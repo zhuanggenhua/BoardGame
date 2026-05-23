@@ -132,6 +132,160 @@ describe('Frankenstein abilities', () => {
         expect(pending).toHaveLength(0);
     });
 
+    it('frankenstein_body_shop 消灭后应进入指示物分配，并允许分配到多个己方随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('body-shop', 'frankenstein_body_shop', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('dok', 'frankenstein_herr_doktor', '0', 2, { powerCounters: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('monster', 'frankenstein_the_monster', '0', 4, { powerCounters: 0 }),
+                        makeMinion('assistant', 'frankenstein_lab_assistant', '0', 2, { powerCounters: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'body-shop' } },
+            defaultTestRandom,
+        );
+        expect(play.success).toBe(true);
+
+        const chooseDestroyed = respondToPromptOption(
+            play.finalState,
+            option => option.value?.minionUid === 'dok',
+            'body shop destroy dok option',
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseDestroyed.success, chooseDestroyed.error).toBe(true);
+        expect(chooseDestroyed.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        expect(chooseDestroyed.finalState.core.bases[0].minions.some(minion => minion.uid === 'dok')).toBe(false);
+
+        const distributePrompt1 = getSimpleChoicePrompt(chooseDestroyed.finalState, 'frankenstein_body_shop_distribute');
+        expect(getPromptOptions(distributePrompt1)).toHaveLength(2);
+
+        const firstDistribution = respondToPromptOption(
+            chooseDestroyed.finalState,
+            option => option.value?.minionUid === 'monster',
+            'body shop distribute first counter to monster',
+            '0',
+            defaultTestRandom,
+        );
+        expect(firstDistribution.success, firstDistribution.error).toBe(true);
+        expect(firstDistribution.finalState.core.bases[1].minions.find(minion => minion.uid === 'monster')?.powerCounters).toBe(1);
+
+        const distributePrompt2 = getSimpleChoicePrompt(firstDistribution.finalState, 'frankenstein_body_shop_distribute');
+        expect(getPromptOptions(distributePrompt2)).toHaveLength(2);
+
+        const secondDistribution = respondToPromptOption(
+            firstDistribution.finalState,
+            option => option.value?.minionUid === 'assistant',
+            'body shop distribute second counter to assistant',
+            '0',
+            defaultTestRandom,
+        );
+        expect(secondDistribution.success, secondDistribution.error).toBe(true);
+        expect(secondDistribution.finalState.core.bases[1].minions.find(minion => minion.uid === 'assistant')?.powerCounters).toBe(1);
+        expect(getPromptsBySourceId(secondDistribution.finalState, 'frankenstein_body_shop_distribute')).toHaveLength(0);
+    });
+
+    it('frankenstein_body_shop 选择海盗 4 力量随从时，即使其改为移动，仍应继续进入指示物分配', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('body-shop', 'frankenstein_body_shop', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('buccaneer', 'pirate_buccaneer', '0', 4, { powerCounters: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('monster', 'frankenstein_the_monster', '0', 5, { powerCounters: 0 }),
+                        makeMinion('assistant', 'frankenstein_lab_assistant', '0', 2, { powerCounters: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_c',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'body-shop' } },
+            defaultTestRandom,
+        );
+        expect(play.success).toBe(true);
+
+        const chooseBuccaneer = respondToPromptOption(
+            play.finalState,
+            option => option.value?.minionUid === 'buccaneer',
+            'body shop choose buccaneer option',
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseBuccaneer.success, chooseBuccaneer.error).toBe(true);
+        const movePrompt = getSimpleChoicePrompt(chooseBuccaneer.finalState, 'pirate_buccaneer_move');
+
+        const moveToBaseC = respondToPromptOption(
+            chooseBuccaneer.finalState,
+            option => getPromptSourceId(movePrompt) === 'pirate_buccaneer_move' && option.value?.toBaseIndex === 2,
+            'buccaneer move to base c option',
+            '0',
+            defaultTestRandom,
+        );
+        expect(moveToBaseC.success, moveToBaseC.error).toBe(true);
+        expect(moveToBaseC.finalState.core.bases[0].minions.some(minion => minion.uid === 'buccaneer')).toBe(false);
+        expect(moveToBaseC.finalState.core.bases[2].minions.some(minion => minion.uid === 'buccaneer')).toBe(true);
+
+        const distributePrompt = getSimpleChoicePrompt(moveToBaseC.finalState, 'frankenstein_body_shop_distribute');
+        expect(getPromptOptions(distributePrompt)).toHaveLength(2);
+
+        let currentState = moveToBaseC.finalState;
+        for (let i = 0; i < 4; i += 1) {
+            const step = respondToPromptOption(
+                currentState,
+                option => option.value?.minionUid === 'monster',
+                `body shop distribute counter ${i + 1} to monster`,
+                '0',
+                defaultTestRandom,
+            );
+            expect(step.success, step.error).toBe(true);
+            currentState = step.finalState;
+        }
+
+        expect(currentState.core.bases[1].minions.find(minion => minion.uid === 'monster')?.powerCounters).toBe(4);
+        expect(currentState.core.bases[1].minions.find(minion => minion.uid === 'assistant')?.powerCounters ?? 0).toBe(0);
+        expect(getPromptsBySourceId(currentState, 'frankenstein_body_shop_distribute')).toHaveLength(0);
+    });
+
     it('frankenstein_german_engineering 在该基地打出随从后给该随从 +1 指示物', () => {
         const core = makeState({
             players: {

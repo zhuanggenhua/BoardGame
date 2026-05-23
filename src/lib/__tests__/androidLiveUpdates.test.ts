@@ -135,7 +135,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk?v=0.5.62',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.8.apk?v=0.5.8',
             source: 'versioned',
         });
     });
@@ -167,7 +167,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk?v=0.5.62',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.8.apk?v=0.5.8',
             source: 'versioned',
         });
     });
@@ -180,7 +180,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk?v=0.5.62',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.8.apk?v=0.5.8',
             source: 'versioned',
         });
     });
@@ -193,8 +193,8 @@ describe('androidLiveUpdates', () => {
     });
 
     it('bundle 版本比较会阻止旧基线 OTA 覆盖更新原生壳或较新的同基线 OTA', () => {
-        expect(compareBundleVersion('0.5.62-ota-2026-05-23T01-00-00-000Z', '0.5.62')).toBe(1);
-        expect(compareBundleVersion('0.5.61-ota-2026-05-23T01-00-00-000Z', '0.5.62')).toBe(-1);
+        expect(compareBundleVersion('0.5.8-ota-2026-05-23T01-00-00-000Z', '0.5.8')).toBe(1);
+        expect(compareBundleVersion('0.5.7-ota-2026-05-23T01-00-00-000Z', '0.5.8')).toBe(-1);
         expect(compareBundleVersion('0.5.61-ota-2026-05-23T01-00-00-000Z', '0.5.61-ota-2026-05-23T00-28-30-595Z')).toBe(1);
         expect(compareBundleVersion('0.5.61-ota-2026-05-23T00-28-30-595Z', '0.5.61-ota-2026-05-23T01-00-00-000Z')).toBe(-1);
     });
@@ -490,10 +490,10 @@ describe('androidLiveUpdates', () => {
         }));
 
         const currentMock = vi.fn().mockResolvedValue({
-            native: '0.5.62',
+            native: '0.5.8',
             bundle: {
                 id: 'builtin',
-                version: '0.5.62',
+                version: '0.5.8',
                 downloaded: '1970-01-01T00:00:00.000Z',
                 checksum: '',
                 status: 'success',
@@ -523,8 +523,8 @@ describe('androidLiveUpdates', () => {
                 get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
             },
             json: async () => ({
-                version: '0.5.61-ota-2026-05-23T00-28-30-595Z',
-                url: 'https://assets.easyboardgame.top/official/app-updates/android/stable/bundles/0.5.61-ota-2026-05-23T00-28-30-595Z.zip',
+                version: '0.5.7-ota-2026-05-23T00-28-30-595Z',
+                url: 'https://assets.easyboardgame.top/official/app-updates/android/stable/bundles/0.5.7-ota-2026-05-23T00-28-30-595Z.zip',
                 checksum: 'abc',
                 channel: 'stable',
             }),

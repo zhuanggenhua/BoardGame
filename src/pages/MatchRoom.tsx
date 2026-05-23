@@ -75,6 +75,7 @@ import { resolveOnlineHudPresence } from './matchHudPresence';
 import {
     haveAiSeatCredentialsChanged,
     loadOnlineAiSeatState,
+    resolveOnlineAiSeatClaimOptions,
     resolveMissingOnlineAiSeatCredentialIds,
 } from './onlineAiSeats';
 import {
@@ -110,6 +111,7 @@ const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_st
 const ONLINE_AI_SEAT_LOAD_RETRY_BASE_MS = 1_000;
 const ONLINE_AI_SEAT_LOAD_RETRY_MAX_MS = 8_000;
 const ONLINE_AI_SEAT_LOAD_RETRY_MAX_ATTEMPTS = 5;
+const ONLINE_AI_SEAT_CLAIM_AUTH_ERROR_STATUSES = new Set([401, 403]);
 const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
     'select-faction',
     'setup-select-faction',
@@ -130,6 +132,16 @@ export function shouldShowOnlineGameErrorToast(error: string): boolean {
     if (SYSTEM_ERRORS.has(error)) return false;
     return true;
 }
+
+const getMatchApiErrorStatus = (error: unknown): number | undefined => {
+    if (error && typeof error === 'object' && 'status' in error) {
+        const status = (error as { status?: unknown }).status;
+        if (typeof status === 'number') return status;
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    const statusMatch = message.match(/^(\d{3})\b/);
+    return statusMatch ? Number(statusMatch[1]) : undefined;
+};
 
 export type MissingMatchConfirmationSignal = 'transport_not_found' | null;
 
@@ -527,6 +539,12 @@ const onlineAiPerfLogger = createScopedLogger('ONLINE_AI_PERF');
 
 type ManualAiSeatDispatch = (playerId: string, type: string, payload: unknown) => boolean;
 
+type PendingManualSetupSelection = {
+    playerId: string;
+    actionKind: ManualSetupSelectionActionKind;
+    selectionId: string;
+};
+
 function appendOnlineAiDevLog(kind: 'transport' | 'perf', event: Record<string, unknown>): void {
     if (typeof window === 'undefined' || !import.meta.env.DEV) {
         return;
@@ -562,6 +580,24 @@ function summarizeSeatControllerTypes(seatControllers: Record<string, AiSeatCont
     );
 }
 
+function resolveManualSetupSelectionActionKindFromCommand(args: {
+    type: string;
+    payload: unknown;
+}): ManualSetupSelectionActionKind | null {
+    if (!isPlainRecord(args.payload)) {
+        return null;
+    }
+    if (typeof args.payload.characterId === 'string') {
+        return 'setup-select-character';
+    }
+    if (typeof args.payload.factionId !== 'string') {
+        return null;
+    }
+    return args.type === 'su:select_faction'
+        ? 'select-faction'
+        : 'setup-select-faction';
+}
+
 export const OnlineManualFactionSelectionBridge = ({
     children,
     seatControllers,
@@ -583,6 +619,22 @@ export const OnlineManualFactionSelectionBridge = ({
     const shouldTakeOver = manualSetupPlayerId !== null;
     const latestSharedStateRef = useRef<MatchState<unknown> | null>(sharedState);
     const latestManualDispatchRef = useRef<ManualAiSeatDispatch | null>(dispatchManualAiCommand);
+    const pendingManualSetupSelectionRef = useRef<PendingManualSetupSelection | null>(null);
+    const [pendingManualSetupSelection, setPendingManualSetupSelectionState] = useState<PendingManualSetupSelection | null>(null);
+
+    const setPendingManualSetupSelection = useCallback((next: PendingManualSetupSelection | null) => {
+        pendingManualSetupSelectionRef.current = next;
+        setPendingManualSetupSelectionState(next);
+    }, []);
+
+    const isManualSetupSelectionPending = pendingManualSetupSelection !== null
+        && !shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState,
+            playerId: pendingManualSetupSelection.playerId,
+            actionKind: pendingManualSetupSelection.actionKind,
+            selectionId: pendingManualSetupSelection.selectionId,
+        });
+    const shouldOverrideManualSetupSelection = shouldTakeOver && !isManualSetupSelectionPending;
 
     useEffect(() => {
         latestSharedStateRef.current = sharedState;
@@ -592,8 +644,37 @@ export const OnlineManualFactionSelectionBridge = ({
         latestManualDispatchRef.current = dispatchManualAiCommand;
     }, [dispatchManualAiCommand]);
 
+    useEffect(() => {
+        const pending = pendingManualSetupSelectionRef.current;
+        if (!pending) {
+            return;
+        }
+        if (shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState,
+            playerId: pending.playerId,
+            actionKind: pending.actionKind,
+            selectionId: pending.selectionId,
+        })) {
+            setPendingManualSetupSelection(null);
+        }
+    }, [setPendingManualSetupSelection, sharedState]);
+
     const manualDispatch = useCallback((type: string, payload: unknown) => {
         const latestSharedState = latestSharedStateRef.current;
+        const pending = pendingManualSetupSelectionRef.current;
+        if (pending) {
+            const pendingReleased = shouldReleaseManualSetupAttemptFromSharedState({
+                sharedState: latestSharedState,
+                playerId: pending.playerId,
+                actionKind: pending.actionKind,
+                selectionId: pending.selectionId,
+            });
+            if (!pendingReleased) {
+                return;
+            }
+            setPendingManualSetupSelection(null);
+        }
+
         const latestCurrentPlayerId = resolveCurrentPlayerId(latestSharedState);
         const latestManualSetupPlayerId = resolveManualSetupSelectionTakeoverPlayerId({
             sharedState: latestSharedState,
@@ -602,16 +683,30 @@ export const OnlineManualFactionSelectionBridge = ({
             hasManualDispatch: Boolean(latestManualDispatchRef.current),
         });
         if (latestManualSetupPlayerId) {
-            latestManualDispatchRef.current?.(latestManualSetupPlayerId, type, payload);
+            const actionKind = resolveManualSetupSelectionActionKindFromCommand({ type, payload });
+            const selectionId = actionKind
+                ? resolveManualSetupSelectionId({ actionKind, payload })
+                : null;
+            if (actionKind && selectionId) {
+                setPendingManualSetupSelection({
+                    playerId: latestManualSetupPlayerId,
+                    actionKind,
+                    selectionId,
+                });
+            }
+            const submitted = latestManualDispatchRef.current?.(latestManualSetupPlayerId, type, payload) === true;
+            if (!submitted && pendingManualSetupSelectionRef.current?.playerId === latestManualSetupPlayerId) {
+                setPendingManualSetupSelection(null);
+            }
             return;
         }
         dispatch(type, payload);
-    }, [dispatch, seatControllers]);
+    }, [dispatch, seatControllers, setPendingManualSetupSelection]);
 
     return (
         <GameClientOverrideProvider
-            playerId={shouldTakeOver ? manualSetupPlayerId : undefined}
-            dispatch={shouldTakeOver ? manualDispatch : undefined}
+            playerId={shouldOverrideManualSetupSelection ? manualSetupPlayerId : undefined}
+            dispatch={shouldOverrideManualSetupSelection ? manualDispatch : undefined}
         >
             {children}
         </GameClientOverrideProvider>
@@ -2862,6 +2957,7 @@ export const MatchRoom = () => {
     );
     const aiRuntimeTruthKeyRef = useRef<string | null>(null);
     const onlineAiSeatReloadAttemptRef = useRef(0);
+    const onlineAiSeatFailureNoticeKeyRef = useRef<string | null>(null);
     const handleForceEndAiPhaseReady = useCallback((handler: (() => Promise<boolean>) | null) => {
         setForceEndAiPhaseHandler(() => handler);
     }, []);
@@ -3205,6 +3301,7 @@ export const MatchRoom = () => {
 
     useEffect(() => {
         onlineAiSeatReloadAttemptRef.current = 0;
+        onlineAiSeatFailureNoticeKeyRef.current = null;
     }, [canClaimMissingAiSeatCredentials, gameId, guestId, matchId, statusPlayerID, token]);
 
     useEffect(() => {
@@ -3218,6 +3315,28 @@ export const MatchRoom = () => {
         let cancelled = false;
         let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
+        const notifyOnlineAiSeatFailure = (reason: string, extra?: Record<string, unknown>) => {
+            const noticeKey = `${matchId}:${reason}`;
+            if (onlineAiSeatFailureNoticeKeyRef.current === noticeKey) {
+                return;
+            }
+            onlineAiSeatFailureNoticeKeyRef.current = noticeKey;
+            logMobileRuntimeCritical('MatchRoom', 'online-ai-seat-claim-toast', {
+                gameId,
+                matchId,
+                reason,
+                statusPlayerID: statusPlayerID ?? null,
+                matchStatusIsHost: matchStatus.isHost,
+                canClaimMissingAiSeatCredentials,
+                ...(extra ?? {}),
+            });
+            toast.error(
+                { kind: 'i18n', key: 'error.aiSeatClaimFailed', ns: 'lobby' },
+                undefined,
+                { dedupeKey: `match.ai-seat-claim-failed.${matchId}` },
+            );
+        };
+
         const scheduleOnlineAiSeatReload = (reason: string, extra?: Record<string, unknown>) => {
             if (cancelled) return;
             if (onlineAiSeatReloadAttemptRef.current >= ONLINE_AI_SEAT_LOAD_RETRY_MAX_ATTEMPTS) {
@@ -3229,6 +3348,10 @@ export const MatchRoom = () => {
                     statusPlayerID: statusPlayerID ?? null,
                     matchStatusIsHost: matchStatus.isHost,
                     canClaimMissingAiSeatCredentials,
+                    ...(extra ?? {}),
+                });
+                notifyOnlineAiSeatFailure(reason, {
+                    attempts: onlineAiSeatReloadAttemptRef.current,
                     ...(extra ?? {}),
                 });
                 return;
@@ -3277,19 +3400,22 @@ export const MatchRoom = () => {
                     claimMissingSeatCredential: canClaimMissingAiSeatCredentials
                         ? async (playerId) => {
                             const aiPlayerName = tLobby('createRoom.aiPlayerName', { seat: Number(playerId) + 1 });
-                            const response = await matchApi.claimSeat(gameId, matchId, playerId, token
-                                ? {
+                            const response = await matchApi.claimSeat(
+                                gameId,
+                                matchId,
+                                playerId,
+                                resolveOnlineAiSeatClaimOptions({
+                                    matchInfo,
                                     token,
-                                    playerName: aiPlayerName,
-                                }
-                                : {
                                     guestId,
                                     playerName: aiPlayerName,
-                                });
+                                }),
+                            );
                             return response.playerCredentials;
                         }
                         : undefined,
                     onClaimError: (playerId, error) => {
+                        const status = getMatchApiErrorStatus(error);
                         logMobileRuntimeCritical('MatchRoom', 'online-ai-seat-claim-failed', {
                             gameId,
                             matchId,
@@ -3297,11 +3423,19 @@ export const MatchRoom = () => {
                             statusPlayerID: statusPlayerID ?? null,
                             matchStatusIsHost: matchStatus.isHost,
                             canClaimMissingAiSeatCredentials,
+                            status: status ?? null,
                             error,
                         });
+                        if (status && ONLINE_AI_SEAT_CLAIM_AUTH_ERROR_STATUSES.has(status)) {
+                            notifyOnlineAiSeatFailure('claim-auth-failed', {
+                                playerId,
+                                status,
+                            });
+                        }
                         console.warn('[MatchRoom] AI 座位补领失败', {
                             matchId,
                             playerId,
+                            status,
                             error: error instanceof Error ? error.message : String(error),
                         });
                     },
@@ -3325,7 +3459,6 @@ export const MatchRoom = () => {
                     persistAiSeatCredentials(matchId, nextAiSeatState.seatCredentials);
                 }
 
-                onlineAiSeatReloadAttemptRef.current = 0;
                 setOnlineAiSeatControllers(nextAiSeatState.seatControllers);
                 setOnlineAiSeatCredentials(nextAiSeatState.seatCredentials);
 
@@ -3336,6 +3469,9 @@ export const MatchRoom = () => {
                     scheduleOnlineAiSeatReload('missing-ai-seat-credentials', {
                         missingAiSeatCredentialIds,
                     });
+                } else {
+                    onlineAiSeatReloadAttemptRef.current = 0;
+                    onlineAiSeatFailureNoticeKeyRef.current = null;
                 }
             } catch (error) {
                 if (!cancelled) {
@@ -3366,7 +3502,7 @@ export const MatchRoom = () => {
                 clearTimeout(retryTimer);
             }
         };
-    }, [canClaimMissingAiSeatCredentials, gameConfig, gameId, guestId, guestName, isTutorialRoute, localStorageTick, matchId, matchStatus.isHost, onlineAiSeatReloadTick, statusPlayerID, tLobby, token]);
+    }, [canClaimMissingAiSeatCredentials, gameConfig, gameId, guestId, guestName, isTutorialRoute, localStorageTick, matchId, matchStatus.isHost, onlineAiSeatReloadTick, statusPlayerID, tLobby, toast, token]);
     // 教程启动 effect
     // 使用 useLayoutEffect 确保在 CriticalImageGate 的 useEffect 之前执行。
     // 配合 TutorialDispatchBridge 的 useLayoutEffect（先 bindDispatch），

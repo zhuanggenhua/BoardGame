@@ -340,6 +340,28 @@ function shouldPreferSeatSnapshotForSharedVisibility(args: {
     });
 }
 
+function shouldPreferSetupSeatSnapshotForSharedVisibility(args: {
+    sharedState: MatchState<unknown>;
+    privateOverlay: MatchState<unknown> | null;
+}): boolean {
+    if (!args.privateOverlay) {
+        return false;
+    }
+
+    const setupLikePhases = new Set(['setup', 'characterSelection', 'characterSelect', 'factionSelect']);
+    const sharedPhase = resolveStatePhase(args.sharedState);
+    const privatePhase = resolveStatePhase(args.privateOverlay);
+    if (!sharedPhase || !setupLikePhases.has(sharedPhase) || privatePhase !== sharedPhase) {
+        return false;
+    }
+
+    const sharedEventStreamNextId = resolveEventStreamNextIdFromState(args.sharedState);
+    const privateEventStreamNextId = resolveEventStreamNextIdFromState(args.privateOverlay);
+    return sharedEventStreamNextId !== null
+        && privateEventStreamNextId !== null
+        && privateEventStreamNextId > sharedEventStreamNextId;
+}
+
 export function resolveOnlineAiDecisionView(
     args: ResolveOnlineAiDecisionViewArgs,
 ): ResolvedOnlineAiDecisionView {
@@ -376,6 +398,9 @@ export function resolveOnlineAiDecisionView(
             sharedState: args.sharedState,
             privateOverlay,
             playerId: args.playerId,
+        }) || shouldPreferSetupSeatSnapshotForSharedVisibility({
+            sharedState: args.sharedState,
+            privateOverlay,
         })
             ? privateOverlay as MatchState<unknown>
             : args.sharedState;

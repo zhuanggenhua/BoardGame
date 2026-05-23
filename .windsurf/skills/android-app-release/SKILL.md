@@ -75,7 +75,13 @@ description: "本项目 Android App 打包/上传/发布/验包 workflow。用�
 - `public/assets/**` 只允许正式运行时资源。
 - 禁止把以下内容打进 Android embedded / OTA：
   - `public/assets/common/audio/**`
-  - `public/assets/common/images/home-v2/**`
+  - `public/assets/common/images/mascot/**`
+  - `public/assets/common/images/home-v2/book-close/**`
+  - `public/assets/common/images/home-v2/catalog-thumbnails/**`
+  - `public/assets/common/images/home-v2/generated-reference-homepage/**`
+  - `public/assets/common/images/home-v2/overview-spread/**`
+  - `public/assets/common/images/home-v2/reference-homepage/**`
+  - `public/assets/common/images/home-v2/reference-thumbnails/**`
   - `public/assets/i18n/**`
   - 参考图、预览图、生成图、中间产物
 - 一旦包体异常变大，先查 `public/assets/**` 和 `dist/`，不要先猜 CDN、缓存或签名。
@@ -245,4 +251,3 @@ https://assets.easyboardgame.top/official/native-app-updates/android/stable/late
 3. 用户要的是 OTA 还是 native 更新
 
 不要把 `OTA` 和 `native` 混成一种更新。
-

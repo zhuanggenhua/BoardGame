@@ -1066,4 +1066,97 @@ describe('scoreBases 多基地计分链恢复', () => {
         expect(state.sys.phase).toBe('playCards');
         expect(state.core.currentPlayerIndex).toBe(1);
     });
+
+    it('4个大副都触发时，会按座次依次移动且各只移动一次', () => {
+        const initialState = createFourPlayerSixInteractionsSetup();
+        const advance = runCommandWithFullSystems(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+        });
+        expect(advance.success).toBe(true);
+
+        let state = advance.finalState;
+        const allEvents: SmashUpEvent[] = [...advance.events] as SmashUpEvent[];
+        const firstMatePromptPlayers: string[] = [];
+        const firstMateMoveOrder: string[] = [];
+        const destinationByPlayer: Record<string, string> = {
+            '0': 'base_the_jungle',
+            '1': 'base_secret_garden',
+            '2': 'base_the_jungle',
+            '3': 'base_secret_garden',
+        };
+
+        const firstChoice = getActiveSimpleChoice(state)!;
+        expect(firstChoice).toBeTruthy();
+        expect(firstChoice.sourceId).toBe('pirate_king_move');
+        const stayPirateKing = findOption(firstChoice, (option: any) => option.value?.move === false);
+        const resolvePirateKing = runCommandWithFullSystems(state, respondCommand(stayPirateKing, '0'));
+        expect(resolvePirateKing.success).toBe(true);
+        allEvents.push(...(resolvePirateKing.events as SmashUpEvent[]));
+        state = resolvePirateKing.finalState;
+
+        while (getActiveSimpleChoice(state)) {
+            const choice = getActiveSimpleChoice(state)!;
+            expect(choice).toBeTruthy();
+
+            let optionId: string;
+            if (choice.sourceId === 'smashup_reaction_choose') {
+                const options = getPromptOptions(choice);
+                optionId = (
+                    options.find((option: any) =>
+                        String(option.id ?? '').includes('pirate_first_mate')
+                        || String(option.label ?? '').includes('pirate_first_mate'),
+                    )?.id
+                    ?? findReactionOptionOrPass(choice, ['base_tortuga', 'base_pirate_cove'])
+                );
+            } else if (choice.sourceId === 'pirate_first_mate_choose_base') {
+                firstMatePromptPlayers.push(choice.playerId);
+                optionId = findOption(
+                    choice,
+                    (option: any) => option.value?.baseDefId === destinationByPlayer[choice.playerId],
+                );
+            } else if (choice.sourceId === 'base_tortuga' || choice.sourceId === 'smashup_immediate_extra_minion') {
+                optionId = findOption(choice, (option: any) => option.id === 'skip' || option.value?.skip === true);
+            } else {
+                throw new Error(`未预期的交互: ${choice.sourceId}`);
+            }
+
+            const resolved = runCommandWithFullSystems(state, respondCommand(optionId, choice.playerId));
+            expect(resolved.success).toBe(true);
+            allEvents.push(...(resolved.events as SmashUpEvent[]));
+            firstMateMoveOrder.push(
+                ...(resolved.events as SmashUpEvent[])
+                    .filter((event) =>
+                        event.type === SU_EVENTS.MINION_MOVED
+                        && (event.payload as { reason?: string } | undefined)?.reason === 'pirate_first_mate',
+                    )
+                    .map((event) => (event.payload as { minionUid: string }).minionUid),
+            );
+            state = resolved.finalState;
+        }
+
+        expect(firstMatePromptPlayers).toEqual(['0', '1', '2', '3']);
+        expect(firstMateMoveOrder).toEqual(['mate-p0', 'mate-p1', 'mate-p2', 'mate-p3']);
+
+        const jungleBase = state.core.bases.find((base) => base.defId === 'base_the_jungle');
+        const gardenBase = state.core.bases.find((base) => base.defId === 'base_secret_garden');
+        expect(jungleBase?.minions.map((minion) => minion.uid)).toEqual(
+            expect.arrayContaining(['king-0', 'mate-p0', 'mate-p2']),
+        );
+        expect(gardenBase?.minions.map((minion) => minion.uid)).toEqual(
+            expect.arrayContaining(['reserve-p1', 'mate-p1', 'mate-p3']),
+        );
+        expect(state.core.bases[0]?.defId).toBe('base_central_brain');
+        expect(state.core.bases[0]?.minions.map((minion) => minion.uid)).not.toEqual(
+            expect.arrayContaining(['mate-p0', 'mate-p1', 'mate-p2', 'mate-p3']),
+        );
+
+        const tortugaScoredEvents = allEvents.filter((event) =>
+            event.type === SU_EVENTS.BASE_SCORED
+            && (event.payload as { baseDefId?: string } | undefined)?.baseDefId === 'base_tortuga',
+        );
+        expect(tortugaScoredEvents).toHaveLength(1);
+        expect(state.sys.phase).toBe('playCards');
+    });
 });

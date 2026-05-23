@@ -1,9 +1,11 @@
 ---
 name: github-pr-review-merge
-description: "BoardGame 项目的 PR 审查、修复、合并补充规则。用于把原始 PR 作为唯一工作对象，默认要求处理完成后原始 PR 已 merge 并关闭，不把手动收尾留给用户。"
+description: "BoardGame 对全局 github-pr-review-merge 的项目补充层。用于把通用 PR 审查/修复/合并流程收紧到本仓库的 worktree、权限判定、终态和收口要求。"
 ---
 
-# BoardGame PR Review Merge
+# BoardGame PR Review Merge Overlay
+
+> 先使用全局 `github-pr-review-merge`，本文件只补充 BoardGame 项目差异，不重复维护通用 PR workflow 正文。
 
 ## 适用范围
 

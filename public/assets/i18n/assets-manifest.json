@@ -3964,6 +3964,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v2": {
+      "variants": {
+        "webp": {
+          "sha256": "d47f6a1ee96f4cef89756acf5222eded650b98552c1b23eeeb2216b02574834b",
+          "bytes": 226422,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/emotes/barbarian/thumbs-up-v1": {
       "variants": {
         "png": {
@@ -3973,7 +3982,25 @@
         }
       }
     },
+    "zh-CN/dicethrone/emotes/barbarian/thumbs-up-v2": {
+      "variants": {
+        "png": {
+          "sha256": "02c8d57acc9a827bacc5403cd12c3f24e1c86efad1dd51436c7bf4c39cb0519c",
+          "bytes": 2192536,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "3cba8b9d2cb98e5699f6ce7cff43655ec65e47c57bf8a168fd126ffeec00b673",
+          "bytes": 155104,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v2": {
       "variants": {
         "webp": {
           "sha256": "3cba8b9d2cb98e5699f6ce7cff43655ec65e47c57bf8a168fd126ffeec00b673",
@@ -4001,6 +4028,15 @@
       }
     },
     "zh-CN/dicethrone/emotes/moon-elf/confused-v1": {
+      "variants": {
+        "png": {
+          "sha256": "09481fa2eeac157f8604938ff36a6e73856f991611cb077ac87656b9a3ee5ae4",
+          "bytes": 1543390,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/emotes/moon-elf/confused-v2": {
       "variants": {
         "png": {
           "sha256": "09481fa2eeac157f8604938ff36a6e73856f991611cb077ac87656b9a3ee5ae4",
@@ -6214,11 +6250,47 @@
         }
       }
     },
+    "zh-CN/smashup/emotes/raider/angry-v1": {
+      "variants": {
+        "png": {
+          "sha256": "dea49ad8d2eaa960cb89cb8cc534c7ff9b8d6bf01ad15bd234bcd2da021398fc",
+          "bytes": 1979623,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/emotes/raider/compressed/angry-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "6f591eec6d11e5074e4548b6c2c53be348a7de77132581d70cd23bca68dd8168",
+          "bytes": 217900,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/emotes/smug-v1": {
       "variants": {
         "png": {
           "sha256": "447dc8f87377baf2866771e464c93ce48ea949dbfb21328934d19b51bdaac9a4",
           "bytes": 1932442,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/emotes/supreme-overlord/compressed/smug-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "541efae459b1fa18230ebfd4cc94877b9f804042fc97d11eb65ad91a3d001dfb",
+          "bytes": 168952,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/emotes/supreme-overlord/smug-v1": {
+      "variants": {
+        "png": {
+          "sha256": "4bddb3080d05b2305cc55f4e275a852070c205f09ac6e627c19952aaf09e4a69",
+          "bytes": 2008286,
           "mime": "image/png"
         }
       }

@@ -1255,6 +1255,44 @@ describe('buildAiProgressMarker（响应窗口语义指纹）', () => {
         expect(buildAiProgressMarker(baseState.G as any))
             .not.toBe(buildAiProgressMarker(progressedState.G as any));
     });
+
+    it('SmashUp factionSelect 同一玩家连续选派系时，playerSelections/takenFactions 变化也应被视为进展', () => {
+        const baseState = createOnlineAiRecoveryState({
+            activePlayerId: '3',
+            phase: 'factionSelect',
+        });
+        (baseState.G as any).core.factionSelection = {
+            takenFactions: ['aliens', 'pirates', 'robots'],
+            playerSelections: {
+                '0': ['aliens'],
+                '1': ['pirates'],
+                '2': ['robots'],
+                '3': [],
+            },
+        };
+
+        const progressedState = {
+            ...baseState,
+            G: {
+                ...baseState.G,
+                core: {
+                    ...(baseState.G as any).core,
+                    factionSelection: {
+                        takenFactions: ['aliens', 'pirates', 'robots', 'wizards'],
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': ['pirates'],
+                            '2': ['robots'],
+                            '3': ['wizards'],
+                        },
+                    },
+                },
+            },
+        };
+
+        expect(buildAiProgressMarker(baseState.G as any))
+            .not.toBe(buildAiProgressMarker(progressedState.G as any));
+    });
 });
 
 describe('resolveCurrentPlayerId（防御阶段操作者）', () => {

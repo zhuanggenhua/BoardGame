@@ -499,14 +499,13 @@ const frankensteinBodyShopDistributePromptProgram = createPromptProgram<BodyShop
         const nextRemaining = currentRemaining - 1;
         if (nextRemaining <= 0) return { events };
 
-        const nextState = withSimulatedMatchState(state, events);
-        if (buildBodyShopDistributeOptions(nextState.core, playerId, nextRemaining).length === 0) {
+        if (buildBodyShopDistributeOptions(state.core, playerId, nextRemaining).length === 0) {
             return { events };
         }
 
         return {
             events,
-            context: createPromptContext(nextState, playerId, timestamp, { remaining: nextRemaining }),
+            context: createPromptContext(state, playerId, timestamp, { remaining: nextRemaining }),
             nextProgram: frankensteinBodyShopDistributePromptProgram,
         };
     },

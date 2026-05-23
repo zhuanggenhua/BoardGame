@@ -59,7 +59,7 @@
 > **UI 优化任务**（布局稳定性修复、字号/间距层级调整、视觉层级重构等）也须走此流程。
 >
 > 必须按以下顺序执行：
-> 1. **先读 Skill**：执行 `.windsurf/skills/ui-ux-pro-max/SKILL.md` 中的 `--design-system` 流程，获取通用设计建议（配色/字体/风格/反模式）。
+> 1. **先读 Skill**：先读 `.windsurf/skills/ui-ux-pro-max/SKILL.md`。它在本项目里是 **overlay 入口**：先路由到全局 `ui-ux-pro-max` 获取通用设计建议（配色/字体/风格/反模式），再回到项目设计系统与本项目验收口径。
 > 2. **再读项目自定义设计系统**：
 >    - `design-system/game-ui/MASTER.md` — 游戏 UI 交互通用原则
 >    - `design-system/styles/<风格>.md` — 对应视觉风格规范

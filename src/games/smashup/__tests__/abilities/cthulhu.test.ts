@@ -1996,6 +1996,43 @@ describe('cthulhu_servitor（仆人 talent）', () => {
         expect((destroyEvt as any).payload.minionDefId).toBe('cthulhu_servitor');
     });
 
+    it('被他人控制时自毁仍应进入自己拥有者的弃牌堆', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['cthulhu', 'aliens'],
+                    discard: [makeCard('dis1', 'cthulhu_fhtagn', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    factions: ['cthulhu', 'aliens'],
+                    discard: [],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [makeMinion('borrowed-servitor', 'cthulhu_servitor', '0', 2, { owner: '1', powerModifier: 0 })],
+                }),
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'borrowed-servitor', baseIndex: 0 },
+            },
+            dummyRandom,
+        );
+
+        const destroyEvt = result.events.find(e => e.type === SU_EVENTS.MINION_DESTROYED) as MinionDestroyedEvent | undefined;
+        expect(destroyEvt).toBeDefined();
+        expect(destroyEvt?.payload.ownerId).toBe('1');
+        expect(result.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-servitor')).toBe(false);
+        expect(result.finalState.core.players['1'].discard.some(card => card.uid === 'borrowed-servitor')).toBe(true);
+    });
+
     it('弃牌堆无行动卡时仅消灭自身', () => {
         const core = makeState({
             players: {

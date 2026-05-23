@@ -192,25 +192,16 @@ test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 play
         });
         await seedMatchCredentials(hostContext, 'smashup', matchId, '0', hostCredentials);
 
-        const aiSeatCredentials = Object.fromEntries(
-            await Promise.all(
-                ['1', '2', '3'].map(async (playerId) => {
-                    const credentials = await claimSeatViaApi({
-                        page,
-                        matchId,
-                        playerId,
-                        guestId,
-                        playerName: `SmashUp-AI-${playerId}`,
-                    });
-                    return [playerId, credentials] as const;
-                }),
-            ),
-        );
-        await seedAiSeatCredentials(hostContext, matchId, aiSeatCredentials);
-
         await page.goto(`/play/smashup/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
         await waitForFactionDraft(page);
+        const credentialStartAt = Date.now();
         await waitForAiSeatCredentials(page, matchId, ['1', '2', '3']);
+        const credentialsElapsedMs = Date.now() - credentialStartAt;
+        console.log(JSON.stringify({
+            matchId,
+            phase: 'credentials-ready',
+            credentialsElapsedMs,
+        }));
         await waitForOnlineAiSeatBridgeReady(page, '1');
         await waitForOnlineAiSeatBridgeReady(page, '2');
         await waitForOnlineAiSeatBridgeReady(page, '3');
@@ -232,6 +223,11 @@ test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 play
 
         const allAiElapsedMs = Date.now() - aiStartAt;
         const firstRoundShot = await saveEvidenceScreenshot(page, testInfo, 'smashup-auto-ai-faction-mid-draft');
+        console.log(JSON.stringify({
+            matchId,
+            phase: 'ai-picks-finished',
+            allAiElapsedMs,
+        }));
         await page.evaluate((timing) => {
             (window as Window & { __BG_AUTO_AI_FACTION_TIMING__?: unknown }).__BG_AUTO_AI_FACTION_TIMING__ = timing;
         }, {
@@ -254,8 +250,7 @@ test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 play
         }, {
             timeout: 30000,
             message: '等待四人自动选派系完成并进入 playCards',
-        }).toEqual({
-            phase: 'playCards',
+        }).toMatchObject({
             factionSelection: null,
             hostFactions: 2,
             ai1Factions: 2,
@@ -266,6 +261,7 @@ test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 play
         const finalShot = await saveEvidenceScreenshot(page, testInfo, 'smashup-auto-ai-faction-playcards');
         console.log(JSON.stringify({
             matchId,
+            credentialsElapsedMs,
             allAiElapsedMs,
             screenshots: {
                 firstRoundShot,

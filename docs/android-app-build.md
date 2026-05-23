@@ -76,7 +76,22 @@ ANDROID_REMOTE_WEB_URL=https://your-domain.com
 - Android embedded 构建前会先裁剪 `dist/`，至少删除：
   - `dist/assets/i18n/**`
   - `dist/assets/common/audio/**`
-- 构建阶段如果检测到 `dist/` 或 `android/app/src/main/assets/public/` 里仍包含 `assets/common/audio/**`，脚本必须直接失败。
+  - `dist/assets/common/images/mascot/**`
+  - `dist/assets/common/images/home-v2/book-close/**`
+  - `dist/assets/common/images/home-v2/catalog-thumbnails/**`
+  - `dist/assets/common/images/home-v2/generated-reference-homepage/**`
+  - `dist/assets/common/images/home-v2/overview-spread/**`
+  - `dist/assets/common/images/home-v2/reference-homepage/**`
+  - `dist/assets/common/images/home-v2/reference-thumbnails/**`
+- 构建阶段如果检测到 `dist/` 或 `android/app/src/main/assets/public/` 里仍包含以下前缀，脚本必须直接失败：
+  - `assets/common/audio/**`
+  - `assets/common/images/mascot/**`
+  - `assets/common/images/home-v2/book-close/**`
+  - `assets/common/images/home-v2/catalog-thumbnails/**`
+  - `assets/common/images/home-v2/generated-reference-homepage/**`
+  - `assets/common/images/home-v2/overview-spread/**`
+  - `assets/common/images/home-v2/reference-homepage/**`
+  - `assets/common/images/home-v2/reference-thumbnails/**`
 - 这条门禁的本质约束是：**native APK 不得重复内置本应从 R2 / 游戏包下载的运行时大资源**。发现这类资源进入 APK，不是“先发再说”，而是构建链路配置错误。
 
 ## 原生 APK 自更新

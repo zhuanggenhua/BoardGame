@@ -277,7 +277,7 @@ export async function claimSeat(
     });
     if (!response.ok) {
         const text = await response.text().catch(() => '');
-        throw new Error(`${response.status}: ${text || response.statusText}`);
+        throw buildApiError(response.status, text, response.statusText);
     }
     return response.json() as Promise<{ playerCredentials: string }>;
 }

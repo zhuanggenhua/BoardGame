@@ -1050,13 +1050,19 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         void Promise.allSettled(
                             aiSeatEntries.map(async ([playerId]) => {
                                 try {
+                                    const aiPlayerName = t('createRoom.aiPlayerName', { seat: Number(playerId) + 1 });
+                                    const claimOptions = ownerType === 'guest'
+                                        ? {
+                                            guestId: guestId ?? getGuestId(),
+                                            playerName: aiPlayerName,
+                                        }
+                                        : {
+                                            token: token ?? undefined,
+                                            playerName: aiPlayerName,
+                                        };
                                     return {
                                         playerId,
-                                        response: await matchApi.claimSeat(gameId, matchID, playerId, {
-                                            token: token ?? undefined,
-                                            guestId,
-                                            playerName: t('createRoom.aiPlayerName', { seat: Number(playerId) + 1 }),
-                                        }),
+                                        response: await matchApi.claimSeat(gameId, matchID, playerId, claimOptions),
                                     };
                                 } catch (error) {
                                     throw {
@@ -1088,6 +1094,13 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                             });
 
                             persistAiSeatCredentials(matchID, aiSeatCredentials);
+                            if (failureCount > 0) {
+                                toast.error(
+                                    { kind: 'i18n', key: 'error.aiSeatClaimFailed', ns: 'lobby' },
+                                    undefined,
+                                    { dedupeKey: `match.ai-seat-claim-failed.${matchID}` },
+                                );
+                            }
                             appendMatchLoadTrace({
                                 stage: 'create-room-ai-seat-claim-background-settled',
                                 gameId,

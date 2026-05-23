@@ -695,10 +695,16 @@ function normalizePreloadedImageCacheKey(src: string, locale?: string): string {
     if (!normalized) return '';
 
     if (normalized.includes(`/${COMPRESSED_SUBDIR}/`)) {
-        return `${stripExtension(normalized)}.webp`;
+        return replaceImageExtension(normalized, '.webp');
     }
 
     return getOptimizedImageUrls(getLocalizedAssetPath(normalized, effectiveLocale)).webp;
+}
+
+function replaceImageExtension(src: string, nextExtension: string): string {
+    const { path, query, hash } = splitUrlParts(src);
+    const normalizedPath = path.replace(/\.(avif|webp|png|jpe?g|gif|svg)$/i, '');
+    return `${normalizedPath}${nextExtension}${query ? `?${query}` : ''}${hash}`;
 }
 
 function stripVersionParam(value: string): string {

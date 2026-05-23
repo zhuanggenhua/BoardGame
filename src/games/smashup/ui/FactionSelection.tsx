@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { SU_COMMANDS, getCurrentPlayerId } from '../domain/types';
 import type { SmashUpCore } from '../domain/types';
-import { buildFactionSelectionIdentitySet, normalizeFactionSelectionId } from '../domain/ids';
+import { buildFactionSelectionIdentitySet, FACTION_DISPLAY_NAMES, normalizeFactionSelectionId } from '../domain/ids';
 import {
     FACTION_METADATA,
     getFactionMechanicTutorial,
@@ -15,7 +15,15 @@ import {
     isFactionImplementationInProgress,
 } from './factionMeta';
 import type { PlayerId } from '../../../engine/types';
-import { getFactionCards, getFactionTitans, resolveCardName } from '../data/cards';
+import {
+    getAllBaseDefs,
+    getBaseDef,
+    getBasePodFactionIds,
+    getBasePodVariantId,
+    getFactionCards,
+    getFactionTitans,
+    resolveCardName,
+} from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { X, Check, Layers, ZoomIn, Pencil, Lock, BookOpen } from 'lucide-react';
 import { UI_Z_INDEX } from '../../../core';
@@ -80,6 +88,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const navigate = useNavigate();
     const selectionState = core.factionSelection;
     const [focusedGroupId, setFocusedGroupId] = useState<string | null>(null);
+    const [detailPreviewTab, setDetailPreviewTab] = useState<'hand' | 'bases'>('hand');
     const [viewingCard, setViewingCard] = useState<{ defId: string; type: 'minion' | 'base' | 'action' | 'titan' } | null>(null);
     const selectionGridRef = useRef<HTMLDivElement | null>(null);
     const [viewportSize, setViewportSize] = useState(() => ({
@@ -163,6 +172,24 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         ? isFactionImplementationInProgress(focusedFactionGroup.groupId)
             || (resolvedActiveFactionId ? isFactionImplementationInProgress(resolvedActiveFactionId) : false)
         : false;
+    const detailFactionCards = useMemo(
+        () => (focusedFactionMeta ? getFactionCards(focusedFactionMeta.id) : []),
+        [focusedFactionMeta],
+    );
+    const detailFactionTitans = useMemo(
+        () => (focusedFactionMeta ? getFactionTitans(focusedFactionMeta.id) : []),
+        [focusedFactionMeta],
+    );
+    const detailFactionBases = useMemo(() => {
+        if (!focusedFactionMeta) return [];
+        const selectedFactions = new Set([focusedFactionMeta.id]);
+        return getAllBaseDefs()
+            .filter((base) => base.faction === focusedFactionMeta.id || getBasePodFactionIds(base).includes(focusedFactionMeta.id))
+            .map((base) => {
+                const resolvedBaseId = getBasePodVariantId(base, selectedFactions) ?? base.id;
+                return getBaseDef(resolvedBaseId) ?? base;
+            });
+    }, [focusedFactionMeta]);
 
     const factionStatusCounts = useMemo(() => {
         let available = 0;
@@ -210,6 +237,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         }
         grid.scrollTop = 0;
     }, [mySelections.length, normalizedFactionSearch]);
+    useEffect(() => {
+        if (!focusedGroupId) return;
+        setDetailPreviewTab('hand');
+    }, [focusedGroupId, resolvedActiveFactionId]);
     const filteredFactionGroups = useMemo(() => {
         return visibleFactionGroups
             .map((group) => {
@@ -682,6 +713,15 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                 {[0, 1].map((i) => {
                                     const fid = selections[i];
                                     const meta = fid ? FACTION_METADATA.find((faction) => faction.id === fid) : null;
+                                    const fallbackName = fid ? FACTION_DISPLAY_NAMES[fid] ?? fid : '';
+                                    const isAsciiFallbackName = Array.from(fallbackName).every(
+                                        (char) => char.charCodeAt(0) <= 0x7f,
+                                    );
+                                    const fallbackBadge = fallbackName
+                                        ? (isAsciiFallbackName
+                                            ? fallbackName.replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase()
+                                            : Array.from(fallbackName.replace(/\s+/g, '')).slice(0, 2).join(''))
+                                        : '';
 
                                     return (
                                         <div
@@ -695,7 +735,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                     : useDesktopLikeLandscapeLayout ? 'w-11 h-11' : 'w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12'}
                                                 ${!fid ? 'border-dashed border-slate-300 opacity-40' : 'border-slate-800 rotate-[-4deg]'}
                                             `}
-                                            title={meta ? t(meta.nameKey) : undefined}
+                                            title={meta ? t(meta.nameKey) : (fallbackName || undefined)}
                                             style={{ transform: fid ? `rotate(${(i * 10) - 5}deg)` : 'none' }}
                                         >
                                             {meta?.icon ? (
@@ -703,7 +743,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                     <meta.icon size={useMinimalPlayerRail ? 18 : useCompactPlayerRail ? 18 : useDesktopLikeLandscapeLayout ? 26 : 28} strokeWidth={2.5} />
                                                 </div>
                                             ) : (
-                                                <span className={useMinimalPlayerRail ? 'text-[8px] text-slate-400 font-black' : useCompactPlayerRail ? 'text-[9px] text-slate-400 font-black' : useDesktopLikeLandscapeLayout ? 'text-[10px] text-slate-400 font-black' : 'text-[10px] sm:text-xs text-slate-400 font-black'}>?</span>
+                                                <span className={useMinimalPlayerRail ? 'text-[8px] text-slate-500 font-black' : useCompactPlayerRail ? 'text-[9px] text-slate-500 font-black' : useDesktopLikeLandscapeLayout ? 'text-[10px] text-slate-500 font-black' : 'text-[10px] sm:text-xs text-slate-500 font-black'}>{fallbackBadge}</span>
                                             )}
                                         </div>
                                     );
@@ -828,8 +868,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                             />
 
                                             {(() => {
-                                                const cards = getFactionCards(focusedFactionMeta.id);
-                                                const titans = getFactionTitans(focusedFactionMeta.id);
                                                 const selectedVariantId = mySelections.find((selectedId) => focusedFactionGroup.variants.some((variant) => variant.id === selectedId)) ?? null;
                                                 const isSelectedByMe = Boolean(selectedVariantId);
                                                 const isTakenByOther = takenFactionIdentities.has(focusedFactionGroup.groupId) && !isSelectedByMe;
@@ -904,10 +942,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
 
                                                             <div className="flex gap-2 mb-4 lg:mb-6">
                                                                 <div className="px-2 py-1 bg-slate-100 rounded text-xs font-black text-slate-800 border border-slate-200 shadow-sm">
-                                                                    {t('ui.minion_count', { count: cards.filter((card) => card.type === 'minion').length })}
+                                                                    {t('ui.minion_count', { count: detailFactionCards.filter((card) => card.type === 'minion').length })}
                                                                 </div>
                                                                 <div className="px-2 py-1 bg-slate-100 rounded text-xs font-black text-slate-800 border border-slate-200 shadow-sm">
-                                                                    {t('ui.action_count', { count: cards.filter((card) => card.type === 'action').length })}
+                                                                    {t('ui.action_count', { count: detailFactionCards.filter((card) => card.type === 'action').length })}
                                                                 </div>
                                                             </div>
 
@@ -925,9 +963,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                             </div>
 
                                                             <div className="rounded-sm border border-slate-200 bg-white/70 p-3 shadow-inner" data-testid="faction-titan-section">
-                                                                {titans.length > 0 ? (
+                                                                {detailFactionTitans.length > 0 ? (
                                                                     <div className={`grid ${titanGridCols} gap-3 md:gap-4`}>
-                                                                        {titans.map((titan) => {
+                                                                        {detailFactionTitans.map((titan) => {
                                                                             const titanName = resolveCardName(titan, t) || titan.id;
                                                                             return (
                                                                                 <button
@@ -1010,48 +1048,125 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                         </div>
 
                                         <div className="flex-1 min-h-0 bg-white/50 overflow-y-auto p-3 sm:p-4 md:p-8 custom-scrollbar">
-                                            <h3 className="text-slate-400 text-sm font-black uppercase tracking-widest mb-4 md:mb-6 flex items-center gap-2">
-                                                <SearchGlyph className="h-[14px] w-[14px]" />
-                                                <span>{t('ui.preview_cards')}</span>
-                                            </h3>
+                                            <div
+                                                className="mb-4 flex flex-wrap items-center gap-2 md:mb-6"
+                                                role="tablist"
+                                                aria-label={t('ui.preview_cards')}
+                                            >
+                                                {([
+                                                    {
+                                                        id: 'hand' as const,
+                                                        label: t('ui.preview_cards_hand'),
+                                                        count: detailFactionCards.length,
+                                                        testId: 'faction-preview-tab-hand',
+                                                    },
+                                                    {
+                                                        id: 'bases' as const,
+                                                        label: t('ui.preview_cards_bases'),
+                                                        count: detailFactionBases.length,
+                                                        testId: 'faction-preview-tab-bases',
+                                                    },
+                                                ]).map((tab) => {
+                                                    const isActive = detailPreviewTab === tab.id;
+                                                    return (
+                                                        <button
+                                                            key={tab.id}
+                                                            type="button"
+                                                            role="tab"
+                                                            aria-selected={isActive}
+                                                            onClick={() => setDetailPreviewTab(tab.id)}
+                                                            data-testid={tab.testId}
+                                                            className={`rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] transition-colors ${
+                                                                isActive
+                                                                    ? 'border-slate-900 bg-slate-900 text-white shadow-md'
+                                                                    : 'border-slate-300 bg-white/80 text-slate-500 hover:border-slate-500 hover:text-slate-800'
+                                                            }`}
+                                                        >
+                                                            {tab.label} · {tab.count}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
 
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4" data-testid="faction-preview-grid">
-                                                {getFactionCards(focusedFactionMeta.id).map((card, cidx) => (
-                                                    <div
-                                                        key={card.id}
-                                                        className="group relative aspect-[0.714] rounded-sm overflow-hidden bg-white p-[2px] lg:p-[3px] shadow-md border-2 border-slate-100 transition-all cursor-zoom-in hover:z-20 hover:scale-110 hover:shadow-xl"
-                                                        style={{ transform: `rotate(${(cidx % 5) - 2}deg)` }}
-                                                        onClick={() => setViewingCard({ defId: card.id, type: card.type })}
-                                                        data-testid="faction-preview-card"
-                                                    >
-                                                        <div className="w-full h-full bg-slate-100 overflow-hidden relative">
-                                                            <CardPreview
-                                                                previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.id } }}
-                                                                className="w-full h-full"
-                                                            />
+                                            {detailPreviewTab === 'hand' ? (
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4" data-testid="faction-preview-grid">
+                                                    {detailFactionCards.map((card, cidx) => (
+                                                        <div
+                                                            key={card.id}
+                                                            className="group relative aspect-[0.714] rounded-sm overflow-hidden bg-white p-[2px] lg:p-[3px] shadow-md border-2 border-slate-100 transition-all cursor-zoom-in hover:z-20 hover:scale-110 hover:shadow-xl"
+                                                            style={{ transform: `rotate(${(cidx % 5) - 2}deg)` }}
+                                                            onClick={() => setViewingCard({ defId: card.id, type: card.type })}
+                                                            data-testid="faction-preview-card"
+                                                        >
+                                                            <div className="w-full h-full bg-slate-100 overflow-hidden relative">
+                                                                <CardPreview
+                                                                    previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.id } }}
+                                                                    className="w-full h-full"
+                                                                />
 
-                                                            {card.count > 1 && (
-                                                                <div className="absolute top-1.5 right-1.5 z-30 min-w-[22px] h-[22px] px-1 bg-amber-500 border-2 border-white rounded-full flex items-center justify-center shadow-md">
-                                                                    <span className="text-white font-black text-[10px] leading-none">×{card.count}</span>
+                                                                {card.count > 1 && (
+                                                                    <div className="absolute top-1.5 right-1.5 z-30 min-w-[22px] h-[22px] px-1 bg-amber-500 border-2 border-white rounded-full flex items-center justify-center shadow-md">
+                                                                        <span className="text-white font-black text-[10px] leading-none">×{card.count}</span>
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 p-1.5 rounded-full text-white z-30">
+                                                                    <ZoomIn size={16} />
                                                                 </div>
-                                                            )}
 
-                                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 p-1.5 rounded-full text-white z-30">
-                                                                <ZoomIn size={16} />
-                                                            </div>
-
-                                                            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 pointer-events-none">
-                                                                <div className="text-white font-black text-[10px] uppercase leading-none mb-1">
-                                                                    {resolveCardName(card, t)}
-                                                                </div>
-                                                                <div className="text-[8px] text-amber-400 font-bold uppercase tracking-widest">
-                                                                    {card.type === 'minion' ? `${t('ui.minion')}: ${(card as import('../domain/types').MinionCardDef).power}` : t('ui.action')}
+                                                                <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 pointer-events-none">
+                                                                    <div className="text-white font-black text-[10px] uppercase leading-none mb-1">
+                                                                        {resolveCardName(card, t)}
+                                                                    </div>
+                                                                    <div className="text-[8px] text-amber-400 font-bold uppercase tracking-widest">
+                                                                        {card.type === 'minion' ? `${t('ui.minion')}: ${(card as import('../domain/types').MinionCardDef).power}` : t('ui.action')}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                                    ))}
+                                                </div>
+                                            ) : detailFactionBases.length > 0 ? (
+                                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4" data-testid="faction-base-grid">
+                                                    {detailFactionBases.map((base, index) => (
+                                                        <button
+                                                            key={base.id}
+                                                            type="button"
+                                                            className="group relative aspect-[1.43] rounded-sm overflow-hidden bg-white p-[3px] shadow-md border-2 border-slate-100 transition-all cursor-zoom-in hover:z-20 hover:-translate-y-1 hover:shadow-xl"
+                                                            style={{ transform: `rotate(${(index % 4) - 1.5}deg)` }}
+                                                            onClick={() => setViewingCard({ defId: base.id, type: 'base' })}
+                                                            data-testid="faction-base-card"
+                                                        >
+                                                            <div className="relative h-full w-full overflow-hidden bg-slate-100">
+                                                                <CardPreview
+                                                                    previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: base.id } }}
+                                                                    className="w-full h-full"
+                                                                />
+
+                                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 p-1.5 rounded-full text-white z-30">
+                                                                    <ZoomIn size={16} />
+                                                                </div>
+
+                                                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent p-2 text-left">
+                                                                    <div className="text-white font-black text-[10px] uppercase leading-none mb-1">
+                                                                        {resolveCardName(base, t)}
+                                                                    </div>
+                                                                    <div className="text-[8px] text-amber-300 font-bold uppercase tracking-widest">
+                                                                        BP {base.breakpoint} · VP {base.vpAwards.join('/')}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className="flex min-h-[12rem] items-center justify-center rounded-sm border border-dashed border-slate-300 bg-slate-50/80 px-4 text-center text-sm font-bold leading-relaxed text-slate-500 md:min-h-[14rem]"
+                                                    data-testid="faction-base-empty"
+                                                >
+                                                    {t('ui.preview_bases_empty')}
+                                                </div>
+                                            )}
                                         </div>
                                         </motion.div>
                                     </div>

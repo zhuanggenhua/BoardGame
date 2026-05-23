@@ -165,6 +165,73 @@ export function resolveCurrentPlayerId(sharedState: MatchState<unknown> | null |
     return null;
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function buildStringArraySemanticSignature(values: unknown): string {
+    if (!Array.isArray(values)) {
+        return '';
+    }
+
+    return values
+        .filter((value): value is string => typeof value === 'string')
+        .join(',');
+}
+
+function buildStringRecordSemanticSignature(values: unknown): string {
+    if (!isPlainRecord(values)) {
+        return '';
+    }
+
+    return Object.keys(values)
+        .sort()
+        .map((key) => {
+            const value = values[key];
+            return `${key}:${typeof value === 'string' ? value : ''}`;
+        })
+        .join(',');
+}
+
+function buildStringArrayRecordSemanticSignature(values: unknown): string {
+    if (!isPlainRecord(values)) {
+        return '';
+    }
+
+    return Object.keys(values)
+        .sort()
+        .map((key) => `${key}:${buildStringArraySemanticSignature(values[key])}`)
+        .join('|');
+}
+
+function buildPregameSelectionProgressSignature(core: unknown): string {
+    if (!isPlainRecord(core)) {
+        return '';
+    }
+
+    const factionSelection = isPlainRecord(core.factionSelection) ? core.factionSelection : null;
+    const takenFactionsSignature = buildStringArraySemanticSignature(factionSelection?.takenFactions);
+    const playerSelectionsSignature = buildStringArrayRecordSemanticSignature(factionSelection?.playerSelections);
+    const selectedFactionsSignature = buildStringRecordSemanticSignature(core.selectedFactions);
+    const selectedCharactersSignature = buildStringRecordSemanticSignature(core.selectedCharacters);
+
+    if (
+        !takenFactionsSignature
+        && !playerSelectionsSignature
+        && !selectedFactionsSignature
+        && !selectedCharactersSignature
+    ) {
+        return '';
+    }
+
+    return [
+        takenFactionsSignature,
+        playerSelectionsSignature,
+        selectedFactionsSignature,
+        selectedCharactersSignature,
+    ].join('#');
+}
+
 export function buildAiProgressMarker(state: MatchState<unknown>): string {
     const turnNumber = typeof state.sys?.turnNumber === 'number' ? state.sys.turnNumber : '';
     const phase = typeof state.sys?.phase === 'string' ? state.sys.phase : '';
@@ -214,6 +281,7 @@ export function buildAiProgressMarker(state: MatchState<unknown>): string {
         ? currentResponseWindow.currentResponderIndex
         : '';
     const currentPlayerId = resolveCurrentPlayerId(state) ?? '';
+    const pregameSelectionProgressSignature = buildPregameSelectionProgressSignature(state.core);
 
     return [
         turnNumber,
@@ -227,6 +295,7 @@ export function buildAiProgressMarker(state: MatchState<unknown>): string {
         responseWindowSourceId,
         responderIndex,
         currentPlayerId,
+        pregameSelectionProgressSignature,
     ].join('|');
 }
 

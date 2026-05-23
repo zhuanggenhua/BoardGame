@@ -183,12 +183,9 @@ function reconcilePendingBodyShopDistributions(
             return false;
         });
 
-        if (matchedSave) {
-            continue;
-        }
-
-        if (matchedDestroy) {
-            const timestamp = typeof matchedDestroy.timestamp === 'number' ? matchedDestroy.timestamp : fallbackTimestamp;
+        if (matchedDestroy || matchedSave) {
+            const matchedTimestamp = matchedDestroy?.timestamp ?? matchedSave?.timestamp;
+            const timestamp = typeof matchedTimestamp === 'number' ? matchedTimestamp : fallbackTimestamp;
             const result = materializeBodyShopDistribution(nextState, item, timestamp);
             nextState = result.state;
             emitted.push(...result.events);
@@ -479,12 +476,35 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                         }
 
                         if (payload.sourceId === 'giant_ant_drone_prevent_destroy') {
-                            const targetMinionUid = (payload.interactionData?.continuationContext as { targetMinionUid?: string } | undefined)?.targetMinionUid;
                             const selected = resolvedValue as { skip?: boolean } | undefined;
-                            if (targetMinionUid && !selected?.skip) {
-                                const pending = getPendingBodyShopDistributions(newState)
-                                    .filter((item) => item.targetMinionUid !== targetMinionUid);
-                                newState = setPendingBodyShopDistributions(newState, pending);
+                            if (!selected?.skip) {
+                                const pendingItems = getPendingBodyShopDistributions(newState);
+                                const remaining: BodyShopPendingDistribution[] = [];
+
+                                for (const item of pendingItems) {
+                                    const targetStillOnBoard = newState.core.bases.some((base) =>
+                                        base.minions.some((minion) => minion.uid === item.targetMinionUid),
+                                    );
+                                    if (!targetStillOnBoard) {
+                                        remaining.push(item);
+                                        continue;
+                                    }
+
+                                    const result = materializeBodyShopDistribution(
+                                        newState as MatchState<SmashUpCore>,
+                                        item,
+                                        eventTimestamp,
+                                    );
+                                    newState = result.state;
+                                    if (result.events.length > 0) {
+                                        nextEvents.push(...result.events as GameEvent[]);
+                                    }
+                                }
+
+                                newState = setPendingBodyShopDistributions(
+                                    newState as MatchState<SmashUpCore>,
+                                    remaining,
+                                );
                             }
                         }
                     }

@@ -24,6 +24,7 @@ import {
     addTempPower, revealAndPickFromDeck,
     buildAbilityFeedback, buildActionMinionTargetOptions, buildPlayerTargetOptions,
     buildStandardDrawEventsFromRuntimeContext,
+    findMinionOnBases,
 } from '../domain/abilityHelpers';
 import { reduce } from '../domain/reduce';
 import { registerTrigger } from '../domain/ongoingEffects';
@@ -963,8 +964,17 @@ const cthulhuServitorPromptProgram = createPromptProgram<CthulhuPromptContext, S
 });
 
 const cthulhuServitorProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const sourceMinion = findMinionOnBases(ctx.state, ctx.cardUid)?.minion;
     const events: SmashUpEvent[] = [
-        destroyMinion(ctx.cardUid, ctx.defId, ctx.baseIndex, ctx.playerId, undefined, 'cthulhu_servitor', ctx.now),
+        destroyMinion(
+            ctx.cardUid,
+            ctx.defId,
+            ctx.baseIndex,
+            sourceMinion?.owner ?? ctx.playerId,
+            undefined,
+            'cthulhu_servitor',
+            ctx.now,
+        ),
     ];
     if (buildServitorOptions(ctx.state, ctx.playerId).length === 0) {
         return { events };

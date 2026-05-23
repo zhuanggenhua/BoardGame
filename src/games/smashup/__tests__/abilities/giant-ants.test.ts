@@ -646,7 +646,7 @@ describe('巨蚁派系能力', () => {
         expectNoPrompt(preventResult.finalState);
     });
 
-    it('尸体商店+雄蜂：选择防止消灭时，应先结算雄蜂且不进入指示物分配', () => {
+    it('尸体商店+雄蜂：选择防止消灭时，仍应按句号后的第二句进入指示物分配', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -707,7 +707,30 @@ describe('巨蚁派系能力', () => {
         expect(prevent.finalState.core.bases[0].minions.some(m => m.uid === 'dok')).toBe(true);
         expect(prevent.finalState.core.bases[1].minions.find(m => m.uid === 'drone')?.powerCounters).toBe(0);
         expect(prevent.finalState.core.bases[1].minions.find(m => m.uid === 'monster')?.powerCounters ?? 0).toBe(0);
-        expectNoPrompt(prevent.finalState);
+
+        const distributePrompt = getSimpleChoicePrompt(prevent.finalState, 'frankenstein_body_shop_distribute');
+        const chooseMonster = getPromptOption(distributePrompt, entry => entry.value?.minionUid === 'monster', 'chooseMonster');
+
+        const firstDistribution = respondToPrompt(
+            prevent.finalState,
+            chooseMonster.id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(firstDistribution.success).toBe(true);
+        expect(firstDistribution.finalState.core.bases[1].minions.find(m => m.uid === 'monster')?.powerCounters).toBe(1);
+
+        const distributePrompt2 = getSimpleChoicePrompt(firstDistribution.finalState, 'frankenstein_body_shop_distribute');
+        const chooseMonsterAgain = getPromptOption(distributePrompt2, entry => entry.value?.minionUid === 'monster', 'chooseMonsterAgain');
+        const secondDistribution = respondToPrompt(
+            firstDistribution.finalState,
+            chooseMonsterAgain.id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(secondDistribution.success).toBe(true);
+        expect(secondDistribution.finalState.core.bases[1].minions.find(m => m.uid === 'monster')?.powerCounters).toBe(2);
+        expectNoPrompt(secondDistribution.finalState);
     });
 
     it('尸体商店+雄蜂：选择不防止消灭时，应在确认消灭后再进入指示物分配', () => {

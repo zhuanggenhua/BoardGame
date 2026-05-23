@@ -104,11 +104,11 @@ function buildCore(): SmashUpCore {
     };
 }
 
-function renderSelection(dispatch = vi.fn()) {
+function renderSelection(dispatch = vi.fn(), core: SmashUpCore = buildCore()) {
     render(
         <MemoryRouter>
             <FactionSelection
-                core={buildCore()}
+                core={core}
                 dispatch={dispatch}
                 playerID="0"
                 playerNames={{ '0': '我', '1': 'AI' }}
@@ -166,6 +166,21 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(String(rail.className)).toContain('absolute');
         expect(String(rail.className)).toContain('bottom-0');
         expect(String(currentPlayerCard.className)).not.toContain('scale-110');
+    });
+
+    it('玩家状态条遇到已写入但未接入选择页的派系时，不应显示问号', () => {
+        const core = buildCore();
+        core.factionSelection!.takenFactions = [SMASHUP_FACTION_IDS.ITTY_CRITTERS];
+        core.factionSelection!.playerSelections = {
+            '0': [],
+            '1': [SMASHUP_FACTION_IDS.ITTY_CRITTERS],
+        };
+
+        renderSelection(vi.fn(), core);
+
+        const aiPlayerCard = screen.getByTestId('faction-selection-player-card-1');
+        expect(aiPlayerCard.textContent).toContain('迷你');
+        expect(aiPlayerCard.textContent).not.toContain('?');
     });
 
     it('超紧凑横屏仍应显示玩家状态条，并默认保留已锁定派系上下文', () => {

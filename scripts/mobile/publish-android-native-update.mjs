@@ -43,12 +43,19 @@ const parseAndroidVersionCode = (versionName) => {
     return (segments[0] * 10000) + (segments[1] * 100) + segments[2];
 };
 
+const resolveAndroidVersionCode = (packageJsonValue, versionName) => {
+    if (typeof packageJsonValue === 'number' && Number.isFinite(packageJsonValue) && packageJsonValue > 0) {
+        return Math.trunc(packageJsonValue);
+    }
+    return parseAndroidVersionCode(versionName);
+};
+
 const channel = readArgValue('channel', process.env.VITE_ANDROID_NATIVE_UPDATE_CHANNEL?.trim() || 'stable');
 const version = readArgValue('version', packageJson.version);
 const parsedVersionCode = Number.parseInt(readArgValue('version-code', ''), 10);
 const versionCode = Number.isFinite(parsedVersionCode) && parsedVersionCode > 0
     ? parsedVersionCode
-    : parseAndroidVersionCode(version);
+    : resolveAndroidVersionCode(packageJson.androidVersionCode, version);
 const notes = readArgValue('notes', 'Android native APK update');
 const forceUpdate = hasFlag('no-force-update') ? false : true;
 const forceUpdateTitle = forceUpdate

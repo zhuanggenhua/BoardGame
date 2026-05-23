@@ -247,6 +247,38 @@ describe('preloadCriticalImages', () => {
         expect(reordered[reordered.length - 1]).toBe(candidateUrls[0]);
     });
 
+    it('同步缓存探测远端 compressed webp fallback 时，不应重复追加 .webp', () => {
+        const probedUrls: string[] = [];
+
+        vi.stubGlobal('Image', class {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 0;
+            naturalHeight = 0;
+            complete = false;
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                probedUrls.push(value);
+            }
+        });
+
+        registerGameAssets('test-remote-fallback-probe', {
+            criticalImages: ['smashup/cards/cards1'],
+        });
+
+        expect(areAllCriticalImagesCached('test-remote-fallback-probe', undefined, 'zh-CN')).toBe(false);
+        expect(probedUrls.some((url) => url.includes('cards1.webp.webp'))).toBe(false);
+        expect(probedUrls).toContain(
+            'https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.webp',
+        );
+    });
+
     it('runtime 内存缓存丢失后，不能仅凭持久化 ready hint 判定关键图已就绪', () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
         setAssetHashesForTesting({

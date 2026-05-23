@@ -6,7 +6,8 @@ import { isAndroidShellBuildMode, isNativeAndroidRuntime } from '../../lib/mobil
 const MASCOT_SRC = 'common/images/mascot/easyboardgame-kanban-girl.png';
 
 const shouldHideOnRoute = (pathname: string) => (
-    pathname.startsWith('/play/')
+    pathname === '/play'
+    || pathname.startsWith('/play/')
     || pathname.startsWith('/admin')
     || pathname.startsWith('/dev')
 );

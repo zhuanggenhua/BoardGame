@@ -52,7 +52,7 @@ import {
     getScoringEligibleBaseIndices,
     getTotalEffectivePowerOnBase,
 } from './domain/ongoingModifiers';
-import { getCardDef, getMinionLikePower, getBaseDef } from './data/cards';
+import { getCardDef, getMinionLikePower, getBaseDef, getFactionCards } from './data/cards';
 import {
     getCardStrategyTags,
     getPlayerStrategyProfile,
@@ -119,6 +119,7 @@ const isInteractionControlValue = (value: unknown): boolean => {
 const SELECTABLE_FACTIONS = Object.values(SMASHUP_FACTION_IDS).filter((factionId) => (
     factionId !== SMASHUP_FACTION_IDS.MADNESS
     && !isSmashUpFactionImplementationInProgress(factionId)
+    && getFactionCards(factionId).length > 0
 ));
 
 const EMPTY_CARD_AI_METRICS: SmashUpCardAiMetrics = {

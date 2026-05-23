@@ -7,6 +7,12 @@ export type OnlineAiSeatState = {
     seatCredentials: Record<string, string>;
 };
 
+export type OnlineAiSeatClaimOptions = {
+    token?: string;
+    guestId?: string;
+    playerName?: string;
+};
+
 type LoadOnlineAiSeatStateArgs = {
     gameConfig: GameManifestEntry;
     matchInfo: MatchInfo;
@@ -20,6 +26,48 @@ const toPlainRecord = (value: unknown): Record<string, unknown> => (
         ? value as Record<string, unknown>
         : {}
 );
+
+const readString = (value: unknown): string => (
+    typeof value === 'string' ? value.trim() : ''
+);
+
+export function resolveOnlineAiSeatClaimOptions(args: {
+    matchInfo: MatchInfo;
+    token?: string | null;
+    guestId?: string | null;
+    playerName?: string;
+}): OnlineAiSeatClaimOptions {
+    const setupData = toPlainRecord(args.matchInfo.setupData);
+    const ownerType = readString(setupData.ownerType);
+    const ownerKey = readString(setupData.ownerKey);
+    const setupGuestId = readString(setupData.guestId);
+    const ownerGuestId = ownerKey.startsWith('guest:')
+        ? ownerKey.slice('guest:'.length).trim()
+        : '';
+    const fallbackGuestId = readString(args.guestId);
+    const token = readString(args.token);
+    const playerName = readString(args.playerName);
+
+    if (ownerType === 'guest' || ownerKey.startsWith('guest:')) {
+        const resolvedGuestId = setupGuestId || ownerGuestId || fallbackGuestId;
+        return {
+            ...(resolvedGuestId ? { guestId: resolvedGuestId } : {}),
+            ...(playerName ? { playerName } : {}),
+        };
+    }
+
+    if (token) {
+        return {
+            token,
+            ...(playerName ? { playerName } : {}),
+        };
+    }
+
+    return {
+        ...(fallbackGuestId ? { guestId: fallbackGuestId } : {}),
+        ...(playerName ? { playerName } : {}),
+    };
+}
 
 function collectSeatIds(matchInfo: MatchInfo, rawSeatControllers: Record<string, unknown>): string[] {
     const seatIds = new Set<string>();

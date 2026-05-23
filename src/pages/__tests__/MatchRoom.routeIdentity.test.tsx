@@ -86,7 +86,24 @@ async function loadMatchRoomWithOnlineMocks(args?: {
         },
         LocalGameProvider: ({ children }: any) => createElement('div', null, children),
         BoardBridge: () => createElement('div', { 'data-testid': 'board-bridge-stub' }, 'board-bridge'),
-        GameClientOverrideProvider: ({ children }: any) => createElement('div', null, children),
+        GameClientOverrideProvider: ({ children, dispatch, playerId }: any) => createElement(
+            'div',
+            {
+                'data-testid': 'game-client-override-probe',
+                'data-player-id': String(playerId ?? ''),
+            },
+            children,
+            createElement('button', {
+                type: 'button',
+                'data-testid': 'override-select-robots',
+                onClick: () => dispatch?.('su:select_faction', { factionId: 'robots' }),
+            }, 'select robots'),
+            createElement('button', {
+                type: 'button',
+                'data-testid': 'override-select-zombies',
+                onClick: () => dispatch?.('su:select_faction', { factionId: 'zombies' }),
+            }, 'select zombies'),
+        ),
         buildAiProgressMarker: () => 'marker',
         releaseAiAttemptKeyIfMatches: () => undefined,
         tryReserveAiAttemptKey: () => true,
@@ -677,5 +694,174 @@ describe('MatchRoom route identity integration', () => {
         });
         expect(mountSpy).toHaveBeenCalledTimes(1);
         expect(unmountSpy).not.toHaveBeenCalled();
+    });
+
+    it('手动代 AI 选派系提交未被 shared state 吸收前，应抑制旧状态下的重复提交', async () => {
+        const gameClientStateRef = {
+            current: {
+                core: {
+                    factionSelection: {
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': [],
+                            '2': [],
+                        },
+                    },
+                },
+                sys: {
+                    phase: 'factionSelect',
+                    currentPlayerId: '1',
+                },
+            },
+        };
+
+        const {
+            OnlineManualFactionSelectionBridge,
+        } = await loadMatchRoomWithOnlineMocks({
+            gameClientStateRef,
+            resolveCurrentPlayerId: (state) => state?.sys?.currentPlayerId ?? null,
+        });
+
+        const seatControllers = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', manualFactionSelection: true },
+            '2': { type: 'local-ai', manualFactionSelection: true },
+        } as const;
+        const dispatchManualAiCommand = vi.fn(() => true);
+        const { rerender } = render(createElement(
+            OnlineManualFactionSelectionBridge,
+            {
+                seatControllers,
+                dispatchManualAiCommand,
+            },
+            createElement('div', { 'data-testid': 'manual-ai-bridge-child' }, 'bridge-child'),
+        ));
+
+        await act(async () => {
+            screen.getByTestId('override-select-robots').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            screen.getByTestId('override-select-zombies').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        });
+
+        expect(dispatchManualAiCommand).toHaveBeenCalledTimes(1);
+        expect(dispatchManualAiCommand).toHaveBeenCalledWith('1', 'su:select_faction', { factionId: 'robots' });
+
+        gameClientStateRef.current = {
+            core: {
+                factionSelection: {
+                    playerSelections: {
+                        '0': ['aliens'],
+                        '1': ['robots'],
+                        '2': [],
+                    },
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+                currentPlayerId: '2',
+            },
+        };
+
+        rerender(createElement(
+            OnlineManualFactionSelectionBridge,
+            {
+                seatControllers,
+                dispatchManualAiCommand,
+            },
+            createElement('div', { 'data-testid': 'manual-ai-bridge-child' }, 'bridge-child'),
+        ));
+
+        await act(async () => {
+            screen.getByTestId('override-select-zombies').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        });
+
+        expect(dispatchManualAiCommand).toHaveBeenCalledTimes(2);
+        expect(dispatchManualAiCommand).toHaveBeenLastCalledWith('2', 'su:select_faction', { factionId: 'zombies' });
+    });
+
+    it('手动代 AI 选派系提交未被 shared state 吸收前，应临时退出 AI 座位接管避免 UI 继续可点', async () => {
+        const gameClientStateRef = {
+            current: {
+                core: {
+                    factionSelection: {
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': [],
+                            '2': [],
+                        },
+                    },
+                },
+                sys: {
+                    phase: 'factionSelect',
+                    currentPlayerId: '1',
+                },
+            },
+        };
+
+        const {
+            OnlineManualFactionSelectionBridge,
+        } = await loadMatchRoomWithOnlineMocks({
+            gameClientStateRef,
+            resolveCurrentPlayerId: (state) => state?.sys?.currentPlayerId ?? null,
+        });
+
+        const seatControllers = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', manualFactionSelection: true },
+            '2': { type: 'local-ai', manualFactionSelection: true },
+        } as const;
+        const dispatchManualAiCommand = vi.fn(() => true);
+        const { rerender } = render(createElement(
+            OnlineManualFactionSelectionBridge,
+            {
+                seatControllers,
+                dispatchManualAiCommand,
+            },
+            createElement('div', { 'data-testid': 'manual-ai-bridge-child' }, 'bridge-child'),
+        ));
+
+        expect(screen.getByTestId('game-client-override-probe')).toHaveAttribute('data-player-id', '1');
+
+        await act(async () => {
+            screen.getByTestId('override-select-robots').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        });
+
+        expect(dispatchManualAiCommand).toHaveBeenCalledTimes(1);
+        await waitFor(() => {
+            expect(screen.getByTestId('game-client-override-probe')).toHaveAttribute('data-player-id', '');
+        });
+
+        await act(async () => {
+            screen.getByTestId('override-select-zombies').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        });
+        expect(dispatchManualAiCommand).toHaveBeenCalledTimes(1);
+
+        gameClientStateRef.current = {
+            core: {
+                factionSelection: {
+                    playerSelections: {
+                        '0': ['aliens'],
+                        '1': ['robots'],
+                        '2': [],
+                    },
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+                currentPlayerId: '2',
+            },
+        };
+
+        rerender(createElement(
+            OnlineManualFactionSelectionBridge,
+            {
+                seatControllers,
+                dispatchManualAiCommand,
+            },
+            createElement('div', { 'data-testid': 'manual-ai-bridge-child' }, 'bridge-child'),
+        ));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('game-client-override-probe')).toHaveAttribute('data-player-id', '2');
+        });
     });
 });

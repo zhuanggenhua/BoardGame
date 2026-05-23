@@ -17,6 +17,7 @@ import {
 import {
     haveAiSeatCredentialsChanged,
     loadOnlineAiSeatState,
+    resolveOnlineAiSeatClaimOptions,
     resolveMissingOnlineAiSeatCredentialIds,
 } from '../onlineAiSeats';
 import { loadGameImplementation } from '../../games/registry';
@@ -701,6 +702,51 @@ describe('resolveExitMatchErrorMessageKey', () => {
 });
 
 describe('onlineAiSeats', () => {
+    it('补领 guest 房间的 AI 凭据时，即使当前存在 token 也必须使用房间 ownerKey 的 guestId', () => {
+        const options = resolveOnlineAiSeatClaimOptions({
+            matchInfo: {
+                matchID: 'match-guest-owner',
+                gameName: 'smashup',
+                players: [{ id: 0, name: '房主' }],
+                setupData: {
+                    ownerKey: 'guest:2141',
+                    ownerType: 'guest',
+                    guestId: '2141',
+                },
+            },
+            token: 'stale-user-token',
+            guestId: '9999',
+            playerName: 'AI 2 号位',
+        });
+
+        expect(options).toEqual({
+            guestId: '2141',
+            playerName: 'AI 2 号位',
+        });
+    });
+
+    it('补领 user 房间的 AI 凭据时才使用 token', () => {
+        const options = resolveOnlineAiSeatClaimOptions({
+            matchInfo: {
+                matchID: 'match-user-owner',
+                gameName: 'smashup',
+                players: [{ id: 0, name: '房主' }],
+                setupData: {
+                    ownerKey: 'user:u-1',
+                    ownerType: 'user',
+                },
+            },
+            token: 'user-token',
+            guestId: '2141',
+            playerName: 'AI 2 号位',
+        });
+
+        expect(options).toEqual({
+            token: 'user-token',
+            playerName: 'AI 2 号位',
+        });
+    });
+
     it('未显式配置在线 AI 座位时，不得套用本地默认 AI', async () => {
         const claimMissingSeatCredential = vi.fn(async (playerId: string) => `reclaimed-${playerId}`);
 
@@ -3007,6 +3053,93 @@ describe('submitOnlineAiResolution', () => {
             }),
         }));
         expect(unsubscribe).toHaveBeenCalledTimes(1);
+    });
+
+    it('SmashUp factionSelect 同一玩家连续选派系时，单命令确认不应误判为 4 秒超时', async () => {
+        vi.useFakeTimers();
+        try {
+            const onConfirmed = vi.fn();
+            const onRejected = vi.fn();
+            const onWillResync = vi.fn();
+            const unsubscribe = vi.fn();
+            const sendBatch = vi.fn();
+            const sendCommand = vi.fn();
+            let stateListener: ((state: unknown) => void) | null = null;
+            const subscribeStateUpdate = vi.fn((listener: (state: unknown) => void) => {
+                stateListener = listener;
+                return unsubscribe;
+            });
+
+            const latestState = {
+                ...buildOnlineAiSeatState({
+                    nextId: 15,
+                    phase: 'factionSelect',
+                    currentPlayerId: '3',
+                }),
+                core: {
+                    currentPlayerId: '3',
+                    factionSelection: {
+                        takenFactions: ['aliens', 'pirates', 'robots'],
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': ['pirates'],
+                            '2': ['robots'],
+                            '3': [],
+                        },
+                    },
+                },
+            } as MatchState<unknown>;
+            const confirmedState = {
+                ...buildOnlineAiSeatState({
+                    nextId: 15,
+                    phase: 'factionSelect',
+                    currentPlayerId: '3',
+                }),
+                core: {
+                    currentPlayerId: '3',
+                    factionSelection: {
+                        takenFactions: ['aliens', 'pirates', 'robots', 'wizards'],
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': ['pirates'],
+                            '2': ['robots'],
+                            '3': ['wizards'],
+                        },
+                    },
+                },
+            } as MatchState<unknown>;
+
+            submitOnlineAiResolution({
+                client: {
+                    sendBatch,
+                    sendCommand,
+                    subscribeStateUpdate,
+                    latestState,
+                    updateLatestState: vi.fn(),
+                    resync: vi.fn(),
+                },
+                resolution: buildResolution({
+                    playerId: '3',
+                    attemptKey: 'attempt-faction-progress',
+                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-wizards' } }],
+                }),
+                lastAiAttemptKeyRef: { current: null },
+                scheduleRetry: vi.fn(),
+                onConfirmed,
+                onRejected,
+                onWillResync,
+            });
+
+            stateListener?.(confirmedState);
+            expect(onConfirmed).toHaveBeenCalledWith(confirmedState);
+
+            await vi.advanceTimersByTimeAsync(4000);
+            expect(onRejected).not.toHaveBeenCalled();
+            expect(onWillResync).not.toHaveBeenCalled();
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('单命令超时后会清空 attemptKey、安排重试，并允许 onWillResync 接管 resync', async () => {

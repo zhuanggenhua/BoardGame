@@ -35,9 +35,23 @@ const distLocalesDir = path.join(distDir, 'locales');
 const distLocalizedAssetsDir = path.join(distDir, 'assets', 'i18n');
 const androidEmbeddedBlockedPrefixes = [
     'assets/common/audio/',
+    'assets/common/images/mascot/',
+    'assets/common/images/home-v2/book-close/',
+    'assets/common/images/home-v2/catalog-thumbnails/',
+    'assets/common/images/home-v2/generated-reference-homepage/',
+    'assets/common/images/home-v2/overview-spread/',
+    'assets/common/images/home-v2/reference-homepage/',
+    'assets/common/images/home-v2/reference-thumbnails/',
 ];
 const androidEmbeddedPrunedPaths = [
     path.join(distDir, 'assets', 'common', 'audio'),
+    path.join(distDir, 'assets', 'common', 'images', 'mascot'),
+    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'book-close'),
+    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'catalog-thumbnails'),
+    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'generated-reference-homepage'),
+    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'overview-spread'),
+    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'reference-homepage'),
+    path.join(distDir, 'assets', 'common', 'images', 'home-v2', 'reference-thumbnails'),
 ];
 const androidPublicDir = path.join(androidDir, 'app', 'src', 'main', 'assets', 'public');
 const androidBuildMetaFileName = 'android-build-meta.json';

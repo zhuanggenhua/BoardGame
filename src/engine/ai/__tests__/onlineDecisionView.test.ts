@@ -175,4 +175,91 @@ describe('resolveOnlineAiDecisionView', () => {
         }
         expect(dispatch.idleReason).toBe('no-action');
     });
+
+    it('factionSelect shared state 滞后时，应使用更新的 seat snapshot 避免重复给上一位 AI 派发', async () => {
+        const gameId = '__test_online_ai_faction_select_stale_shared__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId, state }) => {
+                const currentPlayerId = (state.core as { currentPlayerId?: string } | undefined)?.currentPlayerId;
+                if (currentPlayerId !== playerId) {
+                    return [];
+                }
+                return [{
+                    actionId: `select-faction-${playerId}`,
+                    kind: 'select-faction',
+                    label: `select-faction-${playerId}`,
+                    commands: [{ type: 'su:select_faction', payload: { factionId: `faction-${playerId}` } }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: (context) => (
+                        context.legalActions[0]
+                            ? { actionId: context.legalActions[0].actionId }
+                            : null
+                    ),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const staleSharedState = {
+            core: {
+                currentPlayerId: '1',
+            },
+            sys: {
+                phase: 'factionSelect',
+                turnNumber: 1,
+                eventStream: {
+                    nextId: 10,
+                    entries: [],
+                },
+                interaction: { current: null, queue: [], isBlocked: false },
+                responseWindow: { current: null },
+            },
+        } as MatchState<unknown>;
+        const freshSeatState = {
+            ...staleSharedState,
+            core: {
+                currentPlayerId: '2',
+            },
+            sys: {
+                ...staleSharedState.sys,
+                eventStream: {
+                    nextId: 11,
+                    entries: [],
+                },
+            },
+        } as MatchState<unknown>;
+
+        const dispatch = await resolveNextAiDispatch({
+            engineConfig: {
+                gameId,
+                domain: {} as never,
+                systems: [],
+            },
+            state: staleSharedState,
+            matchId: 'match-faction-select-stale-shared',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+                '2': { type: 'local-ai' },
+            },
+            visibleStateResolver: (playerId) => resolveOnlineAiDecisionView({
+                sharedState: staleSharedState,
+                privateOverlay: freshSeatState,
+                playerId,
+            }),
+        });
+
+        expect(dispatch.kind).toBe('action');
+        if (dispatch.kind !== 'action') {
+            return;
+        }
+        expect(dispatch.resolution.playerId).toBe('2');
+        expect(dispatch.resolution.action.commands).toEqual([
+            { type: 'su:select_faction', payload: { factionId: 'faction-2' } },
+        ]);
+    });
 });
