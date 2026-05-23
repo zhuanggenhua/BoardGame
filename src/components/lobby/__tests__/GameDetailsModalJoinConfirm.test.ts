@@ -1016,9 +1016,9 @@ describe('GameDetailsModal create room ai entry', () => {
         fireEvent.click(screen.getByText('mock-create-room-confirm'));
 
         await waitFor(() => {
-            expect(navigateMock).toHaveBeenCalledWith('/play/dicethrone/match/match-ai-1?playerID=0');
+            expect(matchStatus.persistAiSeatCredentials).toHaveBeenCalledWith('match-ai-1', {});
         });
-        expect(matchStatus.persistAiSeatCredentials).toHaveBeenCalledWith('match-ai-1', {});
+        expect(navigateMock).not.toHaveBeenCalledWith('/play/dicethrone/match/match-ai-1?playerID=0');
 
         expect(matchApi.createMatch).toHaveBeenCalledWith(
             'dicethrone',
@@ -1057,6 +1057,9 @@ describe('GameDetailsModal create room ai entry', () => {
 
         expect(matchStatus.persistAiSeatCredentials).toHaveBeenLastCalledWith('match-ai-1', {
             '1': 'ai-seat-1',
+        });
+        await waitFor(() => {
+            expect(navigateMock).toHaveBeenCalledWith('/play/dicethrone/match/match-ai-1?playerID=0');
         });
     });
 
@@ -2229,6 +2232,7 @@ describe('GameDetailsModal create room ai entry', () => {
                 ownerPlayerID: '0',
                 ownerCredentials: 'seat-creds',
             });
+        vi.spyOn(matchApi, 'claimSeat').mockResolvedValueOnce({ playerCredentials: 'ai-seat-creds' });
 
         render(createElement(GameDetailsModal, baseProps));
 
