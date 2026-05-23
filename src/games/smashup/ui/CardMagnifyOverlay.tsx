@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardDef, getBaseDef, getBasePodVariantId, resolveCardName, resolveCardText } from '../data/cards';
+import { getSmashUpRendererPreviewRef } from './cardPreviewHelper';
 import { useSmashUpOverlay } from './SmashUpOverlayContext';
 
 export const SMASHUP_FORCE_DISMISS_EVENT = 'smashup:force-dismiss-popup';
@@ -52,6 +53,7 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
     const resolvedName = resolveCardName(def, t) || previewDefId;
     const resolvedText = resolveCardText(def, t);
     const isBase = target.type === 'base';
+    const previewRef = getSmashUpRendererPreviewRef(previewDefId, { forceShowOverlay: true });
 
     return (
         <MagnifyOverlay isOpen onClose={onClose} overlayTestId="su-card-magnify-overlay">
@@ -68,13 +70,11 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
                     X
                 </button>
                 <CardPreview
-                    previewRef={def.previewRef
-                        ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: previewDefId, forceShowOverlay: true } }
-                        : undefined}
+                    previewRef={previewRef ?? undefined}
                     className="w-full h-full rounded-xl shadow-2xl"
                     title={resolvedName}
                 />
-                {!def.previewRef && (
+                {!previewRef && (
                     <div className="absolute inset-0 bg-white rounded-xl p-6 border-4 border-slate-800 flex flex-col items-center justify-center text-center">
                         <h2 className="text-3xl font-black uppercase mb-4">{resolvedName}</h2>
                         <p className="font-mono text-lg">{resolvedText}</p>

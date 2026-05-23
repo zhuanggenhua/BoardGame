@@ -43,7 +43,56 @@ async function selectSmashUpFactionById(page: Page, factionId: string) {
     const confirmButton = page.getByTestId('faction-confirm-button');
     await confirmButton.waitFor({ state: 'visible', timeout: 10_000 });
     await expect(confirmButton).toBeEnabled({ timeout: 15_000 });
-    await confirmButton.click();
+    const clickPoint = await confirmButton.evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const hitTarget = document.elementFromPoint(x, y);
+        const ownsHitTarget = hitTarget === button || button.contains(hitTarget);
+        return { x, y, ownsHitTarget };
+    });
+    expect(clickPoint.ownsHitTarget, `派系 ${factionId} 的确认按钮中心点应可真实点击`).toBe(true);
+    await page.mouse.click(clickPoint.x, clickPoint.y);
+}
+
+async function readSmashUpFactionDraftSummary(page: Page, matchId: string) {
+    const state = await getMatchState(matchId, page);
+    return {
+        phase: state.sys?.phase ?? null,
+        currentPlayerIndex: state.core?.currentPlayerIndex ?? null,
+        host: state.core?.factionSelection?.playerSelections?.['0']?.length ?? 0,
+        ai1: state.core?.factionSelection?.playerSelections?.['1']?.length ?? 0,
+        ai2: state.core?.factionSelection?.playerSelections?.['2']?.length ?? 0,
+        ai3: state.core?.factionSelection?.playerSelections?.['3']?.length ?? 0,
+        hostFactions: state.core?.players?.['0']?.factions?.filter(Boolean).length ?? 0,
+        ai1Factions: state.core?.players?.['1']?.factions?.filter(Boolean).length ?? 0,
+        ai2Factions: state.core?.players?.['2']?.factions?.filter(Boolean).length ?? 0,
+        ai3Factions: state.core?.players?.['3']?.factions?.filter(Boolean).length ?? 0,
+        hostDeck: state.core?.players?.['0']?.deck?.length ?? 0,
+        ai1Deck: state.core?.players?.['1']?.deck?.length ?? 0,
+        ai2Deck: state.core?.players?.['2']?.deck?.length ?? 0,
+        ai3Deck: state.core?.players?.['3']?.deck?.length ?? 0,
+    };
+}
+
+async function expectSmashUpFactionDraftSummary(
+    page: Page,
+    matchId: string,
+    expected: Partial<Awaited<ReturnType<typeof readSmashUpFactionDraftSummary>>>,
+    message: string,
+) {
+    await expect.poll(async () => {
+        const summary = await readSmashUpFactionDraftSummary(page, matchId);
+        return Object.fromEntries(
+            Object.keys(expected).map((key) => [
+                key,
+                summary[key as keyof typeof summary],
+            ]),
+        );
+    }, {
+        timeout: 15_000,
+        message,
+    }).toEqual(expected);
 }
 
 test.describe('SmashUp 四人 AI 进房稳定性', () => {
@@ -417,6 +466,115 @@ test.describe('SmashUp 四人 AI 进房稳定性', () => {
 
         await page.screenshot({
             path: join(evidenceDir, 'smashup-four-player-ai-faction-completion-ui-path.png'),
+            fullPage: false,
+            timeout: 5_000,
+        });
+
+        await context.close();
+    });
+
+    test('大厅 UI 创建 4 人 3 AI 并手动给 AI 选派系应走完整个蛇形选秀', async ({ browser, baseURL }) => {
+        test.setTimeout(180_000);
+
+        const context = await browser.newContext({ baseURL });
+        await initContext(context, {
+            storageKey: '__smashup_four_player_manual_ai_faction_ui_path',
+        });
+
+        const page = await context.newPage();
+        const diagnostics = attachPageDiagnostics(page);
+
+        test.skip(!(await ensureGameServerAvailable(page)), '游戏服务器不可用');
+        await ensureLobbyReady(page);
+
+        await openSmashupCreateRoomModal(page);
+        const createRoomModal = page.getByTestId('create-room-modal').last();
+
+        await page.getByRole('button', { name: '4人' }).click();
+        await page.getByRole('button', { name: '加入 AI' }).click();
+        await expect(page.getByText('已开启')).toBeVisible();
+        await page.getByRole('button', { name: '3 号位' }).click();
+        await page.getByRole('button', { name: '4 号位' }).click();
+        await page.getByTestId('create-room-ai-manual-faction-checkbox').check();
+        await expect(page.getByTestId('create-room-ai-manual-faction-checkbox')).toBeChecked();
+
+        await createRoomModal.getByTestId('create-room-confirm-button').click();
+        await expect(page).toHaveURL(/\/play\/smashup\/match\/[^?]+\?playerID=0/, { timeout: 30_000 });
+
+        const matchId = page.url().match(/\/play\/smashup\/match\/([^?]+)/)?.[1];
+        expect(matchId).toBeTruthy();
+        if (!matchId) {
+            throw new Error('未能从 URL 提取 matchId');
+        }
+
+        await waitForTestHarness(page, 30_000);
+        await expect(page.getByText('选择你的派系')).toBeVisible({ timeout: 45_000 });
+        await expect.poll(async () => page.evaluate((targetMatchId) => {
+            const raw = localStorage.getItem(`match_ai_creds_${targetMatchId}`);
+            if (!raw) return [];
+            try {
+                return Object.keys(JSON.parse(raw)).sort();
+            } catch {
+                return ['parse-error'];
+            }
+        }, matchId), {
+            timeout: 20_000,
+            message: '手动选派系房间的 AI 座位凭据应补齐到 1/2/3 号位',
+        }).toEqual(['1', '2', '3']);
+
+        const evidenceDir = join(
+            process.cwd(),
+            'test-results',
+            'evidence-screenshots',
+            '_shared',
+            'smashup-manual-ai-faction-ui-path',
+        );
+        mkdirSync(evidenceDir, { recursive: true });
+
+        const draftSequence = [
+            ['aliens', { phase: 'factionSelect', currentPlayerIndex: 1, host: 1, ai1: 0, ai2: 0, ai3: 0 }],
+            ['ninjas', { phase: 'factionSelect', currentPlayerIndex: 2, host: 1, ai1: 1, ai2: 0, ai3: 0 }],
+            ['robots', { phase: 'factionSelect', currentPlayerIndex: 3, host: 1, ai1: 1, ai2: 1, ai3: 0 }],
+            ['wizards', { phase: 'factionSelect', currentPlayerIndex: 3, host: 1, ai1: 1, ai2: 1, ai3: 1 }],
+            ['tricksters', { phase: 'factionSelect', currentPlayerIndex: 2, host: 1, ai1: 1, ai2: 1, ai3: 2 }],
+            ['zombies', { phase: 'factionSelect', currentPlayerIndex: 1, host: 1, ai1: 1, ai2: 2, ai3: 2 }],
+            ['dinosaurs', { phase: 'factionSelect', currentPlayerIndex: 0, host: 1, ai1: 2, ai2: 2, ai3: 2 }],
+        ] as const;
+
+        for (const [index, [factionId, expected]] of draftSequence.entries()) {
+            await selectSmashUpFactionById(page, factionId);
+            await expectSmashUpFactionDraftSummary(
+                page,
+                matchId,
+                expected,
+                `第 ${index + 1} 次手动选派系后权威状态应推进`,
+            );
+            if (factionId === 'robots') {
+                await page.screenshot({
+                    path: join(evidenceDir, 'smashup-manual-ai-after-third-pick.png'),
+                    fullPage: false,
+                    timeout: 5_000,
+                });
+            }
+        }
+
+        await selectSmashUpFactionById(page, 'pirates');
+        await expectSmashUpFactionDraftSummary(page, matchId, {
+            phase: 'playCards',
+            hostFactions: 2,
+            ai1Factions: 2,
+            ai2Factions: 2,
+            ai3Factions: 2,
+            hostDeck: 35,
+            ai1Deck: 35,
+            ai2Deck: 35,
+            ai3Deck: 35,
+        }, '8 次手动选派系后应进入 playCards，四个玩家都应有完整派系和牌库');
+
+        assertNoFatalFrontendErrors([{ label: 'manual-ai-faction-ui-path', diagnostics }]);
+
+        await page.screenshot({
+            path: join(evidenceDir, 'smashup-manual-ai-faction-ui-path-final.png'),
             fullPage: false,
             timeout: 5_000,
         });

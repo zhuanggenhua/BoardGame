@@ -6,11 +6,14 @@
 
 import type { CardPreviewRef } from '../../../core';
 import { getCardDef, getBaseDef, getTitanDef } from '../data/cards';
+import smashUpEnglishMap from '../data/englishAtlasMap.json';
 
 interface CardPreviewMeta {
     name: string;
     previewRef: CardPreviewRef | null;
 }
+
+const TTS_MAP = smashUpEnglishMap as Record<string, { atlasId: string; index: number }>;
 
 /**
  * 从 defId 中提取基础定义 ID
@@ -19,6 +22,33 @@ interface CardPreviewMeta {
 const normalizeCardId = (cardId: string): string => (
     cardId.replace(/-\d+-\d+$/, '').replace(/-\d+$/, '')
 );
+
+export const getSmashUpRendererPreviewRef = (
+    cardId: string,
+    payload: Record<string, unknown> = {},
+): CardPreviewRef | null => {
+    const defId = normalizeCardId(cardId);
+    const cardDef = getCardDef(defId);
+    const baseDef = getBaseDef(defId);
+    const titanDef = getTitanDef(defId);
+    const hasRenderablePreview = Boolean(
+        cardDef?.previewRef
+        || baseDef?.previewRef
+        || titanDef?.previewRef
+        || TTS_MAP[defId]
+        || TTS_MAP[`${defId}_pod`],
+    );
+
+    if (!hasRenderablePreview) {
+        return null;
+    }
+
+    return {
+        type: 'renderer',
+        rendererId: 'smashup-card-renderer',
+        payload: { defId, ...payload },
+    };
+};
 
 /**
  * 获取 SmashUp 卡牌预览元数据
@@ -31,9 +61,7 @@ export const getSmashUpCardPreviewMeta = (cardId: string): CardPreviewMeta | nul
     if (cardDef) {
         return {
             name: cardDef.name,
-            previewRef: cardDef.previewRef
-                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId } }
-                : null,
+            previewRef: getSmashUpRendererPreviewRef(defId),
         };
     }
 
@@ -42,9 +70,7 @@ export const getSmashUpCardPreviewMeta = (cardId: string): CardPreviewMeta | nul
     if (baseDef) {
         return {
             name: baseDef.name,
-            previewRef: baseDef.previewRef
-                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId } }
-                : null,
+            previewRef: getSmashUpRendererPreviewRef(defId),
         };
     }
 
@@ -52,9 +78,7 @@ export const getSmashUpCardPreviewMeta = (cardId: string): CardPreviewMeta | nul
     if (titanDef) {
         return {
             name: titanDef.name,
-            previewRef: titanDef.previewRef
-                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId } }
-                : null,
+            previewRef: getSmashUpRendererPreviewRef(defId),
         };
     }
 

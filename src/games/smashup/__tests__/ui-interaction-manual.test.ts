@@ -34,6 +34,7 @@ import { ToastProvider } from '../../../contexts/ToastContext';
 import { PromptOverlay } from '../ui/PromptOverlay';
 import { SmashUpCardRenderer } from '../ui/SmashUpCardRenderer';
 import { BaseZone } from '../ui/BaseZone';
+import { CardMagnifyOverlay } from '../ui/CardMagnifyOverlay';
 import {
     buildMinionUidSnapshotByController,
     resolveEnteringMinionUidsByController,
@@ -329,6 +330,22 @@ describe('SmashUp UI 交互验证', () => {
         expect(overlay.getAttribute('data-overlay-visibility')).toBe('always');
         expect(overlay.className).toContain('opacity-100');
         expect(overlay.className).not.toContain('group-hover:opacity-100');
+    });
+
+    it('基地放大查看应允许使用仅存在 renderer 映射的基地卡图', () => {
+        render(
+            React.createElement(CardMagnifyOverlay, {
+                target: { defId: 'base_crypt', type: 'base' },
+                onClose: vi.fn(),
+            }),
+        );
+
+        const preview = screen.getByTestId('mock-card-preview');
+        expect(JSON.parse(preview.getAttribute('data-preview-ref') ?? 'null')).toEqual({
+            type: 'renderer',
+            rendererId: 'smashup-card-renderer',
+            payload: { defId: 'base_crypt', forceShowOverlay: true },
+        });
     });
 
     it('普通卡面中的英文卡图仍保持 hover 才显示中文覆盖层', () => {

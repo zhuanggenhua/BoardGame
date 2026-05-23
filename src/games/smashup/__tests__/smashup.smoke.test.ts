@@ -18,7 +18,7 @@ import { executePipeline } from '../../../engine/pipeline';
 import type { CardsDrawnEvent, SmashUpCore, SmashUpCommand, SmashUpEvent, SmashUpReactionSession } from '../domain/types';
 import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS, TEAM_VP_TO_WIN_2V2, getCurrentPlayerId } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { getCardDef, getFactionCards, getTitanDef } from '../data/cards';
+import { getBaseDef, getCardDef, getFactionCards, getTitanDef } from '../data/cards';
 import { TITAN_CARD_DEFS } from '../data/titans';
 import { getPlayerEffectivePowerOnBase, getRegisteredModifierIds, getTitanPowerContribution } from '../domain/ongoingModifiers';
 import { addPowerCounter, buildPlayerTargetOptions } from '../domain/abilityHelpers';
@@ -6380,6 +6380,10 @@ describe('smashup', () => {
         expect(getSmashUpCardPreviewMeta('pecos_bill')).toEqual({
             name: getTitanDef('pecos_bill')?.name,
             previewRef: { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: 'pecos_bill' } },
+        });
+        expect(getSmashUpCardPreviewMeta('base_crypt')).toEqual({
+            name: getBaseDef('base_crypt')?.name,
+            previewRef: { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: 'base_crypt' } },
         });
     });
 
