@@ -55,6 +55,7 @@ import type {
     SpecialAfterScoringArmedEvent,
     RevealHandEvent,
     RevealDeckTopEvent,
+    AbilityFeedbackEvent,
 } from './types';
 import type { PlayerId } from '../../../engine/types';
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
@@ -81,6 +82,14 @@ import { getSmashUpReactionWindowContext } from './reactionWindowState';
 
 function findTitanByUid(core: SmashUpCore, titanUid: string) {
     return (core.titans ?? []).find(titan => titan.uid === titanUid);
+}
+
+function buildProtectedTargetFeedback(playerId: PlayerId, timestamp: number): AbilityFeedbackEvent {
+    return {
+        type: SU_EVENTS.ABILITY_FEEDBACK,
+        payload: { playerId, messageKey: 'feedback.target_protected', tone: 'warning' },
+        timestamp,
+    };
 }
 
 export function execute(
@@ -966,6 +975,11 @@ export function filterProtectedAffectEvents(
                 ? undefined
                 : record.sourcePlayerId;
 
+            const blockedAttachCleanup = buildBlockedAttachedActionDiscardEvent(record, event);
+            if (blockedAttachCleanup && effectiveSourcePlayerId) {
+                extraEvents.push(buildProtectedTargetFeedback(effectiveSourcePlayerId, event.timestamp ?? Date.now()));
+            }
+
             if (effectiveSourcePlayerId) {
                 const protectionSource = getConsumableProtectionSource(
                     core,
@@ -979,7 +993,6 @@ export function filterProtectedAffectEvents(
                 }
             }
 
-            const blockedAttachCleanup = buildBlockedAttachedActionDiscardEvent(record, event);
             if (blockedAttachCleanup) {
                 extraEvents.push(blockedAttachCleanup);
             }
