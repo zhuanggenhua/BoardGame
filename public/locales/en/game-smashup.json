@@ -230,6 +230,8 @@
     "action_short": "Action",
     "action_global_quota": "Global Quota",
     "action_extra_hint": "Includes extra action quota +{{extra}}",
+    "show_nonessential_controls": "Show hand, end turn, scoreboard, and turn indicator",
+    "hide_nonessential_controls": "Hide hand, end turn, scoreboard, and turn indicator",
     "show_end_turn_controls": "Show end turn button and quota hints",
     "hide_end_turn_controls": "Hide end turn button and quota hints",
     "show_scoreboard_controls": "Show scoreboard",

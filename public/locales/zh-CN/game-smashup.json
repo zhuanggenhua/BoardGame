@@ -194,6 +194,8 @@
     "action_short": "战术",
     "action_global_quota": "通用额度",
     "action_extra_hint": "含额外战术额度 +{{extra}}",
+    "show_nonessential_controls": "显示手牌、结束回合、记分板和回合指示",
+    "hide_nonessential_controls": "隐藏手牌、结束回合、记分板和回合指示",
     "show_end_turn_controls": "显示结束回合按钮和额度提示",
     "hide_end_turn_controls": "隐藏结束回合按钮和额度提示",
     "show_scoreboard_controls": "显示记分板",
