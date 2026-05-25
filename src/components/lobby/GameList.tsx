@@ -6,6 +6,8 @@ import { resolveGameDescription, resolveGameDisplayName } from './gameDetailsCon
 
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
 const HOME_V2_HOLDER_BG = `${HOME_V2_ASSET_ROOT}/holders/compressed/1.webp`;
+const SQUARE_RATIO_PADDING = '100%';
+const LANDSCAPE_4X3_PADDING = '75%';
 
 export interface GameListCardProps {
     game: GameConfig;
@@ -62,7 +64,7 @@ export const GameListCard = ({
             >
                 <div
                     className="relative w-[86px] shrink-0 overflow-hidden rounded-[18px] border border-[#6f4d32]/15 bg-[rgba(64,40,24,0.1)] shadow-[0_8px_18px_rgba(50,30,18,0.12)] transition-transform duration-200 group-hover:-translate-y-[1px]"
-                    style={{ aspectRatio: '1 / 1' }}
+                    style={{ width: 86, height: 86, aspectRatio: '1 / 1' }}
                 >
                     <div className="absolute inset-[2px] overflow-hidden rounded-[14px] bg-[rgba(255,245,224,0.4)] [&_*img]:!block [&_*img]:!h-full [&_*img]:!w-full [&_*img]:!object-cover [&_*img]:!object-center]">
                         {game.thumbnail ? (
@@ -127,6 +129,8 @@ export const GameListCard = ({
                     <div
                         className="relative w-full bg-transparent transition-transform duration-200 group-hover:-translate-y-[1px]"
                         style={{
+                            height: 0,
+                            paddingTop: SQUARE_RATIO_PADDING,
                             aspectRatio: '1 / 1',
                             borderStyle: 'solid',
                             borderWidth: '10px 12px',
@@ -190,8 +194,11 @@ export const GameListCard = ({
             <div className="absolute bottom-[4px] left-[4px] w-2 h-2 border-b-2 border-l-2 border-parchment-card-border opacity-30 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute bottom-[4px] right-[4px] w-2 h-2 border-b-2 border-r-2 border-parchment-card-border opacity-30 group-hover:opacity-100 transition-opacity duration-300" />
 
-            <div className="w-full aspect-[4/3] mb-1.5 relative overflow-hidden rounded-sm bg-slate-900 ring-1 ring-black/5">
-                <div className="w-full h-full transition-transform duration-500 group-hover:scale-110">
+            <div
+                className="w-full mb-1.5 relative overflow-hidden rounded-sm bg-slate-900 ring-1 ring-black/5"
+                style={{ height: 0, paddingTop: LANDSCAPE_4X3_PADDING, aspectRatio: '4 / 3' }}
+            >
+                <div className="absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-110">
                     {game.thumbnail ? (
                         game.thumbnail
                     ) : (

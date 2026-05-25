@@ -23,8 +23,8 @@ export const CategoryPills = ({ activeCategory, onSelect }: CategoryPillsProps) 
     const { t } = useTranslation('common');
 
     return (
-        <div className="w-full overflow-x-auto no-scrollbar">
-            <div className="inline-flex min-w-max items-center gap-6 px-6 py-0 font-serif md:flex md:min-w-0 md:w-full md:justify-center md:py-2">
+        <div className="w-full">
+            <div className="flex w-full flex-wrap items-center justify-center gap-2 px-1 py-1 font-serif sm:gap-3 sm:px-2 md:gap-6 md:px-6 md:py-2">
                 {categories.map((category) => {
                     const isActive = activeCategory === category;
                     return (
@@ -32,7 +32,7 @@ export const CategoryPills = ({ activeCategory, onSelect }: CategoryPillsProps) 
                             key={category}
                             onClick={() => onSelect(category)}
                             className={`
-                                group relative text-sm tracking-wide transition-colors duration-300 cursor-pointer whitespace-nowrap px-4 py-1.5 rounded-full
+                                group relative text-sm tracking-wide transition-colors duration-300 cursor-pointer whitespace-nowrap px-3 py-1.5 rounded-full sm:px-4
                                 ${isActive ? 'text-parchment-base-text font-bold' : 'text-parchment-light-text hover:text-parchment-base-text'}
                             `}
                         >

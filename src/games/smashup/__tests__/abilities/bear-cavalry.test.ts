@@ -632,7 +632,7 @@ describe('bear_cavalry_bear_hug 行为', () => {
         const destroyEvent = respondResult.events.find(event => event.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvent).toEqual(
             expect.objectContaining({
-                payload: expect.objectContaining({ minionUid: 'm1' }),
+                payload: expect.objectContaining({ minionUid: 'm1', destroyerId: '1' }),
             }),
         );
         expect(respondResult.finalState.core.bases[0].minions.some(minion => minion.uid === 'm1')).toBe(false);
@@ -676,7 +676,7 @@ describe('bear_cavalry_bear_hug 行为', () => {
         expect(destroyEvents).toHaveLength(1);
         expect(destroyEvents[0]).toEqual(
             expect.objectContaining({
-                payload: expect.objectContaining({ minionUid: 'm3' }),
+                payload: expect.objectContaining({ minionUid: 'm3', destroyerId: '1' }),
             }),
         );
     });

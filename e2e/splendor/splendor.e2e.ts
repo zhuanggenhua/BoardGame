@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Browser, Page } from '@playwright/test';
 import { test, expect } from '../framework';
+import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath as getSharedEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import {
     ensureGameServerAvailable,
     initContext,
@@ -16,6 +17,134 @@ const SPLENDOR_EVIDENCE_DIR = join(process.cwd(), 'test-results', 'evidence-scre
 function getEvidenceScreenshotPath(filename: string) {
     mkdirSync(SPLENDOR_EVIDENCE_DIR, { recursive: true });
     return join(SPLENDOR_EVIDENCE_DIR, filename);
+}
+
+async function readSplendorViewportMetrics(page: Page) {
+    return page.evaluate(() => {
+        const panel = document.querySelector<HTMLElement>('[data-testid="splendor-pregame-panel"]');
+        const market = document.querySelector<HTMLElement>('[data-tutorial-id="sp-market"]');
+        const bank = document.querySelector<HTMLElement>('[data-tutorial-id="sp-bank"]');
+        const playerStatus = document.querySelector<HTMLElement>('[data-tutorial-id="sp-player-status"]');
+        const shell = document.querySelector<HTMLElement>('.mobile-board-shell');
+        const startButton = document.querySelector<HTMLElement>('[data-testid="splendor-start-game"]');
+        const fabMenu = document.querySelector<HTMLElement>('[data-testid="fab-menu"]');
+
+        const toRect = (node: HTMLElement | null) => {
+            if (!node) return null;
+            const rect = node.getBoundingClientRect();
+            return {
+                left: rect.left,
+                right: rect.right,
+                top: rect.top,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+            };
+        };
+
+        return {
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            pageOverflowX: document.documentElement.scrollWidth - window.innerWidth,
+            shellRect: toRect(shell),
+            pregameRect: toRect(panel),
+            startButtonRect: toRect(startButton),
+            fabMenuRect: toRect(fabMenu),
+            marketRect: toRect(market),
+            bankRect: toRect(bank),
+            playerStatusRect: toRect(playerStatus),
+        };
+    });
+}
+
+async function readSplendorSpriteDiagnostics(page: Page) {
+    return page.evaluate(async () => {
+        const inspect = async (selector: string) => {
+            const element = document.querySelector<HTMLElement>(selector);
+            if (!element) return null;
+            const image = element.querySelector<HTMLImageElement>('img');
+            const rect = element.getBoundingClientRect();
+            const imageRect = image?.getBoundingClientRect() ?? null;
+            const loadResult = image
+                ? await new Promise<{ ok: boolean; naturalWidth: number; naturalHeight: number }>((resolve) => {
+                    if (image.complete) {
+                        resolve({
+                            ok: image.naturalWidth > 0,
+                            naturalWidth: image.naturalWidth,
+                            naturalHeight: image.naturalHeight,
+                        });
+                        return;
+                    }
+
+                    const handleLoad = () => {
+                        cleanup();
+                        resolve({
+                            ok: image.naturalWidth > 0,
+                            naturalWidth: image.naturalWidth,
+                            naturalHeight: image.naturalHeight,
+                        });
+                    };
+                    const handleError = () => {
+                        cleanup();
+                        resolve({ ok: false, naturalWidth: 0, naturalHeight: 0 });
+                    };
+                    const cleanup = () => {
+                        image.removeEventListener('load', handleLoad);
+                        image.removeEventListener('error', handleError);
+                    };
+
+                    image.addEventListener('load', handleLoad, { once: true });
+                    image.addEventListener('error', handleError, { once: true });
+                })
+                : { ok: false, naturalWidth: 0, naturalHeight: 0 };
+
+            return {
+                selector,
+                sourceImagePath: element.getAttribute('data-splendor-sprite-url'),
+                width: rect.width,
+                height: rect.height,
+                imgCurrentSrc: image?.currentSrc ?? null,
+                imgRect: imageRect
+                    ? {
+                        width: imageRect.width,
+                        height: imageRect.height,
+                        left: imageRect.left,
+                        top: imageRect.top,
+                    }
+                    : null,
+                loadResult,
+                outerHTML: element.outerHTML.slice(0, 600),
+            };
+        };
+
+        return {
+            marketCard: await inspect('[data-testid^="splendor-card-"] [data-splendor-sprite-preview="card"]'),
+            nobleCard: await inspect('[data-splendor-sprite-preview="noble"]'),
+        };
+    });
+}
+
+async function waitForSplendorSpriteReady(page: Page) {
+    await expect.poll(async () => {
+        const diagnostics = await readSplendorSpriteDiagnostics(page);
+        return Boolean(
+            diagnostics.marketCard?.loadResult.ok
+            && (diagnostics.marketCard?.loadResult.naturalWidth ?? 0) > 0
+            && diagnostics.nobleCard?.loadResult.ok
+            && (diagnostics.nobleCard?.loadResult.naturalWidth ?? 0) > 0,
+        );
+    }, {
+        timeout: 10000,
+        message: '等待 Splendor 卡图 sprite 真正加载完成',
+    }).toBe(true);
+
+    const diagnostics = await readSplendorSpriteDiagnostics(page);
+    expect(diagnostics.marketCard).not.toBeNull();
+    expect(diagnostics.marketCard!.loadResult.ok).toBe(true);
+    expect(diagnostics.marketCard!.loadResult.naturalWidth).toBeGreaterThan(0);
+    expect(diagnostics.nobleCard).not.toBeNull();
+    expect(diagnostics.nobleCard!.loadResult.ok).toBe(true);
+    expect(diagnostics.nobleCard!.loadResult.naturalWidth).toBeGreaterThan(0);
 }
 
 async function createSplendorRoomViaAPI(page: Page, guestId?: string): Promise<string | null> {
@@ -712,5 +841,202 @@ test.describe('Splendor E2E', () => {
         });
 
         await game.screenshot('splendor-choose-noble-resolved', testInfo);
+    });
+
+    test('Splendor：手机竖屏联机待开局浮层不应横向溢出', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const setup = await setupSplendorOnlineMatch(browser, baseURL);
+        if (!setup) {
+            test.skip(true, 'Splendor 联机房间创建失败');
+            return;
+        }
+
+        const { hostContext, guestContext, hostPage } = setup;
+
+        try {
+            await hostPage.setViewportSize({ width: 390, height: 844 });
+            await expect(hostPage.getByTestId('splendor-pregame-panel')).toBeVisible({ timeout: 15000 });
+            await expect(hostPage.getByTestId('splendor-starting-player')).toBeVisible({ timeout: 15000 });
+            await expect(hostPage.getByTestId('splendor-start-game')).toBeVisible({ timeout: 15000 });
+
+            const metrics = await readSplendorViewportMetrics(hostPage);
+            expect(metrics.pageOverflowX).toBeLessThanOrEqual(1);
+            expect(metrics.pregameRect).not.toBeNull();
+            expect(metrics.pregameRect!.left).toBeGreaterThanOrEqual(-1);
+            expect(metrics.pregameRect!.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+            expect(metrics.pregameRect!.bottom).toBeLessThanOrEqual(metrics.viewportHeight + 1);
+            expect(metrics.startButtonRect).not.toBeNull();
+            if (metrics.startButtonRect && metrics.fabMenuRect) {
+                const overlapsFab = !(
+                    metrics.startButtonRect.right <= metrics.fabMenuRect.left
+                    || metrics.fabMenuRect.right <= metrics.startButtonRect.left
+                    || metrics.startButtonRect.bottom <= metrics.fabMenuRect.top
+                    || metrics.fabMenuRect.bottom <= metrics.startButtonRect.top
+                );
+                expect(overlapsFab).toBeFalsy();
+            }
+
+            await hostPage.screenshot({
+                path: getSharedEvidenceScreenshotPath(testInfo, 'splendor-mobile-pregame-panel'),
+                fullPage: false,
+            });
+        } finally {
+            await guestContext.close();
+            await hostContext.close();
+        }
+    });
+
+    test('Splendor：手机横屏主态不应触发横向溢出，核心区应保持可见', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+
+        await game.openTestGame('splendor');
+        const initialState = await game.getState();
+
+        await game.setupScene({
+            gameId: 'splendor',
+            player0: {
+                reservedCardIds: ['t1-white-1'],
+                purchasedCardIds: ['t1-blue-1', 't1-green-1'],
+                tokens: {
+                    white: 2,
+                    blue: 2,
+                    green: 1,
+                    red: 1,
+                    black: 1,
+                    gold: 1,
+                },
+            },
+            player1: {
+                purchasedCardIds: ['t1-red-1'],
+            },
+            currentPlayer: '0',
+            extra: {
+                core: {
+                    hostStarted: true,
+                    market: {
+                        ...initialState.core.market,
+                        1: ['t1-white-1', 't1-blue-1', 't1-green-1', 't1-red-1'],
+                    },
+                    pendingResolution: undefined,
+                    endgame: { triggered: false },
+                    gameResult: undefined,
+                },
+            },
+        });
+
+        await page.setViewportSize({ width: 844, height: 390 });
+        await expect(page.locator('[data-tutorial-id="sp-market"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-tutorial-id="sp-bank"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-tutorial-id="sp-player-status"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('splendor-bank-token-white')).toBeVisible({ timeout: 10000 });
+
+        const metrics = await readSplendorViewportMetrics(page);
+        expect(metrics.pageOverflowX).toBeLessThanOrEqual(1);
+        expect(metrics.marketRect).not.toBeNull();
+        expect(metrics.bankRect).not.toBeNull();
+        expect(metrics.playerStatusRect).not.toBeNull();
+        expect(metrics.marketRect!.left).toBeGreaterThanOrEqual(-1);
+        expect(metrics.marketRect!.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+        expect(metrics.marketRect!.top).toBeLessThan(metrics.viewportHeight - 24);
+        expect(metrics.bankRect!.left).toBeGreaterThanOrEqual(-1);
+        expect(metrics.bankRect!.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+        expect(metrics.bankRect!.top).toBeLessThan(metrics.viewportHeight - 24);
+        expect(metrics.playerStatusRect!.left).toBeGreaterThanOrEqual(-1);
+        expect(metrics.playerStatusRect!.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+        expect(metrics.playerStatusRect!.top).toBeLessThan(metrics.viewportHeight - 24);
+        if (metrics.shellRect) {
+            expect(metrics.shellRect.left).toBeGreaterThanOrEqual(-1);
+            expect(metrics.shellRect.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+        }
+        const spriteDiagnostics = await readSplendorSpriteDiagnostics(page);
+        expect(spriteDiagnostics.marketCard).not.toBeNull();
+        expect(spriteDiagnostics.marketCard!.loadResult.ok).toBe(true);
+        expect(spriteDiagnostics.marketCard!.loadResult.naturalWidth).toBeGreaterThan(0);
+        expect(spriteDiagnostics.nobleCard).not.toBeNull();
+        expect(spriteDiagnostics.nobleCard!.loadResult.ok).toBe(true);
+        expect(spriteDiagnostics.nobleCard!.loadResult.naturalWidth).toBeGreaterThan(0);
+
+        await page.screenshot({
+            path: getSharedEvidenceScreenshotPath(testInfo, 'splendor-mobile-landscape-main-layout'),
+            fullPage: false,
+        });
+    });
+
+    test('Splendor：手机横屏下应可保留公开牌且操作后仍不触发横向溢出', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+
+        await game.openTestGame('splendor');
+        const initialState = await game.getState();
+        const refillCard = initialState.core.decks[1][0];
+
+        await game.setupScene({
+            gameId: 'splendor',
+            player0: {},
+            player1: {},
+            currentPlayer: '0',
+            extra: {
+                core: {
+                    hostStarted: true,
+                    market: {
+                        ...initialState.core.market,
+                        1: ['t1-white-1', 't1-blue-1', 't1-green-1', 't1-red-1'],
+                    },
+                    decks: {
+                        ...initialState.core.decks,
+                        1: [refillCard],
+                    },
+                    pendingResolution: undefined,
+                    endgame: { triggered: false },
+                    gameResult: undefined,
+                },
+            },
+        });
+
+        await page.setViewportSize({ width: 844, height: 390 });
+        await expect(page.getByTestId('splendor-reserve-t1-white-1')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('splendor-bank-token-gold')).toBeVisible({ timeout: 10000 });
+        await waitForSplendorSpriteReady(page);
+
+        await page.screenshot({
+            path: getSharedEvidenceScreenshotPath(testInfo, 'splendor-mobile-landscape-reserve-before'),
+            fullPage: false,
+        });
+
+        await page.getByTestId('splendor-reserve-t1-white-1').click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                currentPlayer: state.core.currentPlayer,
+                reserved: state.core.players['0'].reservedCardIds,
+                market: state.core.market[1],
+                gold: state.core.players['0'].tokens.gold,
+            };
+        }, { timeout: 10000 }).toEqual({
+            currentPlayer: '1',
+            reserved: ['t1-white-1'],
+            market: ['t1-blue-1', 't1-green-1', 't1-red-1', refillCard],
+            gold: 1,
+        });
+        await waitForSplendorSpriteReady(page);
+
+        const metrics = await readSplendorViewportMetrics(page);
+        expect(metrics.pageOverflowX).toBeLessThanOrEqual(1);
+        expect(metrics.marketRect).not.toBeNull();
+        expect(metrics.bankRect).not.toBeNull();
+        expect(metrics.playerStatusRect).not.toBeNull();
+        expect(metrics.marketRect!.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+        expect(metrics.bankRect!.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+        expect(metrics.playerStatusRect!.right).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+
+        await page.screenshot({
+            path: getSharedEvidenceScreenshotPath(testInfo, 'splendor-mobile-landscape-reserve-after'),
+            fullPage: false,
+        });
     });
 });

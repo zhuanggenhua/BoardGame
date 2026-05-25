@@ -68,11 +68,15 @@ export const ModalBase = memo(({
     children,
 }: ModalBaseProps) => {
     const resolvedOverlayStyle: CSSProperties = { zIndex: UI_Z_INDEX.modalOverlay, ...overlayStyle };
+    const lockedViewportHeight = 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))';
+    const lockedBottomInset = visualStyle === 'home-v2'
+        ? 'var(--safe-area-bottom)'
+        : 'var(--runtime-modal-bottom-inset)';
     const lockedLayoutContainerStyle = preserveKeyboardLayout
         ? ({
-            '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh))',
-            '--modal-active-bottom-inset': 'var(--safe-area-bottom)',
-            '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--safe-area-bottom)))',
+            '--modal-active-viewport-height': lockedViewportHeight,
+            '--modal-active-bottom-inset': lockedBottomInset,
+            '--modal-max-height': `calc(${lockedViewportHeight} - max(1rem, var(--safe-area-top)) - max(1rem, var(--modal-active-bottom-inset, ${lockedBottomInset})))`,
         } as CSSProperties)
         : undefined;
     const resolvedContainerStyle: CSSProperties = {

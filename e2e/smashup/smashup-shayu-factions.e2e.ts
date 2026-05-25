@@ -376,6 +376,73 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
     await game.screenshot('shayu-sharks-laser-beam-after-destroy', testInfo);
   });
 
+  test('Sharks 灰鲭鲨不会把火焰陷阱的无归因消灭误判成自己消灭', async ({ page, game }, testInfo) => {
+    test.setTimeout(90000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', {
+      p0: 'sharks,tornados',
+      p1: 'tricksters,robots',
+      skipFactionSelect: true,
+      skipInitialization: false,
+      seed: 20260523,
+    }, 45000);
+
+    await game.setupScene({
+      gameId: 'smashup',
+      player0: {
+        hand: [
+          { uid: 'p0-mako', defId: 'sharks_mako', type: 'minion' },
+          { uid: 'p0-hammerhead', defId: 'sharks_hammerhead', type: 'minion' },
+        ],
+        factions: ['sharks', 'tornados'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+      },
+      player1: {
+        factions: ['tricksters', 'robots'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+      },
+      bases: [
+        {
+          defId: 'base_shark_reef',
+          minions: [],
+          ongoingActions: [{ uid: 'enemy-trap', defId: 'trickster_flame_trap', ownerId: '1' }],
+        },
+      ],
+      currentPlayer: '0',
+      phase: 'playCards',
+    });
+
+    await game.waitForPhase('playCards');
+    await expect(page.locator('[data-card-uid="p0-mako"]')).toBeVisible({ timeout: 15000 });
+    await game.playCard('sharks_hammerhead', { targetBaseIndex: 0 });
+    await game.waitForNoInteraction(10000);
+
+    await expect(page.locator('[data-card-uid="p0-mako"]')).toBeVisible();
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return {
+        currentSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+        makoStillInHand: state.core.players['0']?.hand.some((card: { uid?: string }) => card.uid === 'p0-mako') ?? false,
+        hammerheadDestroyed: !(state.core.bases[0]?.minions.some((minion: { uid?: string }) => minion.uid === 'p0-hammerhead') ?? false),
+        flameTrapDetached: !(state.core.bases[0]?.ongoingActions.some((action: { uid?: string }) => action.uid === 'enemy-trap') ?? false),
+        unexpectedExtraMako: state.core.bases[0]?.minions.some((minion: { uid?: string }) => minion.uid === 'p0-mako') ?? false,
+      };
+    }, { timeout: 5000 }).toEqual({
+      currentSourceId: null,
+      makoStillInHand: true,
+      hammerheadDestroyed: true,
+      flameTrapDetached: true,
+      unexpectedExtraMako: false,
+    });
+    await game.screenshot('shayu-sharks-mako-flame-trap-no-extra-play', testInfo);
+  });
+
   test('Mythic Greeks 代表行动可从手牌真实打出并改变权威状态', async ({ page, game }, testInfo) => {
     test.setTimeout(90000);
     await setChineseLocale(page.context());

@@ -429,9 +429,9 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
             data-lock-layout-viewport="true"
             style={{
                 zIndex: UI_Z_INDEX.modalContent,
-                '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh))',
-                '--modal-active-bottom-inset': 'var(--safe-area-bottom)',
-                '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--safe-area-bottom)))',
+                '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))',
+                '--modal-active-bottom-inset': 'var(--runtime-modal-bottom-inset)',
+                '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100vh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset))))',
                 paddingTop: isCompactLandscape ? 'max(0.5rem, var(--safe-area-top))' : 'max(1rem, var(--safe-area-top))',
                 paddingRight: 'max(1rem, var(--safe-area-right))',
                 paddingBottom: isCompactLandscape

@@ -199,6 +199,27 @@ describe('MobileTextEntryProxyLayer', () => {
         expect(screen.queryByTestId('mobile-text-entry-proxy-input')).toBeNull();
     });
 
+    it('代理层不应让整块表单拦截底部按钮点击，只允许代理输入自己接收事件', async () => {
+        const sourceInput = document.createElement('input');
+        sourceInput.type = 'text';
+        sourceInput.value = 'alpha';
+        document.body.appendChild(sourceInput);
+
+        render(<MobileTextEntryProxyLayer />);
+
+        await act(async () => {
+            sourceInput.focus();
+            fireEvent.focusIn(sourceInput);
+            await vi.advanceTimersByTimeAsync(60);
+        });
+
+        const proxyInput = screen.getByTestId('mobile-text-entry-proxy-input') as HTMLInputElement;
+        const proxyForm = proxyInput.closest('form');
+        expect(proxyForm).not.toBeNull();
+        expect(proxyForm?.className).toContain('pointer-events-none');
+        expect(proxyInput.className).toContain('pointer-events-auto');
+    });
+
     it('代理输入改值时不应重建节点或丢失焦点', async () => {
         const modalRoot = document.getElementById('modal-root');
         if (!modalRoot) throw new Error('missing modal root');

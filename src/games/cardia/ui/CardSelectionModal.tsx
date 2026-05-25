@@ -92,8 +92,11 @@ export const CardSelectionModal: React.FC<CardSelectionModalProps> = ({
             style={{ zIndex: UI_Z_INDEX.modalOverlay }}
         >
             <div
-                className="flex max-h-[calc(100vh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl border-2 border-purple-500 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl sm:max-h-[88vh] sm:rounded-lg"
-                style={{ zIndex: UI_Z_INDEX.modalContent }}
+                className="flex w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl border-2 border-purple-500 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl sm:max-h-[88vh] sm:rounded-lg"
+                style={{
+                    zIndex: UI_Z_INDEX.modalContent,
+                    maxHeight: 'calc(var(--runtime-viewport-height, 100vh) - 1rem)',
+                }}
             >
                 {/* 标题栏 */}
                 <div className="border-b border-purple-500/30 px-4 py-3 sm:px-6 sm:py-4">
@@ -284,7 +287,8 @@ const CardDisplay: React.FC<CardDisplayProps> = ({ card }) => {
     return (
         <div 
             data-testid={`card-${card.uid}`}
-            className="relative w-full aspect-[2/3] rounded-lg border-2 border-white/20 shadow-lg overflow-hidden"
+            className="relative w-full rounded-lg border-2 border-white/20 shadow-lg overflow-hidden"
+            style={{ height: 0, paddingTop: '150%', aspectRatio: '2 / 3' }}
         >
             {imagePath && !imageError ? (
                 <OptimizedImage

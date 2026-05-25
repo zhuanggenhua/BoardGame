@@ -413,6 +413,10 @@ export const CreateRoomModal = ({
             onClose();
         }
     };
+    const lockedViewportHeight = 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))';
+    const lockedBottomInset = isHomeV2Style
+        ? 'var(--safe-area-bottom)'
+        : 'var(--runtime-modal-bottom-inset)';
 
     const modalLayer = (
         <AnimatePresence>
@@ -439,16 +443,16 @@ export const CreateRoomModal = ({
                         data-lock-layout-viewport="true"
                         style={{
                             zIndex: UI_Z_INDEX.modalContent,
-                            '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh))',
-                            '--modal-active-bottom-inset': 'var(--safe-area-bottom)',
-                            '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--safe-area-bottom)))',
+                            '--modal-active-viewport-height': lockedViewportHeight,
+                            '--modal-active-bottom-inset': lockedBottomInset,
+                            '--modal-max-height': `calc(${lockedViewportHeight} - max(1rem, var(--safe-area-top)) - max(1rem, var(--modal-active-bottom-inset, ${lockedBottomInset})))`,
                             ...(isHomeV2Style ? {
                                 top: 0,
                                 right: 0,
                                 bottom: 0,
                                 left: 0,
-                                height: '100vh',
-                                maxHeight: '100vh',
+                                height: lockedViewportHeight,
+                                maxHeight: lockedViewportHeight,
                                 overflowY: 'visible',
                             } : {}),
                             paddingTop: isHomeV2Style
@@ -458,7 +462,7 @@ export const CreateRoomModal = ({
                                 ? 'max(1rem, var(--safe-area-right))'
                                 : 'max(1rem, var(--safe-area-right))',
                             paddingBottom: isHomeV2Style
-                                ? 'max(1rem, var(--safe-area-bottom, 0px))'
+                                ? 'max(1rem, var(--modal-active-bottom-inset, var(--safe-area-bottom)))'
                                 : 'max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset)))',
                             paddingLeft: isHomeV2Style
                                 ? 'max(1rem, var(--safe-area-left))'
@@ -478,11 +482,11 @@ export const CreateRoomModal = ({
                                 )}
                                 surfaceStyle={{
                                     height: isCompactHomeV2Layout
-                                        ? 'min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 0.5rem), 18.75rem)'
+                                        ? 'min(calc(var(--modal-max-height, var(--runtime-modal-max-height)) - 0.5rem), 18.75rem)'
                                         : undefined,
                                     maxHeight: isCompactHomeV2Layout
                                         ? undefined
-                                        : 'min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 2rem), 42rem)',
+                                        : 'min(var(--modal-max-height, var(--runtime-modal-max-height)), 42rem)',
                                 }}
                                 headerClassName={isCompactHomeV2Layout ? 'px-[22px] pb-[9px] pt-[13px]' : undefined}
                                 titleClassName={isCompactHomeV2Layout ? 'text-[11.8px] tracking-[0.075em]' : undefined}

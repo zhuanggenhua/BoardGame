@@ -32,6 +32,7 @@ const DESKTOP_SELECTED_Y_LIFT_VW = 5;
 const MOBILE_SELECTED_Y_LIFT_VW = 3.8;
 const DRAG_START_DISTANCE_PX = 12;
 const DRAG_DROP_SHADOW = '0 0 30px rgba(251, 191, 36, 0.38)';
+const HAND_AREA_LAYER_Z_INDEX = UI_Z_INDEX.hud + 2;
 
 function handInlineSize(value: number, compactLayout: boolean): string {
     if (!compactLayout) {
@@ -272,6 +273,7 @@ const HandCard: React.FC<HandCardProps> = ({
             `}
             style={{
                 width: cardWidth,
+                height: handInlineSize(cardWidthVw / CARD_ASPECT_RATIO, compactLayout),
                 aspectRatio: `${CARD_ASPECT_RATIO}`,
                 marginLeft: index === 0 ? 0 : spacing,
                 zIndex: isDragging ? 200 : baseZIndex,
@@ -402,7 +404,7 @@ export const HandArea: React.FC<Props> = ({
         <div
             className="absolute inset-x-0 bottom-0 flex flex-col justify-end items-center pointer-events-none"
             style={{
-                zIndex: UI_Z_INDEX.hud,
+                zIndex: HAND_AREA_LAYER_Z_INDEX,
                 ...(compactLayout
                     ? {
                         height: '100%',

@@ -50,6 +50,7 @@ type CthulhuPromptContext = {
     playerId: PlayerId;
     now: number;
 };
+type CthulhuItBeginsAgainPromptContext = CthulhuPromptContext & { sourceCardUid: string };
 type CthulhuMadnessUnleashedPromptContext = CthulhuPromptContext & { sourceCardUid: string };
 type SpecialMadnessPromptContext = CthulhuPromptContext & { cardUid: string };
 type StarSpawnPromptContext = CthulhuPromptContext & { madnessUid: string };
@@ -111,9 +112,12 @@ function buildRecruitByForceOptions(
 function buildItBeginsAgainOptions(
     core: SmashUpCore,
     playerId: PlayerId,
+    sourceCardUid?: string,
 ): PromptOption<CardChoiceValue | SkipChoiceValue>[] {
     const player = core.players[playerId];
-    const actionsInDiscard = player.discard.filter(card => card.type === 'action');
+    const actionsInDiscard = player.discard.filter(
+        card => card.type === 'action' && card.uid !== sourceCardUid,
+    );
     return [
         ...actionsInDiscard.map((card, index) => ({
             id: `action-${index}`,
@@ -348,10 +352,14 @@ const cthulhuRecruitByForceProgram = createEffectProgram<AbilityContext, SmashUp
     };
 });
 
-const cthulhuItBeginsAgainPromptProgram = createPromptProgram<CthulhuPromptContext, SmashUpCore, SmashUpEvent>({
+const cthulhuItBeginsAgainPromptProgram = createPromptProgram<CthulhuItBeginsAgainPromptContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'cthulhu_it_begins_again',
     buildInteraction: (context) => {
-        const options = buildItBeginsAgainOptions(context.matchState.core, context.playerId);
+        const options = buildItBeginsAgainOptions(
+            context.matchState.core,
+            context.playerId,
+            context.sourceCardUid,
+        );
         const interaction = createAbilityRuntimeSimpleChoice(
             `cthulhu_it_begins_again_${context.now}`,
             context.playerId,
@@ -366,17 +374,23 @@ const cthulhuItBeginsAgainPromptProgram = createPromptProgram<CthulhuPromptConte
             },
         );
         interaction.data.optionsGenerator = state =>
-            buildItBeginsAgainOptions(state.core as SmashUpCore, context.playerId);
+            buildItBeginsAgainOptions(
+                state.core as SmashUpCore,
+                context.playerId,
+                context.sourceCardUid,
+            );
         return interaction;
     },
-    onResolve: ({ state, playerId, value, random, timestamp }) => {
+    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         const cardUids = normalizeChoiceArray<CardUidSelection>(value)
             .map(entry => entry.cardUid)
             .filter((entry): entry is string => !!entry);
         if (cardUids.length === 0) return { events: [] };
         const player = state.core.players[playerId];
         const selectedSet = new Set(cardUids);
-        const actionsFromDiscard = player.discard.filter(card => selectedSet.has(card.uid));
+        const actionsFromDiscard = player.discard.filter(
+            card => selectedSet.has(card.uid) && card.uid !== context.sourceCardUid,
+        );
         if (actionsFromDiscard.length === 0) return { events: [] };
         const shuffled = random.shuffle([...player.deck, ...actionsFromDiscard]);
         return {
@@ -390,13 +404,18 @@ const cthulhuItBeginsAgainPromptProgram = createPromptProgram<CthulhuPromptConte
 });
 
 const cthulhuItBeginsAgainProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
-    const options = buildItBeginsAgainOptions(ctx.state, ctx.playerId);
+    const options = buildItBeginsAgainOptions(ctx.state, ctx.playerId, ctx.cardUid);
     if (options.length <= 1) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
     }
     return {
         events: [],
-        context: { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now } satisfies CthulhuPromptContext,
+        context: {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            sourceCardUid: ctx.cardUid,
+        } satisfies CthulhuItBeginsAgainPromptContext,
         nextProgram: cthulhuItBeginsAgainPromptProgram,
     };
 });

@@ -100,6 +100,41 @@ describe('HybridStorage 行为', () => {
         const { metadata: fetchedMetadata } = await hybrid.fetch('guest-clean', { metadata: true });
         expect(fetchedMetadata).toBeUndefined();
     });
+
+    it('Mongo 路径并发 claimSeatMetadata 应保留所有 seat 凭据', async () => {
+        const setupData = buildSetupData({
+            ownerKey: 'user:mongo-ai-owner',
+            ownerType: 'user',
+        });
+        await hybrid.createMatch('mongo-ai-room', {
+            initialState: buildState(setupData),
+            metadata: {
+                ...buildMetadata(setupData),
+                players: {
+                    0: { name: 'Host', credentials: 'host-cred' },
+                    1: { name: 'AI-1' },
+                    2: { name: 'AI-2' },
+                    3: { name: 'AI-3' },
+                },
+            },
+        });
+
+        const results = await Promise.all(['1', '2', '3'].map((playerID) => hybrid.claimSeatMetadata(
+            'mongo-ai-room',
+            {
+                playerID,
+                playerCredentials: `mongo-cred-${playerID}`,
+                playerName: `AI-${playerID}`,
+            },
+        )));
+        const { metadata } = await hybrid.fetch('mongo-ai-room', { metadata: true });
+
+        expect(results.map((result) => result.playerCredentials).sort())
+            .toEqual(['mongo-cred-1', 'mongo-cred-2', 'mongo-cred-3']);
+        expect(metadata?.players['1']?.credentials).toBe('mongo-cred-1');
+        expect(metadata?.players['2']?.credentials).toBe('mongo-cred-2');
+        expect(metadata?.players['3']?.credentials).toBe('mongo-cred-3');
+    });
 });
 
 const buildMongoStub = () => ({
@@ -107,6 +142,7 @@ const buildMongoStub = () => ({
     createMatch: vi.fn(async () => {}),
     setState: vi.fn(async () => {}),
     setMetadata: vi.fn(async () => {}),
+    claimSeatMetadata: vi.fn(async () => ({ playerExists: false })),
     fetch: vi.fn(async () => ({})),
     fetchAuthMetadata: vi.fn(async () => undefined),
     wipe: vi.fn(async () => {}),
@@ -235,5 +271,46 @@ describe('HybridStorage 纯内存模式', () => {
         expect(metadata?.players['0']?.isConnected).toBe(false);
         expect(mongoStub.fetchAuthMetadata).not.toHaveBeenCalled();
         expect(mongoStub.fetch).not.toHaveBeenCalled();
+    });
+
+    it('persistent=false 时并发 claimSeatMetadata 应保留所有 seat 凭据', async () => {
+        const mongoStub = buildMongoStub();
+        const hybrid = new HybridStorage(mongoStub as unknown as typeof mongoStorage, {
+            persistentEnabled: false,
+        });
+        const setupData = buildSetupData({
+            ownerKey: 'guest:ai-owner',
+            guestId: 'ai-owner',
+            ownerType: 'guest',
+        });
+
+        await hybrid.createMatch('guest-ai-room', {
+            initialState: buildState(setupData),
+            metadata: {
+                ...buildMetadata(setupData),
+                players: {
+                    0: { name: 'Host', credentials: 'host-cred' },
+                    1: { name: 'AI-1' },
+                    2: { name: 'AI-2' },
+                    3: { name: 'AI-3' },
+                },
+            },
+        });
+
+        const results = await Promise.all(['1', '2', '3'].map((playerID) => hybrid.claimSeatMetadata(
+            'guest-ai-room',
+            {
+                playerID,
+                playerCredentials: `cred-${playerID}`,
+                playerName: `AI-${playerID}`,
+            },
+        )));
+        const { metadata } = await hybrid.fetch('guest-ai-room', { metadata: true });
+
+        expect(results.map((result) => result.playerCredentials).sort()).toEqual(['cred-1', 'cred-2', 'cred-3']);
+        expect(metadata?.players['1']?.credentials).toBe('cred-1');
+        expect(metadata?.players['2']?.credentials).toBe('cred-2');
+        expect(metadata?.players['3']?.credentials).toBe('cred-3');
+        expect(mongoStub.claimSeatMetadata).not.toHaveBeenCalled();
     });
 });

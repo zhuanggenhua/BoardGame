@@ -26,6 +26,7 @@ type LocalScoreboard = {
 };
 
 const LOCAL_SCOREBOARD_KEY = 'tictactoe_scoreboard_v1';
+const TIC_TAC_TOE_BOARD_VIEWPORT_SIZE = 'min(80vw, 60vh)';
 
 const clearLocalScoreboard = () => {
     try {
@@ -301,7 +302,10 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
 
     return (
         <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: isLocalMatch }}>
-            <div className="flex flex-col items-center h-[100dvh] w-full font-sans bg-black overflow-hidden relative pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] select-none">
+            <div
+                className="flex flex-col items-center w-full font-sans bg-black overflow-hidden relative pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] select-none"
+                style={{ height: 'var(--runtime-viewport-height, 100vh)' }}
+            >
 
                 {/* 增加一个径向渐变使光晕分布更自然 (放底层) */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0)_0%,_rgba(0,0,0,0.8)_100%)] pointer-events-none z-0"></div>
@@ -326,7 +330,13 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
 
                 {/* 棋盘主区域 - 移除边框，保留空间结构 */}
                 <div className="flex-1 w-full flex items-center justify-center p-6 min-h-0 relative z-10">
-                    <div className="relative aspect-square h-full max-h-[80vw] md:max-h-[60vh] max-w-full p-4">
+                    <div
+                        className="relative max-w-full p-4"
+                        style={{
+                            width: TIC_TAC_TOE_BOARD_VIEWPORT_SIZE,
+                            height: TIC_TAC_TOE_BOARD_VIEWPORT_SIZE,
+                        }}
+                    >
 
                         {/* 核心网格线：SVG 路径实现，支持绘制动画且线条粗细与棋子完美平衡 */}
                         <div className="absolute inset-6 pointer-events-none z-10">
@@ -411,11 +421,14 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                 </div>
 
                 {/* 底部 HUD 仪表盘 */}
-                <div className="flex-none w-full max-w-2xl px-8 pb-12 z-10">
+                <div className="flex-none z-10 w-full max-w-2xl px-8 pb-12 max-[640px]:px-6 max-[640px]:pr-24 max-[640px]:pb-24">
                     <div className="relative flex justify-between items-end">
 
                         {/* 左侧玩家 P0 (X - Pink) */}
-                        <div className={`flex flex-col items-center gap-2 transition-opacity duration-300 ${String(currentPlayer) === '0' || isGameOver ? 'opacity-100' : 'opacity-40'}`}>
+                        <div
+                            data-testid="tictactoe-score-left"
+                            className={`flex flex-col items-center gap-2 transition-opacity duration-300 ${String(currentPlayer) === '0' || isGameOver ? 'opacity-100' : 'opacity-40'}`}
+                        >
                             <div className="text-neon-pink font-bold tracking-widest text-xs md:text-sm uppercase mb-1">
                                 {getPlayerName('0')}
                             </div>
@@ -426,7 +439,7 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                         </div>
 
                         {/* 中间状态栏 */}
-                        <div className="flex-1 flex flex-col items-center justify-end pb-2">
+                        <div data-testid="tictactoe-turn-status" className="flex-1 flex flex-col items-center justify-end pb-2">
                             {isGameOver ? (
                                 <div className="text-xl md:text-2xl font-black italic text-white tracking-widest animate-pulse whitespace-nowrap drop-shadow-lg">
                                     {isWinner ?
@@ -454,7 +467,10 @@ export const TicTacToeBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, 
                         </div>
 
                         {/* 右侧玩家 P1 (O - Blue) */}
-                        <div className={`flex flex-col items-center gap-2 transition-opacity duration-300 ${String(currentPlayer) === '1' || isGameOver ? 'opacity-100' : 'opacity-40'}`}>
+                        <div
+                            data-testid="tictactoe-score-right"
+                            className={`flex flex-col items-center gap-2 transition-opacity duration-300 ${String(currentPlayer) === '1' || isGameOver ? 'opacity-100' : 'opacity-40'}`}
+                        >
                             <div className="text-neon-blue font-bold tracking-widest text-xs md:text-sm uppercase mb-1">
                                 {getPlayerName('1')}
                             </div>

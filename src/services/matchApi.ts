@@ -5,7 +5,7 @@
  * 路由结构：/games/:name/:matchID/...
  */
 
-import { GAME_SERVER_URL } from '../config/server';
+import { getGameServerUrl } from '../config/server';
 
 // ============================================================================
 // 类型定义
@@ -60,7 +60,7 @@ export interface LeaveMatchOptions {
 // 内部工具
 // ============================================================================
 
-const baseUrl = (): string => GAME_SERVER_URL || '';
+const baseUrl = (): string => getGameServerUrl() || '';
 
 export interface MatchApiError extends Error {
     status?: number;

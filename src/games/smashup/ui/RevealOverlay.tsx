@@ -42,6 +42,16 @@ interface RevealOverlayProps {
 }
 
 const AUTO_DISMISS_MS = 15_000;
+const CARD_ASPECT_RATIO = 0.714;
+const BASE_CARD_ASPECT_RATIO = 1.43;
+
+function cardFrameStyle(widthVw: number, aspectRatio = CARD_ASPECT_RATIO): React.CSSProperties {
+    return {
+        width: `${widthVw}vw`,
+        height: `calc(${widthVw}vw / ${aspectRatio})`,
+        aspectRatio: `${aspectRatio} / 1`,
+    };
+}
 
 // ============================================================================
 // 组件
@@ -211,8 +221,7 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealO
                             const isBase = !!baseDef;
                             const name = def ? resolveCardName(def, t) : (baseDef ? resolveCardName(baseDef, t) : card.defId);
                             // 统一使用配置：基地 14vw，行动卡/随从 8.5vw
-                            const cardWidth = isBase ? 'w-[14vw]' : 'w-[8.5vw]';
-                            const cardAspect = isBase ? 'aspect-[1.43]' : 'aspect-[0.714]';
+                            const cardStyle = isBase ? cardFrameStyle(14, BASE_CARD_ASPECT_RATIO) : cardFrameStyle(8.5);
                             const maxWidth = isBase ? 'max-w-[14vw]' : 'max-w-[8.5vw]';
                             return (
                                 <motion.div
@@ -231,11 +240,12 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealO
                                         {(def?.previewRef || baseDef?.previewRef) ? (
                                             <CardPreview
                                                 previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId, cardUid: card.uid } }}
-                                                className={`${cardWidth} ${cardAspect} bg-slate-900 rounded`}
+                                                className="bg-slate-900 rounded"
+                                                style={cardStyle}
                                                 alt={name}
                                             />
                                         ) : (
-                                            <div className={`${cardWidth} ${cardAspect} bg-slate-800 rounded flex items-center justify-center p-2`}>
+                                            <div className="bg-slate-800 rounded flex items-center justify-center p-2" style={cardStyle}>
                                                 <span className="text-white text-xs font-bold text-center">{name}</span>
                                             </div>
                                         )}

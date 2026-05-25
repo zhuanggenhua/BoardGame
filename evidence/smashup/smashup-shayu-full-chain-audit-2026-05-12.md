@@ -160,6 +160,13 @@
 - C5 已逐家族归档：beforeScoring、afterScoring、base replace、once/turn、action-trigger、base trigger、destroy trigger、multi/order/continuationContext 均有 L4 或系统代表链证据。
 - C6 已完成回写；最终是否 COMPLETE 以 `temp/smashup-shayu-comprehensive-audit-2026-05-12.json` 与 guard 检查为准。
 
+## 2026-05-23 +08 destroyerId 专项回写
+
+- 旧条目 `sharks_mako` 的 P0/P1 结论“上下文用 destroyer/baseIndex，未发现反转”现需降级：它只证明了 trigger 自身消费字段方向正确，没有反查到共享 reducer 会在 destroyerId 缺失时做错误兜底。
+- 旧条目 `base_shark_reef` 的 destroyer 归属结论也需降级：它只证明了**显式 destroyerId** 时候选归属正确，没有证明 destroyerId 缺失时不会错误给当前玩家 prompt。
+- 共享根因与新增否定链证据见：`evidence/smashup/smashup-shayu-destroyerid-contract-reaudit-2026-05-23.md`。
+- 当前读取口径：本文件 destroy trigger 家族结论必须与 2026-05-23 destroyerId 专项一起看，不能再单独作为“缺失 destroyerId 否定链已审”的证明。
+
 
 ## 2026-05-13 01:03 +08 最终回归验证
 

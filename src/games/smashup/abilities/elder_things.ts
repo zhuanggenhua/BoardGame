@@ -2593,8 +2593,9 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
-            if (!m.attachedActions.some(a => matchesDefId(a.defId, 'elder_thing_dunwich_horror'))) continue;
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, undefined, 'elder_thing_dunwich_horror', ctx.now));
+            const attachment = m.attachedActions.find(a => matchesDefId(a.defId, 'elder_thing_dunwich_horror'));
+            if (!attachment) continue;
+            events.push(destroyMinion(m.uid, m.defId, i, m.owner, attachment.ownerId, 'elder_thing_dunwich_horror', ctx.now));
         }
     }
     return events;

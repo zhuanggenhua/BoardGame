@@ -293,6 +293,17 @@ npm run mobile:android:packages:publish -- --channel stable --game dicethrone
 - `official/mobile-packages/android/<channel>/manifests/<gameId>/<version>.json`
 - `official/mobile-packages/android/<channel>/games/<gameId>.json`
 
+### 游戏包 / 共享包路径合同（强制）
+
+- **zip entry、file index、原生落盘、H5 读取必须同构**：移动包里每个文件的相对路径，一旦从 `public/assets` 计算出来，就必须原样贯穿：
+  1. 发布脚本写入 zip 的 entry path
+  2. `file-index/*.json` 里的 `files[].path`
+  3. 原生解压后 `current/assets/` 下的相对路径
+  4. 前端 `readInstalledAsset(gameId, relativePath)` 传入的 `relativePath`
+- **禁止单层裁前缀**：发布脚本、原生解压、增量下载、H5 读取，任何一层都不得单独把 `common/audio/` 改成 `bgm/` / `sfx/`，也不得把 `<gameId>/`、`atlas-configs/<gameId>/`、`i18n/<locale>/...` 等前缀只在某一层做扁平化。
+- **共享音频包 `common-audio` 的标准合同**：相对路径必须继续使用 `common/audio/...`，而不是把 `bgm/...` / `sfx/...` 当成包根。BGM 缺失时，先查这条路径合同是否被打破，不要先改 BGM 调用逻辑。
+- **修复顺序**：真机发现“包已安装但本地读取不到文件”时，先判定是 `打包脚本 / file index / 原生落盘 / H5 读取` 哪一层先偏离标准合同；确认偏离层后再修。只有历史已发包无法立刻替换时，才允许补一层兼容读取。
+
 manifest 结构示例：
 
 ```json

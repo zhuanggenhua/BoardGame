@@ -9,6 +9,8 @@ import type {
     MatchStorage,
     MatchAuthMetadataProvider,
     MatchMetadata,
+    ClaimSeatMetadataInput,
+    ClaimSeatMetadataResult,
     StoredMatchState,
     CreateMatchData,
     FetchOpts,
@@ -295,6 +297,65 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
         }
 
         await Match.updateOne({ matchID }, update);
+    }
+
+    async claimSeatMetadata(
+        matchID: string,
+        input: ClaimSeatMetadataInput,
+    ): Promise<ClaimSeatMetadataResult> {
+        const Match = getMatchModel();
+        if (!/^[A-Za-z0-9_-]+$/.test(input.playerID)) {
+            throw new Error(`Unsafe playerID for metadata path: ${input.playerID}`);
+        }
+
+        const playerPath = `metadata.players.${input.playerID}`;
+        const credentialsPath = `${playerPath}.credentials`;
+        const namePath = `${playerPath}.name`;
+        const updatedAt = input.updatedAt ?? Date.now();
+
+        await Match.updateOne({
+            matchID,
+            [playerPath]: { $exists: true },
+            $or: [
+                { [credentialsPath]: { $exists: false } },
+                { [credentialsPath]: null },
+                { [credentialsPath]: '' },
+            ],
+        }, {
+            $set: {
+                [credentialsPath]: input.playerCredentials,
+                'metadata.updatedAt': updatedAt,
+            },
+        });
+
+        if (input.playerName) {
+            await Match.updateOne({
+                matchID,
+                [playerPath]: { $exists: true },
+                $or: [
+                    { [namePath]: { $exists: false } },
+                    { [namePath]: null },
+                    { [namePath]: '' },
+                ],
+            }, {
+                $set: {
+                    [namePath]: input.playerName,
+                    'metadata.updatedAt': updatedAt,
+                },
+            });
+        }
+
+        const doc = await Match.findOne({ matchID }).select({ _id: 0, metadata: 1 }).lean<{ metadata?: MatchMetadata } | null>();
+        const metadata = doc?.metadata;
+        const player = metadata?.players?.[input.playerID];
+        const playerCredentials = typeof player?.credentials === 'string' && player.credentials.trim()
+            ? player.credentials
+            : undefined;
+        return {
+            metadata,
+            playerExists: Boolean(player),
+            playerCredentials,
+        };
     }
 
     async fetch(

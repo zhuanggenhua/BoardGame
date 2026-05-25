@@ -2,6 +2,17 @@ import { test, expect } from '@playwright/test';
 import { setChineseLocale } from '../helpers/common';
 
 const SOCIAL_MOBILE_CHAT_SCREENSHOT_PATH = 'test-results/evidence-screenshots/_shared/social-chat-mobile-input-visible.png';
+const E2E_AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyXzEyMyIsInVzZXJuYW1lIjoi5rWL6K-V546p5a62IiwiaWF0IjoxNzE2NTAwMDAwLCJleHAiOjQxMDI0NDQ4MDB9.sig';
+
+async function openFriendsChatModal(page: import('@playwright/test').Page) {
+    const trigger = page.getByTestId('user-menu-trigger');
+    await expect(trigger).toBeVisible();
+    await trigger.dispatchEvent('click');
+
+    const friendsEntry = page.getByTestId('user-menu-friends-chat');
+    await expect(friendsEntry).toBeVisible();
+    await friendsEntry.dispatchEvent('click');
+}
 
 test.describe('社交中心 E2E', () => {
 
@@ -70,11 +81,23 @@ test.describe('社交中心 E2E', () => {
                     code: 'AUTH_LOGIN_OK',
                     message: '登录成功',
                     data: {
-                        token: 'fake_jwt_token',
+                        token: E2E_AUTH_TOKEN,
                         user: mockUser
                     }
                 }
             });
+        });
+
+        await page.route('**/notifications', async route => {
+            await route.fulfill({ json: { notifications: [] } });
+        });
+
+        await page.route('**/notifications/read-state', async route => {
+            if (route.request().method() === 'POST') {
+                await route.fulfill({ json: { success: true } });
+                return;
+            }
+            await route.fulfill({ json: { lastSeenAt: null } });
         });
 
         // Mock Friends List
@@ -123,14 +146,17 @@ test.describe('社交中心 E2E', () => {
         });
 
         // 2. Simulate Login State
-        await page.addInitScript(() => {
-            localStorage.setItem('auth_token', 'fake_jwt_token');
+        await page.addInitScript((token: string) => {
+            localStorage.setItem('auth_token', token);
             localStorage.setItem('auth_user', JSON.stringify({
                 id: 'user_123',
                 username: '测试玩家',
-                email: 'test@example.com'
+                email: 'test@example.com',
+                emailVerified: true,
+                role: 'user',
+                banned: false,
             }));
-        });
+        }, E2E_AUTH_TOKEN);
 
         // Debug: Capture console logs and errors
         page.on('console', msg => console.log(`[Browser Console] ${msg.type()}: ${msg.text()}`));
@@ -140,18 +166,8 @@ test.describe('社交中心 E2E', () => {
         await page.goto('/', { waitUntil: 'domcontentloaded' });
     });
 
-    test('可以通过全局 HUD 打开社交并查看好友聊天', async ({ page }) => {
-        // 1. Wait for GlobalHUD to appear
-        const hudTrigger = page.locator('[data-testid="fab-menu"] [data-fab-id]').first();
-        await expect(hudTrigger).toBeVisible();
-
-        // 2. Expand HUD
-        await hudTrigger.click();
-
-        // 3. Click "Social" button in the menu
-        const socialButton = page.locator('[data-fab-id="social"]');
-        await expect(socialButton).toBeVisible();
-        await socialButton.click();
+    test('可以通过用户菜单打开社交并查看好友聊天', async ({ page }) => {
+        await openFriendsChatModal(page);
 
         // 4. Verify Modal Opened
         // Modal usually has a backdrop and container
@@ -193,13 +209,7 @@ test.describe('社交中心 E2E', () => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-        const hudTrigger = page.locator('[data-testid="fab-menu"] [data-fab-id]').first();
-        await expect(hudTrigger).toBeVisible();
-        await hudTrigger.click();
-
-        const socialButton = page.locator('[data-fab-id="social"]');
-        await expect(socialButton).toBeVisible();
-        await socialButton.click();
+        await openFriendsChatModal(page);
 
         await expect(page.getByText('好友甲')).toBeVisible();
         await page.getByRole('button', { name: /好友甲/i }).click();

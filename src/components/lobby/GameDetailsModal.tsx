@@ -170,6 +170,28 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         || packageInstallCardState.status === 'downloading'
         || packageInstallCardState.status === 'verifying'
         || hasInstalledPackageForMobileGame;
+    const detailTabs = useMemo(() => ([
+        {
+            id: 'lobby' as const,
+            label: t('tabs.lobby'),
+            mobileLabel: t('tabs.lobbyCompact', { defaultValue: t('tabs.lobby') }),
+        },
+        {
+            id: 'changelog' as const,
+            label: t('tabs.changelog'),
+            mobileLabel: t('tabs.changelogCompact', { defaultValue: t('tabs.changelog') }),
+        },
+        {
+            id: 'reviews' as const,
+            label: t('tabs.reviews'),
+            mobileLabel: t('tabs.reviewsCompact', { defaultValue: t('tabs.reviews') }),
+        },
+        {
+            id: 'leaderboard' as const,
+            label: t('tabs.leaderboard'),
+            mobileLabel: t('tabs.leaderboardCompact', { defaultValue: t('tabs.leaderboard') }),
+        },
+    ]), [t]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -2070,52 +2092,35 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     {/* 右侧面板 - 大厅/排行 */}
                     <div className="flex-1 p-3 sm:p-8 flex flex-col bg-parchment-card-bg font-serif overflow-hidden">
                         <div className="flex justify-between items-center mb-4 sm:mb-6 gap-2">
-                            <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar mask-linear-fade pr-2">
-                                <button
-                                    onClick={() => setActiveTab('lobby')}
-                                    className={clsx(
-                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
-                                        activeTab === 'lobby' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
-                                    )}
-                                >
-                                    {t('tabs.lobby')}
-                                    {activeTab === 'lobby' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
-                                </button>
-                                <div className="w-px bg-[#e5e0d0] h-4 sm:h-6 shrink-0" />
-                                <button
-                                    onClick={() => setActiveTab('changelog')}
-                                    className={clsx(
-                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
-                                        activeTab === 'changelog' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
-                                    )}
-                                >
-                                    {t('tabs.changelog')}
-                                    {activeTab === 'changelog' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
-                                </button>
-                                <div className="w-px bg-[#e5e0d0] h-4 sm:h-6 shrink-0" />
-                                <button
-                                    onClick={() => setActiveTab('reviews')}
-                                    className={clsx(
-                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
-                                        activeTab === 'reviews' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
-                                    )}
-                                >
-                                    {t('tabs.reviews')}
-                                    {activeTab === 'reviews' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
-                                </button>
-                                <div className="w-px bg-[#e5e0d0] h-4 sm:h-6 shrink-0" />
-                                <button
-                                    onClick={() => setActiveTab('leaderboard')}
-                                    className={clsx(
-                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
-                                        activeTab === 'leaderboard' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
-                                    )}
-                                >
-                                    {t('tabs.leaderboard')}
-                                    {activeTab === 'leaderboard' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
-                                </button>
+                            <div
+                                data-testid="game-details-tab-row"
+                                className="flex min-w-0 flex-1 items-center justify-between gap-1.5 pr-1 sm:gap-4 sm:overflow-x-auto sm:no-scrollbar sm:mask-linear-fade sm:pr-2 sm:justify-start"
+                            >
+                                {detailTabs.map((tab, index) => (
+                                    <div key={tab.id} className="contents">
+                                        {index > 0 && <div className="hidden h-4 w-px shrink-0 bg-[#e5e0d0] sm:block sm:h-6" />}
+                                        <button
+                                            type="button"
+                                            data-testid={`game-details-tab-${tab.id}`}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={clsx(
+                                                'relative min-w-0 shrink text-[11px] font-bold uppercase tracking-[0.08em] transition-colors whitespace-nowrap sm:shrink-0 sm:text-lg sm:tracking-wider',
+                                                activeTab === tab.id ? 'text-parchment-base-text' : 'text-parchment-light-text hover:text-parchment-base-text',
+                                            )}
+                                        >
+                                            <span className="sm:hidden">{tab.mobileLabel}</span>
+                                            <span className="hidden sm:inline">{tab.label}</span>
+                                            {activeTab === tab.id && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
-                            <button onClick={onClose} className="p-1.5 hover:bg-parchment-base-bg rounded-full text-parchment-light-text hover:text-parchment-base-text transition-colors cursor-pointer shrink-0">
+                            <button
+                                type="button"
+                                data-testid="game-details-close-button"
+                                onClick={onClose}
+                                className="p-1.5 hover:bg-parchment-base-bg rounded-full text-parchment-light-text hover:text-parchment-base-text transition-colors cursor-pointer shrink-0"
+                            >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>

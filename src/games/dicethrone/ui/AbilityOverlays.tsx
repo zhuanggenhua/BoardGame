@@ -233,7 +233,7 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
                                         <CardPreview
                                             previewRef={passiveCard.previewRef}
                                             locale={locale}
-                                            className="h-full aspect-[0.61] rounded-lg"
+                                            className="w-full h-full rounded-lg"
                                         />
                                     </div>
                                 )}
@@ -322,7 +322,7 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
                                     <CardPreview
                                         previewRef={upgradePreviewRef}
                                         locale={locale}
-                                        className="h-full aspect-[0.61] rounded-lg"
+                                        className="w-full h-full rounded-lg"
                                     />
                                 </div>
                             )}

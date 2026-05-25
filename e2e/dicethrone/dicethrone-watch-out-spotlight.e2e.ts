@@ -4072,6 +4072,9 @@ test('mobile narrow viewport should keep magnify entries visible and clickable',
     const diceFaces = page.locator('[data-testid="dice-3d"]');
     const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]');
     const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]');
+    const handArea = page.locator('[data-testid="hand-area"]');
+    const handCards = handArea.locator('[data-card-id]');
+    const firstHandCard = handCards.first();
 
     await expect(playerBoardMagnifyButton).toHaveCSS('opacity', '1');
     await expect(discardPileInspectButton).toHaveCSS('opacity', '1');
@@ -4086,10 +4089,16 @@ test('mobile narrow viewport should keep magnify entries visible and clickable',
     await expectNoHorizontalOverflow(page);
     const viewport = page.viewportSize();
     expect(viewport).not.toBeNull();
+    await expect(handArea).toBeVisible({ timeout: 5000 });
+    await expect(handCards).toHaveCount(4, { timeout: 5000 });
+    await expect(firstHandCard).toBeVisible({ timeout: 5000 });
     await expectElementInsideViewport(playerBoardMagnifyButton, 'player board magnify button', viewport!.width, viewport!.height);
     await expectElementInsideViewport(discardPileInspectButton, 'discard pile inspect button', viewport!.width, viewport!.height);
     await expectElementInsideViewport(rollButton, 'roll button', viewport!.width, viewport!.height);
     await expectElementInsideViewport(confirmButton, 'confirm button', viewport!.width, viewport!.height);
+    await expectMinBoundingBox(handArea, 'mobile hand area', 260, 120);
+    await expectMinBoundingBox(firstHandCard, 'mobile first hand card', 70, 110);
+    await expectElementInsideViewport(firstHandCard, 'mobile first hand card', viewport!.width, viewport!.height);
     await expect(playerBoardSurface).toBeVisible({ timeout: 5000 });
     await expect(playerBoardAbilitySlot).toBeVisible({ timeout: 5000 });
     await expect(tipBoardSurface).toBeVisible({ timeout: 5000 });
@@ -4113,6 +4122,9 @@ test('mobile narrow viewport should keep magnify entries visible and clickable',
     await playerBoardAbilitySlot.click();
     await page.waitForTimeout(300);
     await expect(boardMagnifyOverlay).toBeHidden();
+    const confirmRollToast = page.getByText('请先确认投掷结果');
+    await expect(confirmRollToast).toBeVisible({ timeout: 2000 });
+    await expect(confirmRollToast).toBeHidden({ timeout: 6000 });
 
     await tipBoardSurface.click({ position: { x: 28, y: 80 } });
     await expect(boardMagnifyOverlay).toBeVisible({ timeout: 5000 });

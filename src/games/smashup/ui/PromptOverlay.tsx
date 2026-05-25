@@ -69,6 +69,17 @@ function buildRendererPreviewRef(defId: string | undefined): CardPreviewRef | un
     };
 }
 
+const CARD_ASPECT_RATIO = 0.714;
+const BASE_CARD_ASPECT_RATIO = 1.43;
+
+function cardFrameStyle(widthVw: number, aspectRatio = CARD_ASPECT_RATIO): React.CSSProperties {
+    return {
+        width: `${widthVw}vw`,
+        height: `calc(${widthVw}vw / ${aspectRatio})`,
+        aspectRatio: `${aspectRatio} / 1`,
+    };
+}
+
 /** 从选项 value 中提取 defId（卡牌/随从/基地） */
 function extractDefId(value: unknown): string | undefined {
     if (!value || typeof value !== 'object') return undefined;
@@ -458,7 +469,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             <div className="rounded shadow-xl overflow-hidden">
                                                 <CardPreview
                                                     previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId, cardUid: card.uid } }}
-                                                    className="w-[8.5vw] aspect-[0.714] bg-slate-900 rounded"
+                                                    className="bg-slate-900 rounded"
+                                                    style={cardFrameStyle(8.5)}
                                                     alt={name}
                                                 />
                                             </div>
@@ -676,7 +688,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             <div data-testid="prompt-context-card">
                                 <CardPreview
                                     previewRef={contextPreviewRef}
-                                    className="w-[8.5vw] aspect-[0.714] rounded shadow-[0_4px_24px_rgba(0,0,0,0.6)] ring-2 ring-white/30"
+                                    className="rounded shadow-[0_4px_24px_rgba(0,0,0,0.6)] ring-2 ring-white/30"
+                                    style={cardFrameStyle(8.5)}
                                 />
                             </div>
                         )}
@@ -776,8 +789,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 const isSelected = selectedIds.includes(option.id);
                                 const isBase = !!getBaseDef(defId ?? '');
                                 // 基地使用场上基地尺寸 14vw，行动卡/随从使用手牌尺寸 8.5vw
-                                const cardWidth = isBase ? 'w-[14vw]' : 'w-[8.5vw]';
-                                const cardAspect = isBase ? 'aspect-[1.43]' : 'aspect-[0.714]';
+                                const cardStyle = isBase ? cardFrameStyle(14, BASE_CARD_ASPECT_RATIO) : cardFrameStyle(8.5);
 
                                 return (
                                     <motion.div
@@ -807,10 +819,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             {previewRef ? (
                                                 <CardPreview
                                                     previewRef={previewRef}
-                                                    className={`${cardWidth} ${cardAspect} bg-slate-900 rounded`}
+                                                    className="bg-slate-900 rounded"
+                                                    style={cardStyle}
                                                 />
                                             ) : (
-                                                <div className={`${cardWidth} ${cardAspect} bg-slate-800 rounded flex items-center justify-center p-2`}>
+                                                <div className="bg-slate-800 rounded flex items-center justify-center p-2" style={cardStyle}>
                                                     <span className="text-white text-sm font-bold text-center">{option.label}</span>
                                                 </div>
                                             )}

@@ -9,6 +9,8 @@ import { MagnifyOverlay } from '../../../../components/common/overlays/MagnifyOv
 import { resolveCardAtlasId, initSpriteAtlases } from '../cardAtlas';
 import { useTouchInspectGesture } from '../../../../hooks/ui/useTouchInspectGesture';
 
+const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
+
 /** 解析卡牌的精灵图配置 */
 function resolveSprite(card: Card): { atlasId: string; frameIndex: number } {
     const spriteAtlasType = card.spriteAtlas ?? (card.cardType === 'unit' && card.unitClass === 'summoner' ? 'hero' : 'cards');
@@ -113,11 +115,17 @@ export const CardPoolPanel: React.FC<CardPoolPanelProps> = ({ factionId, current
                 overlayTestId="sw-deckbuilder-card-magnify-overlay"
             >
                 {magnifiedCard && (
-                    <CardSprite
-                        atlasId={magnifiedCard.atlasId}
-                        frameIndex={magnifiedCard.frameIndex}
-                        className="h-[75vh] w-auto rounded-xl shadow-2xl"
-                    />
+                    <div
+                        style={{
+                            width: `min(90vw, calc(75vh * ${SUMMONER_WARS_CARD_ASPECT_RATIO}))`,
+                        }}
+                    >
+                        <CardSprite
+                            atlasId={magnifiedCard.atlasId}
+                            frameIndex={magnifiedCard.frameIndex}
+                            className="w-full rounded-xl shadow-2xl"
+                        />
+                    </div>
                 )}
             </MagnifyOverlay>
         </div>

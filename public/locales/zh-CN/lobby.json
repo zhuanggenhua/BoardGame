@@ -210,9 +210,13 @@
   },
   "tabs": {
     "lobby": "在线大厅",
+    "lobbyCompact": "大厅",
     "reviews": "评价",
+    "reviewsCompact": "评价",
     "leaderboard": "排行榜",
-    "changelog": "更新"
+    "leaderboardCompact": "排行",
+    "changelog": "更新",
+    "changelogCompact": "更新"
   },
   "leaderboard": {
     "loading": "加载中...",

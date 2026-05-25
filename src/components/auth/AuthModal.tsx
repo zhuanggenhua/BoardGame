@@ -483,11 +483,11 @@ export const AuthModal = ({
             )}
             surfaceStyle={{
                 height: isCompactHomeV2Layout
-                    ? `min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 0.5rem), ${mode === 'login' ? '14.6rem' : '16.8rem'})`
+                    ? `min(calc(var(--modal-max-height, var(--runtime-modal-max-height)) - 0.5rem), ${mode === 'login' ? '14.6rem' : '16.8rem'})`
                     : undefined,
                 maxHeight: isCompactHomeV2Layout
                     ? undefined
-                    : 'min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 2rem), 42rem)',
+                    : 'min(var(--modal-max-height, var(--runtime-modal-max-height)), 42rem)',
             }}
             headerClassName={isCompactHomeV2Layout ? '!px-[18px] !pb-[8px] !pt-[13px]' : 'px-7 pb-3 pt-6'}
             titleClassName={isCompactHomeV2Layout ? '!text-[11.8px] !leading-[1.08] tracking-[0.075em]' : undefined}
@@ -1244,7 +1244,7 @@ export const AuthModal = ({
                 paddingTop: 'max(1rem, var(--safe-area-top))',
                 paddingRight: 'max(1rem, var(--safe-area-right))',
                 paddingBottom: isHomeV2Style
-                    ? 'max(1rem, var(--safe-area-bottom, 0px))'
+                    ? 'max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset)))'
                     : 'max(1rem, var(--runtime-modal-bottom-inset))',
                 paddingLeft: 'max(1rem, var(--safe-area-left))',
             }}

@@ -1055,7 +1055,9 @@ export function processDestroyTriggers(
         const triggerMinionPower = minion ? getEffectivePower(currentCore, minion, fromBaseIndex) : undefined;
         // ✅ 优先从 state 读取 owner（兜底修复：即使事件中的 ownerId 错了也能修复）
         const ownerId = minion?.owner ?? eventOwnerId;
-        const destroyerId = eventDestroyerId ?? playerId ?? minion?.controller ?? ownerId;
+        // "you destroyed" 类触发只能信任事件显式声明的 destroyerId。
+        // 不能把当前回合玩家/目标控制者兜底成消灭者，否则会把中性或缺失归因的消灭误判为玩家造成。
+        const destroyerId = eventDestroyerId;
 
         // === Phase 1: 先检查防止消灭触发器（基地能力 + ongoing） ===
         // 在触发 onDestroy 之前，先确认消灭是否会被防止

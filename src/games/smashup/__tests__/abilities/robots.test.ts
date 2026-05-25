@@ -589,6 +589,7 @@ describe('robot_nukebot（核弹机器人 onDestroy）', () => {
             e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.reason === 'robot_nukebot'
         );
         expect(chainDestroys.length).toBe(3);
+        expect(chainDestroys.every(event => (event as any).payload.destroyerId === '1')).toBe(true);
     });
 
     it('同基地只有自己人的随从时不产生额外消灭', () => {

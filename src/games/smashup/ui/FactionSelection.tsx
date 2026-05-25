@@ -302,6 +302,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     };
 
     const useDesktopLikeLandscapeLayout = isMobileLandscape;
+    const useCompactDetailSidebarHeight = viewportSize.width < 768;
+    const detailSidebarMaxHeight = 'calc(var(--runtime-viewport-height, 100vh) * 0.42)';
     const useMinimalPlayerRail = !useDesktopLikeLandscapeLayout
         && playerOrder.length <= 2
         && viewportSize.width < 1180
@@ -328,6 +330,13 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         : useCompactPlayerRail
             ? 'relative mb-1 w-full max-w-[116px] lg:max-w-[140px] aspect-[0.727] xl:max-w-[152px]'
             : 'relative mb-2.5 w-full max-w-[148px] lg:max-w-[192px] aspect-[0.727] xl:max-w-[208px]';
+    const selectionCardFrameStyle: React.CSSProperties | undefined = useDesktopLikeLandscapeLayout
+        ? {
+            width: isUltraCompactLandscape ? 136 : 160,
+            height: (isUltraCompactLandscape ? 136 : 160) / 0.727,
+            aspectRatio: '0.727 / 1',
+        }
+        : undefined;
     const selectionCardSurfaceClassName = useDesktopLikeLandscapeLayout
         ? 'absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] transition-all bg-white p-[3px]'
         : 'absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] lg:border-[5px] transition-all bg-white p-[3px] lg:p-[4px]';
@@ -445,7 +454,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                     ${isTakenByOther ? 'opacity-40 grayscale pointer-events-none' : 'z-10'}
                 `}
             >
-                <div className={selectionCardFrameClassName}>
+                <div className={selectionCardFrameClassName} style={selectionCardFrameStyle}>
                     <div className={`
                         ${selectionCardSurfaceClassName}
                         ${isSelectedByMe
@@ -855,7 +864,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                             <X size={24} />
                                         </button>
 
-                                        <div className="w-full md:w-1/3 max-h-[42dvh] md:max-h-none min-h-0 shrink-0 bg-white/80 p-4 sm:p-5 md:p-4 lg:p-8 flex flex-col border-b-2 md:border-b-0 md:border-r-2 border-dashed border-slate-300 relative overflow-y-auto">
+                                        <div
+                                            className="w-full md:w-1/3 min-h-0 shrink-0 bg-white/80 p-4 sm:p-5 md:p-4 lg:p-8 flex flex-col border-b-2 md:border-b-0 md:border-r-2 border-dashed border-slate-300 relative overflow-y-auto"
+                                            style={useCompactDetailSidebarHeight ? { maxHeight: detailSidebarMaxHeight } : undefined}
+                                        >
                                             <div
                                                 className="absolute top-0 right-0 w-full h-full opacity-5 pointer-events-none blur-3xl saturate-200"
                                                 style={{

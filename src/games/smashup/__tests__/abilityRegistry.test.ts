@@ -163,7 +163,7 @@ describe('能力注册表', () => {
             );
         });
 
-        it('显式追加外部行动能力时缺声明直接报错', () => {
+        it('显式追加外部标准行动能力时缺声明直接报错', () => {
             const state = makeMatchState(makeState());
             expect(() => appendResolvedActionAbility({
                 state,
@@ -179,6 +179,50 @@ describe('能力注册表', () => {
                 timestamp: 100,
                 baseIndex: 0,
             })).toThrowError(/SmashUp ability 缺少声明: missing_action_def::onPlay \(externalActionPlay\.appendResolvedActionAbility\)/);
+        });
+
+        it('显式追加外部持续行动能力时，若没有 onPlay 则按 no-op 处理', () => {
+            const state = makeMatchState(makeState());
+            const events = [{
+                type: SU_EVENTS.ACTION_PLAYED,
+                payload: { playerId: '0', cardUid: 'rotary-1', defId: 'steampunk_rotary_slug_thrower' },
+                timestamp: 100,
+            }, {
+                type: SU_EVENTS.ONGOING_ATTACHED,
+                payload: {
+                    cardUid: 'rotary-1',
+                    defId: 'steampunk_rotary_slug_thrower',
+                    ownerId: '0',
+                    targetType: 'base',
+                    targetBaseIndex: 0,
+                },
+                timestamp: 100,
+            }] as any[];
+
+            expect(() => appendResolvedActionAbility({
+                state,
+                events,
+                playerId: '0',
+                cardUid: 'rotary-1',
+                defId: 'steampunk_rotary_slug_thrower',
+                random: { random: () => 0.5, d: () => 1, range: (min: number) => min, shuffle: <T>(items: T[]) => [...items] },
+                timestamp: 100,
+                baseIndex: 0,
+            })).not.toThrow();
+
+            const result = appendResolvedActionAbility({
+                state,
+                events,
+                playerId: '0',
+                cardUid: 'rotary-1',
+                defId: 'steampunk_rotary_slug_thrower',
+                random: { random: () => 0.5, d: () => 1, range: (min: number) => min, shuffle: <T>(items: T[]) => [...items] },
+                timestamp: 100,
+                baseIndex: 0,
+            });
+
+            expect(result.state).toBe(state);
+            expect(result.events).toHaveLength(2);
         });
     });
 

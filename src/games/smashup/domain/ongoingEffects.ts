@@ -418,11 +418,14 @@ function buildTriggerId(
     now: number,
     order: number,
     located: TriggerSourceLocation,
+    sourceEventId?: string,
 ): string {
+    const sourceKey = sourceEventId ?? `${timing}:${now}`;
     if (entry.perInstance) {
-        return `${timing}:${entry.sourceDefId}:${now}:${order}`;
+        const instanceKey = located.titanUid ?? located.uid ?? 'global';
+        return `${timing}:${entry.sourceDefId}:${sourceKey}:${instanceKey}:${order}`;
     }
-    return `${timing}:${entry.sourceDefId}:${now}:${order}`;
+    return `${timing}:${entry.sourceDefId}:${sourceKey}:${order}`;
 }
 
 function createTriggerInstance(
@@ -442,7 +445,7 @@ function createTriggerInstance(
         ? Array.from(new Set((state.bases[ctx.baseIndex]?.minions ?? []).map((minion) => minion.controller)))
         : undefined;
     return {
-        id: buildTriggerId(entry, timing, now, order, located),
+        id: buildTriggerId(entry, timing, now, order, located, sourceEventId),
         timing,
         sourceDefId: entry.sourceDefId,
         sourceCardUid: located.uid,

@@ -615,7 +615,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
         <div className="relative h-full min-h-0 overflow-hidden bg-[#0b0906] text-[#ead8ad]" data-testid="qidahen-board">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_38%,rgba(174,112,51,0.20),transparent_34%),linear-gradient(180deg,rgba(10,8,5,0.58),rgba(10,8,5,0.18)_28%,rgba(10,8,5,0.72))]" />
 
-            <div className="relative z-10 grid h-full min-h-0 grid-cols-[234px_minmax(0,1fr)_276px] grid-rows-[38px_minmax(0,1fr)_172px] gap-1.5 p-1.5 max-[1100px]:grid-cols-[minmax(0,1fr)] max-[1100px]:grid-rows-[34px_minmax(0,1fr)_164px]">
+            <div className="relative z-10 grid h-full min-h-0 grid-cols-[234px_minmax(0,1fr)_276px] grid-rows-[38px_minmax(0,1fr)_172px] gap-1.5 p-1.5 max-[1100px]:grid-cols-[minmax(0,1fr)] max-[1100px]:grid-rows-[34px_minmax(0,1fr)_176px]">
                 <div className="col-span-3 flex items-center justify-between border border-[#6d5433]/70 bg-[#0e0c08]/92 px-3 text-[13px] text-[#d9c59a] max-[1100px]:col-span-1">
                     <div className="flex min-w-0 items-center gap-4">
                         <span>对局：七大恨</span>
@@ -748,7 +748,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
                 </aside>
 
                 <section className="col-span-2 min-h-0 border border-[#6d5433]/70 bg-[#110e09]/94 max-[1100px]:col-span-1">
-                    <div className="grid h-full grid-cols-[160px_minmax(0,1fr)_330px] gap-2 p-2 max-[1100px]:grid-cols-[minmax(0,1fr)_280px] max-[760px]:grid-cols-[minmax(0,1fr)]">
+                    <div className="grid h-full grid-cols-[160px_minmax(0,1fr)_330px] gap-2 p-2 max-[1100px]:grid-cols-[minmax(0,1fr)_280px] max-[1100px]:gap-1.5 max-[1100px]:p-1.5 max-[760px]:grid-cols-[minmax(0,1fr)]">
                         <div className="grid place-items-center border border-[#3f3122] bg-[#17120d] text-2xl font-black tracking-[0.28em] text-[#b99458] max-[1100px]:hidden">手牌</div>
                         <div className="min-w-0 overflow-x-auto">
                             <div className="flex h-full min-w-max items-center gap-2">
@@ -768,21 +768,21 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="border border-[#3f3122] bg-[#17120d] p-3 max-[760px]:hidden">
-                            <div className="mb-2 hidden border-b border-[#3b2d1d] pb-2 max-[1100px]:block">
-                                <div className="mb-1 text-[11px] font-bold tracking-[0.14em] text-[#f0c989]">行动记录</div>
+                        <div className="border border-[#3f3122] bg-[#17120d] p-3 max-[1100px]:p-2 max-[760px]:hidden">
+                            <div className="mb-2 hidden border-b border-[#3b2d1d] pb-2 max-[1100px]:mb-1 max-[1100px]:pb-1 min-[1101px]:hidden">
+                                <div className="mb-1 text-[11px] font-bold tracking-[0.14em] text-[#f0c989] max-[1100px]:mb-0.5 max-[1100px]:text-[10px]">行动记录</div>
                                 {core.actionLog.slice(0, 2).map((entry) => (
-                                    <div key={entry.id} className="truncate text-[11px] leading-4 text-[#cdb78b]">
+                                    <div key={entry.id} className="truncate text-[11px] leading-4 text-[#cdb78b] max-[1100px]:text-[10px] max-[1100px]:leading-3.5">
                                         <span className={`${factionText[entry.faction]} font-bold`}>{factionName[entry.faction]}</span>
                                         <span className="ml-1">{entry.text.replace(factionName[entry.faction], '')}</span>
                                     </div>
                                 ))}
                             </div>
-                            <div className="text-xs text-[#c9aa78]">已触行动：调兵遣将</div>
-                            <div className="mt-2 text-sm text-[#f0d59a]">消耗行动点：◆ ◆</div>
-                            <div className="mt-4 flex gap-2">
-                                <button type="button" className="flex-1 border border-[#ad4938] bg-[#7a2f25] px-4 py-3 text-lg font-black text-[#ffe1ae]" onClick={confirmPreviewAction}>确认</button>
-                                <button type="button" className="flex-1 border border-[#5d4a31] bg-[#20180f] px-4 py-3 text-lg font-black text-[#d4bd8b]">取消</button>
+                            <div className="text-xs text-[#c9aa78] max-[1100px]:text-[10px]">已触行动：调兵遣将</div>
+                            <div className="mt-2 text-sm text-[#f0d59a] max-[1100px]:mt-1 max-[1100px]:text-[12px]">消耗行动点：◆ ◆</div>
+                            <div className="mt-4 flex gap-2 max-[1100px]:mt-2 max-[1100px]:gap-1.5">
+                                <button type="button" className="flex-1 border border-[#ad4938] bg-[#7a2f25] px-4 py-3 text-lg font-black text-[#ffe1ae] max-[1100px]:px-3 max-[1100px]:py-2 max-[1100px]:text-base" onClick={confirmPreviewAction}>确认</button>
+                                <button type="button" className="flex-1 border border-[#5d4a31] bg-[#20180f] px-4 py-3 text-lg font-black text-[#d4bd8b] max-[1100px]:px-3 max-[1100px]:py-2 max-[1100px]:text-base">取消</button>
                             </div>
                         </div>
                     </div>

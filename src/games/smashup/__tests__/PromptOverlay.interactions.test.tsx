@@ -200,6 +200,34 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         expect(onSelect).toHaveBeenCalledWith('prompt-option-copy');
     });
 
+    it('基地卡展示模式下点击中间选项时，应提交对应的 optionId', () => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'mechanic-base-choice',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择目标基地',
+                sourceId: 'steampunk_mechanic_target',
+                targetType: 'base',
+                options: [
+                    { id: 'base-0', label: '基地一', value: { baseIndex: 0, baseDefId: 'base_0' }, displayMode: 'card' },
+                    { id: 'base-1', label: '基地二', value: { baseIndex: 1, baseDefId: 'base_mushroom_kingdom' }, displayMode: 'card' },
+                    { id: 'base-2', label: '基地三', value: { baseIndex: 2, baseDefId: 'base_2' }, displayMode: 'card' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+
+        fireEvent.click(screen.getByTestId('prompt-card-1'));
+
+        expect(dispatch).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', {
+            interactionId: interaction.id,
+            optionId: 'base-1',
+        });
+    });
+
     it('非 owner 只有拿到可见 current prompt 时才会出现中央 waiting_for_player 文案', () => {
         const dispatch = vi.fn();
         const visiblePrompt: InteractionDescriptor<SimpleChoiceData> = {

@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../../engine/types';
+import { refreshInteractionOptions } from '../../../../engine/systems/InteractionSystem';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
@@ -1258,6 +1259,29 @@ describe('克苏鲁之仆普通行为', () => {
             expect(result.success, result.error).toBe(true);
             expect(result.events.filter((event: any) => event.type === SU_EVENTS.DECK_REORDERED)).toHaveLength(0);
             expect(result.finalState.core.players['0'].deck.some((card: any) => card.uid === 'd1')).toBe(true);
+        });
+
+        it('live 刷新后不应把正在结算的自己加入可选项', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('a1', 'cthulhu_it_begins_again', 'action', '0')],
+                        deck: [makeCard('d1', 'test', 'minion', '0')],
+                        discard: [makeCard('dis1', 'test_action', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+            });
+
+            const { matchState } = execPlayAction(state, '0', 'a1');
+            const refreshedState = refreshInteractionOptions(matchState);
+            const prompt = getFirstPrompt(refreshedState);
+            const optionCardUids = getPromptOptions(prompt)
+                .map((option: any) => option.value?.cardUid)
+                .filter((value: unknown): value is string => typeof value === 'string');
+
+            expect(optionCardUids).toContain('dis1');
+            expect(optionCardUids).not.toContain('a1');
         });
     });
 

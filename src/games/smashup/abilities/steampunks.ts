@@ -983,18 +983,11 @@ export function registerSteampunkAbilities(): void {
     registerAbilityProgram('steampunk_captain_ahab', 'talent', {
         program: steampunkCaptainAhabProgram,
         validateUse: (ctx) => {
-            let currentBaseIndex = -1;
-            for (let i = 0; i < ctx.state.bases.length; i++) {
-                if (ctx.state.bases[i].minions.some(m => m.uid === ctx.cardUid)) {
-                    currentBaseIndex = i;
-                    break;
-                }
-            }
+            const currentBaseIndex = findMinionBaseIndexByUid(ctx.state, ctx.cardUid);
             if (currentBaseIndex === -1) return '当前没有可选择的目标';
-            const hasCandidateBase = ctx.state.bases.some((base, index) =>
-                index !== currentBaseIndex && base.ongoingActions.some(action => action.ownerId === ctx.playerId),
-            );
-            return hasCandidateBase ? null : '当前没有可选择的目标';
+            return buildCaptainAhabBaseOptions(ctx.state, ctx.playerId, currentBaseIndex).length > 0
+                ? null
+                : '当前没有可选择的目标';
         },
     });
 

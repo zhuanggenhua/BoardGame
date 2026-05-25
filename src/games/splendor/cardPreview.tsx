@@ -1,7 +1,7 @@
 import React from 'react';
 import { CardPreview, registerCardPreviewRenderer, type CardPreviewRenderer } from '../../components/common/media/CardPreview';
 import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
-import { buildLocalizedImageSet, type CardPreviewRef } from '../../core';
+import type { CardPreviewRef } from '../../core';
 import { CARD_DEFS_BY_ID } from './domain/rules';
 import {
     getDevelopmentCardAtlasImagePath,
@@ -9,6 +9,7 @@ import {
     getNobleAtlasImagePath,
     getNobleSpriteStyle,
 } from './sprites';
+import { SpriteSurface } from './ui/SpriteSurface';
 
 const SPLENDOR_PREVIEW_RENDERER_ID = 'splendor-card-renderer';
 
@@ -44,16 +45,26 @@ const SplendorPreviewRenderer: CardPreviewRenderer = ({ previewRef, locale, clas
 
     if (!previewMeta?.spriteStyle) return null;
 
+    const fallbackSizing = style?.height
+        ? {}
+        : {
+            height: 0,
+            paddingTop: `${100 / Number(previewMeta.aspectRatio)}%`,
+        };
+
     return (
-        <div
+        <SpriteSurface
+            imagePath={previewMeta.imagePath}
+            locale={effectiveLocale}
+            aspectRatio={Number(previewMeta.aspectRatio)}
+            spriteStyle={previewMeta.spriteStyle}
             className={className}
             style={{
                 ...style,
-                aspectRatio: previewMeta.aspectRatio,
+                ...fallbackSizing,
                 width: '100%',
-                backgroundImage: buildLocalizedImageSet(previewMeta.imagePath, effectiveLocale),
-                ...previewMeta.spriteStyle,
             }}
+            kind={payload.kind}
         />
     );
 };

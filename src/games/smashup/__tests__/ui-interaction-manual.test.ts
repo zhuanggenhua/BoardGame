@@ -48,10 +48,12 @@ vi.mock('../../../components/common/media/CardPreview', async (importOriginal) =
     const actual = await importOriginal<typeof import('../../../components/common/media/CardPreview')>();
     return {
         ...actual,
-        CardPreview: ({ previewRef }: { previewRef?: unknown }) => (
+        CardPreview: ({ previewRef, className, style }: { previewRef?: unknown; className?: string; style?: React.CSSProperties }) => (
             React.createElement('div', {
                 'data-testid': 'mock-card-preview',
                 'data-preview-ref': JSON.stringify(previewRef ?? null),
+                className,
+                style,
             })
         ),
     };
@@ -348,6 +350,20 @@ describe('SmashUp UI 交互验证', () => {
         });
     });
 
+    it('放大查看卡框应有显式高度，兼容不支持 aspect-ratio 的旧 WebView', () => {
+        render(
+            React.createElement(CardMagnifyOverlay, {
+                target: { defId: 'zombie_lord_pod', type: 'minion' },
+                onClose: vi.fn(),
+            }),
+        );
+
+        const frame = screen.getByTestId('su-card-magnify-content');
+        expect(frame.style.width).toBe('25vw');
+        expect(frame.style.height).toContain('vw');
+        expect(frame.style.maxHeight).toContain('px');
+    });
+
     it('普通卡面中的英文卡图仍保持 hover 才显示中文覆盖层', () => {
         render(
             React.createElement(SmashUpCardRenderer, {
@@ -398,6 +414,8 @@ describe('SmashUp UI 交互验证', () => {
             rendererId: 'smashup-card-renderer',
             payload: { defId: 'zombie_lord_pod' },
         });
+        expect(preview.style.width).toBe('8.5vw');
+        expect(preview.style.height).toContain('vw');
     });
 
     it('PromptOverlay 的排序卡牌选项只要带 defId，就应显示对应卡面而不是占位块', async () => {

@@ -176,6 +176,20 @@
 - **新结论**：截至本轮静态 + 行为证据复核，未发现新的 P0/P1 blocker；但本轮未新增浏览器 E2E 截图，因此不能把本轮结论升级为“全量 L3 E2E 收口”。
 - **当前等级**：shayu 三派系可表述为“全量入口矩阵 P0/P1 已审 + 代表性 L2/L3 已验证 + 仍保留非逐对象 L3 残余范围”。
 
+## 2026-05-23 +08 destroyerId 共享合同补审回写
+
+- **旧结论失效项**：
+  1. `sharks_mako` 旧条目“已注册 `perInstance + triggerBase`；未单独 E2E”不足以证明规则正确，因为问题不在卡牌注册，而在共享 destroyer 归因消费。
+  2. `base_shark_reef` 旧条目“已修正用 `destroyerId`，不是被消灭者 owner”只证明了正向归属，未覆盖 destroyerId 缺失时的否定链。
+- **真实根因**：`src/games/smashup/domain/reducer.ts` 旧逻辑会把缺失 `destroyerId` 的 `MINION_DESTROYED` 事件兜底成当前操作者/目标控制者，误触发 `you destroyed` 类能力。
+- **本次补审范围**：仅 shayu 批次中真正依赖 `destroyerId` 的对象：`sharks_mako`、`base_shark_reef`。
+- **新增证据**：
+  - `src/games/smashup/__tests__/abilities/sharks.test.ts`
+    - `灰鲭鲨不会把缺少 destroyerId 的消灭事件默认算成当前玩家消灭`
+    - `鲨鱼领地不会把缺少 destroyerId 的消灭事件默认算成当前玩家触发`
+  - 专项 evidence：`evidence/smashup/smashup-shayu-destroyerid-contract-reaudit-2026-05-23.md`
+- **更新后口径**：shayu 新派系 destroy trigger 家族必须以后续 destroyerId 专项文档为准，旧本文条目不再单独支撑“destroyer 共享合同已收口”。
+
 ## 2026-05-12 再次抽样调查回写
 
 - 新增证据：`evidence/smashup/smashup-shayu-strict-sample-audit-2026-05-12.md`。

@@ -62,5 +62,8 @@ describe('SmashUp HandArea discard layout', () => {
         expect(getCardMargins(discardView.container)).toEqual(getCardMargins(normalView.container));
         expect(getCardMargins(discardView.container).some((margin) => margin < 0)).toBe(true);
         expect(Math.min(...getCardMargins(discardView.container))).toBeGreaterThanOrEqual(-3.4);
+        const firstCard = discardView.container.querySelector<HTMLElement>('[data-card-uid]');
+        expect(firstCard?.style.width).toBeTruthy();
+        expect(firstCard?.style.height).toBeTruthy();
     });
 });

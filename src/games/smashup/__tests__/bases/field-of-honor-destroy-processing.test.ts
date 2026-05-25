@@ -115,7 +115,7 @@ describe('base_the_field_of_honor: 消灭事件管线', () => {
         expect(resolved.finalState.core.players['1'].vp).toBe(0);
     });
 
-    it('destroyerId 缺失时，VP 仍应判给当前操作者控制的随从一侧', () => {
+    it('destroyerId 缺失时，不应把 VP 默认判给当前操作者一侧', () => {
         const victim = makeMinion('victim', '1', 3, 'victim_minion');
         victim.owner = '0';
         const core = makeState({
@@ -165,8 +165,6 @@ describe('base_the_field_of_honor: 消灭事件管线', () => {
         });
 
         const vpEvents = result.events.filter(event => event.type === SU_EVENTS.VP_AWARDED);
-        expect(vpEvents).toHaveLength(1);
-        expect((vpEvents[0] as any).payload.playerId).toBe('1');
-        expect((vpEvents[0] as any).payload.amount).toBe(1);
+        expect(vpEvents).toHaveLength(0);
     });
 });

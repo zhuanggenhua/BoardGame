@@ -61,5 +61,6 @@ describe('DiscardPile', () => {
 
         expect(html).toContain(`z-index:${UI_Z_INDEX.modalOverlay}`);
         expect(html).toContain(`z-index:${UI_Z_INDEX.modalContent}`);
+        expect(html).toContain('padding-top:150%');
     });
 });

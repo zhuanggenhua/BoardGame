@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { NOTIFICATION_API_URL } from '../../config/server';
 import { useTranslation } from 'react-i18next';
-import { Bell } from 'lucide-react';
+import { Bell, Pin } from 'lucide-react';
 
 interface SystemNotification {
     _id: string;
     title: string;
     content: string;
     createdAt: string;
+    pinned?: boolean;
 }
 
 export const SystemNotificationView = () => {
-    const { t } = useTranslation('social');
+    const { t } = useTranslation(['social', 'common']);
     const [notifications, setNotifications] = useState<SystemNotification[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -44,8 +45,35 @@ export const SystemNotificationView = () => {
                 ) : (
                     <div className="p-3 space-y-3">
                         {notifications.map(n => (
-                            <div key={n._id} className="bg-white border border-parchment-card-border/20 rounded-lg p-4 shadow-sm">
-                                <h4 className="font-bold text-sm text-parchment-base-text">{n.title}</h4>
+                            <div
+                                key={n._id}
+                                data-testid={`system-notification-card-${n._id}`}
+                                data-pinned={n.pinned ? 'true' : 'false'}
+                                className={[
+                                    'relative overflow-hidden rounded-lg border p-4 shadow-sm transition-colors',
+                                    n.pinned
+                                        ? 'border-amber-300/70 bg-[linear-gradient(180deg,rgba(255,251,235,0.98)_0%,rgba(255,247,220,0.95)_100%)] shadow-[0_10px_24px_rgba(180,120,30,0.12)]'
+                                        : 'border-parchment-card-border/20 bg-white',
+                                ].join(' ')}
+                            >
+                                {n.pinned && (
+                                    <div
+                                        aria-hidden="true"
+                                        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,rgba(245,158,11,0)_0%,rgba(245,158,11,0.9)_18%,rgba(217,119,6,0.95)_82%,rgba(217,119,6,0)_100%)]"
+                                    />
+                                )}
+                                <div className="flex items-start gap-2">
+                                    <h4 className="flex-1 font-bold text-sm text-parchment-base-text">{n.title}</h4>
+                                    {n.pinned && (
+                                        <span
+                                            data-testid={`system-notification-pinned-badge-${n._id}`}
+                                            className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+                                        >
+                                            <Pin size={11} />
+                                            {t('notification.pinnedBadge')}
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-xs text-parchment-light-text mt-1.5 whitespace-pre-wrap">{n.content}</p>
                                 <p className="text-[10px] text-parchment-light-text/50 mt-2">
                                     {new Date(n.createdAt).toLocaleString('zh-CN')}

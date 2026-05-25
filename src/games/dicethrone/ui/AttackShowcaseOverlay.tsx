@@ -36,6 +36,14 @@ interface AttackShowcaseOverlayProps {
     onDismiss: () => void;
 }
 
+function buildCardFrameStyle(width: string, aspectRatio: number): React.CSSProperties {
+    return {
+        width,
+        height: `calc(${width} / ${aspectRatio})`,
+        aspectRatio: `${aspectRatio} / 1`,
+    };
+}
+
 /**
  * 根据槽位百分比和面板宽高比，计算槽位的实际宽高比
  */
@@ -103,10 +111,10 @@ export const AttackShowcaseOverlay: React.FC<AttackShowcaseOverlayProps> = ({
 
     // 升级卡用卡牌比例 0.61；基础技能用槽位实际比例
     const containerStyle: React.CSSProperties = hasUpgradeCard
-        ? { width: '20vw', aspectRatio: '0.61' }
+        ? buildCardFrameStyle('20vw', 0.61)
         : isUltimate
-            ? { width: '28vw', aspectRatio: String(slotAspect) }
-            : { width: '16vw', aspectRatio: String(slotAspect) };
+            ? buildCardFrameStyle('28vw', slotAspect)
+            : buildCardFrameStyle('16vw', slotAspect);
     const title = mode === 'offensive-preview'
         ? t('attackShowcase.previewTitle')
         : t('attackShowcase.title');

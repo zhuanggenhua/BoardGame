@@ -159,7 +159,7 @@ export const PerfBar: React.FC<{ stats: PerfStats }> = ({ stats }) => {
   const maxColor = stats.maxFrameTime > 33 ? 'text-red-400' : stats.maxFrameTime > 20 ? 'text-yellow-400' : 'text-slate-400';
   const showSecondLine = stats.avgFrameTime > 0 || stats.maxFrameTime > 0;
   return (
-    <div className="flex flex-col gap-0.5 text-xs font-mono shrink-0" style={{ fontVariantNumeric: 'tabular-nums' }}>
+    <div data-testid="effect-card-perf-bar" className="flex flex-col gap-0.5 text-xs font-mono shrink-0" style={{ fontVariantNumeric: 'tabular-nums' }}>
       {/* 第一行：FPS + 当前帧时间 + 运行指示 */}
       <div className="flex gap-2.5 items-center whitespace-nowrap">
         <span className={fpsColor}>
@@ -213,12 +213,22 @@ export const EffectCard: React.FC<{
   return (
     <div className={clsx("flex flex-col h-full overflow-visible", className)}>
       {/* 工具栏：图标 + 标题 + 按钮 + 性能指标 */}
-      <div className="shrink-0 px-3 py-2 border-b border-slate-700/40">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div data-testid="effect-card-toolbar" className="shrink-0 px-3 py-2 border-b border-slate-700/40">
+        <div className="flex flex-wrap items-start gap-x-2 gap-y-1 sm:items-center">
           <Icon size={18} className={clsx("shrink-0", iconColor)} />
-          <span className="text-sm font-bold text-slate-100 whitespace-nowrap">{title}</span>
-          {desc && <span className="text-[11px] text-slate-500 truncate" title={desc}>{desc}</span>}
-          {stats && <div className="ml-auto"><PerfBar stats={stats} /></div>}
+          <div data-testid="effect-card-title-block" className="min-w-0 flex-1">
+            <div className="min-w-0 text-sm font-bold leading-tight text-slate-100 break-words sm:whitespace-nowrap">{title}</div>
+            {desc ? (
+              <div className="mt-0.5 text-[11px] leading-tight text-slate-500 break-words sm:truncate" title={desc}>
+                {desc}
+              </div>
+            ) : null}
+          </div>
+          {stats ? (
+            <div className="w-full sm:ml-auto sm:w-auto flex justify-end">
+              <PerfBar stats={stats} />
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2">{buttons}</div>
       </div>

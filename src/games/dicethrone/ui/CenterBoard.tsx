@@ -190,7 +190,10 @@ export const CenterBoard = ({
                     </button>
                     <div className={`relative h-full transition-[width,opacity,transform] duration-500 overflow-hidden rounded-[0.8vw] ${isTipOpen ? 'w-auto opacity-100 scale-100' : 'w-0 opacity-0 scale-95'}`}>
                         <div
-                            className={`relative h-full w-auto aspect-[1311/2048] group ${isLayoutEditing ? '' : 'cursor-zoom-in'}`}
+                            className={`relative h-full group ${isLayoutEditing ? '' : 'cursor-zoom-in'}`}
+                            style={{
+                                width: `calc(${tipBoardHeightVw}vw * ${1311 / 2048})`,
+                            }}
                             data-testid="tip-board-surface"
                             onClick={(event) => handleMagnifySurfaceClick(event, tipBoardPath)}
                         >

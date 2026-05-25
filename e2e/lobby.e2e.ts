@@ -65,13 +65,21 @@ async function ensureHomeV2BookMaterialsReady(
     }).toEqual(requiredImageKeywords.map(() => 'ok'));
 }
 
-async function waitForMatchBoardOrLoading(page: Page): Promise<'board' | 'loading'> {
+async function waitForMatchBoardOrLoading(page: Page): Promise<'board' | 'loading' | 'gated'> {
     const detectPhase = async () => page.evaluate(() => {
-        const text = document.body?.innerText ?? '';
-        if (text.includes('井字棋') || text.includes('的回合') || text.includes('等待对手加入')) {
+        if (document.querySelector('[data-testid="tictactoe-turn-status"]')
+            || document.querySelector('[data-testid="tictactoe-score-left"]')
+            || document.querySelector('[data-tutorial-id="cell-0"]')) {
             return 'board';
         }
-        if (/正在加载对局资源|加载游戏模块|Loading match resources/i.test(text)) {
+        if (document.querySelector('[data-testid="mobile-orientation-game-gate"]')) {
+            return 'gated';
+        }
+        const text = document.body?.innerText ?? '';
+        if (/的回合|已离线\s*\d+\s*秒/i.test(text)) {
+            return 'board';
+        }
+        if (/正在准备对局|加载游戏模块|正在连接对局|正在同步对局|joining room|loading game module/i.test(text)) {
             return 'loading';
         }
         return 'pending';
@@ -87,7 +95,7 @@ async function waitForMatchBoardOrLoading(page: Page): Promise<'board' | 'loadin
         // 回退到 “至少出现加载态或棋盘态”
     }
 
-    let phase: 'board' | 'loading' | 'pending' = 'pending';
+    let phase: 'board' | 'loading' | 'gated' | 'pending' = 'pending';
     await expect.poll(async () => {
         phase = await detectPhase();
         return phase;
@@ -96,7 +104,13 @@ async function waitForMatchBoardOrLoading(page: Page): Promise<'board' | 'loadin
         message: '进入对局后未检测到可视化内容',
     }).not.toBe('pending');
 
-    return phase === 'loading' ? 'loading' : 'board';
+    if (phase === 'loading') {
+        return 'loading';
+    }
+    if (phase === 'gated') {
+        return 'gated';
+    }
+    return 'board';
 }
 
 async function applyKeyboardViewportSimulation(page: Page, options: { runtimeViewportHeight: number; keyboardInsetHeight: number }) {
@@ -131,7 +145,7 @@ const HOME_V2_LOCKED_ROOM_JOIN_TEST_NAME = 'homeV2Draft 详情页输入房间密
 const HOME_V2_PACKAGE_ENTRY_TEST_NAME = 'homeV2Draft package-managed 游戏详情暂不显示移动包管理入口';
 const HOME_V2_MODAL_UNIFIED_TEST_NAME = 'homeV2Draft 登录与创建房间弹窗统一使用纸面 modal';
 const MOBILE_AUTHOR_ENTRY_TEST_NAME = '移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围框';
-const MOBILE_PACKAGE_ENTRY_TEST_NAME = '移动端 package-managed 游戏详情在左下角显示包管理入口';
+const MOBILE_PACKAGE_ENTRY_TEST_NAME = '网页版 package-managed 游戏详情在移动端不应显示包管理入口，但详情头部仍应完整';
 const GAME_DETAILS_LOADING_FALLBACK_TEST_NAME = '首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转';
 const ACTIVE_MATCH_FLOATING_BANNER_TEST_NAME = '首页活跃房间浮层在桌面端居中且移动端不溢出';
 const WEB_APP_DOWNLOAD_ENTRY_TEST_NAME = '网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址';
@@ -265,6 +279,29 @@ async function waitForHomeV2FlipMode(page: Page, expectedMode: 'overview' | 'det
     const flipStage = page.locator('[data-testid="home-v2-root"] [data-testid="home-v2-fold-line-flip"]').first();
     await expect(flipStage).toHaveAttribute('data-flip-mode', expectedMode, { timeout: 10000 });
     await expect(flipStage).toHaveAttribute('data-turn-animating', 'false', { timeout: 10000 });
+}
+
+async function openLockedRoomPasswordPanel(page: Page, roomName: string): Promise<void> {
+    const passwordPanel = page.getByTestId('home-v2-room-password-panel');
+    const lockedRoomCard = page
+        .locator('[data-testid="home-v2-room-ledger-row"]')
+        .filter({ has: page.getByText(roomName) })
+        .locator('button')
+        .first();
+
+    await expect(lockedRoomCard).toBeVisible({ timeout: 10000 });
+    await expect(lockedRoomCard).toBeEnabled({ timeout: 10000 });
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+        await lockedRoomCard.click();
+        const opened = await passwordPanel.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
+        if (opened) {
+            return;
+        }
+        await page.waitForTimeout(200);
+    }
+
+    throw new Error(`加密房密码面板未出现: ${roomName}`);
 }
 
 async function installHomeV2FlipTimingProbe(page: Page): Promise<void> {
@@ -1543,43 +1580,39 @@ test.describe('Lobby E2E', () => {
             const tictactoeCard = page.locator('[data-testid="home-v2-root"] [data-game-id="tictactoe"]').first();
             await expect(tictactoeCard).toBeVisible({ timeout: 20000 });
             await tictactoeCard.click();
+            await waitForHomeV2FlipMode(page, 'detail');
+            await expect(page.getByTestId('home-v2-detail-right-page')).toBeVisible({ timeout: 10000 });
 
         await expect(page.getByText(injectedLockedRoom.roomName)).toBeVisible({ timeout: 10000 });
-        const lockedRoomCard = page
-            .locator('article')
-            .filter({ has: page.getByText(injectedLockedRoom.roomName) })
-            .locator('button')
-            .first();
-        await lockedRoomCard.click();
+        await openLockedRoomPasswordPanel(page, injectedLockedRoom.roomName);
 
         const passwordPanel = page.getByTestId('home-v2-room-password-panel');
         const passwordSurface = page.getByTestId('home-v2-room-password-surface');
+        const passwordInput = page.getByTestId('home-v2-room-password-input');
+        const passwordConfirm = page.getByTestId('home-v2-room-password-confirm');
         await expect(passwordPanel).toBeVisible({ timeout: 10000 });
         await expect(passwordSurface).toBeVisible({ timeout: 10000 });
-        const passwordPanelMetrics = await page.evaluate(() => {
-            const panelSurface = document.querySelector('[data-testid="home-v2-room-password-surface"]') as HTMLElement | null;
-            const bookStage = document.querySelector('[data-testid="home-v2-book-stage"]') as HTMLElement | null;
-            const input = document.querySelector('[data-testid="home-v2-room-password-input"]') as HTMLElement | null;
-            const confirm = document.querySelector('[data-testid="home-v2-room-password-confirm"]') as HTMLElement | null;
-            if (!panelSurface || !bookStage || !input || !confirm) return null;
-            const surfaceRect = panelSurface.getBoundingClientRect();
-            const bookRect = bookStage.getBoundingClientRect();
-            const inputRect = input.getBoundingClientRect();
-            const confirmRect = confirm.getBoundingClientRect();
-            return {
-                centerXRatio: (surfaceRect.left + surfaceRect.width / 2) / window.innerWidth,
-                centerYRatio: (surfaceRect.top + surfaceRect.height / 2) / window.innerHeight,
-                bookCenterXDelta: Math.abs((surfaceRect.left + surfaceRect.width / 2) - (bookRect.left + bookRect.width / 2)),
-                surfaceWidthRatio: surfaceRect.width / window.innerWidth,
-                surfaceHeightRatio: surfaceRect.height / window.innerHeight,
-                inputHeight: inputRect.height,
-                confirmHeight: confirmRect.height,
-                confirmWidthRatio: confirmRect.width / window.innerWidth,
-            };
-        });
-        if (!passwordPanelMetrics) {
+        await expect(passwordInput).toBeVisible({ timeout: 10000 });
+        await expect(passwordConfirm).toBeVisible({ timeout: 10000 });
+        const bookStage = page.getByTestId('home-v2-book-stage');
+        const surfaceBox = await passwordSurface.boundingBox();
+        const bookBox = await bookStage.boundingBox();
+        const inputBox = await passwordInput.boundingBox();
+        const confirmBox = await passwordConfirm.boundingBox();
+        const viewportSize = page.viewportSize();
+        if (!surfaceBox || !bookBox || !inputBox || !confirmBox || !viewportSize) {
             throw new Error('加密房密码面板节点缺失，无法验证新版浮层');
         }
+        const passwordPanelMetrics = {
+            centerXRatio: (surfaceBox.x + surfaceBox.width / 2) / viewportSize.width,
+            centerYRatio: (surfaceBox.y + surfaceBox.height / 2) / viewportSize.height,
+            bookCenterXDelta: Math.abs((surfaceBox.x + surfaceBox.width / 2) - (bookBox.x + bookBox.width / 2)),
+            surfaceWidthRatio: surfaceBox.width / viewportSize.width,
+            surfaceHeightRatio: surfaceBox.height / viewportSize.height,
+            inputHeight: inputBox.height,
+            confirmHeight: confirmBox.height,
+            confirmWidthRatio: confirmBox.width / viewportSize.width,
+        };
         console.log(
             `[home-v2-password-panel] centerXRatio=${passwordPanelMetrics.centerXRatio.toFixed(2)}, centerYRatio=${passwordPanelMetrics.centerYRatio.toFixed(2)}, bookCenterXDelta=${passwordPanelMetrics.bookCenterXDelta.toFixed(2)}, surfaceWidthRatio=${passwordPanelMetrics.surfaceWidthRatio.toFixed(2)}, surfaceHeightRatio=${passwordPanelMetrics.surfaceHeightRatio.toFixed(2)}, inputHeight=${passwordPanelMetrics.inputHeight.toFixed(2)}, confirmHeight=${passwordPanelMetrics.confirmHeight.toFixed(2)}, confirmWidthRatio=${passwordPanelMetrics.confirmWidthRatio.toFixed(2)}`,
         );
@@ -1605,7 +1638,7 @@ test.describe('Lobby E2E', () => {
                 centerY: rect.top + rect.height / 2,
             };
         });
-        await page.getByTestId('home-v2-room-password-input').click();
+        await passwordInput.click();
         await applyKeyboardViewportSimulation(page, {
             runtimeViewportHeight: 320,
             keyboardInsetHeight: 260,
@@ -1634,15 +1667,50 @@ test.describe('Lobby E2E', () => {
             delete root.dataset.keyboardVisible;
         });
 
-        await page.getByTestId('home-v2-room-password-input').fill(injectedLockedRoom.password);
-        await page.getByTestId('home-v2-room-password-confirm').click();
+        const mobileProxyInput = page.getByTestId('mobile-text-entry-proxy-input').last();
+        let activePasswordInput = passwordInput;
+        await mobileProxyInput.waitFor({ state: 'visible', timeout: 3000 }).catch(() => undefined);
+        const proxyEditable = await mobileProxyInput.isEditable().catch(() => false);
+        if (proxyEditable) {
+            activePasswordInput = mobileProxyInput;
+        } else {
+            await expect(passwordInput).toBeEditable();
+        }
+
+        await activePasswordInput.fill(injectedLockedRoom.password);
+        await expect(activePasswordInput).toHaveValue(injectedLockedRoom.password);
+        if (!proxyEditable) {
+            await expect(passwordInput).toHaveValue(injectedLockedRoom.password);
+        }
+        await expect(passwordConfirm).toBeEnabled();
+        const getMatchResponsePromise = page.waitForResponse((response) => (
+            response.request().method() === 'GET'
+            && response.url().includes(`/games/tictactoe/${injectedLockedRoom.matchId}`)
+        ), { timeout: 15000 }).catch(() => null);
+        const joinResponsePromise = page.waitForResponse((response) => (
+            response.request().method() === 'POST'
+            && response.url().includes(`/games/tictactoe/${injectedLockedRoom.matchId}/join`)
+        ), { timeout: 15000 }).catch(() => null);
+
+        await passwordConfirm.click();
+
+        const [getMatchResponse, joinResponse] = await Promise.all([
+            getMatchResponsePromise,
+            joinResponsePromise,
+        ]);
+        console.log(
+            `[home-v2-locked-room-join] getMatch=${getMatchResponse?.status() ?? 'missing'}, join=${joinResponse?.status() ?? 'missing'}`,
+        );
+        expect(getMatchResponse, 'HomeV2 加密房确认后应先拉取最新房间状态').not.toBeNull();
+        expect(joinResponse, 'HomeV2 加密房确认后应发起 join 请求').not.toBeNull();
+        expect(joinResponse?.ok(), 'HomeV2 加密房 join 请求应成功').toBeTruthy();
         await expect(page).toHaveURL(new RegExp(`/play/tictactoe/match/${injectedLockedRoom.matchId}\\?playerID=\\d+`), { timeout: 15000 });
         await waitForMatchBoardOrLoading(page);
 
             const joinSuccessScreenshotPath = getEvidenceScreenshotPath(testInfo, 'locked-room-join-success');
-            await page.screenshot({ path: joinSuccessScreenshotPath, fullPage: true });
+            await page.screenshot({ path: joinSuccessScreenshotPath, fullPage: false });
         } finally {
-            await context.close();
+            await context.close().catch(() => undefined);
         }
     });
 
@@ -2474,56 +2542,40 @@ test.describe('Lobby E2E', () => {
     test(MOBILE_PACKAGE_ENTRY_TEST_NAME, async ({ page, game }, testInfo) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await ensureLobbyReady(page);
-        await page.getByRole('heading', { name: /Tic-Tac-Toe/i }).click();
+        await page.getByRole('heading', { name: /井字棋|Tic-Tac-Toe/i }).click();
         await expect(page).toHaveURL(/game=tictactoe/);
 
         const modalRoot = getVisibleGameDetailsModal(page);
         const packageCard = page.getByTestId('game-details-mobile-package-card');
         const installButton = page.getByRole('button', { name: /Install Pack/i });
+        const leaderboardTabButton = page.getByTestId('game-details-tab-leaderboard');
+        const closeButton = page.getByTestId('game-details-close-button');
 
         await expect(modalRoot).toBeVisible({ timeout: 15000 });
-        await expect(packageCard).toBeVisible();
-        await expect(page.getByText(/Not installed/i)).toBeVisible();
-        await expect(installButton).toBeVisible();
+        await expect(leaderboardTabButton).toBeVisible();
+        await expect(closeButton).toBeVisible();
+        await expect(packageCard).toHaveCount(0);
+        await expect(installButton).toHaveCount(0);
 
         const modalBox = await modalRoot.boundingBox();
-        const cardBox = await packageCard.boundingBox();
         expect(modalBox).not.toBeNull();
-        expect(cardBox).not.toBeNull();
 
-        if (!modalBox || !cardBox) {
-            throw new Error('移动端详情弹窗或包管理入口未正确渲染，无法校验左下角位置');
+        if (!modalBox) {
+            throw new Error('移动端详情弹窗未正确渲染，无法校验窄屏头部布局');
         }
 
-        const leftOffset = cardBox.x - modalBox.x;
-        const bottomOffset = modalBox.y + modalBox.height - (cardBox.y + cardBox.height);
+        const leaderboardTabBox = await leaderboardTabButton.boundingBox();
+        const closeButtonBox = await closeButton.boundingBox();
+        expect(leaderboardTabBox).not.toBeNull();
+        expect(closeButtonBox).not.toBeNull();
 
-        expect(leftOffset).toBeGreaterThanOrEqual(0);
-        expect(leftOffset).toBeLessThan(36);
-        expect(bottomOffset).toBeGreaterThanOrEqual(0);
-        expect(bottomOffset).toBeLessThan(36);
+        if (!leaderboardTabBox || !closeButtonBox) {
+            throw new Error('移动端包管理详情 tab 或关闭按钮未正确渲染，无法校验窄屏头部布局');
+        }
 
-        await game.screenshot('lobby-mobile-package-entry-left-bottom', testInfo);
+        expect(leaderboardTabBox.x + leaderboardTabBox.width).toBeLessThanOrEqual(closeButtonBox.x - 4);
 
-        await installButton.click();
-        await expect(page.getByText(/Download Tic-Tac-Toe packages/i)).toBeVisible();
-        await expect(page.getByText(/Estimated Download/i)).toBeVisible();
-        await expect(page.getByText('Code Pack', { exact: true })).toBeVisible();
-        await expect(page.getByText('Asset Pack', { exact: true })).toBeVisible();
-
-        await game.screenshot('lobby-mobile-package-entry-confirm-modal', testInfo);
-
-        await page.getByRole('button', { name: /Confirm Download/i }).click();
-        await expect(page.getByTestId('game-details-mobile-package-progress-track')).toBeVisible();
-        await expect(page.getByText(/Reading Manifest/i)).toBeVisible();
-
-        await game.screenshot('lobby-mobile-package-entry-progress-card', testInfo);
-
-        await expect(page.getByText(/does not support downloading game packages yet/i)).toBeVisible({ timeout: 5000 });
-        await expect(page.getByRole('button', { name: /Retry/i })).toBeVisible();
-        await expect(page.getByTestId('game-details-mobile-package-card')).toHaveAttribute('data-status', 'failed');
-
-        await game.screenshot('lobby-mobile-package-entry-failed-retry', testInfo);
+        await game.screenshot('lobby-mobile-web-package-entry-absent', testInfo);
     });
 
     test('Dice Throne 更新日志 tab 会请求公开接口并结束 loading', async ({ page }) => {

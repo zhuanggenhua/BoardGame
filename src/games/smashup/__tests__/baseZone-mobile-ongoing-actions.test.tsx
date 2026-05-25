@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { BaseZone } from '../ui/BaseZone';
@@ -72,15 +72,21 @@ function buildCore() {
 function renderBaseZone(options?: {
     ongoingActions?: Array<{ uid: string; defId: string; ownerId: string; talentUsed?: boolean }>;
     minions?: Array<Record<string, unknown>>;
+    buriedCards?: Array<Record<string, unknown>>;
+    titans?: Array<Record<string, unknown>>;
     usableOngoingTalentUids?: Set<string>;
+    isMobileViewport?: boolean;
 }) {
     const dispatch = vi.fn();
+    const onViewAction = vi.fn();
     const core = buildCore();
     core.bases[0] = {
         ...core.bases[0],
         minions: (options?.minions ?? []) as any,
         ongoingActions: (options?.ongoingActions ?? []) as any,
+        buriedCards: (options?.buriedCards ?? []) as any,
     };
+    (core as any).titans = options?.titans ?? [];
 
     render(
         React.createElement(BaseZone, {
@@ -88,20 +94,21 @@ function renderBaseZone(options?: {
             baseIndex: 0,
             core: core as any,
             turnOrder: core.turnOrder,
+            isMobileViewport: options?.isMobileViewport,
             isDeployMode: false,
             isMyTurn: true,
             myPlayerId: '0',
             dispatch,
             onClick: vi.fn(),
             onViewMinion: vi.fn(),
-            onViewAction: vi.fn(),
+            onViewAction,
             onViewBase: vi.fn(),
             onViewTitan: vi.fn(),
             usableOngoingTalentUids: options?.usableOngoingTalentUids,
         }),
     );
 
-    return { dispatch };
+    return { dispatch, onViewAction };
 }
 
 describe('BaseZone 移动端 ongoing 交互', () => {
@@ -122,6 +129,31 @@ describe('BaseZone 移动端 ongoing 交互', () => {
             ongoingCardUid: 'oa1',
             baseIndex: 0,
         });
+    });
+
+    it('基地上的持续行动卡不显示放大镜以免挡住点击', () => {
+        renderBaseZone({
+            ongoingActions: [
+                { uid: 'oa1', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false },
+            ],
+            usableOngoingTalentUids: new Set(['oa1']),
+        });
+
+        expect(document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]')).toBeNull();
+    });
+
+    it('基地上的普通持续行动卡在移动端仍可单击打开放大预览', () => {
+        const { onViewAction } = renderBaseZone({
+            ongoingActions: [
+                { uid: 'oa1', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false },
+            ],
+        });
+
+        const magnifyButton = document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]');
+        expect(magnifyButton).not.toBeNull();
+
+        fireEvent.click(magnifyButton as Element);
+        expect(onViewAction).toHaveBeenCalledWith('miskatonic_lost_knowledge');
     });
 
     it('附着在随从上的天赋战术在移动端展开后单击一次就应发动', () => {
@@ -158,5 +190,91 @@ describe('BaseZone 移动端 ongoing 交互', () => {
             ongoingCardUid: 'aa1',
             baseIndex: 0,
         });
+    });
+
+    it('基地战场卡片在移动端应有显式高度，避免只剩横条', () => {
+        renderBaseZone({
+            isMobileViewport: true,
+            ongoingActions: [
+                { uid: 'oa1', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false },
+            ],
+            minions: [
+                {
+                    uid: 'm1',
+                    defId: 'pirate_first_mate',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                },
+                {
+                    uid: 'm2',
+                    defId: 'pirate_first_mate',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [
+                        { uid: 'aa1', defId: 'werewolf_leader_of_the_pack', ownerId: '0', talentUsed: false },
+                    ],
+                },
+            ],
+            buriedCards: [
+                {
+                    uid: 'b1',
+                    defId: 'pirate_first_mate',
+                    trueOwnerId: '0',
+                    controllerId: '0',
+                    buriedFrom: 'hand',
+                },
+            ],
+            titans: [
+                {
+                    uid: 't1',
+                    defId: 'dinosaurs_fort_titanosaurus',
+                    faction: 'dinosaurs',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                },
+            ],
+            usableOngoingTalentUids: new Set(['aa1']),
+        });
+
+        const minionCard = document.querySelector('[data-minion-uid="m1"]') as HTMLElement | null;
+        expect(minionCard).not.toBeNull();
+        expect(minionCard?.style.width).toContain('--mobile-layout-inline-unit');
+        expect(minionCard?.style.height).toContain('--mobile-layout-inline-unit');
+
+        const attachedBadgeShell = document.querySelector('[data-testid="smashup-attached-badge-shell"]') as HTMLElement | null;
+        expect(attachedBadgeShell).not.toBeNull();
+        expect(attachedBadgeShell?.style.paddingTop).toBe('24%');
+
+        const baseCard = document.querySelector('[data-base-index="0"]') as HTMLElement | null;
+        const ongoingCard = document.querySelector('[data-ongoing-uid="oa1"]') as HTMLElement | null;
+        const buriedCard = document.querySelector('[data-buried-card-uid="b1"]') as HTMLElement | null;
+        const titanCard = document.querySelector('[data-titan-uid="t1"]') as HTMLElement | null;
+
+        expect(baseCard?.style.height).toContain('--mobile-layout-inline-unit');
+        expect(ongoingCard?.style.height).toBe('100%');
+        expect((ongoingCard?.parentElement as HTMLElement | null)?.style.height).toContain('--mobile-layout-inline-unit');
+        expect(buriedCard?.style.height).toBe('100%');
+        expect((buriedCard?.parentElement as HTMLElement | null)?.style.height).toContain('--mobile-layout-inline-unit');
+        expect(titanCard?.style.height).toBe('100%');
+        expect((titanCard?.parentElement as HTMLElement | null)?.style.height).toContain('--mobile-layout-inline-unit');
+
+        fireEvent.click(document.querySelector('[data-minion-uid="m2"]') as Element);
+        const attachedAction = document.querySelector('[data-attached-action-uid="aa1"]') as HTMLElement | null;
+        expect(attachedAction?.style.width).toContain('--mobile-layout-inline-unit');
+        expect(attachedAction?.style.height).toContain('--mobile-layout-inline-unit');
     });
 });

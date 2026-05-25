@@ -156,10 +156,10 @@ test.describe('大杀四方四人局布局', () => {
         const firstBase = page.locator('[data-base-index="0"]');
 
         await expect(scoreboard).toBeVisible({ timeout: 15000 });
-        await expect(scoreboard).toContainText('你');
         await expect(scoreboard).toContainText('P1');
         await expect(scoreboard).toContainText('P2');
         await expect(scoreboard).toContainText('P3');
+        await expect(scoreboard).toContainText('P4');
         await expect(baseSlots).toHaveCount(5);
         await expect(firstBase).toBeVisible({ timeout: 15000 });
 

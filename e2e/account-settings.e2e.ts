@@ -2,10 +2,17 @@ import { test, expect } from '@playwright/test';
 
 const ACCOUNT_SETTINGS_MOBILE_SCREENSHOT_PATH = 'test-results/evidence-screenshots/account-settings-mobile-password-inputs.png';
 const EMAIL_BIND_MOBILE_SCREENSHOT_PATH = 'test-results/evidence-screenshots/email-bind-mobile-verify-input.png';
+const E2E_AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyXzEyMyIsInVzZXJuYW1lIjoi5pen5pi156ewIiwiaWF0IjoxNzE2NTAwMDAwLCJleHAiOjQxMDI0NDQ4MDB9.sig';
 
 async function openAccountSettings(page: import('@playwright/test').Page) {
-    await page.getByText('旧昵称').click();
-    await page.getByText('账户设置').click();
+    const trigger = page.getByTestId('user-menu-trigger');
+    await expect(trigger).toBeVisible();
+    await trigger.dispatchEvent('click');
+
+    const accountEntry = page.getByTestId('user-menu-account-settings');
+    await expect(accountEntry).toBeVisible();
+    await accountEntry.dispatchEvent('click');
+
     return page.getByTestId('account-settings-modal');
 }
 
@@ -21,9 +28,9 @@ async function openAccountSettings(page: import('@playwright/test').Page) {
 
 test.describe('账户设置', () => {
     test.beforeEach(async ({ page }) => {
-        await page.addInitScript(() => {
+        await page.addInitScript((token: string) => {
             localStorage.setItem('i18nextLng', 'zh-CN');
-            localStorage.setItem('auth_token', 'fake_jwt_token');
+            localStorage.setItem('auth_token', token);
             localStorage.setItem('auth_user', JSON.stringify({
                 id: 'user_123',
                 username: '旧昵称',
@@ -33,7 +40,7 @@ test.describe('账户设置', () => {
                 role: 'user',
                 banned: false,
             }));
-        });
+        }, E2E_AUTH_TOKEN);
 
         // mock /auth/me
         await page.route('**/auth/me', async route => {

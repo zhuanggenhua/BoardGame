@@ -828,7 +828,7 @@ describe('elder_thing_dunwich_horror 附着行动', () => {
         expect(events).toContainEqual(
             expect.objectContaining({
                 type: SU_EVENTS.MINION_DESTROYED,
-                payload: expect.objectContaining({ minionUid: 'm1' }),
+                payload: expect.objectContaining({ minionUid: 'm1', destroyerId: '0' }),
             }),
         );
     });

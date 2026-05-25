@@ -29,7 +29,9 @@ import type { EventStreamEntry } from '../../../engine/types';
 import { RevealOverlay } from '../ui/RevealOverlay';
 
 vi.mock('../../../components/common/media/CardPreview', () => ({
-    CardPreview: ({ alt }: { alt?: string }) => React.createElement('div', { 'data-card-preview': alt ?? 'preview' }),
+    CardPreview: ({ alt, className, style }: { alt?: string; className?: string; style?: React.CSSProperties }) => (
+        React.createElement('div', { 'data-card-preview': alt ?? 'preview', className, style })
+    ),
 }));
 
 afterEach(() => {
@@ -190,6 +192,18 @@ describe('卡牌展示系统', () => {
             }));
 
             expect(await screen.findByText('老王 的手牌')).toBeInTheDocument();
+        });
+
+        it('揭示卡片应有显式高度，避免旧 WebView 下只剩横条', async () => {
+            render(React.createElement(RevealOverlay, {
+                entries: [makeRevealEntry({ id: 5, viewerPlayerId: 'all' })],
+                currentPlayerId: '0',
+            }));
+
+            expect(await screen.findByTestId('reveal-overlay')).toBeInTheDocument();
+            const preview = document.querySelector<HTMLElement>('[data-card-preview]');
+            expect(preview?.style.width).toBe('8.5vw');
+            expect(preview?.style.height).toContain('vw');
         });
     });
 

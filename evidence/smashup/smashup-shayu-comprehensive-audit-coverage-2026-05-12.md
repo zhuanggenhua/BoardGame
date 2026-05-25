@@ -24,6 +24,31 @@
 - 新通用门禁已写入 `docs/ai-rules/testing-audit.md`：所有游戏审计必须先拆规则文本子句，任一子句缺实现/证据时，整对象不得标 `passed`。
 - 本文后续读取时，`mythic_greeks_argonaut` 的旧 L2/L3/L4 结论必须按 2026-05-15 修复后的证据重新理解；不能再引用 2026-05-12 的对象级 pass 作为完整证明。
 
+## 2026-05-23 +08 失效结论回写：Mako 暴露 destroyerId 共享消费合同漏审
+
+后续反馈发现 `sharks_mako` 在“没有明确消灭者”的消灭事件上也会错误触发。根因不是数据录入，也不是 `sharks_mako` 自身 trigger 条件写错，而是共享 destroy 后处理曾把缺失 `destroyerId` 的事件兜底成当前操作者/目标控制者，导致 `you destroyed` 语义被误判。
+
+本次失效直接推翻了本文此前对 destroy trigger 家族的部分结论：
+
+1. `sharks_mako` 旧 L2 结论“已断言消灭随从后只允许立即额外打出手牌中的灰鲭鲨到该基地”只证明了**正向有 destroyerId 的链**，没有覆盖 `destroyerId` 缺失的否定链。
+2. `base_shark_reef` 旧 destroyerId 归属结论只证明了**显式 destroyerId 时的正向归属**，没有证明“缺失 destroyerId 时不应默认把当前玩家当成消灭者”。
+3. `destroy trigger / immediate extra play` 家族旧 C5 结论里“destroy 触发队列按 destroyer/基地上下文收口”应降级为：**当事件显式携带 destroyerId 时收口成立；缺失 destroyerId 的兜底路径当时未被审到**。
+
+本次补审与修复：
+
+- 共享修复：`src/games/smashup/domain/reducer.ts` 收窄 `onMinionDestroyed` 的 destroyer 归因，只信任事件显式声明的 `destroyerId`，不再 fallback 到当前操作者/目标控制者。
+- 回归新增：`src/games/smashup/__tests__/abilities/sharks.test.ts`
+  - `灰鲭鲨在消灭被防止时不会错误出现额外打出提示`
+  - `灰鲭鲨不会把缺少 destroyerId 的消灭事件默认算成当前玩家消灭`
+  - `鲨鱼领地不会把缺少 destroyerId 的消灭事件默认算成当前玩家触发`
+- 详细专项证据：`evidence/smashup/smashup-shayu-destroyerid-contract-reaudit-2026-05-23.md`
+
+更新后的读取口径：
+
+- `sharks_hammerhead`、`sharks_chum`、`sharks_blood_in_the_water` 只依赖“发生了消灭”，不依赖消灭者归因，本次专项未发现新增缺口。
+- `sharks_mako` 与 `base_shark_reef` 是 shayu 批次里真正依赖 `destroyerId` 共享合同的对象；本次已补齐正向链、被防止链、缺失 destroyerId 否定链。
+- 因此本文 destroy trigger 家族的当前结论必须以后续 2026-05-23 destroyerId 专项文档为准，不能继续单独引用 2026-05-13 之前的 C3/C5 结论。
+
 ## 证据层级定义
 
 - L1：静态/数据/注册/字段/素材/入口结构。

@@ -47,7 +47,11 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     public render() {
         if (this.state.hasError) {
             return (
-                <div data-bg-friendly-screen="true" className="min-h-[100dvh] bg-parchment-base-bg text-parchment-base-text font-serif flex flex-col items-center justify-center px-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] relative overflow-hidden">
+                <div
+                    data-bg-friendly-screen="true"
+                    className="bg-parchment-base-bg text-parchment-base-text font-serif flex flex-col items-center justify-center px-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] relative overflow-hidden"
+                    style={{ minHeight: 'var(--runtime-viewport-height, 100vh)' }}
+                >
                     {/* Background Texture/Effect */}
                     <div className="absolute inset-0 opacity-5 pointer-events-none"
                         style={{

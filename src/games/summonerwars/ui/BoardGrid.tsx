@@ -617,9 +617,14 @@ const UnitCell: React.FC<{
                   {r.map(idx => (
                     <div
                       key={idx}
-                      className="w-[15%] aspect-square rounded-full bg-blue-400 border border-blue-200 shadow-[0_0_4px_rgba(96,165,250,0.9)]"
+                      className="relative w-[15%]"
                       style={{ width: '15%', minWidth: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.008)` }}
-                    />
+                    >
+                      <div
+                        className="block w-full rounded-full bg-blue-400 border border-blue-200 shadow-[0_0_4px_rgba(96,165,250,0.9)]"
+                        style={{ height: 0, paddingTop: '100%' }}
+                      />
+                    </div>
                   ))}
                 </div>
               ))}

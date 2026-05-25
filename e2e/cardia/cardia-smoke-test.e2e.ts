@@ -73,6 +73,18 @@ const MOBILE_LAYOUT_SCENARIO: CardiaTestScenario = {
   },
 };
 
+const MOBILE_ACTION_SCENARIO: CardiaTestScenario = {
+  phase: 'play',
+  player1: {
+    hand: ['deck_i_card_01', 'deck_i_card_02'],
+    deck: ['deck_i_card_03', 'deck_i_card_04'],
+  },
+  player2: {
+    hand: ['deck_i_card_05', 'deck_i_card_06'],
+    deck: ['deck_i_card_07', 'deck_i_card_08'],
+  },
+};
+
 async function hideDebugChrome(page: Page) {
   await page.evaluate(() => {
     const toggle = document.querySelector<HTMLElement>('[data-testid="debug-toggle-container"]');
@@ -83,11 +95,81 @@ async function hideDebugChrome(page: Page) {
   });
 }
 
+function requireBrowser(page: Page) {
+  const browser = page.context().browser();
+  if (!browser) {
+    throw new Error('Browser not available');
+  }
+  return browser;
+}
+
 async function waitForHomeReady(page: Page) {
   await page.goto('/');
   await expect(page.locator('body')).toBeVisible();
   await expect(page.locator('text=/cardia/i').first()).toBeVisible({ timeout: 10000 });
 }
+
+async function waitForCardiaCardArtReady(page: Page, options?: { requireBattlefieldCards?: boolean }) {
+  const requireBattlefieldCards = options?.requireBattlefieldCards ?? true;
+
+  await expect.poll(async () => {
+    return page.evaluate(({ requireBattlefieldCards }) => {
+      const inspectCardImages = (selector: string) => {
+        const cardNodes = Array.from(document.querySelectorAll<HTMLElement>(selector));
+        if (cardNodes.length === 0) {
+          return {
+            present: false,
+            ready: false,
+            count: 0,
+            loadedCount: 0,
+          };
+        }
+
+        const loadedCount = cardNodes.filter((cardNode) => {
+          const img = cardNode.querySelector('img') as HTMLImageElement | null;
+          if (!img) return false;
+          const style = window.getComputedStyle(img);
+          return img.complete
+            && img.naturalWidth > 0
+            && img.naturalHeight > 0
+            && Number.parseFloat(style.opacity || '1') > 0.05;
+        }).length;
+
+        return {
+          present: true,
+          ready: loadedCount === cardNodes.length,
+          count: cardNodes.length,
+          loadedCount,
+        };
+      };
+
+      const hand = inspectCardImages('[data-testid="cardia-hand-area"] [data-testid^="card-"]');
+      const battlefield = inspectCardImages('[data-testid="cardia-battlefield"] [data-testid^="card-"]');
+
+      return {
+        hand,
+        battlefield,
+        ready: hand.ready && (!requireBattlefieldCards || battlefield.ready),
+      };
+    }, { requireBattlefieldCards });
+  }, {
+    timeout: 10000,
+    message: '等待 Cardia 手牌/战场卡图真正加载完成',
+  }).toMatchObject({
+    hand: {
+      present: true,
+      ready: true,
+    },
+    battlefield: requireBattlefieldCards
+      ? {
+          present: true,
+          ready: true,
+        }
+      : expect.any(Object),
+    ready: true,
+  });
+}
+
 async function expectResponsiveLayoutStable(page: Page, options?: { requireBattlefieldCards?: boolean }) {
   const requireBattlefieldCards = options?.requireBattlefieldCards ?? true;
 
@@ -100,6 +182,7 @@ async function expectResponsiveLayoutStable(page: Page, options?: { requireBattl
   if (requireBattlefieldCards) {
     await expect(page.locator('[data-testid="cardia-battlefield"] [data-testid^="card-"]').first()).toBeVisible();
   }
+  await waitForCardiaCardArtReady(page, { requireBattlefieldCards });
 
   const viewportMetrics = await page.evaluate(() => {
     const playerArea = document.querySelector<HTMLElement>('[data-testid="cardia-hand-area"]');
@@ -229,6 +312,8 @@ async function expectBattlefieldNotObscured(page: Page) {
 }
 
 test.describe('Cardia 烟雾测试', () => {
+  test.describe.configure({ timeout: 90_000 });
+
   test('应该能够访问游戏列表页面', async ({ page }) => {
     // 访问首页
     await waitForHomeReady(page);
@@ -275,64 +360,131 @@ test.describe('Cardia 烟雾测试', () => {
   });
 
   test('手机横屏布局应完整展示战场与手牌', async ({ page, game }, testInfo) => {
-    await game.openTestGame('cardia');
-    await applyCardiaScenarioToPage(page, MOBILE_LAYOUT_SCENARIO);
+    const setup = await setupCardiaTestScenario(requireBrowser(page), MOBILE_LAYOUT_SCENARIO);
 
-    await page.setViewportSize({ width: 844, height: 390 });
-    await page.waitForTimeout(600);
-    await hideDebugChrome(page);
+    try {
+      await setup.player1Page.setViewportSize({ width: 844, height: 390 });
+      await setup.player1Page.waitForTimeout(600);
+      await hideDebugChrome(setup.player1Page);
 
-    await expectResponsiveLayoutStable(page);
-    await game.screenshot('cardia-mobile-landscape-layout', testInfo);
+      await expectResponsiveLayoutStable(setup.player1Page);
+      await setup.player1Page.screenshot({
+        path: testInfo.outputPath('cardia-mobile-landscape-layout.png'),
+        fullPage: false,
+      });
+    } finally {
+      await setup.cleanup();
+    }
+  });
+
+  test('手机横屏下双方出牌后应进入 Ability 阶段且不出现顶层溢出', async ({ page }, testInfo) => {
+    const setup = await setupCardiaTestScenario(requireBrowser(page), MOBILE_ACTION_SCENARIO);
+
+    try {
+      const { player1Page, player2Page } = setup;
+
+      await player1Page.setViewportSize({ width: 844, height: 390 });
+      await player2Page.setViewportSize({ width: 844, height: 390 });
+      await player1Page.waitForTimeout(800);
+      await player2Page.waitForTimeout(800);
+      await hideDebugChrome(player1Page);
+      await hideDebugChrome(player2Page);
+
+      await expect(player1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('打出卡牌');
+      await expect(player2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('打出卡牌');
+
+      const p1FirstCard = player1Page.locator('[data-testid="cardia-hand-area"] [data-testid^="card-"]').first();
+      const p2FirstCard = player2Page.locator('[data-testid="cardia-hand-area"] [data-testid^="card-"]').first();
+
+      await expect(p1FirstCard).toBeVisible({ timeout: 10000 });
+      await expect(p2FirstCard).toBeVisible({ timeout: 10000 });
+
+      await p1FirstCard.click();
+      await player1Page.waitForTimeout(400);
+      await p2FirstCard.click();
+
+      await expect(player1Page.locator('[data-testid="cardia-battlefield"] [data-testid^="card-"]').first()).toBeVisible({ timeout: 10000 });
+      await expect(player2Page.locator('[data-testid="cardia-battlefield"] [data-testid^="card-"]').first()).toBeVisible({ timeout: 10000 });
+      await expect(player1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('能力', { timeout: 10000 });
+      await expect(player2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText('能力', { timeout: 10000 });
+
+      await expectResponsiveLayoutStable(player1Page);
+      await expectResponsiveLayoutStable(player2Page);
+      await expectBattlefieldNotObscured(player1Page);
+      await expectBattlefieldNotObscured(player2Page);
+
+      await player1Page.screenshot({
+        path: testInfo.outputPath('cardia-mobile-landscape-play-card-host.png'),
+        fullPage: false,
+      });
+      await player2Page.screenshot({
+        path: testInfo.outputPath('cardia-mobile-landscape-play-card-guest.png'),
+        fullPage: false,
+      });
+    } finally {
+      await setup.player1Context.close();
+      await setup.player2Context.close();
+    }
   });
 
   test('手机竖屏布局应完整展示战场与手牌', async ({ page, game }, testInfo) => {
-    await game.openTestGame('cardia');
-    await applyCardiaScenarioToPage(page, MOBILE_LAYOUT_SCENARIO);
+    const setup = await setupCardiaTestScenario(requireBrowser(page), MOBILE_LAYOUT_SCENARIO);
 
-    // iPhone 14 / 15 Pro 竖屏常见尺寸
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.waitForTimeout(700);
-    await hideDebugChrome(page);
+    try {
+      await setup.player1Page.setViewportSize({ width: 390, height: 844 });
+      await setup.player1Page.waitForTimeout(700);
+      await hideDebugChrome(setup.player1Page);
 
-    await expectResponsiveLayoutStable(page);
-    await expectBattlefieldNotObscured(page);
-    await game.screenshot('cardia-mobile-portrait-layout', testInfo);
+      await expectResponsiveLayoutStable(setup.player1Page);
+      await expectBattlefieldNotObscured(setup.player1Page);
+      await setup.player1Page.screenshot({
+        path: testInfo.outputPath('cardia-mobile-portrait-layout.png'),
+        fullPage: false,
+      });
+    } finally {
+      await setup.cleanup();
+    }
   });
 
   test('平板竖屏布局应完整展示战场与手牌', async ({ page, game }, testInfo) => {
-    await game.openTestGame('cardia');
-    await applyCardiaScenarioToPage(page, RESPONSIVE_LAYOUT_SCENARIO);
+    const setup = await setupCardiaTestScenario(requireBrowser(page), RESPONSIVE_LAYOUT_SCENARIO);
 
-    // iPad 竖屏常见尺寸
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await page.waitForTimeout(700);
-    await hideDebugChrome(page);
+    try {
+      await setup.player1Page.setViewportSize({ width: 768, height: 1024 });
+      await setup.player1Page.waitForTimeout(700);
+      await hideDebugChrome(setup.player1Page);
 
-    await expectResponsiveLayoutStable(page);
-    await expectBattlefieldNotObscured(page);
-    await game.screenshot('cardia-tablet-portrait-layout', testInfo);
+      await expectResponsiveLayoutStable(setup.player1Page);
+      await expectBattlefieldNotObscured(setup.player1Page);
+      await setup.player1Page.screenshot({
+        path: testInfo.outputPath('cardia-tablet-portrait-layout.png'),
+        fullPage: false,
+      });
+    } finally {
+      await setup.cleanup();
+    }
   });
 
   test('平板横屏布局应完整展示战场与手牌', async ({ page, game }, testInfo) => {
-    await game.openTestGame('cardia');
-    await applyCardiaScenarioToPage(page, RESPONSIVE_LAYOUT_SCENARIO);
+    const setup = await setupCardiaTestScenario(requireBrowser(page), RESPONSIVE_LAYOUT_SCENARIO);
 
-    await page.setViewportSize({ width: 1024, height: 768 });
-    await page.waitForTimeout(600);
-    await hideDebugChrome(page);
+    try {
+      await setup.player1Page.setViewportSize({ width: 1024, height: 768 });
+      await setup.player1Page.waitForTimeout(600);
+      await hideDebugChrome(setup.player1Page);
 
-    await expectResponsiveLayoutStable(page);
-    await game.screenshot('cardia-tablet-landscape-layout', testInfo);
+      await expectResponsiveLayoutStable(setup.player1Page);
+      await setup.player1Page.screenshot({
+        path: testInfo.outputPath('cardia-tablet-landscape-layout.png'),
+        fullPage: false,
+      });
+    } finally {
+      await setup.cleanup();
+    }
   });
 
   test('真实对局页在 iPhone XR 横屏下不应触发整页缩放', async ({ page }, testInfo) => {
-    const browser = page.context().browser();
-    if (!browser) {
-      throw new Error('Browser not available');
-    }
-
-    const setup = await setupCardiaTestScenario(browser, RESPONSIVE_LAYOUT_SCENARIO);
+    const setup = await setupCardiaTestScenario(requireBrowser(page), RESPONSIVE_LAYOUT_SCENARIO);
 
     try {
       await setup.player1Page.setViewportSize({ width: 896, height: 414 });

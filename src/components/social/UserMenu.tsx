@@ -233,6 +233,7 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                 onClick={handleOpenNotifications}
                 className="group relative inline-flex h-8 items-center pl-1 pr-3 text-parchment-base-text hover:text-parchment-brown transition-colors cursor-pointer"
                 aria-label={t('social:menu.notifications')}
+                data-testid="user-menu-notifications"
             >
                 <span className="font-bold text-sm leading-none tracking-tight">{t('social:menu.notifications')}</span>
                 <span className="underline-center" />
@@ -244,6 +245,7 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="group relative flex h-8 items-center gap-2 cursor-pointer px-2 outline-none transition-colors"
+                data-testid="user-menu-trigger"
             >
                 {user.avatar ? (
                     <img
@@ -274,6 +276,7 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                     <button
                         onClick={handleOpenFriends}
                         className="w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors"
+                        data-testid="user-menu-friends-chat"
                     >
                         <MessageSquare size={16} />
                         {t('social:menu.friendsAndChat')}
@@ -285,6 +288,7 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                     <button
                         onClick={handleOpenAccount}
                         className="w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors"
+                        data-testid="user-menu-account-settings"
                     >
                         <Settings size={16} />
                         {t('auth:menu.accountSettings')}

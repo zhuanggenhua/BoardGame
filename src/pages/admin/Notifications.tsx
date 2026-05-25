@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { ADMIN_API_URL } from '../../config/server';
-import { Plus, Trash2, Pencil, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Pencil, Eye, EyeOff, Pin } from 'lucide-react';
 import { AdminCardListSkeleton } from './components/AdminSkeletons';
 
 interface NotificationItem {
@@ -10,6 +10,7 @@ interface NotificationItem {
     title: string;
     content: string;
     published: boolean;
+    pinned: boolean;
     expiresAt?: string;
     createdAt: string;
 }
@@ -27,6 +28,7 @@ export default function AdminNotifications() {
     const [content, setContent] = useState('');
     const [expiresAt, setExpiresAt] = useState('');
     const [published, setPublished] = useState(true);
+    const [pinned, setPinned] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     const fetchNotifications = useCallback(async () => {
@@ -53,6 +55,7 @@ export default function AdminNotifications() {
         setContent('');
         setExpiresAt('');
         setPublished(true);
+        setPinned(false);
         setEditing(null);
         setShowForm(false);
     };
@@ -68,6 +71,7 @@ export default function AdminNotifications() {
         setContent(item.content);
         setExpiresAt(item.expiresAt ? item.expiresAt.slice(0, 16) : '');
         setPublished(item.published);
+        setPinned(item.pinned);
         setShowForm(true);
     };
 
@@ -76,7 +80,7 @@ export default function AdminNotifications() {
         if (!title.trim() || !content.trim()) return;
         setSubmitting(true);
         try {
-            const body: Record<string, unknown> = { title: title.trim(), content: content.trim(), published };
+            const body: Record<string, unknown> = { title: title.trim(), content: content.trim(), published, pinned };
             if (expiresAt) body.expiresAt = new Date(expiresAt).toISOString();
 
             const url = editing
@@ -181,10 +185,16 @@ export default function AdminNotifications() {
                                     className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
                                 />
                             </div>
-                            <label className="flex items-center gap-2 pb-2 cursor-pointer">
-                                <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} className="rounded" />
-                                <span className="text-sm text-zinc-600">立即发布</span>
-                            </label>
+                            <div className="flex flex-wrap items-center gap-4 pb-2">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} className="rounded" />
+                                    <span className="text-sm text-zinc-600">置顶显示</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} className="rounded" />
+                                    <span className="text-sm text-zinc-600">立即发布</span>
+                                </label>
+                            </div>
                         </div>
                         <div className="flex gap-3 pt-2">
                             <button
@@ -213,6 +223,12 @@ export default function AdminNotifications() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="font-bold text-zinc-800 truncate">{item.title}</h3>
+                                        {item.pinned && (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                                                <Pin size={11} />
+                                                置顶
+                                            </span>
+                                        )}
                                         {!item.published && (
                                             <span className="text-[10px] px-1.5 py-0.5 bg-zinc-100 text-zinc-500 rounded font-medium">草稿</span>
                                         )}

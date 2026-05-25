@@ -316,6 +316,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const runtimeViewport = useRuntimeViewport({ syncCssVars: false });
     const playerDisplayOrder = playerView.orderedPlayerIds;
     const playerNames = playerView.playerNames;
+    const [isNonEssentialUiHidden, setIsNonEssentialUiHidden] = useState(false);
     
     // 响应式布局配置
     const playerCount = playerDisplayOrder.length || coreTurnOrder.length || 2;
@@ -350,6 +351,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         ? 'absolute inset-x-0 flex justify-center pointer-events-none'
         : 'fixed inset-x-0 flex justify-center pointer-events-none';
     const floatingHintStyle = { zIndex: UI_Z_INDEX.hint, bottom: `${layout.floatingActionBottom}px` };
+    const battlefieldBottomInset = isNonEssentialUiHidden ? 0 : layout.handAreaHeight;
+    const battlefieldBaseTopPadding = `max(${layout.boardPaddingTop}px, calc(${layoutInlineSize((layout.minionCardWidth / 0.714) - 0.6, layout)} + 4px))`;
     const topFloatingBannerClassName = isMobileViewport
         ? 'absolute inset-x-0 z-30 flex justify-center pointer-events-none'
         : 'fixed inset-x-0 z-30 flex justify-center pointer-events-none';
@@ -1617,7 +1620,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const resolvedText = resolveCardText(def, t);
         return (
             <div
-                className="relative w-[20vw] max-w-[320px] aspect-[0.714] bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden"
+                className="relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden"
+                style={{
+                    width: '20vw',
+                    maxWidth: '320px',
+                    height: 'calc(20vw / 0.714)',
+                    maxHeight: 'calc(320px / 0.714)',
+                    aspectRatio: '0.714 / 1',
+                }}
                 data-testid="smashup-action-spotlight-card"
                 data-card-def-id={item.cardData.defId}
             >
@@ -1702,8 +1712,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 回合切换提示
     const [showTurnNotice, setShowTurnNotice] = useState(false);
-    const [isEndTurnUiHidden, setIsEndTurnUiHidden] = useState(false);
-    const [isScoreboardUiHidden, setIsScoreboardUiHidden] = useState(false);
     const prevCurrentPidRef = useRef(currentPid);
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout> | null = null;
@@ -1734,8 +1742,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setDiscardSelection(new Set());
             setMeFirstPendingCard(null);
             setIsSubmitting(false);
-            setIsEndTurnUiHidden(false);
-            setIsScoreboardUiHidden(false);
+            setIsNonEssentialUiHidden(false);
             setHandDragPreview(null);
         });
         return () => {
@@ -2686,43 +2693,51 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 <div className="relative z-20 flex justify-between items-start pt-6 px-[2vw] pointer-events-none">
 
                     {/* Left: Turn Tracker (Yellow Notepad) */}
-                    <div
-                        className={`bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 min-w-[140px] clip-path-jagged ${isMobileViewport ? 'pointer-events-none' : 'pointer-events-auto'}`}
-                        data-tutorial-id="su-turn-tracker"
-                        style={turnTrackerStyle}
-                    >
-                        <div className="w-3 h-3 rounded-full bg-red-400 absolute top-1 left-1/2 -translate-x-1/2 opacity-50 shadow-inner" /> {/* Pin */}
-                        <motion.div
-                            key={`turn-${core.turnNumber}`}
-                            initial={{ scale: 0.9, rotate: -3 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                            className="text-center font-black uppercase text-xl leading-none tracking-tighter mb-1 border-b-2 border-slate-800/20 pb-1"
+                    {isNonEssentialUiHidden ? (
+                        <div
+                            aria-hidden="true"
+                            className="min-w-[140px] pointer-events-none"
+                            style={turnTrackerStyle}
+                        />
+                    ) : (
+                        <div
+                            className={`bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 min-w-[140px] clip-path-jagged ${isMobileViewport ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                            data-tutorial-id="su-turn-tracker"
+                            style={turnTrackerStyle}
                         >
-                            {t('ui.turn')} {core.turnNumber}
-                        </motion.div>
-                        <div className="flex justify-between items-center text-sm font-bold font-mono">
-                            <span>{isMyTurn ? t('ui.you') : t('ui.opp')}</span>
-                            <motion.span
-                                key={phase}
-                                initial={{ scale: 0.7, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                                className="text-blue-600 bg-blue-100 px-1 rounded transform rotate-2 inline-block"
+                            <div className="w-3 h-3 rounded-full bg-red-400 absolute top-1 left-1/2 -translate-x-1/2 opacity-50 shadow-inner" /> {/* Pin */}
+                            <motion.div
+                                key={`turn-${core.turnNumber}`}
+                                initial={{ scale: 0.9, rotate: -3 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                                className="text-center font-black uppercase text-xl leading-none tracking-tighter mb-1 border-b-2 border-slate-800/20 pb-1"
                             >
-                                {t(getPhaseNameKey(phase))}
-                            </motion.span>
+                                {t('ui.turn')} {core.turnNumber}
+                            </motion.div>
+                            <div className="flex justify-between items-center text-sm font-bold font-mono">
+                                <span>{isMyTurn ? t('ui.you') : t('ui.opp')}</span>
+                                <motion.span
+                                    key={phase}
+                                    initial={{ scale: 0.7, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                                    className="text-blue-600 bg-blue-100 px-1 rounded transform rotate-2 inline-block"
+                                >
+                                    {t(getPhaseNameKey(phase))}
+                                </motion.span>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Right: Score Sheet + Player Info */}
                     <div
-                        className={`relative pointer-events-auto ${isScoreboardUiHidden ? 'h-8 w-8' : ''}`}
+                        className={`relative pointer-events-auto ${isNonEssentialUiHidden ? 'h-9 w-9' : ''}`}
                         data-tutorial-id="su-scoreboard"
                         style={scoreboardStyle}
                     >
                         <AnimatePresence initial={false}>
-                            {!isScoreboardUiHidden && (
+                            {!isNonEssentialUiHidden && (
                                 <motion.div
                                     key="scoreboard-panel"
                                     data-testid="su-scoreboard-panel"
@@ -2840,19 +2855,19 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                        <button
-                            type="button"
-                            data-testid="su-scoreboard-visibility-toggle"
-                            aria-label={isScoreboardUiHidden
-                                ? t('ui.show_scoreboard_controls', { defaultValue: '显示记分板' })
-                                : t('ui.hide_scoreboard_controls', { defaultValue: '隐藏记分板' })}
-                            onClick={() => setIsScoreboardUiHidden(prev => !prev)}
-                            className={`absolute right-0 top-0 z-10 flex items-center justify-center rounded-full border-solid border-2 border-white/95 ring-1 ring-slate-950/15 bg-slate-900/95 text-white shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-all hover:scale-105 active:scale-95 ${isMobileViewport ? 'h-7 w-7 translate-x-[35%] -translate-y-[35%] text-[11px]' : 'h-8 w-8 translate-x-[35%] -translate-y-[35%] text-xs'}`}
-                        >
-                            <span className="font-black leading-none">{isScoreboardUiHidden ? '显' : '隐'}</span>
-                        </button>
                     </div>
                 </div>
+                <button
+                    type="button"
+                    data-testid="su-scoreboard-visibility-toggle"
+                    aria-label={isNonEssentialUiHidden
+                        ? t('ui.show_nonessential_controls', { defaultValue: '显示手牌、结束回合、记分板和回合指示' })
+                        : t('ui.hide_nonessential_controls', { defaultValue: '隐藏手牌、结束回合、记分板和回合指示' })}
+                    onClick={() => setIsNonEssentialUiHidden(prev => !prev)}
+                    className={`absolute right-2 top-2 z-50 flex items-center justify-center rounded-full border-solid border-2 border-white/95 ring-1 ring-slate-950/15 bg-slate-900/95 text-white shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-all hover:scale-105 active:scale-95 ${isMobileViewport ? 'h-9 w-9 text-sm' : 'h-10 w-10 text-base'}`}
+                >
+                    <span className="font-black leading-none">{isNonEssentialUiHidden ? '显' : '隐'}</span>
+                </button>
 
                 {/* 对手视角指示器 */}
                 <AnimatePresence>
@@ -2896,7 +2911,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                                 className="pointer-events-auto relative h-24 w-24"
                             >
-                                {!isEndTurnUiHidden && (
+                                {!isNonEssentialUiHidden && (
                                     <>
                                 <button
                                     data-testid="su-end-turn-action-button"
@@ -3051,17 +3066,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 )}
                                     </>
                                 )}
-                                <button
-                                    type="button"
-                                    data-testid="su-end-turn-visibility-toggle"
-                                    aria-label={isEndTurnUiHidden
-                                        ? t('ui.show_end_turn_controls', { defaultValue: '显示结束回合按钮和额度提示' })
-                                        : t('ui.hide_end_turn_controls', { defaultValue: '隐藏结束回合按钮和额度提示' })}
-                                    onClick={() => setIsEndTurnUiHidden(prev => !prev)}
-                                    className={`absolute right-0 bottom-0 z-10 flex items-center justify-center rounded-full border-solid border-2 border-white/95 ring-1 ring-slate-950/15 bg-slate-900/95 text-white shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-all hover:scale-105 active:scale-95 ${isMobileViewport ? 'h-7 w-7 translate-x-[30%] translate-y-[30%] text-[11px]' : 'h-8 w-8 translate-x-[35%] translate-y-[35%] text-xs'}`}
-                                >
-                                    <span className="font-black leading-none">{isEndTurnUiHidden ? '显' : '隐'}</span>
-                                </button>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -3338,21 +3342,22 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     transformTarget="content"
                     visibleInsets={{
                         top: layout.hudTopOffset,
-                        bottom: layout.handAreaHeight,
+                        bottom: battlefieldBottomInset,
                     }}
                     className="absolute inset-0 z-10"
                     testId="su-battlefield-viewport"
                 >
                     <div
-                        className="absolute inset-0 flex items-center justify-center overflow-x-auto overflow-y-hidden no-scrollbar"
+                        className="absolute inset-0 flex justify-center overflow-x-auto overflow-y-hidden no-scrollbar"
                         data-tutorial-id="su-base-area"
                         style={{
-                            paddingTop: `${layout.boardPaddingTop}px`,
-                            paddingBottom: `${layout.handAreaHeight}px`,
+                            alignItems: 'safe center',
+                            paddingTop: battlefieldBaseTopPadding,
+                            paddingBottom: `${battlefieldBottomInset}px`,
                         }}
                     >
                         <div
-                            className="flex items-center min-w-max"
+                            className="flex items-start min-w-max"
                             data-testid="su-battlefield-zoom-target"
                             data-mobile-battlefield-zoom-target="true"
                             style={{
@@ -3519,7 +3524,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 )}
                 {/* 手牌区：z-60，在弃牌遮罩之上 */}
                 {
-                    myPlayer && (
+                    myPlayer && !isNonEssentialUiHidden && (
                         <div 
                             className="absolute bottom-0 inset-x-0 z-60 pointer-events-none"
                             style={{ height: `${layout.handAreaHeight}px` }}

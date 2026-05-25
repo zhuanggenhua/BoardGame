@@ -1196,11 +1196,11 @@ export const Right = ({ game }: RightProps) => {
                     surfaceClassName={`font-serif ${isCompactLandscape ? 'home-v2-paper-modal-compact w-[min(15.25rem,calc(100vw-1rem))]' : 'w-[min(31rem,calc(100vw-2rem))]'}`}
                     surfaceStyle={{
                         height: isCompactLandscape
-                            ? 'min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 0.5rem), 11.75rem)'
+                            ? 'min(calc(var(--runtime-viewport-height, 100vh) - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 0.5rem), 11.75rem)'
                             : undefined,
                         maxHeight: isCompactLandscape
                             ? undefined
-                            : 'min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 2rem), 25rem)',
+                            : 'min(calc(var(--runtime-viewport-height, 100vh) - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 2rem), 25rem)',
                     }}
                     headerClassName={isCompactLandscape ? 'px-[22px] pb-[9px] pt-[13px]' : 'px-7 pb-3 pt-6'}
                     titleClassName={isCompactLandscape ? 'text-[11.8px] tracking-[0.075em]' : undefined}

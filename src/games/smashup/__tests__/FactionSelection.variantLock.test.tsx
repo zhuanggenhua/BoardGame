@@ -195,6 +195,17 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(screen.queryByTestId('faction-filter-taken')).not.toBeInTheDocument();
     });
 
+    it('移动横屏候选派系卡框应有显式高度，兼容旧 WebView', () => {
+        setViewport(800, 400);
+        renderSelection();
+
+        const option = screen.getByTestId('faction-option-robots');
+        const frame = option.querySelector<HTMLElement>('.aspect-\\[0\\.727\\]');
+
+        expect(frame?.style.width).toBe('136px');
+        expect(frame?.style.height).toBe(`${136 / 0.727}px`);
+    });
+
     it('桌面高密度候选池应提供搜索入口，但不提供状态过滤按钮', () => {
         setViewport(1440, 900);
         renderSelection();

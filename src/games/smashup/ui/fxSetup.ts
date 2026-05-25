@@ -152,7 +152,12 @@ const ActionShowRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
     React.createElement(motion.div, { className: 'absolute inset-0 bg-black/30' }),
     // 卡牌
     React.createElement(motion.div, {
-      className: 'relative w-[18vw] aspect-[0.714] bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden',
+      className: 'relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden',
+      style: {
+        width: '18vw',
+        height: 'calc(18vw / 0.714)',
+        aspectRatio: '0.714 / 1',
+      },
       initial: { scale: 0.3, y: 200, rotate: -10 },
       animate: { scale: 1, y: 0, rotate: 2 },
       exit: { scale: 0.2, y: -100, x: 300, rotate: 15, opacity: 0, transition: { duration: 0.3, ease: 'easeIn' } },

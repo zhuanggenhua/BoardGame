@@ -575,6 +575,7 @@ describe('killer_plant_sprout 回合开始自毁与检索', () => {
         expect(events.length).toBeGreaterThanOrEqual(1);
         expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
         expect((events[0] as any).payload.minionUid).toBe('sp-1');
+        expect((events[0] as any).payload.destroyerId).toBe('0');
         if (events.length > 1) {
             expect([SU_EVENTS.CARDS_DRAWN, SU_EVENTS.DECK_REORDERED]).toContain(events[1].type);
         }
@@ -1044,7 +1045,7 @@ describe('killer_plant_choking_vines 回合开始触发', () => {
         expect(events).toContainEqual(
             expect.objectContaining({
                 type: SU_EVENTS.MINION_DESTROYED,
-                payload: expect.objectContaining({ minionUid: 'm1' }),
+                payload: expect.objectContaining({ minionUid: 'm1', destroyerId: '0' }),
             } as Partial<MinionDestroyedEvent>),
         );
     });

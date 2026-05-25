@@ -210,9 +210,13 @@
   },
   "tabs": {
     "lobby": "Lobby",
+    "lobbyCompact": "Lobby",
     "reviews": "Reviews",
+    "reviewsCompact": "Reviews",
     "leaderboard": "Leaderboard",
-    "changelog": "Updates"
+    "leaderboardCompact": "Rank",
+    "changelog": "Updates",
+    "changelogCompact": "Updates"
   },
   "leaderboard": {
     "loading": "Loading...",

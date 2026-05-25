@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { saveDevRuntimePorts, removeDevRuntimePorts } from './dev-port-runtime.js';
+import { findAvailablePort } from './port-allocator.js';
 import { withWindowsHide } from './windows-hide.js';
 
 const managedChildren = [];
@@ -78,12 +79,47 @@ function resolveConfiguredPort(value, fallback) {
     return Number.isFinite(port) && port > 0 ? port : fallback;
 }
 
-export async function resolveDevPortsFromEnv(env = process.env) {
+function hasExplicitPort(env, key) {
+    const port = Number(env[key]);
+    return Number.isFinite(port) && port > 0;
+}
+
+function resolvePreferredDevPorts(env, preferredPorts = DEFAULT_DEV_PORTS) {
     return {
-        frontend: resolveConfiguredPort(env.VITE_DEV_PORT, DEFAULT_DEV_PORTS.frontend),
-        gameServer: resolveConfiguredPort(env.GAME_SERVER_PORT, DEFAULT_DEV_PORTS.gameServer),
-        apiServer: resolveConfiguredPort(env.API_SERVER_PORT, DEFAULT_DEV_PORTS.apiServer),
+        frontend: resolveConfiguredPort(env.VITE_DEV_PORT, preferredPorts.frontend),
+        gameServer: resolveConfiguredPort(env.GAME_SERVER_PORT, preferredPorts.gameServer),
+        apiServer: resolveConfiguredPort(env.API_SERVER_PORT, preferredPorts.apiServer),
     };
+}
+
+export async function resolveDevPortsFromEnv(env = process.env, options = {}) {
+    const preferredPorts = resolvePreferredDevPorts(env, options.preferredPorts);
+    const strictPorts = env.BG_DEV_STRICT_PORTS === '1';
+    if (strictPorts) {
+        return preferredPorts;
+    }
+
+    const explicitPorts = {
+        frontend: hasExplicitPort(env, 'VITE_DEV_PORT'),
+        gameServer: hasExplicitPort(env, 'GAME_SERVER_PORT'),
+        apiServer: hasExplicitPort(env, 'API_SERVER_PORT'),
+    };
+    const resolvedPorts = {};
+    const reservedPorts = new Set();
+
+    for (const [service, preferredPort] of Object.entries(preferredPorts)) {
+        if (explicitPorts[service]) {
+            resolvedPorts[service] = preferredPort;
+            reservedPorts.add(preferredPort);
+            continue;
+        }
+
+        const resolvedPort = await findAvailablePort(preferredPort, { reservedPorts });
+        resolvedPorts[service] = resolvedPort;
+        reservedPorts.add(resolvedPort);
+    }
+
+    return resolvedPorts;
 }
 
 function prefixOutput(label, stream, target) {
@@ -249,6 +285,12 @@ async function main() {
     };
 
     console.log('[dev-orchestrator] resolved dev ports:', resolvedPorts);
+    for (const [service, defaultPort] of Object.entries(DEFAULT_DEV_PORTS)) {
+        const resolvedPort = resolvedPorts[service];
+        if (resolvedPort !== defaultPort) {
+            console.log(`[dev-orchestrator] ${service} port ${defaultPort} unavailable, switched to ${resolvedPort}`);
+        }
+    }
     if (devLiteMode) {
         console.log('[dev-orchestrator] dev:lite mode enabled: game uses in-memory storage');
     }

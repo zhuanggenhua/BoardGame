@@ -6,12 +6,14 @@ import {
     getPromptOptions,
     getPromptPlayerId,
     getPromptSourceId,
+    getPromptsBySourceId,
     getSimpleChoicePrompt,
     makeBase,
     makeCard,
     makeMatchState,
     makeMinion,
     makePlayer,
+    resolveDestroyedMinions,
     resolveInteractionChain,
 } from '../helpers';
 import { runCommand } from '../testRunner';
@@ -96,6 +98,41 @@ describe('鲨鱼代表性玩法行为', () => {
         expect(minionUids).not.toContain('low-a');
         expect(minionUids).toContain('low-b');
         expect(minionUids).toContain('high');
+    });
+
+    it('疯狂进食一次消灭多个随从时，锤头鲨会按被消灭数量分别获得指示物', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('a-feed', 'sharks_feeding_frenzy', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_the_deep', [
+                makeMinion('hammer', 'sharks_hammerhead', '0', 3),
+                makeMinion('low-a', 'tornados_dust_devil', '1', 2),
+                makeMinion('low-b', 'sharks_mako', '1', 2),
+            ])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-feed', targetBaseIndex: 0 },
+        } as any);
+        expect(play.success).toBe(true);
+
+        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+            const lowA = getPromptOption(prompt, option => option.value?.minionUid === 'low-a', 'Feeding Frenzy low-a option');
+            const lowB = getPromptOption(prompt, option => option.value?.minionUid === 'low-b', 'Feeding Frenzy low-b option');
+            return { optionIds: [lowA.id, lowB.id] };
+        });
+
+        const hammer = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'hammer');
+        expect(hammer?.powerCounters).toBe(2);
     });
 
     it('飞鲨通过真实行动入口先选择己方随从，再选择另一个基地并消灭低力量随从', () => {
@@ -379,6 +416,78 @@ describe('鲨鱼代表性玩法行为', () => {
         expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'other-minion')).toBe(true);
     });
 
+    it('灰鲭鲨在消灭被防止时不会错误出现额外打出提示', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('torn', 'sharks_torn_apart', 'action', '0'),
+                        makeCard('mako-extra', 'sharks_mako', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_shark_reef', [makeMinion('warbot', 'robot_warbot', '1', 4)])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'torn' },
+        } as any);
+
+        expect(play.success).toBe(true);
+        let makoTriggered = false;
+        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+            const sourceId = getPromptSourceId(prompt);
+            if (sourceId === 'sharks_torn_apart') {
+                return chooseOptionBySource(prompt, 'sharks_torn_apart', option => option.value?.minionUid === 'warbot');
+            }
+            if (sourceId === 'smashup_immediate_extra_minion') {
+                makoTriggered = true;
+                const skip = getPromptOption(prompt, (option: any) => option.value?.skip, 'unexpected mako skip option');
+                return { optionId: skip.id };
+            }
+            throw new Error(`unexpected prompt source: ${String(sourceId)}`);
+        });
+
+        expect(makoTriggered).toBe(false);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'warbot')).toBe(true);
+        expect(getPromptsBySourceId(resolved.finalState, 'smashup_immediate_extra_minion')).toHaveLength(0);
+    });
+
+    it('灰鲭鲨不会把缺少 destroyerId 的消灭事件默认算成当前玩家消灭', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('mako-extra', 'sharks_mako', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_shark_reef', [makeMinion('victim', 'tornados_dust_devil', '1', 2)])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const result = resolveDestroyedMinions(makeMatchState(core), '0', [{
+            minionUid: 'victim',
+            minionDefId: 'tornados_dust_devil',
+            fromBaseIndex: 0,
+            ownerId: '1',
+            reason: 'neutral_destroy_without_destroyer',
+        }]);
+
+        expect(getPromptsBySourceId(result.matchState ?? makeMatchState(core), 'smashup_immediate_extra_minion')).toHaveLength(0);
+    });
+
     it('血腥水域在该基地有随从被消灭后，只允许立即额外打出力量≤3随从到该基地', () => {
         const core = {
             players: {
@@ -436,6 +545,34 @@ describe('鲨鱼代表性玩法行为', () => {
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'small-extra')).toBe(true);
         expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'small-extra')).toBe(false);
         expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'big-extra')).toBe(true);
+    });
+
+    it('鲨鱼领地不会把缺少 destroyerId 的消灭事件默认算成当前玩家触发', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_shark_reef', [makeMinion('victim', 'tornados_dust_devil', '1', 2)]),
+                makeBase('base_the_deep', [makeMinion('destroyer-minion', 'sharks_hammerhead', '0', 3)]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const result = resolveDestroyedMinions(makeMatchState(core), '0', [{
+            minionUid: 'victim',
+            minionDefId: 'tornados_dust_devil',
+            fromBaseIndex: 0,
+            ownerId: '1',
+            reason: 'neutral_destroy_without_destroyer',
+        }]);
+
+        expect(getPromptsBySourceId(result.matchState ?? makeMatchState(core), 'base_shark_reef')).toHaveLength(0);
     });
 
     it('鲨鱼领地按 destroyerId 让消灭者给自己的任意随从放置指示物', () => {

@@ -31,9 +31,9 @@ export const FriendsChatModal = ({ isOpen, onClose, inviteData, initialFriendId 
             className="modal-base-container fixed inset-0 z-50 flex items-center justify-center p-4"
             data-lock-layout-viewport="true"
             style={{
-                '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh))',
-                '--modal-active-bottom-inset': 'var(--safe-area-bottom)',
-                '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--safe-area-bottom)))',
+                '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))',
+                '--modal-active-bottom-inset': 'var(--runtime-modal-bottom-inset)',
+                '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100vh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset))))',
                 paddingTop: 'max(1rem, var(--safe-area-top))',
                 paddingRight: 'max(1rem, var(--safe-area-right))',
                 paddingBottom: 'max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset)))',

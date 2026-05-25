@@ -103,6 +103,7 @@ const DEFAULT_GRID_CONFIG: GridConfig = {
 const MOBILE_LANDSCAPE_MAP_INITIAL_SCALE = 1.18;
 const MOBILE_LANDSCAPE_MAP_PADDING = '4vw';
 const DESKTOP_MAP_SIDE_RATIO = 0.1;
+const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
 const MAP_INTERNAL_TARGETS = new Set([
   'sw-my-summoner', 'sw-enemy-summoner', 'sw-my-gate', 'sw-start-archer',
 ]);
@@ -1499,7 +1500,19 @@ export const SummonerWarsBoard: React.FC<Props> = ({
 
               {/* 卡牌放大预览 */}
               <MagnifyOverlay isOpen={!!magnifiedCard} onClose={() => setMagnifiedCard(null)} containerClassName="max-h-[85vh] max-w-[90vw]" overlayTestId="sw-magnify-overlay" closeLabel={t('actions.close')}>
-                {magnifiedCard && <CardSprite atlasId={magnifiedCard.atlasId} frameIndex={magnifiedCard.frameIndex} className="h-[75vh] rounded-xl shadow-2xl" style={{ minWidth: '40vw' }} />}
+                {magnifiedCard && (
+                  <div
+                    style={{
+                      width: `min(90vw, max(40vw, calc(75vh * ${SUMMONER_WARS_CARD_ASPECT_RATIO})))`,
+                    }}
+                  >
+                    <CardSprite
+                      atlasId={magnifiedCard.atlasId}
+                      frameIndex={magnifiedCard.frameIndex}
+                      className="w-full rounded-xl shadow-2xl"
+                    />
+                  </div>
+                )}
               </MagnifyOverlay>
 
               {/* 弃牌堆查看浮层 */}

@@ -46,9 +46,20 @@ const CARDIA_TIGHT_LANDSCAPE_SIDEBAR_WIDTH = '8.4rem';
 // - 鼠标稳定悬停 200ms 后才打开，避免快速扫过时频繁误触发；
 // - 鼠标离开目标后立即关闭，不做关闭延迟，保证反馈干脆。
 const CARDIA_PC_HOVER_MAGNIFY_DELAY_MS = 200;
+const CARDIA_CARD_ASPECT_RATIO = 106 / 160;
+const CARDIA_PLAYER_ZONE_HEIGHT = 'clamp(8.9rem, calc(var(--runtime-viewport-height, 100vh) * 0.31), 10.6rem)';
 
-const CARD_SIZE_CLASSES = 'w-[var(--cardia-card-width)] aspect-[106/160]';
-const SMALL_CARD_SIZE_CLASSES = 'w-[var(--cardia-small-card-width)] aspect-[106/160]';
+const CARD_SIZE_CLASSES = 'w-[var(--cardia-card-width)]';
+const SMALL_CARD_SIZE_CLASSES = 'w-[var(--cardia-small-card-width)]';
+
+function getCardSizeStyle(size: 'normal' | 'small'): React.CSSProperties {
+    const widthVar = size === 'small' ? 'var(--cardia-small-card-width)' : 'var(--cardia-card-width)';
+    return {
+        width: widthVar,
+        height: `calc(${widthVar} / ${CARDIA_CARD_ASPECT_RATIO})`,
+        aspectRatio: `${CARDIA_CARD_ASPECT_RATIO} / 1`,
+    };
+}
 
 const detectTouchLikeInput = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -839,9 +850,12 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                             {/* 我的区域（横屏右侧下栏） */}
                             <div
                                 data-testid="cardia-player-zone"
-                                className={`mt-0.5 flex h-[clamp(8.9rem,31dvh,10.6rem)] items-end gap-2 overflow-visible pb-1 ${focusedHandCardUid ? 'relative z-[260]' : ''}`}
+                                className={`mt-0.5 flex items-end gap-2 overflow-visible pb-1 ${focusedHandCardUid ? 'relative z-[260]' : ''}`}
 
-                                style={playerZoneWrapperStyle}
+                                style={{
+                                    ...playerZoneWrapperStyle,
+                                    height: CARDIA_PLAYER_ZONE_HEIGHT,
+                                }}
                             >
                                 <div className="min-w-0 flex-1">
                                     <PlayerArea
@@ -1799,6 +1813,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
     
     // 卡牌尺寸由棋盘根节点的 CSS 变量统一控制：PC 固定，移动端自适应。
     const sizeClasses = size === 'small' ? SMALL_CARD_SIZE_CLASSES : CARD_SIZE_CLASSES;
+    const sizeStyle = getCardSizeStyle(size);
     
     // 计算修正标记总和（从 core.modifierTokens 中过滤）
     const modifierTotal = core.modifierTokens
@@ -1887,6 +1902,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
             ref={handleContainerRef}
             data-testid={`card-${card.uid}`}
             className={`group relative ${sizeClasses} overflow-hidden rounded-lg border-2 border-white/20 shadow-lg ${expanded ? 'z-30' : ''}`}
+            style={sizeStyle}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUpOrCancel}
             onPointerCancel={handlePointerUpOrCancel}
@@ -1952,9 +1968,10 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
 const CardBack: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) => {
     const [imageError, setImageError] = React.useState(false);
     const sizeClasses = size === 'small' ? SMALL_CARD_SIZE_CLASSES : CARD_SIZE_CLASSES;
+    const sizeStyle = getCardSizeStyle(size);
     
     return (
-        <div className={`${sizeClasses} overflow-hidden rounded-lg border-2 border-purple-600 shadow-lg`}>
+        <div className={`${sizeClasses} overflow-hidden rounded-lg border-2 border-purple-600 shadow-lg`} style={sizeStyle}>
             {!imageError ? (
                 <OptimizedImage
                     src={CARDIA_IMAGE_PATHS.DECK1_BACK}
@@ -1976,8 +1993,9 @@ const CardBack: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) 
  */
 const EmptySlot: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) => {
     const sizeClasses = size === 'small' ? SMALL_CARD_SIZE_CLASSES : CARD_SIZE_CLASSES;
+    const sizeStyle = getCardSizeStyle(size);
     return (
-        <div className={`${sizeClasses} flex items-center justify-center rounded-lg border-2 border-dashed border-gray-600 text-gray-500`}>
+        <div className={`${sizeClasses} flex items-center justify-center rounded-lg border-2 border-dashed border-gray-600 text-gray-500`} style={sizeStyle}>
             <div className="text-[10px] sm:text-xs">等待中...</div>
         </div>
     );

@@ -1,15 +1,30 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
+    resolveOnPlay,
     requireOnPlay,
     resolveSpecial,
     type AbilityContext,
 } from './abilityRegistry';
+import { getCardDef } from '../data/cards';
 import { reduce } from './reduce';
-import type { SmashUpCore, SmashUpEvent } from './types';
+import type { ActionCardDef, SmashUpCore, SmashUpEvent } from './types';
 
-function requirePlayedActionExecutor(defId: string) {
-    return resolveSpecial(defId)
-        ?? requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
+function getPlayedActionExecutor(defId: string) {
+    const def = getCardDef(defId) as ActionCardDef | undefined;
+    if (!def || def.type !== 'action') {
+        return requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
+    }
+
+    if (def.subtype === 'ongoing') {
+        return resolveOnPlay(defId) ?? null;
+    }
+
+    if (def.subtype === 'special') {
+        return resolveSpecial(defId)
+            ?? requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
+    }
+
+    return requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
 }
 
 
@@ -34,7 +49,13 @@ export function appendResolvedActionAbility(params: {
     targetMinionUid?: string;
     handSizeAfterPlay?: number;
 }): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const executor = requirePlayedActionExecutor(params.defId);
+    const executor = getPlayedActionExecutor(params.defId);
+    if (!executor) {
+        return {
+            state: params.state,
+            events: params.events,
+        };
+    }
 
     let simCore = params.state.core;
     for (const evt of params.events) {

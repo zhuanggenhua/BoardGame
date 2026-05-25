@@ -232,6 +232,17 @@ export async function waitForSmashUpUI(page: Page, timeout = 30000) {
     await page.waitForTimeout(500);
 }
 
+/** 截图取证前隐藏调试浮层，避免主态证据被 DEV 入口污染 */
+export async function hideSmashUpDebugPanelForEvidence(page: Page) {
+    await page.evaluate(() => {
+        (window as Window & { __BG_HIDE_DEBUG_PANEL__?: boolean }).__BG_HIDE_DEBUG_PANEL__ = true;
+    });
+    await page.addStyleTag({
+        content: '[data-testid="debug-toggle-container"] { pointer-events: none !important; opacity: 0 !important; }',
+    }).catch(() => {});
+    await page.waitForTimeout(80);
+}
+
 // ============================================================================
 // 调试面板操作
 // ============================================================================

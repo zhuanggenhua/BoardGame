@@ -70,7 +70,7 @@
         --safe-area-left: env(safe-area-inset-left, 0px);
         --keyboard-inset-height: 0px;
         --safe-area-bottom-with-keyboard: max(var(--safe-area-bottom), var(--keyboard-inset-height));
-        --runtime-modal-bottom-inset: max(var(--safe-area-bottom), 0px);
+        --runtime-modal-bottom-inset: var(--safe-area-bottom-with-keyboard);
         --runtime-viewport-width: 100vw;
         --layout-viewport-height: 100vh;
         /*
@@ -90,6 +90,7 @@
         --mobile-board-shell-inverse-scale: 1;
         --mobile-board-shell-inline-unit: 1vw;
         --mobile-board-shell-block-unit: 1vh;
+        --mobile-orientation-banner-offset: 0px;
         --runtime-modal-max-height: calc(
             var(--runtime-viewport-height, 100vh)
             - max(1rem, var(--safe-area-top))
@@ -300,8 +301,8 @@
     right: 0;
     bottom: auto;
     left: 0;
-    height: var(--runtime-viewport-height, 100dvh);
-    max-height: var(--runtime-viewport-height, 100dvh);
+    height: var(--runtime-viewport-height, 100vh);
+    max-height: var(--runtime-viewport-height, 100vh);
     overflow-y: auto;
     overscroll-behavior: contain;
     scroll-padding-top: max(1rem, var(--safe-area-top));
@@ -309,20 +310,31 @@
 }
 
 .modal-base-container[data-lock-layout-viewport="true"] {
-    height: var(--modal-active-viewport-height, var(--runtime-viewport-height, 100dvh));
-    max-height: var(--modal-active-viewport-height, var(--runtime-viewport-height, 100dvh));
+    height: var(--modal-active-viewport-height, var(--runtime-viewport-height, 100vh));
+    max-height: var(--modal-active-viewport-height, var(--runtime-viewport-height, 100vh));
 }
 
 html[data-keyboard-visible="true"] .auth-modal-container {
-    --modal-active-viewport-height: var(--runtime-viewport-height, 100dvh);
+    --modal-active-viewport-height: var(--runtime-viewport-height, 100vh);
     --modal-active-bottom-inset: var(--runtime-modal-bottom-inset);
     align-items: flex-start;
 }
 
 html[data-keyboard-visible="true"] .auth-modal-container {
-    --modal-active-viewport-height: var(--runtime-viewport-height, 100dvh);
+    --modal-active-viewport-height: var(--runtime-viewport-height, 100vh);
     --modal-active-bottom-inset: var(--runtime-modal-bottom-inset);
     align-items: flex-start;
+}
+
+/*
+ * 旧 Android WebView / 低版本内核不支持 backdrop-filter 时，直接降级成纯色半透明面板。
+ * 这里统一关闭 blur，避免不同游戏各自出现“有的透明、有的糊掉、有的直接不生效”的碎片化退化。
+ */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    [class*="backdrop-blur"] {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
 }
 
 /* 娓告垙涓撳睘瀛椾綋锛歮anifest.fontFamily 閫氳繃 MatchRoom/LocalMatchRoom 娉ㄥ叆涓?CSS 鍙橀噺锛?
@@ -624,7 +636,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 @media (max-width: 1023px) {
     [data-game-page][data-mobile-layout-preset="board-shell"] .mobile-board-shell {
         padding:
-            var(--safe-area-top)
+            max(var(--safe-area-top), var(--mobile-orientation-banner-offset, 0px))
             var(--safe-area-right)
             var(--safe-area-bottom)
             var(--safe-area-left);

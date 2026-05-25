@@ -310,5 +310,6 @@ describe('恐龙派系行动能力', () => {
         const destroyedUids = destroyEvents.map(e => (e as any).payload.minionUid);
         expect(destroyedUids).toContain('m1');
         expect(destroyedUids).toContain('m2');
+        expect(destroyEvents.every(event => (event as any).payload.destroyerId === '0')).toBe(true);
     });
 });

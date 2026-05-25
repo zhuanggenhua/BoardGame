@@ -670,7 +670,7 @@ export const MobileTextEntryProxyLayer = () => {
         autoCapitalize: 'sentences' as const,
         autoCorrect: 'on',
         spellCheck: true,
-        className: proxyState.className || 'w-full',
+        className: `pointer-events-auto ${proxyState.className || 'w-full'}`,
         style: {
             width: '100%',
             ...proxyState.inlineStyle,
@@ -806,7 +806,7 @@ export const MobileTextEntryProxyLayer = () => {
             data-testid="mobile-text-entry-proxy"
         >
             <form
-                className="pointer-events-auto mx-auto w-full max-w-3xl px-3"
+                className="pointer-events-none mx-auto w-full max-w-3xl px-3"
                 style={{ paddingBottom: `max(12px, calc(${Math.max(0, keyboardInset)}px + var(--safe-area-bottom)))` }}
                 onSubmit={(event) => {
                     event.preventDefault();

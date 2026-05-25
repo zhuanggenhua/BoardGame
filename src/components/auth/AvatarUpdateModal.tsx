@@ -209,18 +209,24 @@ export const AvatarUpdateModal = ({ isOpen, onClose, closeOnBackdrop }: AvatarUp
                 {/* 步骤二：裁剪 */}
                 {step === 'crop' && previewUrl && (
                     <div className="space-y-4">
-                        <div className="relative w-full aspect-square bg-black/10 rounded-lg overflow-hidden">
-                            <Cropper
-                                image={previewUrl}
-                                crop={crop}
-                                zoom={zoom}
-                                aspect={1}
-                                cropShape="round"
-                                showGrid={false}
-                                onCropChange={setCrop}
-                                onZoomChange={setZoom}
-                                onCropComplete={onCropComplete}
-                            />
+                        <div
+                            className="relative w-full bg-black/10 rounded-lg overflow-hidden"
+                            style={{ height: 0, paddingTop: '100%' }}
+                            data-testid="avatar-crop-frame"
+                        >
+                            <div className="absolute inset-0">
+                                <Cropper
+                                    image={previewUrl}
+                                    crop={crop}
+                                    zoom={zoom}
+                                    aspect={1}
+                                    cropShape="round"
+                                    showGrid={false}
+                                    onCropChange={setCrop}
+                                    onZoomChange={setZoom}
+                                    onCropComplete={onCropComplete}
+                                />
+                            </div>
                         </div>
 
                         {/* 缩放滑块 */}

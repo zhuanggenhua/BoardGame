@@ -11,6 +11,13 @@ import { getTitanDef, resolveCardName } from '../data/cards';
 import { MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from '../domain/types';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
 
+const CARD_ASPECT_RATIO = 0.714;
+const DECK_DISCARD_LAYER_Z_INDEX = UI_Z_INDEX.hud + 1;
+
+function cardHeight(width: string): string {
+    return `calc(${width} / ${CARD_ASPECT_RATIO})`;
+}
+
 type Props = {
     deckCount: number;
     madnessSupplyCount?: number;
@@ -182,12 +189,19 @@ export const DeckDiscardZone: React.FC<Props> = ({
         <div
             data-tutorial-id="su-deck-discard"
             className="absolute bottom-4 left-[2vw] right-[2vw] flex justify-between items-end pointer-events-none"
-            style={{ zIndex: UI_Z_INDEX.hud }}
+            style={{ zIndex: DECK_DISCARD_LAYER_Z_INDEX }}
         >
             <div className="flex items-end gap-3 pointer-events-auto">
                 {/* 牌库 - 左侧 */}
                 <div className="flex flex-col items-center group" data-testid="su-deck-stack">
-                    <div className="relative aspect-[0.714]" style={{ width: stackWidth }}>
+                    <div
+                        className="relative aspect-[0.714]"
+                        style={{
+                            width: stackWidth,
+                            height: cardHeight(stackWidth),
+                            aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
+                        }}
+                    >
                         {clampedMadnessSupplyCount !== undefined && (
                             <div
                                 className="pointer-events-none absolute inset-x-0 -top-6 z-20 flex justify-center"
@@ -239,7 +253,14 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                 const isActivatable = !!activatableTitanUids?.has(titan.uid) && (isMyTurn || isReactionTitan);
                                 const showTitanInspectButton = showDesktopTitanInspectButton || isCoarseTitanPointer;
                                 return (
-                                    <div key={titan.uid} className="group relative" style={{ width: titanWidth }}>
+                                    <div
+                                        key={titan.uid}
+                                        className="group relative"
+                                        style={{
+                                            width: titanWidth,
+                                            height: cardHeight(titanWidth),
+                                        }}
+                                    >
                                         <button
                                             type="button"
                                             data-testid={`su-rail-titan-${titan.uid}`}
@@ -256,6 +277,10 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                                     ? 'border-green-400 ring-1 ring-green-300/90 hover:-translate-y-1 shadow-[0_0_12px_rgba(74,222,128,0.28)]'
                                                     : 'border-slate-300 hover:-translate-y-1'
                                             }`}
+                                            style={{
+                                                height: '100%',
+                                                aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
+                                            }}
                                             title={titanName}
                                         >
                                             <CardPreview
@@ -323,7 +348,14 @@ export const DeckDiscardZone: React.FC<Props> = ({
                     setShowDiscard(prev => !prev);
                 }}
             >
-                <div className="relative aspect-[0.714]" style={{ width: stackWidth }}>
+                <div
+                    className="relative aspect-[0.714]"
+                    style={{
+                        width: stackWidth,
+                        height: cardHeight(stackWidth),
+                        aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
+                    }}
+                >
                     {hasPlayableFromDiscard && (
                         <div className="absolute -inset-2 rounded-lg z-0 pointer-events-none">
                             <div className="absolute inset-0 rounded-lg bg-green-400/40 animate-ping" />

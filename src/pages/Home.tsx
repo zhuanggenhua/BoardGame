@@ -1095,8 +1095,62 @@ export const Home = () => {
         };
     }, [closeModal]);
 
+    const activeMatchCard = activeMatch ? (
+        <div
+            data-testid="home-active-match-card"
+            className="pointer-events-auto flex w-full max-w-[min(100%,24rem)] flex-col gap-2 rounded-[10px] border border-parchment-brown bg-parchment-base-text/98 px-3 py-2.5 text-parchment-card-bg shadow-xl backdrop-blur-sm sm:max-w-[min(46rem,calc(100vw-2rem))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-3"
+        >
+            <div className="min-w-0 text-center sm:flex-1 sm:text-left">
+                <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-parchment-light-text sm:text-[10px] sm:tracking-wider">
+                    {t('lobby:home.activeMatch.status')}
+                </span>
+                <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[13px] font-bold leading-tight sm:justify-start sm:gap-x-2 sm:gap-y-1 sm:text-sm">
+                    <span className="max-w-full truncate">
+                        {t('lobby:home.activeMatch.room', { id: activeMatch.matchID.slice(0, 4) })}
+                    </span>
+                    <span className="hidden opacity-50 sm:inline">|</span>
+                    <span
+                        className={clsx(
+                            'max-w-full truncate',
+                            activeMatch.players.some(p => p.name) ? 'opacity-100' : 'opacity-50 italic'
+                        )}
+                    >
+                        {t('lobby:home.activeMatch.players', { count: activePlayerCount })}
+                    </span>
+                </div>
+            </div>
+            <div
+                data-testid="home-active-match-actions"
+                className="flex w-fit max-w-full flex-row flex-wrap items-center justify-center gap-1.5 self-center sm:w-auto sm:max-w-none sm:flex-nowrap sm:justify-end sm:self-auto sm:gap-2"
+            >
+                {myMatchRole?.credentials && (
+                    <button
+                        onClick={handleDestroyOrLeave}
+                        className={clsx(
+                            "min-w-[4.5rem] rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer border sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-wider",
+                            myMatchRole.playerID === '0'
+                                ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
+                                : "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20"
+                        )}
+                    >
+                        {myMatchRole.playerID === '0' ? t('lobby:actions.destroy') : t('lobby:actions.leave')}
+                    </button>
+                )}
+                <button
+                    onClick={handleReconnect}
+                    className="min-w-[5.75rem] rounded border border-parchment-light-text bg-parchment-light-text px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors cursor-pointer hover:bg-[#a08060] sm:min-w-0 sm:px-6 sm:py-1.5 sm:text-xs sm:tracking-wider"
+                >
+                    {t('lobby:actions.reconnectEnter')}
+                </button>
+            </div>
+        </div>
+    ) : null;
+
     return (
-        <div className="min-h-[100dvh] bg-parchment-base-bg text-parchment-base-text font-serif overflow-y-scroll flex flex-col items-center pb-[env(safe-area-inset-bottom)]">
+        <div
+            className="bg-parchment-base-bg text-parchment-base-text font-serif overflow-y-scroll flex flex-col items-center pb-[env(safe-area-inset-bottom)]"
+            style={{ minHeight: 'var(--runtime-viewport-height, 100vh)' }}
+        >
             <SEO
                 title={activeCategory === 'All' ? undefined : seoT(`common:category.${activeCategory}`)}
                 description={seoT('lobby:home.subtitle')}
@@ -1150,6 +1204,15 @@ export const Home = () => {
                 <nav className="mb-4 md:mb-6 w-full">
                     <CategoryPills activeCategory={activeCategory} onSelect={setActiveCategory} />
                 </nav>
+
+                {activeMatchCard && (
+                    <div
+                        data-testid="home-active-match-banner"
+                        className="mb-4 flex w-full justify-center px-1 sm:mb-5 sm:px-0 md:hidden"
+                    >
+                        {activeMatchCard}
+                    </div>
+                )}
 
                 {/* 游戏列表 */}
                 <section className="w-full pb-20">
@@ -1212,56 +1275,9 @@ export const Home = () => {
             {activeMatch && (
                 <div
                     data-testid="home-active-match-banner"
-                    className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 flex justify-center px-3 sm:px-4 md:px-6 animate-in slide-in-from-bottom-4 fade-in duration-300"
+                    className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 hidden justify-center px-3 animate-in slide-in-from-bottom-4 fade-in duration-300 md:flex md:px-6"
                 >
-                    <div
-                        data-testid="home-active-match-card"
-                        className="pointer-events-auto flex w-fit max-w-[calc(100vw-1.5rem)] flex-col gap-2 rounded-[10px] border border-parchment-brown bg-parchment-base-text/98 px-3 py-2.5 text-parchment-card-bg shadow-xl backdrop-blur-sm sm:max-w-[min(46rem,calc(100vw-2rem))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-3"
-                    >
-                        <div className="min-w-0 text-center sm:flex-1 sm:text-left">
-                            <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-parchment-light-text sm:text-[10px] sm:tracking-wider">
-                                {t('lobby:home.activeMatch.status')}
-                            </span>
-                            <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[13px] font-bold leading-tight sm:justify-start sm:gap-x-2 sm:gap-y-1 sm:text-sm">
-                                <span className="max-w-full truncate">
-                                    {t('lobby:home.activeMatch.room', { id: activeMatch.matchID.slice(0, 4) })}
-                                </span>
-                                <span className="hidden opacity-50 sm:inline">|</span>
-                                <span
-                                    className={clsx(
-                                        'max-w-full truncate',
-                                        activeMatch.players.some(p => p.name) ? 'opacity-100' : 'opacity-50 italic'
-                                    )}
-                                >
-                                    {t('lobby:home.activeMatch.players', { count: activePlayerCount })}
-                                </span>
-                            </div>
-                        </div>
-                        <div
-                            data-testid="home-active-match-actions"
-                            className="flex w-fit max-w-full flex-row flex-wrap items-center justify-center gap-1.5 self-center sm:w-auto sm:max-w-none sm:flex-nowrap sm:justify-end sm:self-auto sm:gap-2"
-                        >
-                            {myMatchRole?.credentials && (
-                                <button
-                                    onClick={handleDestroyOrLeave}
-                                    className={clsx(
-                                        "min-w-[4.5rem] rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer border sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-wider",
-                                        myMatchRole.playerID === '0'
-                                            ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
-                                            : "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20"
-                                    )}
-                                >
-                                    {myMatchRole.playerID === '0' ? t('lobby:actions.destroy') : t('lobby:actions.leave')}
-                                </button>
-                            )}
-                            <button
-                                onClick={handleReconnect}
-                                className="min-w-[5.75rem] rounded border border-parchment-light-text bg-parchment-light-text px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors cursor-pointer hover:bg-[#a08060] sm:min-w-0 sm:px-6 sm:py-1.5 sm:text-xs sm:tracking-wider"
-                            >
-                                {t('lobby:actions.reconnectEnter')}
-                            </button>
-                        </div>
-                    </div>
+                    {activeMatchCard}
                 </div>
             )}
         </div>

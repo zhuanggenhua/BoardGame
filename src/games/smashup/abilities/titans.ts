@@ -3001,9 +3001,6 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
     const controllerId = ctx.sourceControllerId ?? ctx.playerId;
     const titan = getControlledTitanOnBase(ctx.state, 'ninjas_invisible_ninja', controllerId);
     if (!titan || !ctx.matchState) return [];
-    if (Number(titan.metadata?.invisibleNinjaTriggeredTurn ?? -1) === ctx.state.turnNumber) {
-        return [];
-    }
 
     const destroyAnotherPlayersCard =
         ctx.destroyerId === controllerId
@@ -4186,12 +4183,6 @@ export function registerTitanInteractionHandlers(): void {
 
         const remainingShown = shownCards.filter(card => card.uid !== chosenCard.uid);
         const events: SmashUpEvent[] = [
-            buildTitanMetadataUpdateEvent(
-                continuation.titanUid,
-                { invisibleNinjaTriggeredTurn: state.core.turnNumber },
-                'ninjas_invisible_ninja_ongoing',
-                timestamp,
-            ),
             {
                 type: SU_EVENTS.CARDS_DRAWN,
                 payload: {

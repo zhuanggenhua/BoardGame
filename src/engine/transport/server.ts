@@ -142,6 +142,7 @@ const DEFAULT_ONLINE_AI_RECOVERY_MAX_ADVANCE_STEPS = 16;
 const DEFAULT_ONLINE_AI_RECOVERY_FEEDBACK_COOLDOWN_MS = 60_000;
 const DEFAULT_ONLINE_AI_RECOVERY_FAILURE_REPORT_THRESHOLD = 2;
 const DEFAULT_ONLINE_AI_OVERLAY_RESYNC_COOLDOWN_MS = 1_500;
+const DEFAULT_COMMAND_FAILURE_FEEDBACK_COOLDOWN_MS = 60_000;
 const MAX_ONLINE_AI_RECOVERY_LEGAL_ACTIONS = 8;
 
 function resolveSeatControllerTypeForTraining(
@@ -170,6 +171,20 @@ type OnlineAiRecoveryFeedbackPayload = {
     status?: 'open' | 'resolved';
     reason: string;
     trackerKey: string;
+    progressMarker: string;
+    stateSnapshot: string;
+    actionLog?: string;
+};
+
+type CommandFailureFeedbackPayload = {
+    matchId: string;
+    gameId: string;
+    playerId: string;
+    incidentKind: 'command-failed';
+    severity: 'medium' | 'high';
+    commandType: string;
+    reason: string;
+    incidentKey: string;
     progressMarker: string;
     stateSnapshot: string;
     actionLog?: string;
@@ -473,6 +488,16 @@ const ONLINE_AI_FEEDBACK_PERSISTENCE_SUPPRESSED_KINDS = new Set<OnlineAiRecovery
     'legal-action-recovered',
 ]);
 
+function shouldAutoReportCommandFailure(reason: string): boolean {
+    return reason === GENERIC_COMMAND_FAILURE_REASON
+        || reason === PIPELINE_FAILURE_REASON
+        || reason.startsWith(`${PIPELINE_FAILURE_REASON}:`);
+}
+
+function resolveCommandFailureFeedbackSeverity(reason: string): CommandFailureFeedbackPayload['severity'] {
+    return reason === GENERIC_COMMAND_FAILURE_REASON ? 'medium' : 'high';
+}
+
 function emitOnlineAiBatchTrace(stage: string, payload: Record<string, unknown>): void {
     if (process.env.NODE_ENV === 'production') {
         return;
@@ -556,6 +581,7 @@ interface ActiveMatch {
         commandType: string;
         payload: unknown;
         playerID: string;
+        options?: ExecuteCommandInternalOptions;
         resolve: (success: boolean) => void;
     } | {
         /** batch 任务标记 */
@@ -566,6 +592,11 @@ interface ActiveMatch {
     /** 最近一次 executeCommandInternal 失败的真实原因，供 batch 回滚后透传给客户端。 */
     lastCommandFailureReason: string | null;
 }
+
+type ExecuteCommandInternalOptions = {
+    suppressBroadcast?: boolean;
+    reportFailureFeedback?: boolean;
+};
 
 const GENERIC_COMMAND_FAILURE_REASON = 'command_failed';
 const PIPELINE_FAILURE_REASON = 'pipeline_error';
@@ -715,6 +746,8 @@ export interface GameTransportServerConfig {
     onlineAiRecoveryFeedbackCooldownMs?: number;
     onlineAiRecoveryFailureReportThreshold?: number;
     onlineAiFeedbackReporter?: (payload: OnlineAiRecoveryFeedbackPayload) => Promise<void>;
+    commandFailureFeedbackCooldownMs?: number;
+    commandFailureFeedbackReporter?: (payload: CommandFailureFeedbackPayload) => Promise<void>;
 }
 
 export class GameTransportServer {
@@ -736,8 +769,11 @@ export class GameTransportServer {
     private readonly onlineAiRecoveryFeedbackCooldownMs: number;
     private readonly onlineAiRecoveryFailureReportThreshold: number;
     private readonly onlineAiFeedbackReporter?: GameTransportServerConfig['onlineAiFeedbackReporter'];
+    private readonly commandFailureFeedbackCooldownMs: number;
+    private readonly commandFailureFeedbackReporter?: GameTransportServerConfig['commandFailureFeedbackReporter'];
     private readonly onlineAiRecoveryTrackers = new Map<string, OnlineAiRecoveryTracker>();
     private readonly onlineAiRecoveryFeedbackCooldown = new Map<string, number>();
+    private readonly commandFailureFeedbackCooldown = new Map<string, number>();
     private readonly onlineAiOverlayResyncCooldown = new Map<string, number>();
     private readonly onlineAiRecoveryInFlight = new Set<string>();
     private onlineAiRecoveryTimer: ReturnType<typeof setInterval> | null = null;
@@ -765,6 +801,8 @@ export class GameTransportServer {
         this.onlineAiRecoveryFeedbackCooldownMs = config.onlineAiRecoveryFeedbackCooldownMs ?? DEFAULT_ONLINE_AI_RECOVERY_FEEDBACK_COOLDOWN_MS;
         this.onlineAiRecoveryFailureReportThreshold = config.onlineAiRecoveryFailureReportThreshold ?? DEFAULT_ONLINE_AI_RECOVERY_FAILURE_REPORT_THRESHOLD;
         this.onlineAiFeedbackReporter = config.onlineAiFeedbackReporter;
+        this.commandFailureFeedbackCooldownMs = config.commandFailureFeedbackCooldownMs ?? DEFAULT_COMMAND_FAILURE_FEEDBACK_COOLDOWN_MS;
+        this.commandFailureFeedbackReporter = config.commandFailureFeedbackReporter;
     }
 
     /** 启动传输层，监听 /game namespace */
@@ -2864,6 +2902,87 @@ export class GameTransportServer {
         return ONLINE_AI_FEEDBACK_PERSISTENCE_SUPPRESSED_KINDS.has(payload.incidentKind);
     }
 
+    private buildCommandFailureFeedbackPayload(args: {
+        match: ActiveMatch;
+        playerId: string;
+        commandType: string;
+        reason: string;
+        progressMarker: string;
+        stateIdBefore: number;
+        visibleState: MatchState<unknown>;
+    }): CommandFailureFeedbackPayload {
+        const incidentKey = [
+            args.playerId,
+            args.commandType,
+            args.reason,
+            args.progressMarker,
+        ].join(':');
+        const phase = typeof args.match.state.sys?.phase === 'string' ? args.match.state.sys.phase : null;
+        const turnNumber = typeof args.match.state.sys?.turnNumber === 'number' ? args.match.state.sys.turnNumber : null;
+
+        return {
+            matchId: args.match.matchID,
+            gameId: args.match.gameId,
+            playerId: args.playerId,
+            incidentKind: 'command-failed',
+            severity: resolveCommandFailureFeedbackSeverity(args.reason),
+            commandType: args.commandType,
+            reason: args.reason,
+            incidentKey,
+            progressMarker: args.progressMarker,
+            stateSnapshot: JSON.stringify({
+                kind: 'command-failure-feedback',
+                commandType: args.commandType,
+                reason: args.reason,
+                progressMarker: args.progressMarker,
+                stateIDBefore: args.stateIdBefore,
+                phase,
+                turnNumber,
+                visibleState: args.visibleState,
+            }),
+            actionLog: this.buildOnlineAiDiagnosticActionLog({
+                state: args.match.state,
+                phase,
+                progressMarker: args.progressMarker,
+                commandType: args.commandType,
+                reason: args.reason,
+            }),
+        };
+    }
+
+    private async reportCommandFailureFeedback(payload: CommandFailureFeedbackPayload): Promise<void> {
+        const dedupeKey = `${payload.matchId}:${payload.playerId}:${payload.incidentKind}:${payload.incidentKey}`;
+        const now = Date.now();
+        const cooldownUntil = this.commandFailureFeedbackCooldown.get(dedupeKey) ?? 0;
+        if (cooldownUntil > now) {
+            return;
+        }
+        this.commandFailureFeedbackCooldown.set(dedupeKey, now + this.commandFailureFeedbackCooldownMs);
+
+        const reporter = this.commandFailureFeedbackReporter ?? this.defaultCommandFailureFeedbackReporter.bind(this);
+        try {
+            await reporter(payload);
+            logger.info('[GameTransport] command failure feedback reported', {
+                matchID: payload.matchId,
+                gameId: payload.gameId,
+                playerID: payload.playerId,
+                commandType: payload.commandType,
+                reason: payload.reason,
+                incidentKey: payload.incidentKey,
+            });
+        } catch (error) {
+            logger.warn('[GameTransport] command failure feedback failed', {
+                matchID: payload.matchId,
+                gameId: payload.gameId,
+                playerID: payload.playerId,
+                commandType: payload.commandType,
+                reason: payload.reason,
+                incidentKey: payload.incidentKey,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+    }
+
     private buildOnlineAiDiagnosticActionLog(args: {
         state: MatchState<unknown>;
         phase?: unknown;
@@ -2967,7 +3086,7 @@ export class GameTransportServer {
         }));
     }
 
-    private async defaultOnlineAiFeedbackReporter(payload: OnlineAiRecoveryFeedbackPayload): Promise<void> {
+    private async postInternalSystemFeedback(body: Record<string, unknown>): Promise<void> {
         const { endpoint, token } = ONLINE_AI_FEEDBACK_CONFIG;
         if (!endpoint || !token) {
             return;
@@ -2978,36 +3097,68 @@ export class GameTransportServer {
                 'Content-Type': 'application/json',
                 'X-Internal-Feedback-Token': token,
             },
-            body: JSON.stringify({
-                content: `[system][online-ai-watchdog] ${payload.incidentKind} ${payload.reason}`,
-                type: 'bug',
-                severity: payload.severity,
-                ...(payload.status ? { status: payload.status } : {}),
-                source: 'online-ai-watchdog',
-                autoReportKind: payload.incidentKind,
-                incidentKey: payload.trackerKey,
-                gameName: payload.gameId,
-                contactInfo: 'system:online-ai-watchdog',
-                actionLog: payload.actionLog,
-                stateSnapshot: payload.stateSnapshot,
-                clientContext: {
-                    route: 'server-watchdog',
-                    mode: 'online',
-                    matchId: payload.matchId,
-                    playerId: payload.playerId,
-                    gameId: payload.gameId,
-                    timezone: 'server',
-                },
-                errorContext: {
-                    source: 'online-ai-watchdog',
-                    message: payload.reason,
-                    name: payload.incidentKind,
-                },
-            }),
+            body: JSON.stringify(body),
         });
         if (!response.ok) {
             throw new Error(`feedback_http_${response.status}`);
         }
+    }
+
+    private async defaultOnlineAiFeedbackReporter(payload: OnlineAiRecoveryFeedbackPayload): Promise<void> {
+        await this.postInternalSystemFeedback({
+            content: `[system][online-ai-watchdog] ${payload.incidentKind} ${payload.reason}`,
+            type: 'bug',
+            severity: payload.severity,
+            ...(payload.status ? { status: payload.status } : {}),
+            source: 'online-ai-watchdog',
+            autoReportKind: payload.incidentKind,
+            incidentKey: payload.trackerKey,
+            gameName: payload.gameId,
+            contactInfo: 'system:online-ai-watchdog',
+            actionLog: payload.actionLog,
+            stateSnapshot: payload.stateSnapshot,
+            clientContext: {
+                route: 'server-watchdog',
+                mode: 'online',
+                matchId: payload.matchId,
+                playerId: payload.playerId,
+                gameId: payload.gameId,
+                timezone: 'server',
+            },
+            errorContext: {
+                source: 'online-ai-watchdog',
+                message: payload.reason,
+                name: payload.incidentKind,
+            },
+        });
+    }
+
+    private async defaultCommandFailureFeedbackReporter(payload: CommandFailureFeedbackPayload): Promise<void> {
+        await this.postInternalSystemFeedback({
+            content: `[system][command-failed] ${payload.commandType} ${payload.reason}`,
+            type: 'bug',
+            severity: payload.severity,
+            source: 'player-command-failure',
+            autoReportKind: payload.incidentKind,
+            incidentKey: payload.incidentKey,
+            gameName: payload.gameId,
+            contactInfo: 'system:player-command-failure',
+            actionLog: payload.actionLog,
+            stateSnapshot: payload.stateSnapshot,
+            clientContext: {
+                route: 'server-command',
+                mode: 'online',
+                matchId: payload.matchId,
+                playerId: payload.playerId,
+                gameId: payload.gameId,
+                timezone: 'server',
+            },
+            errorContext: {
+                source: 'player-command-failure',
+                message: payload.reason,
+                name: payload.commandType,
+            },
+        });
     }
 
     private async tryRecoverOnlineAiWithLegalAction(
@@ -3259,7 +3410,13 @@ export class GameTransportServer {
                     await next.execute();
                     next.resolve(true);
                 } else {
-                    const queuedSuccess = await this.executeCommandInternal(match, next.playerID, next.commandType, next.payload);
+                    const queuedSuccess = await this.executeCommandInternal(
+                        match,
+                        next.playerID,
+                        next.commandType,
+                        next.payload,
+                        next.options,
+                    );
                     next.resolve(queuedSuccess);
                 }
             } catch (error) {
@@ -3388,6 +3545,7 @@ export class GameTransportServer {
                     commandType,
                     payload,
                     playerID,
+                    options: { reportFailureFeedback: true },
                     resolve,
                 });
             });
@@ -3395,7 +3553,13 @@ export class GameTransportServer {
 
         match.executing = true;
         try {
-            const success = await this.executeCommandInternal(match, playerID, commandType, payload);
+            const success = await this.executeCommandInternal(
+                match,
+                playerID,
+                commandType,
+                payload,
+                { reportFailureFeedback: true },
+            );
             await this.drainCommandQueue(match);
             return success;
         } finally {
@@ -3469,7 +3633,10 @@ export class GameTransportServer {
             // 批次内命令串行执行（抑制中间广播，避免客户端收到中间状态导致动画重播）
             for (const cmd of commands) {
                 match.lastCommandFailureReason = null;
-                const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, { suppressBroadcast: true });
+                const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, {
+                    suppressBroadcast: true,
+                    reportFailureFeedback: true,
+                });
                 if (!success) {
                     const failureReason = match.lastCommandFailureReason ?? GENERIC_COMMAND_FAILURE_REASON;
                     emitOnlineAiBatchTrace('handle-batch-command-failed', {
@@ -3543,7 +3710,10 @@ export class GameTransportServer {
         // 批次内命令串行执行（抑制中间广播，避免客户端收到中间状态导致动画重播）
         for (const cmd of commands) {
             match.lastCommandFailureReason = null;
-            const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, { suppressBroadcast: true });
+            const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, {
+                suppressBroadcast: true,
+                reportFailureFeedback: true,
+            });
             if (!success) {
                 const failureReason = match.lastCommandFailureReason ?? GENERIC_COMMAND_FAILURE_REASON;
                 emitOnlineAiBatchTrace('execute-batch-command-failed', {
@@ -3870,7 +4040,7 @@ export class GameTransportServer {
         playerID: string,
         commandType: string,
         payload: unknown,
-        options?: { suppressBroadcast?: boolean },
+        options?: ExecuteCommandInternalOptions,
     ): Promise<boolean> {
         const startTime = Date.now();
         match.lastCommandFailureReason = null;
@@ -3916,6 +4086,18 @@ export class GameTransportServer {
                 }
             }
 
+            if (options?.reportFailureFeedback && shouldAutoReportCommandFailure(failureReason)) {
+                await this.reportCommandFailureFeedback(this.buildCommandFailureFeedbackPayload({
+                    match,
+                    playerId: playerID,
+                    commandType,
+                    reason: failureReason,
+                    progressMarker: progressMarkerBeforeCommand,
+                    stateIdBefore,
+                    visibleState: preTrainingState,
+                }));
+            }
+
             // 自动取消 pending interaction（防止游戏卡死）
             // 但如果当前命令本身就是 CANCEL，不能再次递归触发取消.
             if (commandType !== INTERACTION_COMMANDS.CANCEL) {
@@ -3945,6 +4127,18 @@ export class GameTransportServer {
                 for (const sid of sockets) {
                     nsp.to(sid).emit('error', match.matchID, failureReason);
                 }
+            }
+
+            if (options?.reportFailureFeedback && shouldAutoReportCommandFailure(failureReason)) {
+                await this.reportCommandFailureFeedback(this.buildCommandFailureFeedbackPayload({
+                    match,
+                    playerId: playerID,
+                    commandType,
+                    reason: failureReason,
+                    progressMarker: progressMarkerBeforeCommand,
+                    stateIdBefore,
+                    visibleState: preTrainingState,
+                }));
             }
             return false;
         }

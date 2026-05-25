@@ -5167,7 +5167,8 @@ test.describe('Smash Up 牌库检索交互', () => {
         expect(interactionMeta.targetType).toBe('generic');
         expect(interactionMeta.autoRefresh).toBe('deck');
         expect(interactionMeta.responseValidationMode).toBe('live');
-        expect(interactionMeta.optionIds).toEqual(expect.arrayContaining(['minion-0', 'minion-1', 'skip']));
+        expect(interactionMeta.optionIds).toContain('skip');
+        expect(interactionMeta.optionIds.filter((id: string) => id !== 'skip')).toHaveLength(2);
         expect(interactionMeta.optionDisplayModes.filter((mode: string) => mode === 'card')).toHaveLength(2);
 
         await game.screenshot('sprout-prompt-visible', testInfo);

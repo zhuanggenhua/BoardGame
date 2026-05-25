@@ -355,7 +355,8 @@ export const HomeV2 = () => {
         <main
             data-testid="home-v2-root"
             data-bg-friendly-screen="true"
-            className="h-screen overflow-hidden bg-[linear-gradient(180deg,_#3a2b1f_0%,_#30241b_100%)]"
+            className="overflow-hidden bg-[linear-gradient(180deg,_#3a2b1f_0%,_#30241b_100%)]"
+            style={{ height: 'var(--runtime-viewport-height, 100vh)' }}
         >
             <div className="relative flex h-full items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(92,70,48,0.28)_0%,_rgba(13,10,8,0.92)_68%,_rgba(10,8,7,1)_100%)]" />

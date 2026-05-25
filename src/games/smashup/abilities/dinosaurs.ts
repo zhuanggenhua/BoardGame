@@ -780,7 +780,7 @@ const dinoSurvivalOfTheFittestProgram = createEffectProgram<AbilityContext, Smas
         if (!hasHigher) continue;
         const lowest = base.minions.filter((minion) => getMinionPower(ctx.state, minion, baseIndex) === minPower);
         if (lowest.length === 1) {
-            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, baseIndex, lowest[0].owner, undefined, 'dino_survival_of_the_fittest', ctx.now));
+            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, baseIndex, lowest[0].owner, ctx.playerId, 'dino_survival_of_the_fittest', ctx.now));
         }
     }
 

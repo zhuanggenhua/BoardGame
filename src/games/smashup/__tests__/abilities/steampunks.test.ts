@@ -16,6 +16,7 @@ import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import type { BaseInPlay, CardInstance, SmashUpCore } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { SMASHUP_FACTION_IDS } from '../../domain/ids';
+import { validate } from '../../domain/commands';
 import {
     expectNoPrompt,
     getFirstPrompt,
@@ -515,6 +516,49 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(getPromptSourceId(current)).toBe('steampunk_mechanic');
         });
 
+        test('从弃牌堆重打无 onPlay 的持续行动时不应抛缺声明，并会正常附着', () => {
+            const base = makeBase();
+            const state = makeState([base]);
+            state.players['0'].hand = [
+                makeCard('mech-1', 'steampunk_mechanic', 'minion', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
+                ...state.players['0'].hand,
+            ];
+            state.players['0'].discard = [
+                makeCard('rotary-1', 'steampunk_rotary_slug_thrower', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
+            ];
+
+            const playedMechanic = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'mech-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+
+            expect(playedMechanic.success, playedMechanic.error).toBe(true);
+
+            const choseCard = respondToPromptOption(
+                playedMechanic.finalState,
+                option => option.value?.cardUid === 'rotary-1',
+                'steampunk mechanic rotary slug thrower option',
+                '0',
+                dummyRandom,
+            );
+
+            expect(choseCard.success, choseCard.error).toBe(true);
+
+            const attached = respondToPromptOption(
+                choseCard.finalState,
+                option => option.value?.baseIndex === 0,
+                'steampunk mechanic target base 0 option',
+                '0',
+                dummyRandom,
+            );
+
+            expect(attached.success, attached.error).toBe(true);
+            expect(attached.events.some(event => event.type === SU_EVENTS.ACTION_PLAYED)).toBe(true);
+            expect(attached.events.some(event => event.type === SU_EVENTS.ONGOING_ATTACHED)).toBe(true);
+            expect(attached.finalState.core.bases[0].ongoingActions.some(action => action.uid === 'rotary-1' && action.defId === 'steampunk_rotary_slug_thrower')).toBe(true);
+        });
+
         test('只能选择打出到基地上的行动牌，不包括打到随从上的和普通行动牌', () => {
             const base = makeBase();
             const state = makeState([base]);
@@ -606,6 +650,46 @@ describe('蒸汽朋克 ongoing 能力', () => {
             const cardUids = getPromptOptions(current).map((opt: any) => opt.value?.cardUid).filter(Boolean);
             expect(cardUids).toContain('dis-4');
             expect(result.events.some((event: any) => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(false);
+        });
+
+        test('steampunk_mechanic_target: requireOwnMinion 的候选应包含机械师所在基地与中间合法基地', () => {
+            const state = makeState([
+                makeBase(),
+                makeBase({
+                    minions: [makeMinion({ uid: 'ally-mid', defId: 'pirate_first_mate', controller: '0' })],
+                }),
+                makeBase(),
+            ]);
+            state.players['0'].hand = [
+                makeCard('mech-1', 'steampunk_mechanic', 'minion', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
+                ...state.players['0'].hand,
+            ];
+            state.players['0'].discard = [
+                makeCard('dis-4', 'cthulhu_complete_the_ritual', 'action', '0', SMASHUP_FACTION_IDS.CTHULHU),
+            ];
+
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'mech-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+
+            expect(result.success, result.error).toBe(true);
+            const current = getSimpleChoicePrompt(result.finalState, 'steampunk_mechanic');
+            const step1 = respondToPromptOption(
+                result.finalState,
+                option => option.value?.cardUid === 'dis-4',
+                'steampunk mechanic dis-4 option',
+                '0',
+                dummyRandom,
+            );
+            expect(step1.success, step1.error).toBe(true);
+
+            const chooseTargetInteraction = getFirstPrompt(step1.finalState);
+            expect(getPromptSourceId(chooseTargetInteraction)).toBe('steampunk_mechanic_target');
+
+            const baseOptions = getPromptOptions(chooseTargetInteraction).map((opt: any) => opt.value?.baseIndex);
+            expect(baseOptions).toEqual([0, 1]);
         });
 
         test('若所选行动已不在弃牌堆则不再恢复或打出', () => {
@@ -873,6 +957,43 @@ describe('蒸汽朋克 ongoing 能力', () => {
     });
 
     describe('steampunk_captain_ahab: 亚哈船长', () => {
+        test('另一基地有己方基地行动卡时，USE_TALENT 校验通过，可进入高亮集合', () => {
+            const captain = makeMinion({ uid: 'ahab-1', defId: 'steampunk_captain_ahab', controller: '0', owner: '0' });
+            const state = makeState([
+                makeBase({ minions: [captain] }),
+                makeBase({ ongoingActions: [{ uid: 'ongoing-1', defId: 'steampunk_escape_hatch', ownerId: '0', talentUsed: false } as any] }),
+                makeBase(),
+            ]);
+
+            const validation = validate(makeMatchState(state), {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'ahab-1', baseIndex: 0 },
+            } as any);
+
+            expect(validation).toEqual({ valid: true });
+        });
+
+        test('只有当前基地有己方基地行动卡时，USE_TALENT 校验失败，不应高亮', () => {
+            const captain = makeMinion({ uid: 'ahab-1', defId: 'steampunk_captain_ahab', controller: '0', owner: '0' });
+            const state = makeState([
+                makeBase({
+                    minions: [captain],
+                    ongoingActions: [{ uid: 'ongoing-1', defId: 'steampunk_escape_hatch', ownerId: '0', talentUsed: false } as any],
+                }),
+                makeBase(),
+            ]);
+
+            const validation = validate(makeMatchState(state), {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'ahab-1', baseIndex: 0 },
+            } as any);
+
+            expect(validation.valid).toBe(false);
+            expect(validation.error).toBe('当前没有可选择的目标');
+        });
+
         test('多个候选基地时创建 base interaction', () => {
             const captain = makeMinion({ uid: 'ahab-1', defId: 'steampunk_captain_ahab', controller: '0', owner: '0' });
             const state = makeState([

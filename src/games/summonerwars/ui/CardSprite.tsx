@@ -279,6 +279,10 @@ export const CardSprite: React.FC<CardSpriteProps> = ({
   }
 
   const spriteStyle = computeSpriteImgStyle(frameIndex, source.config);
+  const ratioPaddingTop = `${100 / spriteStyle.aspectRatio}%`;
+  const hasExplicitInlineHeight = style?.height != null
+    || style?.minHeight != null
+    || style?.maxHeight != null;
   const handleLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget;
     if (!hasUsableImage(img)) {
@@ -492,7 +496,15 @@ export const CardSprite: React.FC<CardSpriteProps> = ({
       data-card-sprite-url={activeUrl}
       className={`relative overflow-hidden ${className}`}
       style={{
-        aspectRatio: `${spriteStyle.aspectRatio}`,
+        ...(hasExplicitInlineHeight
+          ? {
+              aspectRatio: `${spriteStyle.aspectRatio}`,
+            }
+          : {
+              height: 0,
+              paddingTop: ratioPaddingTop,
+              aspectRatio: `${spriteStyle.aspectRatio}`,
+            }),
         transition: 'opacity 0.3s ease',
         opacity: loaded ? 1 : 0.6,
         ...(loaded ? {} : SHIMMER_BG),
@@ -500,26 +512,28 @@ export const CardSprite: React.FC<CardSpriteProps> = ({
       }}
     >
       {activeUrl ? (
-        <img
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          src={renderedSrc}
-          onLoad={handleLoad}
-          onError={handleError}
-          className="pointer-events-none select-none"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: spriteStyle.imgWidth,
-            height: spriteStyle.imgHeight,
-            maxWidth: 'none',
-            maxHeight: 'none',
-            transform: `translate(${spriteStyle.translateX}, ${spriteStyle.translateY})`,
-            opacity: loaded ? 1 : 0,
-          }}
-        />
+        <div className="absolute inset-0">
+          <img
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            src={renderedSrc}
+            onLoad={handleLoad}
+            onError={handleError}
+            className="pointer-events-none select-none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: spriteStyle.imgWidth,
+              height: spriteStyle.imgHeight,
+              maxWidth: 'none',
+              maxHeight: 'none',
+              transform: `translate(${spriteStyle.translateX}, ${spriteStyle.translateY})`,
+              opacity: loaded ? 1 : 0,
+            }}
+          />
+        </div>
       ) : null}
     </div>
   );

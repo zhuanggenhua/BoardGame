@@ -44,7 +44,7 @@ import { buildUgcServerGames } from './src/server/ugcRegistration';
 import { GameTransportServer } from './src/engine/transport/server';
 import { getAiSeatIds, resolveSeatPlayerDisplayName } from './src/engine/ai';
 import type { GameEngineConfig } from './src/engine/transport/server';
-import type { MatchMetadata, MatchStorage } from './src/engine/transport/storage';
+import type { ClaimSeatMetadataInput, MatchMetadata, MatchStorage } from './src/engine/transport/storage';
 import { resolveMatchStatus } from './src/engine/transport/storage';
 import logger, { gameLogger } from './server/logger';
 import { createTrainingDataRecorderFromEnv } from './server/trainingDataRecorder';
@@ -507,6 +507,9 @@ const claimSeatHandler = createClaimSeatHandler({
         },
         setMetadata: async (matchID: string, metadata: unknown) => {
             await storage.setMetadata(matchID, metadata as MatchMetadata);
+        },
+        claimSeatMetadata: async (matchID: string, input: ClaimSeatMetadataInput) => {
+            return await storage.claimSeatMetadata(matchID, input);
         },
     } as unknown as Parameters<typeof createClaimSeatHandler>[0]['db'],
     auth: {

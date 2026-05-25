@@ -14,6 +14,21 @@ import { getSmashUpRendererPreviewRef } from './cardPreviewHelper';
 import { useSmashUpOverlay } from './SmashUpOverlayContext';
 
 export const SMASHUP_FORCE_DISMISS_EVENT = 'smashup:force-dismiss-popup';
+const CARD_ASPECT_RATIO = 0.714;
+const BASE_CARD_ASPECT_RATIO = 1.43;
+
+function magnifyFrameStyle(isBase: boolean): React.CSSProperties {
+    const width = isBase ? '40vw' : '25vw';
+    const maxWidth = isBase ? '600px' : '400px';
+    const aspectRatio = isBase ? BASE_CARD_ASPECT_RATIO : CARD_ASPECT_RATIO;
+    return {
+        width,
+        maxWidth,
+        height: `calc(${width} / ${aspectRatio})`,
+        maxHeight: `calc(${maxWidth} / ${aspectRatio})`,
+        aspectRatio: `${aspectRatio} / 1`,
+    };
+}
 
 export interface CardMagnifyTarget {
     defId: string;
@@ -61,7 +76,8 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
                 data-testid="su-card-magnify-content"
                 data-card-type={target.type}
                 data-card-def-id={target.defId}
-                className={`relative bg-transparent ${isBase ? 'w-[40vw] max-w-[600px] aspect-[1.43]' : 'w-[25vw] max-w-[400px] aspect-[0.714]'}`}
+                className="relative bg-transparent"
+                style={magnifyFrameStyle(isBase)}
             >
                 <button
                     onClick={onClose}

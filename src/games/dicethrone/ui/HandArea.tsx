@@ -7,8 +7,12 @@ import { buildLocalizedImageSet, UI_Z_INDEX } from '../../../core';
 import { ENGINE_NOTIFICATION_EVENT, type EngineNotificationDetail } from '../../../engine/notifications';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
+import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { ASSETS } from './assets';
 import { getAbilitySlotIdForCharacter } from './abilitySlotMapping';
+
+const HAND_CARD_WIDTH = '12vw';
+const HAND_CARD_ASPECT_RATIO = 0.61;
 
 /** 飞出卡牌信息（成功使用后的动画） */
 type CardOffset = {
@@ -212,6 +216,7 @@ export const HandArea = ({
     characterId?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
+    const isCoarsePointer = useCoarsePointer();
     const [draggingCardKey, setDraggingCardKey] = React.useState<string | null>(null);
     const dragOffsetRef = React.useRef({ x: 0, y: 0 });
     const draggingCardRef = React.useRef<HandCardEntry | null>(null);
@@ -377,6 +382,7 @@ export const HandArea = ({
 
     const totalCards = hand.length;
     const centerIndex = (totalCards - 1) / 2;
+    const handCardBottomOffset = isCoarsePointer ? '0vw' : '-2vw';
 
     const clearAnimationTimers = React.useCallback(() => {
         dealTimersRef.current.forEach(timerId => window.clearTimeout(timerId));
@@ -886,12 +892,15 @@ export const HandArea = ({
                                     setHoveredCardKey(prev => prev === cardKey ? null : prev);
                                 }}
                                 className={`
-                                    absolute bottom-0 w-[12vw] aspect-[0.61] rounded-[0.8vw]
+                                    absolute bottom-0 rounded-[0.8vw]
                                     ${canClickDiscard ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}
                                     pointer-events-auto origin-bottom-center bg-transparent overflow-visible
                                 `}
                                 style={{
-                                    bottom: '-2vw',
+                                    bottom: handCardBottomOffset,
+                                    width: HAND_CARD_WIDTH,
+                                    height: `calc(${HAND_CARD_WIDTH} / ${HAND_CARD_ASPECT_RATIO})`,
+                                    aspectRatio: `${HAND_CARD_ASPECT_RATIO} / 1`,
                                     left: `calc(50% + ${offset * 7}vw - 6vw)`,
                                     x: dragValues.x,
                                     y: dragValues.y,
@@ -984,9 +993,12 @@ export const HandArea = ({
                         <motion.div
                             key={`flying-${flyingOutMetrics.cardKey}`}
                             data-testid="hand-flying-card"
-                            className="absolute bottom-0 w-[12vw] aspect-[0.61] rounded-[0.8vw] pointer-events-none"
+                            className="absolute bottom-0 rounded-[0.8vw] pointer-events-none"
                             style={{
-                                bottom: '-2vw',
+                                bottom: handCardBottomOffset,
+                                width: HAND_CARD_WIDTH,
+                                height: `calc(${HAND_CARD_WIDTH} / ${HAND_CARD_ASPECT_RATIO})`,
+                                aspectRatio: `${HAND_CARD_ASPECT_RATIO} / 1`,
                                 left: `calc(50% + ${flyingOutMetrics.startIndexOffset * 7}vw - 6vw)`,
                                 zIndex: UI_Z_INDEX.overlayRaised,
                             }}

@@ -319,7 +319,7 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
             if (!targetSprout || targetSprout.controller !== ctx.playerId) continue;
 
             const sproutBaseIndex = i;
-            events.push(destroyMinion(targetSprout.uid, targetSprout.defId, sproutBaseIndex, targetSprout.owner, undefined, 'killer_plant_sprout', ctx.now));
+            events.push(destroyMinion(targetSprout.uid, targetSprout.defId, sproutBaseIndex, targetSprout.owner, targetSprout.controller, 'killer_plant_sprout', ctx.now));
             const player = ctx.state.players[targetSprout.controller];
             if (!player) return { events, matchState };
             const deck = simulatedDecks.get(targetSprout.controller) ?? [...player.deck];
@@ -367,7 +367,7 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
             // 记住 sprout 所在基地索引（消灭前）
             const sproutBaseIndex = i;
             // 消灭自身
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, undefined, 'killer_plant_sprout', ctx.now));
+            events.push(destroyMinion(m.uid, m.defId, i, m.owner, m.controller, 'killer_plant_sprout', ctx.now));
             // 搜索牌库中力量≤3的随从
             const player = ctx.state.players[m.controller];
             if (!player) continue;
@@ -421,7 +421,7 @@ function killerPlantChokingVinesTrigger(ctx: TriggerContext): SmashUpEvent[] {
             if (!attached) continue;
             if (attached.ownerId !== ctx.playerId) continue;
             // 消灭附着的随从
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, undefined, 'killer_plant_choking_vines', ctx.now));
+            events.push(destroyMinion(m.uid, m.defId, i, m.owner, attached.ownerId, 'killer_plant_choking_vines', ctx.now));
         }
     }
     return events;

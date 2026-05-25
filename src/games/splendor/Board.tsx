@@ -263,7 +263,7 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
                 </div>
 
                 {isOnlineMatch && !G.core.hostStarted ? (
-                    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center px-4">
+                    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-30 flex justify-center px-4 sm:bottom-4">
                         <div
                             className="pointer-events-auto flex w-full max-w-[720px] items-center justify-between gap-4 rounded-2xl border border-amber-400/35 bg-slate-950/72 px-4 py-3 shadow-[0_18px_48px_rgba(2,6,23,0.45)] backdrop-blur-xl"
                             data-testid="splendor-pregame-panel"
@@ -302,7 +302,7 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
                 ) : null}
 
                 <div className="flex flex-col gap-4">
-                    <div className="grid gap-4 xl:grid-cols-[50%_50%] xl:items-start">
+                    <div className="grid gap-4 min-[820px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] min-[820px]:items-start">
                         <section className="rounded-2xl border border-white/10 bg-black/20 p-4 shadow-lg" data-tutorial-id="sp-nobles">
                             <div className="flex items-start gap-4">
                                 <div className="flex shrink-0 flex-col items-center rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-sm font-semibold tracking-[0.18em] text-white/80">
@@ -369,7 +369,7 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
                         </section>
                     </div>
 
-                    <div className="grid gap-4 xl:grid-cols-[60%_12%_28%] xl:items-stretch">
+                    <div className="grid gap-4 min-[820px]:grid-cols-[minmax(0,1.55fr)_minmax(7rem,0.46fr)_minmax(0,0.99fr)] min-[820px]:items-start">
                         <MarketSection
                             core={G.core}
                             tiers={TIERS}

@@ -79,7 +79,7 @@ async function confirmCreateRoomFromModal(page: Page): Promise<void> {
 }
 
 const MOBILE_AUTHOR_ENTRY_TEST_NAME = '移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围框';
-const MOBILE_PACKAGE_ENTRY_TEST_NAME = '移动端 package-managed 游戏详情在左下角显示包管理入口';
+const MOBILE_PACKAGE_ENTRY_TEST_NAME = '网页版 package-managed 游戏详情在移动端不应显示包管理入口，但详情头部仍应完整';
 const GAME_DETAILS_LOADING_FALLBACK_TEST_NAME = '首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转';
 const ACTIVE_MATCH_FLOATING_BANNER_TEST_NAME = '首页活跃房间浮层在桌面端居中且移动端不溢出';
 const WEB_APP_DOWNLOAD_ENTRY_TEST_NAME = '网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址';
@@ -199,6 +199,38 @@ test.describe('Lobby E2E', () => {
         await expect(page.getByRole('heading', { name: '王权骰铸' })).toBeVisible();
         await expect(page.getByRole('heading', { name: '井字棋' })).toBeVisible();
         await expect(page.getByRole('heading', { name: '素材切片机' })).toHaveCount(0);
+    });
+
+    test('经典首页分类栏在手机竖屏下不应把后半段分类挤到屏外', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+
+        const categoryLabels = ['全部游戏', '卡牌', '骰子', '抽象', '战棋', '休闲', '工具'] as const;
+        for (const label of categoryLabels) {
+            const button = page.getByRole('button', { name: label });
+            await expect(button).toBeVisible();
+            const box = await button.boundingBox();
+            expect(box, `${label} 分类按钮未正确渲染`).not.toBeNull();
+            if (!box) {
+                throw new Error(`${label} 分类按钮未正确渲染`);
+            }
+            expect(box.x, `${label} 分类按钮左边缘不应掉出屏幕`).toBeGreaterThanOrEqual(0);
+            expect(box.x + box.width, `${label} 分类按钮右边缘不应掉出 390 宽视口`).toBeLessThanOrEqual(390);
+        }
+
+        await page.getByRole('button', { name: '工具' }).click();
+        await expect(page.getByRole('heading', { name: '素材切片机' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: '王权骰铸' })).toHaveCount(0);
+
+        const hasHorizontalOverflow = await page.evaluate(() => {
+            const maxScrollWidth = Math.max(
+                document.documentElement.scrollWidth,
+                document.body.scrollWidth,
+                document.documentElement.clientWidth,
+                document.body.clientWidth,
+            );
+            return maxScrollWidth > window.innerWidth + 1;
+        });
+        expect(hasHorizontalOverflow).toBeFalsy();
     });
 
     test('游戏详情弹窗会显示当前中文动作入口', async ({ page }) => {
@@ -509,14 +541,25 @@ test.describe('Lobby E2E', () => {
         });
         await expect(passwordInput).toHaveAttribute('type', 'password');
 
+        const mobileProxyInput = page.getByTestId('mobile-text-entry-proxy-input').last();
+        let activePasswordInput = passwordInput;
+
         await passwordInput.evaluate((node) => {
             if (!(node instanceof HTMLInputElement)) {
                 throw new Error('私密房间密码输入框节点不是 input');
             }
             node.focus();
         });
+        await mobileProxyInput.waitFor({ state: 'visible', timeout: 3000 }).catch(() => undefined);
+        const proxyEditable = await mobileProxyInput.isEditable().catch(() => false);
+        if (proxyEditable) {
+            activePasswordInput = mobileProxyInput;
+        } else {
+            await expect(passwordInput).toBeEditable();
+        }
+
         // 输入密码（先保持默认 password 类型），确保“能输入”和“值确实写进去了”
-        await passwordInput.fill(privateRoom.password);
+        await activePasswordInput.fill(privateRoom.password);
         await expect(passwordInput).toHaveValue(privateRoom.password);
         // 切换显示密码，确保用户可以看到自己输入的内容（避免“看不到输入内容”的反馈）
         await expect(passwordToggle).toBeVisible();
@@ -681,9 +724,9 @@ test.describe('Lobby E2E', () => {
 
         await ensureLobbyReady(page);
 
-        const banner = page.getByTestId('home-active-match-banner');
-        const card = page.getByTestId('home-active-match-card');
-        const actions = page.getByTestId('home-active-match-actions');
+        const banner = page.locator('[data-testid="home-active-match-banner"]:visible');
+        const card = page.locator('[data-testid="home-active-match-card"]:visible');
+        const actions = page.locator('[data-testid="home-active-match-actions"]:visible');
 
         await expect(banner).toBeVisible({ timeout: 15000 });
         await expect(card.getByText(new RegExp(roomCode, 'i'))).toBeVisible();
@@ -730,6 +773,17 @@ test.describe('Lobby E2E', () => {
         const isWrappedStack = secondButtonBox.y > firstButtonBox.y + 2;
         expect(isSingleRowCompact || isWrappedStack).toBeTruthy();
 
+        const firstVisibleGameCard = page.locator('[data-game-id]:visible').first();
+        await expect(firstVisibleGameCard).toBeVisible();
+        const firstVisibleGameCardBox = await firstVisibleGameCard.boundingBox();
+        expect(firstVisibleGameCardBox).not.toBeNull();
+
+        if (!firstVisibleGameCardBox) {
+            throw new Error('首页游戏卡片未正确渲染，无法校验移动端活跃房间卡是否仍遮挡列表');
+        }
+
+        expect(mobileCardBox.y + mobileCardBox.height).toBeLessThanOrEqual(firstVisibleGameCardBox.y - 4);
+
         const hasHorizontalOverflow = await page.evaluate(() => {
             const maxScrollWidth = Math.max(
                 document.documentElement.scrollWidth,
@@ -746,14 +800,19 @@ test.describe('Lobby E2E', () => {
 
     test(MOBILE_AUTHOR_ENTRY_TEST_NAME, async ({ page, game }, testInfo) => {
         await page.setViewportSize({ width: 390, height: 844 });
-        await page.goto('/?game=tictactoe', { waitUntil: 'domcontentloaded' });
+        await ensureLobbyReady(page);
+        await page.getByRole('heading', { name: /井字棋|Tic-Tac-Toe/i }).click();
         await expect(page).toHaveURL(/game=tictactoe/);
 
         const sidebar = page.getByTestId('game-details-sidebar');
         const mobileAuthorButton = page.getByTestId('game-details-author-button-mobile');
+        const leaderboardTabButton = page.getByTestId('game-details-tab-leaderboard');
+        const closeButton = page.getByTestId('game-details-close-button');
 
         await expect(sidebar).toBeVisible({ timeout: 15000 });
         await expect(mobileAuthorButton).toBeVisible();
+        await expect(leaderboardTabButton).toBeVisible();
+        await expect(closeButton).toBeVisible();
         await expect(page.getByTestId('game-details-description')).toBeHidden();
         await expect(page.getByTestId('game-details-player-recommendation')).toBeHidden();
 
@@ -796,6 +855,17 @@ test.describe('Lobby E2E', () => {
             || /^rgba\(0, 0, 0, 0\) 0px 0px 0px 0px(, rgba\(0, 0, 0, 0\) 0px 0px 0px 0px)*$/.test(normalizedBoxShadow)
         ).toBeTruthy();
 
+        const leaderboardTabBox = await leaderboardTabButton.boundingBox();
+        const closeButtonBox = await closeButton.boundingBox();
+        expect(leaderboardTabBox).not.toBeNull();
+        expect(closeButtonBox).not.toBeNull();
+
+        if (!leaderboardTabBox || !closeButtonBox) {
+            throw new Error('移动端详情弹窗 tab 或关闭按钮未正确渲染，无法校验窄屏头部布局');
+        }
+
+        expect(leaderboardTabBox.x + leaderboardTabBox.width).toBeLessThanOrEqual(closeButtonBox.x - 4);
+
         await game.screenshot('lobby-mobile-author-entry-right-top', testInfo);
 
         await mobileAuthorButton.click();
@@ -807,56 +877,40 @@ test.describe('Lobby E2E', () => {
     test(MOBILE_PACKAGE_ENTRY_TEST_NAME, async ({ page, game }, testInfo) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await ensureLobbyReady(page);
-        await page.getByRole('heading', { name: /Tic-Tac-Toe/i }).click();
+        await page.getByRole('heading', { name: /井字棋|Tic-Tac-Toe/i }).click();
         await expect(page).toHaveURL(/game=tictactoe/);
 
         const modalRoot = getVisibleGameDetailsModal(page);
         const packageCard = page.getByTestId('game-details-mobile-package-card');
         const installButton = page.getByRole('button', { name: /Install Pack/i });
+        const leaderboardTabButton = page.getByTestId('game-details-tab-leaderboard');
+        const closeButton = page.getByTestId('game-details-close-button');
 
         await expect(modalRoot).toBeVisible({ timeout: 15000 });
-        await expect(packageCard).toBeVisible();
-        await expect(page.getByText(/Not installed/i)).toBeVisible();
-        await expect(installButton).toBeVisible();
+        await expect(leaderboardTabButton).toBeVisible();
+        await expect(closeButton).toBeVisible();
+        await expect(packageCard).toHaveCount(0);
+        await expect(installButton).toHaveCount(0);
 
         const modalBox = await modalRoot.boundingBox();
-        const cardBox = await packageCard.boundingBox();
         expect(modalBox).not.toBeNull();
-        expect(cardBox).not.toBeNull();
 
-        if (!modalBox || !cardBox) {
-            throw new Error('移动端详情弹窗或包管理入口未正确渲染，无法校验左下角位置');
+        if (!modalBox) {
+            throw new Error('移动端详情弹窗未正确渲染，无法校验窄屏头部布局');
         }
 
-        const leftOffset = cardBox.x - modalBox.x;
-        const bottomOffset = modalBox.y + modalBox.height - (cardBox.y + cardBox.height);
+        const leaderboardTabBox = await leaderboardTabButton.boundingBox();
+        const closeButtonBox = await closeButton.boundingBox();
+        expect(leaderboardTabBox).not.toBeNull();
+        expect(closeButtonBox).not.toBeNull();
 
-        expect(leftOffset).toBeGreaterThanOrEqual(0);
-        expect(leftOffset).toBeLessThan(36);
-        expect(bottomOffset).toBeGreaterThanOrEqual(0);
-        expect(bottomOffset).toBeLessThan(36);
+        if (!leaderboardTabBox || !closeButtonBox) {
+            throw new Error('移动端包管理详情 tab 或关闭按钮未正确渲染，无法校验窄屏头部布局');
+        }
 
-        await game.screenshot('lobby-mobile-package-entry-left-bottom', testInfo);
+        expect(leaderboardTabBox.x + leaderboardTabBox.width).toBeLessThanOrEqual(closeButtonBox.x - 4);
 
-        await installButton.click();
-        await expect(page.getByText(/Download Tic-Tac-Toe packages/i)).toBeVisible();
-        await expect(page.getByText(/Estimated Download/i)).toBeVisible();
-        await expect(page.getByText('Code Pack', { exact: true })).toBeVisible();
-        await expect(page.getByText('Asset Pack', { exact: true })).toBeVisible();
-
-        await game.screenshot('lobby-mobile-package-entry-confirm-modal', testInfo);
-
-        await page.getByRole('button', { name: /Confirm Download/i }).click();
-        await expect(page.getByTestId('game-details-mobile-package-progress-track')).toBeVisible();
-        await expect(page.getByText(/Reading Manifest/i)).toBeVisible();
-
-        await game.screenshot('lobby-mobile-package-entry-progress-card', testInfo);
-
-        await expect(page.getByText(/does not support downloading game packages yet/i)).toBeVisible({ timeout: 5000 });
-        await expect(page.getByRole('button', { name: /Retry/i })).toBeVisible();
-        await expect(page.getByTestId('game-details-mobile-package-card')).toHaveAttribute('data-status', 'failed');
-
-        await game.screenshot('lobby-mobile-package-entry-failed-retry', testInfo);
+        await game.screenshot('lobby-mobile-web-package-entry-absent', testInfo);
     });
 
     test('Dice Throne 更新日志 tab 会请求公开接口并结束 loading', async ({ page }) => {

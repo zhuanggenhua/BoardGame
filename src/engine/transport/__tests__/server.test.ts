@@ -175,6 +175,32 @@ class InMemoryStorage implements MatchStorage {
         this.metadata.set(matchID, metadata);
     }
 
+    async claimSeatMetadata(matchID: string, input: {
+        playerID: string;
+        playerCredentials: string;
+        playerName?: string;
+        updatedAt?: number;
+    }): Promise<{ metadata?: MatchMetadata; playerExists: boolean; playerCredentials?: string }> {
+        const metadata = this.metadata.get(matchID);
+        const player = metadata?.players[input.playerID];
+        if (!metadata || !player) return { metadata, playerExists: false };
+        const playerCredentials = player.credentials || input.playerCredentials;
+        const nextMetadata = {
+            ...metadata,
+            updatedAt: input.updatedAt ?? Date.now(),
+            players: {
+                ...metadata.players,
+                [input.playerID]: {
+                    ...player,
+                    credentials: playerCredentials,
+                    name: player.name || input.playerName || player.name,
+                },
+            },
+        };
+        this.metadata.set(matchID, nextMetadata);
+        return { metadata: nextMetadata, playerExists: true, playerCredentials };
+    }
+
     async fetch(matchID: string, opts: FetchOpts): Promise<FetchResult> {
         return {
             state: opts.state ? this.states.get(matchID) : undefined,
@@ -3023,6 +3049,193 @@ describe('GameTransportServer（离座与重连）', () => {
             && args[2] === 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo'
         ))).toBe(true);
         expect(hasEvent(socket, 'batch:rejected', (args) => args[2] === 'command_failed')).toBe(false);
+    });
+
+    it('在线命令 pipeline 异常时应自动上报后台反馈，并在冷却期内去重', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-command-pipeline-feedback', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfig(),
+            systems: [{
+                id: 'throw-command-feedback',
+                name: 'throw-command-feedback',
+                priority: 1,
+                beforeCommand: ({ command }: { command: { type: string } }) => {
+                    if (command.type === 'TRIGGER_PIPELINE_ERROR') {
+                        throw new Error('effect contract missing turnFlags for base_ninja_dojo');
+                    }
+                },
+            } as any],
+        };
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [engineConfig],
+            commandFailureFeedbackReporter: feedbackReporter,
+            commandFailureFeedbackCooldownMs: 60_000,
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-command-pipeline-feedback');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-command-pipeline-feedback', '0', 'cred-0');
+        socket.sent.length = 0;
+
+        await socket.clientEmit('command', 'match-command-pipeline-feedback', 'TRIGGER_PIPELINE_ERROR', {}, 'cred-0');
+        await socket.clientEmit('command', 'match-command-pipeline-feedback', 'TRIGGER_PIPELINE_ERROR', {}, 'cred-0');
+
+        expect(hasEvent(socket, 'error', (args) => args[1] === 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo')).toBe(true);
+        expect(feedbackReporter).toHaveBeenCalledTimes(1);
+        expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-command-pipeline-feedback',
+            gameId: 'test-game',
+            playerId: '0',
+            incidentKind: 'command-failed',
+            commandType: 'TRIGGER_PIPELINE_ERROR',
+            reason: 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo',
+        }));
+
+        const payload = feedbackReporter.mock.calls[0]?.[0] as {
+            stateSnapshot?: string;
+            actionLog?: string;
+            progressMarker?: string;
+            incidentKey?: string;
+        } | undefined;
+        const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
+        expect(snapshot).toMatchObject({
+            kind: 'command-failure-feedback',
+            commandType: 'TRIGGER_PIPELINE_ERROR',
+            reason: 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo',
+            progressMarker: payload?.progressMarker,
+        });
+        expect(snapshot.visibleState).toBeTruthy();
+
+        if (payload?.actionLog) {
+            const actionLog = JSON.parse(payload.actionLog);
+            expect(actionLog).toMatchObject({
+                kind: 'online-ai-feedback-diagnostic',
+                commandType: 'TRIGGER_PIPELINE_ERROR',
+                reason: 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo',
+                progressMarker: payload?.progressMarker,
+            });
+        }
+        expect(payload?.incidentKey).toContain('TRIGGER_PIPELINE_ERROR');
+    });
+
+    it('领域拒绝错误码不应误报成后台自动反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-command-domain-error-no-feedback', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfig(),
+            domain: {
+                ...createEngineConfig().domain,
+                validate: (_state, command) => {
+                    if (command.type === 'BAD_SUMMON') {
+                        return { valid: false, error: 'summon_position_not_adjacent_to_gate' };
+                    }
+                    return { valid: true };
+                },
+            },
+        };
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [engineConfig],
+            commandFailureFeedbackReporter: feedbackReporter,
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-command-domain-error-no-feedback');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-command-domain-error-no-feedback', '0', 'cred-0');
+        socket.sent.length = 0;
+
+        await socket.clientEmit('command', 'match-command-domain-error-no-feedback', 'BAD_SUMMON', { position: { x: 1, y: 1 } }, 'cred-0');
+
+        expect(hasEvent(socket, 'error', (args) => args[1] === 'summon_position_not_adjacent_to_gate')).toBe(true);
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
+    it('batch 内 pipeline 异常也应自动上报后台反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-batch-pipeline-feedback', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfig(),
+            systems: [{
+                id: 'throw-batch-feedback',
+                name: 'throw-batch-feedback',
+                priority: 1,
+                beforeCommand: ({ command }: { command: { type: string } }) => {
+                    if (command.type === 'TRIGGER_PIPELINE_ERROR') {
+                        throw new Error('effect contract missing turnFlags for base_ninja_dojo');
+                    }
+                },
+            } as any],
+        };
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [engineConfig],
+            commandFailureFeedbackReporter: feedbackReporter,
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-batch-pipeline-feedback');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-batch-pipeline-feedback', '0', 'cred-0');
+        socket.sent.length = 0;
+
+        await socket.clientEmit(
+            'batch',
+            'match-batch-pipeline-feedback',
+            'batch-pipeline-feedback-1',
+            [{ type: 'TRIGGER_PIPELINE_ERROR', payload: {} }],
+            'cred-0',
+        );
+
+        expect(hasEvent(socket, 'batch:rejected', (args) => (
+            args[1] === 'batch-pipeline-feedback-1'
+            && args[2] === 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo'
+        ))).toBe(true);
+        expect(feedbackReporter).toHaveBeenCalledTimes(1);
+        expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-batch-pipeline-feedback',
+            commandType: 'TRIGGER_PIPELINE_ERROR',
+            reason: 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo',
+        }));
     });
 
     it('成功命令后应采集训练决策样本', async () => {

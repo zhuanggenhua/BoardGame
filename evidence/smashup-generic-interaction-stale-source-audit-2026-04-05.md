@@ -71,6 +71,15 @@
 - 共享层补强：
   - `discard` 刷新逻辑现在不仅支持按 `cardUid` 校验，也支持按 `defId` 校验分组选项。
   - 这样像 `zombie_not_enough_bullets` 这类“同名分组”不再只能走快照。
+- 2026-05-24 追加复核：
+  - `cthulhu_it_begins_again` 之前虽然已登记为 `autoRefresh: 'discard' + responseValidationMode: 'live'`，但游戏层 `optionsGenerator` 直接按当前 `player.discard` 重建候选，没有排除“本次正在结算的行动卡自己”。
+  - 由于 `ACTION_PLAYED` 会先把标准行动放进弃牌堆，这导致初始 prompt 快照正确，但一旦执行 `refreshInteractionOptions(...)`，`cthulhu_it_begins_again` 会把自己刷进 live 候选，并允许被洗回牌库。
+  - 本轮已在 `src/games/smashup/abilities/cthulhu.ts` 为 `cthulhu_it_begins_again` 传递 `sourceCardUid`，并在候选生成与 resolve 双层排除该 uid。
+  - 本轮额外核对的同模式兄弟对象：
+    - `steampunk_scrap_diving`：已通过 `excludeCardUid/sourceCardUid` 排除当前行动卡自身。
+    - `robot_microbot_reclaimer`：候选只取弃牌堆随从，不会把当前行动卡自己纳入来源区。
+    - `elder_thing_begin_the_summoning` / `elder_thing_spreading_horror_pod_choose_minion` / `ghost_the_dead_rise_play` / `ghost_across_the_divide`：候选只取弃牌堆随从或随从分组，本轮未发现“当前行动卡自己进入 discard 后被刷成合法候选”的同类问题。
+    - `princesses_direct_to_dvd_sequel` / `princesses_griselda`：当前是快照 options + `autoRefresh` 过滤旧候选，不会通过 `optionsGenerator` 凭空把自己新增进来。
 
 #### 3. 手牌 + 弃牌堆混合来源
 
@@ -198,7 +207,10 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseAbili
 
 ## 命中的审计维度
 
+- D1：规则文本 / 时机语义
 - D5：交互完整
+- D18：状态推进与结算时机
+- D37：动态候选刷新完整性
 - D8：时序正确
 - D9：幂等与重入
 - D24：Handler 共返状态一致性
@@ -220,3 +232,11 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseAbili
   - 复核后确认 `robot_hoverbot` 属于“当前牌库顶活引用”而非纯静态快照，调整为 live 失效校验。
   - 继续扩审 `vikings_*` / `cowboys_*` 揭示块交互，确认它们同样需要按当前牌库顶 live 过滤候选与落地排序，并补齐回归。
   - 再扩审 `wizard_mass_enchantment` / `wizard_portal_order` / `base_wizard_academy`，确认它们同样属于揭示块 live 引用，而不是可长期信任的静态快照。
+- 2026-05-24：
+  - 旧结论失效：仅登记 `autoRefresh/live` 不能证明 discard live prompt 完整正确；`cthulhu_it_begins_again` 仍会在标准行动进入弃牌堆后，把“当前正在结算的自己”刷进候选。
+  - 失效原因：D37 只覆盖了“旧候选失效过滤”，未覆盖“`optionsGenerator` 基于最新状态新增候选时，是否错误引入当前结算对象”。
+  - 新证据：
+    - 修复代码：`src/games/smashup/abilities/cthulhu.ts`
+    - 回归测试：`src/games/smashup/__tests__/abilities/cthulhu.test.ts`
+    - 验证命令：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/cthulhu.test.ts --configLoader native`
+  - 新结论：discard live prompt 审计必须同时覆盖“旧候选会失效”和“新候选不会把当前结算对象自己刷回来”两类风险。

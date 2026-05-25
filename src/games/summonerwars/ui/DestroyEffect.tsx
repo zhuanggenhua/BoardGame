@@ -34,6 +34,7 @@ interface DestroyEffectProps {
 const CARD_ASPECT_RATIO = 1044 / 729;
 /** 卡牌在格子内的宽度比例（与 UnitCell 的 w-[85%] 一致） */
 const CARD_WIDTH_RATIO = 0.85;
+const CARD_PADDING_TOP = `${100 / CARD_ASPECT_RATIO}%`;
 
 /** 单个摧毁效果 */
 const DestroyEffectItem: React.FC<DestroyEffectProps> = ({
@@ -78,7 +79,14 @@ const DestroyEffectItem: React.FC<DestroyEffectProps> = ({
       {/* 卡图 + 碎裂效果：与卡牌相同的宽度比例 + 宽高比 */}
       <div
         className="relative"
-        style={{ width: `${CARD_WIDTH_RATIO * 100}%`, aspectRatio: `${CARD_ASPECT_RATIO}`, maxHeight: '100%', overflow: 'visible' }}
+        style={{
+          width: `${CARD_WIDTH_RATIO * 100}%`,
+          height: 0,
+          paddingTop: CARD_PADDING_TOP,
+          aspectRatio: `${CARD_ASPECT_RATIO}`,
+          maxHeight: '100%',
+          overflow: 'visible',
+        }}
       >
         {spriteSource ? (
           <>

@@ -27,6 +27,16 @@ import { useArmedActivation } from '../../../hooks/ui/useArmedActivation';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
 
 const USED_STATE_CLASS = 'border-slate-400 ring-2 ring-slate-300/80 shadow-[0_0_12px_rgba(148,163,184,0.32)]';
+const CARD_ASPECT_RATIO = 0.714;
+const BASE_CARD_ASPECT_RATIO = 1.43;
+
+function layoutCardHeight(
+    width: number,
+    layout: Pick<ReturnType<typeof getLayoutConfig>, 'useRuntimeInlineUnit'>,
+    aspectRatio = CARD_ASPECT_RATIO,
+): string {
+    return layoutInlineSize(width / aspectRatio, layout);
+}
 
 // ============================================================================
 // Base Zone: The "Battlefield"
@@ -262,7 +272,9 @@ export const BaseZone: React.FC<{
         const isSelectableOngoing = !!selectableOngoingUids?.has(oa.uid);
         const isDimmedOngoing = !!selectableOngoingUids && !selectableOngoingUids.has(oa.uid);
         const showUsedOngoingState = hasOngoingTalent && oa.talentUsed && !canUseOngoingTalent;
-        const showOngoingInspectButton = showDesktopInspectButton || isCoarsePointer;
+        const showOngoingInspectButton = (showDesktopInspectButton || isCoarsePointer)
+            && !canUseOngoingTalent
+            && !isSelectableOngoing;
         const ongoingPowerContribution = getOngoingCardPowerContribution({
             ...base,
             ongoingActions: [oa],
@@ -275,6 +287,7 @@ export const BaseZone: React.FC<{
                 className="group relative"
                 style={{
                     width: layoutInlineSize(layout.ongoingCardWidth, layout),
+                    height: layoutCardHeight(layout.ongoingCardWidth, layout),
                     marginLeft: isFirstInGroup ? '0vw' : layoutInlineSize(-ongoingCardOverlap, layout),
                 }}
             >
@@ -298,6 +311,10 @@ export const BaseZone: React.FC<{
                     className={`relative aspect-[0.714] w-full cursor-pointer
                         hover:z-50 hover:scale-125 hover:-translate-y-[0.3vw] transition-[transform,opacity,filter]
                         ${isDimmedOngoing ? 'opacity-40 grayscale cursor-not-allowed' : ''}`}
+                    style={{
+                        height: '100%',
+                        aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
+                    }}
                     initial={{ y: 20, opacity: 0, scale: 0.6 }}
                     animate={isSelectableOngoing
                         ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' } } }
@@ -422,7 +439,14 @@ export const BaseZone: React.FC<{
                 : `${pConf.border} ${pConf.shadow}`}`;
 
         return (
-            <div key={titan.uid} className="group relative hover:!z-[999]" style={{ width: layoutInlineSize(titanCardWidth, layout) }}>
+            <div
+                key={titan.uid}
+                className="group relative hover:!z-[999]"
+                style={{
+                    width: layoutInlineSize(titanCardWidth, layout),
+                    height: layoutCardHeight(titanCardWidth, layout),
+                }}
+            >
             <motion.div
                 data-titan-uid={titan.uid}
                 data-testid={`su-base-titan-${titan.uid}`}
@@ -475,6 +499,10 @@ export const BaseZone: React.FC<{
                     onViewTitan(titan.defId);
                 }}
                 className={titanFrameClassName}
+                style={{
+                    height: '100%',
+                    aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
+                }}
                 initial={{ y: 20, opacity: 0, scale: 0.7 }}
                 animate={canActivateTitan
                     ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } } }
@@ -572,6 +600,7 @@ export const BaseZone: React.FC<{
         <div 
             className="relative flex flex-col items-center group/base"
             style={{
+                alignSelf: 'flex-start',
                 marginLeft: layoutInlineSize(layout.baseGap / 2, layout),
                 marginRight: layoutInlineSize(layout.baseGap / 2, layout),
             }}
@@ -646,6 +675,8 @@ export const BaseZone: React.FC<{
                 className={`relative aspect-[1.43] transition-all duration-300 z-20 ${baseContainerClassName}`}
                 style={{
                     width: layoutInlineSize(layout.baseCardWidth, layout),
+                    height: layoutCardHeight(layout.baseCardWidth, layout, BASE_CARD_ASPECT_RATIO),
+                    aspectRatio: `${BASE_CARD_ASPECT_RATIO} / 1`,
                 }}
             >
                 <div
@@ -860,6 +891,7 @@ export const BaseZone: React.FC<{
                                                             className="group relative"
                                                             style={{
                                                                 width: layoutInlineSize(buriedCardWidth, layout),
+                                                                height: layoutCardHeight(buriedCardWidth, layout),
                                                                 marginBottom: layoutInlineSize(index === buriedCards.length - 1 ? buriedToMinionOffset : buriedStackOffset, layout),
                                                                 transform: `rotate(${(index % 2 === 0 ? -1 : 1) * 1.5}deg)`,
                                                             }}
@@ -897,6 +929,10 @@ export const BaseZone: React.FC<{
                                                                                 ? 'cursor-default border-slate-700 opacity-35 grayscale-[0.35] saturate-[0.75]'
                                                                                 : 'cursor-pointer border-slate-500'
                                                                 }`}
+                                                                style={{
+                                                                    height: '100%',
+                                                                    aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
+                                                                }}
                                                             >
                                                                 <CardPreview previewRef={buriedPreviewRef} className="w-full h-full" title={buriedTitle} />
                                                             </button>
@@ -1011,15 +1047,26 @@ export const BaseZone: React.FC<{
 
 /** 附着行动卡角标（纯视觉提示，不含交互） */
 const AttachedBadge: React.FC<{ count: number }> = ({ count }) => (
-    <div className="absolute -top-[8%] -right-[8%] w-[24%] aspect-square rounded-full
-        bg-purple-600 border-2 border-white shadow-md
-        flex items-center justify-center pointer-events-none z-30">
-        <Paperclip className="h-[58%] w-[58%] text-white" strokeWidth={3} />
+    <div
+        className="absolute -top-[8%] -right-[8%] w-[24%] pointer-events-none z-30"
+        style={{ height: 0, paddingTop: '24%' }}
+        data-testid="smashup-attached-badge-shell"
+    >
+        <div className="absolute inset-0 rounded-full bg-purple-600 border-2 border-white shadow-md
+            flex items-center justify-center">
+            <Paperclip className="h-[58%] w-[58%] text-white" strokeWidth={3} />
+        </div>
         {count > 1 && (
-            <span className="absolute -top-[14%] -right-[14%] w-[46%] aspect-square rounded-full
-                bg-amber-400 text-[clamp(5px,0.3vw,8px)] font-black text-slate-900 flex items-center justify-center border border-white">
-                {count}
-            </span>
+            <div
+                className="absolute -top-[14%] -right-[14%] w-[46%]"
+                style={{ height: 0, paddingTop: '46%' }}
+                data-testid="smashup-attached-badge-count-shell"
+            >
+                <span className="absolute inset-0 rounded-full
+                    bg-amber-400 text-[clamp(5px,0.3vw,8px)] font-black text-slate-900 flex items-center justify-center border border-white">
+                    {count}
+                </span>
+            </div>
         )}
     </div>
 );
@@ -1126,6 +1173,8 @@ const MinionCard: React.FC<{
         marginTop: index === 0 ? 0 : layoutInlineSize(isMinionSelectMode ? selectionStackOffset : layout.minionStackOffset, layout),
         zIndex: isMinionSelectMode ? 100 + index : index + 1,
         width: layoutInlineSize(layout.minionCardWidth, layout),
+        height: layoutCardHeight(layout.minionCardWidth, layout),
+        aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
     };
     const {
         showDesktopInspectButton,
@@ -1439,7 +1488,11 @@ const MinionCard: React.FC<{
                                             ? USED_STATE_CLASS
                                             : 'border-green-300 ring-1 ring-green-300/65 shadow-[0_0_10px_rgba(134,239,172,0.18)]'
                                         }`}
-                                    style={{ width: layoutInlineSize(3, layout) }}
+                                    style={{
+                                        width: layoutInlineSize(3, layout),
+                                        height: layoutCardHeight(3, layout),
+                                        aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
+                                    }}
                                     title={actionTitle}
                                 >
                                     <div className="w-full h-full overflow-hidden rounded-[0.06vw]">
