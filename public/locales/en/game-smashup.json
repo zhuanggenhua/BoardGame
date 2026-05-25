@@ -550,6 +550,10 @@
       "name": "Skeletons",
       "description": "Bury and recycle low-power minions from the discard pile."
     },
+    "huluwawa": {
+      "name": "Huluwawa",
+      "description": "A Chinese-only custom faction built around talents, deck manipulation, and protective replacement effects."
+    },
       "world_champs": {
         "name": "World Champs",
         "description": "A mixed all-star roster focused on extra actions and tempo bursts."
@@ -3992,6 +3996,90 @@
       "mythic_greeks_favor_of_zeus": {
         "name": "Favor of Zeus",
         "effectText": "Reduce the breakpoint of a base by 5 until the end of the turn."
+      },
+      "huluwawa_da_wa": {
+        "name": "Da Wa",
+        "abilityText": "Talent: This minion gains +2 power until the end of the turn."
+      },
+      "huluwawa_er_wa": {
+        "name": "Er Wa",
+        "abilityText": "Talent: Reveal the top 3 cards of your deck. You may play 1 of them as an extra card. Return the rest to the top and/or bottom of your deck in any order. You may use this ability only once per turn."
+      },
+      "huluwawa_san_wa": {
+        "name": "San Wa",
+        "abilityText": "Ongoing: Other players cannot destroy this minion. Special: When this minion would leave play, you may shuffle it into your deck instead of placing it in the discard pile."
+      },
+      "huluwawa_si_wa": {
+        "name": "Si Wa",
+        "abilityText": "You may destroy a minion here of power 3 or less. Place a +1 power counter on this minion."
+      },
+      "huluwawa_wu_wa": {
+        "name": "Wu Wa",
+        "abilityText": "Ongoing: Other players cannot move minions at this base. Talent: Move a minion of power 3 or less from another base to here."
+      },
+      "huluwawa_liu_wa": {
+        "name": "Liu Wa",
+        "abilityText": "Talent: This minion's printed power becomes 0 until the start of your next turn. Ongoing: This minion is unaffected by other players' effects. Special: Before a base scores, you may cancel your talent effect."
+      },
+      "huluwawa_qi_wa": {
+        "name": "Qi Wa",
+        "abilityText": "Talent: Search your deck for an action card and place it into your hand. If you do, shuffle your deck. Ongoing: If this minion has an action on it, draw an extra card at the end of your turn."
+      },
+      "huluwawa_one_vine_seven_flowers": {
+        "name": "One Vine, Seven Flowers",
+        "effectText": "Choose one minion of each different name from your discard pile. Shuffle them into your deck."
+      },
+      "huluwawa_purple_gold_gourd": {
+        "name": "Purple Gold Gourd",
+        "effectText": "Play on one of your minions.\nTalent: Choose one: move a minion of power 3 or less from another base to here; or choose an action card in your discard pile and place it on the bottom of your deck.\nSpecial: If Qi Wa is in play, you may play this card from your discard pile as an extra card on him."
+      },
+      "huluwawa_strength_in_numbers": {
+        "name": "Strength in Numbers",
+        "effectText": "Choose a base. Each of your minions there gains +1 power until the end of the turn."
+      },
+      "huluwawa_where_do_you_think_youre_going": {
+        "name": "Where Do You Think You're Going?",
+        "effectText": "Choose one: destroy a minion of power 3 or less; or move a minion."
+      },
+      "huluwawa_jade_ruyi": {
+        "name": "Jade Ruyi",
+        "effectText": "Search your deck and/or discard pile for a card and place it into your hand. If you searched your deck, shuffle it. You may play an extra action."
+      },
+      "huluwawa_no_presence": {
+        "name": "No Presence at All",
+        "effectText": "Play on one of your minions.\nSpecial: After this base scores, shuffle this minion into your deck instead of placing it in the discard pile."
+      },
+      "huluwawa_pangolin": {
+        "name": "Pangolin",
+        "effectText": "Play on a base.\nTalent: Move one of your minions from another base to here, or from here to another base."
+      },
+      "huluwawa_one_at_a_time": {
+        "name": "One at a Time",
+        "effectText": "Play on a base.\nTalent: Choose a minion here and return it to its owner's hand. That player may immediately play a minion with a different name here."
+      },
+      "huluwawa_pop": {
+        "name": "Pop!",
+        "effectText": "Draw 2 cards."
+      },
+      "huluwawa_release_my_grandpa": {
+        "name": "Release My Grandpa!",
+        "effectText": "You may play 2 extra actions this turn. Place this card on the bottom of your deck instead of placing it in the discard pile."
+      },
+      "huluwawa_butterfly_sisters_help": {
+        "name": "Butterfly Sister's Help",
+        "effectText": "Play on a minion.\nOngoing: When this minion would be destroyed, destroy this card instead.\nOngoing: After this card goes from play to the discard pile, draw 1 card."
+      },
+      "huluwawa_little_king_kong": {
+        "name": "Little King Kong",
+        "effectText": "Special: You may play this titan to a base with no minions instead of your normal minion play.\nOngoing: When this titan would be removed after losing a titan clash, move it to another base instead.\nOngoing: Once per turn for each player, after one of your minions uses an ability, you may have another of your minions use the same talent ability."
+      },
+      "base_huluwawa_mountain": {
+        "name": "Huluwawa Mountain",
+        "abilityText": "Minions here with printed power 4 or more are unaffected by other players' abilities."
+      },
+      "base_seven_colored_lotus": {
+        "name": "Seven-Colored Lotus Pod",
+        "abilityText": "Once per turn, after you play a minion here, you may play an extra minion with the same printed power here."
       },
       "base_shark_reef": {
         "name": "Shark Reef",

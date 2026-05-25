@@ -55,6 +55,7 @@ import { MERMAIDS_CARDS } from './factions/mermaids';
 import { SKELETONS_CARDS } from './factions/skeletons';
 import { WORLD_CHAMPS_CARDS } from './factions/world_champs';
 import { FAIRIES_CARDS } from './factions/fairies';
+import { HULUWAWA_CARDS } from './factions/huluwawa';
 import { PRINCESSES_CARDS } from './factions/princesses';
 import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
@@ -68,11 +69,6 @@ import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
 const _cardRegistry = new Map<string, CardDef>();
 /** 所有基地定义（按 id 索引） */
 const _baseRegistry = new Map<string, BaseCardDef>();
-
-const normalizeCardName = (defId: string, name: string): string => {
-    if (typeof name === 'string' && name.startsWith('cards.')) return name;
-    return `cards.${defId}.name`;
-};
 
 function registerCards(cards: CardDef[]): void {
     for (const card of cards) {
@@ -90,7 +86,6 @@ function registerBases(bases: BaseCardDef[]): void {
 
 // 初始化注册
 const POD_SUFFIX = '_pod';
-const BASES_PER_FACTION = 2;
 const KNOWN_FACTION_IDS = new Set(Object.values(SMASHUP_FACTION_IDS));
 
 function isPodVariantId(id: string): boolean {
@@ -184,6 +179,7 @@ registerCards(MERMAIDS_CARDS);
 registerCards(SKELETONS_CARDS);
 registerCards(WORLD_CHAMPS_CARDS);
 registerCards(FAIRIES_CARDS);
+registerCards(HULUWAWA_CARDS);
 registerCards(PRINCESSES_CARDS);
 registerCards(SHARKS_CARDS);
 registerCards(TORNADOS_CARDS);
@@ -514,6 +510,31 @@ export const BASE_CARDS_PRETTY_PRETTY: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_PRETTY_PRETTY);
+
+// ============================================================================
+// 葫芦娃 DIY 基地
+// ============================================================================
+export const BASE_CARDS_HULUWAWA: BaseCardDef[] = [
+    {
+        id: 'base_huluwawa_mountain',
+        name: '葫芦山',
+        nameEn: 'Huluwawa Mountain',
+        breakpoint: 18,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.HULUWAWA,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.HULUWAWA_BASES, index: 0 },
+    },
+    {
+        id: 'base_seven_colored_lotus',
+        name: '七彩莲蓬',
+        nameEn: 'Seven-Colored Lotus Pod',
+        breakpoint: 25,
+        vpAwards: [4, 3, 1],
+        faction: SMASHUP_FACTION_IDS.HULUWAWA,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.HULUWAWA_BASES, index: 1 },
+    },
+];
+registerBases(BASE_CARDS_HULUWAWA);
 
 // ============================================================================
 // 扩展基地 (Oops, You Did It Again)
@@ -1370,40 +1391,6 @@ const POD_BASE_POOL_VARIANT_FACTIONS = new Set<string>([
     SMASHUP_FACTION_IDS.VIKINGS_POD,
 ]);
 
-function getBaseDefIdsForFactionsLegacy(factionIds: string[]): string[] {
-    const selected = new Set(factionIds);
-    const matched = getPublicBaseDefs()
-        .filter(base => base.faction && selected.has(base.faction))
-        .map(base => base.id);
-
-    // 检查是否有派系没有对应基地（如 POD 派系）
-    // 统计每个派系匹配到的基地数量
-    const factionBaseCounts = new Map<string, number>();
-    for (const base of getPublicBaseDefs()) {
-        if (base.faction && selected.has(base.faction)) {
-            factionBaseCounts.set(base.faction, (factionBaseCounts.get(base.faction) || 0) + 1);
-        }
-    }
-
-    // 找出没有基地的派系
-    const factionsWithoutBases = factionIds.filter(fid => !factionBaseCounts.has(fid));
-
-    // 如果有派系没有基地，为每个缺失的派系补充 2 个基地
-    if (factionsWithoutBases.length > 0) {
-        const allBases = getAllBaseDefIds();
-        const usedBases = new Set(matched);
-        const availableBases = allBases.filter(id => !usedBases.has(id));
-
-        const missingCount = factionsWithoutBases.length * 2;
-        // 从可用基地中选择（不洗牌，保持确定性，由调用方洗牌）
-        const supplementBases = availableBases.slice(0, Math.min(missingCount, availableBases.length));
-        return [...matched, ...supplementBases];
-    }
-
-    return matched;
-}
-
-
 /** 查找卡牌定义 */
 /** 根据所选派系获取基地定义 ID（同变体补充：POD 只补 POD，基础只补基础） */
 export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
@@ -1562,8 +1549,8 @@ export function resolveCardText(def: CardDef | BaseCardDef | undefined, t: (key:
     }
 
     // 未命中则查找原始对象中的属性 fallback
-    // @ts-ignore
-    const fallbackAttr = def[usesEffectText ? 'effectText' : 'abilityText'];
+    const textDef = def as Partial<{ effectText: string; abilityText: string }>;
+    const fallbackAttr = textDef[usesEffectText ? 'effectText' : 'abilityText'];
     return typeof fallbackAttr === 'string' ? fallbackAttr : '';
 }
 
