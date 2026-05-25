@@ -19952,7 +19952,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
             expect(executeSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
             expect(resolutionSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
-            expect(buildAiProgressMarker(match.state)).toBe('4|draw|1|0|||||||0');
+            expect(buildAiProgressMarker(match.state)).toBe('4|draw|1|0|||||||0|');
             expect(match.state.sys.interaction?.current).toBeUndefined();
             expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
                 matchId: 'match-watchdog-visible-interaction-chain',

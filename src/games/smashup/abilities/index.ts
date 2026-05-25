@@ -43,6 +43,7 @@ import { registerPrincessesAbilities } from './princesses';
 import { registerSharksAbilities } from './sharks';
 import { registerTornadosAbilities } from './tornados';
 import { registerMythicGreeksAbilities } from './mythic_greeks';
+import { registerHuluwawaAbilities } from './huluwawa';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -146,6 +147,7 @@ export function initAllAbilities(): void {
     registerSharksAbilities();
     registerTornadosAbilities();
     registerMythicGreeksAbilities();
+    registerHuluwawaAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 

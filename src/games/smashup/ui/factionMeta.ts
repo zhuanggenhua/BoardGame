@@ -124,6 +124,7 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.GIANT_ANTS_POD, nameKey: 'factions.giant_ants_pod.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants_pod.description' },
     { id: SMASHUP_FACTION_IDS.MERMAIDS, nameKey: 'factions.mermaids.name', icon: Fish, color: '#0ea5e9', descriptionKey: 'factions.mermaids.description' },
     { id: SMASHUP_FACTION_IDS.FAIRIES, nameKey: 'factions.fairies.name', icon: Flower2, color: '#ec4899', descriptionKey: 'factions.fairies.description' },
+    { id: SMASHUP_FACTION_IDS.HULUWAWA, nameKey: 'factions.huluwawa.name', icon: Sprout, color: '#15803d', descriptionKey: 'factions.huluwawa.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.PRINCESSES, nameKey: 'factions.princesses.name', icon: Wand2, color: '#f59eb8', descriptionKey: 'factions.princesses.description' },
     { id: SMASHUP_FACTION_IDS.SHARKS, nameKey: 'factions.sharks.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks.description', implementationStatus: 'in_progress' },
     { id: SMASHUP_FACTION_IDS.TORNADOS, nameKey: 'factions.tornados.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados.description', implementationStatus: 'in_progress' },

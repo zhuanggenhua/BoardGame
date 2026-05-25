@@ -6106,12 +6106,30 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/huluwawa_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "c957d112aca3780013c720d42f14d73367f272a55dd654994dcef7b5bc5cbefd",
+          "bytes": 377686,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/compressed/wangling_base": {
       "variants": {
         "webp": {
           "sha256": "ac6bf989362e14fe01b84c86b3ffefb0d00a2a8e711c1ac6a97d1ca225bfa9ad",
           "bytes": 708688,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/huluwawa_bases": {
+      "variants": {
+        "png": {
+          "sha256": "a84672e60bdc7b4e9b25e4ace4354733c8559d0fc617d6b99642512205c4e6f1",
+          "bytes": 5469582,
+          "mime": "image/png"
         }
       }
     },
@@ -6187,6 +6205,15 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/huluwawa_cards": {
+      "variants": {
+        "webp": {
+          "sha256": "e2cb2ea775bcb4ef44f5c783bb9547e2ac911eb845872e7d15a5137ae4418fd0",
+          "bytes": 865614,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/compressed/pretty_pretty": {
       "variants": {
         "webp": {
@@ -6211,6 +6238,15 @@
           "sha256": "13554fc412e309bd19557ef55dee237263a57ab24b2056abbb0ac4a846ce5ff5",
           "bytes": 852528,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/huluwawa_cards": {
+      "variants": {
+        "png": {
+          "sha256": "402e7b2e90216a162a1876c71c2c66efab69663194911c1e4b52fa6a0b9be4c8",
+          "bytes": 47501004,
+          "mime": "image/png"
         }
       }
     },
@@ -6295,12 +6331,30 @@
         }
       }
     },
+    "zh-CN/smashup/taitan/compressed/huluwawa_titan": {
+      "variants": {
+        "webp": {
+          "sha256": "3b171c8ef47af4a11dc93c651ff6825e7c07284ea4326437bac3c3f08d818fae",
+          "bytes": 262096,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/taitan/compressed/taitan1": {
       "variants": {
         "webp": {
           "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
           "bytes": 2185502,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/taitan/huluwawa_titan": {
+      "variants": {
+        "png": {
+          "sha256": "ccbf162296b3ebcf62d3b050685e2761530e88e02e0e8e1ad1c75bb1531a29ad",
+          "bytes": 2591063,
+          "mime": "image/png"
         }
       }
     },

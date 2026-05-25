@@ -6330,6 +6330,7 @@ describe('smashup', () => {
     it('活动泰坦静态契约与当前已接入范围保持一致', () => {
         const currentTitanIds = TITAN_CARD_DEFS.map(def => def.id);
         expect(currentTitanIds).toEqual([
+            'huluwawa_little_king_kong',
             'dinosaurs_fort_titanosaurus',
             'ninjas_invisible_ninja',
             'bear_cavalry_major_ursa',
@@ -6358,7 +6359,7 @@ describe('smashup', () => {
             'sphinx',
             'pecos_bill',
         ]);
-        expect(TITAN_CARD_DEFS).toHaveLength(27);
+        expect(TITAN_CARD_DEFS).toHaveLength(28);
         expect(getTitanDef('fairies_spirit_of_the_forest')?.abilityTags).toEqual(['special', 'ongoing']);
         expect(getTitanDef('fairies_spirit_of_the_forest')?.previewRef).toEqual({
             type: 'atlas',

@@ -10,6 +10,7 @@ export const SMASHUP_ATLAS_IDS = {
     BASE5: 'smashup:base5',
     BASE6: 'smashup:base6',
     BASE7: 'smashup:base7',
+    HULUWAWA_BASES: 'smashup:huluwawa-bases',
     CARDS1: 'smashup:cards1',
     CARDS2: 'smashup:cards2',
     CARDS3: 'smashup:cards3',
@@ -19,6 +20,8 @@ export const SMASHUP_ATLAS_IDS = {
     CARDS7: 'smashup:cards7',
     CARDS8: 'smashup:cards8',
     CARDS9: 'smashup:cards9',
+    HULUWAWA_CARDS: 'smashup:huluwawa-cards',
+    HULUWAWA_TITAN: 'smashup:huluwawa-titan',
     TITANS: 'smashup:titans',
 } as const;
 
@@ -40,6 +43,7 @@ export const SMASHUP_FACTION_IDS = {
     DINOSAURS_POD: 'dinosaurs_pod',
     EXPLORERS: 'explorers',
     FAIRIES: 'fairies',
+    HULUWAWA: 'huluwawa',
     PRINCESSES: 'princesses',
     SHARKS: 'sharks',
     TORNADOS: 'tornados',
@@ -142,6 +146,7 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.DINOSAURS_POD]: '恐龙 (POD版)',
     [SMASHUP_FACTION_IDS.EXPLORERS]: '探索者',
     [SMASHUP_FACTION_IDS.FAIRIES]: '仙灵',
+    [SMASHUP_FACTION_IDS.HULUWAWA]: '葫芦娃',
     [SMASHUP_FACTION_IDS.PRINCESSES]: '公主',
     [SMASHUP_FACTION_IDS.SHARKS]: '鲨鱼',
     [SMASHUP_FACTION_IDS.TORNADOS]: '龙卷风',
