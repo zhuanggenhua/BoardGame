@@ -8,6 +8,7 @@ type CapacitorRuntimeLike = {
 type AndroidRuntimeWindowLike = {
     Capacitor?: CapacitorRuntimeLike;
     androidBridge?: unknown;
+    __BG_E2E_NATIVE_ANDROID_RUNTIME__?: boolean;
 };
 
 const safeInvoke = <T,>(fn: () => T): T | undefined => {
@@ -46,8 +47,12 @@ export const getNativeAndroidRuntimeDiagnostics = (options?: {
     const windowCapacitorPlatform = safeInvoke(() => runtimeWindow?.Capacitor?.getPlatform?.());
     const windowCapacitorNative = safeInvoke(() => runtimeWindow?.Capacitor?.isNativePlatform?.());
     const hasAndroidBridge = Boolean(runtimeWindow?.androidBridge);
+    const hasE2ENativeAndroidOverride = import.meta.env.DEV
+        && runtimeWindow?.__BG_E2E_NATIVE_ANDROID_RUNTIME__ === true;
     const hasImportRuntimeSignal = typeof importCapacitorNative === 'boolean' || typeof importCapacitorPlatform === 'string';
-    const nativeAndroid = hasImportRuntimeSignal
+    const nativeAndroid = hasE2ENativeAndroidOverride
+        ? true
+        : hasImportRuntimeSignal
         ? Boolean(importCapacitorNative && importCapacitorPlatform === 'android')
         : Boolean(windowCapacitorNative && windowCapacitorPlatform === 'android');
 

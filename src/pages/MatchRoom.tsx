@@ -1594,6 +1594,7 @@ const OnlineAiSeatBridge = ({
                 controller,
                 actionVisibility,
                 now,
+                defaultMinimumActionDelayMs: runtime?.defaultMinimumActionDelayMs,
                 lastVisibleActionAt: lastVisibleAiActionAtRef.current,
                 observedState: state as MatchState<unknown>,
                 extraElapsedBudgetMs: [preScheduleElapsedMs],

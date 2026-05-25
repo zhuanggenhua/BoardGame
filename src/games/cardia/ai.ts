@@ -962,6 +962,7 @@ const balancedLocalPolicy: LocalAiPolicy = createScoredLocalAiPolicy({
 export const cardiaAiRuntime: GameAiRuntime = {
     gameId: 'cardia',
     buildLegalActions: buildCardiaAiLegalActions,
+    defaultMinimumActionDelayMs: 1000,
     localPolicies: {
         baseline: baselineLocalPolicy,
         aggro: aggroLocalPolicy,

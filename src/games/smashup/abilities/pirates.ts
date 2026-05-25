@@ -826,12 +826,25 @@ const pirateSeaDogsChooseToPromptProgram = createPromptProgram<PirateSeaDogsToPr
         const base = state.core.bases[context.fromBase];
         if (!base) return { events: [] };
         const events: SmashUpEvent[] = [];
+        let protectedSkipped = 0;
         for (const minion of base.minions) {
             if (minion.controller === context.playerId) continue;
             const def = getCardDef(minion.defId);
             if (def?.faction !== context.factionId) continue;
-            if (isMinionProtected(state.core, minion, context.fromBase, context.playerId, 'affect')) continue;
+            if (isMinionProtected(state.core, minion, context.fromBase, context.playerId, 'affect')) {
+                protectedSkipped += 1;
+                continue;
+            }
             events.push(moveMinion(minion.uid, minion.defId, context.fromBase, destBase, 'pirate_sea_dogs', timestamp));
+        }
+        if (protectedSkipped > 0) {
+            events.push(buildAbilityFeedback(
+                context.playerId,
+                events.length === 0 ? 'feedback.all_protected' : 'feedback.target_protected',
+                timestamp,
+                undefined,
+                'warning',
+            ));
         }
         return { events };
     },

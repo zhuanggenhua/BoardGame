@@ -4173,6 +4173,7 @@ function shouldUseRemoteDecisionForDiceThrone(context: AiDecisionContext): boole
 export const diceThroneAiRuntime: GameAiRuntime = {
     gameId: 'dicethrone',
     buildLegalActions: buildDiceThroneAiLegalActions,
+    defaultMinimumActionDelayMs: 1000,
     localVisibleStepDelayConfig: {
         mode: 'whitelist',
         actionKinds: [

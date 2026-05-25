@@ -752,6 +752,7 @@ describe('AI seat controller helpers', () => {
         expect(resolveAiMinimumActionDelayMs({ type: 'human' })).toBe(0);
         expect(resolveAiMinimumActionDelayMs({ type: 'local-ai' })).toBe(DEFAULT_AI_MINIMUM_ACTION_DELAY_MS);
         expect(resolveAiMinimumActionDelayMs({ type: 'remote-ai', providerId: 'astrbot' })).toBe(DEFAULT_AI_MINIMUM_ACTION_DELAY_MS);
+        expect(resolveAiMinimumActionDelayMs({ type: 'local-ai' }, 3000)).toBe(3000);
         expect(resolveAiMinimumActionDelayMs({ type: 'local-ai', minimumActionDelayMs: 950 })).toBe(950);
     });
 

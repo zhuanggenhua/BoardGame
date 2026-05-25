@@ -15,6 +15,7 @@ import { reduce } from '../../domain/reducer';
 import type { CardInstance, TurnStartedEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
+    expectNoPrompt,
     getFirstPrompt,
     invokeRegisteredInteractionHandlerContract,
     getPromptOption,
@@ -77,6 +78,52 @@ describe('bear_cavalry_general_ivan 保护', () => {
         const state = makeState({ bases: [makeBase({ minions: [ivan, enemy] })] });
 
         expect(isMinionProtected(state, enemy, 0, '0', 'destroy')).toBe(false);
+    });
+});
+
+describe('bear_cavalry_youre_pretty_much_borscht 保护反馈', () => {
+    it('来源基地对手随从全受保护时不继续目标基地选择，并给出友好提示', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'borscht-1', defId: 'bear_cavalry_youre_pretty_much_borscht', type: 'action', owner: '0' }],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('ally', 'robot_zapbot', '0', 2),
+                        makeMinion('protected-enemy', 'robot_zapbot', '1', 2, {
+                            attachedActions: [{ uid: 'incorporeal-1', defId: 'ghost_incorporeal', ownerId: '1' }],
+                        }),
+                    ],
+                }),
+                makeBase({ defId: 'base_b', minions: [] }),
+            ],
+        });
+
+        const resolved = invokeRegisteredInteractionHandlerContract(
+            'bear_cavalry_borscht_choose_from',
+            makeMatchState(core),
+            '0',
+            { baseIndex: 0 },
+            undefined,
+            0,
+            dummyRandom,
+        );
+
+        expect(resolved?.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: expect.objectContaining({
+                playerId: '0',
+                messageKey: 'feedback.all_protected',
+                tone: 'warning',
+            }),
+        }));
+        expectNoPrompt(resolved!.state);
     });
 });
 

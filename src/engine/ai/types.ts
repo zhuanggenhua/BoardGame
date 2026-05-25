@@ -230,6 +230,7 @@ export interface GameAiRuntime {
         privateOverlay: MatchState<unknown> | null;
     }): OnlineAiDecisionVisibility | null | undefined;
     localVisibleStepDelayConfig?: LocalAiVisibleStepDelayConfig;
+    defaultMinimumActionDelayMs?: number;
     /**
      * @deprecated 旧命名；读取仍兼容，建议迁移到 localVisibleStepDelayConfig。
      */

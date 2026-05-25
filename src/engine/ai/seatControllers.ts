@@ -29,12 +29,16 @@ function isManualFactionSelectionEnabled(value: string | null): boolean {
     return value === MANUAL_FACTION_SEARCH_VALUE || value === 'true';
 }
 
-export function resolveAiMinimumActionDelayMs(controller: AiSeatController): number {
+export function resolveAiMinimumActionDelayMs(
+    controller: AiSeatController,
+    defaultMinimumActionDelayMs?: number,
+): number {
     if (controller.type === 'human') {
         return 0;
     }
 
     return sanitizeMinimumActionDelayMs(controller.minimumActionDelayMs)
+        ?? sanitizeMinimumActionDelayMs(defaultMinimumActionDelayMs)
         ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
 }
 

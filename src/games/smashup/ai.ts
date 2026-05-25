@@ -2448,6 +2448,7 @@ const baselineLocalPolicy = createLookaheadLocalAiPolicy({
 export const smashUpAiRuntime: GameAiRuntime = {
     gameId: 'smashup',
     buildLegalActions: buildSmashUpAiLegalActions,
+    defaultMinimumActionDelayMs: 3000,
     resolveOnlineDecisionVisibility(args) {
         if (shouldUseSharedDecisionViewForReactionOrdering({
             playerId: args.playerId,

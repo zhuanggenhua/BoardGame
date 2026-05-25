@@ -156,6 +156,10 @@ interface NativeInstallRunnerOptions {
     onInstalledAssetBaseUrl?: (gameId: string, assetBaseUrl?: string) => void;
 }
 
+type NativeGamePackageWindowLike = {
+    __BG_E2E_DISABLE_NATIVE_GAME_PACKAGE_PLUGIN__?: boolean;
+};
+
 export interface NativeInstalledGamePackage {
     gameId: string;
     runtimeChannel: string;
@@ -326,6 +330,20 @@ const normalizeNotificationPermissionResult = (
 
 const getNativePlugin = (): NativeGamePackagePlugin | null => {
     if (nativePluginLoader !== undefined) {
+        return nativePluginLoader;
+    }
+
+    const runtimeWindow = typeof window !== 'undefined'
+        ? window as typeof window & NativeGamePackageWindowLike
+        : undefined;
+    if (
+        import.meta.env.DEV
+        && runtimeWindow?.__BG_E2E_DISABLE_NATIVE_GAME_PACKAGE_PLUGIN__ === true
+    ) {
+        logMobileRuntime('NativeGamePackagePlugin', 'skip-e2e-native-plugin', {
+            mode: import.meta.env.MODE,
+        });
+        nativePluginLoader = null;
         return nativePluginLoader;
     }
 

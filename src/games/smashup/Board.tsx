@@ -111,6 +111,7 @@ const ABILITY_FEEDBACK_DEFAULT_MESSAGES: Record<string, string> = {
     'feedback.hand_empty': '手牌中没有符合条件的卡牌',
     'feedback.condition_not_met': '条件不满足，能力未生效',
     'feedback.target_protected': '目标受到保护，能力未生效',
+    'feedback.all_protected': '所有目标都受到保护，能力未生效',
     'feedback.not_highest_power': '本随从不是这里力量最高的，能力未生效',
     'feedback.no_power_counters': '没有可移除的+1力量指示物',
 };

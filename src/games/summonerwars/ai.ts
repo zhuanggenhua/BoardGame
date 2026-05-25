@@ -3417,6 +3417,7 @@ const baselineLocalPolicy = createLookaheadLocalAiPolicy({
 export const summonerWarsAiRuntime: GameAiRuntime = {
     gameId: 'summonerwars',
     buildLegalActions: buildSummonerWarsAiLegalActions,
+    defaultMinimumActionDelayMs: 1000,
     buildFeatureSnapshot(args) {
         const playerId = asSummonerWarsPlayerId(args.playerId);
         if (!playerId) return null;

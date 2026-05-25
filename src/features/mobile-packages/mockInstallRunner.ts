@@ -84,6 +84,7 @@ export const runMockGamePackageInstall = (
                 progressPercent: undefined,
                 errorMessage: undefined,
                 installedVersion: manifest.assetPackVersion ?? manifest.modulePackVersion ?? 'mock-installed',
+                localAssetBaseUrl: `/_capacitor_file_/data/user/0/top.easyboardgame.app.debug/files/game-packages/${manifest.gameId}/current/assets`,
             },
         },
     ];

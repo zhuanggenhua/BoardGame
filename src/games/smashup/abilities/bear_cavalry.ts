@@ -1696,7 +1696,14 @@ export function registerBearCavalryInteractionHandlers(): void {
         // 若没有任何可被移动的对手随从，则直接 fizzle（不再要求选择目标基地）
         const opponentMinions = state.core.bases[fromBase]?.minions.filter(m => m.controller !== playerId) ?? [];
         const movable = opponentMinions.filter(m => !isMinionProtected(state.core, m, fromBase, playerId, 'affect'));
-        if (movable.length === 0) return { state, events: [] };
+        if (movable.length === 0) {
+            return {
+                state,
+                events: opponentMinions.length > 0
+                    ? [buildAbilityFeedback(playerId, 'feedback.all_protected', timestamp, undefined, 'warning')]
+                    : [],
+            };
+        }
         const destBases: { baseIndex: number; label: string }[] = [];
         for (let i = 0; i < state.core.bases.length; i++) {
             if (i === fromBase) continue;
@@ -1719,11 +1726,15 @@ export function registerBearCavalryInteractionHandlers(): void {
         const ctx = (iData as any)?.continuationContext as { fromBase: number };
         if (!ctx) return undefined;
         const events: SmashUpEvent[] = [];
+        let protectedSkipped = 0;
         // 移动所有对手随从（保护检查自动应用）
         const opponentMinions = state.core.bases[ctx.fromBase].minions.filter(m => m.controller !== playerId);
         for (const m of opponentMinions) {
             // 检查保护（手动检查，因为这里不是构建选项而是批量移动）
-            if (isMinionProtected(state.core, m, ctx.fromBase, playerId, 'affect')) continue;
+            if (isMinionProtected(state.core, m, ctx.fromBase, playerId, 'affect')) {
+                protectedSkipped += 1;
+                continue;
+            }
             events.push(...buildValidatedMoveEvents(state, {
                 minionUid: m.uid,
                 minionDefId: m.defId,
@@ -1732,6 +1743,15 @@ export function registerBearCavalryInteractionHandlers(): void {
                 reason: 'bear_cavalry_youre_pretty_much_borscht',
                 now: timestamp,
             }));
+        }
+        if (protectedSkipped > 0) {
+            events.push(buildAbilityFeedback(
+                playerId,
+                events.length === 0 ? 'feedback.all_protected' : 'feedback.target_protected',
+                timestamp,
+                undefined,
+                'warning',
+            ));
         }
         return { state, events };
     });
