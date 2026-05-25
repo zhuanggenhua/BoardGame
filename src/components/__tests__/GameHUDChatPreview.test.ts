@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchChatMessage } from '../../services/matchSocket';
 import { UI_Z_INDEX } from '../../core';
-import { GAME_HUD_FAB_Z_INDEX, getLatestIncomingMessage, isSelfChatMessage, trimChatMessages } from '../game/framework/widgets/GameHUD';
+import type { MatchState } from '../../engine/types';
+import { GAME_HUD_FAB_Z_INDEX, getLatestIncomingMessage, isSelfChatMessage, shouldSuppressSmashUpHudFab, trimChatMessages } from '../game/framework/widgets/GameHUD';
 import { resolveFabSatellitesToRender, shouldTrackFabButtonRect } from '../system/FabMenu';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
@@ -15,6 +16,30 @@ const buildMessage = (override: Partial<MatchChatMessage> = {}): MatchChatMessag
     createdAt: '2025-01-01T00:00:00.000Z',
     ...override,
 });
+
+function buildSmashUpState(overrides?: Partial<MatchState<any>>): MatchState<any> {
+    return {
+        core: {
+            players: {
+                '0': { id: '0', hand: [], deck: [], discard: [], vp: 0, factions: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1 },
+                '1': { id: '1', hand: [], deck: [], discard: [], vp: 0, factions: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1 },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [],
+            baseDeck: [],
+            baseDiscard: [],
+            nextUid: 1,
+            turnNumber: 1,
+        },
+        sys: {
+            phase: 'scoreBases',
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        },
+        ...(overrides ?? {}),
+    } as MatchState<any>;
+}
 
 describe('GameHUD chat preview helpers', () => {
     it('isSelfChatMessage 使用 senderId 判断自身消息', () => {
@@ -188,5 +213,130 @@ describe('FabMenu helpers', () => {
         expect(layout.position).toEqual({ left: 120, top: 6 });
         expect(layout.listOffset).toEqual({ x: 0, y: -32 });
         expect(layout.alignment).toEqual({ v: 'top', h: 'right' });
+    });
+
+    it('SmashUp owner prompt 激活时应隐藏全局 FAB，避免出现第二视觉焦点', () => {
+        const state = buildSmashUpState({
+            core: {
+                ...buildSmashUpState().core,
+                currentPlayer: '0',
+            },
+            sys: {
+                phase: 'playCards',
+                interaction: {
+                    current: {
+                        id: 'prompt-1',
+                        playerId: '0',
+                        data: {
+                            sourceId: 'test_prompt',
+                            targetType: 'base',
+                            options: [{ id: 'a', label: 'A', value: { baseIndex: 0 } }],
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: undefined },
+            },
+        });
+
+        expect(shouldSuppressSmashUpHudFab({
+            gameId: 'smashup',
+            mode: 'online',
+            state,
+            playerId: '0',
+        })).toBe(true);
+    });
+
+    it('SmashUp 非响应者 waiting shell 期间也应隐藏全局 FAB', () => {
+        const state = buildSmashUpState({
+            sys: {
+                phase: 'scoreBases',
+                interaction: { current: undefined, queue: [] },
+                responseWindow: {
+                    current: {
+                        id: 'rw-1',
+                        windowType: 'afterScoring',
+                        sourceId: 'smashup_reaction_choose',
+                        responderQueue: ['1', '0'],
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                    },
+                },
+                resolution: {
+                    activeFrameId: 'frame-1',
+                    frames: [{
+                        id: 'frame-1',
+                        kind: 'smashup:reaction:score-after',
+                        ownerGame: 'smashup',
+                        ownerSystem: 'smashup-reaction',
+                        ownerToken: 'smashup:reaction:frame-1',
+                        ordering: 'responder-round',
+                        status: 'running',
+                        step: 'optional',
+                        phase: 'scoreBases',
+                        phaseGate: 'block-advance-when-blocked',
+                        metadata: {
+                            smashupReactionSession: {
+                                frameId: 'frame-1',
+                                frameKind: 'score-after',
+                                phase: 'optional',
+                                activePlayerId: '1',
+                                currentPlayerId: '1',
+                                consecutivePasses: 0,
+                                responseWindowType: 'afterScoring',
+                            },
+                        },
+                    }],
+                },
+            },
+        });
+
+        expect(shouldSuppressSmashUpHudFab({
+            gameId: 'smashup',
+            mode: 'online',
+            state,
+            playerId: '0',
+        })).toBe(true);
+    });
+
+    it('SmashUp 本地单屏 owner prompt 期间即使未显式传 myPlayerId 也应隐藏全局 FAB', () => {
+        const state = buildSmashUpState({
+            core: {
+                ...buildSmashUpState().core,
+                currentPlayer: '0',
+            },
+            sys: {
+                phase: 'playCards',
+                interaction: {
+                    current: {
+                        id: 'prompt-local',
+                        playerId: '0',
+                        data: {
+                            sourceId: 'local_prompt',
+                            targetType: 'hand',
+                            options: [{ id: 'card-a', label: 'A', value: { cardUid: 'card-a' } }],
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: undefined },
+            },
+        });
+
+        expect(shouldSuppressSmashUpHudFab({
+            gameId: 'smashup',
+            mode: 'local',
+            state,
+            playerId: null,
+        })).toBe(true);
+    });
+
+    it('非 SmashUp 页面不应误隐藏全局 FAB', () => {
+        expect(shouldSuppressSmashUpHudFab({
+            gameId: 'splendor',
+            mode: 'online',
+            state: buildSmashUpState(),
+            playerId: '0',
+        })).toBe(false);
     });
 });

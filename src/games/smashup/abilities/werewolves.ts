@@ -725,7 +725,10 @@ function registerWerewolfOngoingEffects(): void {
         const { state, playerId, now } = ctx;
         for (let i = 0; i < state.bases.length; i++) {
             const base = state.bases[i];
-            const hasMT = base.ongoingActions.some(a => matchesDefId(a.defId, 'werewolf_marking_territory') && a.ownerId === playerId);
+            const hasMT = base.ongoingActions.some(a =>
+                matchesDefId(a.defId, 'werewolf_marking_territory')
+                && (((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === playerId),
+            );
             if (!hasMT) continue;
             let myTotal = 0;
             let maxOther = 0;
@@ -754,6 +757,7 @@ function registerWerewolfOngoingEffects(): void {
         }
         return [];
     }, {
+        playerContext: 'sourceController',
     });
 
     // 势不可挡 ongoing(minion)：本随从不可被消灭

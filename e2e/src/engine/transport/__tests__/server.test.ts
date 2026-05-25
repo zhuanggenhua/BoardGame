@@ -1266,8 +1266,8 @@ describe('startCancelableAiDelay（可取消延迟）', () => {
     });
 });
 
-describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
-    it('重复交替动作循环应触发 action-loop 兜底', () => {
+describe('resolveForceEndTurnForStalledAi（legacy action-loop residual）', () => {
+    it('重复交替动作循环在当前实现下会回到 active-turn 推进，而不是生成 action-loop candidate', () => {
         const sharedState = createOnlineAiRecoveryState({
             activePlayerId: '1',
             phase: 'main1',

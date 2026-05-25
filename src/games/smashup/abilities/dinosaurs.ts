@@ -997,6 +997,7 @@ function dinoWildlifePreserveChecker(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
     return base.ongoingActions.some(
-        a => matchesDefId(a.defId, 'dino_wildlife_preserve') && a.ownerId === ctx.targetMinion.controller
+        a => matchesDefId(a.defId, 'dino_wildlife_preserve')
+            && (((a.metadata?.sourceControllerId as string | undefined) ?? a.ownerId) === ctx.targetMinion.controller)
     );
 }

@@ -98,6 +98,10 @@ export interface BaseAbilityContext {
     actionTargetType?: 'base' | 'minion';
     /** onActionPlayed 时：行动卡目标随从（附着行动卡时有值） */
     actionTargetMinionUid?: string;
+    /** queued trigger 所属 frame 身份；用于排序/诊断/后续上下文对齐 */
+    frameId?: string;
+    /** queued trigger 源事件身份；用于运行时上下文恢复 */
+    sourceEventId?: string;
     now: number;
 }
 
@@ -114,8 +118,14 @@ export type BaseAbilityExecutor = (ctx: BaseAbilityContext) => BaseAbilityResult
 export type BaseAbilityRegistrationOptions = {
     /** Whether this trigger is mandatory for reaction ordering rules */
     mandatory?: boolean;
+    /** Override the player who decides optional queued base abilities. Defaults to the caller-provided owner. */
+    ownerPlayerId?: (ctx: BaseAbilityContext) => PlayerId | undefined;
     /** 当前状态下是否应进入 reaction queue；返回 false 时不暴露空触发。 */
     canTrigger?: (ctx: BaseAbilityContext) => boolean;
+    /** 显式 reaction resource footprint；用于不依赖 runtime probe 的已知合同。 */
+    effectContract?: import('./types').SmashUpReactionResourceFootprint;
+    /** 显式 program-style footprint；用于无法通过 runtime artifacts 还原的只读依赖。 */
+    deriveFootprint?: (ctx: BaseAbilityContext) => import('./types').SmashUpReactionResourceFootprint | undefined;
 };
 
 export type ActiveBaseAbilityRegistrationOptions = {
@@ -172,7 +182,8 @@ function isFirstMinionPlayedAtBaseThisTurn(ctx: BaseAbilityContext): boolean {
 
 type BaseAbilityEntry = {
     executor: BaseAbilityExecutor;
-    options: Required<Omit<BaseAbilityRegistrationOptions, 'canTrigger'>> & Pick<BaseAbilityRegistrationOptions, 'canTrigger'>;
+    options: Required<Pick<BaseAbilityRegistrationOptions, 'mandatory'>>
+        & Pick<BaseAbilityRegistrationOptions, 'canTrigger' | 'ownerPlayerId' | 'effectContract' | 'deriveFootprint'>;
 };
 type ActiveBaseAbilityEntry = {
     executor: BaseAbilityExecutor;
@@ -206,9 +217,12 @@ export function registerBaseAbility(
     }
     timingMap.set(timing, {
         executor,
-        options: {
-            mandatory: options.mandatory ?? true,
-            ...(options.canTrigger ? { canTrigger: options.canTrigger } : {}) } });
+            options: {
+                mandatory: options.mandatory ?? true,
+                ...(options.ownerPlayerId ? { ownerPlayerId: options.ownerPlayerId } : {}),
+                ...(options.canTrigger ? { canTrigger: options.canTrigger } : {}),
+                ...(options.deriveFootprint ? { deriveFootprint: options.deriveFootprint } : {}),
+                ...(options.effectContract ? { effectContract: options.effectContract } : {}) } });
     // Make this base ability runnable by the global reaction queue.
     registerBaseAbilityAsQueuedTrigger(baseDefId, timing);
 }
@@ -344,9 +358,21 @@ export type ExtendedBaseTrigger = BaseTriggerTiming | 'onMinionDestroyed';
 /** 扩展注册表：支持 onMinionDestroyed */
 type ExtendedBaseAbilityRegistrationOptions = {
     mandatory?: boolean;
+    /** Override the player who decides optional queued extended base abilities. Defaults to the caller-provided owner. */
+    ownerPlayerId?: (ctx: BaseAbilityContext) => PlayerId | undefined;
+    /** 当前状态下是否应进入 reaction queue；返回 false 时不暴露空触发。 */
+    canTrigger?: (ctx: BaseAbilityContext) => boolean;
+    /** 显式 reaction resource footprint；用于不依赖 runtime probe 的已知合同。 */
+    effectContract?: import('./types').SmashUpReactionResourceFootprint;
+    /** 显式 program-style footprint；用于无法通过 runtime artifacts 还原的只读依赖。 */
+    deriveFootprint?: (ctx: BaseAbilityContext) => import('./types').SmashUpReactionResourceFootprint | undefined;
 };
 
-type ExtendedBaseAbilityEntry = { executor: BaseAbilityExecutor; options: Required<ExtendedBaseAbilityRegistrationOptions> };
+type ExtendedBaseAbilityEntry = {
+    executor: BaseAbilityExecutor;
+    options: Required<Pick<ExtendedBaseAbilityRegistrationOptions, 'mandatory'>>
+        & Pick<ExtendedBaseAbilityRegistrationOptions, 'canTrigger' | 'ownerPlayerId' | 'effectContract' | 'deriveFootprint'>;
+};
 
 const extendedRegistry = new Map<string, Map<string, ExtendedBaseAbilityEntry>>();
 
@@ -364,7 +390,12 @@ export function registerExtended(
     timingMap.set(timing, {
         executor,
         options: {
-            mandatory: options.mandatory ?? true } });
+            mandatory: options.mandatory ?? true,
+            ...(options.ownerPlayerId ? { ownerPlayerId: options.ownerPlayerId } : {}),
+            ...(options.canTrigger ? { canTrigger: options.canTrigger } : {}),
+            ...(options.deriveFootprint ? { deriveFootprint: options.deriveFootprint } : {}),
+            ...(options.effectContract ? { effectContract: options.effectContract } : {}),
+        } });
 }
 
 /** 触发扩展时机（如 onMinionDestroyed） */
@@ -380,7 +411,10 @@ export function triggerExtendedBaseAbility(
     return entry.executor(ctx);
 }
 
-export function getExtendedBaseAbilityOptions(baseDefId: string, timing: string): Required<ExtendedBaseAbilityRegistrationOptions> | undefined {
+export function getExtendedBaseAbilityOptions(
+    baseDefId: string,
+    timing: string,
+): ExtendedBaseAbilityEntry['options'] | undefined {
     return extendedRegistry.get(baseDefId)?.get(timing)?.options;
 }
 
@@ -478,7 +512,7 @@ export function registerBaseAbilities(): void {
         if (!base || !ctx.minionUid) return { events: [] };
         // Infiltrate：只影响你自己是否能用本基地能力
         const ignored = base.ongoingActions?.some(o =>
-            o.ownerId === ctx.playerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === ctx.playerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return { events: [] };
         // 计算当前玩家和最强对手的力量
@@ -876,7 +910,7 @@ export function registerBaseAbilities(): void {
         const playedMinion = base.minions.find(m => m.uid === ctx.minionUid);
         const controllerId = playedMinion?.controller ?? ctx.playerId;
         const ignored = base.ongoingActions?.some(o =>
-            o.ownerId === controllerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === controllerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return { events: [] };
         return {
@@ -892,7 +926,7 @@ export function registerBaseAbilities(): void {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
         const ignoredByWinner = base.ongoingActions?.some(o =>
-            o.ownerId === winnerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === winnerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignoredByWinner) return { events: [] };
         const events: SmashUpEvent[] = [];
@@ -917,7 +951,7 @@ export function registerBaseAbilities(): void {
         const minion = base.minions.find(m => m.uid === ctx.minionUid);
         if (!minion) return { events: [] };
         const ignored = base.ongoingActions?.some(o =>
-            o.ownerId === minion.controller && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === minion.controller && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return { events: [] };
         return {
@@ -946,7 +980,7 @@ export function registerBaseAbilities(): void {
     registerBaseAbility('base_the_hill', 'onTurnStart', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         const ignored = base?.ongoingActions?.some(o =>
-            o.ownerId === ctx.playerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === ctx.playerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return { events: [] };
         // 收集该玩家在其他基地的随从
@@ -1018,11 +1052,12 @@ export function registerBaseAbilities(): void {
         const base = ctx.state.bases[ctx.baseIndex];
         const playedMinion = ctx.minionUid ? base?.minions.find(m => m.uid === ctx.minionUid) : undefined;
         const ownerId = playedMinion?.owner ?? ctx.playerId;
+        const controllerId = playedMinion?.controller ?? ctx.playerId;
         // Infiltrate：只让“你自己”忽略基地能力（不影响其他玩家）
-        const ignoredByOwner = base?.ongoingActions?.some(o =>
-            o.ownerId === ownerId && o.defId === 'ninja_infiltrate',
+        const ignoredByController = base?.ongoingActions?.some(o =>
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === controllerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
-        if (ignoredByOwner) return { events: [] };
+        if (ignoredByController) return { events: [] };
         const evt = drawMadnessCards(ownerId, 1, ctx.state, 'base_mountains_of_madness', ctx.now);
         return { events: evt ? [evt] : [] };
     }, {
@@ -1185,7 +1220,9 @@ export function registerBaseAbilities(): void {
 
         return { events: [], matchState: nextMatchState };
     }, {
-        mandatory: false });
+        // 整条计分后链必须执行；每位冠军自己的“可不消灭”由 skip 选项承接，
+        // 不能先把整条 tied-champion 链暴露成当前响应者可整体跳过的 optional trigger。
+        mandatory: true });
 
     // base_ninja_dojo_pod: POD 勘误为无基地能力。
     registerBaseAbility('base_ninja_dojo_pod', 'afterScoring', () => ({ events: [] }), {

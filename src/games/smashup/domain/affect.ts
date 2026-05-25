@@ -228,16 +228,17 @@ export function buildAffectRecords(
             if (payload.targetType !== 'minion' || !payload.targetMinionUid) return [];
             const minion = core.bases[payload.targetBaseIndex]?.minions.find(candidate => candidate.uid === payload.targetMinionUid);
             if (!minion) return [];
+            const sourcePlayerId = payload.sourcePlayerId ?? payload.ownerId;
             return [buildMinionAffectRecord(
                 minion,
                 payload.targetBaseIndex,
                 'attach_action',
                 undefined,
                 {
-                    sourcePlayerId: payload.ownerId,
+                    sourcePlayerId,
                     sourceCardUid: payload.cardUid,
                     sourceDefId: payload.defId,
-                    sourceControllerId: payload.ownerId,
+                    sourceControllerId: sourcePlayerId,
                     sourceBaseIndex: payload.targetBaseIndex,
                 },
             )];

@@ -26,7 +26,6 @@ import { CardTransition, CardListTransition } from './ui/CardTransition';
 import { CardFlip } from './ui/CardFlip';
 import { getInitialOpponentFlipState, getNextOpponentFlipState } from './ui/encounterFlipState';
 import type { FactionId } from './domain/ids';
-import { CARDIA_EVENTS } from './domain/events';
 import cardRegistry from './domain/cardRegistry';
 import { exposeDebugTools } from './debug';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
@@ -37,6 +36,7 @@ import { safeMatchMedia, subscribeMediaQueryChange } from '../../lib/mediaQuery'
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { isNodeContainedBy } from './ui/domGuards';
 import { resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
+import { useCardiaEventAnimations } from './hooks/useCardiaEventAnimations';
 
 type Props = GameBoardProps<CardiaCore>;
 
@@ -332,75 +332,13 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     
     useTutorialBridge(G.sys.tutorial, dispatch as any);
     
-    // 用于追踪已处理的事件 ID（必须在组件顶层声明）
-    const lastProcessedIdRef = React.useRef<number>(-1);
-    
-    // 监听事件流，触发动画
-    React.useEffect(() => {
-        if (!G.sys.eventStream) return;
-        
-        const stream = G.sys.eventStream;
-        
-        // 初始化 lastProcessedId（仅在首次有事件时）
-        if (lastProcessedIdRef.current === -1 && stream.entries.length > 0) {
-            lastProcessedIdRef.current = stream.entries[stream.entries.length - 1].id;
-            return; // 首次挂载时跳过历史事件
-        }
-        
-        // 处理新事件
-        const newEntries = stream.entries.filter(entry => entry.id > lastProcessedIdRef.current);
-        
-        newEntries.forEach(entry => {
-            const event = entry.event;
-            
-            // 能力激活闪光
-            if (event.type === CARDIA_EVENTS.ABILITY_ACTIVATED) {
-                animations.triggerAbilityFlash();
-            }
-            
-            // 能力无有效目标提示
-            if (event.type === CARDIA_EVENTS.ABILITY_NO_VALID_TARGET) {
-                const payload = event.payload as any;
-                if (payload.reason === 'no_markers') {
-                    toast.warning(t('ability.noValidTarget.noMarkers', '场上没有带有修正标记或持续标记的卡牌'));
-                }
-            }
-            
-            // 修正标记放置动画
-            if (event.type === CARDIA_EVENTS.MODIFIER_TOKEN_PLACED) {
-                const payload = event.payload as any;
-                const targetElement = cardRefs.current.get(payload.cardId);
-                if (targetElement) {
-                    // 从屏幕中心飞向目标卡牌
-                    animations.addModifierToken(null, targetElement, payload.value);
-                }
-            }
-            
-            // 持续标记放置动画
-            if (event.type === CARDIA_EVENTS.ONGOING_ABILITY_PLACED) {
-                const payload = event.payload as any;
-                const targetElement = cardRefs.current.get(payload.cardId);
-                if (targetElement) {
-                    animations.addOngoingMarker(targetElement);
-                }
-            }
-            
-            // 印戒移动动画
-            if (event.type === CARDIA_EVENTS.SIGNET_MOVED) {
-                const payload = event.payload as any;
-                const fromElement = cardRefs.current.get(payload.fromCardId);
-                const toElement = cardRefs.current.get(payload.toCardId);
-                if (fromElement && toElement) {
-                    animations.addSignetMove(fromElement, toElement);
-                }
-            }
-        });
-        
-        // 更新最后处理的事件 ID
-        if (newEntries.length > 0) {
-            lastProcessedIdRef.current = newEntries[newEntries.length - 1].id;
-        }
-    }, [G.sys.eventStream, animations, toast, t]);
+    useCardiaEventAnimations({
+        eventStreamEntries: G.sys.eventStream?.entries ?? [],
+        animations,
+        toast,
+        t,
+        cardRefs,
+    });
     
     const { overlayProps: endgameProps } = useEndgame({
         result: isGameOver || undefined,

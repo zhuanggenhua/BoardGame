@@ -22,7 +22,30 @@ type HiddenSimpleChoiceInteraction = {
         sourceId?: unknown;
         multi?: { min?: unknown };
         options?: HiddenSimpleChoiceOption[];
+        confirmValue?: unknown;
+        allowedDieIds?: unknown;
+        completedDieIds?: unknown;
+        defenderId?: unknown;
+        maxSteps?: unknown;
+        minSteps?: unknown;
+        meta?: {
+            dtType?: unknown;
+            diceOwnerId?: unknown;
+            targetOpponentDice?: unknown;
+            selectCount?: unknown;
+            dieModifyConfig?: {
+                mode?: unknown;
+                targetValue?: unknown;
+                adjustRange?: { min?: unknown; max?: unknown };
+            };
+        };
     };
+};
+
+type DefenderChoiceOption = {
+    playerId?: unknown;
+    customId?: unknown;
+    disabled?: unknown;
 };
 
 export type HiddenInteractionDescriptor = {
@@ -34,6 +57,23 @@ export type HiddenInteractionDescriptor = {
         sourceId?: unknown;
         multi?: { min?: unknown };
         options?: HiddenSimpleChoiceOption[];
+        confirmValue?: unknown;
+        allowedDieIds?: unknown;
+        completedDieIds?: unknown;
+        defenderId?: unknown;
+        maxSteps?: unknown;
+        minSteps?: unknown;
+        meta?: {
+            dtType?: unknown;
+            diceOwnerId?: unknown;
+            targetOpponentDice?: unknown;
+            selectCount?: unknown;
+            dieModifyConfig?: {
+                mode?: unknown;
+                targetValue?: unknown;
+                adjustRange?: { min?: unknown; max?: unknown };
+            };
+        };
     };
 };
 
@@ -42,6 +82,7 @@ export type ForceSkippableHiddenAiInteraction = {
     interactionId: string;
     sourceId?: string;
     title?: string;
+    fingerprintHint?: string;
     resolution: AiResolution;
 };
 
@@ -61,6 +102,7 @@ export const ONLINE_AI_LEGAL_ACTION_ONLY_REASONS = [
 
 export const ONLINE_AI_EMERGENCY_OVERLAY_FALLBACK_REASONS = [
     'response-window',
+    'response-loop',
     'active-turn',
     'active-turn-legal-only',
     'seat-legal-only',
@@ -75,6 +117,49 @@ const ONLINE_AI_EMERGENCY_OVERLAY_FALLBACK_REASON_SET = new Set<ForceEndTurnStal
 export const shouldUseOnlineAiEmergencyOverlayFallback = (
     reason: ForceEndTurnStalledAiReason,
 ): boolean => ONLINE_AI_EMERGENCY_OVERLAY_FALLBACK_REASON_SET.has(reason);
+
+function normalizeInteractionFingerprintValue(value: unknown): unknown {
+    if (Array.isArray(value)) {
+        return value.map((item) => normalizeInteractionFingerprintValue(item));
+    }
+    if (value && typeof value === 'object') {
+        const normalized: Record<string, unknown> = {};
+        for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+            normalized[key] = normalizeInteractionFingerprintValue(
+                (value as Record<string, unknown>)[key],
+            );
+        }
+        return normalized;
+    }
+    return value;
+}
+
+function stringifyInteractionFingerprintValue(value: unknown): string {
+    if (typeof value === 'undefined') {
+        return 'undefined';
+    }
+    return JSON.stringify(normalizeInteractionFingerprintValue(value));
+}
+
+export function buildInteractionOptionSemanticSignature(
+    options: readonly HiddenSimpleChoiceOption[] | undefined,
+): string {
+    if (!Array.isArray(options)) {
+        return '';
+    }
+    return options
+        .map((option) => {
+            const optionId = typeof option?.id === 'string' ? option.id : '';
+            const disabledFlag = option?.disabled === true ? '1' : '0';
+            const valueSignature = stringifyInteractionFingerprintValue(option?.value ?? null);
+            return `${optionId}:${disabledFlag}:${valueSignature}`;
+        })
+        .join(',');
+}
+
+export function buildInteractionSliderSemanticSignature(slider: unknown): string {
+    return stringifyInteractionFingerprintValue(slider ?? null);
+}
 
 export type ForceEndTurnStalledAiResolution = {
     playerId: string;
@@ -231,6 +316,194 @@ function buildForceEndTurnResolution(args: {
     };
 }
 
+function buildForceSkipFingerprintHint(args: {
+    playerId: string;
+    interactionId: string;
+    sourceId?: string;
+    title?: string;
+    payload: { optionId?: string; optionIds?: string[] };
+}): string {
+    const sourceId = typeof args.sourceId === 'string' && args.sourceId.length > 0
+        ? args.sourceId
+        : 'unknown-source';
+    const title = typeof args.title === 'string' && args.title.length > 0
+        ? args.title
+        : 'unknown-title';
+    const payloadSignature = typeof args.payload.optionId === 'string' && args.payload.optionId.length > 0
+        ? `single:${args.payload.optionId}`
+        : Array.isArray(args.payload.optionIds)
+            ? `multi:${args.payload.optionIds.join(',')}`
+            : 'empty';
+    return `force-skip:${args.playerId}:${args.interactionId}:${sourceId}:${title}:${payloadSignature}`;
+}
+
+function buildNumberArraySemanticSignature(values: unknown): string {
+    if (!Array.isArray(values)) {
+        return '';
+    }
+
+    return values
+        .filter((value): value is number => typeof value === 'number')
+        .join(',');
+}
+
+function buildStringArraySemanticSignature(values: unknown): string {
+    if (!Array.isArray(values)) {
+        return '';
+    }
+
+    return values
+        .filter((value): value is string => typeof value === 'string')
+        .join(',');
+}
+
+function buildDefenderChoiceOptionSemanticSignature(options: unknown): string {
+    if (!Array.isArray(options)) {
+        return '';
+    }
+
+    return options
+        .map((option) => {
+            const item = option as DefenderChoiceOption | undefined;
+            const playerId = typeof item?.playerId === 'string' ? item.playerId : '';
+            const customId = typeof item?.customId === 'string' ? item.customId : '';
+            const disabledFlag = item?.disabled === true ? '1' : '0';
+            return `${playerId}:${customId}:${disabledFlag}`;
+        })
+        .join(',');
+}
+
+function buildInteractionRecoveryFingerprintHint(
+    current: HiddenSimpleChoiceInteraction | undefined,
+    playerId: string,
+    reason: 'hidden-interaction' | 'visible-interaction',
+    state?: MatchState<unknown>,
+): string {
+    const interactionId = typeof current?.id === 'string' && current.id.length > 0
+        ? current.id
+        : `${playerId}:unknown-interaction`;
+    const sourceId = typeof current?.data?.sourceId === 'string' ? current.data.sourceId : '';
+    const title = typeof current?.data?.title === 'string' ? current.data.title : '';
+    const minCount = typeof current?.data?.multi?.min === 'number' ? current.data.multi.min : '';
+    const optionCount = Array.isArray(current?.data?.options) ? current.data.options.length : '';
+    const optionSignature = buildInteractionOptionSemanticSignature(current?.data?.options);
+    const coreState = state?.core as {
+        pendingDamage?: {
+            id?: unknown;
+            responderId?: unknown;
+            responseType?: unknown;
+            currentDamage?: unknown;
+            sourcePlayerId?: unknown;
+            targetPlayerId?: unknown;
+            isFullyEvaded?: unknown;
+            tokenUsageTotals?: unknown;
+        };
+        pendingBonusDiceSettlement?: {
+            id?: unknown;
+            attackerId?: unknown;
+            rerollCount?: unknown;
+            maxRerollCount?: unknown;
+            readyToSettle?: unknown;
+            dice?: unknown;
+        };
+    } | undefined;
+    const compareRollConfirmSignature = current?.kind === 'compare-roll-choice'
+        && current.data
+        && Object.prototype.hasOwnProperty.call(current.data, 'confirmValue')
+        ? JSON.stringify((current.data as { confirmValue?: unknown }).confirmValue ?? null)
+        : '';
+    if (current?.kind === 'dt:card-interaction') {
+        const interactionType = typeof current.data?.type === 'string' ? current.data.type : '';
+        const targetPlayerIdsSignature = buildStringArraySemanticSignature(current.data?.targetPlayerIds);
+        const requiresTargetWithStatus = current.data?.requiresTargetWithStatus === true ? '1' : '0';
+        const transferStatusId = typeof current.data?.transferConfig?.statusId === 'string'
+            ? current.data.transferConfig.statusId
+            : '';
+        return `${reason}:${playerId}:${interactionId}:dt:card-interaction:${sourceId}:${interactionType}:${targetPlayerIdsSignature}:${requiresTargetWithStatus}:${transferStatusId}`;
+    }
+    if (current?.kind === 'dt:defender-choice') {
+        const defenderId = typeof current.data?.defenderId === 'string' ? current.data.defenderId : '';
+        const attackerId = typeof current.data?.attackerId === 'string' ? current.data.attackerId : '';
+        const targetRollValue = typeof current.data?.targetRollValue === 'number' ? String(current.data.targetRollValue) : '';
+        const defenderOptionSignature = buildDefenderChoiceOptionSemanticSignature(current.data?.options);
+        return `${reason}:${playerId}:${interactionId}:dt:defender-choice:${sourceId}:${defenderId}:${attackerId}:${targetRollValue}:${defenderOptionSignature}`;
+    }
+    if (current?.kind === 'dt:token-response') {
+        const pendingDamage = coreState?.pendingDamage;
+        const pendingId = typeof pendingDamage?.id === 'string' ? pendingDamage.id : '';
+        const responderId = typeof pendingDamage?.responderId === 'string' ? pendingDamage.responderId : playerId;
+        const responseType = typeof pendingDamage?.responseType === 'string' ? pendingDamage.responseType : '';
+        const currentDamage = typeof pendingDamage?.currentDamage === 'number'
+            ? String(pendingDamage.currentDamage)
+            : '';
+        const sourcePlayerId = typeof pendingDamage?.sourcePlayerId === 'string' ? pendingDamage.sourcePlayerId : '';
+        const targetPlayerId = typeof pendingDamage?.targetPlayerId === 'string' ? pendingDamage.targetPlayerId : '';
+        const fullyEvaded = pendingDamage?.isFullyEvaded === true ? '1' : '0';
+        const tokenUsageSignature = pendingDamage?.tokenUsageTotals
+            && typeof pendingDamage.tokenUsageTotals === 'object'
+            ? Object.entries(pendingDamage.tokenUsageTotals as Record<string, unknown>)
+                .map(([tokenId, count]) => `${tokenId}:${typeof count === 'number' ? count : ''}`)
+                .sort()
+                .join(',')
+            : '';
+        return `${reason}:${playerId}:${interactionId}:dt:token-response:${pendingId}:${responderId}:${responseType}:${currentDamage}:${sourcePlayerId}:${targetPlayerId}:${fullyEvaded}:${tokenUsageSignature}`;
+    }
+    if (current?.kind === 'dt:bonus-dice') {
+        const settlement = coreState?.pendingBonusDiceSettlement;
+        const settlementId = typeof settlement?.id === 'string' ? settlement.id : '';
+        const attackerId = typeof settlement?.attackerId === 'string' ? settlement.attackerId : playerId;
+        const rerollCount = typeof settlement?.rerollCount === 'number' ? String(settlement.rerollCount) : '';
+        const maxRerollCount = typeof settlement?.maxRerollCount === 'number' ? String(settlement.maxRerollCount) : '';
+        const readyToSettle = settlement?.readyToSettle === true ? '1' : '0';
+        const diceSignature = Array.isArray(settlement?.dice)
+            ? settlement.dice
+                .map((die) => {
+                    const dieState = die as { index?: unknown; value?: unknown; rerolled?: unknown } | undefined;
+                    const dieIndex = typeof dieState?.index === 'number' ? dieState.index : '';
+                    const dieValue = typeof dieState?.value === 'number' ? dieState.value : '';
+                    const rerolled = dieState?.rerolled === true ? '1' : '0';
+                    return `${dieIndex}:${dieValue}:${rerolled}`;
+                })
+                .join(',')
+            : '';
+        return `${reason}:${playerId}:${interactionId}:dt:bonus-dice:${settlementId}:${attackerId}:${rerollCount}:${maxRerollCount}:${readyToSettle}:${diceSignature}`;
+    }
+    if (current?.kind === 'multistep-choice') {
+        const title = typeof current.data?.title === 'string' ? current.data.title : '';
+        const dtType = typeof current.data?.meta?.dtType === 'string' ? current.data.meta.dtType : '';
+        const maxSteps = typeof current.data?.maxSteps === 'number' ? String(current.data.maxSteps) : '';
+        const minSteps = typeof current.data?.minSteps === 'number' ? String(current.data.minSteps) : '';
+        const selectCount = typeof current.data?.meta?.selectCount === 'number'
+            ? String(current.data.meta.selectCount)
+            : '';
+        const allowedDieIdsSignature = buildNumberArraySemanticSignature(current.data?.allowedDieIds);
+        const completedDieIdsSignature = buildNumberArraySemanticSignature(current.data?.completedDieIds);
+        const diceOwnerId = typeof current.data?.meta?.diceOwnerId === 'string' ? current.data.meta.diceOwnerId : '';
+        const targetOpponentDice = current.data?.meta?.targetOpponentDice === true ? '1' : '0';
+        const dieModifyConfig = current.data?.meta?.dieModifyConfig as {
+            mode?: unknown;
+            targetValue?: unknown;
+            adjustRange?: { min?: unknown; max?: unknown };
+        } | undefined;
+        const dieModifyMode = typeof dieModifyConfig?.mode === 'string' ? dieModifyConfig.mode : '';
+        const dieModifyTargetValue = typeof dieModifyConfig?.targetValue === 'number'
+            ? String(dieModifyConfig.targetValue)
+            : '';
+        const dieModifyAdjustMin = typeof dieModifyConfig?.adjustRange?.min === 'number'
+            ? String(dieModifyConfig.adjustRange.min)
+            : '';
+        const dieModifyAdjustMax = typeof dieModifyConfig?.adjustRange?.max === 'number'
+            ? String(dieModifyConfig.adjustRange.max)
+            : '';
+        return `${reason}:${playerId}:${interactionId}:multistep-choice:${sourceId}:${title}:${dtType}:${maxSteps}:${minSteps}:${allowedDieIdsSignature}:${completedDieIdsSignature}:${diceOwnerId}:${targetOpponentDice}:${selectCount}:${dieModifyMode}:${dieModifyTargetValue}:${dieModifyAdjustMin}:${dieModifyAdjustMax}`;
+    }
+    if (current?.kind === 'simple-choice') {
+        const sliderSignature = buildInteractionSliderSemanticSignature(current.data?.slider);
+        return `${reason}:${playerId}:${interactionId}:simple-choice:${sourceId}:${title}:${minCount}:${optionCount}:${optionSignature}:${sliderSignature}`;
+    }
+    return `${reason}:${playerId}:${interactionId}:${sourceId}:${title}:${minCount}:${optionCount}:${optionSignature}:${compareRollConfirmSignature}`;
+}
+
 function buildForceEndTurnFromInteractionState(
     state: MatchState<unknown>,
     playerId: string,
@@ -243,30 +516,71 @@ function buildForceEndTurnFromInteractionState(
 
     const forceSkipPayload = buildForceSkipPayloadFromSeatState(state, playerId);
     if (forceSkipPayload) {
+        const fingerprintHint = buildInteractionRecoveryFingerprintHint(current, playerId, reason, state);
         return {
             playerId,
             reason,
             requiresConfirmedAdvancePhase: true,
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId,
-                suffix: `${reason}:${forceSkipPayload.interactionId}`,
+                suffix: fingerprintHint,
                 commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: forceSkipPayload.payload }],
             }),
         };
     }
 
-    const fallbackInteractionId = typeof current.id === 'string' && current.id.length > 0
-        ? current.id
-        : `${playerId}:unknown-interaction`;
-
+    const interactionKind = typeof current.kind === 'string' ? current.kind : '';
+    const compareRollData = current.data as {
+        options?: Array<{ id?: unknown; disabled?: unknown }> | unknown;
+        confirmValue?: unknown;
+    } | undefined;
+    const compareRollEnabledOptionIds = interactionKind === 'compare-roll-choice' && Array.isArray(compareRollData?.options)
+        ? compareRollData.options
+            .filter((option): option is { id: string; disabled?: unknown } =>
+                typeof option?.id === 'string' && option.disabled !== true)
+            .map((option) => option.id)
+        : [];
+    const defenderChoiceData = current.data as {
+        options?: Array<{ playerId?: unknown; disabled?: unknown }> | unknown;
+    } | undefined;
+    const defenderChoiceEnabledPlayerIds = interactionKind === 'dt:defender-choice' && Array.isArray(defenderChoiceData?.options)
+        ? defenderChoiceData.options
+            .filter((option): option is { playerId: string; disabled?: unknown } =>
+                typeof option?.playerId === 'string' && option.disabled !== true)
+            .map((option) => option.playerId)
+        : [];
+    const defenderChoiceSinglePlayerId = defenderChoiceEnabledPlayerIds.length === 1
+        ? defenderChoiceEnabledPlayerIds[0]
+        : null;
+    const compareRollSingleOptionId = compareRollEnabledOptionIds.length === 1
+        ? compareRollEnabledOptionIds[0]
+        : null;
+    const shouldForceCompareRollConfirm = interactionKind === 'compare-roll-choice'
+        && compareRollEnabledOptionIds.length === 0
+        && compareRollData !== undefined
+        && Object.prototype.hasOwnProperty.call(compareRollData, 'confirmValue');
+    const forceCommand = interactionKind === 'dt:token-response'
+        ? { type: 'SKIP_TOKEN_RESPONSE', payload: {} }
+        : interactionKind === 'dt:bonus-dice'
+            ? { type: 'SKIP_BONUS_DICE_REROLL', payload: {} }
+            : defenderChoiceSinglePlayerId
+                ? { type: 'SELECT_DEFENDER_TARGET', payload: { defenderId: defenderChoiceSinglePlayerId } }
+            : compareRollSingleOptionId
+                ? { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: compareRollSingleOptionId } }
+                : shouldForceCompareRollConfirm
+                    ? { type: 'SYS_INTERACTION_CONFIRM', payload: {} }
+                    : { type: 'SYS_INTERACTION_CANCEL', payload: {} };
+    const fingerprintHint = buildInteractionRecoveryFingerprintHint(current, playerId, reason, state);
     return {
         playerId,
         reason,
         requiresConfirmedAdvancePhase: true,
+        fingerprintHint,
         resolution: buildForceEndTurnResolution({
             playerId,
-            suffix: `${reason}:${fallbackInteractionId}`,
-            commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: {} }],
+            suffix: fingerprintHint,
+            commands: [forceCommand],
         }),
     };
 }
@@ -421,6 +735,15 @@ function buildForceSkipPayloadFromSeatState(
         };
     }
 
+    if (minCount === 0) {
+        return {
+            interactionId: current.id,
+            payload: { optionIds: [] },
+            sourceId,
+            title,
+        };
+    }
+
     const allowWhenHasNonControl = options?.allowWhenHasNonControl ?? true;
     if (!allowWhenHasNonControl && hasEnabledNonControlOptions(data)) {
         return null;
@@ -433,15 +756,6 @@ function buildForceSkipPayloadFromSeatState(
         return {
             interactionId: current.id,
             payload: { optionId: cancelOption.id },
-            sourceId,
-            title,
-        };
-    }
-
-    if (minCount === 0) {
-        return {
-            interactionId: current.id,
-            payload: { optionIds: [] },
             sourceId,
             title,
         };
@@ -530,17 +844,26 @@ export function resolveForceSkippableHiddenAiInteraction(args: {
             continue;
         }
 
+        const fingerprintHint = buildForceSkipFingerprintHint({
+            playerId,
+            interactionId: forceSkipPayload.interactionId,
+            sourceId: forceSkipPayload.sourceId,
+            title: forceSkipPayload.title,
+            payload: forceSkipPayload.payload,
+        });
+
         return {
             playerId,
             interactionId: forceSkipPayload.interactionId,
             sourceId: forceSkipPayload.sourceId,
             title: forceSkipPayload.title,
+            fingerprintHint,
             resolution: {
                 playerId,
-                attemptKey: `force-skip:${playerId}:${forceSkipPayload.interactionId}`,
+                attemptKey: fingerprintHint,
                 source: 'local-ai',
                 action: {
-                    actionId: `force-skip:${forceSkipPayload.interactionId}`,
+                    actionId: fingerprintHint,
                     kind: 'interaction-choice',
                     label: '强制跳过 AI 可选效果',
                     commands: [{
@@ -601,13 +924,14 @@ function resolveOrphanDisplayOnlyBonusDiceSettlement(args: {
         ? settlement.id
         : 'unknown-display-only-settlement';
 
+    const fingerprintHint = `display-only-bonus:${settlement.attackerId}:${phase || 'unknown-phase'}:${settlementId}`;
     return {
         playerId: settlement.attackerId,
         reason: 'seat-legal-only',
-        fingerprintHint: `display-only-bonus:${settlement.attackerId}:${phase || 'unknown-phase'}:${settlementId}`,
+        fingerprintHint,
         resolution: buildForceEndTurnResolution({
             playerId: settlement.attackerId,
-            suffix: `display-only-bonus:${settlement.attackerId}:${settlementId}`,
+            suffix: fingerprintHint,
             commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
         }),
     };
@@ -650,8 +974,11 @@ export function resolveForceEndTurnForStalledAi(args: {
 
     const responseWindow = args.sharedState?.sys?.responseWindow as {
         current?: {
+            id?: unknown;
             responderQueue?: unknown;
             currentResponderIndex?: unknown;
+            windowType?: unknown;
+            sourceId?: unknown;
         };
     } | undefined;
     const responderQueue = Array.isArray(responseWindow?.current?.responderQueue)
@@ -662,13 +989,28 @@ export function resolveForceEndTurnForStalledAi(args: {
         : 0;
     const responderId = responderQueue[responderIndex];
     if (typeof responderId === 'string' && args.seatControllers[responderId]?.type !== 'human') {
+        const windowId = typeof responseWindow?.current?.id === 'string' && responseWindow.current.id.length > 0
+            ? responseWindow.current.id
+            : `${responderId}:response-window`;
+        const windowType = typeof responseWindow?.current?.windowType === 'string'
+            ? responseWindow.current.windowType
+            : 'unknown-type';
+        const sourceId = typeof responseWindow?.current?.sourceId === 'string'
+            ? responseWindow.current.sourceId
+            : 'unknown-source';
+        const queueSignature = responderQueue
+            .map((value) => (typeof value === 'string' ? value : ''))
+            .filter((value) => value.length > 0)
+            .join('|');
+        const fingerprintHint = `response-window:${responderId}:${windowType}:${sourceId}:${windowId}:${queueSignature}`;
         return {
             playerId: responderId,
             reason: 'response-window',
             requiresConfirmedAdvancePhase: true,
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId: responderId,
-                suffix: `response-window:${responderId}`,
+                suffix: fingerprintHint,
                 commands: [{ type: 'RESPONSE_PASS', payload: {} }],
             }),
         };
@@ -689,8 +1031,9 @@ export function resolveForceEndTurnForStalledAi(args: {
         ? args.sharedState.sys.phase
         : '';
     const currentPlayerId = resolveCurrentPlayerId(args.sharedState);
+    const progressMarker = buildAiProgressMarker(args.sharedState);
     const defensivePendingAttack = (args.sharedState?.core as {
-        pendingAttack?: { defenderId?: unknown };
+        pendingAttack?: { defenderId?: unknown; attackerId?: unknown; sourceAbilityId?: unknown };
     } | undefined)?.pendingAttack;
 
     // DiceThrone defensiveRoll 的真实操作者是防御方 defender（off-turn）。
@@ -707,14 +1050,22 @@ export function resolveForceEndTurnForStalledAi(args: {
         if (args.seatControllers[defenderId]?.type === 'human') {
             return null;
         }
+        const attackerId = typeof defensivePendingAttack.attackerId === 'string'
+            ? defensivePendingAttack.attackerId
+            : currentPlayerId;
+        const sourceAbilityId = typeof defensivePendingAttack.sourceAbilityId === 'string'
+            && defensivePendingAttack.sourceAbilityId.length > 0
+            ? defensivePendingAttack.sourceAbilityId
+            : 'unknown-source';
+        const fingerprintHint = `active-turn-legal-only:${defenderId}:defensiveRoll:${attackerId}:${sourceAbilityId}:${progressMarker}`;
         return {
             playerId: defenderId,
             reason: 'active-turn-legal-only',
             legalActionOnly: true,
-            fingerprintHint: `active-turn-legal-only:${defenderId}:defensiveRoll`,
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId: defenderId,
-                suffix: `active-turn-legal-only:${defenderId}:defensiveRoll`,
+                suffix: fingerprintHint,
                 commands: [],
             }),
         };
@@ -737,24 +1088,43 @@ export function resolveForceEndTurnForStalledAi(args: {
         // 选目标或防御响应。若 seat overlay stale 或 legalActions 暂时为 0，
         // 强发 ADVANCE_PHASE 只会打出 command_failed，并制造高频误导性自动反馈。
         if (phase === 'factionSelect' || isDiceRollPhase || !advancePhaseCommandType) {
+            const defensiveFingerprintHint = phase === 'defensiveRoll'
+                ? (() => {
+                    const pendingAttack = (args.sharedState?.core as {
+                        pendingAttack?: { attackerId?: unknown; sourceAbilityId?: unknown };
+                    } | undefined)?.pendingAttack;
+                    const attackerId = typeof pendingAttack?.attackerId === 'string'
+                        ? pendingAttack.attackerId
+                        : 'unknown-attacker';
+                    const sourceAbilityId = typeof pendingAttack?.sourceAbilityId === 'string'
+                        && pendingAttack.sourceAbilityId.length > 0
+                        ? pendingAttack.sourceAbilityId
+                        : 'unknown-source';
+                    return `active-turn-legal-only:${currentPlayerId}:defensiveRoll:${attackerId}:${sourceAbilityId}:${progressMarker}`;
+                })()
+                : null;
+            const fingerprintHint = defensiveFingerprintHint
+                ?? `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}:${progressMarker}`;
             return {
                 playerId: currentPlayerId,
                 reason: 'active-turn-legal-only',
                 legalActionOnly: true,
-                fingerprintHint: `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}`,
+                fingerprintHint,
                 resolution: buildForceEndTurnResolution({
                     playerId: currentPlayerId,
-                    suffix: `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}`,
+                    suffix: fingerprintHint,
                     commands: [],
                 }),
             };
         }
+        const fingerprintHint = `active-turn:${currentPlayerId}:${buildAiProgressMarker(args.sharedState)}`;
         return {
             playerId: currentPlayerId,
             reason: 'active-turn',
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId: currentPlayerId,
-                suffix: `active-turn:${currentPlayerId}`,
+                suffix: fingerprintHint,
                 commands: [{ type: advancePhaseCommandType, payload: {} }],
             }),
         };
@@ -793,16 +1163,20 @@ export function resolveManualForceEndAiPhase(args: {
         if (args.seatControllers[interactionPlayerId]?.type === 'human') {
             return null;
         }
-        const interactionId = typeof visibleCurrent.id === 'string' && visibleCurrent.id.length > 0
-            ? visibleCurrent.id
-            : `${interactionPlayerId}:manual-visible-interaction`;
+        const fingerprintHint = buildInteractionRecoveryFingerprintHint(
+            visibleCurrent,
+            interactionPlayerId,
+            'visible-interaction',
+            args.sharedState,
+        );
         return {
             playerId: interactionPlayerId,
             reason: 'visible-interaction',
             requiresConfirmedAdvancePhase: true,
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId: interactionPlayerId,
-                suffix: `manual-visible-interaction:${interactionId}`,
+                suffix: `manual-visible-interaction:${fingerprintHint}`,
                 commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: {} }],
             }),
         };
@@ -818,16 +1192,20 @@ export function resolveManualForceEndAiPhase(args: {
         if (!seatCurrent || String(seatCurrent.playerId) !== playerId) {
             continue;
         }
-        const interactionId = typeof seatCurrent.id === 'string' && seatCurrent.id.length > 0
-            ? seatCurrent.id
-            : `${playerId}:manual-hidden-interaction`;
+        const fingerprintHint = buildInteractionRecoveryFingerprintHint(
+            seatCurrent,
+            playerId,
+            'hidden-interaction',
+            args.seatStates[playerId] ?? undefined,
+        );
         return {
             playerId,
             reason: 'hidden-interaction',
             requiresConfirmedAdvancePhase: true,
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId,
-                suffix: `manual-hidden-interaction:${interactionId}`,
+                suffix: `manual-hidden-interaction:${fingerprintHint}`,
                 commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: {} }],
             }),
         };
@@ -850,14 +1228,19 @@ export function resolveManualForceEndAiPhase(args: {
                 : `${responderId}:manual-response-window`;
             const windowType = typeof currentWindow.windowType === 'string' ? currentWindow.windowType : 'unknown-type';
             const sourceId = typeof currentWindow.sourceId === 'string' ? currentWindow.sourceId : 'unknown-source';
+            const queueSignature = responderQueue
+                .map((value) => (typeof value === 'string' ? value : ''))
+                .filter((value) => value.length > 0)
+                .join('|');
+            const fingerprintHint = `manual-response-window:${responderId}:${windowType}:${sourceId}:${windowId}:${queueSignature}`;
             return {
                 playerId: responderId,
                 reason: 'response-window',
                 requiresConfirmedAdvancePhase: true,
-                fingerprintHint: `manual-response-window:${responderId}:${windowType}:${sourceId}`,
+                fingerprintHint,
                 resolution: buildForceEndTurnResolution({
                     playerId: responderId,
-                    suffix: `manual-response-window:${responderId}:${windowType}:${sourceId}:${windowId}`,
+                    suffix: fingerprintHint,
                     commands: [{ type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE', payload: {} }],
                 }),
             };

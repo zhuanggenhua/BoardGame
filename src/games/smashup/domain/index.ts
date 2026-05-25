@@ -5,7 +5,14 @@
  */
 
 import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import { processDestroyMoveCycle, processAffectTriggers, processDeckInspectionTriggers, filterProtectedAffectEvents, buildDestroyEventKey } from './reducer';
+import {
+    processDestroyMoveCycle,
+    processAffectTriggers,
+    processDeckInspectionTriggers,
+    processReturnToHandTriggers,
+    filterProtectedAffectEvents,
+    buildDestroyEventKey,
+} from './reducer';
 import type { FlowHooks, PhaseEnterResult } from '../../../engine/systems/FlowSystem';
 import type {
     SmashUpCommand,
@@ -41,13 +48,14 @@ import {
     getCurrentPlayerId,
 } from './types';
 import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from './ongoingModifiers';
-import { collectTriggers, fireTriggerForSource, hasRegisteredTrigger, interceptEvent as ongoingInterceptEvent } from './ongoingEffects';
+import { collectTriggers, fireTriggerForSource, hasRegisteredTrigger, interceptEvent as ongoingInterceptEvent, isBaseScoringSuppressed } from './ongoingEffects';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import {
     getSmashUpReactionSession,
     registerSmashUpReactionPostProcessor,
     startSmashUpReactionSession,
 } from './reactionSession';
+import { getSmashUpReactionWindowContext } from './reactionWindowState';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
@@ -118,7 +126,8 @@ function collectPhaseTwoOngoingExtraEvents(
         }
 
         for (const ongoing of base.ongoingActions) {
-            if (ongoing.defId === 'trickster_enshrouding_mist' && ongoing.ownerId === playerId) {
+            const ongoingControllerId = (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
+            if (ongoing.defId === 'trickster_enshrouding_mist' && ongoingControllerId === playerId) {
                 events.push(grantExtraMinion(playerId, 'trickster_enshrouding_mist', now, baseIndex, { playTiming: 'banked' }));
             }
         }
@@ -202,6 +211,36 @@ function getPlayersWithPlayableAfterScoringResponses(state: MatchState<SmashUpCo
     }
 
     return playablePlayers;
+}
+
+type TurnEndAdvancePayload = Omit<TurnEndedEvent['payload'], 'playerId'>;
+
+function buildTurnEndAdvancePayload(core: SmashUpCore): TurnEndAdvancePayload {
+    const currentPlayerId = getCurrentPlayerId(core);
+    const activeExtraTurn = core.activeExtraTurn;
+    if (activeExtraTurn && activeExtraTurn.playerId === currentPlayerId) {
+        return {
+            nextPlayerIndex: activeExtraTurn.returnToPlayerIndex,
+            completedExtraTurn: true,
+        };
+    }
+
+    const queuedExtraTurn = core.pendingExtraTurns?.[0];
+    if (queuedExtraTurn) {
+        const queuedPlayerIndex = core.turnOrder.indexOf(queuedExtraTurn.playerId);
+        if (queuedPlayerIndex >= 0) {
+            return {
+                nextPlayerIndex: queuedPlayerIndex,
+                extraTurnPlayerId: queuedExtraTurn.playerId,
+                extraTurnReturnToPlayerIndex: queuedExtraTurn.returnToPlayerIndex,
+                extraTurnReason: queuedExtraTurn.reason,
+            };
+        }
+    }
+
+    return {
+        nextPlayerIndex: (core.currentPlayerIndex + 1) % core.turnOrder.length,
+    };
 }
 
 function buildBaseRankings(
@@ -510,6 +549,10 @@ export function scoreOneBase(
         if (ms) ms = { ...ms, core: updatedCore };
         return { events, newBaseDeck: baseDeck, matchState: ms };
     }
+    if (isBaseScoringSuppressed(updatedCore, baseIndex)) {
+        if (ms) ms = { ...ms, core: updatedCore };
+        return { events, newBaseDeck: baseDeck, matchState: ms };
+    }
     const effectiveBreakpointAfterBefore = getEffectiveBreakpoint(updatedCore, baseIndex);
     const totalPowerAfterBefore = getTotalEffectivePowerOnBase(updatedCore, updatedBaseAfterBefore, baseIndex);
     const lockedAtScoreBasesEnter = updatedCore.scoringEligibleBaseIndices?.includes(baseIndex) ?? false;
@@ -753,6 +796,9 @@ export function scoreOneBase(
     const playersWithAfterScoringCards = ms
         ? getPlayersWithPlayableAfterScoringResponses({ ...ms, core: afterScoringCore }, now)
         : [];
+    // afterScoring 可能已经通过 BASE_DECK_REORDERED / 其他补发事件改写了基地牌库；
+    // 后续换基地与空牌库 reshuffle 必须以最新 core 为准，而不是沿用函数入参的旧 baseDeck 快照。
+    newBaseDeck = [...(updatedCore.baseDeck ?? newBaseDeck)];
 
     // 构建清场 + 换基地 + onBaseRevealed 触发队列（延迟到当前基地彻底结算后再补发）
     const postScoringEvents: SmashUpEvent[] = [];
@@ -792,9 +838,13 @@ export function scoreOneBase(
         };
         postScoringEvents.push(replaceEvt);
         newBaseDeck = newBaseDeck.slice(1);
+        const revealCore = postScoringEvents.reduce(
+            (nextCore, event) => reduce(nextCore, event),
+            updatedCore,
+        );
 
         const queuedReveal = collectExtendedBaseAbilityTriggers({
-            core,
+            core: revealCore,
             timing: 'onBaseRevealed',
             ownerPlayerId: pid,
             baseIndex,
@@ -1183,10 +1233,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 && !(state.core.triggerQueue ?? []).some(trigger => trigger.frameId?.startsWith('turn-end:'));
 
             if (resumedAfterTurnEndReactionResolution) {
-                const nextIndex = (core.currentPlayerIndex + 1) % core.turnOrder.length;
+                const advance = buildTurnEndAdvancePayload(core);
                 return [{
                     type: SU_EVENTS.TURN_ENDED,
-                    payload: { playerId: pid, nextPlayerIndex: nextIndex },
+                    payload: { playerId: pid, ...advance },
                     timestamp: now,
                 } as TurnEndedEvent];
             }
@@ -1239,10 +1289,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 } as PhaseExitResult;
             }
 
-            const nextIndex = (core.currentPlayerIndex + 1) % core.turnOrder.length;
+            const advance = buildTurnEndAdvancePayload(core);
             const evt: TurnEndedEvent = {
                 type: SU_EVENTS.TURN_ENDED,
-                payload: { playerId: pid, nextPlayerIndex: nextIndex },
+                payload: { playerId: pid, ...advance },
                 timestamp: now,
             };
             events.push(evt);
@@ -1426,7 +1476,9 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             let nextTurnNumber = core.turnNumber;
             let nextPlayerIndex = core.currentPlayerIndex;
             if (from === 'endTurn') {
-                const nextIndex = (core.currentPlayerIndex + 1) % core.turnOrder.length;
+                const turnEndedEvent = exitEvents?.find(event => event.type === SU_EVENTS.TURN_ENDED) as TurnEndedEvent | undefined;
+                const nextIndex = turnEndedEvent?.payload.nextPlayerIndex
+                    ?? ((core.currentPlayerIndex + 1) % core.turnOrder.length);
                 nextPlayerId = core.turnOrder[nextIndex];
                 nextPlayerIndex = nextIndex;
                 if (nextIndex === 0) {
@@ -1703,7 +1755,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             if (getSmashUpReactionSession(state)) {
                 return undefined;
             }
-            if (state.sys.responseWindow?.current) {
+            if (getSmashUpReactionWindowContext(state)) {
                 return undefined;
             }
             if ((state.sys as any)._waitForScoreBasesInteractionReduce) {
@@ -2141,8 +2193,10 @@ function postProcessSystemEvents(
         skipDestroyEventKeys: processedDestroyEventKeys,
     });
     if (afterDestroyMove.matchState) ms = afterDestroyMove.matchState;
+    const afterReturnToHand = processReturnToHandTriggers(afterDestroyMove.events, ms, pid, random, now);
+    if (afterReturnToHand.matchState) ms = afterReturnToHand.matchState;
     // 杩斿洖鎵嬬墝/鏀剧墝搴撳簳淇濇姢杩囨护锛堜笌 execute() 鍚庡鐞嗗榻愶級
-    const afterProtectedAffect = filterProtectedAffectEvents(afterDestroyMove.events, ms.core, pid);
+    const afterProtectedAffect = filterProtectedAffectEvents(afterReturnToHand.events, ms.core, pid);
     const afterAffect = processAffectTriggers(afterProtectedAffect, ms, pid, random, now);
     if (afterAffect.matchState) ms = afterAffect.matchState;
     const afterDeckInspection = processDeckInspectionTriggers(afterAffect.events, ms, pid, random, now);
@@ -2288,6 +2342,25 @@ function postProcessSystemEvents(
                     tempCore = reduce(tempCore, queuedBase as unknown as SmashUpEvent);
                     tempMatchState = { ...tempMatchState, core: tempCore };
                 }
+
+                const queuedExtendedBase = collectExtendedBaseAbilityTriggers({
+                    core: tempCore,
+                    timing: 'onActionPlayed',
+                    ownerPlayerId: playedEvt.payload.playerId,
+                    baseIndex: playedEvt.payload.targetBaseIndex,
+                    reason: 'action-played',
+                    actionTargetBaseIndex: playedEvt.payload.targetBaseIndex,
+                    actionTargetType: playedEvt.payload.targetType,
+                    actionTargetMinionUid: playedEvt.payload.targetMinionUid,
+                    frameId,
+                    sourceEventId,
+                    now: event.timestamp,
+                });
+                if (queuedExtendedBase) {
+                    derivedEvents.push(queuedExtendedBase as unknown as SmashUpEvent);
+                    tempCore = reduce(tempCore, queuedExtendedBase as unknown as SmashUpEvent);
+                    tempMatchState = { ...tempMatchState, core: tempCore };
+                }
             }
 
             const queuedActionTriggers = collectTriggers(tempCore, 'onActionPlayed', {
@@ -2327,8 +2400,10 @@ function postProcessSystemEvents(
             skipDestroyEventKeys: processedDestroyEventKeys,
         });
         if (afterDerivedDestroyMove.matchState) ms = afterDerivedDestroyMove.matchState;
+        const afterDerivedReturnToHand = processReturnToHandTriggers(afterDerivedDestroyMove.events, ms, pid, random, now);
+        if (afterDerivedReturnToHand.matchState) ms = afterDerivedReturnToHand.matchState;
         // 杩斿洖鎵嬬墝/鏀剧墝搴撳簳淇濇姢杩囨护锛堜笌 execute() 鍚庡鐞嗗榻愶級
-        const afterDerivedProtectedAffect = filterProtectedAffectEvents(afterDerivedDestroyMove.events, ms.core, pid);
+        const afterDerivedProtectedAffect = filterProtectedAffectEvents(afterDerivedReturnToHand.events, ms.core, pid);
         const afterDerivedAffect = processAffectTriggers(afterDerivedProtectedAffect, ms, pid, random, now);
         if (afterDerivedAffect.matchState) ms = afterDerivedAffect.matchState;
         const afterDerivedDeckInspection = processDeckInspectionTriggers(afterDerivedAffect.events, ms, pid, random, now);
@@ -2346,6 +2421,10 @@ function postProcessSystemEvents(
         titanSysAny._processedTitanPositionEvents = new Set<string>();
     }
     const processedTitanPositionEvents = titanSysAny._processedTitanPositionEvents as Set<string>;
+    if (!titanSysAny._processedTitanRemovedEvents || !(titanSysAny._processedTitanRemovedEvents instanceof Set)) {
+        titanSysAny._processedTitanRemovedEvents = new Set<string>();
+    }
+    const processedTitanRemovedEvents = titanSysAny._processedTitanRemovedEvents as Set<string>;
 
     const titanDerived: SmashUpEvent[] = [];
     let titanCore = state;
@@ -2356,27 +2435,33 @@ function postProcessSystemEvents(
         if (eventIndex >= alreadyReducedEventCount) {
             titanCore = reduce(titanCore, event);
         }
-        if (event.type !== SU_EVENT_TYPES.TITAN_PLAYED && event.type !== SU_EVENT_TYPES.TITAN_MOVED) continue;
+        if (
+            event.type !== SU_EVENT_TYPES.TITAN_PLAYED
+            && event.type !== SU_EVENT_TYPES.TITAN_MOVED
+            && event.type !== SU_EVENT_TYPES.TITAN_REMOVED_FROM_PLAY
+        ) continue;
 
-        const eventBaseIndex = event.type === SU_EVENT_TYPES.TITAN_PLAYED
-            ? event.payload.baseIndex
-            : event.payload.toBaseIndex;
-        const eventKey = `${event.type}:${event.payload.titanUid}@${eventBaseIndex}`;
-        if (processedTitanPositionEvents.has(eventKey)) continue;
-        processedTitanPositionEvents.add(eventKey);
+        if (event.type === SU_EVENT_TYPES.TITAN_PLAYED || event.type === SU_EVENT_TYPES.TITAN_MOVED) {
+            const eventBaseIndex = event.type === SU_EVENT_TYPES.TITAN_PLAYED
+                ? event.payload.baseIndex
+                : event.payload.toBaseIndex;
+            const eventKey = `${event.type}:${event.payload.titanUid}@${eventBaseIndex}`;
+            if (processedTitanPositionEvents.has(eventKey)) continue;
+            processedTitanPositionEvents.add(eventKey);
 
-        const clashResult = resolveTitanClashEvents(
-            titanCore,
-            event,
-            titanCore === ms.core ? ms : { ...ms, core: titanCore },
-        );
-        if (clashResult.matchState) {
-            ms = clashResult.matchState;
-        }
-        if (clashResult.events.length > 0) {
-            titanDerived.push(...clashResult.events);
-            for (const clashEvent of clashResult.events) {
-                titanCore = reduce(titanCore, clashEvent);
+            const clashResult = resolveTitanClashEvents(
+                titanCore,
+                event,
+                titanCore === ms.core ? ms : { ...ms, core: titanCore },
+            );
+            if (clashResult.matchState) {
+                ms = clashResult.matchState;
+            }
+            if (clashResult.events.length > 0) {
+                titanDerived.push(...clashResult.events);
+                for (const clashEvent of clashResult.events) {
+                    titanCore = reduce(titanCore, clashEvent);
+                }
             }
         }
 
@@ -2398,6 +2483,30 @@ function postProcessSystemEvents(
                 }
             }
         }
+
+        if (event.type === SU_EVENT_TYPES.TITAN_REMOVED_FROM_PLAY) {
+            const eventKey = `${event.type}:${event.payload.titanUid}:${event.payload.reason}:${event.payload.fromBaseIndex ?? 'none'}`;
+            if (processedTitanRemovedEvents.has(eventKey)) continue;
+            processedTitanRemovedEvents.add(eventKey);
+
+            const queuedTitanRemoved = collectTriggers(titanCore, 'onTitanRemovedFromPlay', {
+                state: titanCore,
+                matchState: ms,
+                playerId: event.payload.controllerId,
+                baseIndex: event.payload.fromBaseIndex,
+                sourceEventId: `titan-removed:${event.payload.titanUid}:${eventIndex}:${now}`,
+                frameId: `titan-removed-frame:${event.payload.titanUid}:${eventIndex}:${now}`,
+                sourceCardUid: event.payload.titanUid,
+                sourceBaseIndex: event.payload.fromBaseIndex,
+                sourceControllerId: event.payload.controllerId,
+                random,
+                now,
+            }, { sourceDefIds: [event.payload.defId] });
+            if (queuedTitanRemoved) {
+                titanDerived.push(queuedTitanRemoved);
+                titanCore = reduce(titanCore, queuedTitanRemoved);
+            }
+        }
     }
 
     const deferredClashResult = resolveDeferredPecosBillClashEvents(
@@ -2415,6 +2524,15 @@ function postProcessSystemEvents(
         }
     }
 
+    let finalEvents = [...combined, ...titanDerived];
+    const immediateExtraEvents = finalEvents.filter((event): event is LimitModifiedEvent =>
+        event.type === SU_EVENTS.LIMIT_MODIFIED && event.payload.playTiming === 'immediate',
+    );
+    if (immediateExtraEvents.length > 0) {
+        const msForImmediateExtra = titanCore === ms.core ? ms : { ...ms, core: titanCore };
+        ms = queueImmediateExtraPlayInteractions(msForImmediateExtra, immediateExtraEvents);
+    }
+
     // === Global reaction queue resolution (Wiki simultaneous ordering) ===
     // Important: the resolver must see the latest temporary core, including
     // movement/position events that happened in this post-process pass.
@@ -2423,7 +2541,6 @@ function postProcessSystemEvents(
     const msForQueue = titanCore === ms.core ? ms : { ...ms, core: titanCore };
 
     const rq = maybeResolveReactionQueue(msForQueue, random, now);
-    let finalEvents = [...combined, ...titanDerived];
     if (rq) {
         finalEvents = [...finalEvents, ...rq.events];
         ms = rq.state;
@@ -2470,13 +2587,6 @@ function postProcessSystemEvents(
                 _waitForStartTurnInteractionReduce: undefined,
             } as any,
         };
-    }
-
-    const immediateExtraEvents = finalEvents.filter((event): event is LimitModifiedEvent =>
-        event.type === SU_EVENTS.LIMIT_MODIFIED && event.payload.playTiming === 'immediate',
-    );
-    if (immediateExtraEvents.length > 0) {
-        ms = queueImmediateExtraPlayInteractions(ms, immediateExtraEvents);
     }
 
     return { events: finalEvents, matchState: ms };

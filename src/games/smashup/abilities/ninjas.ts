@@ -866,6 +866,14 @@ const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext,
         if (!selected?.cardUid || !selected.defId || selected.power === undefined) {
             return { events: [], matchState: state };
         }
+        const selectedCard = state.core.players[playerId]?.hand.find((card) =>
+            card.uid === selected.cardUid
+            && card.defId === selected.defId
+            && card.type === 'minion',
+        );
+        if (!selectedCard) {
+            return { events: [], matchState: state };
+        }
 
         const base = state.core.bases[context.baseIndex];
         if (!base) {
@@ -876,8 +884,9 @@ const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext,
             type: SU_EVENTS.MINION_PLAYED,
             payload: {
                 playerId,
-                cardUid: selected.cardUid,
-                defId: selected.defId,
+                cardUid: selectedCard.uid,
+                defId: selectedCard.defId,
+                ownerId: selectedCard.owner,
                 baseIndex: context.baseIndex,
                 baseDefId: base.defId,
                 power: selected.power,
@@ -1004,7 +1013,8 @@ function registerNinjaOngoingEffects(): void {
         // 检查目标随从是否附着了烟幕弹，且来源是对手
         const bomb = ctx.targetMinion.attachedActions.find(a => matchesDefId(a.defId, 'ninja_smoke_bomb'));
         if (!bomb) return false;
-        return ctx.sourcePlayerId !== bomb.ownerId;
+        const controllerId = (bomb.metadata?.sourceControllerId as PlayerId | undefined) ?? bomb.ownerId;
+        return ctx.sourcePlayerId !== controllerId;
     });
 
     // 烟雾弹：拥有者回合开始时自毁
@@ -1015,7 +1025,8 @@ function registerNinjaOngoingEffects(): void {
             for (const m of base.minions) {
                 for (const attached of m.attachedActions) {
                     if (!matchesDefId(attached.defId, 'ninja_smoke_bomb')) continue;
-                    if (attached.ownerId !== trigCtx.playerId) continue;
+                    const controllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
+                    if (controllerId !== trigCtx.playerId) continue;
                     events.push({
                         type: SU_EVENTS.ONGOING_DETACHED,
                         payload: {
@@ -1031,7 +1042,7 @@ function registerNinjaOngoingEffects(): void {
         }
         return events;
     }, {
-    }, {
+        playerContext: 'sourceController',
     });
 
     // 暗杀：回合结束时消灭目标随从（附着在随从上）
@@ -1044,7 +1055,10 @@ function registerNinjaOngoingEffects(): void {
             for (const m of base.minions) {
                 const assassinationCard = m.attachedActions.find(a => matchesDefId(a.defId, 'ninja_assassination'));
                 // 只在暗杀卡拥有者的回合结束时触发
-                if (assassinationCard && assassinationCard.ownerId === trigCtx.playerId) {
+                const controllerId = assassinationCard
+                    ? ((assassinationCard.metadata?.sourceControllerId as PlayerId | undefined) ?? assassinationCard.ownerId)
+                    : undefined;
+                if (assassinationCard && controllerId === trigCtx.playerId) {
                     events.push({
                         type: SU_EVENTS.MINION_DESTROYED,
                         payload: {
@@ -1052,7 +1066,8 @@ function registerNinjaOngoingEffects(): void {
                             minionDefId: m.defId,
                             fromBaseIndex: i,
                             ownerId: m.owner,
-                            destroyerId: assassinationCard.ownerId, // 暗杀卡的拥有者是消灭者
+                            controllerId: m.controller,
+                            destroyerId: controllerId,
                             reason: 'ninja_assassination',
                         },
                         timestamp: trigCtx.now,
@@ -1062,7 +1077,7 @@ function registerNinjaOngoingEffects(): void {
         }
         return events;
     }, {
-    }, {
+        playerContext: 'sourceController',
     });
 
     // 渗透：附着此卡的随从不受基地能力影响（广义保护）?
@@ -1077,7 +1092,8 @@ function registerNinjaOngoingEffects(): void {
             for (const m of trigCtx.state.bases[i].minions) {
                 for (const a of m.attachedActions) {
                     if (a.defId !== 'ninja_infiltrate') continue;
-                    if (a.ownerId !== trigCtx.playerId) continue;
+                    const controllerId = (a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId;
+                    if (controllerId !== trigCtx.playerId) continue;
                     events.push({
                         type: SU_EVENTS.ONGOING_DETACHED,
                         payload: {
@@ -1093,7 +1109,7 @@ function registerNinjaOngoingEffects(): void {
         }
         return events;
     }, {
-    }, {
+        playerContext: 'sourceController',
     });
 }
 

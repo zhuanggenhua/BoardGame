@@ -486,6 +486,7 @@ export function GameProvider({
                     } else {
                         finalState = result.stateToRender;
                     }
+
                 } else {
                     finalState = newState as MatchState<unknown>;
                 }

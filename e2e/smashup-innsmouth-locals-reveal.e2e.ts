@@ -67,10 +67,10 @@ test.describe('印斯茅斯"本地人"展示功能', () => {
         expect(player1RevealVisible).toBe(true);
 
         // 验证展示的卡牌数量（应该是 3 张）
-        const player0CardCount = await hostPage.locator('[data-testid="reveal-overlay"] [data-card-preview]').count();
+        const player0CardCount = await hostPage.locator('[data-testid="reveal-overlay"] [data-testid="reveal-card"]').count();
         expect(player0CardCount).toBe(3);
 
-        const player1CardCount = await guestPage.locator('[data-testid="reveal-overlay"] [data-card-preview]').count();
+        const player1CardCount = await guestPage.locator('[data-testid="reveal-overlay"] [data-testid="reveal-card"]').count();
         expect(player1CardCount).toBe(3);
 
         // 截图保存证据
@@ -139,7 +139,7 @@ test.describe('印斯茅斯"本地人"展示功能', () => {
         await guestPage.waitForSelector('[data-testid="reveal-overlay"]', { timeout: 5000 });
 
         // 验证展示 3 张牌
-        const cardCount = await hostPage.locator('[data-testid="reveal-overlay"] [data-card-preview]').count();
+        const cardCount = await hostPage.locator('[data-testid="reveal-overlay"] [data-testid="reveal-card"]').count();
         expect(cardCount).toBe(3);
 
         // 关闭展示

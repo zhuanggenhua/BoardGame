@@ -37,6 +37,8 @@ import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import type { RandomFn } from '../../../engine/types';
+import { runCommand, defaultTestRandom } from './testRunner';
+import { makeMatchState as makePromptMatchState } from './helpers';
 
 // ============================================================================
 // 测试辅助
@@ -178,6 +180,22 @@ describe('bear_cavalry_superiority 保护', () => {
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, enemyMinion, 0, '0', 'destroy')).toBe(false);
     });
+
+    it('borrowed bear_cavalry_superiority 应按控制者而不是真实 owner 保护己方随从', () => {
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const base = makeBase({
+            minions: [myMinion],
+            ongoingActions: [{
+                uid: 'sup-borrowed-1',
+                defId: 'bear_cavalry_superiority',
+                ownerId: '1',
+                metadata: { sourceControllerId: '0' },
+            } as any],
+        });
+        const state = makeState({ bases: [base] });
+        expect(isMinionProtected(state, myMinion, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, myMinion, 0, '1', 'move')).toBe(true);
+    });
 });
 
 // ============================================================================
@@ -250,6 +268,29 @@ describe('bear_cavalry_high_ground 触发', () => {
         expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
     });
 
+    it('borrowed bear_cavalry_high_ground 应按控制者而不是真实 owner 消灭移入的对手随从', () => {
+        const myMinion = makeMinion('my', 'test_minion', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
+        const destBase = makeBase({
+            minions: [myMinion],
+            ongoingActions: [{
+                uid: 'hg-borrowed-1',
+                defId: 'bear_cavalry_high_ground',
+                ownerId: '1',
+                metadata: { sourceControllerId: '0' },
+            } as any],
+        });
+        const srcBase = makeBase({ minions: [moved] });
+        const state = makeState({ bases: [destBase, srcBase] });
+
+        const { events } = fireTriggers(state, 'onMinionMoved', {
+            state, playerId: '0', baseIndex: 0,
+            triggerMinionUid: 'moved', triggerMinionDefId: 'test_minion',
+            random: dummyRandom, now: 0,
+        });
+        expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+    });
+
     it('POD 版高地也会消灭移入的对手随从', () => {
         const myMinion = makeMinion('my', 'test_minion', '0', 3, { powerModifier: 0 });
         const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
@@ -266,6 +307,62 @@ describe('bear_cavalry_high_ground 触发', () => {
             random: dummyRandom, now: 0,
         });
         expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+    });
+
+    it('bear_cavalry_general_ivan_pod 在真实 prompt 响应 yes 后应保留每回合限一次记录，并阻止同回合第二次触发', () => {
+        const ivan = makeMinion('ivan-pod', 'bear_cavalry_general_ivan_pod', '0', 6, { powerModifier: 0 });
+        const ally = makeMinion('ally-1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const movedA = makeMinion('enemy-moved-a', 'test_minion', '1', 2, { powerModifier: 0 });
+        const movedB = makeMinion('enemy-moved-b', 'test_minion', '1', 2, { powerModifier: 0 });
+        const base = makeBase({ minions: [ivan, ally, movedA, movedB] });
+        const state = makeState({ bases: [base] });
+        const promptState = makePromptMatchState(state as any);
+
+        const triggered = fireTriggers(state, 'onMinionMoved', {
+            state,
+            matchState: promptState,
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'enemy-moved-a',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        const prompt = triggered.matchState?.sys.interaction.current as any;
+        expect(prompt?.data?.sourceId).toBe('bear_cavalry_general_ivan_pod_trigger');
+
+        const yesOption = (prompt?.data?.options ?? []).find((option: any) => option?.value?.action === 'yes');
+        expect(yesOption).toBeDefined();
+
+        const resolved = runCommand(
+            triggered.matchState!,
+            {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: '0',
+                payload: { optionId: yesOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.specialLimitUsed).toEqual({
+            bear_cavalry_general_ivan_pod_0: [0],
+        });
+
+        const secondTriggered = fireTriggers(resolved.finalState.core, 'onMinionMoved', {
+            state: resolved.finalState.core,
+            matchState: makePromptMatchState(resolved.finalState.core as any),
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'enemy-moved-b',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 1001,
+        });
+
+        expect(secondTriggered.events).toEqual([]);
+        expect(secondTriggered.matchState?.sys.interaction.current).toBeUndefined();
     });
 });
 
@@ -385,6 +482,21 @@ describe('cthulhu_furthering_the_cause 触发', () => {
         expect(events.some(e => e.type === SU_EVENTS.VP_AWARDED)).toBe(false);
     });
 
+    it('被他人控制但归自己拥有的随从本回合在此被消灭时，仍应按控制权判定为 another player 并获得 1 VP', () => {
+        const base = makeBase({
+            ongoingActions: [{ uid: 'ftc-1', defId: 'cthulhu_furthering_the_cause', ownerId: '0' }],
+        });
+        const state = makeState({
+            bases: [base],
+            turnDestroyedMinions: [{ uid: 'destroyed-1', defId: 'test_minion', baseIndex: 0, owner: '0', controller: '1' }],
+        });
+
+        const { events } = fireTriggers(state, 'onTurnEnd', {
+            state, playerId: '0', random: dummyRandom, now: 0,
+        });
+        expect(events.some(e => e.type === SU_EVENTS.VP_AWARDED)).toBe(true);
+    });
+
     it('reducer: MINION_DESTROYED 会追踪到 turnDestroyedMinions', () => {
         const minion = makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [minion] });
@@ -398,7 +510,7 @@ describe('cthulhu_furthering_the_cause 触发', () => {
         const next = reduce(state, evt);
         expect(next.turnDestroyedMinions).toBeDefined();
         expect(next.turnDestroyedMinions!.length).toBe(1);
-        expect(next.turnDestroyedMinions![0]).toEqual({ uid: 'm1', defId: 'test_minion', baseIndex: 0, owner: '1' });
+        expect(next.turnDestroyedMinions![0]).toEqual({ uid: 'm1', defId: 'test_minion', baseIndex: 0, owner: '1', controller: '1' });
     });
 
     it('reducer: MINION_MOVED 不会把本回合刚被消灭的随从从弃牌堆拉回场上', () => {
@@ -501,6 +613,25 @@ describe('killer_plant_overgrowth 回合开始临界点降为0', () => {
         expect(bpEvents.length).toBe(0);
     });
 
+    it('borrowed Overgrowth 应按控制者而不是真实 owner 在控制者回合开始降低临界点', () => {
+        const base = makeBase({
+            defId: 'base_the_jungle',
+            ongoingActions: [{ uid: 'og-1', defId: 'killer_plant_overgrowth', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+        });
+        const state = makeState({
+            currentPlayerIndex: 0,
+            bases: [base],
+        });
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state, playerId: '0', random: dummyRandom, now: 0,
+        });
+        const bpEvents = events.filter(
+            e => e.type === SU_EVENTS.BREAKPOINT_MODIFIED && (e as any).payload.reason === 'killer_plant_overgrowth'
+        );
+        expect(bpEvents.length).toBe(1);
+        expect((bpEvents[0] as any).payload.delta).toBe(-12);
+    });
+
     it('reduce 后 tempBreakpointModifiers 生效，临界点变为 0', () => {
         const base = makeBase({
             defId: 'base_the_jungle',
@@ -550,6 +681,28 @@ describe('killer_plant_entangled 保护 + 自毁', () => {
         expect(isMinionProtected(state, enemyMinion, 0, '0', 'move')).toBe(true);
     });
 
+    it('borrowed Entangled 应按控制者而不是真实 owner 判断“这里有你的随从”并保护该基地随从不可移动', () => {
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const base = makeBase({
+            minions: [myMinion, enemyMinion],
+            ongoingActions: [{ uid: 'ent-1', defId: 'killer_plant_entangled', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+        });
+        const state = makeState({ bases: [base] });
+        expect(isMinionProtected(state, myMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, enemyMinion, 0, '0', 'move')).toBe(true);
+    });
+
+    it('borrowed Entangled 在只有控制者随从而没有真实 owner 随从时，也应按控制者触发保护', () => {
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const base = makeBase({
+            minions: [myMinion],
+            ongoingActions: [{ uid: 'ent-1', defId: 'killer_plant_entangled', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+        });
+        const state = makeState({ bases: [base] });
+        expect(isMinionProtected(state, myMinion, 0, '1', 'move')).toBe(true);
+    });
+
     it('控制者回合开始时消灭本卡', () => {
         const base = makeBase({
             ongoingActions: [{ uid: 'ent-1', defId: 'killer_plant_entangled', ownerId: '0' }],
@@ -560,6 +713,22 @@ describe('killer_plant_entangled 保护 + 自毁', () => {
             state, playerId: '0', random: dummyRandom, now: 0,
         });
         expect(events.some(e => e.type === SU_EVENTS.ONGOING_DETACHED)).toBe(true);
+    });
+
+    it('borrowed Entangled 应按控制者而不是真实 owner 在控制者回合开始自毁', () => {
+        const base = makeBase({
+            ongoingActions: [{ uid: 'ent-1', defId: 'killer_plant_entangled', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+        });
+        const state = makeState({ bases: [base] });
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state, playerId: '0', random: dummyRandom, now: 0,
+        });
+        const detachEvents = events.filter(
+            e => e.type === SU_EVENTS.ONGOING_DETACHED && (e as any).payload.defId === 'killer_plant_entangled'
+        );
+        expect(detachEvents.length).toBe(1);
+        expect((detachEvents[0] as any).payload.ownerId).toBe('1');
     });
 
     it('非控制者回合不消灭', () => {
@@ -1395,6 +1564,41 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
         expect((pending!.data as { sourceId?: string }).sourceId).toBe('pirate_buccaneer_move');
     });
 
+    it('owner 与 controller 分离时，三基地选择 prompt 应交给当前控制者', () => {
+        const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4, {
+            owner: '1',
+            powerModifier: 0,
+        });
+        const base0 = makeBase({ minions: [buccaneer] });
+        const base1 = makeBase();
+        const base2 = makeBase();
+        const state = makeState({ bases: [base0, base1, base2] });
+        const matchState = {
+            core: state,
+            playerIds: ['0', '1'],
+            sys: { interaction: { current: null, queue: [] }, gameover: null, eventStream: { entries: [], nextId: 0 } },
+        } as unknown as import('../../../engine/types').MatchState<SmashUpCore>;
+
+        const result = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            matchState,
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'buc-1',
+            triggerMinionDefId: 'pirate_buccaneer',
+            random: dummyRandom,
+            now: 1,
+        });
+
+        expect(result.events).toHaveLength(0);
+        expect(result.matchState).toBeDefined();
+        const ms = result.matchState!;
+        const pending = ms.sys.interaction.current ?? ms.sys.interaction.queue[0];
+        expect(pending).toBeDefined();
+        expect(pending!.playerId).toBe('0');
+        expect((pending!.data as { sourceId?: string }).sourceId).toBe('pirate_buccaneer_move');
+    });
+
     it('交互处理函数已注册', () => {
         const handler = getInteractionHandler('pirate_buccaneer_move');
         expect(handler).toBeDefined();
@@ -2102,6 +2306,35 @@ describe('base_mountains_of_madness 疯狂之山', () => {
         });
         expect(result.events.length).toBe(0);
     });
+
+    it('borrowed Infiltrate 由控制者控制时，应阻止 Mountains of Madness 让控制者自己打出的随从拥有者抽疯狂卡', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_mountains_of_madness',
+                minions: [{
+                    uid: 'my-minion',
+                    defId: 'test_minion',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 3,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                } as any],
+                ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            })],
+            madnessDeck: ['madness_1', 'madness_2'],
+            nextUid: 100,
+        } as Partial<SmashUpCore>);
+        const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+        const result = triggerBaseAbility('base_mountains_of_madness', 'onMinionPlayed', {
+            state, matchState: ms, baseIndex: 0, baseDefId: 'base_mountains_of_madness',
+            playerId: '0', minionUid: 'my-minion', now: 1,
+        });
+        expect(result.events.length).toBe(0);
+    });
 });
 
 describe('base_the_homeworld 母星', () => {
@@ -2471,6 +2704,53 @@ describe('bear_cavalry_bear_necessities_pod 限制', () => {
         expect(result.valid).toBe(true);
     });
 
+    it('borrowed bear_cavalry_bear_necessities_pod 应按控制者而不是真实 owner 限制对手额外出牌', () => {
+        const restrictedBase = makeBase({
+            minions: [makeMinion('enemy-on-base', 'test_minion', '1', 3, { powerModifier: 0 })],
+            ongoingActions: [{
+                uid: 'bn-borrowed-1',
+                defId: 'bear_cavalry_bear_necessities_pod',
+                ownerId: '1',
+                talentUsed: true,
+                metadata: { sourceControllerId: '0' },
+            } as any],
+        });
+        const state = makeState({
+            currentPlayerIndex: 1,
+            bases: [restrictedBase, makeBase()],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    minionsPlayed: 1,
+                    minionLimit: 2,
+                    actionsPlayed: 1,
+                    actionLimit: 2,
+                    hand: [
+                        { uid: 'm-extra', defId: 'dino_war_raptor', type: 'minion', owner: '1' } as CardInstance,
+                        { uid: 'a-extra', defId: 'bear_cavalry_bear_hug', type: 'action', owner: '1' } as CardInstance,
+                    ],
+                }),
+            },
+        });
+        const matchState = { core: state, sys: { phase: 'playCards' } } as any;
+
+        const minionResult = validate(matchState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'm-extra', baseIndex: 1 },
+        } as any);
+        expect(minionResult.valid).toBe(false);
+        expect(minionResult.error).toContain('额外牌');
+
+        const actionResult = validate(matchState, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '1',
+            payload: { cardUid: 'a-extra' },
+        } as any);
+        expect(actionResult.valid).toBe(false);
+        expect(actionResult.error).toContain('额外牌');
+    });
+
     it('拥有者下回合开始时会销毁已激活的口粮POD', () => {
         const state = makeState({
             bases: [makeBase({
@@ -2500,6 +2780,42 @@ describe('bear_cavalry_bear_necessities_pod 限制', () => {
         const detachedCount = opponentTurnStart.events.filter(e => e.type === SU_EVENTS.ONGOING_DETACHED).length;
         expect(detachedCount).toBe(0);
     });
+
+    it('borrowed bear_cavalry_bear_necessities_pod 应按控制者而不是真实 owner 在下回合开始时自毁', () => {
+        const state = makeState({
+            bases: [makeBase({
+                ongoingActions: [{
+                    uid: 'bn-borrowed-1',
+                    defId: 'bear_cavalry_bear_necessities_pod',
+                    ownerId: '1',
+                    talentUsed: true,
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            })],
+        });
+
+        const controllerTurnStart = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: dummyRandom,
+            now: 14,
+        });
+        expect(controllerTurnStart.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: expect.objectContaining({ cardUid: 'bn-borrowed-1', ownerId: '1' }),
+            }),
+        ]));
+
+        const ownerTurnStart = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '1',
+            random: dummyRandom,
+            now: 15,
+        });
+        const detachedCount = ownerTurnStart.events.filter(e => e.type === SU_EVENTS.ONGOING_DETACHED).length;
+        expect(detachedCount).toBe(0);
+    });
 });
 
 describe('bear_cavalry_superiority_pod 保护模式', () => {
@@ -2526,6 +2842,25 @@ describe('bear_cavalry_superiority_pod 保护模式', () => {
         expect(isMinionProtected(afterTurnStart, myMinion, 0, '1', 'destroy')).toBe(false);
     });
 
+    it('borrowed bear_cavalry_superiority_pod 的 protect 模式也应按控制者而不是真实 owner 保护己方随从', () => {
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const state = makeState({
+            bases: [makeBase({
+                minions: [myMinion],
+                ongoingActions: [{
+                    uid: 'sup-borrowed-1',
+                    defId: 'bear_cavalry_superiority_pod',
+                    ownerId: '1',
+                    talentUsed: true,
+                    metadata: { superiorityProtect: true, sourceControllerId: '0' },
+                } as any],
+            })],
+        });
+
+        expect(isMinionProtected(state, myMinion, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, myMinion, 0, '1', 'move')).toBe(true);
+    });
+
     it('draw 分支会关闭保护标记并正常摸牌', () => {
         const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const drawCard: CardInstance = { uid: 'd1', defId: 'test_action', type: 'action' } as any;
@@ -2546,6 +2881,60 @@ describe('bear_cavalry_superiority_pod 保护模式', () => {
         const drawResult = handler!(ms, '0', 'draw', { cardUid: 'sup-1' }, dummyRandom, 0);
         expect(drawResult.events.some(e => e.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
         expect(isMinionProtected(drawResult.state.core, myMinion, 0, '1', 'destroy')).toBe(false);
+    });
+
+    it('bear_cavalry_superiority_pod 在真实 prompt 响应 draw 后应关闭保护标记并正常摸牌', () => {
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const drawCard: CardInstance = { uid: 'd1', defId: 'test_action', type: 'action', owner: '0' } as any;
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [drawCard] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                minions: [myMinion],
+                ongoingActions: [{
+                    uid: 'sup-1',
+                    defId: 'bear_cavalry_superiority_pod',
+                    ownerId: '0',
+                    talentUsed: false,
+                    metadata: { superiorityProtect: true },
+                } as any],
+            })],
+        });
+
+        const talent = runCommand(
+            makePromptMatchState(core as any),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'sup-1', baseIndex: 0 },
+            } as any,
+            defaultTestRandom,
+        );
+
+        expect(talent.success).toBe(true);
+        const prompt = talent.finalState.sys.interaction.current as any;
+        expect(prompt?.data?.sourceId).toBe('bear_cavalry_superiority_pod_talent');
+
+        const drawOption = (prompt?.data?.options ?? []).find((option: any) => option?.value?.action === 'draw');
+        expect(drawOption).toBeDefined();
+
+        const resolved = runCommand(
+            talent.finalState,
+            {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: '0',
+                payload: { optionId: drawOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map((card: any) => card.uid)).toContain('d1');
+        expect(resolved.finalState.core.players['0'].deck).toHaveLength(0);
+        expect(resolved.finalState.core.bases[0].ongoingActions[0]?.metadata?.superiorityProtect).toBe(false);
+        expect(isMinionProtected(resolved.finalState.core, myMinion, 0, '1', 'destroy')).toBe(false);
     });
 });
 

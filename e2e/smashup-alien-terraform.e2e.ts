@@ -2899,6 +2899,21 @@ test.describe('Smash Up - Alien Terraform', () => {
         expect(finalState.core.bases[0].ongoingActions.map((candidate: any) => candidate.uid)).toContain('time-box-extra-action');
         expect(finalState.core.players['0'].actionsPlayed).toBe(2);
 
+        await dismissSmashUpSpotlightQueueIfVisible(page);
+        const playedLowMinion = page.locator('[data-minion-uid="time-box-low-minion"]').first();
+        await expect(playedLowMinion).toBeVisible({ timeout: 15000 });
+        await playedLowMinion.hover();
+        await playedLowMinion.locator('button').first().click({ force: true });
+        await expectSmashUpMagnifyTarget(page, 'minion', 'pirate_first_mate');
+        await game.screenshot('time-box-talent-low-minion-magnify', testInfo);
+        await closeSmashUpMagnifyOverlay(page);
+
+        const playedExtraActionMagnify = page.getByTestId('su-base-ongoing-magnify-time-box-extra-action');
+        await expect(playedExtraActionMagnify).toBeVisible({ timeout: 15000 });
+        await playedExtraActionMagnify.click({ force: true });
+        await expectSmashUpMagnifyTarget(page, 'action', 'trickster_hideout');
+        await game.screenshot('time-box-talent-extra-action-magnify', testInfo);
+        await closeSmashUpMagnifyOverlay(page);
         await waitForLayoutSettle(page);
         await game.screenshot('time-box-talent-resolved', testInfo);
     });

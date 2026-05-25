@@ -60,7 +60,7 @@
 | `base_tornado_alley` | 每回合第一次移入后，可把另一个随从移到这里 | onMinionMoved → optional minion prompt | `usedBaseAbilitiesThisTurn` + skip + reason 防自触发 | once/turn、另一个、可选均有治理；历史 L3 覆盖 | L3 |
 | `mythic_greeks_odysseus` | 你打出行动后，在你的一个随从上 +1 | onActionPlayed → 己方随从 prompt | `playerContext:sourceController`，targets self | 触发者归属正确；第一选择随从；Argonaut 行为覆盖代表链 | L2 |
 | `mythic_greeks_argonaut` | 触发行动态能力；可代替行动打出 | 打出随从入口/特殊打出入口 | action-trigger replay 手写代表链，special 语义注册 | 本轮 P0 关注 action-trigger 入口，已有 L2/L3；跨派系泛化仍为残余范围 | L2/L3 |
-| `mythic_greeks_jason` | 每回合一次，行动后选基地，你在那里的随从 +1 | onActionPlayed → 基地 prompt | metadata once/turn，sourceUid，self minions on chosen base | 第一入口基地正确；once/turn metadata 存在；未单独 L3 | L1/L2 |
+| `mythic_greeks_jason` | 每回合一次，行动后选基地，你在那里的随从 +1 | onActionPlayed → 基地 prompt | metadata once/turn，sourceUid，self minions on chosen base | 第一入口基地正确；once/turn metadata 存在；Argonaut 真实入口 E2E 已把 Jason prompt 和 chosen-base buff 跑通 | L2 / scoped L3 |
 | `mythic_greeks_heracles` | 任意玩家行动后，本随从 +1 临时 | onActionPlayed 自动 | `sourceCardUid/sourceBaseIndex` | 无玩家选择；“任意玩家”与 trigger 不限 sourceController 一致 | L2 |
 | `mythic_greeks_spartan` | 每回合一次，你行动后本随从 +1 指示物 | onActionPlayed 自动 | sourceController self + metadata once/turn | 无用户入口；once/turn metadata 存在 | L2/L3 |
 | `mythic_greeks_favor_of_hades` | 从你的弃牌堆选择一张行动回手 | 弃牌行动卡 prompt/单张自动 | discard filter action + recover | 第一入口是卡牌；归属 self discard；单张自动不违背“将一张” | L1 |

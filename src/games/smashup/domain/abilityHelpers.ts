@@ -222,10 +222,11 @@ export function destroyMinion(
     reason: string,
     now: number,
     sourceKind?: 'action' | 'nonAction',
+    controllerId?: PlayerId,
 ): MinionDestroyedEvent {
     return {
         type: SU_EVENTS.MINION_DESTROYED,
-        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason, sourceKind } as MinionDestroyedEvent['payload'],
+        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, controllerId, destroyerId, reason, sourceKind } as MinionDestroyedEvent['payload'],
         timestamp: now,
     };
 }
@@ -452,6 +453,7 @@ export function buildValidatedDestroyEvents(
             params.reason,
             params.now,
             params.sourceKind,
+            minion.controller,
         ),
     ];
 }
@@ -491,6 +493,7 @@ export function buildValidatedCardToDeckBottomEvents(
         cardUid: string;
         defId: string;
         ownerId: PlayerId;
+        sourcePlayerId?: PlayerId;
         reason: string;
         now: number;
         expectedLocation?: 'discard' | 'hand' | 'deck' | 'bases' | 'any';
@@ -499,28 +502,31 @@ export function buildValidatedCardToDeckBottomEvents(
     const core = 'core' in state ? state.core : state;
     const owner = core.players[params.ownerId];
     if (!owner) return [];
+    const sourcePlayer = params.sourcePlayerId ? core.players[params.sourcePlayerId] : undefined;
 
     const exists = (() => {
         switch (params.expectedLocation ?? 'any') {
             case 'discard':
-                return owner.discard.some(card => card.uid === params.cardUid);
+                return (sourcePlayer ?? owner).discard.some(card => card.uid === params.cardUid);
             case 'hand':
-                return owner.hand.some(card => card.uid === params.cardUid);
+                return (sourcePlayer ?? owner).hand.some(card => card.uid === params.cardUid);
             case 'deck':
-                return owner.deck.some(card => card.uid === params.cardUid);
+                return (sourcePlayer ?? owner).deck.some(card => card.uid === params.cardUid);
             case 'bases':
                 return core.bases.some(
                     base => base.minions.some(minion => minion.uid === params.cardUid)
-                        || base.ongoingActions.some(action => action.uid === params.cardUid),
+                        || base.ongoingActions.some(action => action.uid === params.cardUid)
+                        || base.minions.some(minion => minion.attachedActions.some(action => action.uid === params.cardUid)),
                 );
             case 'any':
             default:
-                return owner.hand.some(card => card.uid === params.cardUid)
-                    || owner.deck.some(card => card.uid === params.cardUid)
-                    || owner.discard.some(card => card.uid === params.cardUid)
+                return (sourcePlayer ?? owner).hand.some(card => card.uid === params.cardUid)
+                    || (sourcePlayer ?? owner).deck.some(card => card.uid === params.cardUid)
+                    || (sourcePlayer ?? owner).discard.some(card => card.uid === params.cardUid)
                     || core.bases.some(
                         base => base.minions.some(minion => minion.uid === params.cardUid)
-                            || base.ongoingActions.some(action => action.uid === params.cardUid),
+                            || base.ongoingActions.some(action => action.uid === params.cardUid)
+                            || base.minions.some(minion => minion.attachedActions.some(action => action.uid === params.cardUid)),
                     );
         }
     })();
@@ -534,6 +540,7 @@ export function buildValidatedCardToDeckBottomEvents(
             defId: params.defId,
             ownerId: params.ownerId,
             reason: params.reason,
+            ...(params.sourcePlayerId !== undefined ? { sourcePlayerId: params.sourcePlayerId } : {}),
         },
         timestamp: params.now,
     }];
@@ -1034,6 +1041,7 @@ export function grantExtraMinion(
     options?: {
         sameNameOnly?: boolean;
         sameNameDefId?: string;
+        specificCardUid?: string;
         powerMax?: number;
         playTiming?: 'banked' | 'immediate';
         consumePendingMinionPlayEffectOnSkip?: boolean;
@@ -1048,6 +1056,7 @@ export function grantExtraMinion(
             ...(options?.powerMax !== undefined ? { powerMax: options.powerMax } : {}),
             ...(options?.sameNameOnly ? { sameNameOnly: true } : {}),
             ...(options?.sameNameDefId ? { sameNameDefId: options.sameNameDefId } : {}),
+            ...(options?.specificCardUid ? { specificCardUid: options.specificCardUid } : {}),
             ...(options?.consumePendingMinionPlayEffectOnSkip ? { consumePendingMinionPlayEffectOnSkip: true } : {}),
         },
         timestamp: now,
@@ -1060,7 +1069,12 @@ export function grantExtraAction(
     playerId: PlayerId,
     reason: string,
     now: number,
-    options?: { playTiming?: 'banked' | 'immediate' },
+    options?: {
+        playTiming?: 'banked' | 'immediate';
+        restrictToBase?: number;
+        restrictToMinionUid?: string;
+        specialActionWindow?: 'meFirst' | 'afterScoring';
+    },
 ): LimitModifiedEvent {
     return {
         type: SU_EVENTS.LIMIT_MODIFIED,
@@ -1070,6 +1084,9 @@ export function grantExtraAction(
             delta: 1,
             reason,
             ...(options?.playTiming ? { playTiming: options.playTiming } : {}),
+            ...(options?.restrictToBase !== undefined ? { restrictToBase: options.restrictToBase } : {}),
+            ...(options?.restrictToMinionUid ? { restrictToMinionUid: options.restrictToMinionUid } : {}),
+            ...(options?.specialActionWindow ? { specialActionWindow: options.specialActionWindow } : {}),
         },
         timestamp: now,
     };

@@ -52,6 +52,7 @@ type RobotMicrobotReclaimerContext = RobotPromptContext & {
 type RobotHoverbotChoice = {
     cardUid?: string;
     defId?: string;
+    ownerId?: string;
     power?: number;
     baseIndex?: number;
     skip?: boolean;
@@ -66,6 +67,7 @@ type RobotHoverbotContext = RobotPromptContext & {
 type RobotHoverbotBaseContext = RobotPromptContext & {
     cardUid: string;
     defId: string;
+    ownerId: string;
     power: number;
 };
 
@@ -299,14 +301,25 @@ const robotMicrobotReclaimerPromptProgram = createPromptProgram<RobotMicrobotRec
         const player = state.core.players[playerId];
         const selectedUidSet = new Set(cardUids);
         const microbotsFromDiscard = player.discard.filter((card) => selectedUidSet.has(card.uid));
-        const newDeck = [...player.deck, ...microbotsFromDiscard];
-        const shuffled = random.shuffle([...newDeck]);
+        const cardsByOwner = new Map<PlayerId, CardInstance[]>();
+        for (const card of microbotsFromDiscard) {
+            const ownerId = state.core.players[card.owner] ? card.owner : playerId;
+            cardsByOwner.set(ownerId, [...(cardsByOwner.get(ownerId) ?? []), card]);
+        }
         return {
-            events: [{
-                type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: shuffled.map((card) => card.uid) },
-                timestamp,
-            }],
+            events: Array.from(cardsByOwner.entries()).map(([ownerId, cards]) => {
+                const owner = state.core.players[ownerId] ?? player;
+                const shuffled = random.shuffle([...owner.deck, ...cards]);
+                return {
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: {
+                        playerId: ownerId,
+                        deckUids: shuffled.map((card) => card.uid),
+                        ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+                    },
+                    timestamp,
+                } as SmashUpEvent;
+            }),
         };
     },
 });
@@ -374,6 +387,7 @@ const robotHoverbotBasePromptProgram = createPromptProgram<RobotHoverbotBaseCont
                     playerId,
                     cardUid: context.cardUid,
                     defId: context.defId,
+                    ownerId: context.ownerId,
                     baseIndex: choice.baseIndex,
                     baseDefId: state.core.bases[choice.baseIndex]?.defId,
                     power: context.power,
@@ -400,7 +414,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                     {
                         id: 'play',
                         label: `打出 cards.${topCard.defId}.name`,
-                        value: { cardUid: topCard.uid, defId: topCard.defId, power },
+                        value: { cardUid: topCard.uid, defId: topCard.defId, ownerId: topCard.owner, power },
                         displayMode: 'card' as const,
                         _source: 'static' as const,
                     },
@@ -424,7 +438,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                     {
                         id: 'play',
                         label: `打出 cards.${topCard.defId}.name`,
-                        value: { cardUid: topCard.uid, defId: topCard.defId, power },
+                        value: { cardUid: topCard.uid, defId: topCard.defId, ownerId: topCard.owner, power },
                         displayMode: 'card' as const,
                         _source: 'static' as const,
                     },
@@ -449,6 +463,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                         playerId,
                         cardUid: choice.cardUid,
                         defId: choice.defId,
+                        ownerId: choice.ownerId,
                         baseIndex: 0,
                         baseDefId: state.core.bases[0].defId,
                         power: choice.power ?? 0,
@@ -467,6 +482,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                 now: timestamp,
                 cardUid: choice.cardUid,
                 defId: choice.defId,
+                ownerId: choice.ownerId ?? player.deck[0].owner,
                 power: choice.power ?? 0,
             },
             nextProgram: robotHoverbotBasePromptProgram,
@@ -641,13 +657,15 @@ function registerRobotOngoingEffects(): void {
             if (!isMicrobot(trigCtx.state, destroyedMinion)) return [];
         }
 
+        const destroyedControllerId = destroyedMinion?.controller ?? trigCtx.controllerId ?? trigCtx.playerId;
+
         // 找到 Archive 的控制者
         let archiveCount = 0;
         for (const base of trigCtx.state.bases) {
             for (const minion of base.minions) {
                 if (
                     matchesDefId(minion.defId, 'robot_microbot_archive')
-                    && minion.controller === trigCtx.playerId
+                    && minion.controller === destroyedControllerId
                 ) {
                     archiveCount++;
                 }
@@ -660,7 +678,7 @@ function registerRobotOngoingEffects(): void {
         // 5. 抽 1 张牌（按全局抽牌规则处理牌库为空 / 手牌上限）
         // “你的 Microbot” → 被消灭随从必须由 Archive 控制者控制
 
-        const player = trigCtx.state.players[trigCtx.playerId];
+        const player = trigCtx.state.players[destroyedControllerId];
         // “你的 Microbot” → 被消灭随从必须由 Archive 控制者控制
         if (!player || player.deck.length === 0) return [];
 
@@ -670,7 +688,7 @@ function registerRobotOngoingEffects(): void {
         return [
             {
                 type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: trigCtx.playerId, count: drawnUids.length, cardUids: drawnUids },
+                payload: { playerId: destroyedControllerId, count: drawnUids.length, cardUids: drawnUids },
                 timestamp: trigCtx.now,
             },
         ];

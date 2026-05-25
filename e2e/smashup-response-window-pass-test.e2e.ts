@@ -199,7 +199,12 @@ test.describe('大杀四方 - 响应窗口 Pass 测试', () => {
 
         await game.screenshot('01-madness-unleashed-prompt', testInfo);
 
-        await selectAllButton.evaluate((button: HTMLButtonElement) => button.click());
+        if (await selectAllButton.isVisible().catch(() => false)) {
+            await selectAllButton.evaluate((button: HTMLButtonElement) => button.click());
+        } else {
+            await page.locator(`[data-option-id="${madnessOptions[0].id}"]`).click();
+            await page.locator(`[data-option-id="${madnessOptions[1].id}"]`).click();
+        }
         await expect(confirmButton).toHaveText(/^(确认|Confirm)\s*\(2\)$/i);
         await game.screenshot('01b-madness-unleashed-select-all', testInfo);
 
@@ -210,7 +215,7 @@ test.describe('大杀四方 - 响应窗口 Pass 测试', () => {
         const actionQuotaText = await actionQuota.evaluate((node) => node.textContent?.replace(/\s+/g, '') ?? '');
         expect(actionQuotaText).toMatch(/(战术|Action)2/i);
         expect(actionQuotaText).toMatch(/(通用额度|GlobalQuota)2\/3/i);
-        expect(actionQuotaText).toMatch(/(含额外行动额度|Includesextraactionquota)\+2/i);
+        expect(actionQuotaText).toMatch(/(含额外(?:行动|战术)额度|Includesextraactionquota)\+2/i);
         await game.screenshot('02-after-madness-unleashed-quota', testInfo);
 
         await dismissSpotlightQueueIfPresent();

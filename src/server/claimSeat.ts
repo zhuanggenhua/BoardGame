@@ -118,16 +118,40 @@ export const createClaimSeatHandler = ({
             return;
         }
 
-        const playerCredentials = await auth.generateCredentials(ctx);
-        player.credentials = playerCredentials;
-        if (!player.name) {
+        const latestMetadata = (await db.fetch(matchID, { metadata: true })).metadata ?? metadata;
+        const latestPlayers = latestMetadata.players as Record<string, { name?: string; credentials?: string }> | undefined;
+        const latestPlayer = latestPlayers?.[resolvedPlayerID] ?? player;
+        if (!latestPlayer) {
+            logger.warn(`[claim-seat] rejected reason=player_not_found_after_refresh matchID=${matchID} playerID=${resolvedPlayerID}`);
+            ctx.throw(404, 'Player ' + resolvedPlayerID + ' not found');
+            return;
+        }
+
+        const existingCredentials = typeof latestPlayer.credentials === 'string' && latestPlayer.credentials.trim()
+            ? latestPlayer.credentials
+            : undefined;
+        const playerCredentials = existingCredentials ?? await auth.generateCredentials(ctx);
+        const nextPlayer = {
+            ...latestPlayer,
+            credentials: playerCredentials,
+        };
+        if (!nextPlayer.name) {
             const resolvedName = requestedName || payload?.username;
             if (resolvedName) {
-                player.name = resolvedName;
+                nextPlayer.name = resolvedName;
             }
         }
 
-        await db.setMetadata(matchID, metadata);
+        const nextMetadata: MatchMetadata = {
+            ...latestMetadata,
+            updatedAt: Date.now(),
+            players: {
+                ...latestMetadata.players,
+                [resolvedPlayerID]: nextPlayer,
+            },
+        };
+
+        await db.setMetadata(matchID, nextMetadata);
         logger.info(`[claim-seat] success matchID=${matchID} playerID=${resolvedPlayerID} actor=${actorLabel}`);
         ctx.body = { playerID: resolvedPlayerID, playerCredentials };
     };

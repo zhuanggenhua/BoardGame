@@ -206,8 +206,8 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
      * 鏍稿績锛氭秷璐?EventStream 涓殑鏂颁簨浠?
      */
     useEffect(() => {
-        const { entries: newEntries, didReset } = consumeNew();
-        if (didReset) {
+        const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
+        if (didReset || didOptimisticRollback) {
             cardSpotlightQueueRef.current = [];
             processedCardSpotlightKeysRef.current.clear();
             setCardSpotlightQueue([]);

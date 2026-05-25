@@ -8,6 +8,9 @@ import { makeCard, makeMatchState, makeMinion, makePlayer, makeState, getInterac
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { getEffectivePower } from '../domain/ongoingModifiers';
+import { maybeResolveReactionQueue } from '../domain/reactionQueue';
+import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
+import { collectTriggers } from '../domain/ongoingEffects';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
@@ -292,6 +295,114 @@ describe('vampires_pod: Nightstalker POD', () => {
         expect(useTalent.success).toBe(true);
         expect(useTalent.events.some(e => e.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
         expect(useTalent.events.some(e => e.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(true);
+    });
+
+    it('borrowed Fledgling Vampire POD 从当前玩家手牌埋葬时，仍应保留真实 trueOwnerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    hand: [
+                        makeCard('borrowed-fv', 'vampire_fledgling_vampire_pod', 'minion', '0'),
+                    ],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 1,
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('victim-a', 'robot_microbot', '0', 1)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const victim = core.bases[0].minions.find(minion => minion.uid === 'victim-a');
+        const queued = collectTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core, 'playCards', '1'),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'victim-a',
+            triggerMinionDefId: 'robot_microbot',
+            triggerMinion: victim,
+            destroyerId: '1',
+            sourceControllerId: '1',
+            reason: 'test_destroy',
+            random: defaultTestRandom,
+            now: 40,
+        }) as any;
+
+        const trigger = (queued?.payload?.triggers ?? [])
+            .find((candidate: any) => candidate.sourceDefId === 'vampire_fledgling_vampire_pod');
+        expect(trigger?.sourceCardUid).toBe('borrowed-fv');
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }, 'playCards', '1'),
+            defaultTestRandom,
+            40,
+        );
+        const reactionPrompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
+        expect(reactionPrompt?.data?.sourceId).toBe('smashup_reaction_choose');
+        const triggerOption = reactionPrompt.data.options.find((option: any) => {
+            const triggerId = option.value?.triggerId;
+            return triggerId && triggerId === trigger.id;
+        });
+        expect(triggerOption).toBeTruthy();
+
+        const chosen = resolveSmashUpReactionChoice(
+            prompted!.state,
+            defaultTestRandom,
+            41,
+            triggerOption.value,
+        );
+
+        const burySourcePrompt: any = getInteractionsFromMS(chosen.state)[0];
+        expect(burySourcePrompt?.data?.sourceId).toBe('vampire_fledgling_vampire_pod_bury_source');
+        const borrowedSourceOption = burySourcePrompt.data.options.find((o: any) => o.value?.cardUid === 'borrowed-fv');
+        expect(borrowedSourceOption).toBeTruthy();
+
+        const afterChooseSource = runCommand(
+            chosen.state,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: borrowedSourceOption.id } } as any,
+            defaultTestRandom,
+        );
+        expect(afterChooseSource.success).toBe(true);
+
+        const buryBasePrompt: any = getInteractionsFromMS(afterChooseSource.finalState)[0];
+        expect(buryBasePrompt?.data?.sourceId).toBe('vampire_fledgling_vampire_pod_bury_base');
+        const targetBaseOption = buryBasePrompt.data.options.find((o: any) => o.value?.baseIndex === 1);
+        expect(targetBaseOption).toBeTruthy();
+
+        const afterChooseBase = runCommand(
+            afterChooseSource.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: targetBaseOption.id } } as any,
+            defaultTestRandom,
+        );
+        expect(afterChooseBase.success).toBe(true);
+
+        const buriedEvent = afterChooseBase.events.find((event: any) => event.type === SU_EVENTS.CARD_BURIED);
+        expect(buriedEvent).toEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_BURIED,
+            payload: expect.objectContaining({
+                playerId: '1',
+                cardUid: 'borrowed-fv',
+                baseIndex: 1,
+                trueOwnerId: '0',
+                buriedFrom: 'hand',
+                reason: 'vampire_fledgling_vampire_pod',
+            }),
+        }));
     });
 });
 
@@ -602,6 +713,121 @@ describe('vampires_pod: Wolf Pact POD', () => {
         const prompt: any = getInteractionsFromMS(ms)[0];
         expect(prompt?.data?.sourceId).toBe('vampire_wolf_pact_pod_action');
         expect(prompt.data.options.some((o: any) => o.id === 'skip')).toBe(false);
+    });
+
+    it('战术面选择被他人拥有的弃牌时，仍应洗回其拥有者牌库而不是当前玩家牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('borrowed-discard', 'robot_microbot', 'minion', '1'),
+                        makeCard('own-discard', 'robot_microbot', 'minion', '0'),
+                    ],
+                    deck: [makeCard('p0-deck-a', 'vampire_nightstalker_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'robot_microbot', 'minion', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const onPlay = resolveOnPlay('vampire_wolf_pact_pod_action');
+        expect(onPlay).toBeTruthy();
+        const result = onPlay!({
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'wp',
+            defId: 'vampire_wolf_pact_pod_action',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 0,
+        } as any);
+        const ms = result.matchState ?? makeMatchState(core);
+        const prompt: any = getInteractionsFromMS(ms)[0];
+        const borrowedOption = prompt.data.options.find((option: any) => option.value?.cardUid === 'borrowed-discard');
+        expect(borrowedOption).toBeTruthy();
+
+        const resolved = runCommand(
+            ms,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: borrowedOption.id } },
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['own-discard']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-a', 'borrowed-discard']);
+    });
+
+    it('破晓从弃牌堆打出 borrowed 低力量随从时，应保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('crack', 'vampire_crack_of_dusk', 'action', '0')],
+                    discard: [
+                        makeCard('borrowed-minion', 'vampire_fledgling_vampire', 'minion', '1'),
+                        makeCard('own-minion', 'vampire_fledgling_vampire', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'vampire_fledgling_vampire', 'minion', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const onPlay = resolveOnPlay('vampire_crack_of_dusk');
+        expect(onPlay).toBeTruthy();
+        const result = onPlay!({
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'crack',
+            defId: 'vampire_crack_of_dusk',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 0,
+        } as any);
+
+        const ms = result.matchState ?? makeMatchState(core);
+        const chooseCardPrompt: any = getInteractionsFromMS(ms)[0];
+        expect(chooseCardPrompt?.data?.sourceId).toBe('vampire_crack_of_dusk');
+        const borrowedOption = chooseCardPrompt.data.options.find((option: any) => option.value?.cardUid === 'borrowed-minion');
+        expect(borrowedOption).toBeTruthy();
+
+        const chooseCard = runCommand(
+            ms,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: borrowedOption.id } },
+            defaultTestRandom,
+        );
+        expect(chooseCard.success).toBe(true);
+
+        const chooseBasePrompt: any = getInteractionsFromMS(chooseCard.finalState)[0];
+        expect(chooseBasePrompt?.data?.sourceId).toBe('vampire_crack_of_dusk_base');
+        const baseOption = chooseBasePrompt.data.options.find((option: any) => option.value?.baseIndex === 0);
+        expect(baseOption).toBeTruthy();
+
+        const resolved = runCommand(
+            chooseCard.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: baseOption.id } },
+            defaultTestRandom,
+        );
+        expect(resolved.success).toBe(true);
+
+        const minion = resolved.finalState.core.bases[0].minions.find(card => card.uid === 'borrowed-minion');
+        expect(minion?.controller).toBe('0');
+        expect(minion?.owner).toBe('1');
+        expect(minion?.powerCounters).toBe(1);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['own-minion']);
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).not.toContain('borrowed-minion');
     });
 });
 

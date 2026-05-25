@@ -18,6 +18,7 @@ import { getCardDef, getBaseDef } from '../data/cards';
 import { fireTriggers } from './ongoingEffects';
 import { validateActionPlaySemantics } from './playLegality';
 import { reduce } from './reduce';
+import { buildActionPlayedEvent } from './actionPlayEvent';
 import type {
     ActionCardDef,
     ActiveDuel,
@@ -494,11 +495,14 @@ function playActionAsDuelCard(
         };
     }
 
-    const events: SmashUpEvent[] = [{
-        type: SU_EVENTS.ACTION_PLAYED,
-        payload: { playerId, cardUid, defId },
+    const events: SmashUpEvent[] = [buildActionPlayedEvent({
+        playerId,
+        cardUid,
+        defId,
+        ownerId: card.owner,
+        targetBaseIndex: duel.baseIndex,
         timestamp: now,
-    } as SmashUpEvent];
+    }) as SmashUpEvent];
 
     const executor = requireDuelActionExecutor(defId, subtype ?? 'standard');
     let nextState = state;
@@ -533,18 +537,25 @@ function playOngoingActionAsDuelCard(
     random: RandomFn,
     now: number,
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
+    const card = state.core.players[playerId]?.hand.find(entry => entry.uid === cardUid);
+    const ownerId = card?.owner ?? playerId;
     const events: SmashUpEvent[] = [
-        {
-            type: SU_EVENTS.ACTION_PLAYED,
-            payload: { playerId, cardUid, defId },
+        buildActionPlayedEvent({
+            playerId,
+            cardUid,
+            defId,
+            ownerId,
+            targetBaseIndex,
+            targetMinionUid,
             timestamp: now,
-        } as SmashUpEvent,
+        }) as SmashUpEvent,
         {
             type: SU_EVENTS.ONGOING_ATTACHED,
             payload: {
                 cardUid,
                 defId,
-                ownerId: playerId,
+                ownerId,
+                ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
                 targetType: targetMinionUid ? 'minion' : 'base',
                 targetBaseIndex,
                 targetMinionUid,

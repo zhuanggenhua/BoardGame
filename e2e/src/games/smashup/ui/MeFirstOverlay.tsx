@@ -65,6 +65,34 @@ export const MeFirstOverlay: React.FC<{
         ? t('ui.after_scoring_title', { defaultValue: '计分后响应' })
         : t('ui.me_first_title');
 
+    if (!isMyResponse) {
+        return (
+            <motion.div
+                className="fixed inset-0 flex items-center justify-center pointer-events-none"
+                style={{ zIndex: UI_Z_INDEX.overlayRaised }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                data-testid="me-first-overlay"
+            >
+                <motion.div
+                    className="pointer-events-none rounded-2xl border border-amber-500/35 bg-[#fef3c7]/95 px-5 py-3 shadow-xl"
+                    initial={{ scale: 0.9, y: 18 }}
+                    animate={{ scale: 1, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+                    data-testid="me-first-waiting-shell"
+                >
+                    <p className="text-sm font-bold text-slate-700 text-center" data-testid="me-first-status">
+                        {t('ui.me_first_waiting', {
+                            player: currentResponderName,
+                            defaultValue: '等待 {{player}} 响应...',
+                        })}
+                    </p>
+                </motion.div>
+            </motion.div>
+        );
+    }
+
     return (
         <motion.div
             className="fixed inset-0 flex items-center justify-center pointer-events-none"
@@ -85,44 +113,36 @@ export const MeFirstOverlay: React.FC<{
                         {windowTitle}
                     </h3>
                     <p className="text-sm font-bold text-slate-600 mt-1" data-testid="me-first-status">
-                        {isMyResponse
-                            ? t('ui.me_first_your_turn')
-                            : t('ui.me_first_waiting', {
-                                player: currentResponderName,
-                                defaultValue: '等待 {{player}} 响应...',
-                            })
-                        }
+                        {t('ui.me_first_your_turn')}
                     </p>
                 </div>
 
-                {isMyResponse && (
-                    <div className="flex flex-col gap-2">
-                        {/* 提示：从手牌中选择可响应的卡牌或让过 */}
-                        {hasRespondableCards ? (
-                            <p className="text-xs text-center text-amber-700/80 font-medium">
-                                {t('ui.me_first_select_from_hand', { defaultValue: '从手牌中选择可响应的卡牌打出' })}
-                            </p>
-                        ) : (
-                            <p className="text-xs text-center text-slate-600 font-medium">
-                                {t('ui.me_first_no_special', { defaultValue: '你没有可在当前窗口打出的卡牌' })}
-                            </p>
-                        )}
+                <div className="flex flex-col gap-2">
+                    {/* 提示：从手牌中选择可响应的卡牌或让过 */}
+                    {hasRespondableCards ? (
+                        <p className="text-xs text-center text-amber-700/80 font-medium">
+                            {t('ui.me_first_select_from_hand', { defaultValue: '从手牌中选择可响应的卡牌打出' })}
+                        </p>
+                    ) : (
+                        <p className="text-xs text-center text-slate-600 font-medium">
+                            {t('ui.me_first_no_special', { defaultValue: '你没有可在当前窗口打出的卡牌' })}
+                        </p>
+                    )}
 
-                        {/* 让过按钮 */}
-                        <div className="flex justify-center">
-                            <GameButton
-                                variant="secondary"
-                                onClick={handlePass}
-                                data-testid="me-first-pass-button"
-                            >
-                                {t('ui.me_first_pass')}
-                            </GameButton>
-                        </div>
+                    {/* 让过按钮 */}
+                    <div className="flex justify-center">
+                        <GameButton
+                            variant="secondary"
+                            onClick={handlePass}
+                            data-testid="me-first-pass-button"
+                        >
+                            {t('ui.me_first_pass')}
+                        </GameButton>
                     </div>
-                )}
+                </div>
 
                 {/* 响应进度 */}
-                <div className="flex justify-center gap-2 mt-3">
+                <div className="flex justify-center gap-2 mt-3" data-testid="me-first-progress">
                     {reactionWindow.responderQueue.map((pid, idx) => {
                         const isPassed = reactionWindow.passedPlayers.includes(pid);
                         const isCurrent = idx === reactionWindow.currentResponderIndex;

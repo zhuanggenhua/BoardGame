@@ -157,7 +157,7 @@ describe('反馈2：制高点消灭随从时 destroyerId 应正确透传', () =>
         expect(next.players['0'].vp).toBe(0);
         expect(next.players['1'].vp).toBe(0);
         expect(next.turnDestroyedMinions).toEqual([
-            { uid: 'm1', defId: 'robot_zapbot', baseIndex: 0, owner: '1' },
+            { uid: 'm1', defId: 'robot_zapbot', baseIndex: 0, owner: '1', controller: '1' },
         ]);
         expect(next.destroyedMinionByPlayersThisTurn).toEqual(['0']);
     });

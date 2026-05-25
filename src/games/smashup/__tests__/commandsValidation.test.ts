@@ -545,6 +545,49 @@ describe('SmashUp command validation', () => {
         expect(result.valid).toBe(true);
     });
 
+    it('legacy responderQueue 被 ghost 污染时，validate 仍应按 live current player 放行 special', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            titans: [
+                makeTitan({
+                    uid: 'titan-ghost-2',
+                    defId: 'ghosts_creampuff_man',
+                    faction: 'ghosts',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+            ],
+            bases: [makeBase({ defId: 'test_base' })],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'scoreBases';
+        ms.sys.responseWindow = {
+            ...(ms.sys.responseWindow ?? {}),
+            current: {
+                id: 'legacy-window',
+                windowType: 'meFirst',
+                sourceId: 'legacy_me_first',
+                responderQueue: ['ghost', '1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        } as any;
+
+        const result = validate(ms, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-ghost-2', baseIndex: 0 },
+        } as any);
+
+        expect(result.valid).toBe(true);
+    });
+
     it('rejects deputy special activation because its effect is not a manual on-board special', () => {
         const core = makeState({
             bases: [
@@ -932,6 +975,37 @@ describe('SmashUp command validation', () => {
 
         expect(result.valid).toBe(false);
         expect((result as any).error).toContain('条件不满足');
+    });
+
+    it('allows borrowed ongoing talent when metadata.sourceControllerId matches the acting player', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('base-ongoing-1', 'trickster_enshrouding_mist_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                    ongoingActions: [{
+                        uid: 'hideout-pod-borrowed',
+                        defId: 'trickster_hideout_pod',
+                        ownerId: '1',
+                        talentUsed: false,
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                }),
+            ],
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'hideout-pod-borrowed', baseIndex: 0 },
+        } as any);
+
+        expect(result.valid).toBe(true);
     });
 
     it('rejects steampunk_zeppelin talent when no friendly minion can be moved', () => {

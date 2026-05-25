@@ -165,6 +165,19 @@ describe('忍者 ongoing/special 能力', () => {
             expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
         });
 
+        test('borrowed Smoke Bomb 应按控制者而不是真实 owner 保护控制者的随从不受其他玩家行动影响', () => {
+            const myMinion = makeMinion({
+                defId: 'ninja_a', uid: 'n-borrowed-1', controller: '0',
+                attachedActions: [{ uid: 'sb-borrowed-1', defId: 'ninja_smoke_bomb', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            });
+            const base = makeBase({
+                minions: [myMinion],
+            });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
+        });
+
         test('POD 版烟雾弹也会保护被附着的随从', () => {
             const myMinion = makeMinion({
                 defId: 'ninja_a', uid: 'n-pod-1', controller: '0',
@@ -1047,6 +1060,55 @@ describe('机器人 ongoing 能力', () => {
             expect(drawEventsP0.length).toBe(0);
         });
 
+        test('被我方控制但归对手拥有的微型机被消灭时，Archive 仍应按控制权给我方抽牌', () => {
+            const archive = makeMinion({
+                defId: 'robot_microbot_archive',
+                uid: 'ma-stolen',
+                controller: '0',
+                owner: '0',
+            });
+            const stolenMicrobot = makeMinion({
+                defId: 'robot_microbot_guard',
+                uid: 'mg-stolen',
+                controller: '0',
+                owner: '1',
+            });
+            const base = makeBase({ defId: 'base_a', minions: [archive, stolenMicrobot] });
+            const state = makeState([base], {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [
+                        makeCard('p0-deck-1', 'deck_card_1', 'minion', '0', SMASHUP_FACTION_IDS.ROBOTS),
+                    ],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ROBOTS, 'test_b'] as [string, string],
+                },
+            });
+
+            const { events } = fireTriggers(state, 'onMinionDestroyed', {
+                state,
+                playerId: '1',
+                controllerId: '0',
+                baseIndex: 0,
+                triggerMinionUid: 'mg-stolen',
+                triggerMinionDefId: 'robot_microbot_guard',
+                triggerMinion: stolenMicrobot,
+                random: dummyRandom,
+                now: 1000,
+            } as any);
+
+            const drawEventsP0 = events.filter(
+                e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '0'
+            );
+            expect(drawEventsP0.length).toBe(1);
+        });
+
         test('Archive 自身作为微型机被消灭时也会触发抽牌', () => {
             // 玩家0：Archive（被消灭的对象也是微型机）
             const archive = makeMinion({ defId: 'robot_microbot_archive', uid: 'ma-self', controller: '0' });
@@ -1348,6 +1410,29 @@ describe('诡术师 ongoing 能力', () => {
 
             expect(events).toHaveLength(0);
         });
+
+        test('borrowed Flame Trap 应按控制者而不是真实 owner 消灭对手打出的随从', () => {
+            const base = makeBase({
+                ongoingActions: [{ uid: 'ft-borrowed', defId: 'trickster_flame_trap', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(2);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+            expect((events[0] as any).payload.reason).toBe('trickster_flame_trap');
+            expect(events[1].type).toBe(SU_EVENTS.ONGOING_DETACHED);
+            expect((events[1] as any).payload.ownerId).toBe('1');
+        });
     });
 
     describe('trickster_brownie: 布朗尼', () => {
@@ -1410,6 +1495,29 @@ describe('诡术师 ongoing 能力', () => {
             });
 
             expect(events).toHaveLength(2);
+            expect(events[1].type).toBe(SU_EVENTS.MINION_DESTROYED);
+            expect((events[1] as any).payload.destroyerId).toBe('0');
+        });
+
+        test('borrowed Flame Trap POD 应按控制者而不是真实 owner 消灭对手打出的随从并标记 destroyerId', () => {
+            const base = makeBase({
+                ongoingActions: [{ uid: 'ft-pod-borrowed', defId: 'trickster_flame_trap_pod', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(2);
+            expect(events[0].type).toBe(SU_EVENTS.ONGOING_DETACHED);
+            expect((events[0] as any).payload.ownerId).toBe('1');
             expect(events[1].type).toBe(SU_EVENTS.MINION_DESTROYED);
             expect((events[1] as any).payload.destroyerId).toBe('0');
         });
@@ -1711,6 +1819,30 @@ describe('诡术师 ongoing 能力', () => {
             expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
         });
 
+        test('borrowed Hideout 打在基地上时，应按控制者而不是真实 owner 保护控制者的随从', () => {
+            const myMinion = makeMinion({ defId: 'trickster_a', uid: 't-1', controller: '0' });
+            const base = makeBase({
+                minions: [myMinion],
+                ongoingActions: [{ uid: 'ho-1', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
+        });
+
+        test('borrowed Hideout 贴在随从上时，应按控制者而不是真实 owner 保护控制者的随从', () => {
+            const myMinion = makeMinion({
+                defId: 'trickster_a',
+                uid: 't-1',
+                controller: '0',
+                attachedActions: [{ uid: 'ho-1', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            });
+            const base = makeBase({ minions: [myMinion] });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
+        });
+
         test('不保护敌方随从', () => {
             const enemyMinion = makeMinion({ defId: 'robot_a', uid: 'r-1', controller: '1' });
             const base = makeBase({
@@ -1781,12 +1913,103 @@ describe('诡术师 ongoing 能力', () => {
 
             expect(result).toBeUndefined();
         });
+
+        test('borrowed Hideout POD 应按控制者而不是真实 owner 阻止其他玩家把随从移动到此基地', () => {
+            const targetBase = makeBase({
+                ongoingActions: [{
+                    uid: 'ho-borrowed-1',
+                    defId: 'trickster_hideout_pod',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            });
+
+            const enemyMove = interceptEvent(makeState([
+                makeBase({
+                    minions: [makeMinion({ defId: 'robot_zapbot', uid: 'm-3', controller: '1', owner: '1' })],
+                }),
+                targetBase,
+            ]), {
+                type: SU_EVENTS.MINION_MOVED,
+                payload: {
+                    minionUid: 'm-3',
+                    minionDefId: 'robot_zapbot',
+                    fromBaseIndex: 0,
+                    toBaseIndex: 1,
+                    reason: 'test_move',
+                },
+                timestamp: 1000,
+            } as any);
+            expect(enemyMove).toBeNull();
+
+            const ownerMove = interceptEvent(makeState([
+                makeBase({
+                    minions: [makeMinion({ defId: 'trickster_a', uid: 'm-4', controller: '0', owner: '0' })],
+                }),
+                targetBase,
+            ]), {
+                type: SU_EVENTS.MINION_MOVED,
+                payload: {
+                    minionUid: 'm-4',
+                    minionDefId: 'trickster_a',
+                    fromBaseIndex: 0,
+                    toBaseIndex: 1,
+                    reason: 'test_move',
+                },
+                timestamp: 1000,
+            } as any);
+            expect(ownerMove).toBeUndefined();
+        });
     });
 
     describe('trickster_pay_the_piper: 付笛手的钱', () => {
         test('对手打出随从后弃一张牌', () => {
             const base = makeBase({
                 ongoingActions: [{ uid: 'pp-1', defId: 'trickster_pay_the_piper', ownerId: '0' }],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
+            expect((events[0] as any).payload.playerId).toBe('1');
+        });
+
+        test('borrowed Pay the Piper 应按控制者而不是真实 owner 让对手弃牌', () => {
+            const base = makeBase({
+                ongoingActions: [{ uid: 'pp-borrowed', defId: 'trickster_pay_the_piper', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
+            expect((events[0] as any).payload.playerId).toBe('1');
+        });
+    });
+
+    describe('trickster_pay_the_piper_pod: 付笛手的钱 POD', () => {
+        test('borrowed Pay the Piper POD 应按控制者而不是真实 owner 让对手弃牌', () => {
+            const base = makeBase({
+                ongoingActions: [{ uid: 'pp-pod-borrowed', defId: 'trickster_pay_the_piper_pod', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
             });
             const state = makeState([base]);
 

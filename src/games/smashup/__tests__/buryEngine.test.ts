@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
-import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
+import { clearBaseAbilityRegistry, registerBaseAbility } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { makeMatchState, makePlayer, makeState, applyEvents } from './helpers';
+import { findInteractionOption, makeCard, makeMatchState, makeMinion, makePlayer, makeState, applyEvents, resolveInteractionChain } from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
@@ -87,6 +87,307 @@ describe('bury engine', () => {
         expect(res.finalState.core.bases[0].buriedCards?.length ?? 0).toBe(0);
         // minion now in play
         expect(res.finalState.core.bases[0].minions.some(m => m.uid === 'b1')).toBe(true);
+    });
+
+    it('uncovering a borrowed buried minion should preserve true owner when played', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', { hand: [], deck: [], discard: [] }),
+                '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [],
+                buriedCards: [{
+                    uid: 'borrowed-buried-minion',
+                    defId: 'robot_warbot',
+                    trueOwnerId: '1',
+                    controllerId: '0',
+                    buriedFrom: 'hand',
+                }],
+            }],
+        });
+
+        const enter = runCommand(
+            makeMatchState(core),
+            { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 11 } as any,
+            defaultTestRandom,
+        );
+        const interaction = enter.finalState.sys.interaction.current as any;
+        expect(interaction?.data?.sourceId).toBe('bury_uncover_start_turn');
+        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-buried-minion');
+        expect(option).toBeTruthy();
+
+        const resolved = runCommand(
+            enter.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: option.id }, timestamp: 12 } as any,
+            defaultTestRandom,
+        );
+
+        const playedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+        expect(playedEvent?.payload?.ownerId).toBe('1');
+        const playedMinion = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'borrowed-buried-minion');
+        expect(playedMinion?.controller).toBe('0');
+        expect(playedMinion?.owner).toBe('1');
+        expect(resolved.finalState.core.bases[0].buriedCards?.some(card => card.uid === 'borrowed-buried-minion') ?? false).toBe(false);
+    });
+
+    it('uncovered buried action should respect queued base onActionPlayed canTrigger instead of direct execution', () => {
+        registerBaseAbility('base_bury_queue_test', 'onActionPlayed', (ctx) => ({
+            events: [{
+                type: SU_EVENTS.ABILITY_FEEDBACK,
+                payload: { playerId: ctx.playerId, messageKey: 'base_bury_queue_test_ran', tone: 'info' },
+                timestamp: ctx.now,
+            } as any],
+        }), {
+            canTrigger: () => false,
+        });
+
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', { hand: [], deck: [], discard: [], factions: ['zombies'] as any }),
+                '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+            },
+            bases: [{
+                defId: 'base_bury_queue_test',
+                minions: [],
+                ongoingActions: [],
+                buriedCards: [{
+                    uid: 'buried-overrun',
+                    defId: 'zombie_overrun',
+                    trueOwnerId: '0',
+                    controllerId: '0',
+                    buriedFrom: 'hand',
+                }],
+            }],
+        });
+
+        const enter = runCommand(
+            makeMatchState(core),
+            { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 30 } as any,
+            defaultTestRandom,
+        );
+
+        const interaction = enter.finalState.sys.interaction.current as any;
+        expect(interaction?.data?.sourceId).toBe('bury_uncover_start_turn');
+        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'buried-overrun');
+        expect(option).toBeTruthy();
+
+        const resolved = runCommand(
+            enter.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: option.id }, timestamp: 31 } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: expect.objectContaining({ messageKey: 'base_bury_queue_test_ran' }),
+        }));
+    });
+
+    it('uncovering a buried ongoing action should preserve target context for queued onActionPlayed base abilities', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    deck: [{ uid: 'drawn-curse', defId: 'robot_warbot', type: 'minion', owner: '0' } as any],
+                    discard: [],
+                    factions: ['ancient_egyptians', 'robots'] as any,
+                }),
+                '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+            },
+            bases: [{
+                defId: 'base_enchanted_glade',
+                minions: [makeMinion('curse-target', 'robot_warbot', '0', 3, { powerCounters: 1 })],
+                ongoingActions: [],
+                buriedCards: [{
+                    uid: 'buried-curse',
+                    defId: 'ancient_egyptians_ancient_curse_pod',
+                    trueOwnerId: '0',
+                    controllerId: '0',
+                    buriedFrom: 'hand',
+                }],
+            }],
+        });
+
+        const enter = runCommand(
+            makeMatchState(core),
+            { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 40 } as any,
+            defaultTestRandom,
+        );
+
+        const resolved = resolveInteractionChain(enter.finalState, (prompt) => {
+            if (prompt?.data?.sourceId === 'bury_uncover_start_turn') {
+                const option = findInteractionOption(prompt, entry => entry?.value?.cardUid === 'buried-curse');
+                expect(option).toBeDefined();
+                return { optionId: option.id };
+            }
+            if (prompt?.data?.sourceId === 'ancient_egyptians_ancient_curse_confirm') {
+                const option = findInteractionOption(prompt, entry => entry?.value?.apply === true);
+                expect(option).toBeDefined();
+                return { optionId: option.id };
+            }
+            throw new Error(`未处理的埋葬翻开交互 sourceId: ${prompt?.data?.sourceId ?? 'unknown'}`);
+        });
+
+        const actionPlayed = resolved.events.find(event => event.type === SU_EVENTS.ACTION_PLAYED) as any;
+        expect(actionPlayed?.payload).toEqual(expect.objectContaining({
+            targetBaseIndex: 0,
+            targetType: 'minion',
+            targetMinionUid: 'curse-target',
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: expect.objectContaining({
+                playerId: '0',
+                cardUids: ['drawn-curse'],
+            }),
+        }));
+    });
+
+    it('uncovering a borrowed buried ongoing action should preserve true owner when attaching', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    factions: ['ancient_egyptians', 'robots'] as any,
+                }),
+                '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('curse-target', 'robot_warbot', '0', 3)],
+                ongoingActions: [],
+                buriedCards: [{
+                    uid: 'borrowed-buried-curse',
+                    defId: 'ancient_egyptians_ancient_curse_pod',
+                    trueOwnerId: '1',
+                    controllerId: '0',
+                    buriedFrom: 'hand',
+                }],
+            }],
+        });
+
+        const enter = runCommand(
+            makeMatchState(core),
+            { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 41 } as any,
+            defaultTestRandom,
+        );
+
+        const resolved = resolveInteractionChain(enter.finalState, (prompt) => {
+            if (prompt?.data?.sourceId === 'bury_uncover_start_turn') {
+                const option = findInteractionOption(prompt, entry => entry?.value?.cardUid === 'borrowed-buried-curse');
+                expect(option).toBeDefined();
+                return { optionId: option.id };
+            }
+            if (prompt?.data?.sourceId === 'ancient_egyptians_ancient_curse_confirm') {
+                const option = findInteractionOption(prompt, entry => entry?.value?.apply === false);
+                expect(option).toBeDefined();
+                return { optionId: option.id };
+            }
+            throw new Error(`未处理的埋葬翻开交互 sourceId: ${prompt?.data?.sourceId ?? 'unknown'}`);
+        });
+
+        const attachedEvent = resolved.events.find(event =>
+            event.type === SU_EVENTS.ONGOING_ATTACHED
+            && (event as any).payload?.cardUid === 'borrowed-buried-curse'
+        ) as any;
+        expect(attachedEvent?.payload?.ownerId).toBe('1');
+
+        const host = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'curse-target');
+        expect(host?.attachedActions.find(action => action.uid === 'borrowed-buried-curse')?.ownerId).toBe('1');
+        expect(resolved.finalState.core.bases[0].buriedCards?.some(card => card.uid === 'borrowed-buried-curse') ?? false).toBe(false);
+    });
+
+    it('uncovering a borrowed buried ongoing action onto Brownie should preserve sourcePlayerId for onMinionAffected triggers', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('p0-hand-a', 'sharks_mako', 'minion', '0')],
+                    deck: [],
+                    discard: [],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('p1-hand-a', 'robot_microbot', 'minion', '1')],
+                    deck: [],
+                    discard: [],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('brownie-target', 'trickster_brownie', '1', 2)],
+                ongoingActions: [],
+                buriedCards: [{
+                    uid: 'borrowed-buried-brownie-curse',
+                    defId: 'ancient_egyptians_ancient_curse_pod',
+                    trueOwnerId: '1',
+                    controllerId: '0',
+                    buriedFrom: 'hand',
+                }],
+            }],
+        });
+
+        const enter = runCommand(
+            makeMatchState(core),
+            { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 51 } as any,
+            defaultTestRandom,
+        );
+
+        const resolved = resolveInteractionChain(enter.finalState, (prompt) => {
+            if (prompt?.data?.sourceId === 'bury_uncover_start_turn') {
+                const option = findInteractionOption(prompt, entry => entry?.value?.cardUid === 'borrowed-buried-brownie-curse');
+                expect(option).toBeDefined();
+                return { optionId: option.id };
+            }
+            if (prompt?.data?.sourceId === 'ancient_egyptians_ancient_curse_confirm') {
+                const option = findInteractionOption(prompt, entry => entry?.value?.apply === false);
+                expect(option).toBeDefined();
+                return { optionId: option.id };
+            }
+            throw new Error(`未处理的埋葬翻开交互 sourceId: ${prompt?.data?.sourceId ?? 'unknown'}`);
+        });
+
+        const attachedEvent = resolved.events.find(event =>
+            event.type === SU_EVENTS.ONGOING_ATTACHED
+            && (event as any).payload?.cardUid === 'borrowed-buried-brownie-curse'
+        ) as any;
+        expect(attachedEvent?.payload).toEqual(expect.objectContaining({
+            ownerId: '1',
+            sourcePlayerId: '0',
+            targetType: 'minion',
+            targetBaseIndex: 0,
+            targetMinionUid: 'brownie-target',
+        }));
+
+        const queued = resolved.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        expect(queued).toBeDefined();
+        const brownieTrigger = queued?.payload?.triggers?.find((trigger: any) => trigger.sourceDefId === 'trickster_brownie');
+        expect(brownieTrigger).toEqual(expect.objectContaining({
+            sourceDefId: 'trickster_brownie',
+            sourceCardUid: 'brownie-target',
+            sourceControllerId: '1',
+            ownerPlayerId: '1',
+            eventPlayerId: '0',
+        }));
     });
 
     it('at startTurn, uncovering a buried onTurnStart minion should still resolve in the same window', () => {

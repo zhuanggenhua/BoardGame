@@ -160,6 +160,7 @@
     "confirm": "确认",
     "prompt_no_options": "暂无可选项",
     "invalid_base_target": "该基地不可选择",
+    "invalid_minion_target": "该基地没有可选择的随从",
     "discard_play_available": "可从弃牌堆打出",
     "click_base_to_deploy": "点击基地部署",
     "click_base_to_bury": "点击基地埋葬这张牌",
@@ -182,8 +183,8 @@
     "close": "关闭",
     "reveal_your_hand_shown": "你的手牌正在被展示",
     "reveal_confirmed": "已确认",
-    "reveal_queue_hint": "{{count}} 条展示待查看 · 点击继续",
-    "reveal_dismiss_hint": "点击任意位置关闭",
+    "reveal_queue_hint": "{{count}} 条展示待查看 · 关闭后继续",
+    "reveal_dismiss_hint": "关闭后可继续操作",
     "deselect_all": "取消全选",
     "select_all": "全选",
     "waiting_opponent": "等待对方操作",
@@ -504,28 +505,44 @@
     "world_champs": {
       "name": "世界冠军",
       "description": "由冠军卡牌混编，擅长额外行动、指示物与高机动爆发。"
-      },
-      "fairies": {
-        "name": "仙灵",
-        "description": "通过持续行动转移、临时力量修正和战术封锁灵活掌控基地节奏。"
-      },
-      "princesses": {
-        "name": "公主",
-        "description": "用额外出牌、弃牌堆回收与持续增益拖长价值战，并靠 Eliza 压制对手爆发。"
-      },
-      "sharks": {
-        "name": "鲨鱼",
-        "description": "围绕低战力仆从消灭、+1战力指示物与撕咬连锁展开。"
-      },
-      "tornados": {
-        "name": "龙卷风",
-        "description": "通过移动仆从、替换基地与计分窗口移动来打乱战场节奏。"
-      },
-      "mythic_greeks": {
-        "name": "希腊神话",
-        "description": "以行动触发英雄加成，并通过诸神恩惠连续获得额外行动与战力。"
-      }
     },
+    "fairies": {
+      "name": "仙灵",
+      "description": "通过持续行动转移、临时力量修正和战术封锁灵活掌控基地节奏。"
+    },
+    "princesses": {
+      "name": "公主",
+      "description": "用额外出牌、弃牌堆回收与持续增益拖长价值战，并靠 Eliza 压制对手爆发。"
+    },
+    "sharks": {
+      "name": "鲨鱼",
+      "description": "围绕低战力仆从消灭、+1战力指示物与撕咬连锁展开。"
+    },
+    "tornados": {
+      "name": "龙卷风",
+      "description": "通过移动仆从、替换基地与计分窗口移动来打乱战场节奏。"
+    },
+    "mythic_greeks": {
+      "name": "希腊神话",
+      "description": "以行动触发英雄加成，并通过诸神恩惠连续获得额外行动与战力。"
+    },
+    "shapeshifters": {
+      "name": "变形者",
+      "description": "复制、变形并从牌库或弃牌堆调换随从，持续改写战场上的能力与力量。"
+    },
+    "cyborg_apes": {
+      "name": "电子猿",
+      "description": "通过附着行动强化仆从，并把行动牌回收、保护或转化为持续战力。"
+    },
+    "super_spies": {
+      "name": "超级间谍",
+      "description": "窥探牌库与手牌，在计分窗口夺取控制权，并用情报行动打乱对手节奏。"
+    },
+    "time_travelers": {
+      "name": "时间旅行者",
+      "description": "回收弃牌、返回手牌、改写基地补充与计分后去向，反复重做关键回合。"
+    }
+  },
   "tutorial": {
     "title": "大杀四方教学",
     "welcome": "欢迎来到大杀四方！组合两个种族争夺基地，率先获得15点胜利分数即可获胜。",
@@ -3679,10 +3696,10 @@
     "base_hall_of_fame": {
       "name": "名人堂",
       "abilityText": "你每回合首次在此打出的随从在本回合结束前力量 +2。"
-      },
-      "fairies_titania": {
-        "name": "Titania",
-        "abilityText": "你可以将一个随从移回其拥有者的手牌，或打出一个额外的随从。"
+    },
+    "fairies_titania": {
+      "name": "Titania",
+      "abilityText": "你可以将一个随从移回其拥有者的手牌，或打出一个额外的随从。"
     },
     "fairies_glymmer": {
       "name": "Glymmer",
@@ -3724,251 +3741,475 @@
       "name": "结果",
       "effectText": "打在一个基地上。选择一项：持续，这里的所有随从具有 +1 力量；或持续，这里的所有随从具有 -1 力量。"
     },
-        "fairies_fairy_ballet": {
-          "name": "精灵芭蕾",
-          "effectText": "选择一项：抽取两张卡牌；或抽取一张卡牌并打出一张额外的战术。"
-        },
-        "princesses_happily_ever_after": {
-          "name": "永远幸福",
-          "effectText": "打出到基地上。\n持续：如果当这里计分时你是这里的赢家，获得 1VP。"
-        },
-        "princesses_true_loves_kiss": {
-          "name": "真爱之吻",
-          "effectText": "移动一个仆从到另一个基地。"
-        },
-        "princesses_direct_to_dvd_sequel": {
-          "name": "直出结局",
-          "effectText": "从你的弃牌堆洗入一个仆从到你的牌库并抓一张牌。"
-        },
-        "princesses_woodland_helpers": {
-          "name": "丛林帮手",
-          "effectText": "打出到基地上。\n持续：在你打出一个行动后，你可以将它放到牌库底而不是你的弃牌堆。"
-        },
-        "princesses_some_day_my_prince_will_come": {
-          "name": "总有一天我的王子会来的",
-          "effectText": "异能：在一个基地计分前，移动一个仆从从那里到另一个基地。"
-        },
-        "princesses_fairy_godmother": {
-          "name": "妖精奶奶",
-          "effectText": "抽一张卡，或者一个仆从获得 +2 力量直到回合结束。"
-        },
-        "princesses_skillet": {
-          "name": "平底锅",
-          "effectText": "摧毁一个力量为 2 或更小的仆从并抓三张牌。"
-        },
-        "princesses_heirloom": {
-          "name": "传家宝",
-          "effectText": "打出到一个仆从上。\n持续：该仆从身上的每张传家宝使其获得 +1 力量。本卡不能被摧毁。"
-        },
-        "princesses_tale_as_old_as_time": {
-          "name": "古老的传说",
-          "effectText": "选择一个基地并将你的所有仆从移动到那里。"
-        },
-        "princesses_marie_degraw": {
-          "name": "玛丽·德格劳",
-          "abilityText": "天赋：展示你牌库顶的牌。如果它是一个仆从，抽取它。否则，将其放到你的牌库底。"
-        },
-        "princesses_eliza": {
-          "name": "伊莱莎",
-          "abilityText": "持续：其他玩家每回合至多只能打出一张额外牌。"
-        },
-        "princesses_snow_white": {
-          "name": "白雪公主",
-          "abilityText": "天赋：移动一个仆从从另一个基地到这里。"
-        },
-        "princesses_apricot": {
-          "name": "杏子公主",
-          "abilityText": "天赋：摧毁另一个玩家在这里的力量为 2 或更小的仆从。"
-        },
-        "princesses_griselda": {
-          "name": "格丽泽尔达",
-          "abilityText": "天赋：从你的弃牌堆中放置一张传家宝到你的手上。"
-        },
-        "princesses_sleeping_beauty": {
-          "name": "睡美人",
-          "abilityText": "持续：如果本仆从将要进入弃牌堆，将其改为洗入你的牌库。"
-        },
-      "sharks_megalodon": {
-        "name": "巨齿鲨",
-        "abilityText": "你可以消灭此基地一个战力4或更少的仆从。特殊能力：此基地计分前，你可以消灭此基地一个战力3或更少的仆从。"
-      },
-      "sharks_great_white": {
-        "name": "大白鲨",
-        "abilityText": "天赋能力：将本仆从移动至另一个基地，并消灭该基地一个战力2或更少的仆从。"
-      },
-      "sharks_hammerhead": {
-        "name": "锤头鲨",
-        "abilityText": "持续能力：当本基地有仆从被消灭后，放置一个+1战力指示物到本仆从上。"
-      },
-      "sharks_mako": {
-        "name": "灰鲭鲨",
-        "abilityText": "特殊能力：当你消灭任意基地上的一个仆从后，你可以将本仆从作为一个额外仆从打到那里。"
-      },
-      "sharks_blood_in_the_water": {
-        "name": "血腥水域",
-        "effectText": "打出到一个基地上。持续能力：当这里有仆从被消灭后，你可以将一个战力3或更少的仆从作为额外仆从打到这里。"
-      },
-      "sharks_week_of_sharks": {
-        "name": "鲨鱼周",
-        "effectText": "打出到一个基地上。持续能力：如果你在这里有仆从，在你的回合结束时额外抽一张牌。每回合只能使用一个“鲨鱼周”的能力。"
-      },
-      "sharks_torn_apart": {
-        "name": "撕裂",
-        "effectText": "消灭一个战力3或更少的仆从，并抽一张牌。"
-      },
-      "sharks_chum": {
-        "name": "鱼饵",
-        "effectText": "打出到一个仆从上。持续能力：当一个仆从被消灭后，在此仆从上放置一个+1战力指示物。"
-      },
-      "sharks_dangerous_waters": {
-        "name": "危险水域",
-        "effectText": "打出到一个基地上。天赋能力：选择这里的一个仆从。该仆从-2战力直到回合结束。"
-      },
-      "sharks_feeding_frenzy": {
-        "name": "疯狂进食",
-        "effectText": "选择一个基地。消灭该基地任意数量战力2或更少的仆从。"
-      },
-      "sharks_air_jaws": {
-        "name": "飞鲨",
-        "effectText": "将你的一个仆从移动到另一个基地，然后消灭那里的一个战力3或更少的仆从。"
-      },
-      "sharks_freakin_laser_beam": {
-        "name": "激光束",
-        "effectText": "选择你的一个仆从。消灭你该仆从所在基地上一个战力等于或低于该仆从的仆从。"
-      },
-      "tornados_monster_tornado": {
-        "name": "龙卷风怪物",
-        "abilityText": "天赋能力：你可以将一个战力4或更少的仆从从这里移动至另一个基地，或从另一个基地移动到这里。"
-      },
-      "tornados_cyclone": {
-        "name": "气旋",
-        "abilityText": "天赋能力：将本仆从移动至另一个基地。"
-      },
-      "tornados_twister": {
-        "name": "旋风",
-        "abilityText": "当本仆从打出至一个基地时，你可以将一个战力3或更少的仆从从这里移动至另一个基地，或从另一个基地移动到这里。"
-      },
-      "tornados_dust_devil": {
-        "name": "尘卷风",
-        "abilityText": "特殊能力：当一个基地计分前，你可以将本仆从移动到该基地。"
-      },
-      "tornados_trade_winds": {
-        "name": "信风",
-        "effectText": "选择两个战力3或更少的仆从。将每名仆从移动到另一名仆从的基地上。"
-      },
-      "tornados_carried_away": {
-        "name": "卷走",
-        "effectText": "将一个仆从移动至另一个基地上。"
-      },
-      "tornados_whirlwinds": {
-        "name": "旋风群",
-        "effectText": "你可以把任意数量的你的仆从移动至其他基地。"
-      },
-      "tornados_gone_with_the_wind": {
-        "name": "随风而逝",
-        "effectText": "特殊能力：在一个基地计分后打出。你可以将该基地上你的一个仆从移动到另一个基地，而不是将它放入弃牌堆。"
-      },
-      "tornados_ripped_off": {
-        "name": "扯走",
-        "effectText": "将一个打在基地上的行动卡移动到另一个基地，或将一个打在仆从上的行动卡移动到另一个仆从上。"
-      },
-      "tornados_picked_up": {
-        "name": "卷起",
-        "effectText": "特殊：你可以在基地计分前打出此牌。将该基地上的一个仆从移动到另一个基地。"
-      },
-      "tornados_not_in_kansas": {
-        "name": "不在堪萨斯",
-        "effectText": "消灭一个基地，以及任何打在该基地上或该基地仆从上的行动卡。用基地牌库顶的牌替换它。原基地上的所有仆从保留在新基地上。"
-      },
-      "tornados_over_the_rainbow": {
-        "name": "飞越彩虹",
-        "effectText": "特殊：你可以在基地计分前打出此牌。将你另一个基地上的一个仆从移动到该基地。"
-      },
-      "mythic_greeks_odysseus": {
-        "name": "奥德修斯",
-        "abilityText": "持续能力：当你打出一个行动后，在你的一个仆从上放置一个+1战力指示物。"
-      },
-      "mythic_greeks_argonaut": {
-        "name": "阿尔戈英雄",
-        "abilityText": "触发所有会因你打出一个行动而触发的能力。特殊能力：任何你可以打出行动的时候，你可以改为打出这张牌。"
-      },
-      "mythic_greeks_jason": {
-        "name": "伊阿宋",
-        "abilityText": "持续能力：每回合一次，在你打出一个行动后，你可以选择一个基地，并使你在该基地的仆从+1战力直到回合结束。"
-      },
-      "mythic_greeks_favor_of_hades": {
-        "name": "哈迪斯的恩惠",
-        "effectText": "将一张行动卡从你的弃牌堆返回手牌。"
-      },
-      "mythic_greeks_heracles": {
-        "name": "赫拉克勒斯",
-        "abilityText": "持续能力：任意玩家打出一个行动后，本仆从+1战力直到回合结束。"
-      },
-      "mythic_greeks_favor_of_ares": {
-        "name": "阿瑞斯的恩惠",
-        "effectText": "你的一个仆从+3战力直到回合结束。"
-      },
-      "mythic_greeks_spartan": {
-        "name": "斯巴达人",
-        "abilityText": "持续能力：每回合一次，在你打出一个行动后，你可以在本仆从上放置一个+1战力指示物。"
-      },
-      "mythic_greeks_favor_of_aphrodite": {
-        "name": "阿佛洛狄忒的恩惠",
-        "effectText": "打出一名额外的仆从。"
-      },
-      "mythic_greeks_favor_of_dionysus": {
-        "name": "狄俄尼索斯的恩惠",
-        "effectText": "你的一个仆从+1战力直到回合结束。打出一个额外的行动。你可以将此卡放到你的牌库顶，而不是弃牌堆。"
-      },
-      "mythic_greeks_favor_of_hera": {
-        "name": "赫拉的恩惠",
-        "effectText": "在至多两名你的仆从上各放置一个+1战力指示物。"
-      },
-      "mythic_greeks_favor_of_athena": {
-        "name": "雅典娜的恩惠",
-        "effectText": "展示你牌库顶的5张牌。你可以将其中一张行动牌加入手牌，并按任意顺序将其余牌放回你的牌库顶。"
-      },
-      "mythic_greeks_favor_of_apollo": {
-        "name": "阿波罗的恩惠",
-        "effectText": "抽一张牌，并打出一个额外的行动。"
-      },
-      "mythic_greeks_favor_of_hermes": {
-        "name": "赫尔墨斯的恩惠",
-        "effectText": "打出两个额外的行动。"
-      },
-      "mythic_greeks_favor_of_poseidon": {
-        "name": "波塞冬的恩惠",
-        "effectText": "将你的弃牌堆中至多3张牌洗回你的牌库。"
-      },
-      "mythic_greeks_favor_of_zeus": {
-        "name": "宙斯的恩惠",
-        "effectText": "将一个基地的破坏点减少5，直到回合结束。"
-      },
-      "base_shark_reef": {
-        "name": "鲨鱼领地",
-        "abilityText": "摧毁本基地仆从的玩家，可以在他任意1个仆从上放置一个+1战力指示物。"
-      },
-      "base_the_deep": {
-        "name": "海渊",
-        "abilityText": "你打出一个4战力或更高战力的仆从到这里后，你可以消灭本基地一个战力更低的仆从。"
-      },
-      "base_trailer_park": {
-        "name": "拖车公园",
-        "abilityText": "当你移动一个仆从到这里后，在其上放置一个+1战力指示物。"
-      },
-      "base_tornado_alley": {
-        "name": "龙卷风走廊",
-        "abilityText": "每回合第一次有仆从移动到这里后，你可以把另一个仆从移动到这里。"
-      },
-      "base_oracle_at_delphi": {
-        "name": "特尔斐的神谕",
-        "abilityText": "在你打出一个仆从至本基地后，展示你牌库顶的牌。如果是行动牌，将它加入手牌；否则放回牌库顶。"
-      },
-      "base_wooden_horse": {
-        "name": "特洛伊木马",
-        "abilityText": "在任意玩家打出一个行动后，他能使这里的一个仆从+2战力直到回合结束。"
-      }
-      },
+    "fairies_fairy_ballet": {
+      "name": "精灵芭蕾",
+      "effectText": "选择一项：抽取两张卡牌；或抽取一张卡牌并打出一张额外的战术。"
+    },
+    "princesses_happily_ever_after": {
+      "name": "永远幸福",
+      "effectText": "打出到基地上。\n持续：如果当这里计分时你是这里的赢家，获得 1VP。"
+    },
+    "princesses_true_loves_kiss": {
+      "name": "真爱之吻",
+      "effectText": "移动一个仆从到另一个基地。"
+    },
+    "princesses_direct_to_dvd_sequel": {
+      "name": "直出结局",
+      "effectText": "从你的弃牌堆洗入一个仆从到你的牌库并抓一张牌。"
+    },
+    "princesses_woodland_helpers": {
+      "name": "丛林帮手",
+      "effectText": "打出到基地上。\n持续：在你打出一个行动后，你可以将它放到牌库底而不是你的弃牌堆。"
+    },
+    "princesses_some_day_my_prince_will_come": {
+      "name": "总有一天我的王子会来的",
+      "effectText": "异能：在一个基地计分前，移动一个仆从从那里到另一个基地。"
+    },
+    "princesses_fairy_godmother": {
+      "name": "妖精奶奶",
+      "effectText": "抽一张卡，或者一个仆从获得 +2 力量直到回合结束。"
+    },
+    "princesses_skillet": {
+      "name": "平底锅",
+      "effectText": "摧毁一个力量为 2 或更小的仆从并抓三张牌。"
+    },
+    "princesses_heirloom": {
+      "name": "传家宝",
+      "effectText": "打出到一个仆从上。\n持续：该仆从身上的每张传家宝使其获得 +1 力量。本卡不能被摧毁。"
+    },
+    "princesses_tale_as_old_as_time": {
+      "name": "古老的传说",
+      "effectText": "选择一个基地并将你的所有仆从移动到那里。"
+    },
+    "princesses_marie_degraw": {
+      "name": "玛丽·德格劳",
+      "abilityText": "天赋：展示你牌库顶的牌。如果它是一个仆从，抽取它。否则，将其放到你的牌库底。"
+    },
+    "princesses_eliza": {
+      "name": "伊莱莎",
+      "abilityText": "持续：其他玩家每回合至多只能打出一张额外牌。"
+    },
+    "princesses_snow_white": {
+      "name": "白雪公主",
+      "abilityText": "天赋：移动一个仆从从另一个基地到这里。"
+    },
+    "princesses_apricot": {
+      "name": "杏子公主",
+      "abilityText": "天赋：摧毁另一个玩家在这里的力量为 2 或更小的仆从。"
+    },
+    "princesses_griselda": {
+      "name": "格丽泽尔达",
+      "abilityText": "天赋：从你的弃牌堆中放置一张传家宝到你的手上。"
+    },
+    "princesses_sleeping_beauty": {
+      "name": "睡美人",
+      "abilityText": "持续：如果本仆从将要进入弃牌堆，将其改为洗入你的牌库。"
+    },
+    "sharks_megalodon": {
+      "name": "巨齿鲨",
+      "abilityText": "你可以消灭此基地一个战力4或更少的仆从。特殊能力：此基地计分前，你可以消灭此基地一个战力3或更少的仆从。"
+    },
+    "sharks_great_white": {
+      "name": "大白鲨",
+      "abilityText": "天赋能力：将本仆从移动至另一个基地，并消灭该基地一个战力2或更少的仆从。"
+    },
+    "sharks_hammerhead": {
+      "name": "锤头鲨",
+      "abilityText": "持续能力：当本基地有仆从被消灭后，放置一个+1战力指示物到本仆从上。"
+    },
+    "sharks_mako": {
+      "name": "灰鲭鲨",
+      "abilityText": "特殊能力：当你消灭任意基地上的一个仆从后，你可以将本仆从作为一个额外仆从打到那里。"
+    },
+    "sharks_blood_in_the_water": {
+      "name": "血腥水域",
+      "effectText": "打出到一个基地上。持续能力：当这里有仆从被消灭后，你可以将一个战力3或更少的仆从作为额外仆从打到这里。"
+    },
+    "sharks_week_of_sharks": {
+      "name": "鲨鱼周",
+      "effectText": "打出到一个基地上。持续能力：如果你在这里有仆从，在你的回合结束时额外抽一张牌。每回合只能使用一个“鲨鱼周”的能力。"
+    },
+    "sharks_torn_apart": {
+      "name": "撕裂",
+      "effectText": "消灭一个战力3或更少的仆从，并抽一张牌。"
+    },
+    "sharks_chum": {
+      "name": "鱼饵",
+      "effectText": "打出到一个仆从上。持续能力：当一个仆从被消灭后，在此仆从上放置一个+1战力指示物。"
+    },
+    "sharks_dangerous_waters": {
+      "name": "危险水域",
+      "effectText": "打出到一个基地上。天赋能力：选择这里的一个仆从。该仆从-2战力直到回合结束。"
+    },
+    "sharks_feeding_frenzy": {
+      "name": "疯狂进食",
+      "effectText": "选择一个基地。消灭该基地任意数量战力2或更少的仆从。"
+    },
+    "sharks_air_jaws": {
+      "name": "飞鲨",
+      "effectText": "将你的一个仆从移动到另一个基地，然后消灭那里的一个战力3或更少的仆从。"
+    },
+    "sharks_freakin_laser_beam": {
+      "name": "激光束",
+      "effectText": "选择你的一个仆从。消灭你该仆从所在基地上一个战力等于或低于该仆从的仆从。"
+    },
+    "tornados_monster_tornado": {
+      "name": "龙卷风怪物",
+      "abilityText": "天赋能力：你可以将一个战力4或更少的仆从从这里移动至另一个基地，或从另一个基地移动到这里。"
+    },
+    "tornados_cyclone": {
+      "name": "气旋",
+      "abilityText": "天赋能力：将本仆从移动至另一个基地。"
+    },
+    "tornados_twister": {
+      "name": "旋风",
+      "abilityText": "当本仆从打出至一个基地时，你可以将一个战力3或更少的仆从从这里移动至另一个基地，或从另一个基地移动到这里。"
+    },
+    "tornados_dust_devil": {
+      "name": "尘卷风",
+      "abilityText": "特殊能力：当一个基地计分前，你可以将本仆从移动到该基地。"
+    },
+    "tornados_trade_winds": {
+      "name": "信风",
+      "effectText": "选择两个战力3或更少的仆从。将每名仆从移动到另一名仆从的基地上。"
+    },
+    "tornados_carried_away": {
+      "name": "卷走",
+      "effectText": "将一个仆从移动至另一个基地上。"
+    },
+    "tornados_whirlwinds": {
+      "name": "旋风群",
+      "effectText": "你可以把任意数量的你的仆从移动至其他基地。"
+    },
+    "tornados_gone_with_the_wind": {
+      "name": "随风而逝",
+      "effectText": "特殊能力：在一个基地计分后打出。你可以将该基地上你的一个仆从移动到另一个基地，而不是将它放入弃牌堆。"
+    },
+    "tornados_ripped_off": {
+      "name": "扯走",
+      "effectText": "将一个打在基地上的行动卡移动到另一个基地，或将一个打在仆从上的行动卡移动到另一个仆从上。"
+    },
+    "tornados_picked_up": {
+      "name": "卷起",
+      "effectText": "特殊：你可以在基地计分前打出此牌。将该基地上的一个仆从移动到另一个基地。"
+    },
+    "tornados_not_in_kansas": {
+      "name": "不在堪萨斯",
+      "effectText": "消灭一个基地，以及任何打在该基地上或该基地仆从上的行动卡。用基地牌库顶的牌替换它。原基地上的所有仆从保留在新基地上。"
+    },
+    "tornados_over_the_rainbow": {
+      "name": "飞越彩虹",
+      "effectText": "特殊：你可以在基地计分前打出此牌。将你另一个基地上的一个仆从移动到该基地。"
+    },
+    "mythic_greeks_odysseus": {
+      "name": "奥德修斯",
+      "abilityText": "持续能力：当你打出一个行动后，在你的一个仆从上放置一个+1战力指示物。"
+    },
+    "mythic_greeks_argonaut": {
+      "name": "阿尔戈英雄",
+      "abilityText": "触发所有会因你打出一个行动而触发的能力。特殊能力：任何你可以打出行动的时候，你可以改为打出这张牌。"
+    },
+    "mythic_greeks_jason": {
+      "name": "伊阿宋",
+      "abilityText": "持续能力：每回合一次，在你打出一个行动后，你可以选择一个基地，并使你在该基地的仆从+1战力直到回合结束。"
+    },
+    "mythic_greeks_favor_of_hades": {
+      "name": "哈迪斯的恩惠",
+      "effectText": "将一张行动卡从你的弃牌堆返回手牌。"
+    },
+    "mythic_greeks_heracles": {
+      "name": "赫拉克勒斯",
+      "abilityText": "持续能力：任意玩家打出一个行动后，本仆从+1战力直到回合结束。"
+    },
+    "mythic_greeks_favor_of_ares": {
+      "name": "阿瑞斯的恩惠",
+      "effectText": "你的一个仆从+3战力直到回合结束。"
+    },
+    "mythic_greeks_spartan": {
+      "name": "斯巴达人",
+      "abilityText": "持续能力：每回合一次，在你打出一个行动后，你可以在本仆从上放置一个+1战力指示物。"
+    },
+    "mythic_greeks_favor_of_aphrodite": {
+      "name": "阿佛洛狄忒的恩惠",
+      "effectText": "打出一名额外的仆从。"
+    },
+    "mythic_greeks_favor_of_dionysus": {
+      "name": "狄俄尼索斯的恩惠",
+      "effectText": "你的一个仆从+1战力直到回合结束。打出一个额外的行动。你可以将此卡放到你的牌库顶，而不是弃牌堆。"
+    },
+    "mythic_greeks_favor_of_hera": {
+      "name": "赫拉的恩惠",
+      "effectText": "在至多两名你的仆从上各放置一个+1战力指示物。"
+    },
+    "mythic_greeks_favor_of_athena": {
+      "name": "雅典娜的恩惠",
+      "effectText": "展示你牌库顶的5张牌。你可以将其中一张行动牌加入手牌，并按任意顺序将其余牌放回你的牌库顶。"
+    },
+    "mythic_greeks_favor_of_apollo": {
+      "name": "阿波罗的恩惠",
+      "effectText": "抽一张牌，并打出一个额外的行动。"
+    },
+    "mythic_greeks_favor_of_hermes": {
+      "name": "赫尔墨斯的恩惠",
+      "effectText": "打出两个额外的行动。"
+    },
+    "mythic_greeks_favor_of_poseidon": {
+      "name": "波塞冬的恩惠",
+      "effectText": "将你的弃牌堆中至多3张牌洗回你的牌库。"
+    },
+    "mythic_greeks_favor_of_zeus": {
+      "name": "宙斯的恩惠",
+      "effectText": "将一个基地的破坏点减少5，直到回合结束。"
+    },
+    "base_shark_reef": {
+      "name": "鲨鱼领地",
+      "abilityText": "摧毁本基地仆从的玩家，可以在他任意1个仆从上放置一个+1战力指示物。"
+    },
+    "base_the_deep": {
+      "name": "海渊",
+      "abilityText": "你打出一个4战力或更高战力的仆从到这里后，你可以消灭本基地一个战力更低的仆从。"
+    },
+    "base_trailer_park": {
+      "name": "拖车公园",
+      "abilityText": "当你移动一个仆从到这里后，在其上放置一个+1战力指示物。"
+    },
+    "base_tornado_alley": {
+      "name": "龙卷风走廊",
+      "abilityText": "每回合第一次有仆从移动到这里后，你可以把另一个仆从移动到这里。"
+    },
+    "base_oracle_at_delphi": {
+      "name": "特尔斐的神谕",
+      "abilityText": "在你打出一个仆从至本基地后，展示你牌库顶的牌。如果是行动牌，将它加入手牌；否则放回牌库顶。"
+    },
+    "base_wooden_horse": {
+      "name": "特洛伊木马",
+      "abilityText": "在任意玩家打出一个行动后，他能使这里的一个仆从+2战力直到回合结束。"
+    },
+    "shapeshifters_bacta_the_future": {
+      "name": "巴卡塔维持的未来",
+      "effectText": "摧毁一个仆从。该仆从的拥有者可以立即打出一个额外的仆从。"
+    },
+    "shapeshifters_shell_game": {
+      "name": "甲壳比赛",
+      "effectText": "打出到一个仆从上。持续：本仆从不能被摧毁。"
+    },
+    "shapeshifters_genetic_shift": {
+      "name": "基因转变",
+      "effectText": "选择一个模式：你的所有仆从+1力量直到回合结束，或你的一个仆从+3力量直到回合结束。"
+    },
+    "shapeshifters_transmogrify": {
+      "name": "变形",
+      "effectText": "摧毁你的一个仆从。从你的牌库搜寻一个力量不高于它的仆从，将其作为一个额外仆从打出到这里。之后重洗牌库。"
+    },
+    "shapeshifters_really": {
+      "name": "...你确定？",
+      "effectText": "摧毁你的一个仆从。从你的弃牌堆额外打出一个力量不高于它的仆从。"
+    },
+    "shapeshifters_mimic": {
+      "name": "变形者",
+      "abilityText": "持续：本仆从的力量等于场上印刷力量最高的仆从。"
+    },
+    "shapeshifters_cellular_bonding": {
+      "name": "细胞结合",
+      "effectText": "打出到一个仆从上。选择那张仆从上的一个行动。持续：本卡拥有所选卡牌的能力。"
+    },
+    "shapeshifters_copycat": {
+      "name": "模仿者",
+      "abilityText": "选择另一个玩家场中的一个仆从。本卡获得那张仆从的能力直到回合结束。"
+    },
+    "shapeshifters_splice_as_nice": {
+      "name": "拼接很美子",
+      "effectText": "打出到一个仆从上。持续：本仆从+2力量。"
+    },
+    "shapeshifters_gelf": {
+      "name": "G.E.L.F.",
+      "abilityText": "天赋：从你的牌库搜寻一个非 G.E.L.F.、力量4或更低的仆从；将本卡洗入你的牌库并将该仆从作为一个额外仆从打出到这里。之后重洗牌库。"
+    },
+    "shapeshifters_mitosis": {
+      "name": "有丝分裂",
+      "effectText": "选择你场上的一个仆从。从你的手牌打出一张同名仆从作为一个额外仆从。"
+    },
+    "shapeshifters_doppelganger": {
+      "name": "相似者",
+      "abilityText": "特殊：当本卡从基地进入弃牌堆时，从你的牌库搜寻一个仆从并将其作为一个额外仆从打出。之后重洗你的牌库。"
+    },
+    "cyborg_apes_monkey_on_your_back": {
+      "name": "猴子在你的背上",
+      "effectText": "打出到一个仆从上。天赋：摧毁另一个玩家在这里的力量为4或更少的仆从。将本卡放到你的牌库底。"
+    },
+    "cyborg_apes_cyberevolution": {
+      "name": "电子进化",
+      "effectText": "打出到一个仆从上。持续：本仆从+3力量。"
+    },
+    "cyborg_apes_juiced_up": {
+      "name": "兴奋剂",
+      "effectText": "打出到一个仆从上。持续：本仆从上每有一张行动，便+2力量（包括本卡）。"
+    },
+    "cyborg_apes_flying_monkey": {
+      "name": "飞行猴子",
+      "effectText": "打出到你的一张仆从上。特殊：在本基地计分后，你可以将该仆从移动到另一个基地而不是弃牌堆。之后摧毁本行动。"
+    },
+    "cyborg_apes_shielding": {
+      "name": "护盾",
+      "effectText": "打出到一个仆从上。摧毁本仆从上其他玩家的所有行动。持续：该仆从和其上的其他行动不受其他玩家行动影响。"
+    },
+    "cyborg_apes_furious_george": {
+      "name": "狂怒的乔治",
+      "abilityText": "持续：每有一张行动在本卡上，本仆从+1力量。"
+    },
+    "cyborg_apes_going_bananas": {
+      "name": "为了香蕉",
+      "effectText": "选择一个基地。摧毁其他玩家打出到该基地上和该基地仆从上的所有行动。"
+    },
+    "cyborg_apes_baboom": {
+      "name": "羌拳",
+      "abilityText": "天赋：将一张行动作为一个额外行动打出到本仆从上。"
+    },
+    "cyborg_apes_monkey_see_monkey_do": {
+      "name": "猴子见，猴子做",
+      "effectText": "展示你牌库顶的5张牌。将任意数量的行动置入手牌，剩余的洗回牌库。"
+    },
+    "cyborg_apes_clyde_2_0": {
+      "name": "克莱德2.0",
+      "abilityText": "持续：如果打出到这里的仆从上的行动将要进入弃牌堆，改为将其置入你的手牌。"
+    },
+    "cyborg_apes_missing_uplink": {
+      "name": "丢失中继",
+      "effectText": "打出到你的一张仆从上。持续：在你的回合结束时，抽一张额外的牌。"
+    },
+    "cyborg_apes_cyberback": {
+      "name": "赛博守护者",
+      "abilityText": "持续：你可以从弃牌堆而不是手牌打出行动到本仆从上。"
+    },
+    "super_spies_live_and_let_chum": {
+      "name": "让对手鱼饵",
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。摧毁这里一个力量3或更少的仆从。"
+    },
+    "super_spies_the_spy_who_ditched_me": {
+      "name": "抛弃我的间谍",
+      "effectText": "每位其他玩家必须弃掉一张仆从牌，或者展示其手牌以证明其中没有仆从牌。"
+    },
+    "super_spies_permit_to_kill": {
+      "name": "杀戮许可",
+      "effectText": "每位其他玩家展示其牌库顶的两张牌，并弃掉其中所有展示的仆从牌。将其余牌以任意顺序放回牌库顶。"
+    },
+    "super_spies_for_my_eyes_only": {
+      "name": "只为我的眼睛",
+      "effectText": "查看你牌库顶的5张牌。将它们以任意顺序放回牌库顶和/或牌库底。"
+    },
+    "super_spies_the_base_is_not_enough": {
+      "name": "基地永远不够",
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。选择这里一个力量4或更少的仆从；你获得其控制权直到回合结束。"
+    },
+    "super_spies_spy": {
+      "name": "间谍",
+      "abilityText": "查看你牌库顶的3张牌。将它们以任意顺序放回牌库顶和/或牌库底。"
+    },
+    "super_spies_mindraker": {
+      "name": "思维探测器",
+      "effectText": "打出到一个基地上。持续：其他玩家不能在本基地计分时打出行动。"
+    },
+    "super_spies_operative": {
+      "name": "密探",
+      "abilityText": "展示任意数量玩家牌库顶的一张牌。将其中任意数量的牌放到其拥有者的牌库底，其余牌放回牌库顶。"
+    },
+    "super_spies_from_q_with_love": {
+      "name": "来自Q的爱",
+      "effectText": "抓3张牌。弃2张牌。"
+    },
+    "super_spies_mole": {
+      "name": "内鬼",
+      "abilityText": "特殊：在这个基地计分前，你可以打出一个行动作为特殊行动。"
+    },
+    "super_spies_discards_are_forever": {
+      "name": "抛弃是永远",
+      "effectText": "所有玩家从各自牌库顶开始展示牌，直到展示出一张仆从牌。弃掉所有以此方式展示的牌。"
+    },
+    "super_spies_secret_agent": {
+      "name": "秘密探员",
+      "abilityText": "持续：在其他玩家打出一个行动后，他必须弃掉一张牌。"
+    },
+    "time_travelers_its_astounding": {
+      "name": "令人震惊",
+      "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
+    },
+    "time_travelers_time_is_fleeting": {
+      "name": "时间流逝",
+      "effectText": "特殊：在一个基地计分后打出。如果弃牌堆中至少有一个基地，选择其中一个基地代替从基地牌库抽一张新的基地。"
+    },
+    "time_travelers_into_the_time_slip": {
+      "name": "时间流动",
+      "effectText": "将场上的一张牌返回其拥有者的手牌。"
+    },
+    "time_travelers_1_21_gigawatts": {
+      "name": "千兆瓦",
+      "effectText": "将你弃牌堆里的所有行动或所有仆从洗回你的牌库。"
+    },
+    "time_travelers_do_over": {
+      "name": "从头来过",
+      "effectText": "从一个基地将你的一张仆从返回手牌。你可以将其作为一个额外仆从再次打出。"
+    },
+    "time_travelers_jumper": {
+      "name": "跳跃者",
+      "abilityText": "持续：当本仆从从场上进入弃牌堆时，你可以将其放回手牌。"
+    },
+    "time_travelers_stasis_field": {
+      "name": "静滞立场",
+      "effectText": "打出到一个基地上。持续：本基地不能被计分。在你的回合开始时摧毁本行动。"
+    },
+    "time_travelers_time_raider": {
+      "name": "时间掠夺者",
+      "abilityText": "天赋：将你弃牌堆中的一张牌放到牌库底。"
+    },
+    "time_travelers_time_walk": {
+      "name": "时间旅行",
+      "effectText": "本回合你可以额外打出一张仆从和一张行动。抽2张牌。将本卡置于牌库底而不是弃牌堆。"
+    },
+    "time_travelers_repeater_perfect": {
+      "name": "重复时间者",
+      "abilityText": "将你弃牌堆中的一张行动放到你的牌库顶。"
+    },
+    "time_travelers_wormhole": {
+      "name": "虫洞",
+      "effectText": "特殊：在一个基地计分后打出。将你在这里的仆从洗回牌库，而不是将其置入弃牌堆。"
+    },
+    "time_travelers_doctor_when": {
+      "name": "时间博士",
+      "abilityText": "你可以将场上的你另一张仆从返回手牌。你可以将其作为一个额外仆从再次打出。"
+    },
+    "base_the_nexus": {
+      "name": "联结点",
+      "abilityText": "如果可能，赢家可以从基地弃牌堆中选择一张基地代替抽新的基地。"
+    },
+    "base_portal_room": {
+      "name": "传送门",
+      "abilityText": "赢家可以在当前回合结束后额外进行一个回合。"
+    },
+    "base_isis_swingin_pad": {
+      "name": "ISI摇摆据点",
+      "abilityText": "赢家可以查看自己牌库顶3张牌，并以任意顺序将它们放回自己牌库顶和/或牌库底。"
+    },
+    "base_secret_volcano_headquarters": {
+      "name": "秘密火山总部",
+      "abilityText": "在这个基地计分前，所有玩家展示他们牌库顶的牌。将所有展示出的仆从放到这里。"
+    },
+    "base_the_vats": {
+      "name": "生体培养缸",
+      "abilityText": "你不能打出一个与在这里的另一个仆从同名的仆从到这里。"
+    },
+    "base_faceless_city": {
+      "name": "无面者之城",
+      "abilityText": "一回合一次，在你打出一个仆从到这里后，搜寻你的牌库找一张同名仆从，展示它，并将其放进你的手中。之后重洗牌库。"
+    },
+    "base_primate_park": {
+      "name": "灵长类公园",
+      "abilityText": "赢家可以将打出到这里的仆从身上的行动卡拿回他们的手牌。"
+    },
+    "base_monkey_lab": {
+      "name": "猴子实验室",
+      "abilityText": "这里的每个仆从每有一个行动在身上就获得+1力量。"
+    }
+  },
   "endgame": {
     "victory": "胜利",
     "defeat": "落败",

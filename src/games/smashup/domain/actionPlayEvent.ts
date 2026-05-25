@@ -6,9 +6,11 @@ type BuildActionPlayedEventParams = {
     playerId: PlayerId;
     cardUid: string;
     defId: string;
+    ownerId?: PlayerId;
     timestamp: number;
     isExtraAction?: boolean;
     fromBuried?: boolean;
+    fromDiscard?: boolean;
     targetBaseIndex?: number;
     targetMinionUid?: string;
     sourceCommandType?: string;
@@ -19,9 +21,11 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
         playerId,
         cardUid,
         defId,
+        ownerId,
         timestamp,
         isExtraAction,
         fromBuried,
+        fromDiscard,
         targetBaseIndex,
         targetMinionUid,
         sourceCommandType,
@@ -33,8 +37,10 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
             playerId,
             cardUid,
             defId,
+            ...(ownerId !== undefined ? { ownerId } : {}),
             ...(isExtraAction ? { isExtraAction: true } : {}),
             ...(fromBuried ? { fromBuried: true } : {}),
+            ...(fromDiscard ? { fromDiscard: true } : {}),
             ...(targetBaseIndex !== undefined
                 ? {
                     targetBaseIndex,

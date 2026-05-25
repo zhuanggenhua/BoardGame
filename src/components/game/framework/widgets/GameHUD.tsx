@@ -41,6 +41,9 @@ import { OpponentOfflineBanner } from './OpponentOfflineBanner';
 import { logger } from '../../../../lib/logger';
 import { useSmashUpOverlay } from '../../../../games/smashup/ui/SmashUpOverlayContext';
 import { isNativeAndroidRuntime } from '../../../../lib/mobile/androidRuntime';
+import type { MatchState } from '../../../../engine/types';
+import { getSmashUpReactionWindowPresentation } from '../../../../games/smashup/domain/reactionWindowState';
+import { isSmashUpPromptOwnedByPlayer } from '../../../../games/smashup/ui/interactionMode';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial' | 'test';
@@ -105,6 +108,47 @@ export const trimChatMessages = (
     if (messages.length <= maxMessages) return messages;
     return messages.slice(messages.length - maxMessages);
 };
+
+type SmashUpHudSuppressionInput = {
+    gameId?: string;
+    mode?: GameHUDProps['mode'];
+    state?: MatchState<unknown> | null;
+    playerId?: string | null;
+};
+
+export function shouldSuppressSmashUpHudFab({
+    gameId,
+    mode,
+    state,
+    playerId,
+}: SmashUpHudSuppressionInput): boolean {
+    if (gameId !== 'smashup' || !state) return false;
+
+    const currentPrompt = state.sys?.interaction?.current as { playerId?: unknown } | null | undefined;
+    const effectivePlayerId = playerId ?? (
+        (mode === 'local' || mode === 'tutorial')
+            ? ((state.core as Record<string, unknown> | undefined)?.currentPlayer as string | undefined) ?? null
+            : null
+    );
+
+    if (!effectivePlayerId) {
+        return Boolean(currentPrompt) || Boolean(getSmashUpReactionWindowPresentation(state as MatchState<any>));
+    }
+
+    if (isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID: effectivePlayerId })) {
+        return true;
+    }
+
+    const reactionWindow = getSmashUpReactionWindowPresentation(state as MatchState<any>);
+    if (!reactionWindow) return false;
+
+    if (reactionWindow.activePlayerId === effectivePlayerId) {
+        return true;
+    }
+
+    const pendingInteractionId = state.sys?.responseWindow?.current?.pendingInteractionId;
+    return !currentPrompt && !pendingInteractionId;
+}
 
 export const GAME_HUD_FAB_Z_INDEX = UI_Z_INDEX.emergencyHud;
 
@@ -210,6 +254,12 @@ export const GameHUD = ({
         const entries = undoState?.G?.sys?.actionLog?.entries ?? [];
         return buildActionLogRows(entries, { getPlayerLabel: getActionLogPlayerLabel });
     }, [getActionLogPlayerLabel, undoState?.G?.sys?.actionLog?.entries]);
+    const shouldSuppressFabMenu = useMemo(() => shouldSuppressSmashUpHudFab({
+        gameId: _gameId,
+        mode,
+        state: undoState?.G ?? null,
+        playerId: myPlayerId,
+    }), [_gameId, mode, myPlayerId, undoState?.G]);
 
     const isSelfMessage = useCallback((message: MatchChatMessage) => {
         return isSelfChatMessage(message, myPlayerId, myDisplayName);
@@ -1071,12 +1121,14 @@ export const GameHUD = ({
                     name={opponentName}
                 />
             )}
-            <FabMenu
-                isDark={true}
-                items={items}
-                position="bottom-right"
-                zIndex={GAME_HUD_FAB_Z_INDEX}
-            />
+            {!shouldSuppressFabMenu && (
+                <FabMenu
+                    isDark={true}
+                    items={items}
+                    position="bottom-right"
+                    zIndex={GAME_HUD_FAB_Z_INDEX}
+                />
+            )}
 
             {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
             {showFeedback && (

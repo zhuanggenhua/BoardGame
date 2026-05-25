@@ -296,6 +296,42 @@ describe('隐蔽迷雾 E2E: 进入 playCards 的额外随从', () => {
         expect(result.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
         expect(result.finalState.sys.interaction.current).toBeUndefined();
     });
+
+    it('borrowed 隐蔽迷雾应按控制者而不是真实 owner 在进入 playCards 时给控制者基地限定额外随从', () => {
+        const core = makeState({
+            currentPlayerIndex: 1,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_tar_pits',
+                    ongoingActions: [{
+                        uid: 'borrowed-mist-1',
+                        defId: 'trickster_enshrouding_mist',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                }),
+            ],
+        });
+
+        const runner = createCustomRunner(makeFullMatchState(core));
+        const result = runner.run({
+            name: 'borrowed 隐蔽迷雾 E2E - P1 结束回合后 P0 进入 playCards',
+            commands: [
+                { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '1', payload: undefined },
+            ] as any[],
+        });
+
+        expect(result.finalState.core.currentPlayerIndex).toBe(0);
+        expect(result.finalState.sys.phase).toBe('playCards');
+        expect(result.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
+        expect(result.finalState.core.players['1'].baseLimitedMinionQuota?.[0] ?? 0).toBe(0);
+        expect(result.finalState.sys.interaction.current).toBeUndefined();
+    });
 });
 
 describe('神秘花园 E2E: 进入 playCards 的额外随从', () => {

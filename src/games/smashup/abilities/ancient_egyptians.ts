@@ -24,6 +24,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { reduce } from '../domain/reduce';
 
 type BuriedChoice = { cardUid: string; baseIndex: number; defId?: string; baseDefId?: string };
 type HandCardChoice = { cardUid: string; defId: string };
@@ -53,6 +54,21 @@ function createPromptContext<TExtra extends Record<string, unknown> = Record<str
         now,
         ...(extra ?? {} as TExtra),
     };
+}
+
+function applyPreviewEventsToMatchState(
+    matchState: MatchState<SmashUpCore>,
+    events: readonly SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    if (events.length === 0) return matchState;
+    return {
+        ...matchState,
+        core: events.reduce((core, event) => reduce(core, event), matchState.core),
+    };
+}
+
+function getHandCardOwner(state: SmashUpCore, playerId: PlayerId, cardUid: string): PlayerId {
+    return state.players[playerId]?.hand.find(card => card.uid === cardUid)?.owner ?? playerId;
 }
 
 function runtimeResultToAbilityResult(
@@ -90,15 +106,18 @@ export function registerAncientEgyptiansAbilities(): void {
     registerTrigger('ancient_egyptians_mummy', 'afterScoring', ancientEgyptiansMummyAfterScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('ancient_egyptians_pharaoh', 'beforeScoring', ancientEgyptiansPharaohBeforeScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('ancient_egyptians_pharaoh', 'onBuriedCardUncovered', ancientEgyptiansPharaohOnUncover, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('base_star_portal', 'onCardBuried', ancientEgyptiansStarPortalOnBuried, {
         perInstance: true,
@@ -126,7 +145,7 @@ function ancientEgyptiansBurySelfOnPlay(ctx: AbilityContext): AbilityResult {
             cardUid: ctx.cardUid,
             defId: ctx.defId,
             baseIndex: ctx.baseIndex,
-            trueOwnerId: ctx.playerId,
+            trueOwnerId: getHandCardOwner(ctx.state, ctx.playerId, ctx.cardUid),
             buriedFrom: 'play',
             reason: ctx.defId,
             random: ctx.random,
@@ -273,7 +292,7 @@ const ancientEgyptiansPyramidEngineerTalentProgram = createPromptProgram<
                 cardUid: selected.cardUid,
                 defId: selected.defId,
                 baseIndex: context.baseIndex,
-                trueOwnerId: playerId,
+                trueOwnerId: getHandCardOwner(state.core, playerId, selected.cardUid),
                 buriedFrom: 'hand',
                 reason: 'ancient_egyptians_pyramid_engineer',
                 random,
@@ -326,7 +345,7 @@ const ancientEgyptiansLostKnowledgeBuryBasePromptProgram = createPromptProgram<
                 cardUid: context.cardUid,
                 defId: context.defId,
                 baseIndex,
-                trueOwnerId: playerId,
+                trueOwnerId: getHandCardOwner(state.core, playerId, context.cardUid),
                 buriedFrom: 'hand',
                 reason: 'ancient_egyptians_lost_knowledge',
                 random,
@@ -713,7 +732,7 @@ const ancientEgyptiansSealTheTombBuryPromptProgram = createPromptProgram<
                 cardUid: card.cardUid,
                 defId: card.defId,
                 baseIndex: context.baseIndex,
-                trueOwnerId: playerId,
+                trueOwnerId: getHandCardOwner(state.core, playerId, card.cardUid),
                 buriedFrom: 'hand',
                 reason: 'ancient_egyptians_seal_the_tomb',
                 random,
@@ -761,7 +780,7 @@ const ancientEgyptiansSealTheTombUncoverPromptProgram = createPromptProgram<
                 now: timestamp,
                 reason: 'ancient_egyptians_seal_the_tomb',
             });
-            currentState = result.state;
+            currentState = applyPreviewEventsToMatchState(result.state, result.events);
             events.push(...result.events);
         }
         return { events, matchState: currentState };
@@ -984,7 +1003,7 @@ const ancientEgyptiansPyramidsDuringTurnPromptProgram = createPromptProgram<
                     cardUid: selected.cardUid,
                     defId: selected.defId,
                     baseIndex: context.baseIndex,
-                    trueOwnerId: playerId,
+                    trueOwnerId: getHandCardOwner(state.core, playerId, selected.cardUid),
                     buriedFrom: 'hand',
                     reason: 'base_pyramids',
                     random,

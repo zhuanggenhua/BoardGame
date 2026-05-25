@@ -2,10 +2,10 @@
  * 端到端诊断测试：vampire_buffet afterScoring 是否在完整计分管线中触发
  *
  * 场景：
- * - 基地上有 vampire_buffet ongoing 卡（owner=P0）
- * - 基地达到临界点，P0 力量最高（赢家）
- * - 完整走 playCards → scoreBases 流程（Me First 响应 → 计分）
- * - 验证 POWER_COUNTER_ADDED 事件是否产生
+ * - 基地达到临界点，P0 力量最高
+ * - 真实走 playCards → scoreBases 响应窗
+ * - 验证 vampire_buffet 在当前响应窗里能真实打出并写入 pendingAfterScoringSpecials
+ * - 具体 afterScoring 放置指示物的结果由 newOngoingAbilities.test.ts 承接
  */
 
 import { describe, expect, it } from 'vitest';
@@ -20,10 +20,8 @@ import { createInitialSystemState, executePipeline, createSeededRandom } from '.
 const PLAYER_IDS = ['0', '1'];
 const systems = smashUpSystemsForTest;
 
-// POD commit 删除了 powerCounters 功能，这些测试不再适用
-// 如需恢复 powerCounters 功能，请移除下面的 .skip
-describe.skip('vampire_buffet 端到端计分流程', () => {
-    it('赢家在 Me First! 打出 buffet 时，计分后产生 POWER_COUNTER_ADDED', () => {
+describe('vampire_buffet 端到端计分流程', () => {
+    it('赢家在当前计分响应窗打出 buffet 时，应真实离手并写入 pendingAfterScoringSpecials', () => {
         const serverRng = createSeededRandom('buffet-test');
 
         const core: SmashUpCore = {
@@ -87,34 +85,23 @@ describe.skip('vampire_buffet 端到端计分流程', () => {
         const armedEntries = getEventStreamEntries(afterBuffet.state).filter(e => e.event.type === SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED);
         expect(armedEntries.length).toBeGreaterThan(0);
 
-        // Step 3: P1 RESPONSE_PASS → 应该触发计分
-        const rw = afterBuffet.state.sys.responseWindow?.current;
-        let finalState: MatchState<SmashUpCore>;
-        if (rw) {
-            const afterP1Pass = executePipeline(
-                { domain: SmashUpDomain, systems },
-                afterBuffet.state,
-                { type: 'RESPONSE_PASS', playerId: rw.responderQueue[rw.currentResponderIndex], payload: undefined, timestamp: 3 } as unknown as SmashUpCommand,
-                serverRng, PLAYER_IDS,
-            );
-            expect(afterP1Pass.success).toBe(true);
-            finalState = afterP1Pass.state;
-        } else {
-            finalState = afterBuffet.state;
-        }
+        const player0 = afterBuffet.state.core.players['0'];
+        expect(player0.hand.some(card => card.uid === 'buffet1')).toBe(false);
+        expect(player0.discard.some(card => card.uid === 'buffet1')).toBe(true);
+        expect(afterBuffet.state.core.pendingAfterScoringSpecials).toEqual([
+            expect.objectContaining({
+                sourceDefId: 'vampire_buffet',
+                playerId: '0',
+                baseIndex: 0,
+                cardUid: 'buffet1',
+            }),
+        ]);
 
-        const allEntries = getEventStreamEntries(finalState);
-
-        // 核心断言：vampire_buffet 应该产生 POWER_COUNTER_ADDED
-        const pcAdded = allEntries.filter(e => e.event.type === SU_EVENTS.POWER_COUNTER_ADDED);
-        expect(pcAdded.length).toBeGreaterThan(0);
-
-        // 检查 BASE_SCORED
-        const scored = allEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        expect(scored.length).toBeGreaterThan(0);
+        const reactionPrompt = afterBuffet.state.sys.interaction?.current as any;
+        expect(reactionPrompt?.data?.sourceId).toBe('smashup_reaction_choose');
     });
 
-    it('P0 打出 we_are_the_champions，P1 pass 后触发计分和 ARMED 效果', () => {
+    it('P0 在 Me First! 窗口打出 we_are_the_champions 时应立即创建交互，而不是先写 ARMED', () => {
         const serverRng = createSeededRandom('champions-buffet');
 
         const core: SmashUpCore = {
@@ -185,35 +172,15 @@ describe.skip('vampire_buffet 端到端计分流程', () => {
         );
         expect(afterChampions.success).toBe(true);
 
-        // 检查 ARMED 事件
-        const armedEntries = getEventStreamEntries(afterChampions.state).filter(e => e.event.type === SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED);
-        expect(armedEntries.length).toBeGreaterThan(0);
+        // 当前合同：在 afterScoring 响应窗口中应立即起交互，不先写 ARMED
+        const armedEntries = afterChampions.events.filter(e => e.type === SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED);
+        expect(armedEntries.length).toBe(0);
 
-        // Step 3: 依次 pass 直到窗口关闭（触发计分）
-        let currentState = afterChampions.state;
-        let ts = 3;
-        while (currentState.sys.responseWindow?.current) {
-            const rw = currentState.sys.responseWindow.current;
-            const responderId = rw.responderQueue[rw.currentResponderIndex];
-            const passResult = executePipeline(
-                { domain: SmashUpDomain, systems },
-                currentState,
-                { type: 'RESPONSE_PASS', playerId: responderId, payload: undefined, timestamp: ts++ } as unknown as SmashUpCommand,
-                serverRng, PLAYER_IDS,
-            );
-            expect(passResult.success).toBe(true);
-            currentState = passResult.state;
-        }
-
-        const allEntries = getEventStreamEntries(currentState);
-
-        // 核心断言：计分发生
-        const scored = allEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        expect(scored.length).toBeGreaterThan(0);
-
-        // We Are The Champions 应该创建选择来源随从的交互
-        const interaction = currentState.sys.interaction?.current;
+        const interaction = afterChampions.state.sys.interaction?.current ?? afterChampions.state.sys.interaction?.queue?.[0];
         expect(interaction).toBeTruthy();
-        expect((interaction as any)?.data?.sourceId).toBe('giant_ant_we_are_the_champions_choose_snapshot_source');
+        expect([
+            'giant_ant_we_are_the_champions_choose_source',
+            'giant_ant_we_are_the_champions_choose_snapshot_source',
+        ]).toContain((interaction as any)?.data?.sourceId);
     });
 });

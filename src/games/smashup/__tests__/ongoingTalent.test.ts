@@ -23,6 +23,7 @@ import {
     makeMinion, makeCard, makePlayer, makeState, makeMatchState,
     getInteractionsFromMS, applyEvents,
 } from './helpers';
+import { runCommand } from './testRunner';
 import type { RandomFn } from '../../../engine/types';
 
 beforeAll(() => {
@@ -788,6 +789,49 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
         expect((destroyInteraction?.data?.options ?? []).some((option: any) => option.value?.minionUid === 'm-low')).toBe(true);
     });
 
+    it('从手牌交换被他人拥有的持续战术时，换进基地的 ongoing 仍应保留真实 ownerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('h-borrowed', 'trickster_flame_trap_pod', 'action', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [makeOngoing('oa1', 'trickster_hideout_pod', '0')],
+            }],
+        });
+
+        const ms = makeMatchState(core);
+        execute(ms, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const swapInteraction = getInteractionsFromMS(ms)[0];
+        const swapHandler = getInteractionHandler('trickster_hideout_pod_swap');
+        expect(swapHandler).toBeDefined();
+
+        const result = swapHandler!(
+            ms,
+            '0',
+            { zone: 'hand', cardUid: 'h-borrowed', defId: 'trickster_flame_trap_pod' },
+            swapInteraction?.data,
+            defaultRandom,
+            3000,
+        );
+
+        expect(result?.state.core.players['0'].hand).toEqual([
+            expect.objectContaining({ uid: 'oa1', defId: 'trickster_hideout_pod', type: 'action', owner: '0' }),
+        ]);
+        expect(result?.state.core.bases[0].ongoingActions[0]).toEqual(
+            expect.objectContaining({ uid: 'h-borrowed', defId: 'trickster_flame_trap_pod', ownerId: '1' }),
+        );
+    });
+
     it('从牌库交换时把藏身处洗回牌库，而不是回手', () => {
         const shuffleRandom: RandomFn = {
             ...defaultRandom,
@@ -838,6 +882,70 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
         );
 
         const reorderedEvent = (result?.events ?? []).find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
+        expect(reorderedEvent).toBeDefined();
+        expect(reorderedEvent.payload.deckUids).toEqual(['oa1', 'd-extra']);
+    });
+
+    it('从牌库交换时经过真实 SYS_INTERACTION_RESPOND 收口后，不应因 DECK_REORDERED 丢失 ongoing 交换结果', () => {
+        const shuffleRandom: RandomFn = {
+            ...defaultRandom,
+            shuffle: (arr: any[]) => [...arr].reverse(),
+        };
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    deck: [
+                        makeCard('d-flame', 'trickster_flame_trap_pod', 'action', '0'),
+                        makeCard('d-extra', 'trickster_enshrouding_mist_pod', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [makeOngoing('oa1', 'trickster_hideout_pod', '0')],
+            }],
+        });
+
+        const activated = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+            } as any,
+            shuffleRandom,
+        );
+
+        expect(activated.success).toBe(true);
+        const prompt = activated.finalState.sys.interaction.current as any;
+        expect(prompt?.data?.sourceId).toBe('trickster_hideout_pod_swap');
+
+        const deckOption = (prompt?.data?.options ?? []).find((option: any) =>
+            option?.value?.zone === 'deck' && option?.value?.cardUid === 'd-flame'
+        );
+        expect(deckOption).toBeDefined();
+
+        const resolved = runCommand(
+            activated.finalState,
+            {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: '0',
+                payload: { optionId: deckOption.id },
+            } as any,
+            shuffleRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.some((card: any) => card.uid === 'oa1')).toBe(false);
+        expect(resolved.finalState.core.players['0'].deck.map((card: any) => card.uid)).toEqual(['oa1', 'd-extra']);
+        expect(resolved.finalState.core.bases[0].ongoingActions).toEqual([
+            expect.objectContaining({ uid: 'd-flame', defId: 'trickster_flame_trap_pod', ownerId: '0' }),
+        ]);
+
+        const reorderedEvent = resolved.events.find((event: any) => event.type === SU_EVENTS.DECK_REORDERED) as any;
         expect(reorderedEvent).toBeDefined();
         expect(reorderedEvent.payload.deckUids).toEqual(['oa1', 'd-extra']);
     });

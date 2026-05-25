@@ -9,10 +9,16 @@ import {
     registerProtection,
     registerRestriction,
     registerTrigger,
+    registerBaseScoringSuppression,
+    registerPodOngoingAliases,
+    collectTriggers,
     clearOngoingEffectRegistry,
     getOngoingEffectRegistrySize,
+    getRegisteredOngoingEffectIds,
     isMinionProtected,
     isOperationRestricted,
+    isBaseScoringSuppressed,
+    getConsumableProtectionSource,
     fireTriggers,
     fireTriggerForSource,
     getBaseRestrictions,
@@ -112,6 +118,59 @@ describe('持续效果拦截框架', () => {
             expect(size.restriction).toBe(0);
             expect(size.trigger).toBe(0);
         });
+
+        test('getRegisteredOngoingEffectIds 会暴露 base scoring suppression sourceId，供审计层读取', () => {
+            registerBaseScoringSuppression('time_travelers_stasis_field', () => true);
+
+            const ids = getRegisteredOngoingEffectIds();
+            expect(ids.baseScoringSuppressionIds.has('time_travelers_stasis_field')).toBe(true);
+        });
+
+        test('_pod alias 也应继承 base scoring suppression', () => {
+            registerBaseScoringSuppression('time_travelers_stasis_field', () => true);
+            registerPodOngoingAliases();
+
+            const base = makeBase({
+                ongoingActions: [{ uid: 'stasis-pod-1', defId: 'time_travelers_stasis_field_pod', ownerId: '0' }],
+            });
+            const state = makeState([base]);
+
+            expect(isBaseScoringSuppressed(state, 0)).toBe(true);
+        });
+
+        test('getRegisteredOngoingEffectIds 不应暴露无实体的自动 _pod alias sourceId', () => {
+            registerProtection('ghost_haunting', 'destroy', () => true);
+            registerProtection('time_travelers_stasis_field', 'destroy', () => true);
+
+            registerPodOngoingAliases();
+
+            const ids = getRegisteredOngoingEffectIds();
+            expect(ids.protectionIds.has('ghost_haunting_pod')).toBe(true);
+            expect(ids.protectionIds.has('time_travelers_stasis_field_pod')).toBe(false);
+        });
+
+        test('POD alias 若继承 consumable protection，仍应保留 consumable 语义', () => {
+            registerProtection('alias_guard', 'destroy', (ctx) => ctx.targetMinion.defId === 'guard-target', {
+                consumable: true,
+            });
+
+            registerPodOngoingAliases();
+
+            const targetMinion = makeMinion({ uid: 'guard-target', defId: 'guard-target' });
+            const state = makeState([
+                makeBase({
+                    minions: [targetMinion],
+                    ongoingActions: [{ uid: 'guard-source', defId: 'alias_guard_pod', ownerId: '0' }],
+                }),
+            ]);
+
+            expect(getConsumableProtectionSource(state, targetMinion, 0, '1', 'destroy')).toEqual({
+                uid: 'guard-source',
+                defId: 'alias_guard_pod',
+                ownerId: '0',
+            });
+        });
+
     });
 
     describe('protection 保护拦截器', () => {
@@ -369,6 +428,98 @@ describe('持续效果拦截框架', () => {
             expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
             expect(events[1].type).toBe(SU_EVENTS.CARDS_DRAWN);
         });
+
+        test('fireTriggers non-perInstance source selection 应跳过 canTrigger 不合格的同名 source', () => {
+            registerTrigger('test_shared_source_choice', 'onMinionDestroyed', (ctx) => [{
+                type: 'TEST_EVENT' as any,
+                payload: {
+                    sourceCardUid: ctx.sourceCardUid,
+                    sourceControllerId: ctx.sourceControllerId,
+                },
+                timestamp: ctx.now,
+            } as SmashUpEvent], {
+                playerContext: 'sourceController',
+                canTrigger: ctx => ctx.sourceControllerId === '1',
+            });
+
+            const state = makeState([
+                makeBase({
+                    minions: [
+                        makeMinion({ uid: 'source-p0', defId: 'test_shared_source_choice', controller: '0' }),
+                        makeMinion({ uid: 'source-p1', defId: 'test_shared_source_choice', controller: '1' }),
+                        makeMinion({ uid: 'victim-a', defId: 'robot_microbot', controller: '0' }),
+                    ],
+                }),
+            ]);
+
+            const { events } = fireTriggers(state, 'onMinionDestroyed', {
+                state,
+                playerId: '0',
+                baseIndex: 0,
+                triggerMinionUid: 'victim-a',
+                triggerMinionDefId: 'robot_microbot',
+                triggerMinion: state.bases[0].minions.find(minion => minion.uid === 'victim-a'),
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect((events[0] as any).payload).toEqual({
+                sourceCardUid: 'source-p1',
+                sourceControllerId: '1',
+            });
+        });
+
+        test('sourceController 解析到不在 turnOrder 的 ownerPlayerId 时，不应排 queued trigger', () => {
+            registerTrigger('ghost_source', 'onTurnStart', () => [{
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: '0', count: 1, cardUids: ['x'] },
+                timestamp: 0,
+            }], {
+                optional: true,
+                playerContext: 'sourceController',
+            });
+
+            const ghostMinion = makeMinion({
+                uid: 'ghost-source',
+                defId: 'ghost_source',
+                controller: 'ghost' as any,
+                owner: '0',
+            });
+            const state = makeState([makeBase({ minions: [ghostMinion] })]);
+
+            const queued = collectTriggers(state, 'onTurnStart', {
+                playerId: '0',
+                now: 1,
+            });
+
+            expect(queued).toBeUndefined();
+        });
+
+        test('eventPlayer 不在 turnOrder 时，不应排 queued trigger', () => {
+            registerTrigger('normal_source', 'onTurnStart', () => [{
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: '0', count: 1, cardUids: ['x'] },
+                timestamp: 0,
+            }], {
+                optional: true,
+            });
+
+            const source = makeMinion({
+                uid: 'normal-source',
+                defId: 'normal_source',
+                controller: '0',
+                owner: '0',
+            });
+            const state = makeState([makeBase({ minions: [source] })]);
+
+            const queued = collectTriggers(state, 'onTurnStart', {
+                playerId: 'ghost' as any,
+                now: 1,
+            });
+
+            expect(queued).toBeUndefined();
+        });
     });
 
     describe('来源活跃性检查', () => {
@@ -462,6 +613,43 @@ describe('持续效果拦截框架', () => {
             expect((result.events[0] as any).payload).toEqual({
                 sourceCardUid: 'source-b',
                 sourceBaseIndex: 1,
+            });
+        });
+
+        test('fireTriggerForSource non-perInstance source selection 应跳过 canTrigger 不合格的同名 source', () => {
+            registerTrigger('test_shared_source_choice', 'onMinionDestroyed', (ctx) => [{
+                type: 'TEST_EVENT' as any,
+                payload: {
+                    sourceCardUid: ctx.sourceCardUid,
+                    sourceControllerId: ctx.sourceControllerId,
+                },
+                timestamp: ctx.now,
+            } as SmashUpEvent], {
+                playerContext: 'sourceController',
+                canTrigger: ctx => ctx.sourceControllerId === '1',
+            });
+
+            const state = makeState([
+                makeBase({
+                    minions: [
+                        makeMinion({ uid: 'source-p0', defId: 'test_shared_source_choice', controller: '0' }),
+                        makeMinion({ uid: 'source-p1', defId: 'test_shared_source_choice', controller: '1' }),
+                    ],
+                }),
+            ]);
+
+            const result = fireTriggerForSource(state, 'test_shared_source_choice', 'onMinionDestroyed', {
+                state,
+                playerId: '0',
+                baseIndex: 0,
+                random: dummyRandom,
+                now: 1,
+            });
+
+            expect(result.events).toHaveLength(1);
+            expect((result.events[0] as any).payload).toEqual({
+                sourceCardUid: 'source-p1',
+                sourceControllerId: '1',
             });
         });
 
@@ -582,6 +770,30 @@ describe('Affect 分类', () => {
             affectType: 'cancel_ability',
             countsForOnMinionAffected: true,
             sourceDefId: 'wizard_mass_enchantment',
+        });
+
+        const attached = buildAffectRecords(state, {
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: {
+                cardUid: 'borrowed-ongoing',
+                defId: 'trickster_hideout',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'minion',
+                targetBaseIndex: 0,
+                targetMinionUid: 'm-1',
+            },
+            timestamp: 1003,
+        } as SmashUpEvent);
+        expect(attached).toHaveLength(1);
+        expect(attached[0]).toMatchObject({
+            targetKind: 'minion',
+            affectType: 'attach_action',
+            countsForOnMinionAffected: true,
+            sourcePlayerId: '0',
+            sourceControllerId: '0',
+            sourceCardUid: 'borrowed-ongoing',
+            sourceDefId: 'trickster_hideout',
         });
     });
 

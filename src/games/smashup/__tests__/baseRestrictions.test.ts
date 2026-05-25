@@ -447,6 +447,17 @@ describe('base_tsars_palace: 沙皇宫殿 power≤2 限制', () => {
         const restricted = isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 2 });
         expect(restricted).toBe(false);
     });
+
+    it('borrowed Infiltrate 由控制者控制时，控制者仍可在 Tsar’s Palace 打出 power≤2 随从', () => {
+        const state = makeState({
+            bases: [makeBase('base_tsars_palace', {
+                ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            })],
+        });
+
+        const restricted = isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 2 });
+        expect(restricted).toBe(false);
+    });
 });
 
 // ============================================================================
@@ -470,6 +481,20 @@ describe('base_antarctic_base: 南极基地 每回合每基地最多1个随从',
         const state = makeState({
             bases: [makeBase('base_antarctic_base', {
                 ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '0' }],
+            })],
+            players: {
+                '0': makePlayer('0', { minionsPlayedPerBase: { 0: 1 } }),
+                '1': makePlayer('1'),
+            },
+        });
+        const restricted = isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 3 });
+        expect(restricted).toBe(false);
+    });
+
+    it('borrowed Infiltrate 由控制者控制时，控制者仍可忽略 Antarctic Base 的每回合每基地一次限制', () => {
+        const state = makeState({
+            bases: [makeBase('base_antarctic_base', {
+                ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
             })],
             players: {
                 '0': makePlayer('0', { minionsPlayedPerBase: { 0: 1 } }),

@@ -456,10 +456,40 @@ function ensureResolvableSimpleChoiceOptions<T>(
  * 用于事件 payload 和 playerView 输出。
  */
 export function stripNonSerializableFromData(data: unknown): unknown {
-    if (!data || typeof data !== 'object') return data;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { optionsGenerator, ...rest } = data as Record<string, unknown>;
-    return rest;
+    const clone = (value: unknown, seen: WeakMap<object, unknown>): unknown => {
+        if (value === null || value === undefined) return value;
+        if (typeof value === 'function') return undefined;
+        if (typeof value !== 'object') return value;
+
+        if (seen.has(value as object)) {
+            return seen.get(value as object);
+        }
+
+        if (Array.isArray(value)) {
+            const clonedArray: unknown[] = [];
+            seen.set(value, clonedArray);
+            for (const item of value) {
+                const clonedItem = clone(item, seen);
+                if (clonedItem !== undefined) {
+                    clonedArray.push(clonedItem);
+                }
+            }
+            return clonedArray;
+        }
+
+        const clonedObject: Record<string, unknown> = {};
+        seen.set(value as object, clonedObject);
+        for (const [key, entryValue] of Object.entries(value as Record<string, unknown>)) {
+            if (key === 'optionsGenerator') continue;
+            const clonedEntry = clone(entryValue, seen);
+            if (clonedEntry !== undefined) {
+                clonedObject[key] = clonedEntry;
+            }
+        }
+        return clonedObject;
+    };
+
+    return clone(data, new WeakMap<object, unknown>());
 }
 
 /**
@@ -878,6 +908,15 @@ export function asCompareRollChoice<T = unknown>(
     return { ...data, id: interaction.id, playerId: interaction.playerId };
 }
 
+function isCompareRollVisibleToPlayer(
+    interaction: InteractionDescriptor | undefined,
+    playerId: PlayerId,
+): boolean {
+    if (!interaction || interaction.kind !== 'compare-roll-choice') return false;
+    const data = interaction.data as CompareRollChoiceData;
+    return data.contestants.some((contestant) => isSamePlayerId(contestant.playerId, playerId));
+}
+
 /**
  * 通用选项刷新逻辑（框架层）— opt-in 模式
  *
@@ -1218,12 +1257,14 @@ export function createInteractionSystem<TCore>(
                 }
             }
 
-            const filteredCurrent =
-                isSamePlayerId(processedCurrent?.playerId, playerId) ? stripNonSerializable(processedCurrent) : undefined;
+            const canViewCurrent =
+                isSamePlayerId(processedCurrent?.playerId, playerId)
+                || isCompareRollVisibleToPlayer(processedCurrent, playerId);
+            const filteredCurrent = canViewCurrent ? stripNonSerializable(processedCurrent) : undefined;
 
             // 同样处理 queue 中的交互
             const processedQueue = queue
-                .filter((i) => isSamePlayerId(i?.playerId, playerId))
+                .filter((i) => isSamePlayerId(i?.playerId, playerId) || isCompareRollVisibleToPlayer(i, playerId))
                 .map((i) => {
                     if (i.kind === 'simple-choice') {
                         const data = i.data as SimpleChoiceData;

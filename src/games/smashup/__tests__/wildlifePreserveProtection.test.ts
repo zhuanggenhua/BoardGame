@@ -212,6 +212,39 @@ describe('wildlife_preserve: action 保护检查', () => {
         expect(isMinionProtected(state, minion, 0, '1', 'action')).toBe(true);
         expect(isMinionProtected(state, minion, 0, '0', 'action')).toBe(false);
     });
+
+    it('borrowed wildlife_preserve 应按控制者而不是真实 owner 保护控制者的随从', () => {
+        const base = makeBase('test_base', {
+            minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })],
+            ongoingActions: [{
+                uid: 'wp-borrowed',
+                defId: 'dino_wildlife_preserve',
+                ownerId: '1',
+                metadata: { sourceControllerId: '0' },
+            } as any],
+        });
+        const state = makeState({ bases: [base] });
+        const minion = base.minions[0];
+
+        expect(isMinionProtected(state, minion, 0, '1', 'action')).toBe(true);
+        expect(isMinionProtected(state, minion, 0, '0', 'action')).toBe(false);
+    });
+
+    it('borrowed wildlife_preserve 不应反向保护真实 owner 的随从', () => {
+        const base = makeBase('test_base', {
+            minions: [makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 })],
+            ongoingActions: [{
+                uid: 'wp-borrowed',
+                defId: 'dino_wildlife_preserve',
+                ownerId: '1',
+                metadata: { sourceControllerId: '0' },
+            } as any],
+        });
+        const state = makeState({ bases: [base] });
+        const minion = base.minions[0];
+
+        expect(isMinionProtected(state, minion, 0, '0', 'action')).toBe(false);
+    });
 });
 
 // ============================================================================

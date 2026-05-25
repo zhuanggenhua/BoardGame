@@ -11,22 +11,18 @@
 import React from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
-import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
-import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { createFlowSystem, createBaseSystems } from '../../../engine';
-import { smashUpFlowHooks } from '../domain/index';
+import type { SmashUpCore } from '../domain/types';
+import { SU_EVENTS } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { createSmashUpEventSystem } from '../domain/systems';
-import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../../../engine/hooks/EventStreamRollbackContext';
 import { reduce } from '../domain/reduce';
 import type { RevealHandEvent, RevealDeckTopEvent } from '../domain/types';
 import type { EventStreamEntry } from '../../../engine/types';
-import { RevealOverlay } from '../ui/RevealOverlay';
+import { RevealOverlay, resolveRevealSuppressionRules } from '../ui/RevealOverlay';
 
 vi.mock('../../../components/common/media/CardPreview', () => ({
     CardPreview: ({ alt }: { alt?: string }) => React.createElement('div', { 'data-card-preview': alt ?? 'preview' }),
@@ -35,27 +31,6 @@ vi.mock('../../../components/common/media/CardPreview', () => ({
 afterEach(() => {
     cleanup();
 });
-
-const PLAYER_IDS = ['0', '1'];
-
-function createRunner() {
-    return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
-        domain: SmashUpDomain,
-        systems: [
-            createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-            ...createBaseSystems<SmashUpCore>(),
-            createSmashUpEventSystem(),
-        ],
-        playerIds: PLAYER_IDS,
-    });
-}
-
-const DRAFT_COMMANDS = [
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
-] as SmashUpCommand[];
 
 function makeRevealEntry({
     id,
@@ -76,6 +51,21 @@ function makeRevealEntry({
             },
             timestamp: id * 100,
         },
+    };
+}
+
+function makeNonRevealEntry(id: number): EventStreamEntry {
+    return {
+        id,
+        event: {
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: {
+                playerId: '0',
+                baseIndex: 0,
+                card: { uid: `minion-${id}`, defId: 'pirate_first_mate' },
+            },
+            timestamp: id * 100,
+        } as any,
     };
 }
 
@@ -170,6 +160,21 @@ describe('卡牌展示系统', () => {
             expect(await screen.findByTestId('reveal-overlay')).toBeInTheDocument();
         });
 
+        it('reveal overlay 应保持非阻塞，只暴露最小关闭控件', async () => {
+            render(React.createElement(RevealOverlay, {
+                entries: [makeRevealEntry({ id: 21, viewerPlayerId: 'all' })],
+                currentPlayerId: '0',
+            }));
+
+            const overlay = await screen.findByTestId('reveal-overlay');
+            const dismissButton = await screen.findByTestId('reveal-dismiss-btn');
+            const revealCard = await screen.findByTestId('reveal-card');
+
+            expect(overlay.className).toContain('pointer-events-none');
+            expect(dismissButton).toBeInTheDocument();
+            expect(revealCard.className).toContain('cursor-pointer');
+        });
+
         it('私有展示只应出现在归属玩家页面', async () => {
             render(React.createElement(RevealOverlay, {
                 entries: [makeRevealEntry({ id: 3, viewerPlayerId: '1' })],
@@ -190,6 +195,154 @@ describe('卡牌展示系统', () => {
             }));
 
             expect(await screen.findByText('老王 的手牌')).toBeInTheDocument();
+        });
+
+        it('连续重渲染夹入非展示事件时不应丢失已捕获的公开展示', async () => {
+            const { rerender } = render(React.createElement(RevealOverlay, {
+                entries: [makeRevealEntry({ id: 5, viewerPlayerId: 'all' })],
+                currentPlayerId: '0',
+            }));
+
+            rerender(React.createElement(RevealOverlay, {
+                entries: [makeRevealEntry({ id: 5, viewerPlayerId: 'all' }), makeNonRevealEntry(6)],
+                currentPlayerId: '0',
+            }));
+
+            expect(await screen.findByTestId('reveal-overlay')).toBeInTheDocument();
+        });
+
+        it('optimistic rollback signal 应清空旧 reveal 队列，并在恢复后重新对齐服务端事件', async () => {
+            let rollbackValue: EventStreamRollbackValue = {
+                watermark: null,
+                seq: 0,
+                reconcileSeq: 0,
+            };
+
+            const renderOverlay = (entries: EventStreamEntry[]) => React.createElement(
+                EventStreamRollbackContext.Provider,
+                { value: rollbackValue },
+                React.createElement(RevealOverlay, {
+                    entries,
+                    currentPlayerId: '0',
+                }),
+            );
+
+            const oldEntry = makeRevealEntry({ id: 7, viewerPlayerId: 'all' });
+            const { rerender } = render(renderOverlay([oldEntry]));
+
+            expect(await screen.findByTestId('reveal-overlay')).toBeInTheDocument();
+
+            rollbackValue = {
+                watermark: null,
+                seq: 1,
+                reconcileSeq: 0,
+            };
+
+            rerender(renderOverlay([]));
+            expect(screen.queryByTestId('reveal-overlay')).toBeNull();
+
+            rerender(renderOverlay([oldEntry]));
+            expect(await screen.findByTestId('reveal-overlay')).toBeInTheDocument();
+        });
+
+        it('当前玩家进入 Operative 第二层 prompt 时，应隐藏同批公开 reveal 浮层避免叠层', async () => {
+            const suppressionRules = resolveRevealSuppressionRules({
+                sourceId: 'super_spies_operative_top_bottom',
+                revealedByPlayer: {
+                    '1': ['card-6'],
+                },
+                options: [
+                    {
+                        id: 'operative-p1-top',
+                        label: '跳跃者',
+                        value: { targetPlayerId: '1', cardUid: 'card-6', defId: 'time_travelers_jumper' },
+                    },
+                ],
+            }, true);
+
+            render(React.createElement(RevealOverlay, {
+                entries: [{
+                    id: 6,
+                    event: {
+                        type: SU_EVENTS.REVEAL_DECK_TOP,
+                        payload: {
+                            targetPlayerId: '1',
+                            viewerPlayerId: 'all',
+                            cards: [{ uid: 'card-6', defId: 'time_travelers_jumper' }],
+                            count: 1,
+                            reason: 'super_spies_operative',
+                        },
+                        timestamp: 600,
+                    },
+                }],
+                currentPlayerId: '0',
+                suppressionRules,
+            }));
+
+            await Promise.resolve();
+            expect(screen.queryByTestId('reveal-overlay')).toBeNull();
+        });
+
+        it('未拥有 prompt 的旁观页面不应误抑制公开 reveal 浮层', async () => {
+            const suppressionRules = resolveRevealSuppressionRules({
+                sourceId: 'super_spies_operative_top_bottom',
+                revealedByPlayer: {
+                    '1': ['card-7'],
+                },
+            }, false);
+
+            render(React.createElement(RevealOverlay, {
+                entries: [{
+                    id: 7,
+                    event: {
+                        type: SU_EVENTS.REVEAL_DECK_TOP,
+                        payload: {
+                            targetPlayerId: '1',
+                            viewerPlayerId: 'all',
+                            cards: [{ uid: 'card-7', defId: 'time_travelers_jumper' }],
+                            count: 1,
+                            reason: 'super_spies_operative',
+                        },
+                        timestamp: 700,
+                    },
+                }],
+                currentPlayerId: '1',
+                suppressionRules,
+            }));
+
+            expect(await screen.findByTestId('reveal-overlay')).toBeInTheDocument();
+        });
+
+        it('私有 deck reorder prompt 也应隐藏自己已接管的 reveal 浮层', async () => {
+            const suppressionRules = resolveRevealSuppressionRules({
+                sourceId: 'super_spies_spy_reorder',
+                inspectedCards: [
+                    { uid: 'deck-8-a', defId: 'super_spies_spy' },
+                    { uid: 'deck-8-b', defId: 'super_spies_operative' },
+                ],
+            }, true);
+
+            render(React.createElement(RevealOverlay, {
+                entries: [{
+                    id: 8,
+                    event: {
+                        type: SU_EVENTS.REVEAL_DECK_TOP,
+                        payload: {
+                            targetPlayerId: '0',
+                            viewerPlayerId: '0',
+                            cards: [{ uid: 'deck-8-a', defId: 'super_spies_spy' }, { uid: 'deck-8-b', defId: 'super_spies_operative' }],
+                            count: 2,
+                            reason: 'super_spies_spy',
+                        },
+                        timestamp: 800,
+                    },
+                }],
+                currentPlayerId: '0',
+                suppressionRules,
+            }));
+
+            await Promise.resolve();
+            expect(screen.queryByTestId('reveal-overlay')).toBeNull();
         });
     });
 

@@ -1,3 +1,180 @@
+# Findings: SmashUp yuanhou shared transport / playerView completion audit（2026-05-19）
+
+## 已确认事实
+
+- 造成“有真实进展但像死循环”的直接原因不是缺实现，而是**执行锚点分裂**：
+  - 活跃 `goal.objective` 还停在旧 `The Spy Who Ditched Me / waiting overlay` residual；
+  - 当前 worktree 根 `task_plan.md` 顶部仍是历史 `shayu` 任务；
+  - 真正最新的 operational target 在长期状态 JSON `smashup-yuanhou-faction-effect-audit-2026-05-16.json` 的 `last_verified / next_actions`。
+- 在现有工具约束下，`goal` 只能读取或标完成，不能原地改写 objective；因此本轮必须明确：**继续推进时以长期状态 JSON 为准**。
+- 这轮唯一明确红点也不是实现回退，而是测试预期漂移：`server.test.ts` 里两条 `active-turn legal-action-recovered` 用例把 `blockerFingerprint` 错写成应等于**最终** `progressMarker`；真实合同是它保留**恢复起点**的 progress marker 作为 provenance。现已改成锁 `buildAiProgressMarker(match.state)`，并聚焦复跑 `online AI watchdog 完成 legal action 恢复后也应写入系统反馈|online AI watchdog 在 active-turn 的多步 legal action 链中，应只在最终交还回合后上报 resolved` => `2 passed`。
+- 又补一格 `active-turn` 的 sibling-family resolved gate：`hasOnlineAiRecoveryResolved()` 此前没有单独直测“同一 AI 已切到 `visible-interaction / response-window / hidden-interaction / response-loop` 时仍不算 resolved”。现已新增最小门禁，聚焦验证 `9 passed`。
+- 当前更高价值的下一格，不是再回扫对象级 family，而是继续把 `server.ts / onlineAiRecovery.ts` 里的 caller/source provenance 补成 direct gate，避免 completion audit 因“文档写到了、generic branch 也大概覆盖了”而反复重开同一缺口。
+- 2026-05-19 新确认的一格 shared transport 缺口是：`response-loop` 的 trackerKey 虽然已经通过 `buildOnlineAiRecoveryFingerprint()` 吃到 `window id/sourceId`，但 `resolveOnlineAiRecoveryCandidate()` 与 `runOnlineAiRecoverySequence()` 在把 `response-window` 升级成 `response-loop` 时写入的 `candidate.fingerprintHint` 仍只有 `responderId/phase/windowType/queueSignature`，会让 feedback/blockerFingerprint 在失败诊断里把新窗口折回旧 incident。
+- 现已把两处 `response-loop` provenance 一并收紧到 `responderId + phase + windowId + windowType + sourceId + queueSignature`，并补最小直测锁定：已进入 `response-loop` 的 candidate 会把 `response-loop-existing-tracker-1 / card-live` 保留下来，`resolveOnlineAiRecoveryFeedbackFingerprint()` 不再丢失这两格 provenance。
+- 2026-05-19 继续往 legal-action fallback caller 下钻后，又确认 `active-turn-legal-only` 有一条对称缺口：
+  - `resolveForceEndTurnForStalledAi()` 生成的 `active-turn-legal-only` candidate 只有 `active-turn-legal-only:${playerId}:${phase}` 这类粗 `fingerprintHint`；
+  - 真正的 `stale-private-overlay / missing-private-overlay` provenance 是在 `tryRecoverOnlineAiWithLegalAction()` 里才出现的。如果 strict + emergency playerView 两次 `resolveNextAiDispatch()` 后仍 blocked，旧实现会直接拿粗 `fingerprintHint` 去构造 `stateSnapshot/actionLog.blockerFingerprint`，导致 failure 诊断丢掉 `blockedKey`。
+  - 现已让 `tryRecoverOnlineAiWithLegalAction()` 返回 `blockedKey`，并在 legal-action-only 失败分支把它并回 candidate `fingerprintHint`；新增直测锁定 `active-turn-legal-only + stale-private-overlay` 的 feedback snapshot/actionLog 都会保留 `1:private-required:stale-private-overlay:targetingRoll:prompt-7`。
+- 2026-05-19 同型缺口也存在于 `seat-legal-only`：
+  - `resolveOnlineAiLegalActionOnlyCandidate()` 的 blocked candidate 已经会带 `blockedKey`，但同样需要在 strict + emergency playerView 后仍 blocked 的 failure 分支里把这格 provenance 写回 `fingerprintHint`。
+  - 现已补最小直测，确认 `seat-legal-only + stale-private-overlay` 的 feedback snapshot/actionLog 都会保留 `1:private-required:stale-private-overlay:targetingRoll:prompt-seat-7`。
+- 2026-05-19 completion audit 又确认一个此前只有 candidate 级证据、没有 feedback 级直测的旁支：
+  - `resolveOrphanDisplayOnlyBonusDiceSettlement()` 已经会为 `displayOnly pendingBonusDiceSettlement` 生成 `fingerprintHint=display-only-bonus:${attackerId}:${phase}:${settlementId}`，但此前只测了“会生成 candidate”和“成功时会直接 `SKIP_BONUS_DICE_REROLL` 收口”，没有锁住失败反馈层是否真的保留 settlement provenance；
+  - 现已新增 runtime direct gate：human `main1` 遗留 AI `displayOnly` bonus settlement 时，若 watchdog 代打 `SKIP_BONUS_DICE_REROLL` 失败，`stateSnapshot/actionLog.blockerFingerprint` 都会保留 `display-only-bonus:1:main1:display-only-bonus-feedback-1`；
+  - 这条结论只把 `display-only-bonus` 提升为 feedback provenance direct gate，不外推整个 `seat-legal-only` family 或 DiceThrone bonus-die 生命周期已全部收口。
+- 2026-05-19 completion audit 再向 `response-window` 主链下钻后，又确认一条更隐蔽的 provenance 洗掉点：
+  - `response-window` 在 emergency playerView 后若仍 blocked，旧实现虽然会先拿到 `blockedKey` 并请求 overlay resync，但随后仍会 fallback 执行 `RESPONSE_PASS`；如果这一步没有产生任何进展，失败理由会落成 `response-window:recover-interaction:no_progress`；
+  - 旧实现此时会先 `revalidateRecoveryCandidate(currentCandidate)`，把已经补到 `currentCandidate.fingerprintHint` 里的 `blockedKey` 洗回粗粒度 `response-window:${playerId}:${phase}:${windowId}:${windowType}:${sourceId}:${queue}`，导致 `stateSnapshot/actionLog.blockerFingerprint` 丢掉最关键的 blocked provenance；
+  - 现已在 recovery sequence 中增加最小 hint 继承器：当旧 `fingerprintHint` 明显比 revalidate 后更具体时，失败路径保留旧 hint。新增 runtime direct gate 后，`response-window + stale-private-overlay + fallback RESPONSE_PASS + no_progress` 的反馈快照与 actionLog 都会保留 `1:private-required:stale-private-overlay:response-window:attack-rw-7`；
+  - 这条结论只把 `response-window blocked feedback provenance` 提升为 direct gate，不外推整个 response-window family、overlay resync caller 或所有 `RESPONSE_PASS` 邻近路径已全部完成。
+- 2026-05-19 completion audit 再补一格相邻 family 后确认：`visible-interaction` 的 blocked feedback provenance 此前也只有实现旁证，没有 direct gate。
+  - 当前 `visible-interaction` 在 emergency playerView 后若仍 blocked，会先把 `blockedKey` 并回 `currentCandidate.fingerprintHint`，再 fallback 到 force command；但若这一步直接 `command_failed`，旧审计没有最小 runtime 证据证明 `stateSnapshot/actionLog.blockerFingerprint` 真的还保留那格 `blockedKey`。
+  - 本轮新增 direct gate：`online AI watchdog 在 visible-interaction 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey`；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 visible-interaction 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey"` => `1 passed`。
+  - 夹具命中的是 `visible-interaction + stale-private-overlay + fallback force command + command_failed` 这条失败链，结果 `stateSnapshot/actionLog.blockerFingerprint` 都保留 `1:private-required:stale-private-overlay:visible-interaction:super_spies_secret_agent_discard`。
+  - 这条结论只把 `visible-interaction blocked feedback provenance` 提升为 direct gate，不外推 hidden-interaction 同族、overlay resync caller 或全部可见 prompt kind 已完成。
+- 2026-05-19 completion audit 顺着同一条 fallback caller 链再补一格后确认：`hidden-interaction` 也存在同型覆盖缺口。
+  - 当前 `hidden-interaction` 在 emergency playerView 后若仍 blocked，同样会先把 `blockedKey` 并回 `currentCandidate.fingerprintHint`，再 fallback 到 force command；但若这一步直接 `command_failed`，旧审计也没有最小 runtime 证据证明 `stateSnapshot/actionLog.blockerFingerprint` 仍保留那格 `blockedKey`。
+  - 本轮新增 direct gate：`online AI watchdog 在 hidden-interaction 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey`；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 hidden-interaction 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey"` => `1 passed`。
+  - 夹具命中的是 `hidden-interaction + stale-private-overlay + fallback force command + command_failed` 这条失败链，结果 `stateSnapshot/actionLog.blockerFingerprint` 都保留 `1:private-required:stale-private-overlay:hidden-interaction:super_spies_secret_agent_discard`。
+  - 这条结论只把 `hidden-interaction blocked feedback provenance` 提升为 direct gate，不外推其他 hidden prompt kind、overlay resync caller 或全部 seat-only 交互已完成。
+- 2026-05-19 completion audit 再往同一矩阵里补一格后确认：`active-turn` 也存在同型覆盖缺口。
+  - 当前 `active-turn` 在 emergency playerView 后若仍 blocked，也会先把 `blockedKey` 并回 `currentCandidate.fingerprintHint`，再 fallback 到 force command；但若这一步直接 `command_failed`，旧审计同样没有最小 runtime 证据证明 `stateSnapshot/actionLog.blockerFingerprint` 仍保留那格 `blockedKey`。
+  - 本轮新增 direct gate：`online AI watchdog 在 active-turn 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey`；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 active-turn 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey"` => `1 passed`。
+  - 夹具命中的是 `active-turn + stale-private-overlay + fallback force command + command_failed` 这条失败链，结果 `stateSnapshot/actionLog.blockerFingerprint` 都保留 `1:private-required:stale-private-overlay:playCards:active-turn-owner-1`。
+  - 这条结论只把 `active-turn blocked feedback provenance` 提升为 direct gate，不外推所有 active-turn 多步链、overlay resync caller 或其他 phase 的 legal-action family 已完成。
+- 2026-05-19 completion audit 再补一格 shared-visible 分支后确认：`missing-visible-state` 此前也只有 helper 级合同，没有 feedback 级 direct gate。
+  - 当前 `visible-interaction` 在 `shared-visible` 视角下若丢失 live visible state，`tryRecoverOnlineAiWithLegalAction()` 会直接返回 `blockedReason='missing-visible-state'`，且不会误走 emergency playerView 或 overlay resync；但旧审计没有最小 runtime 证据证明后续 fallback force command 若 `command_failed`，`stateSnapshot/actionLog.blockerFingerprint` 仍会保留那格 `blockedKey`。
+  - 本轮新增 direct gate：`online AI watchdog 在 visible-interaction 遇到 missing-visible-state 且 fallback force command 失败时，反馈 blockerFingerprint 应保留 blockedKey`；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 visible-interaction 遇到 missing-visible-state 且 fallback force command 失败时，反馈 blockerFingerprint 应保留 blockedKey"` => `1 passed`。
+  - 夹具命中的是 `visible-interaction + shared-visible missing-visible-state + fallback force command + command_failed` 这条失败链，结果 `stateSnapshot/actionLog.blockerFingerprint` 都保留 `1:shared-visible:missing-visible-state:smashup_immediate_extra_action`。
+  - 这条结论只把 `missing-visible-state feedback provenance` 提升为 direct gate，不外推其它 shared-visible family、candidate producer 或全部 fallback command 路径已完成。
+- 2026-05-19 completion audit 再补一格 `advance_guard_blocked` 后确认：这条此前只有 reason 级断言，没有 feedback 级 direct gate。
+  - 当前 `runOnlineAiRecoverySequence()` 在 legal-action exhausted 后会尝试 fallback `ADVANCE_PHASE`；如果执行前发现当前已切到 human 回合，旧测试只证明 reason 会落成 `advance_guard_blocked`，没有最小 runtime 证据证明 `stateSnapshot/actionLog.blockerFingerprint` 仍保留原先的 legal-action provenance。
+  - 本轮新增 direct gate：`online AI watchdog fallback 到 ADVANCE_PHASE 前应校验当前仍是 AI 回合，避免误推进 human 回合`；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog fallback 到 ADVANCE_PHASE 前应校验当前仍是 AI 回合，避免误推进 human 回合"` => `1 passed`。
+  - 夹具命中的是 `legal-action-only -> follow-up ADVANCE_PHASE -> advance_guard_blocked` 这条失败链，结果 `stateSnapshot/actionLog.blockerFingerprint` 都保留 `legal-action-only:1:main2`，不再只剩 `active-turn:follow-up-advance:advance_guard_blocked` 这类 reason 级旁证。
+  - 这条结论只把 `advance_guard_blocked` 提升为 feedback direct gate，不外推所有 follow-up advance、多步 legal-action exhausted 邻近分支或 overlay resync caller 已完成。
+- 2026-05-19 completion audit 再补一格 `active-turn-legal-only:legal_action_unavailable` 后确认：这条此前也只有 reason 级断言，没有 feedback 级 direct gate。
+  - 当前 `active-turn-legal-only` 在 AI active 的 `targetingRoll` / `offensiveRoll` / `defensiveRoll` 这类 legal-only 场景下，如果 `buildLegalActions()` 为空，或 legal action 真被选出来但执行失败，且本分支又不允许 fallback `ADVANCE_PHASE`，旧测试都只证明 failure 会落成 `active-turn-legal-only:follow-up-advance:legal_action_unavailable`，没有最小 runtime 证据证明 `stateSnapshot/actionLog.blockerFingerprint` 仍保留 active-turn legal-only provenance。
+  - 本轮把这格补成两条 direct gate：`online AI watchdog 在 AI active 的 targetingRoll 且 legalActions 为空时，不得 fallback 到裸 ADVANCE_PHASE` 与 `online AI watchdog 在 active-turn-legal-only 的合法动作执行失败时，反馈 blockerFingerprint 也应保留 legal-only fingerprint`；聚焦验证分别为 `1 passed` 与 `1 passed`。
+  - 两条夹具分别命中 `active-turn-legal-only -> no legal action -> legal_action_unavailable` 和 `active-turn-legal-only -> legal action command failed -> legal_action_unavailable` 两个失败子分支，结果 `stateSnapshot/actionLog.blockerFingerprint` 都保留 `active-turn-legal-only:1:targetingRoll`，不再只靠 reason 级旁证。
+  - 这条结论只把 `active-turn-legal-only legal_action_unavailable` 提升为 feedback direct gate，不外推所有 roll phase、seat-legal-only 邻近分支或 overlay resync caller 已完成。
+- 2026-05-19 completion audit 顺手补了一条 feedback 双出口一致性小缺口：
+  - 现有 `online AI watchdog 自动反馈应携带交互选项与可选性诊断信息` 已经锁住 `stateSnapshot.blockerFingerprint` 会带上 `dt-test-visible-choice`，但旧断言没有同步检查 `actionLog.blockerFingerprint`，容易把“snapshot 对了、actionLog 漏了”误当已完全覆盖。
+  - 本轮把同一夹具补成 snapshot + actionLog 双断言；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 自动反馈应携带交互选项与可选性诊断信息"` => `1 passed`。
+  - 这条不新增 family，只是把既有 `visible-interaction diagnostics` 从“半覆盖”收紧成“反馈双出口一致”。
+- 2026-05-19 completion audit 再补一格 `factionSelect legal-action-recovered` 后确认：这条此前只证明“会恢复并 resolved”，没有 recovered feedback 的 provenance direct gate。
+  - 当前 `factionSelect` 的目标是阻止 watchdog 误发 `ADVANCE_PHASE`，已有夹具证明它会改走 `SELECT_FACTION`；但旧断言没有继续确认 recovered feedback 是否保留 `active-turn-legal-only` 这条 caller provenance。
+  - 本轮把同一夹具补成 direct gate：`online AI watchdog 在 factionSelect 阶段应走 legal-action recovery，而不是 fallback ADVANCE_PHASE`；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 factionSelect 阶段应走 legal-action recovery，而不是 fallback ADVANCE_PHASE"` => `1 passed`。
+  - 结果不仅 `incidentKind=legal-action-recovered` 且 `status=resolved`，还同时锁住 `reason=active-turn-legal-only:legal-action:select-faction:select-faction:robots`，以及 `stateSnapshot/actionLog.blockerFingerprint` 都含 `active-turn-legal-only:2:factionSelect`。
+  - 这条结论只把 `factionSelect recovered provenance` 提升为 direct gate，不外推所有 pregame / public setup / SummonerWars 邻近分支或多 AI 连续选阵营已全部完成。
+- 2026-05-19 completion audit 再补一格 `seat-legal-only legal-action-recovered` 后确认：off-turn 公开 roll phase 这条此前也只证明“会恢复并 resolved”，没有 recovered feedback 的 provenance direct gate。
+  - 当前 `human active` 的 off-turn `defensiveRoll` / `targetingRoll` 两条公开分支，已有夹具证明 watchdog 会代 AI 串行执行 `ROLL_DICE -> CONFIRM_ROLL -> ADVANCE_PHASE` 收口；但旧断言没有继续确认 recovered feedback 是否保留 `seat-legal-only` 这条 caller provenance。
+  - 本轮把两条夹具都补成 direct gate：`online AI watchdog 在 human active 的 off-turn 防御阶段也应代 AI 执行合法动作，避免 defensiveRoll 卡死` 与 `online AI watchdog 在 human active 的 off-turn targetingRoll 阶段也应代 AI 执行合法动作，避免 4 人选目标卡死`；聚焦验证各 `1 passed`。
+  - 两条结果都不只锁住 `incidentKind=legal-action-recovered` 且 `status=resolved`，还同时锁住 `reason=seat-legal-only:legal-action:advance-phase:legal-advance`，以及 `stateSnapshot/actionLog.blockerFingerprint` 分别含 `seat-legal-only:1:defensiveRoll:advance-phase:legal-advance` 与 `seat-legal-only:1:targetingRoll:advance-phase:legal-advance`。
+  - 这条结论只把 `seat-legal-only recovered provenance` 提升到这两个 off-turn public roll 分支，不外推所有 public setup /其他 game phase /所有 multi-step legal-action chain 已全部完成。
+- 本轮首先命中的最小缺口是：
+  - `legalActionOnly` 当前虽已锁住：
+    - same-player same-reason unresolved
+    - `active-turn-legal-only <-> seat-legal-only` unresolved
+    - same-player -> `active-turn` unresolved
+  - 但还缺两条更直给的 sibling-family direct gate：
+    - `legalActionOnly -> visible-interaction`
+    - `legalActionOnly -> response-window`
+  - 这两条若不单独落测，后续 completion audit 很容易再把“同一 AI 只是换了 surface”误看成“旧 incident 已收口”。
+- 2026-05-19 继续下钻 `onlineDecisionView / localRunner` 后确认：
+  - `shared/private freshness` 这一层已经锁住 `eventStream + interactionId + kind + sourceId`，当前没有证据支持再把 `title/options` 直接塞进 freshness fingerprint。
+  - 真正仍偏粗的是 `resolveNextAiDispatch()` 产出的 `blockedKey`。旧实现对 `stale-private-overlay` 只拼 `turn/phase/currentPlayer/eventStream`，没有带 `interaction/response-window` 语义指纹；这会让“同轮同 epoch，但 prompt/source 已变”的新 blocker 继续复用旧冷却键。
+  - 本轮已把 `ResolvedOnlineAiDecisionView.diagnostics` 扩到 `interactionId/kind/sourceId + responseWindow id/type/sourceId/responder`，并让 `localRunner` 把这组语义指纹并入 `blockedKey`。
+  - 新增直测已通过，证明：
+    - `blockedKey` 现在会显式包含 `owner-prompt-1 / simple-choice / super_spies_secret_agent_discard`；
+    - 即使 `turn/phase/currentPlayer/eventStream` 完全相同，只要 `interaction sourceId` 漂移，`blockedKey` 也会变化，不再把新 prompt 吞进旧 resync cooldown。
+- 2026-05-19 再往下审 `resolveOnlineAiRecoveryCandidate / trackerKey` 后又确认一格更底层缺口：
+  - `onlineDecisionView` 的 freshness 现在不缺 `title/options`，但 recovery tracker 自己仍可能偏粗。
+  - 旧 `buildInteractionRecoveryFingerprintHint()` / `buildOnlineAiRecoveryFingerprint()` 对 `visible/hidden simple-choice` 只看 `sourceId + title + minCount + optionCount`，不看 option IDs；
+  - 这意味着即使剩余候选已从 `hand-a` 漂到 `hand-c`，只要标题、来源和候选数量没变，旧 tracker 仍可能把它当成同一个 incident。
+  - 本轮已把 simple-choice 的 option signature 一并并入 recovery fingerprint，并新增 transport 直测证明：
+    - 同 `sourceId/title/count` 下，hidden-interaction 候选从 `hand-a,skip` 漂到 `hand-c,skip` 时，tracker key 会切换；
+    - watchdog 不会继续沿旧 tracker 自动恢复或上报失败。
+- 2026-05-19 再补一格 visible simple-choice provenance：
+  - 旧 `buildOnlineAiRecoveryFingerprint()` 的 visible simple-choice 也只看 `sourceId + title + minCount + optionCount`，没有带 `interactionId`，所以同一张 prompt 只要换了 interaction frame，就可能仍被当成旧 incident。
+  - 现已把 visible simple-choice 的 `interactionId + optionSignature` 也并进 fingerprint。
+  - 新增直测锁定：`reaction-choice-1` 与 `reaction-choice-2` 在 `sourceId/title/optionSignature` 相同、但 interactionId 漂移时，`buildOnlineAiRecoveryFingerprint()` 必须返回不同值。
+  - 随后又补了一条真正的 runtime gate：`runOnlineAiRecoveryTick()` 在第一张 visible prompt 已执行 `SYS_INTERACTION_RESPOND(skip)` 后，若现场立即换成同 `sourceId/title/options` 但 `interactionId=visible-owner-only-2` 的第二张 visible prompt，watchdog 必须删除旧 tracker、停止沿旧 incident 继续恢复，也不应误上报 feedback。
+  - 这条把 visible simple-choice 从“只有 fingerprint 变细”的 L2 旁证，推进到“旧 tracker 真会在 runtime 序列里被丢弃”的 direct gate；但当前仍只覆盖 `interactionId` 漂移分支，不外推 `dt:card-interaction`、`response-window` 或 `pending-damage` 的同类 runtime gate 已全部补齐。
+- 2026-05-19 再沿同一条 shared transport 线下钻到 `dt:card-interaction`：
+  - 旧 `buildOnlineAiRecoveryFingerprint()` 的 `dt:card-interaction` 分支只看 `type + targetCount + requiresTargetWithStatus + transferStatusId`，没带 `interactionId`，因此同语义但已换交互帧的新 prompt 也可能被复用旧 tracker。
+  - 先补红灯后确认缺口真实存在：`buildOnlineAiRecoveryFingerprint 在 dt:card-interaction 的 type/target/status 相同但 interactionId 漂移时，也必须变化`。
+  - 现已在 `server.ts` 把 `interactionId` 并入 `dt:card-interaction` fingerprint；复跑与 visible simple-choice、`pendingInteractionId` fallback 同组聚焦验证后，`3 passed | 156 skipped`。
+  - 随后又补了一条 runtime gate：`runOnlineAiRecoveryTick()` 在第一张 `dt-card-interaction-1` 已执行 `SYS_INTERACTION_CANCEL` 后，若现场立即换成同 `type/target/status` 但 `interactionId=dt-card-interaction-2` 的第二张 `dt:card-interaction`，watchdog 必须删除旧 tracker、停止沿旧 incident 继续恢复，也不应误上报 feedback。
+  - 这条把 `dt:card-interaction` 从“只有 fingerprint 变细”的旁证，推进到“旧 tracker 真会在 runtime 序列里被丢弃”的 direct gate；但当前仍只覆盖 `interactionId` 漂移分支，不外推其它自定义 interaction kind 的 runtime gate 已全部补齐。
+  - 这条进展仍属于 shared transport / playerView completion audit，不是回头刷 DiceThrone 对象级玩法链。
+- 2026-05-19 再补同型缺口到 `response-window / response-loop`：
+  - 旧 `buildOnlineAiRecoveryFingerprint()` 的响应窗口分支只看 `windowType + sourceId + queueSignature`，没带 `window id`，因此同来源、同响应者队列但已换 frame 的新窗口仍可能被沿用旧 tracker。
+  - 现已在 `server.ts` 把 `window id` 并进 `response-window / response-loop` fingerprint。
+  - 新增直测锁定：`buildOnlineAiRecoveryFingerprint 在 response-window 的 type/source/queue 相同但 window id 漂移时，也必须变化`。
+  - 与 `dt:card-interaction`、visible simple-choice、`pendingInteractionId` fallback 同组复跑后，聚焦验证结果为 `4 passed | 156 skipped`。
+  - 同时又把 `response-loop` 单独补成 direct gate：新增 `buildOnlineAiRecoveryFingerprint 在 response-loop 的 type/source/queue 相同但 window id 漂移时，也必须变化`，确认不是只在 `response-window` 侧成立。
+  - 这层语义现在还真正接到了 overlay resync caller：新增 `online AI watchdog 在 response-window id 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉`，证明 `blockedKey` 里的 `rw:` 片段已经参与冷却键判定，不再只是“fingerprint 变细了”的孤立实现。
+- 2026-05-19 completion audit 又扫出一个“实现已在、但当前 worktree 没有直测锁住”的分支：
+  - `buildOnlineAiRecoveryFingerprint()` 的 `pending-damage` 分支已经带 `pendingDamage.id + responderId + responseType`，但之前没有最小 direct gate。
+  - 现已新增 `buildOnlineAiRecoveryFingerprint 在 pending-damage 的 responder/responseType 相同但 pending id 漂移时，也必须变化`，并直接转绿。
+  - 这条说明当前缺的是 shared transport 覆盖证据，不是新的实现 bug。
+- 2026-05-19 completion audit 再往 manual recovery 诊断口径下钻后，确认还有一条不会改动自动恢复判定、但会让 blocker 证据偏粗的 provenance 漂移：
+  - `resolveManualForceEndAiPhase()` 的 `response-window` 分支会把 `candidate.fingerprintHint` 直接交给后续 snapshot/actionLog 的 `blockerFingerprint`；
+  - 旧 `fingerprintHint` 只有 `responderId + windowType + sourceId`，没带 `windowId`，因此同来源同窗口类型但已换 frame 的手动强制关窗会被折叠成同一 blocker；
+  - 现已把 `fingerprintHint` 收紧到 `manual-response-window:${responderId}:${windowType}:${sourceId}:${windowId}`，并用 `onlineAiRecovery-gameover.test.ts` 直测锁定 `fingerprintHint / attemptKey`；
+  - 这条修正只证明 manual force-end 的诊断 provenance 现在与自动 watchdog 的 response-window 粒度重新对齐，不外推为 `resolveOnlineAiRecoveryCandidate()`、`hasOnlineAiRecoveryResolved()` 或 overlay resync caller 已全部完成。
+- 2026-05-19 completion audit 再往 `MatchRoom` 的 manual caller 下钻后，又确认一条此前只靠阅读代码、没有 helper 直测锁住的边界：
+  - `resolveManualOnlineAiRecovery()` 在没有 manual candidate 且 `resolveNextAiDispatch()` 返回 `blocked` 时，必须把 `blockedKey / blockedReason` 原样交还给 `forceEndAiPhase`，这样后续 `requestSeatResync(...)` 才不会丢失 caller provenance；
+  - 现已在 `matchSeatValidation.test.ts` 新增 `手动强制结束在无 manual candidate 且 AI 决策被 blocked 时，应原样保留 blockedKey 与 blockedReason`，确认返回值保持 `kind='blocked'` 且不吞 `blockedKey`；
+  - 随后又把 `forceEndAiPhase()` 里真正构造 seat resync 请求的那一跳抽成纯 helper `resolveManualBlockedOnlineAiSeatResync()`，并新增直测锁定 `blockedKey / blockedReason` 会原样进入 `reason='manual-force-end-blocked'` 的 resync meta，而 `blockedKey=null` 不会伪造请求；
+  - 这两条加起来只证明 client helper/caller 已具备最小 provenance gate，不外推 `forceEndAiPhase` 的整段 UI toast / requestSeatResync 生命周期全量完成。
+- 2026-05-19 completion audit 也顺手确认了两个当前不该继续当主线 residual 追的兼容残枝：
+  - `pending-damage`：当前 worktree 里只剩 `server.ts` 的 fingerprint / diagnostic 拼装分支与对应直测，没有在 `resolveForceEndTurnForStalledAi()`、`resolveManualForceEndAiPhase()` 或 `resolveManualOnlineAiRecovery()` 找到 live candidate 生产者；
+  - `action-loop`：同样没有 live candidate producer；`server.test.ts` 里原先“应触发 action-loop 兜底”的标题已经与真实断言漂移，实际断言一直是 `active-turn -> ADVANCE_PHASE`；
+  - 现已把这条测试标题改成 `legacy action-loop residual`，明确它在当前 worktree 里是历史兼容/审计残枝，不再应被当成 shared transport 主线未闭口去重复扩样。
+- 2026-05-19 又清掉了一条刚冒出来的假 blocker：
+  - 新增的 `compare-roll-choice` runtime gate 复现后稳定表现为 `executed=[]`，说明当前 watchdog 根本没有进入 compare-roll 的可执行 recovery 链；
+  - 结合 `onlineAiRecovery.ts` 现状可确认：compare-roll 当前只在 `visible/shared visibility` 与 `recovery fingerprint` 两层有真实合同，并没有对应的 `SYS_INTERACTION_RESPOND` runtime recovery family；
+  - 因此这条测试不是“实现差一点”，而是把 fingerprint provenance 错写成了 runtime 恢复预期。现已删除该假 gate，只保留已经转绿的 `buildOnlineAiRecoveryFingerprint 在 compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化` direct gate；
+  - 这一步的价值是把当前 worktree 从“新增一条无效红测导致继续卡住”拉回真实主线，避免下轮再把 compare-roll 当成 live recovery residual 重复排查。
+- 2026-05-19 `dt:defender-choice` 则恰好证明了“哪些 kind 真属于 runtime recovery family”：
+  - 和 compare-roll 相反，这条交互在 `onlineAiRecovery.ts` 的 `visible-interaction` fallback 下确实会走 `SYS_INTERACTION_CANCEL`；
+  - 因而它不应只停在 fingerprint 直测。现已新增 runtime gate，确认第一次 cancel 后如果现场立即切成同 `interactionId` 但 `sourceId` 漂移的新 defender prompt，watchdog 会丢弃旧 tracker，不会继续沿旧 incident 恢复，也不误上报 feedback；
+  - 这说明当前主线不是“所有 prompt kind 都补 runtime”，而是先区分该 kind 是否真有可执行 recovery family，再决定补 runtime 还是只保留 fingerprint gate。
+- 2026-05-19 继续按长期状态 JSON 盘点 shared consumer seam 后确认：
+  - `src/games/dicethrone/hooks/useAnimationEffects.ts` 已有 `didReset / didOptimisticRollback` 清队列逻辑，但当前 worktree 没有独立 rollback gate；
+  - 这是真实覆盖缺口，不是 transport/provenance 主线又开了新洞。
+  - 现已新增 `src/games/dicethrone/__tests__/useAnimationEffects.rollback.test.tsx`，锁定 optimistic rollback 后：
+    - 旧动画队列不会残留；
+    - 恢复旧 `DAMAGE_DEALT` 事件不会重播；
+    - 只有后来真正新增的事件会继续触发 FX。
+  - 这条结论只把 `useAnimationEffects` 提升到 shared consumer direct gate，不外推整个 DiceThrone FX/动画链已全部收口。
+- 2026-05-19 同一条 shared consumer seam 继续往 SummonerWars 盘点后确认：
+  - `src/games/summonerwars/ui/useGameEvents.ts` 也有 `didReset / didOptimisticRollback` 清理逻辑，但当前 worktree 里没有独立 rollback gate；
+  - 这意味着 reconnect/resync 后，旧 `UNIT_ATTACKED` 攻击结果可能继续留在 `diceResult` UI 里，或恢复旧事件时被误当新事件重播。
+  - 现已新增 `src/games/summonerwars/__tests__/useGameEvents.rollback.test.tsx`，锁定 optimistic rollback 后：
+    - 旧攻击结果会被清空；
+    - 恢复旧 `UNIT_ATTACKED` 不重播；
+    - 只有后续新攻击事件才会重新进入骰子结果 UI。
+  - 这条结论只把 `useGameEvents` 提升到 shared consumer direct gate，不外推 SummonerWars 整个攻击/动画链已全部收口。
+- 2026-05-19 回到 transport helper 层再补一格后确认：
+  - `resolveOnlineAiRecoveryCandidate()` 只有在 `shouldInspectSeatStatesForHiddenAiInteraction(sharedState)` 为真时，才会去构造 hidden seat view；这条入口条件如果回退，会直接影响 `pendingInteractionId` 锁住 response window 时的 hidden prompt 收口链。
+  - 现已在 `onlineAiRecovery-gameover.test.ts` 新增 helper gate，锁定两件事：
+    - shared 没有 current、但 `responseWindow.current.pendingInteractionId` 仍在时，必须继续检查 hidden seat state；
+    - shared 当前交互还在时，即使 response window 残留 `pendingInteractionId`，也不得错误转去 hidden seat state。
+  - 同时这轮还把 `resolveForceSkippableHiddenAiInteraction()` 的真实合同钉死了：
+    - 若 hidden simple-choice 有 `skip`，即使同场还有非控制项，也会优先生成 force-skip；
+    - 若只剩“非控制项 + __cancel__”，则不会自动取消。
+  - 这条结论只把 hidden-seat inspection / force-skip helper 提升到 direct gate，不外推整个 onlineAiRecovery 主链已全部收口。
+
+## 当前结论
+
+- 当前 worktree 应按 shared transport / playerView completion audit 继续，而不是再按旧 goal/task 顶部标题回扫 `Spy / Secret Agent / The Spy Who Ditched Me / Portal Room / Time Box` 等已闭环 family。
+- 后续每次“继续”都要先看长期状态 JSON 的 `next_actions`，避免再被历史 `goal` 或继承下来的旧 `task_plan.md` 顶部误导。
+
+---
+
 # Findings: SmashUp shayu 三派系通用入口矩阵补强与全量重审（2026-05-12）
 
 ## 已确认事实
@@ -1950,3 +2127,623 @@
 - 已建立 shayu 三派系 45 对象全量 P0/P1 审计矩阵。
 - 本轮未发现新的 P0/P1 blocker。
 - 当前残余：未新增浏览器 E2E 截图，因此不得把本轮结论说成全量 L3 E2E 收口；Argonaut 跨派系 action-trigger 泛化仍是后续专项。
+
+## 2026-05-17 SmashUp yuanhou shared overlay residual 复核
+
+- `The Spy Who Ditched Me` 的 Host stale waiting overlay 不是单卡 handler 残留，而是 `optimisticEngine` 先前会污染上一帧 authoritative 引用导致的 shared transport/playerView 残影。
+- 已补回归 `processCommand 不得污染上一帧 authoritative state 引用，即使 pipeline/系统原地改写输入对象`，并重新跑通真实多客户端 E2E。
+- 当前真实链路结论：Host 非目标页不再出现中央 waiting overlay 或弃随从 prompt；Guest 页面仍正常给出弃随从选择权，服务端只按目标玩家选择弃牌。
+
+## 2026-05-17 SmashUp yuanhou Time Raider 边界补强
+
+- `Time Raider` 的单候选自动沉底与空弃牌反馈已补 L2，不应继续写成 residual。
+- 复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间掠夺者"` 结果为 `3 passed / 145 skipped`。
+- 当前浏览器 scoped L3 仍只覆盖多候选选择 `Time Walk` 分支。
+
+## 2026-05-17 SmashUp yuanhou Repeater Perfect 边界补强
+
+- `Repeater Perfect` 的单行动自动顶牌与空弃牌反馈已补 L2，不应继续写成 residual。
+- 复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "往复时间者"` 结果为 `4 passed / 147 skipped`。
+- 当前浏览器 scoped L3 仍只覆盖混合弃牌堆里选择第二张行动分支。
+
+## 2026-05-18 SmashUp yuanhou Repeater Perfect 单行动自动分支已从“只靠 L2 锁定”补到 scoped L3
+
+- `Repeater Perfect` 当前真正缺的不是更多 handler 负例，而是 **真实入口在弃牌堆只剩 1 张行动时，会不会错误弹出选择 prompt 或把唯一行动留在弃牌堆**。
+- 现有 L2/L3 已经证明：
+  - 混合弃牌堆里只会列行动候选，不会把随从混进 prompt。
+  - 玩家可以在两张行动里选择第二张，把它放到牌库顶。
+  - 但这还不足以证明唯一行动自动分支在浏览器里真的是“无 prompt 自动执行”，而不是瞬时 prompt 或隐式漏执行。
+- 本轮新增浏览器链：
+  - `时间旅行者-Repeater Perfect-弃牌堆只剩一张行动时真实入口应自动放到牌库顶且不弹 prompt`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-repeater-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Repeater Perfect-弃牌堆只剩一张行动时真实入口应自动放到牌库顶且不弹 prompt"` -> `1 passed`
+- 关键信号：
+  - 起始图里能直接看到手牌区的 `Repeater Perfect`，以及弃牌堆里唯一行动 `Time Walk` 本体，说明命中的确实是“单行动自动分支”。
+  - 收口图里中央没有任何选择 prompt，`Portal Room` 上只剩刚打出的 `Repeater Perfect`，弃牌堆角标从 `2` 变成 `1`。
+  - 配合状态断言 `deck=['repeater-single-discard-action,repeater-single-deck-a']`、`discard=['repeater-single-discard-minion']`、`interaction.current==null`，可以确认唯一行动已经自动进牌库顶。
+- 结论：
+  - `time_travelers_repeater_perfect.choose_discard_action` 不再只是“混合弃牌堆里选择第二张行动”有浏览器证据；单行动自动分支现在也有 scoped L3。
+  - `time_travelers_repeater_perfect.top_selected_action` 当前也不再只靠多候选正向选择支撑浏览器层证据；唯一行动自动顶牌现在同样有真实 UI 证据。空弃牌反馈继续留在 L2 即可。
+
+## 2026-05-18 SmashUp yuanhou Time Raider 单候选自动沉底分支已从“只靠 L2 锁定”补到 scoped L3
+
+- `Time Raider` 当前真正缺的不是更多多候选断言，而是 **真实天赋入口在弃牌堆只剩 1 张牌时，会不会错误弹出 `time_travelers_time_raider_choose` prompt，或者根本没把唯一弃牌沉到底**。
+- 现有 L2/L3 已经证明：
+  - 多候选时，prompt 会同时列出随从与行动两类弃牌，玩家可选其中一张沉到底。
+  - 但这还不足以证明唯一弃牌自动分支在浏览器里真的是“无 prompt 自动执行”，而不是 prompt 闪过或 UI 漏执行。
+- 本轮新增浏览器链：
+  - `时间旅行者-Time Raider-弃牌堆只剩一张牌时真实入口应自动放到牌库底且不弹 prompt`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-raider-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Time Raider-弃牌堆只剩一张牌时真实入口应自动放到牌库底且不弹 prompt"` -> `1 passed`
+- 关键信号：
+  - 起始图里能直接看到场上的 `Time Raider`，以及弃牌堆里唯一的 `Time Walk` 本体，说明命中的确实是单候选自动分支。
+  - 收口图里中央没有任何选择 prompt，`Time Raider` 本体已经显示“已用”，弃牌堆角标从 `1` 变成 `0`。
+  - 配合状态断言 `deck=['raider-single-deck-a,raider-single-discard-card']`、`discard=[]`、`talentUsed===true`、`interaction.current==null`，可以确认唯一弃牌已经自动进牌库底。
+- 结论：
+  - `time_travelers_time_raider.choose_discard_card` 不再只是“多候选选择分支”有浏览器证据；单候选自动分支现在也有 scoped L3。
+  - `time_travelers_time_raider.bottom_selected_card` 当前也不再只靠多候选正向选择支撑浏览器层证据；唯一弃牌自动沉底现在同样有真实 UI 证据。空弃牌 feedback 继续留在 L2 即可。
+
+## 2026-05-17 SmashUp yuanhou Moon Zero Three 口径修正
+
+- `Moon Zero Three.talent_top_bottom` 的“空牌库反馈”旧口径不符合实现；所有玩家都不可查看时，validator 直接拒绝天赋。
+- 复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "三号空间站"` 结果为 `3 passed / 154 skipped`。
+- 当前浏览器 scoped L3 仍覆盖他人牌库放底与自己牌库放顶两条分支。
+
+## 2026-05-17 SmashUp yuanhou ISI optional-pass cleanup
+
+- `ISI 摇摆据点` 的 `pass` 分支此前已经推进到 `base_replaced/cards_drawn/next player playCards`，但中央仍残留旧的 `选择一个反应动作`；这不是单卡语义错，而是 shared `smashup_reaction_choose` runtime prompt cleanup 断层。
+- 根因是 `registerAbilityRuntimePrompt('smashup_reaction_choose')` 在 `resolved.events=[]` 的 optional pass 分支里仍无条件回退 `resolved.state.core -> state.core`，把已经清掉的 `triggerQueue` 和 reaction frame 进度又带回来了。
+- 修复后，`超级间谍基地：ISI摇摆据点真实计分后可跳过响应并正常继续收口` 与 `时间旅行者：虫洞后全员让过会消费未选择的传送门室触发并收口` 两条 L2 一起通过，说明这次 shared cleanup 没把现有 optional pass 链打坏。
+- 真实入口 E2E `超级间谍-ISI摇摆据点-真实计分后跳过响应仍应完成收口并保留赢家牌库顺序` 已通过；实际截图显示 afterScoring 入口按钮文案是 `让过`，而不是旧猜测的“跳过”，且 pass 后中央 prompt 真正消失，画面恢复到下一位玩家的正常 `出牌阶段`。
+
+## 2026-05-17 SmashUp yuanhou Time Is Fleeting 非当前响应者归属补证
+
+- `Time Is Fleeting` 之前已经有单页 scoped L3，但 evidence 里仍把“非当前视角响应者”保留成 residual。这条边界的关键不是再补一个 unit，而是要证明 afterScoring response window 在多客户端下会把按钮交给赢家本人。
+- 新增真实多客户端 E2E：`时间旅行者-Time Is Fleeting-真实多客户端下赢家不是当前回合玩家时应只给赢家页面弃牌堆基地选择权`。
+- 这次链路里：
+  - P0 是当前回合玩家，结束回合触发 `Monkey Lab` 计分。
+  - P1 用 `Time Raider` 以 24 力获胜，且手里持有 `Time Is Fleeting`。
+  - Guest 赢家页出现 `时间流逝 / 让过`。
+  - Host 当前回合玩家页没有同按钮，也没有基地弃牌堆候选，只剩等待 Guest 响应。
+- Guest 点击 `时间流逝` 后，真实进入 `time_travelers_time_is_fleeting_choose`，只列 `The Vats / Faceless City / The Nexus` 三张基地弃牌堆候选，不列本次刚计分的 `Monkey Lab`。
+- Guest 选择 `Faceless City` 后，服务端权威状态收口为：
+
+## 2026-05-17 SmashUp yuanhou The Nexus skip 真实入口已锁定
+
+- `The Nexus` 之前虽然已经有 scoped L3，但只覆盖了“选择 `Faceless City` 替代新基地”的正向分支。
+- 这还不足以证明 `base_the_nexus_choose` 里的 `skip` 真的是一个可点击、可收口、并且会回退到 `baseDeck[0]` 的真实入口，而不是只停在 handler/L2 的口头说明。
+- 本轮补了两层证据：
+  - L2：`时间旅行者基地：枢纽真实计分后让过响应应继续按正常牌库顶替换基地`
+  - E2E：`时间旅行者-The Nexus-真实计分后让过响应应继续按正常牌库顶替换基地`
+- 关键信号：
+  - 真实 discard-base prompt 里中央明确出现 `跳过（照常抽新基地）` 按钮，不是抽象的 “may skip”。
+  - 点击后中央 prompt 真正消失，左侧新基地变成 `Monkey Lab / 猴子实验室`，而不是继续停在 `The Nexus` 选择链里。
+  - 权威状态收口为 `interaction.current==null`、`responseWindow.current==null`、`baseDeck=[]`、`baseDiscard` 保留原三张弃牌堆基地并新增 `base_the_nexus`。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "枢纽|The Nexus"` -> `3 passed / 185 skipped`
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-the-nexus-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-The Nexus-真实计分后让过响应应继续按正常牌库顶替换基地"` -> `1 passed`
+- 结论：
+  - `base_the_nexus.choose_base_from_base_discard` 的 skip 语义现已从 L2/handler 提升到真实入口 scoped L3。
+  - `base_the_nexus.replace_new_base_with_selected_discard_base` 也不再只覆盖 `Faceless City` 分支；skip 后按 `baseDeck[0]` 正常翻新的真实链已补齐。
+  - `currentPlayerIndex === 1`
+  - `bases[0].defId === 'base_faceless_city'`
+  - `baseDeck` 仍保留 `base_primate_park`
+  - `P1 discard` 含 `time-fleeting-guest`
+  - `interaction.current == null`
+- 结论：
+  - `time_travelers_time_is_fleeting.choose_base_from_discard` 的“赢家不是当前回合玩家时，选择权仍归赢家本人”现在已有 scoped L3。
+  - `replace_new_base` 的赢家非当前玩家分支也已有 scoped L3。
+  - 当前 residual 可以收紧为：单候选自动分支、多 special 排序；不再把非当前响应者归属留在 residual。
+
+## 2026-05-17 SmashUp yuanhou Wormhole 空选误报纠偏
+
+- `Wormhole` 空选这次不是业务 bug，而是测试证据口径错了。
+- 旧失败把 `passPortalRoom.finalState` 里 `p0Hand=["deck-a","wormhole-a"] / p0Deck=["jumper-a","raider-a"]` 直接解释成“空选等于全选”，但事件链证明这一步已经跨过了 `Portal Room` 的额外回合 `draw 2`。
+- 定向复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "虫洞"` 时看到：
+  - `playWormhole` 后 `wormhole-a` 已在 discard，三只随从仍在场。
+  - `chooseNone.events` 只有 `SYS_INTERACTION_RESOLVED(value=[])`，没有 `su:card_to_deck_bottom`、`su:deck_reordered(reason:'time_travelers_wormhole')` 或其他 Wormhole 领域事件。
+  - 真正出现的洗回牌库事件是 pass 之后的 `su:deck_reshuffled(deckUids=[wormhole-a,jumper-a,raider-a])`，它来自 `Portal Room` 额外回合 draw step 在牌库不足时把 discard reshuffle 进 deck，而不是 Wormhole 空选把随从洗回牌库。
+- 因此这次应该修的是测试断言，不是实现：
+  - 空选断言改为验证“没有发出 Wormhole 的 deck-bottom / deck-reordered 事件”。
+  - `Portal Room` 后续抽牌链继续允许发生，不再把被 draw step 改写过的最终 hand/deck 当成 Wormhole 语义证据。
+- 结论：`time_travelers_wormhole.select_own_minions_here` 与 `shuffle_selected_to_owner_decks_instead_discard` 的空选/全选边界本轮没有新增实现缺口；此前把空选重新挂回 residual 的判断作废。
+
+## 2026-05-17 SmashUp yuanhou Time Is Fleeting 单候选自动分支已闭合
+
+- `Time Is Fleeting` 现在不该再把“单候选自动分支”留在 residual。
+- 代码里本来就有这条分支：`baseDiscard.filter(defId !== scoredBaseDefId)` 只剩 1 张时，`timeTravelersTimeIsFleeting()` 直接 `reorderBaseDiscardTop(baseDiscard[0], 'time_travelers_time_is_fleeting', now)`，不会创建 `time_travelers_time_is_fleeting_choose` prompt。
+- 本轮补了两条 L2，把这条实现边界锁实：
+  - direct special：过滤后只剩 `base_the_vats` 时，`matchState` 不会被写入，`events` 直接返回 `BASE_DECK_REORDERED(topDefIds=['base_the_vats'], reason='time_travelers_time_is_fleeting')`。
+  - 真实 `scoreBases` 链：`Monkey Lab` 计分、`baseDiscard=['base_faceless_city']` 时，P0 在 `smashup_reaction_choose` 里打出 `Time Is Fleeting` 后，不会出现第二层基地弃牌堆选择 prompt，最终直接收口为 `bases[0].defId='base_faceless_city'`、`baseDiscard=['base_monkey_lab']`。
+- 定向复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间流逝"` 结果为 `5 passed / 162 skipped`。
+- 结论：`time_travelers_time_is_fleeting.choose_base_from_discard` 与 `replace_new_base` 当前 residual 只剩多 special 排序；单候选自动分支已从 residual 收紧到 L2。
+
+## 2026-05-17 SmashUp yuanhou Time Is Fleeting 多 special 排序已锁定
+
+- 旧 residual 里最后剩下的“多 special 排序”现在也有对象级 L2 了。
+- 新增测试：`时间旅行者：时间流逝在同一计分响应窗先结算后，仍应继续保留虫洞 special 入口`。
+- 这次场景把 `Time Is Fleeting` 和 `Wormhole` 同时塞进同一位赢家的 afterScoring 手里，真实序列变成：
+  - 第一次 `smashup_reaction_choose` 同时给出两张 special。
+  - 先选 `time-fleeting-a`，进入 `time_travelers_time_is_fleeting_choose` 选 `base_faceless_city`。
+  - reaction window 再次回到 `smashup_reaction_choose`，且 `wormhole-a` 仍然存在。
+  - 再选 `wormhole-a` 进入 `time_travelers_wormhole_choose`，选择 `traveler-a`。
+- 最终权威状态：
+  - `bases[0].defId === 'base_faceless_city'`
+  - `P0 deck === ['deck-rest','traveler-a']`
+  - `P0 discard === ['time-fleeting-a','wormhole-a','winner-a']`
+  - `P1 discard === ['enemy-a']`
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间旅行者：时间流逝在同一计分响应窗先结算后，仍应继续保留虫洞 special 入口"` -> `1 passed / 167 skipped`
+  - 随后复跑 `... -t "时间流逝"` -> `6 passed / 162 skipped`
+- 结论：`Time Is Fleeting` 不再把对象级“多 special 排序”继续挂成 residual；剩下更广义的跨玩家/跨 frame reaction 排序问题，归 shared contract 持续审，不再算这张牌自身未闭合。
+
+## 2026-05-17 SmashUp yuanhou Clyde 2.0 owner/controller 分离已锁定
+
+- `Clyde 2.0` 之前虽然已有多客户端浏览器链证明“两按钮可见且能点”，但 evidence 里还把 `owner/controller` 分离继续挂在 residual 里。
+- 这条边界真正要锁的是：
+  - 当 `returnToHand:true` 时，行动应进入 `Clyde` 控制者手牌，而不是行动拥有者手牌。
+  - 当 `returnToHand:false` 时，行动应进入行动拥有者弃牌堆，而不是 `Clyde` 控制者弃牌堆。
+- 本轮新增两条 L2：
+  - `电子猿：克莱德2.0选择收入手牌时，敌方拥有的附着行动也应进入克莱德控制者手牌`
+  - `电子猿：克莱德2.0选择进入弃牌堆时，敌方拥有的附着行动应回到其拥有者弃牌堆`
+- 做法不是再起浏览器，而是直接用 `processClydeDetachChoices()` 为 `ownerId='1' / host.controller='0' / clyde.controller='0'` 的分离态造出真实 `cyborg_apes_clyde_2_0_detach` prompt，再走原始 handler + reducer 收口。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "克莱德2.0选择收入手牌时，敌方拥有的附着行动也应进入克莱德控制者手牌|克莱德2.0选择进入弃牌堆时，敌方拥有的附着行动应回到其拥有者弃牌堆"` -> `2 passed / 168 skipped`
+  - 随后复跑 `... -t "克莱德2.0|灵长公园阻止这里随从身上的行动在离场时被 Clyde 2.0 收回手牌"` -> `5 passed / 165 skipped`
+- 结论：`cyborg_apes_clyde_2_0.may_put_it_into_your_hand_instead` 的 owner/controller 分离不再作为 residual；剩余口径收紧为多 Clyde、多 eligible detach 与 Primate Park 例外。
+
+## 2026-05-17 SmashUp yuanhou Missing Uplink 牌库不足与多 owner 边界已锁定
+
+- `Missing Uplink` 当前不该再把“牌库不足洗弃牌 / 多 owner 混挂”继续写成 residual。
+- 这两条风险本质上都在 shared draw contract：
+  - 若只看已有双实例回归，无法证明 `buildStandardDrawEvents()` 在 owner turn-end 聚合链里遇到空牌库时，不会跳过旧牌库顶部或少抽一张。
+  - 也无法证明聚合维度真的是 action `ownerId`，而不是宿主 controller、当前 turn player，或“场上所有 Missing Uplink 一起算”。
+- 本轮新增两条 L2：
+  - `电子猿：丢失中继在牌库不足时应先抽旧牌库顶部再洗弃牌续抽`
+  - `电子猿：丢失中继在多 owner 混挂时只聚合当前拥有者的实例`
+- 第一条测试的关键信号：
+  - 初始 `deck=[deck-a]`、`discard=[discard-a,discard-b]`、场上两张 `Missing Uplink`。
+  - 触发后事件顺序固定为 `DECK_RESHUFFLED -> CARDS_DRAWN`。
+  - `CARDS_DRAWN.cardUids === ['deck-a','discard-b']`，说明先抽掉旧牌库顶，再从 reshuffle 后的新牌库继续抽，而不是先洗再抽或直接漏抽。
+- 第二条测试的关键信号：
+  - 同一名 `controller=1` 的宿主上混挂 `ownerId=0` 与 `ownerId=1` 的两张 `Missing Uplink`。
+  - P0 结束回合只产生 `playerId='0' / cardUids=['p0-draw-a']`。
+  - P1 结束回合只产生 `playerId='1' / cardUids=['p1-draw-a']`。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "丢失中继|Missing Uplink"` -> `5 passed / 167 skipped`。
+- 结论：`cyborg_apes_missing_uplink.owner_turn_end_draw_one_per_instance` 的对象级 residual 已进一步收紧；当前不再保留“牌库不足洗弃牌 / 多 owner”，只保留多客户端视角与更广回合边界的 scoped L3 外层边界。
+
+## 2026-05-17 SmashUp yuanhou Secret Volcano Headquarters 双极端 reveal 分支已锁定
+
+- `Secret Volcano Headquarters` 当前不该再把“双方都翻随从 / 双方都翻行动”继续写成 residual。
+- 现有 scoped L3 只证明了一个混合分支：
+  - P0 顶牌是随从，P1 顶牌是行动。
+  - 这能证明“只把 reveal 出来的随从打进来”，但还不能排除“双方都翻随从时漏打一张”或“双方都翻行动时误打一张”的实现断层。
+- 本轮新增两条 L2：
+  - `超级间谍基地：秘密火山总部在双方都翻出随从时应把两张展示随从都打到这里`
+  - `超级间谍基地：秘密火山总部在双方都翻出行动时不应把任何牌打到这里`
+- 第一条测试的关键信号：
+  - 两名玩家牌库顶都是随从。
+  - 事件层必须是 2 次 `REVEAL_DECK_TOP` 加 2 次 `MINION_PLAYED`。
+  - 最终基地上同时出现 `p0-minion-a / p1-minion-a`，双方牌库各自只剩原来的第二张。
+- 第二条测试的关键信号：
+  - 两名玩家牌库顶都是行动。
+  - 仍然会各自 reveal 1 张，但不存在任何 `MINION_PLAYED`。
+  - 基地保持空场，双方牌库顺序完全不变。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "秘密火山总部|Secret Volcano Headquarters"` -> `3 passed / 171 skipped`。
+- 结论：`base_secret_volcano_headquarters.reveal_one_each_player_then_play_revealed_minions_here` 的对象级 residual 已进一步收紧；当前不再保留“双方都翻随从 / 双方都翻行动”，只剩多人局 `turnOrder` 扩展与真实 reveal 可见性边界。
+
+## 2026-05-17 SmashUp yuanhou Secret Volcano Headquarters 三人 turnOrder 已锁定
+
+- `Secret Volcano Headquarters` 现在也不该再把“多人局 `turnOrder` 扩展”继续写成 residual。
+- 现有 L2 与 scoped L3 都只覆盖两人局，确实无法证明 `for (const playerId of ctx.state.turnOrder)` 在 3 人局不会漏处理第 3 名玩家，或 reveal 顺序不会被打乱。
+- 本轮新增一条 L2：
+  - `超级间谍基地：秘密火山总部在三人 turnOrder 下应按顺序让每位玩家各展示一张并只打出其中的随从`
+- 这条测试的关键信号：
+  - `turnOrder=['0','1','2']`。
+  - `REVEAL_DECK_TOP.payload.targetPlayerId` 顺序必须精确等于 `['0','1','2']`。
+  - P0 / P2 顶牌是随从，P1 顶牌是行动，因此最终基地上只出现 `p0-minion-a / p2-minion-a`，而 P1 顶牌行动仍留在其牌库顶。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "秘密火山总部|Secret Volcano Headquarters"` -> `4 passed / 171 skipped`。
+- 结论：`base_secret_volcano_headquarters.reveal_one_each_player_then_play_revealed_minions_here` 的对象级 residual 再次收紧；当前不再保留多人局 `turnOrder` 扩展，只剩真实 reveal 可见性这一类浏览器边界。
+
+## 2026-05-17 SmashUp yuanhou Discards Are Forever 空牌库/首张随从/三人扩展已锁定
+
+- `Discards Are Forever` 当前也不该再把“空牌库 / 顶牌直接是随从 / 多人局 turnOrder 扩展”继续写成 residual。
+- 现有 scoped L3 只覆盖双人局两条典型链：
+  - P0 是 `action -> minion`
+  - P1 是 `action -> action -> minion`
+  - 这还不足以证明空牌库会被安全跳过、首张即随从会立刻停止，以及三人局不会漏掉第 3 位玩家。
+- 本轮新增三条 L2：
+  - `超级间谍：弃牌永恒在顶牌直接是随从时只弃掉这一张展示牌`
+  - `超级间谍：弃牌永恒遇到空牌库玩家时应跳过该玩家并继续处理其他玩家`
+  - `超级间谍：弃牌永恒在三人 turnOrder 下应依次处理每位玩家直到各自翻到首个随从`
+- 关键信号：
+  - 首张即随从时，discard 只新增那张随从，不会误吞后续牌。
+  - 空牌库玩家不会生成空的 reveal/mill 事件，也不会阻断其他玩家。
+  - 三人局下 `REVEAL_DECK_TOP.payload.targetPlayerId` 顺序精确等于 `['0','1','2']`，说明能力按 `turnOrder` 逐人处理。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "弃牌永恒|Discards Are Forever"` -> `4 passed / 174 skipped`。
+- 结论：`super_spies_discards_are_forever.reveal_until_first_minion_then_mill_seen_cards` 的对象级 residual 已进一步收紧；当前不再保留空牌库、首张随从或三人扩展，只剩更广的浏览器可见性边界。
+
+## 2026-05-17 SmashUp yuanhou Moon Zero Three special 多合法基地与 controller 口径已锁定
+
+- `Moon Zero Three` 当前也不该再把“多合法基地并存”或“借来的敌方随从是否算 other player's minion”继续留在 residual。
+- 现有 scoped L3 只覆盖 Titan rail 真入口的单合法基地/单非法基地分支，确实还不能证明：
+  - 同时存在 `己方随从基地 + 空基地` 时，两者都会被 validator 视为合法落点。
+  - `owner='1' / controller='0'` 的借来随从不会错误阻挡 `Moon Zero Three` special。
+- 本轮新增两条 L2：
+  - `三号空间站：多个合法基地并存时应允许打到任一合法基地并拒绝敌方随从所在基地`
+  - `三号空间站：判定其他玩家随从时应按控制者而非拥有者`
+- 关键信号：
+  - 多合法基地分支中，`baseIndex=0/1` 都通过 `ACTIVATE_SPECIAL` 校验，而敌方随从所在 `baseIndex=2` 稳定返回 `你只能将三号空间站打出到没有其他玩家随从的基地`。
+  - controller 分支中，借来随从基地通过校验并可真实落场；真正 `controller='1'` 的敌方随从基地仍被拒绝。
+  - 两条测试都实际执行 special，最终 Titan 落点与所选合法基地一致，不是只停在 `validate`。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "三号空间站"` -> `5 passed / 175 skipped`。
+- 结论：`super_spies_moon_zero_three.special_summon_condition` 的对象级 residual 已继续收紧；当前不再保留多合法基地并存或 controller/owner 分离，只剩 skip 分支与其它 Titan special 竞争窗口。
+
+## 2026-05-17 SmashUp yuanhou From Q With Love 短候选边界已锁定
+
+- `From Q With Love` 当前也不该再把“投影手牌只剩 1 张 / 0 张时是否仍会错误弹弃牌 prompt”继续写成 residual。
+- 现有 scoped L3 只覆盖 exact-2 分支：
+  - `old-hand + draw-a/b/c` 四张候选里，玩家同时选旧手牌与新抽牌各一张。
+  - 这足以证明投影手牌候选集合正确，但还不足以证明 `discardCount = min(2, projectedHand.length)` 在短候选/空候选时仍会按当前实现自动收口。
+- 本轮新增两条 L2：
+  - `超级间谍：来自Q的爱在投影手牌只剩一张时应只要求弃这一张`
+  - `超级间谍：来自Q的爱在投影手牌为空时不应创建弃牌 prompt`
+- 关键信号：
+  - `hand=[q-a,old-hand], deck=[]` 时，prompt 仍存在，但 `multi={min:1,max:1}`，`allowedCardUids=['old-hand']`，响应后手牌清空且 `discard` 含 `q-a/old-hand`。
+  - `hand=[q-a], deck=[]` 时，`PLAY_ACTION` 直接收口，没有创建空的 `super_spies_from_q_with_love_discard` prompt，且 `discard=['q-a']`。
+  - 这说明自动分支在候选少于 2 时会直接按当前 projectedHand 收口，而不是错误吞掉 prompt 或要求弃两张。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "来自Q的爱|From Q With Love"` -> `4 passed / 180 skipped`。
+- 结论：`super_spies_from_q_with_love.draw_three_then_discard_two_from_projected_hand` 的对象级 residual 已继续收紧；当前不再保留投影手牌只剩 1 张或 0 张的边界，只剩 exact-2 分支之外更广的浏览器可见性边界。
+
+## 2026-05-17 SmashUp yuanhou Doctor When specific-card 执行期负例已锁定
+
+- `Doctor When` 当前也不该再把“execute 前是否还能被同名诱饵冒充”停留在说明层。
+- 现有 L2/L3 已经证明：
+  - 第一层 return prompt 只允许返回“另一个己方随从”。
+  - 第二层 `smashup_immediate_extra_minion` prompt 只显示刚返回的 `raider-a`，不显示手牌中的同名 `same-raider`。
+  - 但这还不足以证明：如果有人把 `same-raider` 伪造塞进第二层 prompt，execute 前复核仍会整次拒绝。
+- 本轮新增一条 L2：
+  - `时间旅行者：时间博士的立即额外随从执行前仍拒绝伪造同名诱饵`
+- 关键信号：
+  - `doctor-a` 先返回 `raider-a`，extra prompt 仍只列 `raider-a`。
+  - 伪造 `optionId='forged-same-raider-decoy'` 后，最终基地仍只有 `doctor-a`，而 `raider-a/same-raider` 都留在手牌。
+  - 这说明 execute 阶段不只靠 `sameNameDefId`，而是继续复核 `specificCardUid===returned.uid`。
+- 同一轮还补强了 skip-return 负例：选择 `不返回随从` 后不会出现 `LIMIT_MODIFIED(reason:'time_travelers_doctor_when')`，也不会残留第二层 extra prompt。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间博士|从头来过|Doctor When|Do Over"` -> `7 passed / 178 skipped`。
+- 结论：`time_travelers_doctor_when.may_play_returned_minion_again` 的对象级残余已继续收紧；当前不再保留“同名诱饵执行期伪造”这类隐性风险，只剩 skip extra 分支之外更广的浏览器可见性边界。
+
+## 2026-05-17 SmashUp yuanhou Do Over skip-extra 分支已锁定
+
+- `Do Over` 当前也不该再把“玩家在 returned-card extra prompt 里选择 skip 后是否真的收口”停在说明层。
+- 现有 L2/L3 已经证明：
+  - `Do Over` 会把 `jumper-a` 真实返回手牌。
+  - extra prompt 只允许刚返回的 `jumper-a`，并拒绝同名诱饵 `same-jumper`。
+  - 但这还不足以证明 skip extra 后不会错误把 `jumper-a` 又打回基地，或者残留第二层交互。
+- 本轮新增一条 L2：
+  - `时间旅行者：从头来过在放弃额外随从后应直接收口并保留刚返回的那张牌`
+- 关键信号：
+  - `Do Over` 返回 `jumper-a` 后进入 `smashup_immediate_extra_minion`。
+  - 点击 skip 后，`interaction.current == null`，基地仍为空，而 `jumper-a` 保留在 P0 手牌。
+  - 这说明 skip extra 分支会直接收口，而不是错误继续额外打出 returned card。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "从头来过|Do Over"` -> `3 passed / 183 skipped`。
+- 结论：`time_travelers_do_over.may_play_returned_minion_again` 的对象级残余已继续收紧；当前不再保留 skip extra 分支，只剩 returned-card specific 打回分支之外更广的浏览器可见性边界。
+
+## 2026-05-17 SmashUp yuanhou Doctor When skip-extra 分支已锁定
+
+- `Doctor When` 当前也不该再把“玩家在 returned-card extra prompt 里选择 skip 后是否真的收口”停在对象级说明里。
+- 现有 L2/L3 已经证明：
+  - `Doctor When` 的 return prompt 只允许“另一个己方随从”，并且可 skip。
+  - extra prompt 只显示刚返回的 `raider-a`，不显示同名诱饵 `same-raider`。
+  - execute 前即使伪造把 `same-raider` 塞进 prompt，也会被 `specificCardUid` 复核整次拒绝。
+  - 但这还不足以证明 skip extra 后不会错误把 `raider-a` 又打回基地。
+- 本轮新增一条 L2：
+  - `时间旅行者：时间博士在放弃额外随从后应直接收口并保留刚返回的那张牌`
+- 关键信号：
+  - `doctor-a` 返回 `raider-a` 后进入 `smashup_immediate_extra_minion`。
+  - 点击 skip 后，`interaction.current == null`，基地只剩 `doctor-a`，而 `raider-a` 保留在 P0 手牌。
+  - 这说明 skip extra 分支会直接收口，而不是错误继续额外打出 returned card。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间博士|Doctor When"` -> `6 passed / 181 skipped`。
+- 结论：`time_travelers_doctor_when.may_play_returned_minion_again` 的对象级残余已继续收紧；当前不再保留 skip extra 分支，只剩 returned-card specific 打回分支之外更广的浏览器可见性边界。
+
+## 2026-05-17 SmashUp yuanhou 1.21 Gigawatts 单一牌种自动分支已锁定
+
+- `1.21 Gigawatts` 当前不该再把“弃牌堆只剩单一牌种时是否还会错误弹按钮 prompt”继续写成 residual。
+- 现有 scoped L3 只覆盖双类型按钮链：
+  - 真实入口能看到“行动 / 仆从”两个按钮。
+  - 选择其一后，所选类型会连同现有 deck 一起洗回。
+  - 但这还不足以证明“当前弃牌堆只剩单一牌种”时不会错误地残留 `time_travelers_1_21_gigawatts_choose` prompt。
+- 本轮新增一条 L2：
+  - `时间旅行者：1.21千兆瓦在弃牌堆只剩单一牌种时应自动洗回整副牌库且不弹牌种选择 prompt`
+- 关键信号：
+  - 初始 `discard=[action-a,action-b]`、`deck=[deck-a,deck-b]`，并把 `shuffle()` 固定为 reverse。
+  - `PLAY_ACTION` 结束后 `sys.interaction.current == null`，说明没有创建牌种选择 prompt。
+  - 最终 `deck=['deck-b','deck-a','action-b','action-a']`，而不是只把 `action-a/action-b` 放到牌库顶，证明自动分支下仍然是“所选弃牌 + 现有 deck”整副一起 shuffle。
+  - `discard=['gigawatts-a']`，说明被选中的弃牌类型已全部离开弃牌堆，只剩本行动自己正常进入 discard。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "1.21千兆瓦|1.21 千兆瓦"` -> `2 passed / 180 skipped`。
+- 结论：`time_travelers_1_21_gigawatts.choose_card_type` 与 `time_travelers_1_21_gigawatts.shuffle_selected_type_to_deck` 的对象级 residual 已继续收紧；当前不再保留单一牌种自动分支，只剩双类型按钮分支之外更广的浏览器可见性与随机顺序可视性边界。
+
+## 2026-05-18 SmashUp yuanhou 1.21 Gigawatts 单一牌种自动分支已从 L2 升到 scoped L3
+
+- `1.21 Gigawatts` 不该继续停在“L2 已锁定单一牌种自动分支，但浏览器只看过双类型按钮链”的状态。
+- 现有浏览器证据先前只证明：
+  - 真实入口能看到“行动 / 仆从”两个按钮。
+  - 玩家选择其一后，被选类型会和现有 deck 一起洗回。
+  - 但这还不足以证明：如果弃牌堆里根本只剩单一牌种，真实 UI 会不会仍然错误弹出按钮 prompt，或在没有 prompt 的情况下偷偷短路失败。
+- 本轮新增浏览器链：
+  - `时间旅行者-1.21-Gigawatts-弃牌堆只剩单一牌种时真实入口应自动洗回牌库且不弹按钮 prompt`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-gigawatts-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-1.21-Gigawatts-弃牌堆只剩单一牌种时真实入口应自动洗回牌库且不弹按钮 prompt"` -> `1 passed`
+- 关键信号：
+  - 起始图里手牌区直接可见 `1.21 Gigawatts`，弃牌堆里直接可见两张行动牌，没有任何仆从弃牌；这确认测试没有再次落到“双类型按钮 prompt”那条旧链。
+  - 收口图里中央没有任何“行动 / 仆从”按钮，弃牌堆角标从 `2` 变成 `1`，说明两张行动已经离开弃牌堆，只剩本行动自己进入 discard。
+  - 配合状态断言 `interaction.current==null` 且 deck 同时含原 deck 与两张行动弃牌，可证明真实 UI 下单一牌种分支是自动洗回，不是静默失败。
+- 结论：
+  - `time_travelers_1_21_gigawatts.choose_card_type` 不再只靠双类型按钮链支撑 scoped L3；单一牌种自动分支现在也有真实 UI 证据。
+  - `time_travelers_1_21_gigawatts.shuffle_selected_type_to_deck` 同样不再只靠正向按钮选择支撑；单一牌种自动洗回已从“L2 已锁定”升级为 scoped L3。
+
+## 2026-05-18 SmashUp yuanhou Spy 单卡自动查看分支已从 L2 升到 scoped L3
+
+- `Spy.inspect_self_top_three` 不该继续停在“顶三张重排已有浏览器证据，但牌库只剩 1 张时只靠 L2”。
+- 现有浏览器证据先前只证明：
+  - 真实手牌打出 `Spy` 后会进入顶三张 inspect/reorder prompt。
+  - 玩家可以选择非默认 `顶：内鬼 / 间谍；底：密探` 顺序，并把未查看的第 4 张保留在中段。
+  - 但这还不足以证明：如果牌库只剩 1 张，真实 `PLAY_MINION` 入口会不会仍错误弹出 `super_spies_spy_reorder`、残留空 overlay，或让 `Spy` 本体落场后卡在半截 inspect 链里。
+- 本轮新增浏览器链：
+  - `超级间谍-Spy-牌库只剩一张时真实入口应自动查看且不弹重排 prompt`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-spy-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Spy-牌库只剩一张时真实入口应自动查看且不弹重排 prompt"` -> `1 passed`
+- 关键信号：
+  - 起始图里底部手牌区只有 `Spy`，左下牌库角标为 `1`，这确认测试没有再落回“顶三张重排”那条旧链。
+  - 收口图里 `Spy` 已真实落到 `Secret Volcano Headquarters`，中央没有任何顶/底重排 prompt 或按钮，桌面直接回到普通出牌态。
+  - 配合状态断言 `interaction.current==null`、`base0.minions` 含 `spy-single-hand`、`deck=['spy-single-deck-a']`、`hand` 已移除 `spy-single-hand`，可确认单卡分支在真实 UI 下是“自动查看并收口”，不是静默失败。
+- 结论：
+  - `super_spies_spy.inspect_self_top_three` 不再只靠多于 1 张时的重排链支撑 scoped L3；单卡自动查看分支现在也有真实 UI 证据。
+  - `super_spies_spy.reorder_top_bottom_inspected_cards` 仍只按多于 1 张时的真实重排分支记 scoped L3；空牌库无 prompt 继续由 L2 守门。
+
+## 2026-05-18 SmashUp yuanhou For My Eyes Only 单卡自动查看分支已从 L2 升到 scoped L3
+
+- `For My Eyes Only.inspect_self_top_five` 不该继续停在“顶五张重排已有浏览器证据，但牌库只剩 1 张时只靠 L2”。
+- 现有浏览器证据先前只证明：
+  - 真实无目标行动二次点击打出 `For My Eyes Only` 后，会进入顶五张 inspect/reorder prompt。
+  - 玩家可以选择非默认 `顶：内鬼 / 间谍；底：跳跃者 / 密探 / 秘密探员` 顺序，并把第 6 张保留在中段。
+  - 但这还不足以证明：如果牌库只剩 1 张，真实入口会不会仍错误弹出 `super_spies_for_my_eyes_only_reorder`、残留空 overlay，或把本行动本体卡在半透明收口态。
+- 本轮新增浏览器链：
+  - `超级间谍-For My Eyes Only-牌库只剩一张时真实入口应自动查看且不弹重排 prompt`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-eyes-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-For My Eyes Only-牌库只剩一张时真实入口应自动查看且不弹重排 prompt"` -> `1 passed`
+- 关键信号：
+  - 起始图里底部手牌区只有 `For My Eyes Only`，左下牌库角标为 `1`，这确认测试没有再落回“顶五张重排”那条旧链。
+  - 收口图里中央没有任何顶/底重排 prompt 或按钮，右下弃牌堆直接可见本行动本体，桌面已经回到普通出牌态。
+  - 配合状态断言 `interaction.current==null`、`deck=['eyes-single-deck-a']`、`discard` 含 `eyes-single-hand`、`hand` 已移除 `eyes-single-hand`，可确认单卡分支在真实 UI 下是“自动查看并收口”，不是静默失败。
+- 结论：
+  - `super_spies_for_my_eyes_only.inspect_self_top_five` 不再只靠多于 1 张时的重排链支撑 scoped L3；单卡自动查看分支现在也有真实 UI 证据。
+  - `super_spies_for_my_eyes_only.reorder_top_bottom_inspected_cards` 仍只按多于 1 张时的真实重排分支记 scoped L3；空牌库无 prompt 继续由 L2 守门。
+
+## 2026-05-18 SmashUp yuanhou Spy / For My Eyes Only 空牌库无 prompt 分支已从 L2 升到 scoped L3
+
+- `Spy.inspect_self_top_three` 与 `For My Eyes Only.inspect_self_top_five` 不该继续停在“单卡自动查看已有浏览器证据，但牌库为空仍只靠 L2”。
+- 现有浏览器证据先前只证明：
+  - `Spy` / `For My Eyes Only` 在牌库还有牌时，真实入口会进入 inspect 链或自动查看分支。
+  - 但这还不足以证明：如果牌库已经是空的，真实入口会不会仍错误弹出空的 reorder overlay、残留按钮，或把本体卡在半路 inspect 链。
+- 本轮新增浏览器链：
+  - `超级间谍-Spy-牌库为空时真实入口不应创建重排 prompt`
+  - `超级间谍-For My Eyes Only-牌库为空时真实入口不应创建重排 prompt`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-empty-deck-inspect BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Spy-牌库为空时真实入口不应创建重排 prompt|超级间谍-For My Eyes Only-牌库为空时真实入口不应创建重排 prompt"` -> `2 passed`
+- 关键信号：
+  - 两张起始图里左下牌库角标都直接是 `0`，这确认测试没有再落回“仍有 1 张牌”的旧链。
+  - `Spy` 收口图里 `Spy` 已真实进场，中央没有任何顶/底重排 prompt 或按钮。
+  - `For My Eyes Only` 收口图里中央同样没有任何顶/底重排 prompt 或按钮，右下弃牌堆已出现本行动本体。
+  - 配合状态断言，`Spy` 分支 `interaction.current==null && base0.minions` 含 `spy-empty-hand && deck=[]`，`For My Eyes Only` 分支 `interaction.current==null && discard` 含 `eyes-empty-hand && deck=[]`，可确认两条空牌库边界在真实 UI 下都是“直接收口”。
+- 结论：
+  - `super_spies_spy.inspect_self_top_three` 的浏览器证据已扩到“顶三张重排 + 单卡自动查看 + 空牌库无 prompt”。
+  - `super_spies_for_my_eyes_only.inspect_self_top_five` 的浏览器证据已扩到“顶五张重排 + 单卡自动查看 + 空牌库无 prompt”。
+
+## 2026-05-17 SmashUp yuanhou Do Over / Doctor When skip-extra 已从 L2 升到 scoped L3
+
+- 先前两段关于 `Do Over` / `Doctor When` 的结论里，有一句共同的过渡口径已经失效：
+  - `skip extra 分支继续由 L2 锁定`
+- 这句在当时是对的，但现在已经不够，因为真正的剩余风险不是 handler 会不会 skip，而是：
+  - 真实 returned-card extra prompt 里点击“放弃这次额外随从”后，流程是否真的收口。
+  - 刚回手的那张牌是否会被误自动再打回基地，或者残留第二层交互。
+- 本轮直接补了对应的浏览器链：
+  - `时间旅行者-Do Over-真实入口放弃额外随从后应直接收口并保留刚返回的那张牌`
+  - `时间旅行者-Doctor When-真实入口放弃额外随从后应直接收口并保留刚返回的那张牌`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-specific-extra-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-time-travelers-specific-extra.e2e.ts` -> `4 passed`
+- 关键信号：
+  - `Do Over` prompt 图里能直接看到 returned `Jumper` 与 skip 按钮；resolved 图里 `Portal Room` 仍为空，而 `Jumper` 继续留手。
+  - `Doctor When` prompt 图里 returned `Time Raider` 已回到底部手牌，桌面只剩 `Doctor When`；resolved 图里 prompt 已完全消失，基地仍只剩 `Doctor When`。
+  - 配合状态断言，两条链都满足 `interaction.current == null`，且 returned card 没有被误自动打回基地。
+- 结论：
+  - `time_travelers_do_over.may_play_returned_minion_again` 不再把 `skip extra` 留成 “只靠 L2” 的残余。
+  - `time_travelers_doctor_when.may_play_returned_minion_again` 也不再把 `skip extra` 留成 “只靠 L2” 的残余。
+  - 这两条 atom 当前剩余只继续保留更广的 returned-card 组合、multi-extra 竞争链与其它浏览器可见性边界。
+
+## 2026-05-18 SmashUp yuanhou Faceless City skip 分支已从“只靠 L2”补到 scoped L3
+
+- `Faceless City` 当前也不该再把 `skip` 停留在“unit test 已锁定”这一层。
+- 现有 L2/L3 已经证明：
+  - 多候选 prompt 只列同名牌 `same-a/same-b`，不列非同名 `other-card`。
+  - 玩家选择第二张同名牌后，`same-b` 会进手牌，剩余牌库按测试随机源收口。
+  - 但这还不足以证明：同一个真实 prompt 里的 `跳过搜寻` 被点击后，UI 会不会真的收口，以及牌库会不会被悄悄改写。
+- 本轮新增浏览器链：
+  - `变形者基地-Faceless City-真实入口跳过搜寻后应直接收口并保留原牌库顺序`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-faceless-city-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者基地-Faceless City-真实入口跳过搜寻后应直接收口并保留原牌库顺序"` -> `1 passed`
+- 关键信号：
+  - prompt 图里能直接看到 `跳过搜寻`，并且候选区没有非同名牌。
+  - resolved 图里搜索层与按钮都已消失，桌面回到正常出牌态。
+  - 配合状态断言，点击 skip 后 `hand.length===0`，`deck=['same-skip-a','other-skip-card','same-skip-b']`，说明真实入口没有偷偷摸一张同名牌，也没有改乱原牌库顺序。
+- 结论：
+  - `base_faceless_city.may_choose_or_skip_same_name_card` 不再只是“选择第二张同名牌”有浏览器证据；skip 分支现在也有 scoped L3。
+  - `base_faceless_city` 当前只继续保留自动单候选与 forged late-deck 的 L2/shared 边界，不再把 skip 单独挂成 residual。
+
+## 2026-05-18 SmashUp yuanhou G.E.L.F. skip 分支已从“只覆盖选择候选”补到 scoped L3
+
+- `G.E.L.F.` 当前也不该再把 optional extra-play 的浏览器证据停留在“选择第二张候选打回原基地”这一半。
+- 现有 L2/L3 已经证明：
+  - `G.E.L.F.` 天赋会先把自身洗回牌库，并只列出力量 4 或以下且非 `G.E.L.F.` 的候选。
+  - 玩家选择 `Mimic` 后，该候选会被直接额外打到原基地，且不会再残留第二个 immediate extra prompt。
+  - 但这还不足以证明：同一个真实搜索 prompt 里的 `放弃这次选择` 被点击后，UI 会不会真的收口，以及基地会不会被悄悄补打一只候选。
+- 本轮新增浏览器链：
+  - `变形者-GELF-真实入口跳过搜寻后应直接收口且不额外打出候选随从`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-gelf-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-GELF-真实入口跳过搜寻后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 关键信号：
+  - prompt 图里能直接看到 `G.E.L.F.` 搜索覆盖层、两张合格候选和 `放弃这次选择` 按钮，且原 `G.E.L.F.` 已离场回到牌库链。
+  - resolved 图里搜索层与按钮都已消失，`The Vats` 仍为空，说明没有候选被偷偷打回基地。
+  - 配合状态断言，点击 skip 后 `interaction.current==null`、`minions.length===0`、`hand.length===0`，而五张牌都还留在 P0 `deck`，说明真实入口没有偷偷补打一只候选，也没有错误创建第二个 immediate extra prompt。
+- 结论：
+  - `shapeshifters_gelf.extra_play_here` 不再只是“选择候选打回原基地”有浏览器证据；skip 分支现在也有 scoped L3。
+  - `shapeshifters_gelf` 当前只继续保留更广 shared search 的随机顺序、forged late-deck 与其它 L2/shared 边界，不再把 skip 单独挂成 residual。
+
+## 2026-05-18 SmashUp yuanhou Really? skip 分支已从“只覆盖选择候选 + 选基地”补到 scoped L3
+
+- `Really?` 当前也不该再把 optional discard-search 的浏览器证据停留在“选择第二张候选并选基地打出”这一半。
+- 现有 L2/L3 已经证明：
+  - `Really?` 会先摧毁己方目标，再进入只列合格弃牌堆随从的搜索 prompt。
+  - 玩家选择第二张候选后，会继续进入基地选择 prompt，并能把该随从打到不是原基地的另一个合法基地。
+  - 但这还不足以证明：同一个真实弃牌堆搜索 prompt 里的 `放弃这次选择` 被点击后，UI 会不会真的收口，以及系统会不会偷偷继续进入第二层基地选择或直接把候选打到某个基地。
+- 本轮新增浏览器链：
+  - `变形者-Really-真实入口跳过弃牌堆搜寻后应直接收口且不额外打出候选随从`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-really-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-Really-真实入口跳过弃牌堆搜寻后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 关键信号：
+  - prompt 图里能直接看到 `Really?` 弃牌堆搜索覆盖层、两张候选和 `放弃这次选择` 按钮，而且被摧毁的 `Doppelganger` 已经进弃牌堆。
+  - resolved 图里搜索层与按钮都已消失，`Faceless City` 与 `The Vats` 都还是空的，说明 skip 后没有任何弃牌堆候选被偷偷打进来。
+  - 配合状态断言，点击 skip 后 `interaction.current==null`、两个基地 `minions.length===0`，而 `really-skip-hand/really-skip-target/really-skip-discard-a/really-skip-discard-b` 都仍留在 P0 discard，说明系统没有继续进入第二层基地选择，也没有误 extra play。
+- 结论：
+  - `shapeshifters_really.choose_discard_minion` 不再只是“选择第二张候选”有浏览器证据；skip 分支现在也有 scoped L3。
+  - `shapeshifters_really.play_extra_minion_any_base` 当前也不再只靠“选择候选后再选基地”支撑 optional extra-play 语义；skip 分支现在同样有真实 UI 收口证据。
+
+## 2026-05-18 SmashUp yuanhou Transmogrify skip 分支已从“只覆盖选择候选打回原基地”补到 scoped L3
+
+- `Transmogrify` 当前也不该再把 optional deck-search 的浏览器证据停留在“选择第二张候选并把它打回原基地”这一半。
+- 现有 L2/L3 已经证明：
+  - `Transmogrify` 会先摧毁己方目标，再进入只列合格牌库随从的搜索 prompt。
+  - 玩家选择第二张候选后，该候选会被直接额外打回被摧毁随从原来的基地，且不会残留第二个 immediate prompt。
+  - 但这还不足以证明：同一个真实牌库搜索 prompt 里的 `放弃这次选择` 被点击后，UI 会不会真的收口，以及系统会不会偷偷把候选打回 `The Vats`。
+- 本轮新增浏览器链：
+  - `变形者-Transmogrify-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-transmogrify-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-Transmogrify-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 关键信号：
+  - prompt 图里能直接看到 `Transmogrify` 牌库搜索覆盖层、两张合格候选和 `放弃这次选择` 按钮，而且被摧毁的 `G.E.L.F.` 已经进弃牌堆。
+  - resolved 图里搜索层与按钮都已消失，`The Vats` 仍然空场，说明 skip 后没有任何牌库候选被偷偷打回原基地。
+  - 配合状态断言，点击 skip 后 `interaction.current==null`、`minions.length===0`，`transmogrify-skip-hand/transmogrify-skip-target` 留在 discard，而三张候选仍留在 deck，说明系统没有继续进入第二层链，也没有误 extra play。
+- 结论：
+  - `shapeshifters_transmogrify.search_equal_or_lower_power_deck_minion` 不再只是“选择第二张候选”有浏览器证据；skip 分支现在也有 scoped L3。
+  - `shapeshifters_transmogrify.play_extra_minion_here_and_shuffle` 当前也不再只靠“选择候选打回原基地”支撑 optional extra-play 语义；skip 分支现在同样有真实 UI 收口证据。
+
+## 2026-05-18 SmashUp yuanhou Doppelganger skip 分支已从“只覆盖选候选打回原基地”补到 scoped L3
+
+- `Doppelganger` 当前也不该再把 optional deck-search 的浏览器证据停留在“Bacta 摧毁后跳过 immediate extra，再选择第二张候选打回原基地”这一半。
+- 现有 L2/L3 已经证明：
+  - `Bacta` 真实摧毁 `Doppelganger` 后，会先出现 `smashup_immediate_extra_minion`，跳过后才进入 `shapeshifters_doppelganger_search`。
+  - 玩家选择第二张候选后，该候选会被直接打回 `Doppelganger` 原来的基地，且不会残留第二个 immediate prompt。
+  - 但这还不足以证明：同一个真实 `Doppelganger search` prompt 里的 `放弃这次选择` 被点击后，UI 会不会真的收口，以及系统会不会偷偷把候选打回 `The Vats`。
+- 本轮新增浏览器链：
+  - `变形者-Doppelganger-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-doppelganger-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-Doppelganger-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 关键信号：
+  - prompt 图里能直接看到 `Doppelganger` 牌库搜索覆盖层、两张候选和 `放弃这次选择` 按钮，顶部还保留前链的额外随从机会 toast，说明这确实是 `Bacta immediate extra skip` 之后的第二层搜索链。
+  - resolved 图里搜索层与按钮都已消失，`The Vats` 仍为空场，说明 skip 后没有任何牌库候选被偷偷打回原基地。
+  - 配合状态断言，点击 skip 后 `interaction.current==null`、`minions.length===0`，`bacta-doppelganger-skip-hand/doppelganger-skip-target` 留在 discard，而两张候选仍留在 deck，说明系统没有再进入额外的 play 链。
+- 结论：
+  - `shapeshifters_doppelganger.on_discard_from_base_search_deck_minion` 不再只是“进入 search”有浏览器证据；skip 分支现在也有 scoped L3。
+  - `shapeshifters_doppelganger.play_extra_minion_original_base` 当前也不再只靠“选择候选打回原基地”支撑 optional extra-play 语义；skip 分支现在同样有真实 UI 收口证据。
+
+## 2026-05-18 SmashUp yuanhou Mitosis skip 分支已从“只覆盖选候选打到目标基地”补到 scoped L3
+
+- `Mitosis` 当前也不该再把 optional same-name hand choice 的浏览器证据停留在“从两张同名手牌里选第二张并把它打到目标基地”这一半。
+- 现有 L2/L3 已经证明：
+  - `Mitosis` 在真实手牌入口里会先让玩家点一个己方目标随从，再进入只列同名手牌的选择 prompt。
+  - 玩家选择第二张同名 `G.E.L.F.` 后，该候选会被直接打到目标基地，且不会残留第二个 immediate prompt。
+  - 但这还不足以证明：同一个真实 same-name prompt 里的 `放弃这次选择` 被点击后，UI 会不会真的收口，以及系统会不会偷偷把某张同名手牌打到 `The Vats`。
+- 本轮新增浏览器链：
+  - `变形者-Mitosis-真实入口跳过同名手牌选择后应直接收口且不额外打出候选随从`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-mitosis-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-Mitosis-真实入口跳过同名手牌选择后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 关键信号：
+  - prompt 图里能直接看到 `Mitosis` same-name 覆盖层、两张 `G.E.L.F.` 候选和 `放弃这次选择` 按钮；底部手牌区的 `Mimic` 仍可见但不在候选层里，说明非同名手牌没有混入候选集合。
+  - resolved 图里选择层与按钮都已消失，`The Vats` 上仍只有原目标那只 `G.E.L.F.`，而底部两张同名 `G.E.L.F.` 手牌都继续留在手里，说明 skip 后没有任何同名手牌被偷偷补打上场。
+  - 配合状态断言，点击 skip 后 `interaction.current==null`、`minions.length===1`、`discard` 含 `mitosis-skip-hand`，而 `mitosis-skip-same-a/mitosis-skip-same-b/mitosis-skip-wrong-name` 都仍留在 hand，说明链路在 same-name prompt 处直接收口。
+- 结论：
+  - `shapeshifters_mitosis.choose_same_name_hand_minion` 不再只是“选择第二张候选”有浏览器证据；skip 分支现在也有 scoped L3。
+  - `shapeshifters_mitosis.play_selected_extra_minion_here` 当前也不再只靠“选择候选打到目标基地”支撑 optional extra-play 语义；skip 分支现在同样有真实 UI 收口证据。
+
+## 2026-05-18 SmashUp yuanhou Operative 空选 0 人分支已从 residual 补到 scoped L3
+
+- `Operative` 之前剩下的对象级 residual，不是“第一层玩家多选 prompt 根本没验证”，而是**真实入口里 `any number of players` 的 `0` 会不会被 UI 吞掉**。
+- 现有 L2/L3 已经证明：
+  - 第一层 prompt 能多选两位玩家，并把这两位玩家各自的顶牌带进第二层 `top/bottom` prompt。
+  - 但这还不足以证明：如果玩家在第一层一个都不选，点击确认后会不会错误生成第二层 reveal/top-bottom、偷偷 reveal 所有人顶牌，或改写任何一边的 deck 顶顺序。
+- 本轮新增浏览器链：
+  - `超级间谍-Operative-真实入口空选玩家后应直接收口且不展示任何牌库顶牌`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-operative-empty BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Operative-真实入口空选玩家后应直接收口且不展示任何牌库顶牌"` -> `1 passed`
+- 关键信号：
+  - prompt 图里能直接看到 `密探：选择要查看牌库顶牌的玩家`，`玩家0/玩家1` 两个按钮都处于未勾选状态，且确认按钮可点击，说明 `0` 不是仅靠 reducer 容忍的隐形 payload，而是 UI 明确承认的合法输入。
+  - resolved 图里 prompt 已完全消失，`Secret Volcano Headquarters` 上只剩 Operative，本轮没有出现任何展示牌或第二层放底 prompt。
+  - 配合状态断言，点击确认后 `interaction.current==null`、`p0Deck='operative-empty-p0-top,operative-empty-p0-second'`、`p1Deck='operative-empty-p1-top,operative-empty-p1-second'`，同时页面不存在 `operative-empty-p0-top / operative-empty-p1-top` 的 option 节点，说明系统没有偷偷 reveal 或改写任一玩家牌库顶。
+- 结论：
+  - `super_spies_operative.choose_players_to_reveal` 不再只是“正常多选两人”有浏览器证据；空选 0 人分支现在也有 scoped L3。
+  - 这条证据只收紧了第一层 `choose_players_to_reveal` 的 `0..N` 端点，不外推 `bottom_any_revealed_cards` 的“0 张放底”或更广多人非当前视角都已完成。
+
+## 2026-05-18 SmashUp yuanhou Operative 二步空选 0 张放底分支已从 residual 补到 scoped L3
+
+- `Operative` 在补完第一层 `0 人` 之后，剩下的浏览器残项就只剩第二层 `top/bottom` prompt 的 `0 张` 端点。
+- 现有 L2/L3 已经证明：
+  - 第一层可以真实选择两位玩家，并进入只展示这两位玩家牌库顶牌的第二层 prompt。
+  - 第二层可以真实选择其中 1 张展示牌放到底，未选牌保持在顶。
+  - 但这还不足以证明：如果第二层一张都不选直接确认，会不会偷偷把某张展示顶牌沉到底、遗留第二层 overlay，或把这次 `0 张` 错误短路成第一层 prompt 的回流。
+- 本轮新增浏览器链：
+  - `超级间谍-Operative-真实入口空选展示牌后应保持各牌库顶顺序并直接收口`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-operative-bottom-empty BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Operative-真实入口空选展示牌后应保持各牌库顶顺序并直接收口"` -> `1 passed`
+- 关键信号：
+  - prompt 图里能直接看到两位玩家都已在第一层被勾选，中间只出现两张展示顶牌，但一张都没勾选；这证明第二层 `0 张放底` 是真实可操作端点，不是只能靠 handler 接收空数组。
+  - resolved 图里第二层 prompt 已完全消失，桌面回到普通出牌态，`Secret Volcano Headquarters` 上仍只剩 Operative。
+  - 配合状态断言，点击确认后 `interaction.current==null`、`p0Deck='operative-bottom-empty-p0-top,operative-bottom-empty-p0-second'`、`p1Deck='operative-bottom-empty-p1-top,operative-bottom-empty-p1-second'`，说明系统没有偷偷改变任一展示顶牌顺序。
+- 结论：
+  - `super_spies_operative.bottom_any_revealed_cards` 不再只是“选 1 张放底”有浏览器证据；空选 0 张分支现在也有 scoped L3。
+  - `Operative` 当前对象级浏览器残项不再包括两层 `any number` 的空选端点；后续若继续推进，应转向更高层的多人非当前视角或 shared contract，而不是再把这张牌的本地空选挂成 residual。
+
+## 2026-05-18 SmashUp yuanhou Time Raider / Repeater Perfect 空弃牌 feedback 已从 L2 提升到 scoped L3
+
+- `Time Raider` 与 `Repeater Perfect` 之前都还把“空弃牌反馈”停在 L2，这个口径不够，因为真实风险不是 reducer 有没有发 `feedback.discard_empty`，而是玩家界面会不会错误弹出空 prompt，或者根本看不到反馈。
+- 本轮新增两条真实入口：
+  - `时间旅行者-Repeater Perfect-弃牌堆为空时真实入口应提示无可选行动且不弹 prompt`
+  - `时间旅行者-Time Raider-弃牌堆为空时真实入口应提示无可选牌且不弹 prompt`
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-empty-discard-feedback BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Repeater Perfect-弃牌堆为空时真实入口应提示无可选行动且不弹 prompt|时间旅行者-Time Raider-弃牌堆为空时真实入口应提示无可选牌且不弹 prompt"` -> `2 passed`
+- 关键信号：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Repeater-Perfect-弃牌堆为空时真实入口应提示无可选行动且不弹-prompt\yuanhou-repeater-perfect-empty-discard-feedback-toast-locator.png` 与 `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Time-Raider-弃牌堆为空时真实入口应提示无可选牌且不弹-prompt\yuanhou-time-raider-empty-discard-feedback-toast-locator.png` 都直接显示 toast 文案 `弃牌堆中没有符合条件的卡牌`。
+  - `yuanhou-repeater-perfect-empty-discard-feedback-without-prompt.png` 里 `Portal Room` 下只剩真实进场的 `Repeater Perfect`，没有任何候选 prompt。
+  - `yuanhou-time-raider-empty-discard-feedback-without-prompt.png` 里 `Time Raider` 已显示“已用”，页面同样没有任何候选 prompt。
+  - 配合状态断言，`Repeater Perfect` 分支保持 `deck=['repeater-empty-deck-a']`、`discard=[]`，`Time Raider` 分支保持 `deck=['raider-empty-deck-a']`、`discard=[]` 且 `talentUsed===true`，说明两条链都只是“toast + 收口”，没有偷偷改动牌区。
+- 结论：
+  - `time_travelers_repeater_perfect.choose_discard_action / top_selected_action` 不再把空弃牌反馈挂在对象级 residual。
+  - `time_travelers_time_raider.choose_discard_card / bottom_selected_card` 也不再把空弃牌反馈留在 L2；这两个对象当前的本地浏览器分支已经补齐到“多候选 / 单候选 / 空弃牌 feedback”。
+
+## 2026-05-18 超级间谍重排截图“选项太多”已确认为旧图口径
+
+- 用户当轮质疑点是：超级间谍重排 prompt 的截图看起来像“选项太多”，怀疑仍是易用性不达标的按钮墙。
+- 这次复核不再只看断言，而是重新查看当前 worktree 里三张最新 prompt 截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Spy-真实入口可查看自己牌库顶三张并按非默认顶底顺序放回\yuanhou-spy-top-three-reorder-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-For-My-Eyes-Only-真实入口可查看自己牌库顶五张并按非默认顶底顺序放回\yuanhou-for-my-eyes-only-top-five-reorder-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-ISI摇摆据点-真实多客户端下赢家不是当前回合玩家时应只给赢家页面重排牌库\yuanhou-isi-swingin-pad-reorder-prompt.png`
+- 肉眼复核结论：
+  - 三张图的中央主体都是 inspected cards 卡带，本体可见；右侧是固定工具条，不是把所有排列结果枚举成一屏按钮。
+  - 当前工具条只暴露 `移到牌库底 / 后移 / 确认顺序` 这类与已选卡直接相关的动作；`前移 / 重置` 不会在初始无效态常驻露出。
+  - 因此图里“看起来选项多”的部分其实是被查看的真实卡牌，不是旧的结果按钮墙。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx --configLoader native --maxWorkers 1` -> `11 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Spy-真实入口可查看自己牌库顶三张并按非默认顶底顺序放回"` -> `1 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-For My Eyes Only-真实入口可查看自己牌库顶五张并按非默认顶底顺序放回"` -> `1 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-ISI摇摆据点-真实多客户端下赢家不是当前回合玩家时应只给赢家页面重排牌库"` -> `1 passed`
+- 结论：
+  - 当前 `shared-contract: deck-inspect-reorder` 已经收敛为线性编辑器型 UI。
+  - 用户看到的“截图很多选项”不再代表当前实现状态，后续审计不得继续引用旧按钮墙截图作为现行证据。

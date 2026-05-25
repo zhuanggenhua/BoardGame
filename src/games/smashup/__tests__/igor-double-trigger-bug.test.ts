@@ -22,9 +22,10 @@ describe('Bug: Igor 被 base_rlyeh 消灭时触发两次', () => {
         initAllAbilities();
     });
 
-    it('场景测试：base_crypt + Igor 双重触发（可能的根因）', () => {
-        // 假设：如果基地是 base_crypt（地窖），它也会在随从被消灭时创建交互
-        // 这可能导致用户看到两个"放置+1指示物"的交互
+    it('场景测试：base_crypt + Igor 不应同时挂两个 prompt，base_crypt 应排队等待 Igor 先解决', () => {
+        // 当前正确行为不是“两个 prompt 同时并存”，而是：
+        // 1. Igor 的 onDestroy 真实交互先出现；
+        // 2. base_crypt 的 onMinionDestroyed 继续保留在 trigger queue 中，等待前一个交互收口后再继续。
         const core = makeState({
             players: {
                 '0': makePlayer('0', { hand: [], deck: [], discard: [] }),
@@ -58,9 +59,7 @@ describe('Bug: Igor 被 base_rlyeh 消灭时触发两次', () => {
         // 调用 processDestroyTriggers 处理消灭事件
         const result = processDestroyTriggers([destroyEvent], ms, '0', defaultTestRandom, 1000);
         
-        // 检查：应该有两个交互
-        // 1. Igor 的 onDestroy（选择放置+1指示物的随从）
-        // 2. base_crypt 的 onMinionDestroyed（消灭者选择放置+1指示物的随从）
+        // 检查：当前只应有 Igor prompt，base_crypt 不应丢失，而是留在 trigger queue 中等待后续继续
         const allInteractions = [];
         if (result.matchState?.sys.interaction.current) {
             allInteractions.push(result.matchState.sys.interaction.current);
@@ -77,9 +76,9 @@ describe('Bug: Igor 被 base_rlyeh 消灭时触发两次', () => {
         console.log('Igor interactions:', igorInteractions.length);
         console.log('Crypt interactions:', cryptInteractions.length);
         
-        // 预期：Igor 触发一次，base_crypt 触发一次
         expect(igorInteractions.length).toBe(1);
-        expect(cryptInteractions.length).toBe(1);
-        expect(allInteractions.length).toBe(2);
+        expect(cryptInteractions.length).toBe(0);
+        expect(allInteractions.length).toBe(1);
+        expect(result.matchState?.core.triggerQueue?.some(trigger => trigger.sourceDefId === 'base_crypt')).toBe(true);
     });
 });

@@ -22,7 +22,9 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { applyEvents, makeMatchState as makeMatchStateFromHelpers } from './helpers';
+import { fireTriggers } from '../domain/ongoingEffects';
+import { uncoverBuriedCard } from '../domain/bury';
+import { applyEvents, makeMatchState as makeMatchStateFromHelpers, resolveInteractionChain } from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 
@@ -74,6 +76,358 @@ describe('bear cavalry interaction regressions', () => {
         expect(destroyEvent).toBeDefined();
         expect((destroyEvent as any).payload.minionUid).toBe('m1');
         expect(respondResult.finalState.core.bases[0].minions.some(m => m.uid === 'm1')).toBe(false);
+    });
+});
+
+describe('ancient egyptians interaction regressions', () => {
+    it('ancient_egyptians_pyramid_engineer talent 埋葬 borrowed 手牌时应保留真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-hand-a', 'robot_microbot_alpha', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_pyramid',
+                minions: [makeMinion('engineer-1', 'ancient_egyptians_pyramid_engineer', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+
+        const talent = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'engineer-1', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(talent.success).toBe(true);
+
+        const prompt = talent.finalState.sys.interaction?.current as any;
+        expect(prompt?.data?.sourceId).toBe('ancient_egyptians_pyramid_engineer_talent');
+        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-hand-a');
+        expect(option).toBeDefined();
+
+        const resolved = runCommand(talent.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: option.id },
+        } as any, defaultRandom);
+
+        const buried = (resolved.finalState.core.bases[0].buriedCards ?? []).find(card => card.uid === 'borrowed-hand-a');
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-hand-a',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'hand',
+        }));
+    });
+
+    it('ancient_egyptians_lost_knowledge 埋葬 borrowed 手牌时应保留真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('lost-knowledge-a', 'ancient_egyptians_lost_knowledge', 'action', '0'),
+                        makeCard('borrowed-lost-hand', 'robot_microbot_alpha', 'minion', '1'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_lost_test', minions: [], ongoingActions: [] }],
+        });
+
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'lost-knowledge-a' },
+        } as any, defaultRandom);
+        expect(played.success).toBe(true);
+
+        const resolved = resolveInteractionChain(played.finalState, (prompt) => {
+            if (prompt?.data?.sourceId === 'ancient_egyptians_lost_knowledge_mode') {
+                const bury = prompt.data.options.find((entry: any) => entry.value?.mode === 'bury');
+                expect(bury).toBeDefined();
+                return { optionId: bury.id };
+            }
+            if (prompt?.data?.sourceId === 'ancient_egyptians_lost_knowledge_bury') {
+                const borrowed = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-lost-hand');
+                expect(borrowed).toBeDefined();
+                return { optionId: borrowed.id };
+            }
+            if (prompt?.data?.sourceId === 'ancient_egyptians_lost_knowledge_bury_base') {
+                const base = prompt.data.options.find((entry: any) => entry.value?.baseIndex === 0);
+                expect(base).toBeDefined();
+                return { optionId: base.id };
+            }
+            throw new Error(`未处理的失落知识交互 sourceId: ${prompt?.data?.sourceId ?? 'unknown'}`);
+        }, defaultRandom);
+
+        const buried = (resolved.finalState.core.bases[0].buriedCards ?? []).find(card => card.uid === 'borrowed-lost-hand');
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-lost-hand',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'hand',
+        }));
+    });
+
+    it('ancient_egyptians_seal_the_tomb 埋葬 borrowed 手牌时应保留真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('seal-bury-a', 'ancient_egyptians_seal_the_tomb', 'action', '0'),
+                        makeCard('borrowed-seal-hand', 'robot_microbot_alpha', 'minion', '1'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_seal_bury_test', minions: [], ongoingActions: [] }],
+        });
+
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'seal-bury-a', targetBaseIndex: 0 },
+        } as any, defaultRandom);
+        expect(played.success).toBe(true);
+
+        const resolved = resolveInteractionChain(played.finalState, (prompt) => {
+            if (prompt?.data?.sourceId === 'ancient_egyptians_seal_the_tomb_mode') {
+                const bury = prompt.data.options.find((entry: any) => entry.value?.mode === 'bury');
+                expect(bury).toBeDefined();
+                return { optionId: bury.id };
+            }
+            if (prompt?.data?.sourceId === 'ancient_egyptians_seal_the_tomb_bury') {
+                const borrowed = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-seal-hand');
+                expect(borrowed).toBeDefined();
+                return { optionIds: [borrowed.id] };
+            }
+            throw new Error(`未处理的封印墓穴埋葬交互 sourceId: ${prompt?.data?.sourceId ?? 'unknown'}`);
+        }, defaultRandom);
+
+        const buried = (resolved.finalState.core.bases[0].buriedCards ?? []).find(card => card.uid === 'borrowed-seal-hand');
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-seal-hand',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'hand',
+        }));
+    });
+
+    it('ancient_egyptians_you_can_take_it_with_you 自埋 borrowed 行动时应保留真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-self-bury', 'ancient_egyptians_you_can_take_it_with_you', 'action', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_self_bury_test', minions: [], ongoingActions: [] }],
+        });
+
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'borrowed-self-bury', targetBaseIndex: 0 },
+        } as any, defaultRandom);
+
+        const buried = (played.finalState.core.bases[0].buriedCards ?? []).find(card => card.uid === 'borrowed-self-bury');
+        expect(played.success).toBe(true);
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-self-bury',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'play',
+        }));
+    });
+
+    it('ancient_egyptians_mummy 计分后埋葬 borrowed 随从时应保留真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_mummy_source',
+                    minions: [makeMinion('borrowed-mummy', 'ancient_egyptians_mummy', '0', 2, '1')],
+                    ongoingActions: [],
+                },
+                { defId: 'base_mummy_target', minions: [], ongoingActions: [] },
+            ],
+        });
+
+        const triggered = fireTriggers(state, 'afterScoring', {
+            state,
+            matchState: makeMatchState(state),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 2, vp: 3 }],
+            sourceCardUid: 'borrowed-mummy',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            random: defaultRandom,
+            now: 1001,
+        });
+        const promptState = triggered.matchState ?? makeMatchState(state);
+        const prompt = promptState.sys.interaction.current as any;
+        expect(prompt?.data?.sourceId).toBe('ancient_egyptians_mummy_after_scoring');
+        const option = prompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(option).toBeDefined();
+
+        const resolved = runCommand(promptState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: option.id },
+        } as any, defaultRandom);
+
+        const buried = resolved.finalState.core.bases[1].buriedCards?.find(card => card.uid === 'borrowed-mummy');
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-mummy',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'play',
+        }));
+    });
+
+    it('ancient_egyptians_seal_the_tomb 真实 uncover 多选若先翻开随从再翻开 Blessing of Anubis，后者也应看到新翻开的随从', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('seal-1', 'ancient_egyptians_seal_the_tomb', 'action', '0')],
+                    factions: ['ancient_egyptians', 'wizards'] as any,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_seal_test',
+                minions: [],
+                ongoingActions: [],
+                buriedCards: [
+                    {
+                        uid: 'buried-mummy',
+                        defId: 'ancient_egyptians_mummy',
+                        trueOwnerId: '0',
+                        controllerId: '0',
+                        buriedFrom: 'hand',
+                    } as any,
+                    {
+                        uid: 'buried-blessing',
+                        defId: 'ancient_egyptians_blessing_of_anubis',
+                        trueOwnerId: '0',
+                        controllerId: '0',
+                        buriedFrom: 'hand',
+                    } as any,
+                ],
+            }],
+        });
+
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'seal-1', targetBaseIndex: 0 },
+        } as any, defaultRandom);
+        expect(played.success).toBe(true);
+
+        const resolved = resolveInteractionChain(played.finalState, (prompt) => {
+            if (prompt?.data?.sourceId === 'ancient_egyptians_seal_the_tomb_mode') {
+                const uncover = prompt.data.options.find((entry: any) => entry.value?.mode === 'uncover');
+                expect(uncover).toBeDefined();
+                return { optionId: uncover.id };
+            }
+            if (prompt?.data?.sourceId === 'ancient_egyptians_seal_the_tomb_uncover') {
+                const uncoverMummy = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'buried-mummy');
+                const uncoverBlessing = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'buried-blessing');
+                expect(uncoverMummy).toBeDefined();
+                expect(uncoverBlessing).toBeDefined();
+                return { optionIds: [uncoverMummy.id, uncoverBlessing.id] };
+            }
+            throw new Error(`未处理的封印墓穴交互 sourceId: ${prompt?.data?.sourceId ?? 'unknown'}`);
+        }, defaultRandom);
+
+        const base = resolved.finalState.core.bases[0];
+        const mummy = base.minions.find((minion) => minion.uid === 'buried-mummy');
+
+        expect(base.buriedCards ?? []).toHaveLength(0);
+        expect(mummy).toBeDefined();
+        expect(mummy?.tempPowerModifier).toBe(2);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: expect.objectContaining({
+                cardUid: 'buried-mummy',
+                fromBuried: true,
+            }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({
+                minionUid: 'buried-mummy',
+                amount: 2,
+                reason: 'ancient_egyptians_blessing_of_anubis',
+            }),
+        }));
+    });
+
+    it('bury.uncoverBuriedCard 翻开 fairies_enchantment 后响应 minus 时，应在 prompt state 上看到已附着的 ongoing 并写入 metadata', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_bury_enchantment',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 3)],
+                ongoingActions: [],
+                buriedCards: [{
+                    uid: 'buried-enchantment',
+                    defId: 'fairies_enchantment',
+                    trueOwnerId: '0',
+                    controllerId: '0',
+                    buriedFrom: 'hand',
+                } as any],
+            }],
+        });
+
+        const uncovered = uncoverBuriedCard({
+            matchState: makeMatchState(state),
+            playerId: '0',
+            cardUid: 'buried-enchantment',
+            baseIndex: 0,
+            random: defaultRandom,
+            now: 301,
+            reason: 'test_uncover_fairies_enchantment',
+        });
+
+        const prompt = (uncovered.state.sys.interaction?.current
+            ?? uncovered.state.sys.interaction?.queue?.[0]) as any;
+        expect(prompt?.data?.sourceId).toBe('fairies_enchantment');
+        const minusOption = prompt?.data?.options?.find((entry: any) => entry.value?.branchId === 'minus');
+        expect(minusOption).toBeDefined();
+
+        const resolved = runCommand(uncovered.state, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: minusOption.id },
+        } as any, defaultRandom);
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'buried-enchantment',
+                defId: 'fairies_enchantment',
+                ownerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 0,
+                metadata: expect.objectContaining({
+                    fairiesEnchantmentMode: 'minus',
+                }),
+            }),
+        }));
+
+        const enchantment = resolved.finalState.core.bases[0].ongoingActions
+            .find(action => action.uid === 'buried-enchantment');
+        expect(enchantment?.metadata?.fairiesEnchantmentMode).toBe('minus');
     });
 });
 
@@ -569,6 +923,46 @@ describe('黑熊骑兵派系能力', () => {
 
             const interactions = getLastInteractions();
             expect(interactions.length).toBe(0);
+        });
+
+        it('选择手牌 borrowed 随从打出时，应保留真实 owner', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [
+                            makeCard('a1', 'bear_cavalry_commission', 'action', '0'),
+                            makeCard('borrowed-minion', 'robot_microbot_guard', 'minion', '1'),
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
+            });
+
+            const playResult = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any, defaultRandom);
+
+            expect(playResult.success).toBe(true);
+            const prompt = playResult.finalState.sys.interaction?.current as any;
+            expect(prompt?.data?.sourceId).toBe('bear_cavalry_commission_choose_minion');
+
+            const borrowedOption = prompt.data.options.find((option: any) => option?.value?.cardUid === 'borrowed-minion');
+            expect(borrowedOption).toBeDefined();
+
+            const respondResult = runCommand(playResult.finalState, {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: '0',
+                payload: { optionId: borrowedOption.id },
+            } as any, defaultRandom);
+
+            expect(respondResult.success).toBe(true);
+            const borrowed = respondResult.finalState.core.bases[0].minions.find(m => m.uid === 'borrowed-minion');
+            expect(borrowed?.controller).toBe('0');
+            expect(borrowed?.owner).toBe('1');
+            expect(respondResult.finalState.core.players['0'].hand.some(card => card.uid === 'borrowed-minion')).toBe(false);
         });
     });
 });

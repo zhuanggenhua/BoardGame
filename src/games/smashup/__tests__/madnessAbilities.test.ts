@@ -227,6 +227,9 @@ describe('interaction handler regressions', () => {
         expect(actionPlayed).toBeDefined();
         expect(actionPlayed.payload?.defId).toBe(MADNESS_CARD_DEF_ID);
         expect(actionPlayed.payload?.isExtraAction).toBe(true);
+        expect(actionPlayed.payload?.targetBaseIndex).toBeUndefined();
+        expect(actionPlayed.payload?.targetType).toBeUndefined();
+        expect(actionPlayed.payload?.targetMinionUid).toBeUndefined();
 
         const interaction = playMadnessResult.state.sys.interaction;
         const queuedInteractions = [

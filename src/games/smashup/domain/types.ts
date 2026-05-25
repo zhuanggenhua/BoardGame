@@ -272,6 +272,8 @@ export interface BaseRestriction {
          * 用于北极基地（North Pole）：每回合只能打出一个随从到这。
          */
         minionPlayLimitPerTurn?: number;
+        /** 禁止把与此基地已有仆从同名的随从打到此基地。 */
+        sameNameAlreadyAtBase?: boolean;
     };
 }
 
@@ -496,6 +498,7 @@ export type PendingPostScoringAction =
         playerId: PlayerId;
         cardUid: string;
         defId: string;
+        ownerId?: PlayerId;
         baseIndex: number;
         targetBaseDefId: string;
         power: number;
@@ -572,10 +575,18 @@ export interface SmashUpReactionResourceFootprint {
     fallbackReason?: string;
 }
 
+/**
+ * 历史命名兼容：旧调用方把显式 reaction 资源合同称为 TriggerEffectContract。
+ * 语义上等同于显式的 reaction resource footprint。
+ */
+export type TriggerEffectContract = SmashUpReactionResourceFootprint;
+
 export interface TriggerInstance {
     /** stable id for interaction selection */
     id: string;
     timing: import('./ongoingEffects').TitanAwareTriggerTiming;
+    /** queued trigger 回放时用于恢复 ctx.playerId 的语义来源 */
+    playerContext?: 'eventPlayer' | 'sourceController' | 'sourceHostController';
     /** defId of the triggering source (minion/action/base) */
     sourceDefId: string;
     /** concrete source card uid when the trigger comes from an in-play card instance */
@@ -594,6 +605,8 @@ export interface TriggerInstance {
     sourceEventId?: string;
     /** who decides / is credited */
     ownerPlayerId: PlayerId;
+    /** 原始触发事件关联玩家；queued trigger 执行时用于恢复 ctx.playerId 语义 */
+    eventPlayerId?: PlayerId;
     witnessRequirement: WitnessRequirement;
     witnessed: boolean;
 
@@ -601,16 +614,27 @@ export interface TriggerInstance {
     baseIndex?: number;
     moveFromBaseIndex?: number;
     moveToBaseIndex?: number;
+    duel?: ActiveDuel;
+    duelSourceId?: string;
+    duelOutcome?: DuelOutcomeKind;
+    duelChallenger?: MinionOnBase;
+    duelChallenged?: MinionOnBase;
+    duelWinner?: MinionOnBase;
+    duelLoser?: MinionOnBase;
+    duelTie?: boolean;
     triggerMinionUid?: string;
     triggerMinionDefId?: string;
     triggerMinionPower?: number;
     /** destroyer (for onMinionDestroyed "after you destroy" checks) */
     destroyerId?: PlayerId;
+    /** 被影响/被消灭随从的控制者等事件控制者上下文 */
+    controllerId?: PlayerId;
     reason?: string;
     affectType?: import('./ongoingEffects').AffectType;
     counterChangeKind?: 'added' | 'removed';
     counterDelta?: number;
     affectEvent?: SmashUpEvent;
+    affectBatchTargets?: Array<{ minionUid: string; baseIndex: number; controllerId: PlayerId }>;
     rankings?: { playerId: PlayerId; power: number; vp: number }[];
     triggerBaseControllersAtTrigger?: PlayerId[];
     actionTargetBaseIndex?: number;
@@ -656,6 +680,7 @@ export interface SmashUpReactionSession {
     consecutivePasses: number;
     sourceBaseIndex?: number;
     responseWindowType?: 'meFirst' | 'afterScoring';
+    consumedSpecialCardUids?: string[];
 }
 
 export type DuelOutcomeKind =
@@ -715,7 +740,7 @@ export interface SmashUpCore {
     cardsPlayedThisTurn?: number;
     powerCountersPlacedOnMinionsThisTurn?: number;
     /** 本回合被消灭的随从记录（用于 cthulhu_furthering_the_cause 等能力判定，并阻止过期移动把它们从弃牌堆拉回场上） */
-    turnDestroyedMinions?: { uid: string; defId: string; baseIndex: number; owner: string }[];
+    turnDestroyedMinions?: { uid: string; defId: string; baseIndex: number; owner: string; controller?: string }[];
     /** 本回合曾“消灭过随从”的玩家列表（用于 Nightstalker POD 等判定）。TURN_STARTED 时清空。 */
     destroyedMinionByPlayersThisTurn?: PlayerId[];
     /**
@@ -854,6 +879,18 @@ export interface SmashUpCore {
         baseIndex: number;
         baseDefId: string;
     }>;
+    /** 等待插入的额外回合队列。 */
+    pendingExtraTurns?: Array<{
+        playerId: PlayerId;
+        returnToPlayerIndex: number;
+        reason: string;
+    }>;
+    /** 当前正在执行的额外回合；该回合结束后回到 returnToPlayerIndex。 */
+    activeExtraTurn?: {
+        playerId: PlayerId;
+        returnToPlayerIndex: number;
+        reason: string;
+    };
 
     /** 全局触发队列：用于按 Wiki 规则统一“同时触发”的反应排序与 witness/LKI */
     triggerQueue?: TriggerInstance[];
@@ -941,6 +978,8 @@ export interface PlayActionCommand extends Command<typeof SU_COMMANDS.PLAY_ACTIO
         cardUid: string;
         targetBaseIndex?: number;
         targetMinionUid?: string;
+        /** 从弃牌堆打出行动卡（如 Cyberback 允许打到自己身上） */
+        fromDiscard?: boolean;
     };
 }
 
@@ -1048,6 +1087,7 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         cardUid: string;
         defId: string;
         baseIndex: number;
+        ownerId?: PlayerId;
         /** 基地 defId（事件发生时的基地，用于日志显示）。可选，用于向后兼容测试代码。 */
         baseDefId?: string;
         power: number;
@@ -1078,10 +1118,13 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         playerId: PlayerId;
         cardUid: string;
         defId: string;
+        ownerId?: PlayerId;
         /** 是否为额外行动（不消耗行动次数） */
         isExtraAction?: boolean;
         /** 从埋葬区打出（揭开时使用） */
         fromBuried?: boolean;
+        /** 从弃牌堆打出 */
+        fromDiscard?: boolean;
     };
 }
 
@@ -1294,6 +1337,18 @@ export interface TurnEndedEvent extends GameEvent<'su:turn_ended'> {
     payload: {
         playerId: PlayerId;
         nextPlayerIndex: number;
+        extraTurnPlayerId?: PlayerId;
+        extraTurnReturnToPlayerIndex?: number;
+        extraTurnReason?: string;
+        completedExtraTurn?: boolean;
+    };
+}
+
+export interface ExtraTurnQueuedEvent extends GameEvent<typeof SU_EVENTS.EXTRA_TURN_QUEUED> {
+    payload: {
+        playerId: PlayerId;
+        returnToPlayerIndex: number;
+        reason: string;
     };
 }
 
@@ -1318,6 +1373,8 @@ export interface DeckReshuffledEvent extends GameEvent<'su:deck_reshuffled'> {
 export interface DeckReorderedEvent extends GameEvent<'su:deck_reordered'> {
     payload: {
         playerId: PlayerId;
+        /** 若与 playerId 不同，表示被重排进牌库的卡当前来源于另一位玩家的牌区 */
+        sourcePlayerId?: PlayerId;
         /** 重排后的牌库 UID 顺序 */
         deckUids: string[];
     };
@@ -1353,12 +1410,18 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         playTiming?: 'banked' | 'immediate';
         /** 限定额度只能用于指定基地（不设则为全局额度） */
         restrictToBase?: number;
+        /** 仅 immediate 额外行动：限定只能打到指定随从上。 */
+        restrictToMinionUid?: string;
+        /** 仅 immediate 额外行动：按计分窗口特殊行动处理，用于保留基地限定和计分窗口限制。 */
+        specialActionWindow?: 'meFirst' | 'afterScoring';
         /** 额外出牌的力量上限（如家园：力量≤2），不设则无限制 */
         powerMax?: number;
         /** 同名限制：这些额度只能用于打出同一 defId 的随从（第一个打出时锁定） */
         sameNameOnly?: boolean;
         /** 预锁定的 defId（与 sameNameOnly 配合使用，跳过首次锁定直接限定） */
         sameNameDefId?: string;
+        /** 仅 immediate 额外随从：限定只能打出指定的手牌 uid。 */
+        specificCardUid?: string;
         /**
          * 仅 immediate 额外随从：若玩家选择“放弃这次额外随从”，是否需要消费掉 pendingMinionPlayEffects 的队列首项。
          * 用于避免“本应绑定本次额外随从的效果”泄漏到后续普通随从。
@@ -1389,6 +1452,7 @@ export type SmashUpEvent =
     | TriggerConsumedEvent
     | TurnStartedEvent
     | TurnEndedEvent
+    | ExtraTurnQueuedEvent
     | BaseReplacedEvent
     | DeckReshuffledEvent
     | DeckReorderedEvent
@@ -1496,6 +1560,7 @@ export interface MinionDestroyedEvent extends GameEvent<typeof SU_EVENTS.MINION_
         minionDefId: string;
         fromBaseIndex: number;
         ownerId: PlayerId;
+        controllerId?: PlayerId; // 被消灭随从的控制者；live minion 缺失时供 reducer/ledger 继续保留 controller provenance
         destroyerId?: PlayerId;  // 消灭者（可选，缺失时由事件处理流程按当前操作者推断）
         reason: string;
     };
@@ -1574,6 +1639,7 @@ export interface OngoingAttachedEvent extends GameEvent<typeof SU_EVENTS.ONGOING
         cardUid: string;
         defId: string;
         ownerId: PlayerId;
+        sourcePlayerId?: PlayerId;
         targetType: 'base' | 'minion';
         targetBaseIndex: number;
         targetMinionUid?: string;
@@ -1592,6 +1658,8 @@ export interface OngoingDetachedEvent extends GameEvent<typeof SU_EVENTS.ONGOING
         defId: string;
         ownerId: PlayerId;
         reason: string;
+        /** Clyde 2.0 replacement choice: true = put into Clyde controller's hand, false/absent = normal discard. */
+        clydeReturnToHand?: boolean;
         sourcePlayerId?: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;
@@ -1830,6 +1898,7 @@ export interface PermanentPowerAddedEvent extends GameEvent<typeof SU_EVENTS.PER
         baseIndex: number;
         amount: number;
         reason: string;
+        expiresOnTurnNumber?: number;
         sourcePlayerId?: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;

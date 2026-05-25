@@ -888,6 +888,33 @@ export class GameTransportServer {
         };
     }
 
+    private async persistSeatConnectionState(
+        match: ActiveMatch,
+        playerID: string,
+        isConnected: boolean,
+    ): Promise<void> {
+        const activeSeat = match.metadata.players[playerID];
+        const freshMetadata = (await this.storage.fetch(match.matchID, { metadata: true })).metadata ?? match.metadata;
+        const freshSeat = freshMetadata.players[playerID] ?? activeSeat;
+        if (!freshSeat) return;
+
+        const nextMetadata: MatchMetadata = {
+            ...freshMetadata,
+            updatedAt: Date.now(),
+            players: {
+                ...freshMetadata.players,
+                [playerID]: {
+                    ...activeSeat,
+                    ...freshSeat,
+                    isConnected,
+                },
+            },
+        };
+
+        match.metadata = nextMetadata;
+        await this.storage.setMetadata(match.matchID, nextMetadata);
+    }
+
     /**
      * 测试 / 管理接口：校验某个玩家是否有权访问指定对局。
      *
@@ -2788,7 +2815,7 @@ export class GameTransportServer {
                 match.metadata.players[playerID].isConnected = true;
                 if (!wasConnected) {
                     match.metadata.updatedAt = Date.now();
-                    this.storage.setMetadata(matchID, match.metadata).catch((error) => {
+                    this.persistSeatConnectionState(match, playerID, true).catch((error) => {
                         logger.warn('[GameTransport] persist connected metadata failed', {
                             matchID,
                             playerID,
@@ -3651,7 +3678,7 @@ export class GameTransportServer {
         // 更新 metadata
         if (match.metadata.players[playerID]) {
             match.metadata.players[playerID].isConnected = false;
-            this.storage.setMetadata(match.matchID, match.metadata).catch((err) => {
+            this.persistSeatConnectionState(match, playerID, false).catch((err) => {
                 logger.error(`[GameTransport] setMetadata 失败（断线标记可能未持久化） matchID=${match.matchID} playerID=${playerID}`, err);
             });
         }

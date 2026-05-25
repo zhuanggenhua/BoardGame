@@ -126,6 +126,7 @@ export function registerPirateAbilities(): void {
     // === ongoing 效果注册 ===
     // 海盗王：基地计分前移动到该基地
     registerTrigger('pirate_king', 'beforeScoring', pirateKingBeforeScoring, {
+        playerContext: 'sourceController',
     });
     // 副官：基地计分后移动到其他基地（而非弃牌堆）
     registerTrigger('pirate_first_mate', 'afterScoring', pirateFirstMateAfterScoring, {

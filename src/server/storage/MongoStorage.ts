@@ -131,6 +131,16 @@ const extractPlayersForOccupancy = (metadata: unknown): Record<string, PlayerSea
     return metadata.players as Record<string, PlayerSeat>;
 };
 
+const resolveMetadataUpdatedAtDate = (metadata: MatchMetadata): Date => {
+    const updatedAtMs = typeof metadata.updatedAt === 'number' && Number.isFinite(metadata.updatedAt)
+        ? metadata.updatedAt
+        : Date.now();
+    if (metadata.updatedAt !== updatedAtMs) {
+        metadata.updatedAt = updatedAtMs;
+    }
+    return new Date(updatedAtMs);
+};
+
 /**
  * MongoDB 存储实现
  */
@@ -289,7 +299,10 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
             }
         }
 
-        const update: Record<string, unknown> = { metadata };
+        const update: Record<string, unknown> = {
+            metadata,
+            updatedAt: resolveMetadataUpdatedAtDate(metadata),
+        };
         if (refreshedExpiresAt) {
             update.expiresAt = refreshedExpiresAt;
         }
@@ -478,7 +491,13 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
                         changed = true;
                     }
                     if (changed) {
-                        await Match.updateOne({ matchID: doc.matchID }, { metadata });
+                        metadata.updatedAt = now;
+                        await Match.updateOne({
+                            matchID: doc.matchID,
+                        }, {
+                            metadata,
+                            updatedAt: resolveMetadataUpdatedAtDate(metadata),
+                        });
                     }
                     const reason = isStaleConnected ? 'stale_after_restart' : 'ghost_connection';
                     logger.warn(`[Cleanup] 强制标记断线 matchID=${doc.matchID} reason=${reason} connected=${connectedCount} occupied=${occupiedCount} idleMs=${idleMs}`);
@@ -486,7 +505,13 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
                 }
                 if (metadata?.disconnectedSince) {
                     delete metadata.disconnectedSince;
-                    await Match.updateOne({ matchID: doc.matchID }, { metadata });
+                    metadata.updatedAt = now;
+                    await Match.updateOne({
+                        matchID: doc.matchID,
+                    }, {
+                        metadata,
+                        updatedAt: resolveMetadataUpdatedAtDate(metadata),
+                    });
                 }
                 continue;
             }
@@ -496,7 +521,13 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
             if (!disconnectedSince) {
                 logger.info(`[Cleanup] 标记断线时间 matchID=${doc.matchID} reason=disconnected_since_missing connected=${connectedCount} occupied=${occupiedCount}`);
                 metadata.disconnectedSince = now;
-                await Match.updateOne({ matchID: doc.matchID }, { metadata });
+                metadata.updatedAt = now;
+                await Match.updateOne({
+                    matchID: doc.matchID,
+                }, {
+                    metadata,
+                    updatedAt: resolveMetadataUpdatedAtDate(metadata),
+                });
                 continue;
             }
 

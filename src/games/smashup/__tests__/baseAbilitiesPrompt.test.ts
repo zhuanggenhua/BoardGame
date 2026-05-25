@@ -491,6 +491,26 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
         );
         expect(resolved?.events ?? []).toHaveLength(0);
     });
+
+    it('borrowed Infiltrate 由控制者控制时，应阻止 The Hill 给控制者生成移动 Prompt', () => {
+        const result = triggerBaseAbilityWithMS('base_the_hill', 'onTurnStart', makeCtx({
+            state: makeState({
+                bases: [
+                    makeBase('base_the_hill', {
+                        ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+                    }),
+                    makeBase('other_base', {
+                        minions: [makeMinion('m1', '0', 3)],
+                    }),
+                ],
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_the_hill',
+        }));
+
+        expect(result.events).toHaveLength(0);
+        expect(getInteractionsFromResult(result)).toHaveLength(0);
+    });
 });
 
 // ============================================================================

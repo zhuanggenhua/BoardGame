@@ -187,6 +187,42 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
         expect(deckUids).not.toContain('mb2');
     });
 
+    it('选择被他人拥有的弃牌堆微型机时，仍应洗回其拥有者牌库而不是当前玩家牌库', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('r1', 'robot_microbot_reclaimer', 'minion', '0')],
+                    deck: [makeCard('p0-deck-a', 'robot_zapbot', 'minion', '0')],
+                    discard: [makeCard('borrowed-microbot', 'robot_microbot_alpha', 'minion', '1')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'robot_zapbot', 'minion', '1')],
+                }),
+            },
+        });
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'r1', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(played.success).toBe(true);
+
+        const interaction = (played.finalState.sys as any)?.interaction?.current;
+        expect(interaction?.data?.sourceId).toBe('robot_microbot_reclaimer');
+        const selected = interaction?.data?.options?.find((option: any) => option.value?.cardUid === 'borrowed-microbot');
+        expect(selected).toBeDefined();
+
+        const resolved = runCommand(played.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionIds: [selected.id] },
+        } as any, defaultRandom);
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-microbot')).toBe(false);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-a', 'borrowed-microbot']);
+    });
+
     it('弃牌堆刷新后，AI 不应再拿到过期微型机或 skip+卡牌的混合动作', () => {
         const state = makeState({
             players: {

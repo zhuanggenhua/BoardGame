@@ -73,6 +73,81 @@ export interface AiActionResolution {
 
 export type AiDispatchResult = AiActionResolution | AiBlockedResolution | AiIdleResolution;
 
+function buildResolvedDecisionSemanticBlockedKey(diagnostics: {
+    sharedInteractionId?: string | null;
+    privateInteractionId?: string | null;
+    sharedInteractionKind?: string | null;
+    privateInteractionKind?: string | null;
+    sharedInteractionSourceId?: string | null;
+    privateInteractionSourceId?: string | null;
+    sharedInteractionTitle?: string | null;
+    privateInteractionTitle?: string | null;
+    sharedInteractionOptionSignature?: string | null;
+    privateInteractionOptionSignature?: string | null;
+    sharedResponseWindowId?: string | null;
+    privateResponseWindowId?: string | null;
+    sharedResponseWindowType?: string | null;
+    privateResponseWindowType?: string | null;
+    sharedResponseWindowSourceId?: string | null;
+    privateResponseWindowSourceId?: string | null;
+    sharedResponseWindowResponderId?: string | null;
+    privateResponseWindowResponderId?: string | null;
+    sharedResponseWindowQueueSignature?: string | null;
+    privateResponseWindowQueueSignature?: string | null;
+} | null): string {
+    if (!diagnostics) {
+        return [
+            'ix',
+            'no-shared-interaction-id',
+            'no-shared-interaction-kind',
+            'no-shared-interaction-source',
+            'no-shared-interaction-title',
+            'no-shared-interaction-options',
+            'no-seat-interaction-id',
+            'no-seat-interaction-kind',
+            'no-seat-interaction-source',
+            'no-seat-interaction-title',
+            'no-seat-interaction-options',
+            'rw',
+            'no-shared-window-id',
+            'no-shared-window-type',
+            'no-shared-window-source',
+            'no-shared-window-responder',
+            'no-shared-window-queue',
+            'no-seat-window-id',
+            'no-seat-window-type',
+            'no-seat-window-source',
+            'no-seat-window-responder',
+            'no-seat-window-queue',
+        ].join(':');
+    }
+
+    return [
+        'ix',
+        diagnostics.sharedInteractionId ?? 'no-shared-interaction-id',
+        diagnostics.sharedInteractionKind ?? 'no-shared-interaction-kind',
+        diagnostics.sharedInteractionSourceId ?? 'no-shared-interaction-source',
+        diagnostics.sharedInteractionTitle ?? 'no-shared-interaction-title',
+        diagnostics.sharedInteractionOptionSignature ?? 'no-shared-interaction-options',
+        diagnostics.privateInteractionId ?? 'no-seat-interaction-id',
+        diagnostics.privateInteractionKind ?? 'no-seat-interaction-kind',
+        diagnostics.privateInteractionSourceId ?? 'no-seat-interaction-source',
+        diagnostics.privateInteractionTitle ?? 'no-seat-interaction-title',
+        diagnostics.privateInteractionOptionSignature ?? 'no-seat-interaction-options',
+        'rw',
+        diagnostics.sharedResponseWindowId ?? 'no-shared-window-id',
+        diagnostics.sharedResponseWindowType ?? 'no-shared-window-type',
+        diagnostics.sharedResponseWindowSourceId ?? 'no-shared-window-source',
+        diagnostics.sharedResponseWindowResponderId ?? 'no-shared-window-responder',
+        diagnostics.sharedResponseWindowQueueSignature ?? 'no-shared-window-queue',
+        diagnostics.privateResponseWindowId ?? 'no-seat-window-id',
+        diagnostics.privateResponseWindowType ?? 'no-seat-window-type',
+        diagnostics.privateResponseWindowSourceId ?? 'no-seat-window-source',
+        diagnostics.privateResponseWindowResponderId ?? 'no-seat-window-responder',
+        diagnostics.privateResponseWindowQueueSignature ?? 'no-seat-window-queue',
+    ].join(':');
+}
+
 function shouldUseRemoteDecision(args: {
     runtime: ReturnType<typeof getGameAiRuntime>;
     context: ReturnType<typeof buildAiDecisionContext>;
@@ -452,6 +527,7 @@ export async function resolveNextAiDispatch(
                         resolvedVisibleState.diagnostics.privatePhase ?? 'no-seat-phase',
                         resolvedVisibleState.diagnostics.privateCurrentPlayerId ?? 'no-seat-player',
                         resolvedVisibleState.diagnostics.privateEventStreamNextId ?? 'no-seat-eventstream',
+                        buildResolvedDecisionSemanticBlockedKey(resolvedVisibleState.diagnostics),
                     ].join(':'),
                     diagnostics: resolvedVisibleState.diagnostics,
                 };

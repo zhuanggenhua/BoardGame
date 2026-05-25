@@ -130,9 +130,9 @@ export const BaseZone: React.FC<{
     const titanSideContainerAnchorOffset = titanRowWidth / 2 + titanSideContainerGap;
     const isBaseHighlighted = isSelectable || canUseBaseAbility || (isDeployMode && !isMinionSelectMode);
     const baseContainerClassName = isDimmed
-        ? 'opacity-40 grayscale cursor-not-allowed rotate-1'
+        ? 'opacity-25 grayscale saturate-0 brightness-[0.72] contrast-75 cursor-not-allowed rotate-1 scale-[0.97]'
         : isBaseHighlighted
-            ? 'cursor-pointer rotate-0 scale-105'
+            ? 'cursor-pointer rotate-0 scale-[1.07]'
             : 'cursor-pointer rotate-1 hover:rotate-0';
     const baseCardFrameClassName = `relative w-full h-full bg-white p-[0.4vw] rounded-sm transition-[box-shadow] duration-300
         ${isSelectable
@@ -140,7 +140,7 @@ export const BaseZone: React.FC<{
             : canUseBaseAbility
             ? 'shadow-[0_0_2vw_rgba(251,191,36,0.45)] ring-4 ring-amber-300'
             : isDeployMode && !isMinionSelectMode
-            ? 'shadow-[0_0_1.8vw_rgba(134,239,172,0.4)] ring-4 ring-green-300'
+            ? 'shadow-[0_0_2.6vw_rgba(16,185,129,0.72)] ring-4 ring-emerald-400'
             : 'shadow-sm group-hover/base:shadow-xl'
         }`;
 
@@ -689,6 +689,15 @@ export const BaseZone: React.FC<{
                             animate={{ opacity: [0.08, 0.24, 0.08] }}
                             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
                             style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.32) 0%, transparent 72%)' }}
+                        />
+                    )}
+
+                    {isDeployMode && !isMinionSelectMode && !isSelectable && !canUseBaseAbility && (
+                        <motion.div
+                            className="absolute inset-0 pointer-events-none z-25 rounded-sm"
+                            animate={{ opacity: [0.12, 0.28, 0.12] }}
+                            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                            style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.34) 0%, transparent 70%)' }}
                         />
                     )}
 

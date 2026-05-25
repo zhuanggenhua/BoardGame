@@ -38,6 +38,7 @@ import {
 import { validate } from './domain/commands';
 import { getCardDefActivatableAbilities, hasCardActivatableAbility } from './domain/activationMetadata';
 import { resolveLiveSmashUpReactionChoice } from './domain/reactionSession';
+import { getSmashUpReactionWindowContext } from './domain/reactionWindowState';
 import {
     actionLikeNeedsResponseWindowBase,
     getActionLikeResponseWindowTiming,
@@ -290,10 +291,12 @@ const hasPendingScoreBasesSpecialActivation = (state: SmashUpState, playerId: Pl
     return false;
 };
 
+const hasLiveReactionWindow = (state: SmashUpState): boolean => !!getSmashUpReactionWindowContext(state);
+
 const canAdvancePhase = (state: SmashUpState, playerId: PlayerId): boolean => {
     if (state.sys.interaction?.current) return false;
     if (state.sys.interaction?.isBlocked === true) return false;
-    if (state.sys.responseWindow?.current) return false;
+    if (hasLiveReactionWindow(state)) return false;
     if (state.sys.phase === 'scoreBases' && hasPendingScoreBasesSpecialActivation(state, playerId)) {
         return false;
     }
@@ -786,7 +789,7 @@ const relativeUtilityByActionIdCache = new WeakMap<AiDecisionContext, Map<string
 const shouldApplySmashUpRelativeUtility = (context: AiDecisionContext): boolean => {
     if (context.responseWindow) return false;
     const state = context.visibleState as SmashUpState;
-    return !state.sys.responseWindow?.current;
+    return !hasLiveReactionWindow(state);
 };
 
 const buildRelativeUtilityByActionId = (context: AiDecisionContext): Map<string, number> => {
@@ -1729,11 +1732,11 @@ const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): Ai
     const responseWindow = state.sys.responseWindow?.current;
     if (!responseWindow) return null;
 
-    const currentResponderId = responseWindow.responderQueue?.[responseWindow.currentResponderIndex];
-    if (currentResponderId !== playerId) return null;
+    const reactionWindow = getSmashUpReactionWindowContext(state);
+    if (!reactionWindow || reactionWindow.activePlayerId !== playerId) return null;
 
     const actions: AiLegalAction[] = [{
-        actionId: createAiLegalActionId('response-pass', responseWindow.windowType, playerId),
+        actionId: createAiLegalActionId('response-pass', reactionWindow.windowType, playerId),
         kind: 'response-pass',
         label: '跳过响应',
         commands: [{
@@ -1741,7 +1744,7 @@ const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): Ai
             payload: {},
         }],
         metadata: {
-            windowType: responseWindow.windowType,
+            windowType: reactionWindow.windowType,
         },
     }];
 

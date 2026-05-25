@@ -20,6 +20,7 @@ import {
     revealHand,
     buildAbilityFeedback,
     buildValidatedCardToDeckBottomEvents,
+    findMinionOnBases,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import type {
@@ -595,17 +596,30 @@ const elderThingBeginTheSummoningPromptProgram = createPromptProgram<ElderThingB
         );
         return attachOptionsGenerator(interaction, (state) => buildDiscardMinionCardOptions(state.core, context.playerId));
     },
-    onResolve: ({ context, value, timestamp }) => {
+    onResolve: ({ context, state, value, timestamp }) => {
         const selected = getSelectedCard(value);
         if (!selected) {
             return { events: [] };
         }
-        const player = context.matchState.core.players[context.playerId];
-        const newDeckUids = [selected.cardUid, ...player.deck.map(c => c.uid)];
+        const player = state.core.players[context.playerId];
+        const inDiscard = player.discard.find((card) => card.uid === selected.cardUid && card.type === 'minion');
+        if (!inDiscard) {
+            return { events: [] };
+        }
         return {
             events: [
-                { type: SU_EVENTS.DECK_REORDERED, payload: { playerId: context.playerId, deckUids: newDeckUids }, timestamp } as SmashUpEvent,
-                grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: context.matchState }, 'elder_thing_begin_the_summoning'),
+                {
+                    type: SU_EVENTS.CARD_TO_DECK_TOP,
+                    payload: {
+                        cardUid: selected.cardUid,
+                        defId: selected.defId,
+                        ownerId: inDiscard.owner,
+                        sourcePlayerId: context.playerId,
+                        reason: 'elder_thing_begin_the_summoning',
+                    },
+                    timestamp,
+                } as SmashUpEvent,
+                grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, 'elder_thing_begin_the_summoning'),
             ],
         };
     },
@@ -816,6 +830,7 @@ export function registerElderThingAbilities(): void {
     // Dunwich Horror POD：before scoring trigger (mandatory)
     registerTrigger('elder_thing_dunwich_horror_pod', 'beforeScoring', elderThingDunwichHorrorPodBeforeScoring, {
         mandatory: true,
+        playerContext: 'sourceHostController',
     });
     // POD 版不会“回合结束自动消灭”，这里显式注册 no-op，阻止 alias 继承原版 onTurnEnd 触发。
     registerTrigger('elder_thing_dunwich_horror_pod', 'onTurnEnd', elderThingDunwichHorrorPodOnTurnEndNoop, {
@@ -829,6 +844,7 @@ export function registerElderThingAbilities(): void {
     // === ongoing 效果注册 ===
     // 郦威奇恐怖：回合结束时消灭附着了此卡的随从
     registerTrigger('elder_thing_dunwich_horror', 'onTurnEnd', elderThingDunwichHorrorTrigger, {
+        playerContext: 'sourceController',
     });
     // 力量的代价：基地计分前按对手疑狂卡数给己方随从力量
     registerAbility('elder_thing_the_price_of_power', 'special', elderThingPriceOfPowerSpecial);
@@ -1153,6 +1169,7 @@ const elderThingElderThingPodDestroyPromptProgram = createPromptProgram<ElderThi
             return { events: [] };
         }
 
+        const sourceOwnerId = findMinionOnBases(state.core, context.cardUid)?.minion.owner ?? context.playerId;
         let destroyableCount = 0;
         const destroyEvents: SmashUpEvent[] = [];
         for (const pick of picks) {
@@ -1178,7 +1195,7 @@ const elderThingElderThingPodDestroyPromptProgram = createPromptProgram<ElderThi
                     ...buildValidatedCardToDeckBottomEvents(state, {
                         cardUid: context.cardUid,
                         defId: 'elder_thing_elder_thing_pod',
-                        ownerId: context.playerId,
+                        ownerId: sourceOwnerId,
                         reason: 'elder_thing_elder_thing_pod_fallback',
                         now: timestamp,
                         expectedLocation: 'bases',
@@ -1226,13 +1243,14 @@ const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingP
         );
     },
     onResolve: ({ context, state, value, timestamp }) => {
+        const sourceOwnerId = findMinionOnBases(state.core, context.cardUid)?.minion.owner ?? context.playerId;
         const mode = (value as { mode?: 'destroy' | 'bottom' } | undefined)?.mode;
         if (mode === 'bottom') {
             return {
                 events: buildValidatedCardToDeckBottomEvents(state, {
                     cardUid: context.cardUid,
                     defId: 'elder_thing_elder_thing_pod',
-                    ownerId: context.playerId,
+                    ownerId: sourceOwnerId,
                     reason: 'elder_thing_elder_thing_pod',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -1246,7 +1264,7 @@ const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingP
                 events: buildValidatedCardToDeckBottomEvents(state, {
                     cardUid: context.cardUid,
                     defId: 'elder_thing_elder_thing_pod',
-                    ownerId: context.playerId,
+                    ownerId: sourceOwnerId,
                     reason: 'elder_thing_elder_thing_pod_forced',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -1511,7 +1529,13 @@ const elderThingBeginTheSummoningPodPromptProgram = createPromptProgram<ElderThi
         if (!inDiscard) return { events: [] };
         const evt: SmashUpEvent = {
             type: SU_EVENTS.CARD_TO_DECK_TOP,
-            payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: context.playerId, reason: 'elder_thing_begin_the_summoning_pod' },
+            payload: {
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                ownerId: inDiscard.owner,
+                sourcePlayerId: context.playerId,
+                reason: 'elder_thing_begin_the_summoning_pod',
+            },
             timestamp,
         };
         return {
@@ -1665,13 +1689,20 @@ const elderThingSpreadingHorrorPodChooseMinionPromptProgram = createPromptProgra
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = getSelectedCard(value);
         if (!selected) return { events: [] };
-        const def = getCardDef(selected.defId) as MinionCardDef | undefined;
+        const selectedCard = state.core.players[context.casterPlayerId]?.discard.find((card) =>
+            card.uid === selected.cardUid
+            && card.defId === selected.defId
+            && card.type === 'minion',
+        );
+        if (!selectedCard) return { events: [] };
+        const def = getCardDef(selectedCard.defId) as MinionCardDef | undefined;
         const playedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
             payload: {
                 playerId: context.casterPlayerId,
-                cardUid: selected.cardUid,
-                defId: selected.defId,
+                cardUid: selectedCard.uid,
+                defId: selectedCard.defId,
+                ownerId: selectedCard.owner,
                 baseIndex: context.chosenBaseIndex,
                 power: def?.power ?? 0,
                 fromDiscard: true,
@@ -2077,6 +2108,7 @@ const elderThingDestroySecondPromptProgram = createPromptProgram<ElderThingDestr
         if (!selected) {
             return { events: [] };
         }
+        const sourceOwnerId = findMinionOnBases(state.core, context.cardUid)?.minion.owner ?? context.playerId;
 
         const firstTarget = context.firstTarget;
         const proposed: SmashUpEvent[] = [
@@ -2104,7 +2136,7 @@ const elderThingDestroySecondPromptProgram = createPromptProgram<ElderThingDestr
                 events: buildValidatedCardToDeckBottomEvents(state, {
                     cardUid: context.cardUid,
                     defId: context.elderThingDefId,
-                    ownerId: context.playerId,
+                    ownerId: sourceOwnerId,
                     reason: 'elder_thing_elder_thing_failed_destroy',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -2143,6 +2175,7 @@ const elderThingDestroyFirstPromptProgram = createPromptProgram<ElderThingOnPlay
         if (!firstTarget) {
             return { events: [] };
         }
+        const sourceOwnerId = findMinionOnBases(state.core, context.cardUid)?.minion.owner ?? context.playerId;
 
         const remaining = collectFriendlyOtherMinions(
             state.core,
@@ -2155,7 +2188,7 @@ const elderThingDestroyFirstPromptProgram = createPromptProgram<ElderThingOnPlay
                 events: buildValidatedCardToDeckBottomEvents(state, {
                     cardUid: context.cardUid,
                     defId: context.elderThingDefId,
-                    ownerId: context.playerId,
+                    ownerId: sourceOwnerId,
                     reason: 'elder_thing_elder_thing_failed_destroy',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -2212,12 +2245,13 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
     },
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = (value as { choice?: string } | undefined)?.choice;
+        const sourceOwnerId = findMinionOnBases(state.core, context.cardUid)?.minion.owner ?? context.playerId;
         if (choice === 'deckbottom') {
             return {
                 events: buildValidatedCardToDeckBottomEvents(state, {
                     cardUid: context.cardUid,
                     defId: context.elderThingDefId,
-                    ownerId: context.playerId,
+                    ownerId: sourceOwnerId,
                     reason: 'elder_thing_elder_thing',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -2231,7 +2265,7 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
                 events: buildValidatedCardToDeckBottomEvents(state, {
                     cardUid: context.cardUid,
                     defId: context.elderThingDefId,
-                    ownerId: context.playerId,
+                    ownerId: sourceOwnerId,
                     reason: 'elder_thing_elder_thing_failed_destroy',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -2255,7 +2289,7 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
                     events: buildValidatedCardToDeckBottomEvents(state, {
                         cardUid: context.cardUid,
                         defId: context.elderThingDefId,
-                        ownerId: context.playerId,
+                        ownerId: sourceOwnerId,
                         reason: 'elder_thing_elder_thing_failed_destroy',
                         now: timestamp,
                         expectedLocation: 'bases',
@@ -2619,7 +2653,7 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
             if (!m.attachedActions.some(a => matchesDefId(a.defId, 'elder_thing_dunwich_horror'))) continue;
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, undefined, 'elder_thing_dunwich_horror', ctx.now));
+            events.push(destroyMinion(m.uid, m.defId, i, m.owner, undefined, 'elder_thing_dunwich_horror', ctx.now, undefined, m.controller));
         }
     }
     return events;

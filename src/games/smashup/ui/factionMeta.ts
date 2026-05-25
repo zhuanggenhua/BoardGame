@@ -128,6 +128,10 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.SHARKS, nameKey: 'factions.sharks.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks.description', implementationStatus: 'in_progress' },
     { id: SMASHUP_FACTION_IDS.TORNADOS, nameKey: 'factions.tornados.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados.description', implementationStatus: 'in_progress' },
     { id: SMASHUP_FACTION_IDS.MYTHIC_GREEKS, nameKey: 'factions.mythic_greeks.name', icon: Sword, color: '#f59e0b', descriptionKey: 'factions.mythic_greeks.description', implementationStatus: 'in_progress' },
+    { id: SMASHUP_FACTION_IDS.SHAPESHIFTERS, nameKey: 'factions.shapeshifters.name', icon: FlaskConical, color: '#db2777', descriptionKey: 'factions.shapeshifters.description', implementationStatus: 'in_progress' },
+    { id: SMASHUP_FACTION_IDS.CYBORG_APES, nameKey: 'factions.cyborg_apes.name', icon: Bot, color: '#84cc16', descriptionKey: 'factions.cyborg_apes.description', implementationStatus: 'in_progress' },
+    { id: SMASHUP_FACTION_IDS.SUPER_SPIES, nameKey: 'factions.super_spies.name', icon: Eye, color: '#dc2626', descriptionKey: 'factions.super_spies.description', implementationStatus: 'in_progress' },
+    { id: SMASHUP_FACTION_IDS.TIME_TRAVELERS, nameKey: 'factions.time_travelers.name', icon: Orbit, color: '#0d9488', descriptionKey: 'factions.time_travelers.description', implementationStatus: 'in_progress' },
     { id: SMASHUP_FACTION_IDS.SKELETONS, nameKey: 'factions.skeletons.name', icon: Skull, color: '#6b7280', descriptionKey: 'factions.skeletons.description' },
     { id: SMASHUP_FACTION_IDS.WORLD_CHAMPS, nameKey: 'factions.world_champs.name', icon: Medal, color: '#eab308', descriptionKey: 'factions.world_champs.description' },
     // POD 版本阵营：英文和中文都显示（英文用户的主版本）

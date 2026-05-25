@@ -59,6 +59,10 @@ import { PRINCESSES_CARDS } from './factions/princesses';
 import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
 import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
+import { SHAPESHIFTERS_CARDS } from './factions/shapeshifters';
+import { CYBORG_APES_CARDS } from './factions/cyborg_apes';
+import { SUPER_SPIES_CARDS } from './factions/super_spies';
+import { TIME_TRAVELERS_CARDS } from './factions/time_travelers';
 
 // ============================================================================
 // 注册表
@@ -188,6 +192,10 @@ registerCards(PRINCESSES_CARDS);
 registerCards(SHARKS_CARDS);
 registerCards(TORNADOS_CARDS);
 registerCards(MYTHIC_GREEKS_CARDS);
+registerCards(SHAPESHIFTERS_CARDS);
+registerCards(CYBORG_APES_CARDS);
+registerCards(SUPER_SPIES_CARDS);
+registerCards(TIME_TRAVELERS_CARDS);
 // POD 版本阵营（最新英文 POD 版本）
 registerCards(NINJA_POD_CARDS);
 registerCards(TITAN_CARD_DEFS);
@@ -604,7 +612,6 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'North Pole',
         breakpoint: 24,
         vpAwards: [5, 3, 2],
-        faction: 'cyborg_apes',
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 0 },
         restrictions: [{ type: 'play_minion', condition: { minionPlayLimitPerTurn: 1 } }],
     },
@@ -724,6 +731,86 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_SET4);
+
+// ============================================================================
+// 扩展基地 (Science Fiction Double Feature - yuanhou)
+// ============================================================================
+export const BASE_CARDS_SCIENCE_FICTION_DOUBLE_FEATURE: BaseCardDef[] = [
+    {
+        id: 'base_the_nexus',
+        name: '联结点',
+        nameEn: 'The Nexus',
+        breakpoint: 19,
+        vpAwards: [3, 3, 2],
+        faction: SMASHUP_FACTION_IDS.TIME_TRAVELERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 0 },
+    },
+    {
+        id: 'base_portal_room',
+        name: '传送门',
+        nameEn: 'Portal Room',
+        breakpoint: 22,
+        vpAwards: [2, 3, 1],
+        faction: SMASHUP_FACTION_IDS.TIME_TRAVELERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 1 },
+    },
+    {
+        id: 'base_isis_swingin_pad',
+        name: 'ISI摇摆据点',
+        nameEn: "ISI's Swingin' Pad",
+        breakpoint: 21,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.SUPER_SPIES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 2 },
+    },
+    {
+        id: 'base_secret_volcano_headquarters',
+        name: '秘密火山总部',
+        nameEn: 'Secret Volcano Headquarters',
+        breakpoint: 18,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.SUPER_SPIES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 3 },
+    },
+    {
+        id: 'base_the_vats',
+        name: '生体培养缸',
+        nameEn: 'The Vats',
+        breakpoint: 15,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.SHAPESHIFTERS,
+        restrictions: [{ type: 'play_minion', condition: { sameNameAlreadyAtBase: true } }],
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 4 },
+    },
+    {
+        id: 'base_faceless_city',
+        name: '无面者之城',
+        nameEn: 'Faceless City',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.SHAPESHIFTERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 5 },
+    },
+    {
+        id: 'base_primate_park',
+        name: '灵长类公园',
+        nameEn: 'Primate Park',
+        breakpoint: 20,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.CYBORG_APES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 6 },
+    },
+    {
+        id: 'base_monkey_lab',
+        name: '猴子实验室',
+        nameEn: 'Monkey Lab',
+        breakpoint: 23,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.CYBORG_APES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 7 },
+    },
+];
+registerBases(BASE_CARDS_SCIENCE_FICTION_DOUBLE_FEATURE);
 
 // ============================================================================
 // 扩展基地 (Monster Smash - cards5)

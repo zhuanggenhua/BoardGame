@@ -506,8 +506,8 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
                 const classText = nodes.map((node) => node.getAttribute('class') ?? '').join(' ');
                 return {
                     exists: true,
-                    selectable: /ring-green-300|ring-green-400/.test(classText),
-                    dimmed: /opacity-40/.test(classText) && /grayscale/.test(classText),
+                    selectable: /ring-green-300|ring-green-400|ring-emerald-400/.test(classText),
+                    dimmed: /cursor-not-allowed/.test(classText) && /grayscale/.test(classText),
                 };
             };
 

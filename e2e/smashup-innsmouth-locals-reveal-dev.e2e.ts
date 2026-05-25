@@ -77,14 +77,14 @@ test.describe('印斯茅斯"本地人"展示功能（开发服务器）', () => 
         expect(revealVisible).toBe(true);
 
         // 8. 验证展示的卡牌数量（应该是 3 张）
-        const cardCount = await page.locator('[data-testid="reveal-overlay"] [data-card-preview]').count();
+        const cardCount = await page.locator('[data-testid="reveal-overlay"] [data-testid="reveal-card"]').count();
         expect(cardCount).toBe(3);
 
         // 9. 截图：展示 UI
         await page.screenshot({ path: 'test-results/innsmouth-locals-02-reveal-ui.png' });
 
         // 10. 点击关闭展示 UI
-        await page.click('[data-testid="reveal-overlay"]');
+        await page.getByTestId('reveal-dismiss-btn').click({ force: true });
 
         // 11. 验证展示 UI 消失
         await page.waitForSelector('[data-testid="reveal-overlay"]', { state: 'hidden', timeout: 2000 });

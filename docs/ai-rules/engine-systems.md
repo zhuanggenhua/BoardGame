@@ -101,6 +101,7 @@
 - 私有决策的 freshness gate 只允许拦 `private-required`，不得再一刀切阻断整个在线 AI。
 - 新增在线 AI 决策点时，先判断它依赖公共真相还是私有 overlay，再决定是否允许 shared fallback。
 - **响应窗口特例（强制）**：`responseWindow` 场景下，freshness 校验不得把 `currentPlayer === responder` 当成硬条件。必须按窗口语义对齐（`windowType/sourceId/currentResponder`），因为响应者本来就可能不是当前行动玩家（如 DiceThrone 防御/干扰响应）。
+- **response-loop 升级门禁（强制）**：watchdog 只有在确认是**纯 AI 响应循环**时，才允许把 `response-window` 升级成 `response-loop` 并执行 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`。最低要求同时满足：① 同一 incident 已有失败/重开证据；② 当前 `responderQueue` 里**没有 human**；③ 若 tracker 已从 `response-window` 升到 `response-loop`，后续 tick 必须沿同一 incident continuity 继续 hard-close，不能因为 key 前缀变化又降回 `RESPONSE_PASS`。凡修改 `resolveOnlineAiRecoveryCandidate()` 或 `runOnlineAiRecoverySequence()` 的 response-loop 逻辑，必须补两类直测：`human still queued -> 不得 hard-close`，以及 `existing response-loop / accumulated failureCount -> 不得空转降级`。
 
 ##### 回归门禁（强制）
 
@@ -1635,14 +1636,20 @@ activeUse: {
 `pendingSave` 用于暂缓 `MINION_DESTROYED` 事件——当 baseTrigger/ongoing 创建了"拯救交互"（如雄蜂防消灭、九命之屋），等待玩家决定。
 
 **核心不变量**：
-1. **`interactionCountBefore` 必须在 `onDestroy` 之后取值** — onDestroy 产生的交互是死亡效果（如 Igor 选目标放指示物），不是拯救交互，不应触发 pendingSave
-2. **不得按 sourceId 过滤"拯救交互"** — 任何 baseTrigger/ongoing 创建的新交互都可能是拯救交互（雄蜂、九命之屋等），硬编码白名单会遗漏新增的拯救能力
-3. **pendingSave 检测公式**：`interactionCountAfter > interactionCountBefore` 即为拯救交互，无需额外过滤
+1. **`interactionCountBefore` 必须在 `onDestroy` 之后取值** — onDestroy 产生的交互是死亡效果（如 Igor 选目标放指示物），不是拯救交互，不应触发 pendingSave。
+2. **通用原则：不能只凭“新交互出现了”就认定是拯救交互** — destroy 链上既可能出现 replacement/save prompt，也可能出现普通死亡效果 prompt；若没有额外合同，`interactionCountAfter > interactionCountBefore` 只能说明“出现了新交互”，不能单独推出“应该 pendingSave”。
+3. **SmashUp 当前 runtime 例外（带作用域）**：`src/games/smashup/domain/reducer.ts` 的 `processDestroyTriggers()` 目前仍依赖 `PREVENT_DESTROY_SOURCE_IDS` 白名单识别交互式 replacement。也就是当前 SmashUp 的 pendingSave 合同是两段式：
+   `interactionCountAfter > interactionCountBefore`
+   且 `newInteraction.data.sourceId ∈ PREVENT_DESTROY_SOURCE_IDS`
+   才进入 pendingSave。
+   当前已锁定的 sourceId 示例：`base_nine_lives_intercept`、`giant_ant_drone_prevent_destroy`、`pirate_buccaneer_move`。
+4. **新增交互式 replacement 时必须同步三处**：`reducer.ts` 的 `PREVENT_DESTROY_SOURCE_IDS`、`src/games/smashup/rule/ENGINE_GUIDE.md`、`src/games/smashup/__tests__/reactionQueueDestroyPendingSaveContract.test.ts`。未同步前，不得把“删白名单”当作默认清理动作。
 
 **历史教训**：
-- ❌ 在 onDestroy 之前取 `interactionCountBefore` → Igor 的效果交互被误判为拯救交互 → Igor 的 `MINION_DESTROYED` 被错误抑制
-- ❌ 添加 `isSaveInteraction = sourceId === 'base_nine_lives_intercept'` 过滤 → 雄蜂的 `giant_ant_drone_prevent_destroy` 被跳过 → 雄蜂防消灭失效
-- ✅ 正确：`interactionCountBefore` 在 onDestroy 之后取值 + 不按 sourceId 过滤
+- ❌ 在 onDestroy 之前取 `interactionCountBefore` → Igor 的效果交互被误判为拯救交互 → Igor 的 `MINION_DESTROYED` 被错误抑制。
+- ❌ 把 `interactionCountAfter > interactionCountBefore` 直接当成 pendingSave → 普通死亡效果 prompt 也会被误判成拯救交互。
+- ❌ 只给个别 sourceId 加临时特判、却不回写统一白名单合同 → 新增 `giant_ant_drone_prevent_destroy` / `pirate_buccaneer_move` 这类入口时会静默漏接。
+- ✅ 当前 SmashUp 正确口径：`interactionCountBefore` 在 onDestroy 之后取值，并通过 `PREVENT_DESTROY_SOURCE_IDS` 明确声明哪些交互式 replacement 会进入 pendingSave。
 
 ### matchState 链式传递（强制）
 

@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { makeState, makePlayer, makeCard, makeBase, makeMatchState } from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
-import { SU_COMMANDS } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { registerWizardAbilities } from '../abilities/wizards';
 import { registerZombieAbilities } from '../abilities/zombies';
@@ -23,6 +23,161 @@ beforeAll(() => {
 });
 
 describe('学徒打出 ongoing 行动卡', () => {
+    it('直接打出被他人拥有的 ongoing 行动时，附着后仍应保留 owner 且从当前玩家手牌移除', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('overrun', 'zombie_overrun', 'action', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({ defId: 'base_a' })],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'overrun', targetBaseIndex: 0 },
+        }, defaultTestRandom);
+
+        expect(result.success).toBe(true);
+        const attachEvent = result.events.find(event => event.type === 'su:ongoing_attached') as any;
+        expect(attachEvent?.payload?.ownerId).toBe('1');
+
+        const finalCore = result.finalState.core;
+        expect(finalCore.bases[0].ongoingActions).toContainEqual(
+            expect.objectContaining({ uid: 'overrun', defId: 'zombie_overrun', ownerId: '1' }),
+        );
+        expect(finalCore.players['0'].hand.some(card => card.uid === 'overrun')).toBe(false);
+        expect(finalCore.players['1'].hand.some(card => card.uid === 'overrun')).toBe(false);
+    });
+
+    it('学徒选择把当前牌库顶 borrowed 行动放入手牌时，应进入当前玩家手牌且不动真实拥有者牌库', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'wizard_neophyte', 'minion', '0')],
+                    deck: [
+                        makeCard('borrowed-summon', 'wizard_summon', 'action', '1'),
+                        makeCard('p0-tail', 'test_minion', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'test_minion', 'minion', '1')],
+                }),
+            },
+            bases: [makeBase()],
+        });
+
+        const playNeophyte = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        }, defaultTestRandom);
+        expect(playNeophyte.success).toBe(true);
+        expect(playNeophyte.finalState.sys.interaction.current?.data?.sourceId).toBe('wizard_neophyte');
+
+        const chooseToHand = runCommand(playNeophyte.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: 'to_hand' },
+        }, defaultTestRandom);
+        expect(chooseToHand.success).toBe(true);
+
+        const drawEvent = chooseToHand.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
+        expect(drawEvent?.payload).toEqual(expect.objectContaining({
+            playerId: '0',
+            cardUids: ['borrowed-summon'],
+        }));
+        expect(chooseToHand.finalState.core.players['0'].hand).toContainEqual(
+            expect.objectContaining({ uid: 'borrowed-summon', owner: '1' }),
+        );
+        expect(chooseToHand.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-tail']);
+        expect(chooseToHand.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail']);
+        expect(chooseToHand.finalState.core.players['1'].hand.some(card => card.uid === 'borrowed-summon')).toBe(false);
+    });
+
+    it('学徒额外打出当前牌库顶 borrowed ongoing 行动时，应从当前牌库移除并保留真实 owner 附着', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'wizard_neophyte', 'minion', '0')],
+                    deck: [
+                        makeCard('borrowed-overrun', 'zombie_overrun', 'action', '1'),
+                        makeCard('p0-tail', 'test_minion', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'test_minion', 'minion', '1')],
+                }),
+            },
+            bases: [makeBase({ defId: 'base_a' }), makeBase({ defId: 'base_b' })],
+        });
+
+        const playNeophyte = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        }, defaultTestRandom);
+        expect(playNeophyte.success).toBe(true);
+        expect(playNeophyte.finalState.sys.interaction.current?.data?.sourceId).toBe('wizard_neophyte');
+
+        const choosePlay = runCommand(playNeophyte.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: 'play_extra' },
+        }, defaultTestRandom);
+        expect(choosePlay.success).toBe(true);
+
+        const targetPrompt = choosePlay.finalState.sys.interaction.current;
+        expect(targetPrompt?.data?.sourceId).toBe('wizard_neophyte_choose_base');
+        const baseOption = (targetPrompt?.data?.options ?? [])[0];
+
+        const resolveTarget = runCommand(choosePlay.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: baseOption.id },
+        }, defaultTestRandom);
+        expect(resolveTarget.success).toBe(true);
+
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_REMOVED_FROM_DECK,
+            payload: expect.objectContaining({
+                playerId: '0',
+                cardUid: 'borrowed-overrun',
+                defId: 'zombie_overrun',
+            }),
+        }));
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ACTION_PLAYED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                cardUid: 'borrowed-overrun',
+                defId: 'zombie_overrun',
+                ownerId: '1',
+                isExtraAction: true,
+                targetBaseIndex: 0,
+            }),
+        }));
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'borrowed-overrun',
+                defId: 'zombie_overrun',
+                ownerId: '1',
+                targetType: 'base',
+                targetBaseIndex: 0,
+            }),
+        }));
+        expect(resolveTarget.finalState.core.bases[0].ongoingActions).toContainEqual(
+            expect.objectContaining({ uid: 'borrowed-overrun', defId: 'zombie_overrun', ownerId: '1' }),
+        );
+        expect(resolveTarget.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-tail']);
+        expect(resolveTarget.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail']);
+        expect(resolveTarget.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-overrun')).toBe(false);
+        expect(resolveTarget.finalState.core.players['1'].discard.some(card => card.uid === 'borrowed-overrun')).toBe(false);
+    });
+
     it('学徒打出 zombie_overrun（泛滥横行）时应该先选择目标基地', () => {
         const state = makeState({
             players: {

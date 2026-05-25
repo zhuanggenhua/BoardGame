@@ -526,6 +526,70 @@ describe('Oops Ancient Egyptians bases', () => {
         expect(secondUse.error).toContain('本回合已使用');
     });
 
+    it('base_pyramids 埋葬 borrowed 手牌时应保留真实 owner', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_pyramids',
+                minions: [],
+                ongoingActions: [],
+            }],
+            players: {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [{ uid: 'borrowed-pyramids-hand', defId: 'robot_microbot_alpha', type: 'minion', owner: '1' }],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS, SMASHUP_FACTION_IDS.ALIENS],
+                },
+                '1': {
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.ALIENS],
+                },
+            } as any,
+        });
+
+        const activated = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_BASE_ABILITY,
+            playerId: '0',
+            payload: { baseIndex: 0 },
+        } as any, defaultTestRandom);
+        expect(activated.success).toBe(true);
+
+        const prompt = activated.finalState.sys.interaction.current as any;
+        expect(prompt?.data?.sourceId).toBe('base_pyramids');
+        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-pyramids-hand');
+        expect(option).toBeDefined();
+
+        const buried = runCommand(activated.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: option.id },
+        } as any, defaultTestRandom);
+
+        const buriedCard = (buried.finalState.core.bases[0].buriedCards ?? [])
+            .find(card => card.uid === 'borrowed-pyramids-hand');
+        expect(buried.success).toBe(true);
+        expect(buriedCard).toEqual(expect.objectContaining({
+            uid: 'borrowed-pyramids-hand',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'hand',
+        }));
+    });
+
     it('base_star_portal 在行动牌打到此基地时让其控制者抽一张牌', () => {
         const ctx: BaseAbilityContext = {
             state: makeState({
@@ -676,6 +740,76 @@ describe('Oops Ancient Egyptians bases', () => {
         const drawEvent = triggered.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
         expect(drawEvent).toBeDefined();
         expect(drawEvent.payload.playerId).toBe('0');
+        expect(drawEvent.payload.count).toBe(1);
+    });
+
+    it('base_star_portal 在其他玩家埋牌到这里时让埋葬者抽牌', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_star_portal',
+                minions: [],
+                ongoingActions: [],
+            }],
+            players: {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [{ uid: 'p0-deck-a', defId: 'robot_warbot', type: 'minion', owner: '0' }],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS, SMASHUP_FACTION_IDS.ALIENS],
+                },
+                '1': {
+                    id: '1',
+                    vp: 0,
+                    hand: [{ uid: 'bury-me', defId: 'robot_warbot', type: 'minion', owner: '1' }],
+                    deck: [{ uid: 'p1-draw-a', defId: 'robot_microbot_alpha', type: 'minion', owner: '1' }],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS, SMASHUP_FACTION_IDS.ALIENS],
+                },
+            } as any,
+        });
+
+        const events = buildBuryCardEvents({
+            core,
+            playerId: '1',
+            cardUid: 'bury-me',
+            defId: 'robot_warbot',
+            baseIndex: 0,
+            trueOwnerId: '1',
+            buriedFrom: 'hand',
+            reason: 'test_star_portal_burier',
+            random: defaultTestRandom,
+            now: 1003,
+        });
+
+        expect(events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
+        expect(events.some(event => event.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(true);
+
+        const buriedCore = events.reduce((acc, event) => reduce(acc, event), core);
+        const triggered = fireTriggers(buriedCore, 'onCardBuried', {
+            state: buriedCore,
+            playerId: '0',
+            baseIndex: 0,
+            buriedCardUid: 'bury-me',
+            buriedCardDefId: 'robot_warbot',
+            buriedCardControllerId: '1',
+            buriedFrom: 'hand',
+            random: defaultTestRandom,
+            now: 1003,
+        });
+
+        const drawEvent = triggered.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
+        expect(drawEvent).toBeDefined();
+        expect(drawEvent.payload.playerId).toBe('1');
         expect(drawEvent.payload.count).toBe(1);
     });
 });
@@ -1531,6 +1665,40 @@ describe('base_laboratorium: 实验工坊 - 当前玩家回合内基地全局首
         const { events } = triggerBaseAbility('base_laboratorium', 'onMinionPlayed', ctx);
         expect(events.length).toBe(0);
     });
+
+    it('borrowed Infiltrate 由控制者控制时，应阻止 Laboratorium 给控制者打出的首个随从放指示物', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{
+                    defId: 'base_laboratorium',
+                    minions: [makeMinion('m4', '0', 3)],
+                    ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+                }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.WEREWOLVES],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 0 },
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_laboratorium',
+            playerId: '0',
+            minionUid: 'm4',
+            now: 1001,
+        };
+
+        const { events } = triggerBaseAbility('base_laboratorium', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(0);
+    });
 });
 
 describe('base_moot_site: 集会场 - 当前玩家回合内基地全局首次随从', () => {
@@ -1622,6 +1790,81 @@ describe('base_moot_site: 集会场 - 当前玩家回合内基地全局首次随
         };
 
         const { events } = triggerBaseAbility('base_moot_site', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(0);
+    });
+
+    it('borrowed Infiltrate 由控制者控制时，应阻止 Moot Site 给控制者打出的首个随从 +2 临时力量', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{
+                    defId: 'base_moot_site',
+                    minions: [makeMinion('m4', '0', 3)],
+                    ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+                }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.FRANKENSTEIN],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 0 },
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_moot_site',
+            playerId: '0',
+            minionUid: 'm4',
+            now: 1001,
+        };
+
+        const { events } = triggerBaseAbility('base_moot_site', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(0);
+    });
+});
+
+describe('base_golem_schloss: 魔像城堡 - afterScoring', () => {
+    it('borrowed Infiltrate 由控制者控制时，应阻止 Golem Schloß 给冠军的随从放指示物', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [
+                    {
+                        defId: 'base_golem_schloss',
+                        minions: [makeMinion('winner-on-base', '0', 4)],
+                        ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+                    },
+                    {
+                        defId: 'base_a',
+                        minions: [makeMinion('winner-other-base', '0', 3)],
+                        ongoingActions: [],
+                    },
+                ],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        factions: [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.FRANKENSTEIN],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
+                    },
+                } as any,
+            }),
+            rankings: [{ playerId: '0', totalPower: 7, place: 1 }] as any,
+            baseIndex: 0,
+            baseDefId: 'base_golem_schloss',
+            playerId: '0',
+            now: 1002,
+        };
+
+        const { events } = triggerBaseAbility('base_golem_schloss', 'afterScoring', ctx);
         expect(events.length).toBe(0);
     });
 });
@@ -1852,6 +2095,59 @@ describe('Oops Vikings bases', () => {
         );
 
         expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'd2')).toBe(true);
+        expect(resolved.finalState.core.players['1'].discard).toHaveLength(0);
+        expect(resolved.finalState.core.players['1'].deck).toHaveLength(0);
+    });
+
+    it('base_drakkar 目标弃牌堆重洗时应分流 borrowed 卡，只揭示目标玩家自有牌', () => {
+        const result = triggerBaseAbilityWithMS('base_drakkar', 'onMinionPlayed', {
+            state: makeState({
+                bases: [{
+                    defId: 'base_drakkar',
+                    minions: [makeMinion('m1', '0', 3)],
+                    ongoingActions: [],
+                }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [{ uid: 'p0-deck-a', defId: 'test_action_a', type: 'action', owner: '0' }], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.VIKINGS, SMASHUP_FACTION_IDS.ALIENS],
+                    },
+                    '1': {
+                        id: '1',
+                        vp: 0,
+                        hand: [],
+                        deck: [],
+                        discard: [
+                            { uid: 'borrowed-d2', defId: 'robot_microbot_beta', type: 'minion', owner: '0' },
+                            { uid: 'own-d3', defId: 'robot_microbot_alpha', type: 'minion', owner: '1' },
+                        ],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        factions: [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.PIRATES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_drakkar',
+            playerId: '0',
+            minionUid: 'm1',
+            minionDefId: 'test_minion',
+            minionPower: 3,
+            now: 1000,
+        });
+
+        const prompt = getInteractionsFromResult(result)[0] as any;
+        const option = prompt.data.options.find((entry: any) => entry.value?.targetPlayerId === '1');
+        const resolved = runCommand(
+            result.matchState!,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'own-d3')).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'borrowed-d2')).toBe(false);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a', 'borrowed-d2']);
         expect(resolved.finalState.core.players['1'].discard).toHaveLength(0);
         expect(resolved.finalState.core.players['1'].deck).toHaveLength(0);
     });
@@ -2161,6 +2457,59 @@ describe('Oops Samurai bases', () => {
         expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
     });
 
+    it('base_sakura_garden 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重抽牌', () => {
+        const core = makeState({
+            players: {
+                '0': {
+                    id: '0', vp: 0, hand: [],
+                    deck: [makeCard('garden-draw-a', '0', 'robot_microbot_alpha')],
+                    discard: [],
+                    minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.SAMURAI, SMASHUP_FACTION_IDS.ALIENS],
+                },
+                '1': {
+                    id: '1', vp: 0, hand: [], deck: [], discard: [],
+                    minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.WIZARDS],
+                },
+            },
+            bases: [{
+                defId: 'base_sakura_garden',
+                minions: [{
+                    uid: 'garden-dup-1',
+                    defId: 'sharks_mako',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 3,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                }],
+                ongoingActions: [],
+            }],
+        }) as any;
+        const state = makeMatchState(core);
+
+        const result = processDestroyTriggers([{
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'garden-dup-1',
+                minionDefId: 'sharks_mako',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1001,
+        } as any], state, '1', defaultTestRandom, 1001);
+
+        const drawEvents = result.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        expect(drawEvents).toHaveLength(1);
+        expect(drawEvents[0]?.payload?.playerId).toBe('0');
+    });
+
     it('base_sakura_garden 与 samurai_honor_the_fallen 同时触发时两者都会结算抓牌', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
@@ -2447,6 +2796,63 @@ describe('Oops Samurai bases', () => {
             destroyerId: '1',
             random: dummyRandom,
             now: 1002,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+    });
+
+    it('base_sakura_garden 在同一玩家先失去 stolen minion 再失去自有随从时，不应因 owner 不同而重复抽牌', () => {
+        const state = makeState({
+            bases: [{
+                defId: 'base_sakura_garden',
+                minions: [],
+                ongoingActions: [],
+            }],
+            turnDestroyedMinions: [{
+                uid: 'stolen-dead-1',
+                defId: 'samurai_samurai_chan',
+                baseIndex: 0,
+                owner: '1',
+                controller: '0',
+            }],
+            players: {
+                '0': {
+                    id: '0', vp: 0, hand: [],
+                    deck: [makeCard('draw-1', '0', 'robot_microbot_alpha')],
+                    discard: [],
+                    minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.SAMURAI, SMASHUP_FACTION_IDS.ALIENS],
+                },
+                '1': {
+                    id: '1', vp: 0, hand: [], deck: [], discard: [],
+                    minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.WIZARDS],
+                },
+            } as any,
+        });
+
+        const result = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            matchState: makeMatchState(state),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinion: {
+                uid: 'owned-dead-2',
+                defId: 'samurai_bushi',
+                controller: '0',
+                owner: '0',
+                basePower: 4,
+                powerCounters: 0,
+                powerModifier: 0,
+                tempPowerModifier: 0,
+                talentUsed: false,
+                attachedActions: [],
+            },
+            triggerMinionUid: 'owned-dead-2',
+            triggerMinionDefId: 'samurai_bushi',
+            destroyerId: '1',
+            random: dummyRandom,
+            now: 1003,
         });
 
         expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);

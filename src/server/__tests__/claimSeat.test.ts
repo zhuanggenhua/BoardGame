@@ -92,4 +92,64 @@ describe('claim-seat handler', () => {
         expect(savedPlayer?.name).toBe('游客001');
         expect(savedPlayer?.credentials).toBe('guest-cred');
     });
+
+    it('第一次读取到 stale metadata 时，claim-seat 落盘前应保留存储层最新 seat 信息', async () => {
+        const jwtSecret = 'test-secret';
+        const staleMetadata = buildMetadata('guest:g1');
+        staleMetadata.players['0'] = {};
+        staleMetadata.players['1'] = { name: '旧对手' };
+
+        const latestMetadata = buildMetadata('guest:g1');
+        latestMetadata.players['0'] = {
+            name: '房主',
+            credentials: 'latest-seat-cred',
+        };
+        latestMetadata.players['1'] = { name: '新对手' };
+
+        const state = buildState('guest:g1');
+        let fetchCount = 0;
+        let savedPlayers: SavedMatchData['players'];
+
+        const handler = createClaimSeatHandler({
+            db: {
+                fetch: async (_matchID, opts) => {
+                    fetchCount += 1;
+                    if (opts.state) {
+                        return { metadata: staleMetadata, state };
+                    }
+                    return { metadata: latestMetadata };
+                },
+                setMetadata: async (_id, nextMetadata) => {
+                    savedPlayers = (nextMetadata as SavedMatchData).players;
+                },
+            },
+            auth: {
+                generateCredentials: () => {
+                    throw new Error('最新 metadata 已有 credentials 时不应重新签发');
+                },
+            },
+            jwtSecret,
+        });
+
+        const ctx: ClaimSeatContext = {
+            get: () => '',
+            request: { body: { playerID: '0', guestId: 'g1', playerName: '房主候选' } },
+            throw: (status: number, message: string) => {
+                throw new Error(`${status}:${message}`);
+            },
+            body: undefined,
+        };
+
+        await handler(ctx, 'match-stale-claim-seat');
+
+        expect(fetchCount).toBe(2);
+        expect((ctx.body as { playerCredentials?: string })?.playerCredentials).toBe('latest-seat-cred');
+        expect(savedPlayers?.['0']).toEqual({
+            name: '房主',
+            credentials: 'latest-seat-cred',
+        });
+        expect(savedPlayers?.['1']).toEqual({
+            name: '新对手',
+        });
+    });
 });

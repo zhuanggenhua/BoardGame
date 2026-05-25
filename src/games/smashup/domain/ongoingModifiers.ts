@@ -13,7 +13,7 @@
 import type { PlayerId } from '../../../engine/types';
 import type { SmashUpCore, MinionOnBase, BaseInPlay, TitanState } from './types';
 import { getBaseDef, getCardDef } from '../data/cards';
-import { getSuppressionFilteredStateForSource, isBaseAbilitySuppressed, isCardSuppressed } from './ongoingEffects';
+import { getSuppressionFilteredStateForSource, isBaseAbilitySuppressed, isBaseScoringSuppressed, isCardSuppressed } from './ongoingEffects';
 
 // ============================================================================
 // 类型定义
@@ -70,7 +70,7 @@ export interface BasePowerModifierContext {
     /** 玩家 ID */
     playerId: PlayerId;
     /** 当前处理的 ongoing 卡（可选，用于判断卡的所有者） */
-    ongoing?: { uid: string; defId: string; ownerId: string };
+    ongoing?: { uid: string; defId: string; ownerId: string; metadata?: Record<string, unknown> };
 }
 
 /** 基地级别力量修正函数：返回该玩家在该基地的额外力量 */
@@ -88,12 +88,15 @@ interface BreakpointModifierEntry {
 
 /** 持续力量修正注册表 */
 const modifierRegistry: ModifierEntry[] = [];
+const generatedPodModifierAliases = new Set<string>();
 
 /** 持续临界点修正注册表 */
 const breakpointModifierRegistry: BreakpointModifierEntry[] = [];
+const generatedPodBreakpointAliases = new Set<string>();
 
 /** 基地级别力量修正注册表 */
 const basePowerModifiers: Map<string, BasePowerModifierFn> = new Map();
+const generatedPodBasePowerAliases = new Set<string>();
 
 export interface TitanPowerModifierContext {
     state: SmashUpCore;
@@ -109,6 +112,18 @@ const titanPowerModifiers: Map<string, TitanPowerModifierFn> = new Map();
 
 function normalizeDefId(defId: string): string {
     return defId.endsWith('_pod') ? defId.slice(0, -4) : defId;
+}
+
+function isEntityBackedModifierSource(defId: string): boolean {
+    return Boolean(getCardDef(defId) || getBaseDef(defId));
+}
+
+function shouldExposePodModifierAlias(defId: string): boolean {
+    const podCard = getCardDef(`${defId}_pod`);
+    if (podCard) {
+        return podCard.abilityTags?.includes('ongoing') ?? false;
+    }
+    return Boolean(getBaseDef(`${defId}_pod`));
 }
 
 function getFilteredPowerModifierContext(
@@ -144,6 +159,27 @@ function getFilteredBreakpointModifierContext(
         baseIndex,
         base: filteredState.bases[baseIndex] ?? state.bases[baseIndex],
         originalBreakpoint,
+    };
+}
+
+function rewriteBaseOngoingDefIdForPodAlias(
+    state: SmashUpCore,
+    baseIndex: number,
+    podDefId: string,
+    baseDefId: string,
+): { state: SmashUpCore; base: BaseInPlay } {
+    const originalBase = state.bases[baseIndex] ?? { defId: 'missing_base', minions: [], ongoingActions: [] };
+    const rewrittenBase: BaseInPlay = {
+        ...originalBase,
+        ongoingActions: originalBase.ongoingActions.map((action) => (
+            action.defId === podDefId ? { ...action, defId: baseDefId } : action
+        )),
+    };
+    const rewrittenBases = state.bases.slice();
+    rewrittenBases[baseIndex] = rewrittenBase;
+    return {
+        state: { ...state, bases: rewrittenBases },
+        base: rewrittenBase,
     };
 }
 
@@ -269,25 +305,27 @@ export function registerOngoingPowerModifier(
             a.defId === baseDefId || a.defId === baseDefId + '_pod'
         );
         if (cards.length === 0) return 0;
+        const getControllerId = (action: { ownerId: string; metadata?: { sourceControllerId?: string } }) =>
+            action.metadata?.sourceControllerId ?? action.ownerId;
 
         switch (target) {
             case 'opponentMinions': {
-                // 统计 owner 不是当前随从控制者的张数
-                const count = cards.filter(a => a.ownerId !== ctx.minion.controller).length;
+                // 统计控制者不是当前随从控制者的张数
+                const count = cards.filter(a => getControllerId(a) !== ctx.minion.controller).length;
                 if (count === 0) return 0;
                 if (condition && !condition(ctx)) return 0;
                 return count * delta;
             }
             case 'ownerMinions': {
-                // 统计 owner 是当前随从控制者的张数
-                const count = cards.filter(a => a.ownerId === ctx.minion.controller).length;
+                // 统计控制者是当前随从控制者的张数
+                const count = cards.filter(a => getControllerId(a) === ctx.minion.controller).length;
                 if (count === 0) return 0;
                 if (condition && !condition(ctx)) return 0;
                 return count * delta;
             }
             case 'firstOwnerMinion': {
-                // 只给 owner 在此基地的第一个随从加成（用于"总力量+N"效果）
-                const count = cards.filter(a => a.ownerId === ctx.minion.controller).length;
+                // 只给控制者在此基地的第一个随从加成（用于"总力量+N"效果）
+                const count = cards.filter(a => getControllerId(a) === ctx.minion.controller).length;
                 if (count === 0) return 0;
                 const firstMinion = ctx.base.minions.find(m => m.controller === ctx.minion.controller);
                 if (!firstMinion || firstMinion.uid !== ctx.minion.uid) return 0;
@@ -326,6 +364,9 @@ export function clearPowerModifierRegistry(): void {
     breakpointModifierRegistry.length = 0;
     basePowerModifiers.clear();
     titanPowerModifiers.clear();
+    generatedPodModifierAliases.clear();
+    generatedPodBreakpointAliases.clear();
+    generatedPodBasePowerAliases.clear();
 }
 
 /**
@@ -335,8 +376,8 @@ export function clearPowerModifierRegistry(): void {
  * 跳过那些已在函数内部处理 POD 版本的修正（handlesPodInternally: true）。
  */
 export function registerPodPowerModifierAliases(): void {
-    let mappedCount = 0;
-    let skippedCount = 0;
+    let _mappedCount = 0;
+    let _skippedCount = 0;
     
     // 1. 随从力量修正（modifierRegistry）
     const powerModsToAdd: ModifierEntry[] = [];
@@ -347,11 +388,12 @@ export function registerPodPowerModifierAliases(): void {
             if (!modifierRegistry.some(e => e.sourceDefId === podId)) {
                 // 跳过已在函数内部处理 POD 版本的修正
                 if (entry.handlesPodInternally) {
-                    skippedCount++;
+                    _skippedCount++;
                     continue;
                 }
                 powerModsToAdd.push({ sourceDefId: podId, modifier: entry.modifier });
-                mappedCount++;
+                generatedPodModifierAliases.add(podId);
+                _mappedCount++;
             }
         }
     }
@@ -361,10 +403,27 @@ export function registerPodPowerModifierAliases(): void {
     const breakpointModsToAdd: BreakpointModifierEntry[] = [];
     for (const entry of breakpointModifierRegistry) {
         if (!entry.sourceDefId.endsWith('_pod')) {
-            const podId = entry.sourceDefId + '_pod';
+            const baseDefId = entry.sourceDefId;
+            const podId = `${baseDefId}_pod`;
             if (!breakpointModifierRegistry.some(e => e.sourceDefId === podId)) {
-                breakpointModsToAdd.push({ sourceDefId: podId, modifier: entry.modifier });
-                mappedCount++;
+                breakpointModsToAdd.push({
+                    sourceDefId: podId,
+                    modifier: (ctx) => {
+                        const rewritten = rewriteBaseOngoingDefIdForPodAlias(
+                            ctx.state,
+                            ctx.baseIndex,
+                            podId,
+                            baseDefId,
+                        );
+                        return entry.modifier({
+                            ...ctx,
+                            state: rewritten.state,
+                            base: rewritten.base,
+                        });
+                    },
+                });
+                generatedPodBreakpointAliases.add(podId);
+                _mappedCount++;
             }
         }
     }
@@ -374,10 +433,27 @@ export function registerPodPowerModifierAliases(): void {
     const basePowerModsToAdd: Array<[string, BasePowerModifierFn]> = [];
     for (const [defId, modifier] of basePowerModifiers.entries()) {
         if (!defId.endsWith('_pod')) {
-            const podId = defId + '_pod';
+            const baseDefId = defId;
+            const podId = `${baseDefId}_pod`;
             if (!basePowerModifiers.has(podId)) {
-                basePowerModsToAdd.push([podId, modifier]);
-                mappedCount++;
+                basePowerModsToAdd.push([podId, (ctx) => {
+                    const rewritten = rewriteBaseOngoingDefIdForPodAlias(
+                        ctx.state,
+                        ctx.baseIndex,
+                        podId,
+                        baseDefId,
+                    );
+                    return modifier({
+                        ...ctx,
+                        state: rewritten.state,
+                        base: rewritten.base,
+                        ongoing: ctx.ongoing?.defId === podId
+                            ? { ...ctx.ongoing, defId: baseDefId }
+                            : ctx.ongoing,
+                    });
+                }]);
+                generatedPodBasePowerAliases.add(podId);
+                _mappedCount++;
             }
         }
     }
@@ -396,15 +472,34 @@ export function getRegisteredModifierIds(): {
     const powerModifierIds = new Set<string>();
 
     for (const entry of modifierRegistry) {
+        if (
+            generatedPodModifierAliases.has(entry.sourceDefId)
+            && entry.sourceDefId.endsWith('_pod')
+            && !shouldExposePodModifierAlias(entry.sourceDefId.slice(0, -4))
+        ) {
+            continue;
+        }
         powerModifierIds.add(entry.sourceDefId);
-        if (entry.handlesPodInternally && !entry.sourceDefId.endsWith('_pod')) {
+        if (
+            entry.handlesPodInternally
+            && !entry.sourceDefId.endsWith('_pod')
+            && isEntityBackedModifierSource(entry.sourceDefId)
+            && shouldExposePodModifierAlias(entry.sourceDefId)
+        ) {
             powerModifierIds.add(`${entry.sourceDefId}_pod`);
         }
     }
 
     for (const defId of basePowerModifiers.keys()) {
+        if (
+            generatedPodBasePowerAliases.has(defId)
+            && defId.endsWith('_pod')
+            && !shouldExposePodModifierAlias(defId.slice(0, -4))
+        ) {
+            continue;
+        }
         powerModifierIds.add(defId);
-        if (!defId.endsWith('_pod')) {
+        if (!defId.endsWith('_pod') && shouldExposePodModifierAlias(defId)) {
             powerModifierIds.add(`${defId}_pod`);
         }
     }
@@ -415,7 +510,15 @@ export function getRegisteredModifierIds(): {
 
     return {
         powerModifierIds,
-        breakpointModifierIds: new Set(breakpointModifierRegistry.map(e => e.sourceDefId)),
+        breakpointModifierIds: new Set(
+            breakpointModifierRegistry
+                .filter((entry) => !(
+                    generatedPodBreakpointAliases.has(entry.sourceDefId)
+                    && entry.sourceDefId.endsWith('_pod')
+                    && !shouldExposePodModifierAlias(entry.sourceDefId.slice(0, -4))
+                ))
+                .map(e => e.sourceDefId),
+        ),
     };
 }
 
@@ -569,7 +672,8 @@ export function getOngoingCardPowerContribution(
 ): number {
     let total = 0;
     for (const oa of base.ongoingActions) {
-        if (oa.ownerId !== playerId) continue;
+        const ongoingControllerId = (oa.metadata?.sourceControllerId as PlayerId | undefined) ?? oa.ownerId;
+        if (ongoingControllerId !== playerId) continue;
         const counters = (oa.metadata?.powerCounters as number) ?? 0;
         if (counters > 0) total += counters;
     }
@@ -727,6 +831,7 @@ export function getScoringEligibleBaseIndices(state: SmashUpCore): number[] {
         const base = state.bases[i];
         const baseDef = getBaseDef(base.defId);
         if (!baseDef) continue;
+        if (isBaseScoringSuppressed(state, i)) continue;
         const totalPower = getTotalEffectivePowerOnBase(state, base, i);
         if (totalPower >= getEffectiveBreakpoint(state, i)) {
             indices.push(i);

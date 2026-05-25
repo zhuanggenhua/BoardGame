@@ -11,11 +11,14 @@ import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
 import { smashUpSystemsForTest } from '../game';
 import type { MinionOnBase, SmashUpCore } from '../domain/types';
+import { makeBase, makeCard, makeMatchState, makePlayer, makeState } from './helpers';
 import {
     advanceSmashUpReactionSession,
     getSmashUpReactionSession,
+    resolveSmashUpReactionChoice,
     startSmashUpReactionSession,
 } from '../domain/reactionSession';
+import { getSmashUpReactionWindowContext, getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 
 function getReactionSession(state: MatchState<SmashUpCore>) {
     return getSmashUpReactionSession(state);
@@ -204,6 +207,458 @@ describe('响应窗口跳过逻辑', () => {
         expect(getReactionSession(finalState)).toBeUndefined();
         expect(getCurrentChoice(finalState)).toBeUndefined();
         expect(finalState.sys.responseWindow?.current).toBeUndefined();
+    });
+
+    it('smashup_reaction_choose 的旧 play_action option 若已从 live hand 消失，应按 stale pass 收口而不是误打出旧牌', () => {
+        const runner = createRunner((playerIds, random) => {
+            const core = SmashUpDomain.setup(playerIds, random);
+            const sys = createInitialSystemState(playerIds, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.bases[0] = {
+                defId: 'base_the_mothership',
+                minions: Array.from({ length: 5 }, (_, index) =>
+                    makeMinion(`fake-${index}`, 'test_minion', '0', '0', 5),
+                ),
+                ongoingActions: [],
+            };
+            core.players['0'].hand = [
+                { uid: 'card-1', defId: 'pirate_full_sail', type: 'action', owner: '0' },
+                { uid: 'card-3', defId: 'pirate_full_sail', type: 'action', owner: '0' },
+            ];
+            core.players['1'].hand = [
+                { uid: 'card-2', defId: 'robot_microbot_alpha', type: 'minion', owner: '1' },
+            ];
+
+            return { core, sys };
+        });
+
+        const advanceResult = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advanceResult.success).toBe(true);
+
+        const firstChoice = getCurrentChoice(runner.getState());
+        expect(firstChoice?.sourceId).toBe('smashup_reaction_choose');
+        expect(firstChoice?.playerId).toBe('0');
+
+        const staleOptionId = findOptionId(
+            firstChoice!,
+            option => option.value?.kind === 'play_action' && option.value?.cardUid === 'card-1',
+            '找不到将要失效的全速航行选项',
+        );
+        const staleOption = firstChoice!.options.find(option => option.id === staleOptionId);
+        expect(staleOption).toBeDefined();
+
+        const staleState = runner.getState();
+        runner.setState({
+            ...staleState,
+            core: {
+                ...staleState.core,
+                players: {
+                    ...staleState.core.players,
+                    '0': {
+                        ...staleState.core.players['0'],
+                        hand: staleState.core.players['0'].hand.filter(card => card.uid !== 'card-1'),
+                    },
+                },
+            },
+            sys: {
+                ...staleState.sys,
+                interaction: {
+                    ...staleState.sys.interaction,
+                    current: undefined,
+                },
+            },
+        });
+
+        const resolved = resolveSmashUpReactionChoice(
+            runner.getState(),
+            { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+            2,
+            staleOption!.value as any,
+        );
+
+        const finalState = resolved.state;
+        expect(getReactionSession(finalState)?.activePlayerId).toBe('0');
+        expect(getCurrentChoice(finalState)?.sourceId).toBe('smashup_reaction_choose');
+        expect(getCurrentChoice(finalState)?.playerId).toBe('0');
+        expect(getCurrentChoice(finalState)?.options.some(option =>
+            option.value?.kind === 'play_action' && option.value?.cardUid === 'card-3',
+        )).toBe(true);
+        expect(finalState.core.players['0'].hand.some(card => card.uid === 'card-1')).toBe(false);
+        expect(finalState.core.players['0'].discard.some(card => card.uid === 'card-1')).toBe(false);
+        expect(finalState.core.bases[0].ongoingActions.some(card => card.uid === 'card-1')).toBe(false);
+    });
+
+    it('smashup_reaction_choose 的旧 play_minion option 若已从 live hand 消失，应按 stale pass 收口而不是误打出旧随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('card-m1', 'ninja_shinobi', '0'),
+                        makeCard('card-a1', 'pirate_full_sail', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'scoreBases';
+        const withSession = startSmashUpReactionSession(ms, {
+            frameId: 'score-before:0:stale-minion',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'meFirst',
+        });
+        const prompted = advanceSmashUpReactionSession(
+            withSession,
+            { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+            1,
+        );
+        expect(prompted).toBeDefined();
+
+        const firstChoice = getCurrentChoice(prompted!.state);
+        expect(firstChoice?.sourceId).toBe('smashup_reaction_choose');
+        expect(firstChoice?.playerId).toBe('0');
+
+        const staleMinionOptionId = findOptionId(
+            firstChoice!,
+            option => option.value?.kind === 'play_minion' && option.value?.cardUid === 'card-m1',
+            '找不到将要失效的随从出牌选项',
+        );
+        const staleMinionOption = firstChoice!.options.find(option => option.id === staleMinionOptionId);
+        expect(staleMinionOption).toBeDefined();
+
+        const staleState = {
+            ...prompted!.state,
+            core: {
+                ...prompted!.state.core,
+                players: {
+                    ...prompted!.state.core.players,
+                    '0': {
+                        ...prompted!.state.core.players['0'],
+                        hand: prompted!.state.core.players['0'].hand.filter(card => card.uid !== 'card-m1'),
+                    },
+                },
+            },
+            sys: {
+                ...prompted!.state.sys,
+                interaction: {
+                    ...prompted!.state.sys.interaction,
+                    current: undefined,
+                },
+            },
+        };
+
+        const resolved = resolveSmashUpReactionChoice(
+            staleState,
+            { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+            2,
+            staleMinionOption!.value as any,
+        );
+
+        const finalState = resolved.state;
+        expect(getReactionSession(finalState)?.activePlayerId).toBe('0');
+        expect(getCurrentChoice(finalState)?.sourceId).toBe('smashup_reaction_choose');
+        expect(getCurrentChoice(finalState)?.playerId).toBe('0');
+        expect(getCurrentChoice(finalState)?.options.some(option =>
+            option.value?.kind === 'play_action' && option.value?.cardUid === 'card-a1',
+        )).toBe(true);
+        expect(finalState.core.players['0'].hand.some(card => card.uid === 'card-m1')).toBe(false);
+        expect(finalState.core.players['0'].discard.some(card => card.uid === 'card-m1')).toBe(false);
+        expect(finalState.core.bases[0].minions.some(minion => minion.uid === 'card-m1')).toBe(false);
+    });
+
+    it('invalid activePlayerId 不在 turnOrder 时，应回退到合法当前玩家而不是跳过首个响应者', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('card-a1', 'pirate_full_sail', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'scoreBases';
+        const withSession = startSmashUpReactionSession(ms, {
+            frameId: 'score-before:0:invalid-active-player',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: 'ghost' as PlayerId,
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'meFirst',
+        });
+
+        const prompted = advanceSmashUpReactionSession(
+            withSession,
+            { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+            1,
+        );
+
+        expect(prompted).toBeDefined();
+        expect(getReactionSession(prompted!.state)?.activePlayerId).toBe('0');
+        expect(getCurrentChoice(prompted!.state)?.sourceId).toBe('smashup_reaction_choose');
+        expect(getCurrentChoice(prompted!.state)?.playerId).toBe('0');
+        expect(getCurrentChoice(prompted!.state)?.options.some(option =>
+            option.value?.kind === 'play_action' && option.value?.cardUid === 'card-a1',
+        )).toBe(true);
+        expectMirroredIndex(prompted!.state, 0);
+    });
+
+    it('reactionWindowState 读取到 ghost session 时，也应回退到合法当前玩家而不是暴露非法 responder', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('card-a1', 'pirate_full_sail', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'scoreBases';
+        ms.sys.resolution = {
+            activeFrameId: 'ghost-frame',
+            frames: [{
+                id: 'ghost-frame',
+                kind: 'smashup:reaction:score-before',
+                ownerGame: 'smashup',
+                ownerSystem: 'smashup-reaction',
+                ownerToken: 'smashup:reaction:ghost-frame',
+                ordering: 'responder-round',
+                status: 'running',
+                step: 'optional',
+                phase: 'scoreBases',
+                phaseGate: 'block-advance-when-blocked',
+                metadata: {
+                    smashupReactionSession: {
+                        frameId: 'ghost-frame',
+                        frameKind: 'score-before',
+                        phase: 'optional',
+                        activePlayerId: 'ghost' as PlayerId,
+                        currentPlayerId: 'ghost' as PlayerId,
+                        consecutivePasses: 0,
+                        responseWindowType: 'meFirst',
+                        sourceBaseIndex: 0,
+                    },
+                },
+            }],
+        } as any;
+
+        const context = getSmashUpReactionWindowContext(ms);
+        expect(context?.activePlayerId).toBe('0');
+        expect(context?.currentPlayerId).toBe('0');
+
+        ms.sys.responseWindow = {
+            current: {
+                id: 'mirrored-window',
+                windowType: 'meFirst',
+                sourceId: 'smashup_reaction_choose',
+                responderQueue: ['0', '1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+                resolutionFrameId: 'ghost-frame',
+            },
+        } as any;
+
+        const presentation = getSmashUpReactionWindowPresentation(ms);
+        expect(presentation?.activePlayerId).toBe('0');
+        expect(presentation?.currentPlayerId).toBe('0');
+        expect(presentation?.responderQueue).toEqual(['0', '1']);
+        expect(presentation?.currentResponderIndex).toBe(0);
+    });
+
+    it('reactionWindowPresentation 在只有潜伏 session、没有可见 responseWindow 时应返回 undefined', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('card-a1', 'pirate_full_sail', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'scoreBases';
+        ms.sys.resolution = {
+            activeFrameId: 'latent-frame',
+            frames: [{
+                id: 'latent-frame',
+                kind: 'smashup:reaction:score-before',
+                ownerGame: 'smashup',
+                ownerSystem: 'smashup-reaction',
+                ownerToken: 'smashup:reaction:latent-frame',
+                ordering: 'responder-round',
+                status: 'running',
+                step: 'optional',
+                phase: 'scoreBases',
+                phaseGate: 'block-advance-when-blocked',
+                metadata: {
+                    smashupReactionSession: {
+                        frameId: 'latent-frame',
+                        frameKind: 'score-before',
+                        phase: 'optional',
+                        activePlayerId: '0',
+                        currentPlayerId: '0',
+                        consecutivePasses: 0,
+                        responseWindowType: 'meFirst',
+                        sourceBaseIndex: 0,
+                    },
+                },
+            }],
+        } as any;
+        ms.sys.responseWindow = { current: undefined } as any;
+        ms.sys.interaction = { current: undefined, queue: [] } as any;
+
+        expect(getSmashUpReactionWindowContext(ms)?.activePlayerId).toBe('0');
+        expect(getSmashUpReactionWindowPresentation(ms)).toBeUndefined();
+    });
+
+    it('reactionWindowState 读取 legacy responderQueue 时，也应过滤 ghost responder 并回退到合法当前玩家', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('card-a1', 'pirate_full_sail', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'scoreBases';
+        ms.sys.responseWindow = {
+            current: {
+                id: 'legacy-window',
+                windowType: 'meFirst',
+                sourceId: 'legacy_me_first',
+                responderQueue: ['ghost', '1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+                sourceBaseIndex: 0,
+            },
+        } as any;
+
+        const context = getSmashUpReactionWindowContext(ms);
+        expect(context?.activePlayerId).toBe('0');
+        expect(context?.currentPlayerId).toBe('0');
+
+        const presentation = getSmashUpReactionWindowPresentation(ms);
+        expect(presentation?.activePlayerId).toBe('0');
+        expect(presentation?.currentPlayerId).toBe('0');
+        expect(presentation?.responderQueue).toEqual(['0', '1']);
+        expect(presentation?.currentResponderIndex).toBe(0);
+    });
+
+    it('smashup_reaction_choose 的旧 activate_special option 若已从 live base 消失，应刷新并保留当前响应者的剩余 live 选项', () => {
+        const runner = createRunner((playerIds, random) => {
+            const core = SmashUpDomain.setup(playerIds, random);
+            const sys = createInitialSystemState(playerIds, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.players['0'].hand = [
+                { uid: 'card-a1', defId: 'pirate_full_sail', type: 'action', owner: '0' },
+            ];
+            core.players['1'].hand = [];
+            core.bases[0] = {
+                defId: 'base_primate_park',
+                breakpoint: 20,
+                minions: [
+                    makeMinion('anchor-a', 'time_travelers_jumper', '0', '0', 10),
+                    makeMinion('mole-a', 'super_spies_mole', '0', '0', 2),
+                    makeMinion('enemy-a', 'sharks_hammerhead', '1', '1', 10),
+                ],
+                ongoingActions: [],
+            };
+
+            return { core, sys };
+        });
+
+        const advanceResult = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advanceResult.success).toBe(true);
+
+        const firstChoice = getCurrentChoice(runner.getState());
+        expect(firstChoice?.sourceId).toBe('smashup_reaction_choose');
+        expect(firstChoice?.playerId).toBe('0');
+
+        const staleSpecialOptionId = findOptionId(
+            firstChoice!,
+            option => option.value?.kind === 'activate_special' && option.value?.minionUid === 'mole-a',
+            '找不到将要失效的 Mole special 选项',
+        );
+        const staleSpecialOption = firstChoice!.options.find(option => option.id === staleSpecialOptionId);
+        expect(staleSpecialOption).toBeDefined();
+        expect(firstChoice?.options.some(option =>
+            option.value?.kind === 'play_action' && option.value?.cardUid === 'card-a1',
+        )).toBe(true);
+
+        const staleState = {
+            ...runner.getState(),
+            core: {
+                ...runner.getState().core,
+                bases: runner.getState().core.bases.map((base, baseIndex) => (
+                    baseIndex !== 0
+                        ? base
+                        : {
+                            ...base,
+                            minions: base.minions.filter(minion => minion.uid !== 'mole-a'),
+                        }
+                )),
+            },
+            sys: {
+                ...runner.getState().sys,
+                interaction: {
+                    ...runner.getState().sys.interaction,
+                    current: undefined,
+                },
+            },
+        };
+
+        const resolved = resolveSmashUpReactionChoice(
+            staleState,
+            { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+            2,
+            staleSpecialOption!.value as any,
+        );
+
+        const finalState = resolved.state;
+        expect(getReactionSession(finalState)?.activePlayerId).toBe('0');
+        expect(getCurrentChoice(finalState)?.sourceId).toBe('smashup_reaction_choose');
+        expect(getCurrentChoice(finalState)?.playerId).toBe('0');
+        expect(getCurrentChoice(finalState)?.options.some(option =>
+            option.value?.kind === 'play_action' && option.value?.cardUid === 'card-a1',
+        )).toBe(true);
+        expect(getCurrentChoice(finalState)?.options.some(option =>
+            option.value?.kind === 'activate_special' && option.value?.minionUid === 'mole-a',
+        )).toBe(false);
+        expect(finalState.core.bases[0].minions.some(minion => minion.uid === 'mole-a')).toBe(false);
+        expect(resolved.events).toEqual([]);
     });
 
     it('所有玩家都没有可响应内容时，session 会直接关闭', () => {

@@ -16,6 +16,49 @@ import { registerTriggerProgramExecutor } from './triggerExecutors';
 type BaseTriggerTimingAsTrigger = BaseTriggerTiming;
 type QueuedBaseTriggerContext = TriggerContext & { triggerMinionPower?: number };
 
+function cloneReactionFootprint(
+  footprint: import('./types').SmashUpReactionResourceFootprint | undefined,
+): import('./types').SmashUpReactionResourceFootprint | undefined {
+  if (!footprint) return undefined;
+  return {
+    reads: [...footprint.reads],
+    writes: [...footprint.writes],
+    ...(footprint.opensInteraction ? { opensInteraction: true } : {}),
+    ...(footprint.fallbackReason ? { fallbackReason: footprint.fallbackReason } : {}),
+  };
+}
+
+function cloneEffectContractWithBaseSourceContext(
+  footprint: import('./types').SmashUpReactionResourceFootprint | undefined,
+  baseIndex: number,
+): import('./types').SmashUpReactionResourceFootprint | undefined {
+  const cloned = cloneReactionFootprint(footprint);
+  if (!cloned) return undefined;
+  const alreadyReadsBase = cloned.reads.some(ref => ref.kind === 'base' && ref.index === baseIndex);
+  return alreadyReadsBase
+    ? cloned
+    : {
+        ...cloned,
+        reads: [...cloned.reads, { kind: 'base' as const, index: baseIndex }],
+      };
+}
+
+function mergeDerivedFootprint(
+  primary: import('./types').SmashUpReactionResourceFootprint | undefined,
+  secondary: import('./types').SmashUpReactionResourceFootprint | undefined,
+): import('./types').SmashUpReactionResourceFootprint | undefined {
+  if (!primary) return cloneReactionFootprint(secondary);
+  if (!secondary) return cloneReactionFootprint(primary);
+  return {
+    reads: [...primary.reads, ...secondary.reads],
+    writes: [...primary.writes, ...secondary.writes],
+    ...(primary.opensInteraction || secondary.opensInteraction ? { opensInteraction: true } : {}),
+    ...(primary.fallbackReason ?? secondary.fallbackReason
+      ? { fallbackReason: primary.fallbackReason ?? secondary.fallbackReason }
+      : {}),
+  };
+}
+
 function requireQueuedBaseIndex(baseIndex: number | undefined, baseDefId: string, timing: string): number {
   if (baseIndex === undefined) {
     throw new Error(`SmashUp base ability queued trigger 缺少 baseIndex: ${baseDefId}@${timing}`);
@@ -45,7 +88,10 @@ export function registerBaseAbilityAsQueuedTrigger(
       minionUid: ctx.triggerMinionUid,
       minionDefId: ctx.triggerMinionDefId,
       minionPower: ctx.triggerMinionPower,
-      rankings: ctx.rankings,
+      destroyerId: ctx.destroyerId,
+      controllerId: ctx.controllerId,
+      reason: ctx.reason,
+      rankings: ctx.rankings ? structuredClone(ctx.rankings) : undefined,
       actionTargetBaseIndex: ctx.actionTargetBaseIndex,
       actionTargetType: ctx.actionTargetType,
       actionTargetMinionUid: ctx.actionTargetMinionUid,
@@ -79,6 +125,9 @@ export function collectBaseAbilityTriggers(params: {
   triggerMinionUid?: string;
   triggerMinionDefId?: string;
   triggerMinionPower?: number;
+  destroyerId?: PlayerId;
+  controllerId?: PlayerId;
+  reason?: string;
   rankings?: { playerId: PlayerId; power: number; vp: number }[];
   actionTargetBaseIndex?: number;
   actionTargetType?: 'base' | 'minion';
@@ -95,6 +144,9 @@ export function collectBaseAbilityTriggers(params: {
     triggerMinionUid,
     triggerMinionDefId,
     triggerMinionPower,
+    destroyerId,
+    controllerId,
+    reason,
     rankings,
     actionTargetBaseIndex,
     actionTargetType,
@@ -108,7 +160,7 @@ export function collectBaseAbilityTriggers(params: {
 
   if (!hasBaseAbility(base.defId, timing)) return undefined;
   const options = getBaseAbilityOptions(base.defId, timing);
-  if (options?.canTrigger && !options.canTrigger({
+  const optionContext = {
     state: core,
     baseIndex,
     baseDefId: base.defId,
@@ -116,13 +168,29 @@ export function collectBaseAbilityTriggers(params: {
     minionUid: triggerMinionUid,
     minionDefId: triggerMinionDefId,
     minionPower: triggerMinionPower,
-    rankings,
+    destroyerId,
+    controllerId,
+    reason,
+    rankings: rankings ? structuredClone(rankings) : undefined,
     actionTargetBaseIndex,
     actionTargetType,
     actionTargetMinionUid,
-    now })) {
+    frameId,
+    sourceEventId,
+    now };
+  const resolvedOwnerPlayerId = options?.ownerPlayerId?.(optionContext) ?? ownerPlayerId;
+  if (!core.turnOrder.includes(resolvedOwnerPlayerId)) return undefined;
+  const resolvedOptionContext = {
+    ...optionContext,
+    playerId: resolvedOwnerPlayerId,
+  };
+  if (options?.canTrigger && !options.canTrigger(resolvedOptionContext)) {
     return undefined;
   }
+  const explicitDerivedFootprint = mergeDerivedFootprint(
+    cloneEffectContractWithBaseSourceContext(options?.effectContract, baseIndex),
+    options?.deriveFootprint?.(resolvedOptionContext),
+  );
   // Witness rule (base as source): it must still be in play when the trigger is queued.
   // Since we are queueing from the live bases array, this is satisfied here.
 
@@ -137,17 +205,25 @@ export function collectBaseAbilityTriggers(params: {
     resolutionClass: mandatory ? 'mandatory' : 'optional',
     frameId: frameId ?? `${timing}:${sourceEventId ?? now}`,
     sourceEventId: sourceEventId ?? `${timing}:${now}`,
-    ownerPlayerId,
+    ownerPlayerId: resolvedOwnerPlayerId,
     witnessRequirement: 'inPlayAtTriggerTime',
     witnessed: true,
     baseIndex,
     triggerMinionUid,
     triggerMinionDefId,
     triggerMinionPower,
-    rankings,
+    destroyerId,
+    controllerId,
+    reason,
+    rankings: rankings ? structuredClone(rankings) : undefined,
     actionTargetBaseIndex,
     actionTargetType,
     actionTargetMinionUid,
+    ...(explicitDerivedFootprint
+      ? {
+          derivedFootprint: explicitDerivedFootprint,
+        }
+      : {}),
     lkiBase: { baseIndex, defId: base.defId } };
 
   return {
@@ -174,10 +250,15 @@ export function registerExtendedBaseAbilityAsQueuedTrigger(
       minionUid: ctx.triggerMinionUid,
       minionDefId: ctx.triggerMinionDefId,
       minionPower: ctx.triggerMinionPower,
-      rankings: ctx.rankings,
+      destroyerId: ctx.destroyerId,
+      controllerId: ctx.controllerId,
+      reason: ctx.reason,
+      rankings: ctx.rankings ? structuredClone(ctx.rankings) : undefined,
       actionTargetBaseIndex: ctx.actionTargetBaseIndex,
       actionTargetType: ctx.actionTargetType,
       actionTargetMinionUid: ctx.actionTargetMinionUid,
+      frameId: ctx.frameId,
+      sourceEventId: ctx.sourceEventId,
       now: ctx.now };
     if (!executor) return { events: [] };
     return executor(baseCtx);
@@ -201,15 +282,72 @@ export function collectExtendedBaseAbilityTriggers(params: {
   timing: string;
   ownerPlayerId: PlayerId;
   baseIndex: number;
+  triggerMinionUid?: string;
+  triggerMinionDefId?: string;
+  triggerMinionPower?: number;
+  destroyerId?: PlayerId;
+  controllerId?: PlayerId;
+  reason?: string;
+  actionTargetBaseIndex?: number;
+  actionTargetType?: 'base' | 'minion';
+  actionTargetMinionUid?: string;
   frameId?: string;
   sourceEventId?: string;
   now: number;
 }): TriggerQueuedEvent | undefined {
-  const { core, timing, ownerPlayerId, baseIndex, frameId, sourceEventId, now } = params;
+  const {
+    core,
+    timing,
+    ownerPlayerId,
+    baseIndex,
+    triggerMinionUid,
+    triggerMinionDefId,
+    triggerMinionPower,
+    destroyerId,
+    controllerId,
+    reason,
+    actionTargetBaseIndex,
+    actionTargetType,
+    actionTargetMinionUid,
+    frameId,
+    sourceEventId,
+    now,
+  } = params;
   const base = core.bases[baseIndex];
   if (!base) return undefined;
   const opts = getExtendedBaseAbilityOptions(base.defId, timing);
   if (!opts) return undefined;
+  const optionContext = {
+    state: core,
+    baseIndex,
+    baseDefId: base.defId,
+    playerId: ownerPlayerId,
+    minionUid: triggerMinionUid,
+    minionDefId: triggerMinionDefId,
+    minionPower: triggerMinionPower,
+    destroyerId,
+    controllerId,
+    reason,
+    actionTargetBaseIndex,
+    actionTargetType,
+    actionTargetMinionUid,
+    frameId,
+    sourceEventId,
+    now,
+  };
+  const resolvedOwnerPlayerId = opts.ownerPlayerId?.(optionContext) ?? ownerPlayerId;
+  if (!core.turnOrder.includes(resolvedOwnerPlayerId)) return undefined;
+  const resolvedOptionContext = {
+    ...optionContext,
+    playerId: resolvedOwnerPlayerId,
+  };
+  if (opts.canTrigger && !opts.canTrigger(resolvedOptionContext)) {
+    return undefined;
+  }
+  const explicitDerivedFootprint = mergeDerivedFootprint(
+    cloneEffectContractWithBaseSourceContext(opts.effectContract, baseIndex),
+    opts.deriveFootprint?.(resolvedOptionContext),
+  );
 
   // Ensure executor exists for queue consumption.
   registerExtendedBaseAbilityAsQueuedTrigger(base.defId, timing);
@@ -225,10 +363,24 @@ export function collectExtendedBaseAbilityTriggers(params: {
     resolutionClass: mandatory ? 'mandatory' : 'optional',
     frameId: frameId ?? `${timing}:${sourceEventId ?? now}`,
     sourceEventId: sourceEventId ?? `${timing}:${now}`,
-    ownerPlayerId,
+    ownerPlayerId: resolvedOwnerPlayerId,
     witnessRequirement: 'inPlayAtTriggerTime',
     witnessed: true,
     baseIndex,
+    triggerMinionUid,
+    triggerMinionDefId,
+    triggerMinionPower,
+    destroyerId,
+    controllerId,
+    reason,
+    actionTargetBaseIndex,
+    actionTargetType,
+    actionTargetMinionUid,
+    ...(explicitDerivedFootprint
+      ? {
+          derivedFootprint: explicitDerivedFootprint,
+        }
+      : {}),
     lkiBase: { baseIndex, defId: base.defId } };
 
   return {

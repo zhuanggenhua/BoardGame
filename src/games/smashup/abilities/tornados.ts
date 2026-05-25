@@ -395,26 +395,36 @@ const rippedOffActionPromptProgram = createPromptProgram<RippedOffContext, Smash
 
 const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'tornados_ripped_off_target',
+    interactionSourceIds: [
+        'tornados_ripped_off_target_base',
+        'tornados_ripped_off_target_minion',
+    ],
     buildInteraction: (context) => {
         if (context.targetType === 'base') {
             return createAbilityRuntimeSimpleChoice(
-                `tornados_ripped_off_target_${context.now}`,
+                `tornados_ripped_off_target_base_${context.now}`,
                 context.playerId,
                 '扯走：选择新的基地',
                 buildBaseTargetOptions(collectBaseTargets(context.matchState.core, baseIndex => baseIndex !== context.fromBaseIndex), context.matchState.core),
-                { sourceId: 'tornados_ripped_off_target', targetType: 'base' },
+                { sourceId: 'tornados_ripped_off_target_base', targetType: 'base' },
             );
         }
         const targets = collectMinionTargets(context.matchState.core, (minion) => minion.uid !== context.fromMinionUid);
         return createAbilityRuntimeSimpleChoice(
-            `tornados_ripped_off_target_${context.now}`,
+            `tornados_ripped_off_target_minion_${context.now}`,
             context.playerId,
             '扯走：选择新的随从',
             buildMinionTargetOptions(targets, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'affect' }),
-            { sourceId: 'tornados_ripped_off_target', targetType: 'minion' },
+            { sourceId: 'tornados_ripped_off_target_minion', targetType: 'minion' },
         );
     },
     onResolve: ({ context, value, timestamp }) => {
+        const sourceAction = context.targetType === 'base'
+            ? context.matchState.core.bases[context.fromBaseIndex]?.ongoingActions.find(action => action.uid === context.cardUid)
+            : context.matchState.core.bases[context.fromBaseIndex]?.minions
+                .find(minion => minion.uid === context.fromMinionUid)
+                ?.attachedActions
+                .find(action => action.uid === context.cardUid);
         const events: SmashUpEvent[] = [{
             type: SU_EVENTS.ONGOING_DETACHED,
             payload: { cardUid: context.cardUid, defId: context.defId, ownerId: context.ownerId, reason: 'tornados_ripped_off' },
@@ -425,7 +435,16 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
             if (choice.baseIndex === undefined) return { events: [] };
             events.push({
                 type: SU_EVENTS.ONGOING_ATTACHED,
-                payload: { cardUid: context.cardUid, defId: context.defId, ownerId: context.ownerId, targetType: 'base', targetBaseIndex: choice.baseIndex },
+                payload: {
+                    cardUid: context.cardUid,
+                    defId: context.defId,
+                    ownerId: context.ownerId,
+                    ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                    targetType: 'base',
+                    targetBaseIndex: choice.baseIndex,
+                    ...(sourceAction?.metadata ? { metadata: sourceAction.metadata } : {}),
+                    ...(sourceAction?.talentUsed !== undefined ? { talentUsed: sourceAction.talentUsed } : {}),
+                },
                 timestamp,
             } as OngoingAttachedEvent);
             return { events };
@@ -434,7 +453,17 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
         if (!choice.minionUid || choice.baseIndex === undefined) return { events: [] };
         events.push({
             type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: { cardUid: context.cardUid, defId: context.defId, ownerId: context.ownerId, targetType: 'minion', targetBaseIndex: choice.baseIndex, targetMinionUid: choice.minionUid },
+            payload: {
+                cardUid: context.cardUid,
+                defId: context.defId,
+                ownerId: context.ownerId,
+                ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                targetType: 'minion',
+                targetBaseIndex: choice.baseIndex,
+                targetMinionUid: choice.minionUid,
+                ...(sourceAction?.metadata ? { metadata: sourceAction.metadata } : {}),
+                ...(sourceAction?.talentUsed !== undefined ? { talentUsed: sourceAction.talentUsed } : {}),
+            },
             timestamp,
         } as OngoingAttachedEvent);
         return { events };

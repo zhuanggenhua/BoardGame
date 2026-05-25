@@ -623,6 +623,49 @@ describe('InteractionSystem', () => {
         });
     });
 
+    it('compare-roll-choice 应对双方参战者可见，但仍对其他玩家保持隐藏，且 snapshot 不共享 contestants 引用', () => {
+        const system = createInteractionSystem<TestCore>();
+        const current = createCompareRollChoice(
+            'interaction-compare-roll-visible',
+            '0',
+            {
+                title: '对比掷骰',
+                sourceId: 'duel',
+                contestants: [
+                    { playerId: '0', label: '我方', roll: 6 },
+                    { playerId: '1', label: '对手', roll: 1 },
+                ],
+                options: [
+                    { id: 'deal-3', label: '造成 3 伤害', value: { customId: 'deal-3', value: 3 } },
+                ],
+            },
+        );
+        const state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current,
+                    queue: [],
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+
+        const ownerView = system.playerView?.(state, '0') as any;
+        const opponentView = system.playerView?.(state, '1') as any;
+        const otherView = system.playerView?.(state, '2') as any;
+
+        expect(ownerView?.interaction?.current?.id).toBe('interaction-compare-roll-visible');
+        expect(opponentView?.interaction?.current?.id).toBe('interaction-compare-roll-visible');
+        expect(otherView?.interaction?.current).toBeUndefined();
+        expect(ownerView?.interaction?.isBlocked).toBe(false);
+        expect(opponentView?.interaction?.isBlocked).toBe(true);
+        expect(otherView?.interaction?.isBlocked).toBe(true);
+
+        opponentView.interaction.current.data.contestants[0].roll = 99;
+
+        expect((state.sys.interaction.current as any).data.contestants[0].roll).toBe(6);
+    });
+
     it('buildTargetAiHint 会为 inspect 目标推导 relation / intent / target tags', () => {
         const hint = buildTargetAiHint({
             actorPlayerId: '0',

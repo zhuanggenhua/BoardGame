@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { SU_COMMANDS } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { getEffectivePower } from '../domain/ongoingModifiers';
 import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, resolveInteractionChain } from './helpers';
 import { runCommand } from './testRunner';
 
@@ -105,6 +106,60 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(result.success).toBe(true);
         expect(result.finalState.core.players['0'].hand.some(card => card.uid === 'draw-1')).toBe(true);
         expect(result.finalState.core.players['0'].actionLimit).toBe(2);
+    });
+
+    it('神话希腊：伊阿宋在打出行动后选择一个基地并只强化那里自己的随从', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a-hermes', 'mythic_greeks_favor_of_hermes', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_oracle_at_delphi', [
+                    makeMinion('jason', 'mythic_greeks_jason', '0', 4),
+                    makeMinion('own-a', 'mythic_greeks_spartan', '0', 2),
+                    makeMinion('enemy-a', 'sharks_mako', '1', 2),
+                ]),
+                makeBase('base_the_deep', [
+                    makeMinion('own-b', 'sharks_hammerhead', '0', 3),
+                ]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-hermes' },
+        } as any);
+
+        expect(played.success).toBe(true);
+
+        const resolved = resolveInteractionChain(played.finalState, (prompt, state) => {
+            if (prompt.data?.sourceId === 'smashup_reaction_choose') {
+                const triggersById = new Map((state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
+                const option = prompt.data.options.find((candidate: any) => {
+                    const trigger = triggersById.get(candidate.value?.triggerId);
+                    return trigger?.sourceDefId === 'mythic_greeks_jason';
+                });
+                return { optionId: option.id };
+            }
+            expect(prompt.data?.sourceId).toBe('mythic_greeks_jason');
+            const option = prompt.data.options.find((candidate: any) => candidate.value?.baseIndex === 0);
+            return { optionId: option.id };
+        });
+
+        const [base0, base1] = resolved.finalState.core.bases;
+        expect(base0.minions.find(minion => minion.uid === 'jason')?.tempPowerModifier).toBe(1);
+        expect(base0.minions.find(minion => minion.uid === 'own-a')?.tempPowerModifier).toBe(1);
+        expect(base0.minions.find(minion => minion.uid === 'enemy-a')?.tempPowerModifier ?? 0).toBe(0);
+        expect(base1.minions.find(minion => minion.uid === 'own-b')?.tempPowerModifier ?? 0).toBe(0);
     });
 
     it('鲨鱼：疯狂进食按玩家多选消灭任意数量低力量随从', () => {
@@ -358,6 +413,45 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(player.discard.map(card => card.uid)).toEqual(['discard-b', 'a-poseidon']);
     });
 
+    it('神话希腊：波塞冬的恩惠选择被他人拥有的弃牌时，仍应洗回其拥有者牌库', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a-poseidon', 'mythic_greeks_favor_of_poseidon', 'action', '0')],
+                    deck: [makeCard('p0-deck-a', 'mythic_greeks_spartan', 'minion', '0')],
+                    discard: [
+                        makeCard('borrowed-discard', 'sharks_mako', 'minion', '1'),
+                        makeCard('own-discard', 'mythic_greeks_favor_of_apollo', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'sharks_hammerhead', 'minion', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_oracle_at_delphi', [])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-poseidon' },
+        } as any);
+        expect(play.success).toBe(true);
+        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+            const borrowed = prompt.data.options.find((option: any) => option.value?.cardUid === 'borrowed-discard');
+            return { optionIds: [borrowed.id] };
+        });
+        const p0 = resolved.finalState.core.players['0'];
+        const p1 = resolved.finalState.core.players['1'];
+        expect(p0.deck.map(card => card.uid)).toEqual(['p0-deck-a']);
+        expect(p0.discard.map(card => card.uid)).toEqual(['own-discard', 'a-poseidon']);
+        expect(p1.deck.map(card => card.uid)).toEqual(['borrowed-discard', 'p1-deck-a']);
+    });
+
     it('神话希腊：雅典娜的恩惠展示牌库顶5张，由玩家选择行动牌并决定其余回顶顺序', () => {
         const core = {
             players: {
@@ -408,6 +502,112 @@ describe('shayu 三派系代表性玩法行为', () => {
             'top-action-c',
             'deck-rest',
         ]);
+    });
+
+    it('神话希腊：雅典娜的恩惠回顶剩余揭示牌时，被他人拥有的牌仍应进入其拥有者牌库顶', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a-athena', 'mythic_greeks_favor_of_athena', 'action', '0')],
+                    deck: [
+                        makeCard('borrowed-revealed', 'sharks_mako', 'minion', '1'),
+                        makeCard('top-action-pick', 'mythic_greeks_favor_of_apollo', 'action', '0'),
+                        makeCard('own-minion-b', 'mythic_greeks_spartan', 'minion', '0'),
+                        makeCard('own-action-a', 'mythic_greeks_favor_of_ares', 'action', '0'),
+                        makeCard('own-action-c', 'sharks_torn_apart', 'action', '0'),
+                        makeCard('deck-rest', 'tornados_dust_devil', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'sharks_mako', 'minion', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_oracle_at_delphi', [])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-athena' },
+        } as any);
+        expect(play.success).toBe(true);
+
+        const resolved = resolveInteractionChain(play.finalState, (prompt, _state, step) => {
+            if (step === 0) {
+                const picked = prompt.data.options.find((option: any) => option.value?.cardUid === 'top-action-pick');
+                return { optionId: picked.id };
+            }
+            const order = ['own-minion-b', 'borrowed-revealed', 'own-action-a'];
+            const target = prompt.data.options.find((option: any) => option.value?.cardUid === order[step - 1]);
+            return { optionId: target.id };
+        });
+
+        const p0 = resolved.finalState.core.players['0'];
+        const p1 = resolved.finalState.core.players['1'];
+        expect(p0.hand.map(card => card.uid)).toContain('top-action-pick');
+        expect(p0.deck.map(card => card.uid)).toEqual(['own-minion-b', 'own-action-a', 'own-action-c', 'deck-rest']);
+        expect(p1.deck.map(card => card.uid)).toEqual(['borrowed-revealed', 'p1-deck-a']);
+    });
+
+    it('神话希腊：雅典娜的恩惠牌库不足洗入弃牌堆时，应把 borrowed 弃牌分流回真实拥有者牌库', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a-athena', 'mythic_greeks_favor_of_athena', 'action', '0')],
+                    deck: [
+                        makeCard('own-deck-action', 'mythic_greeks_favor_of_apollo', 'action', '0'),
+                        makeCard('own-deck-minion', 'mythic_greeks_spartan', 'minion', '0'),
+                    ],
+                    discard: [
+                        makeCard('borrowed-discard', 'sharks_mako', 'minion', '1'),
+                        makeCard('own-discard-action', 'mythic_greeks_favor_of_ares', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'sharks_tiger_shark', 'minion', '1')],
+                    discard: [],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_oracle_at_delphi', [])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-athena' },
+        } as any);
+
+        expect(play.success).toBe(true);
+        expect(play.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '1',
+                sourcePlayerId: '0',
+                deckUids: ['p1-deck-a', 'borrowed-discard'],
+            }),
+        }));
+        expect(play.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                deckUids: expect.arrayContaining(['borrowed-discard']),
+            }),
+        }));
+
+        const p0 = play.finalState.core.players['0'];
+        const p1 = play.finalState.core.players['1'];
+        expect(p0.deck.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(p0.discard.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(p1.deck.map(card => card.uid)).toEqual(['p1-deck-a', 'borrowed-discard']);
     });
 
     it('龙卷风：旋风群为每个被选随从分别选择目标基地', () => {
@@ -490,6 +690,179 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'first')).toBe(true);
     });
 
+    it('龙卷风：扯走把 borrowed 附着行动移到 Brownie 身上时，应保留 sourcePlayerId 并把 queued 事件玩家留给真正行动玩家', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('a-ripped', 'tornados_ripped_off', 'action', '0'),
+                        makeCard('discard-me', 'sharks_mako', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_trailer_park', [
+                    makeMinion('host-a', 'sharks_mako', '1', 2, {
+                        attachedActions: [{ uid: 'borrowed-sleep', defId: 'trickster_mark_of_sleep', ownerId: '1' }],
+                    }),
+                    makeMinion('brownie-a', 'trickster_brownie', '1', 2),
+                ]),
+                makeBase('base_tornado_alley', []),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-ripped' },
+        } as any);
+        expect(play.success).toBe(true);
+        expect((play.finalState.sys.interaction.current?.data as any)?.sourceId).toBe('tornados_ripped_off');
+
+        const chooseActionPrompt = play.finalState.sys.interaction.current as any;
+        const chooseAction = runCommand(play.finalState, {
+            type: 'SYS_INTERACTION_RESPOND' as any,
+            playerId: '0',
+            payload: { optionId: chooseActionPrompt.data.options[0].id },
+        } as any);
+        expect(chooseAction.success).toBe(true);
+        expect((chooseAction.finalState.sys.interaction.current?.data as any)?.sourceId).toBe('tornados_ripped_off_target_minion');
+
+        const chooseTargetPrompt = chooseAction.finalState.sys.interaction.current as any;
+        const brownieOption = chooseTargetPrompt.data.options.find((option: any) => option.value?.minionUid === 'brownie-a');
+        expect(brownieOption).toBeDefined();
+
+        const resolveTarget = runCommand(chooseAction.finalState, {
+            type: 'SYS_INTERACTION_RESPOND' as any,
+            playerId: '0',
+            payload: { optionId: brownieOption.id },
+        } as any);
+        expect(resolveTarget.success).toBe(true);
+
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'borrowed-sleep',
+                defId: 'trickster_mark_of_sleep',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'minion',
+                targetBaseIndex: 0,
+                targetMinionUid: 'brownie-a',
+            }),
+        }));
+        expect(resolveTarget.finalState.core.bases[0].minions.find(minion => minion.uid === 'brownie-a')?.attachedActions).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ uid: 'borrowed-sleep', defId: 'trickster_mark_of_sleep', ownerId: '1' }),
+            ]),
+        );
+
+        const queued = resolveTarget.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        const brownieTrigger = queued?.payload?.triggers?.find((trigger: any) => trigger.sourceDefId === 'trickster_brownie');
+        expect(brownieTrigger).toEqual(expect.objectContaining({
+            sourceDefId: 'trickster_brownie',
+            sourceCardUid: 'brownie-a',
+            sourceControllerId: '1',
+            ownerPlayerId: '1',
+            eventPlayerId: '0',
+        }));
+    });
+
+    it('龙卷风：扯走把 borrowed Fairies Enchantment 移到另一基地后，应保留 metadata 与 sourcePlayerId', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a-ripped', 'tornados_ripped_off', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                {
+                    ...makeBase('base_trailer_park', [
+                        makeMinion('source-minion', 'sharks_mako', '0', 3),
+                    ]),
+                    ongoingActions: [{
+                        uid: 'borrowed-enchantment',
+                        defId: 'fairies_enchantment',
+                        ownerId: '1',
+                        metadata: {
+                            sourceControllerId: '0',
+                            fairiesEnchantmentMode: 'minus',
+                        },
+                    }],
+                },
+                makeBase('base_tornado_alley', [
+                    makeMinion('target-minion', 'sharks_mako', '0', 3, { powerModifier: 0 }),
+                ]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-ripped' },
+        } as any);
+        expect(play.success).toBe(true);
+        expect((play.finalState.sys.interaction.current?.data as any)?.sourceId).toBe('tornados_ripped_off');
+
+        const chooseActionPrompt = play.finalState.sys.interaction.current as any;
+        const enchantmentOption = chooseActionPrompt.data.options.find((option: any) => option.value?.cardUid === 'borrowed-enchantment');
+        expect(enchantmentOption).toBeDefined();
+
+        const chooseAction = runCommand(play.finalState, {
+            type: 'SYS_INTERACTION_RESPOND' as any,
+            playerId: '0',
+            payload: { optionId: enchantmentOption.id },
+        } as any);
+        expect(chooseAction.success).toBe(true);
+        expect((chooseAction.finalState.sys.interaction.current?.data as any)?.sourceId).toBe('tornados_ripped_off_target_base');
+
+        const chooseBasePrompt = chooseAction.finalState.sys.interaction.current as any;
+        const targetBaseOption = chooseBasePrompt.data.options.find((option: any) => option.value?.baseIndex === 1);
+        expect(targetBaseOption).toBeDefined();
+
+        const resolveTarget = runCommand(chooseAction.finalState, {
+            type: 'SYS_INTERACTION_RESPOND' as any,
+            playerId: '0',
+            payload: { optionId: targetBaseOption.id },
+        } as any);
+        expect(resolveTarget.success).toBe(true);
+
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'borrowed-enchantment',
+                defId: 'fairies_enchantment',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 1,
+                metadata: expect.objectContaining({
+                    fairiesEnchantmentMode: 'minus',
+                }),
+            }),
+        }));
+
+        const movedEnchantment = resolveTarget.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'borrowed-enchantment');
+        expect(movedEnchantment?.metadata?.sourceControllerId).toBe('0');
+        expect(movedEnchantment?.metadata?.fairiesEnchantmentMode).toBe('minus');
+
+        const targetMinion = resolveTarget.finalState.core.bases[1].minions.find(minion => minion.uid === 'target-minion');
+        expect(targetMinion).toBeDefined();
+        expect(getEffectivePower(resolveTarget.finalState.core, targetMinion!, 1)).toBe(2);
+    });
+
     it('神话希腊：狄俄尼索斯的恩惠可选择是否放回牌库顶', () => {
         const core = {
             players: {
@@ -521,6 +894,42 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(player.actionLimit).toBe(2);
         expect(player.deck[0]?.uid).toBe('a-dionysus');
         expect(player.discard.some(card => card.uid === 'a-dionysus')).toBe(false);
+    });
+
+    it('神话希腊：被他人拥有的狄俄尼索斯恩惠选择回顶时，仍应进入其拥有者牌库而不是当前玩家牌库', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-dionysus', 'mythic_greeks_favor_of_dionysus', 'action', '1')],
+                    deck: [makeCard('p0-deck-1', 'mythic_greeks_spartan', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-1', 'mythic_greeks_favor_of_apollo', 'action', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_oracle_at_delphi', [makeMinion('own-a', 'mythic_greeks_spartan', '0', 2)])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'borrowed-dionysus', targetBaseIndex: 0, targetMinionUid: 'own-a' },
+        } as any);
+        expect(play.success).toBe(true);
+        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+            const top = prompt.data.options.find((option: any) => option.value?.choice === 'deck-top');
+            return { optionId: top.id };
+        });
+        const p0 = resolved.finalState.core.players['0'];
+        const p1 = resolved.finalState.core.players['1'];
+        expect(p0.deck.map(card => card.uid)).toEqual(['p0-deck-1']);
+        expect(p0.discard.some(card => card.uid === 'borrowed-dionysus')).toBe(false);
+        expect(p1.deck.map(card => card.uid)).toEqual(['borrowed-dionysus', 'p1-deck-1']);
+        expect(p1.discard.some(card => card.uid === 'borrowed-dionysus')).toBe(false);
     });
 
     it('神话希腊：阿尔戈英雄触发行动态持续能力', () => {

@@ -89,6 +89,7 @@ type AttachedActionState = {
 
 type FairiesEnchantmentContinuation = {
     baseIndex: number;
+    attachedCardUid?: string;
     selectedBranchIds?: Array<'plus' | 'minus'>;
     allowBoth?: boolean;
 };
@@ -184,6 +185,7 @@ function findAttachedActionState(
 
 function buildTransferAttachedActionEvents(
     attached: AttachedActionState,
+    sourcePlayerId: PlayerId,
     targetBaseIndex: number,
     targetMinionUid: string,
     reason: string,
@@ -206,6 +208,7 @@ function buildTransferAttachedActionEvents(
                 cardUid: attached.cardUid,
                 defId: attached.defId,
                 ownerId: attached.ownerId,
+                ...(attached.ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
                 targetType: 'minion',
                 targetBaseIndex,
                 targetMinionUid,
@@ -534,6 +537,7 @@ function createTransferSelfAbilityProgram(
             return {
                 events: buildTransferAttachedActionEvents(
                     liveAttached,
+                    context.playerId,
                     selected.baseIndex,
                     selected.minionUid,
                     reason,
@@ -702,6 +706,7 @@ const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, S
         return {
             events: buildTransferAttachedActionEvents(
                 attached,
+                context.playerId,
                 context.targetBaseIndex,
                 context.targetMinionUid,
                 'fairies_tinx',
@@ -759,7 +764,8 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
         if (branchIds.length === 0) return { events: [] };
 
         const attached = state.core.bases[context.baseIndex]?.ongoingActions.find(action =>
-            action.ownerId === playerId && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
+            action.uid === context.attachedCardUid
+            && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
         );
         if (!attached) return { events: [] };
         const spirit = branchIds.length > 1 ? getAvailableSpiritOfTheForestOrTitan(state.core, playerId) : undefined;
@@ -769,6 +775,8 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
         if (fairiesEnchantmentMode !== 'plus' && fairiesEnchantmentMode !== 'minus' && fairiesEnchantmentMode !== 'both') {
             return { events: [] };
         }
+        const sourcePlayerId = (attached.metadata?.sourcePlayerId as PlayerId | undefined)
+            ?? (attached.metadata?.sourceControllerId as PlayerId | undefined);
 
         return {
             events: [
@@ -778,6 +786,7 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
                         cardUid: attached.uid,
                         defId: attached.defId,
                         ownerId: attached.ownerId,
+                        ...(sourcePlayerId && sourcePlayerId !== attached.ownerId ? { sourcePlayerId } : {}),
                         targetType: 'base',
                         targetBaseIndex: context.baseIndex,
                         metadata: { fairiesEnchantmentMode },
@@ -1117,6 +1126,7 @@ const fairiesEnchantmentProgram = createEffectProgram<AbilityContext, SmashUpCor
             playerId: ctx.playerId,
             now: ctx.now,
             baseIndex: ctx.baseIndex,
+            attachedCardUid: ctx.cardUid,
             allowBoth: !!upgrade,
         } satisfies FairiesEnchantmentContinuation & FairiesPromptContext,
         nextProgram: fairiesEnchantmentPromptProgram,
@@ -1161,7 +1171,7 @@ function fairiesLadybugProtectionChecker(ctx: ProtectionCheckContext): boolean {
 function fairiesMagicWardRestrictionChecker(ctx: RestrictionCheckContext): boolean {
     return ctx.state.bases[ctx.baseIndex]?.ongoingActions.some(action =>
         (action.defId === 'fairies_magic_ward' || action.defId === 'fairies_magic_ward_pod')
-        && action.ownerId !== ctx.playerId,
+        && ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) !== ctx.playerId,
     ) ?? false;
 }
 

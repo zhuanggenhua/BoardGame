@@ -17,13 +17,14 @@ import type {
     SmashUpCore,
     SmashUpEvent,
     MinionOnBase,
+    SmashUpReactionResourceFootprint,
     TriggerInstance,
     TriggerQueuedEvent,
     PlayerTurnRestrictionType } from './types';
 import { SU_EVENTS } from './types';
 import { registerTriggerExecutor } from './triggerExecutors';
-import { getBaseDef, getTitanDef } from '../data/cards';
-import { matchesDefId, mustUseBaseLimitedMinionQuota } from './utils';
+import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
+import { isSameNameDefId, matchesDefId, mustUseBaseLimitedMinionQuota } from './utils';
 
 // ============================================================================
 // 缂備緡鍋夐褔鎮楁搴樺亾鐟欏嫮鐓紒?
@@ -38,6 +39,7 @@ export type ProtectionType =
 
 /** 闂佺硶鏅涢幖顐耿閹绢喗鍤勯柦妯侯槸椤棃鏌涘Ο渚剰闁糕晜顨呰灋闁逞屽墴瀵濡烽妷銉︾槪闂佽桨绀佹惔婊呮閻楀牊浜ら柡鍌涘缁€鈧?true 闁荤偞绋忛崝搴ㄥΦ濮樿鲸瀚氶柕澶堝劤閸炪劑鏌涢敂钘夘€滈柛蹇旓耿瀹曟繂鈽夊搴㈣晧闂佸憡锚椤戝懘宕?*/
 export type BaseAbilitySuppressionChecker = (state: SmashUpCore, baseIndex: number) => boolean;
+export type BaseScoringSuppressionChecker = (state: SmashUpCore, baseIndex: number) => boolean;
 
 /** 婵烇絽娲︾换鍐╂叏閵忕姈娑㈠焵椤掑嫬钃熼柕澶堝€楅悷鎰槈閹炬剚鍎愰柡?*/
 export interface ProtectionCheckContext {
@@ -164,6 +166,8 @@ export interface TriggerContext {
     triggerMinionDefId?: string;
     /** 消灭者（仅 onMinionDestroyed） */
     destroyerId?: PlayerId;
+    /** 事件里相关随从/对象的控制者 */
+    controllerId?: PlayerId;
     /** 事件原因 */
     reason?: string;
     /** 影响类型（仅 onMinionAffected） */
@@ -227,12 +231,14 @@ interface ProtectionEntry {
     checker: ProtectionChecker;
     /** 濠电偞鍨甸悧鎰板焵椤掍緡娈旈柣搴ㄦ敱缁屽崬鈹戦崶顬垿鏌ㄥ☉娆庝孩鐞氭繈鏌涘▎鎰仴闁诡喗顨婂Λ渚€鍩€椤掑倹鍟哄ù锝呮贡鍟搁梺璇叉禋閸樿棄顭囬棃娑掓敠闁归偊鍓欓獮銏ゆ煟濡も偓閻妲愬▎鎰箚?trickster_hideout闂?*/
     consumable?: boolean;
+    generatedPodAlias?: boolean;
 }
 
 interface RestrictionEntry {
     sourceDefId: string;
     restrictionType: RestrictionType;
     checker: RestrictionChecker;
+    generatedPodAlias?: boolean;
 }
 
 interface TriggerEntry {
@@ -240,15 +246,17 @@ interface TriggerEntry {
     timing: TitanAwareTriggerTiming;
     rawCallback: TriggerCallback;
     callback: TriggerCallback;
+    canTrigger?: (ctx: TriggerContext) => boolean;
     optional?: boolean;
     mandatory?: boolean;
     phase?: 'replacement' | 'reaction';
-    playerContext?: 'eventPlayer' | 'sourceController';
+    playerContext?: 'eventPlayer' | 'sourceController' | 'sourceHostController';
     baseScoped?: boolean;
     /** true 闂佸搫鍟抽崺鏍偓鍨矒瀹曢攱娼幍顔炬啰濠殿噯绲界换瀣煂濠婂牆绾ч柕澶涘閻栭亶鎮楅崷顓炰粧缂佽翰鍎靛畷锟犲即閻樺樊浠鹃梺绋跨箞閸庨潧危?闂佸湱鐟抽崱鈺傛杸闂佹寧绋戦惌渚€鍩€椤掆偓婵傛梻绮径鎰強妞ゆ牗绋戦惁?defId 闂佽壈椴搁懝楣冨箖鎼淬垻鈻旈柍褜鍓欓埢?*/
     perInstance?: boolean;
     /** true 闂佸搫鍟崕濂搞€呴敃鈧晥闁稿本绋掗梽宥嗙節瑜庨崝鏇犳崲閳ь剙顪冮妶鍫敽缂傚秴鎳忕粋宥嗘償閿涘嫮歇闂佸憡鎸哥粔鐤杺闂佸憡鐟﹂崹鐢割敋椤旇姤鍎熼柡鍐ㄥ€归悾閬嶆煕閳轰焦鎯堟繝鈧幘顔芥櫖闁割偅绮庢导鎰攽閳ュ啿鈧粙顢橀幖浣哥闁糕剝顨堥崬銊╂煕閿曞偆鏆掔紒妤€鍊块幆鍐礋椤栨侗鍚傛繛瀵稿Т閸戠晫妲?*/
     sourceScope?: 'any' | 'triggerBase';
+    effectContract?: import('./types').SmashUpReactionResourceFootprint;
     /**
      * Global triggers bypass the "source must be in play" witness check.
      * Use for Special cards that can be played from hand/discard when a condition happens.
@@ -257,18 +265,33 @@ interface TriggerEntry {
     /** global 闁荤喐鐟辩粻鎴ｃ亹閸岀偛闂柕濞垮劚鐢帡鎮规担鍦憙妞ゎ偄妫涢幏鐘虫媴閻戞鏆犻梺鍝勵槶閸庤尙鑺遍鈧畷鐘诲传閸曨厼骞嶉梺鎸庣⊕閻╊垳鍒掗婊勫?hand + discard */
     globalZones?: Array<'hand' | 'discard' | 'deck'>;
     fallbackFootprint?: import('./types').SmashUpReactionResourceFootprint & { fallbackReason: string };
+    generatedPodAlias?: boolean;
 }
 
 interface TriggerSourceLocation {
     uid?: string;
     baseIndex?: number;
     controllerId?: PlayerId;
+    hostControllerId?: PlayerId;
     titanUid?: string;
 }
 
 interface InterceptorEntry {
     sourceDefId: string;
     interceptor: EventInterceptor;
+    generatedPodAlias?: boolean;
+}
+
+interface BaseAbilitySuppressionEntry {
+    sourceDefId: string;
+    checker: BaseAbilitySuppressionChecker;
+    generatedPodAlias?: boolean;
+}
+
+interface BaseScoringSuppressionEntry {
+    sourceDefId: string;
+    checker: BaseScoringSuppressionChecker;
+    generatedPodAlias?: boolean;
 }
 
 // ============================================================================
@@ -279,29 +302,56 @@ const protectionRegistry: ProtectionEntry[] = [];
 const restrictionRegistry: RestrictionEntry[] = [];
 const triggerRegistry: TriggerEntry[] = [];
 const interceptorRegistry: InterceptorEntry[] = [];
-const baseAbilitySuppressionRegistry: { sourceDefId: string; checker: BaseAbilitySuppressionChecker }[] = [];
+const baseAbilitySuppressionRegistry: BaseAbilitySuppressionEntry[] = [];
+const baseScoringSuppressionRegistry: BaseScoringSuppressionEntry[] = [];
+
+function shouldExposePodOngoingAlias(defId: string): boolean {
+    const podCard = getCardDef(`${defId}_pod`);
+    if (podCard) {
+        return podCard.abilityTags?.includes('ongoing') ?? false;
+    }
+    return Boolean(getBaseDef(`${defId}_pod`));
+}
+
+function shouldHideGeneratedPodOngoingAlias(
+    entries: Array<{ sourceDefId: string; generatedPodAlias?: boolean }>,
+    sourceDefId: string,
+): boolean {
+    if (!sourceDefId.endsWith('_pod')) return false;
+    const related = entries.filter((entry) => entry.sourceDefId === sourceDefId);
+    if (related.length === 0) return false;
+    if (related.some((entry) => !entry.generatedPodAlias)) return false;
+    return !shouldExposePodOngoingAlias(sourceDefId.slice(0, -4));
+}
 
 /** 濠电偛顦崝宀勫船閼恒儳鈹嶆繝闈涙搐琚橀梺鐟板殩闂勫嫰宕洪崨鏉戦棷?*/
 export function registerProtection(
     sourceDefId: string,
     protectionType: ProtectionType,
     checker: ProtectionChecker,
-    options?: { consumable?: boolean }
+    options?: { consumable?: boolean; generatedPodAlias?: boolean }
 ): void {
     // 闂佸憡锚椤兘宕抽崨濠勨攳婵犻潧娲よ闂佹寧绋掗懝楣冨箖閹惧鈻旈柍?sourceDefId + protectionType 闂佸憡鐟禍婵嬪极閻愬搫绀冮悘鐐跺亹椤忚鲸绻涢崱蹇旑潐缂佽鲸鐟╁濂稿矗婢舵ê澹?HMR 闂備焦褰冪粔鎾囬幓鎺嗘灃闁靛鍎遍弬鈧梺?
     if (protectionRegistry.some(e => e.sourceDefId === sourceDefId && e.protectionType === protectionType)) return;
-    protectionRegistry.push({ sourceDefId, protectionType, checker, consumable: options?.consumable });
+    protectionRegistry.push({
+        sourceDefId,
+        protectionType,
+        checker,
+        consumable: options?.consumable,
+        generatedPodAlias: options?.generatedPodAlias,
+    });
 }
 
 /** 濠电偛顦崝宀勫船娴犲鈷旈柟閭﹀墮閻撴垿鏌熼崙銈夋闁糕晛鎳樺畷?*/
 export function registerRestriction(
     sourceDefId: string,
     restrictionType: RestrictionType,
-    checker: RestrictionChecker
+    checker: RestrictionChecker,
+    options?: { generatedPodAlias?: boolean },
 ): void {
     // 闂佸憡锚椤兘宕抽崨濠勨攳婵犻潧娲よ闂佹寧绋掗懝楣冨箖閹惧鈻旈柍?sourceDefId + restrictionType 闂佸憡鐟禍婵嬪极閻愬搫绀冮悘鐐跺亹椤忚鲸绻涢崱蹇旑潐缂佽鲸鐟╁濂稿矗婢舵ê澹?HMR 闂備焦褰冪粔鎾囬幓鎺嗘灃闁靛鍎遍弬鈧梺?
     if (restrictionRegistry.some(e => e.sourceDefId === sourceDefId && e.restrictionType === restrictionType)) return;
-    restrictionRegistry.push({ sourceDefId, restrictionType, checker });
+    restrictionRegistry.push({ sourceDefId, restrictionType, checker, generatedPodAlias: options?.generatedPodAlias });
 }
 
 export function registerTrigger(
@@ -309,16 +359,19 @@ export function registerTrigger(
     timing: TitanAwareTriggerTiming,
     callback: TriggerCallback,
     options?: {
+        canTrigger?: (ctx: TriggerContext) => boolean;
         optional?: boolean;
         mandatory?: boolean;
         phase?: 'replacement' | 'reaction';
         global?: boolean;
         globalZones?: Array<'hand' | 'discard' | 'deck'>;
-        playerContext?: 'eventPlayer' | 'sourceController';
+        playerContext?: 'eventPlayer' | 'sourceController' | 'sourceHostController';
         baseScoped?: boolean;
         perInstance?: boolean;
         sourceScope?: 'any' | 'triggerBase';
-            fallbackFootprint?: import('./types').SmashUpReactionResourceFootprint & { fallbackReason: string };
+        effectContract?: import('./types').SmashUpReactionResourceFootprint;
+        fallbackFootprint?: import('./types').SmashUpReactionResourceFootprint & { fallbackReason: string };
+        generatedPodAlias?: boolean;
     }
 ): void {
     // 闂佸憡锚椤兘宕抽崨濠勨攳婵犻潧娲よ闂佹寧绋掗懝楣冨箖閹惧鈻旈柍?sourceDefId + timing 闂佸憡鐟禍婵嬪极閻愬搫绀冮悘鐐跺亹椤忚鲸绻涢崱蹇旑潐缂佽鲸鐟╁濂稿矗婢舵ê澹?HMR 闂備焦褰冪粔鎾囬幓鎺嗘灃闁靛鍎遍弬鈧梺?
@@ -328,16 +381,20 @@ export function registerTrigger(
         timing,
         rawCallback: callback,
         callback,
+        canTrigger: options?.canTrigger,
         optional: options?.optional,
         mandatory: options?.mandatory,
         phase: options?.phase ?? 'reaction',
         perInstance: options?.perInstance,
         sourceScope: options?.sourceScope ?? 'any',
+        effectContract: options?.effectContract,
         global: options?.global,
         globalZones: options?.globalZones,
         playerContext: options?.playerContext ?? 'eventPlayer',
         baseScoped: options?.baseScoped ?? true,
-        fallbackFootprint: options?.fallbackFootprint });
+        fallbackFootprint: options?.fallbackFootprint,
+        generatedPodAlias: options?.generatedPodAlias,
+    });
     registerTriggerExecutor(sourceDefId, timing, callback);
 }
 
@@ -347,14 +404,25 @@ function locateSources(state: SmashUpCore, sourceDefId: string): TriggerSourceLo
         const base = state.bases[i];
         if (base.defId === sourceDefId) locations.push({ baseIndex: i });
         for (const ongoing of base.ongoingActions.filter(o => o.defId === sourceDefId)) {
-            locations.push({ uid: ongoing.uid, baseIndex: i, controllerId: ongoing.ownerId });
+            const metadata = ongoing.metadata as { sourceControllerId?: PlayerId; sourcePlayerId?: PlayerId } | undefined;
+            locations.push({
+                uid: ongoing.uid,
+                baseIndex: i,
+                controllerId: metadata?.sourceControllerId ?? metadata?.sourcePlayerId ?? ongoing.ownerId,
+            });
         }
         for (const minion of base.minions.filter(m => m.defId === sourceDefId)) {
             locations.push({ uid: minion.uid, baseIndex: i, controllerId: minion.controller });
         }
         for (const m of base.minions) {
             for (const attached of m.attachedActions?.filter(a => a.defId === sourceDefId) ?? []) {
-                locations.push({ uid: attached.uid, baseIndex: i, controllerId: attached.ownerId });
+                const metadata = attached.metadata as { sourceControllerId?: PlayerId; sourcePlayerId?: PlayerId } | undefined;
+                locations.push({
+                    uid: attached.uid,
+                    baseIndex: i,
+                    controllerId: metadata?.sourceControllerId ?? metadata?.sourcePlayerId ?? attached.ownerId,
+                    hostControllerId: m.controller,
+                });
             }
         }
     }
@@ -406,10 +474,24 @@ function isTurnBoundarySourceControllerEligible(
     located: TriggerSourceLocation,
     playerId: PlayerId,
 ): boolean {
-    if (entry.playerContext !== 'sourceController') return true;
+    if (entry.playerContext !== 'sourceController' && entry.playerContext !== 'sourceHostController') return true;
     if (timing !== 'onTurnStart' && timing !== 'onTurnEnd') return true;
-    if (!located.controllerId) return true;
-    return located.controllerId === playerId;
+    const sourcePlayerId = getTriggerSourcePlayerId(entry, located);
+    if (!sourcePlayerId) return true;
+    return sourcePlayerId === playerId;
+}
+
+function getTriggerSourcePlayerId(
+    entry: Pick<TriggerEntry, 'playerContext'>,
+    located: TriggerSourceLocation,
+): PlayerId | undefined {
+    if (entry.playerContext === 'sourceHostController') {
+        return located.hostControllerId ?? located.controllerId;
+    }
+    if (entry.playerContext === 'sourceController') {
+        return located.controllerId;
+    }
+    return undefined;
 }
 
 function buildTriggerId(
@@ -438,38 +520,55 @@ function createTriggerInstance(
     const mandatory = entry.mandatory ?? !(entry.optional ?? false);
     const sourceEventId = ctx.sourceEventId ?? `${timing}:${now}`;
     const frameId = ctx.frameId ?? `${timing}:${sourceEventId}`;
+    const sourcePlayerId = getTriggerSourcePlayerId(entry, located);
+    const explicitDerivedFootprint = cloneEffectContractWithSourceContext(entry.effectContract, located, sourcePlayerId ?? located.controllerId);
     const triggerBaseControllersAtTrigger = ctx.baseIndex !== undefined
         ? Array.from(new Set((state.bases[ctx.baseIndex]?.minions ?? []).map((minion) => minion.controller)))
         : undefined;
     return {
         id: buildTriggerId(entry, timing, now, order, located),
         timing,
+        playerContext: entry.playerContext,
         sourceDefId: entry.sourceDefId,
         sourceCardUid: located.uid,
-        sourceControllerId: located.controllerId,
+        sourceControllerId: sourcePlayerId ?? located.controllerId,
         sourceBaseIndex: located.baseIndex,
         mandatory,
         resolutionClass: mandatory ? 'mandatory' : 'optional',
         frameId,
         sourceEventId,
-        ownerPlayerId: entry.playerContext === 'sourceController' && located.controllerId
-            ? located.controllerId
-            : pid,
+        ownerPlayerId: sourcePlayerId ?? pid,
+        eventPlayerId: pid,
         witnessRequirement: 'inPlayAtTriggerTime',
         witnessed: true,
         baseIndex: ctx.baseIndex,
         moveFromBaseIndex: ctx.moveFromBaseIndex,
         moveToBaseIndex: ctx.moveToBaseIndex,
+        duel: ctx.duel ? structuredClone(ctx.duel) : undefined,
+        duelSourceId: ctx.duelSourceId,
+        duelOutcome: ctx.duelOutcome,
+        duelChallenger: ctx.duelChallenger ? structuredClone(ctx.duelChallenger) : undefined,
+        duelChallenged: ctx.duelChallenged ? structuredClone(ctx.duelChallenged) : undefined,
+        duelWinner: ctx.duelWinner ? structuredClone(ctx.duelWinner) : undefined,
+        duelLoser: ctx.duelLoser ? structuredClone(ctx.duelLoser) : undefined,
+        duelTie: ctx.duelTie,
         triggerMinionUid: ctx.triggerMinionUid,
         triggerMinionDefId: ctx.triggerMinionDefId,
         triggerMinionPower: (ctx as any).triggerMinionPower,
         destroyerId: ctx.destroyerId,
+        controllerId: ctx.controllerId,
         reason: ctx.reason,
+        ...(explicitDerivedFootprint
+            ? {
+                derivedFootprint: explicitDerivedFootprint,
+            }
+            : {}),
         affectType: ctx.affectType,
         counterChangeKind: ctx.counterChangeKind,
         counterDelta: ctx.counterDelta,
-        affectEvent: ctx.affectEvent,
-        rankings: ctx.rankings,
+        affectEvent: ctx.affectEvent ? structuredClone(ctx.affectEvent) : undefined,
+        affectBatchTargets: ctx.affectBatchTargets ? structuredClone(ctx.affectBatchTargets) : undefined,
+        rankings: ctx.rankings ? structuredClone(ctx.rankings) : undefined,
         triggerBaseControllersAtTrigger,
         buriedCardUid: (ctx as any).buriedCardUid,
         buriedCardDefId: (ctx as any).buriedCardDefId,
@@ -478,9 +577,9 @@ function createTriggerInstance(
         actionTargetBaseIndex: ctx.actionTargetBaseIndex,
         actionTargetType: ctx.actionTargetType,
         actionTargetMinionUid: ctx.actionTargetMinionUid,
-        inspectionCards: ctx.inspectionCards,
+        inspectionCards: ctx.inspectionCards ? structuredClone(ctx.inspectionCards) : undefined,
         inspectionZone: ctx.inspectionZone,
-        inspectionTargetPlayerIds: ctx.inspectionTargetPlayerIds,
+        inspectionTargetPlayerIds: ctx.inspectionTargetPlayerIds ? structuredClone(ctx.inspectionTargetPlayerIds) : undefined,
         inspectionCausePlayerId: ctx.inspectionCausePlayerId,
         fallbackFootprint: entry.fallbackFootprint,
         lkiMinion: ctx.triggerMinion
@@ -495,8 +594,39 @@ function createTriggerInstance(
                 powerModifier: ctx.triggerMinion.powerModifier,
                 tempPowerModifier: ctx.triggerMinion.tempPowerModifier,
                 attachedActionDefIds: ctx.triggerMinion.attachedActions?.map(a => a.defId) ?? [],
-                metadata: ctx.triggerMinion.metadata ? { ...ctx.triggerMinion.metadata } : undefined }
+                metadata: ctx.triggerMinion.metadata ? structuredClone(ctx.triggerMinion.metadata) : undefined }
             : undefined };
+}
+
+function buildTriggerEligibilityContext(
+    state: SmashUpCore,
+    entry: TriggerEntry,
+    timing: TitanAwareTriggerTiming,
+    now: number,
+    pid: PlayerId,
+    located: TriggerSourceLocation,
+    ctx: Omit<TriggerContext, 'timing'>,
+): TriggerContext {
+    const sourcePlayerId = getTriggerSourcePlayerId(entry, located);
+    return {
+        ...ctx,
+        state,
+        timing,
+        playerId: pid,
+        sourceCardUid: located.uid,
+        sourceBaseIndex: located.baseIndex,
+        sourceControllerId: sourcePlayerId ?? located.controllerId,
+        now,
+    };
+}
+
+function isQueuedTriggerPlayerEligible(
+    state: SmashUpCore,
+    trigger: TriggerInstance,
+): boolean {
+    const turnOrder = state.turnOrder ?? [];
+    if (turnOrder.length === 0) return false;
+    return turnOrder.includes(trigger.ownerPlayerId) && turnOrder.includes(trigger.eventPlayerId);
 }
 
 function shouldSkipTriggerInstance(
@@ -568,19 +698,56 @@ function shouldSkipTriggerInstance(
         && (state.veryLargeBoulderTriggeredTurnByTitan ?? {})[located.titanUid] === state.turnNumber;
 }
 
+function cloneEffectContractWithSourceContext(
+    effectContract: SmashUpReactionResourceFootprint | undefined,
+    located: TriggerSourceLocation,
+    sourcePlayerId: PlayerId | undefined,
+): SmashUpReactionResourceFootprint | undefined {
+    if (!effectContract) return undefined;
+    return {
+        reads: [
+            ...effectContract.reads,
+            ...(located.uid
+                ? [
+                    { kind: 'sourceInstance' as const, uid: located.uid },
+                    { kind: 'cardInstance' as const, uid: located.uid },
+                ]
+                : []),
+            ...(sourcePlayerId
+                ? [{ kind: 'playerControl' as const, playerId: sourcePlayerId }]
+                : []),
+        ],
+        writes: [...effectContract.writes],
+        ...(effectContract.opensInteraction ? { opensInteraction: true } : {}),
+        ...(effectContract.fallbackReason ? { fallbackReason: effectContract.fallbackReason } : {}),
+    };
+}
+
 /** 收集符合当前时机的触发器实例，供全局反应队列后续排序与执行。 */
 export function collectTriggers(
     state: SmashUpCore,
     timing: TitanAwareTriggerTiming,
     ctx: Omit<TriggerContext, 'timing'>,
+    options?: { sourceDefIds?: readonly string[] },
 ): TriggerQueuedEvent | undefined {
     if (triggerRegistry.length === 0) return undefined;
     const triggers: TriggerInstance[] = [];
     const now = ctx.now;
     const pid = ctx.playerId;
+    const allowedSourceDefIds = options?.sourceDefIds ? new Set(options.sourceDefIds) : undefined;
+    const buildExplicitSourceFallback = (entry: TriggerEntry): TriggerSourceLocation | undefined => {
+        if (!entry.perInstance || !allowedSourceDefIds?.has(entry.sourceDefId)) return undefined;
+        if (!ctx.sourceCardUid || ctx.sourceControllerId === undefined) return undefined;
+        return {
+            uid: ctx.sourceCardUid,
+            baseIndex: ctx.sourceBaseIndex,
+            controllerId: ctx.sourceControllerId,
+        };
+    };
 
     for (const entry of triggerRegistry) {
         if (entry.timing !== timing) continue;
+        if (allowedSourceDefIds && !allowedSourceDefIds.has(entry.sourceDefId)) continue;
         // Only queue reaction-phase triggers (replacement effects must remain immediate)
         if (entry.phase === 'replacement') continue;
         if (entry.global) {
@@ -590,16 +757,36 @@ export function collectTriggers(
                 timing,
                 entry.globalZones ?? ['hand', 'discard'],
                 pid,
+                ctx,
+                candidate => !entry.canTrigger
+                    || entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, candidate, ctx)),
             );
             if (!located) continue;
-            triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx));
+            if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, located, ctx))) continue;
+            const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx);
+            if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+            triggers.push(trigger);
             continue;
         }
 
         const locatedSources = locateSources(state, entry.sourceDefId);
         if (locatedSources.length === 0) {
+            const explicitSourceFallback = buildExplicitSourceFallback(entry);
+            if (explicitSourceFallback) {
+                if (!isTriggerSourceEligible(entry, timing, explicitSourceFallback, ctx.baseIndex)) continue;
+                if (!isTurnBoundarySourceControllerEligible(entry, timing, explicitSourceFallback, pid)) continue;
+                if (shouldSkipTriggerInstance(state, entry, timing, explicitSourceFallback, ctx)) continue;
+                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, explicitSourceFallback, ctx))) continue;
+                const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, explicitSourceFallback, ctx);
+                if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+                triggers.push(trigger);
+                continue;
+            }
             if (!entry.perInstance && isSourceActive(state, entry.sourceDefId)) {
-                triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, {}, ctx));
+                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, {}, ctx))) continue;
+                const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, {}, ctx);
+                if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+                triggers.push(trigger);
             }
             continue;
         }
@@ -609,18 +796,26 @@ export function collectTriggers(
                 if (!isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)) continue;
                 if (!isTurnBoundarySourceControllerEligible(entry, timing, located, pid)) continue;
                 if (shouldSkipTriggerInstance(state, entry, timing, located, ctx)) continue;
-                triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx));
+                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, located, ctx))) continue;
+                const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx);
+                if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+                triggers.push(trigger);
             }
             continue;
         }
 
-        const located = selectSpecificSourceLocation(locatedSources, ctx, candidate => (
-            isTriggerSourceEligible(entry, timing, candidate, ctx.baseIndex)
-            && isTurnBoundarySourceControllerEligible(entry, timing, candidate, pid)
-            && !shouldSkipTriggerInstance(state, entry, timing, candidate, ctx)
-        ));
+        const located = selectSpecificSourceLocation(locatedSources, ctx, candidate => {
+            if (!isTriggerSourceEligible(entry, timing, candidate, ctx.baseIndex)) return false;
+            if (!isTurnBoundarySourceControllerEligible(entry, timing, candidate, pid)) return false;
+            if (shouldSkipTriggerInstance(state, entry, timing, candidate, ctx)) return false;
+            return !entry.canTrigger
+                || entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, candidate, ctx));
+        });
         if (!located) continue;
-        triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx));
+        if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, located, ctx))) continue;
+        const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx);
+        if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+        triggers.push(trigger);
     }
 
     if (triggers.length === 0) return undefined;
@@ -633,21 +828,32 @@ export function collectTriggers(
 /** 濠电偛顦崝宀勫船閼恒儳顩查悗锝傛櫆椤愪粙鏌熼崙銈夋闁糕晛鎳樺畷鎶解€﹂幒鏃傤槱闂佸搫娲ら妵姗€宕鍕瀬闁割偆鍠撴禍顖炴煥?*/
 export function registerInterceptor(
     sourceDefId: string,
-    interceptor: EventInterceptor
+    interceptor: EventInterceptor,
+    options?: { generatedPodAlias?: boolean },
 ): void {
     // 闂佸憡锚椤兘宕抽崨濠勨攳婵犻潧娲よ闂佹寧绋掗懝楣冨箖閹惧鈻旈柍?sourceDefId 闂佸憡鐟禍婵嬪极閻愬搫绀冮悘鐐跺亹椤忚鲸绻涢崱蹇旑潐缂佽鲸鐟╁濂稿矗婢舵ê澹?HMR 闂備焦褰冪粔鎾囬幓鎺嗘灃闁靛鍎遍弬鈧梺?
     if (interceptorRegistry.some(e => e.sourceDefId === sourceDefId)) return;
-    interceptorRegistry.push({ sourceDefId, interceptor });
+    interceptorRegistry.push({ sourceDefId, interceptor, generatedPodAlias: options?.generatedPodAlias });
 }
 
 /** 濠电偛顦崝宀勫船娴犲鏄ラ柛婵嗗閸曢箖鏌ょ€圭姵顥夊┑顔肩箻瀹曘垻鈧綆浜滈悡鎴︽煥濞戞澧曟い?alien_jammed_signal闂佹寧绋掔喊宥嗘櫠瀹ュ瀚夊璺鸿嫰鐠愮喖鎮楃涵鍛厫婵☆偁鍊楅幉鎾幢濮楀棗濡伴梺绯曟櫅閹碱偄锕㈤幘顔藉殑闁芥ê顦～鏃堟煥?*/
 export function registerBaseAbilitySuppression(
     sourceDefId: string,
-    checker: BaseAbilitySuppressionChecker
+    checker: BaseAbilitySuppressionChecker,
+    options?: { generatedPodAlias?: boolean },
 ): void {
     // 闂佸憡锚椤兘宕抽崨濠勨攳婵犻潧娲よ闂佹寧绋掗懝楣冨箖閹惧鈻旈柍?sourceDefId 闂佸憡鐟禍婵嬪极閻愬搫绀冮悘鐐跺亹椤忚鲸绻涢崱蹇旑潐缂佽鲸鐟╁濂稿矗婢舵ê澹?HMR 闂備焦褰冪粔鎾囬幓鎺嗘灃闁靛鍎遍弬鈧梺?
     if (baseAbilitySuppressionRegistry.some(e => e.sourceDefId === sourceDefId)) return;
-    baseAbilitySuppressionRegistry.push({ sourceDefId, checker });
+    baseAbilitySuppressionRegistry.push({ sourceDefId, checker, generatedPodAlias: options?.generatedPodAlias });
+}
+
+export function registerBaseScoringSuppression(
+    sourceDefId: string,
+    checker: BaseScoringSuppressionChecker,
+    options?: { generatedPodAlias?: boolean },
+): void {
+    if (baseScoringSuppressionRegistry.some(e => e.sourceDefId === sourceDefId)) return;
+    baseScoringSuppressionRegistry.push({ sourceDefId, checker, generatedPodAlias: options?.generatedPodAlias });
 }
 
 /** 濠电偞鎸搁幊鎰板煘閺嶎厼绠ラ柍褜鍓熷鍨緞鐎ｎ偅娈橀梺鍛婂姇閻線濡撮崘顔芥櫖闁割偆鍠撻妶鎾偣閸ャ劍绀堥柡浣靛€濋弫?*/
@@ -657,6 +863,7 @@ export function clearOngoingEffectRegistry(): void {
     triggerRegistry.length = 0;
     interceptorRegistry.length = 0;
     baseAbilitySuppressionRegistry.length = 0;
+    baseScoringSuppressionRegistry.length = 0;
 }
 
 export function hasRegisteredTrigger(sourceDefId: string, timing: TriggerTiming): boolean {
@@ -665,124 +872,203 @@ export function hasRegisteredTrigger(sourceDefId: string, timing: TriggerTiming)
 
 /**
  * 婵炴垶鎸鹃崕銈嗘櫠瀹ュ瀚?POD 闂佺粯顨呴悧濠傦耿娴煎瓨鍎嶉柛鏇ㄥ亜楠炪垽鏌ｅΔ鈧張顒佺珶閹烘鐓傞煫鍥ㄦ⒐閺嗗牓鏌?trigger/restriction/protection 闂佸憡甯╅崑鍕箖?
- * 
+ *
  * POD 闂?defId 闂佸搫绉堕崢褏妲愰埄鍐枖?闂佸憡顭囬崰鎾存櫠濮婃攨fId + _pod"闂佹寧绋戦悧鍡涖€?alien_scout_pod闂佹寧绋戦ˇ顓㈠焵?
  * 濠殿喗绺块崐鏇㈠吹闁秴鏋佸ù鑲╃節閹查箖鏌涘Ο鐑橆棞闁告垟鈧枼鏋栭柕濞垮劚閺傗偓闁荤偞渚楅悡澶屾濠靛牅鐒婇柛鈩冪懐閸庡﹪鏌涘顒傚閻㈩垼鍋呴幈銊р偓锝庝海閸╁瞼鈧鍠栫换鎺戔枔?defId 闂佹眹鍔岀€氼厽鏅跺澶婂珘?trigger/restriction/protection 婵犮垼娉涚粔鎾春濡ゅ啰纾兼繛鍡楁禋閸ょ娀骞栫€涙ɑ鈷掓繛?_pod 闂佺粯顨呴悧濠傦耿娴兼潙违?
  * 闁哄鏅滈悷锕傛偋闁秴绫嶉柣妯肩帛娴犳ê鈽夐幘璺哄妺闁伙腹鍓濈粙?POD 闂佸憡銇涢埀顒€鍟跨粈瀣煟濞嗘ê澧扮紒槌栦邯瀹?trigger 婵炲濯寸徊鍧楁偉濠婂牊鏅悘鐐跺Г閻ㄦ垿鏌ら崘娴嬪亾閻曚礁鏁ら梺绋跨箲閸庡ジ宕靛鍫濈闁靛ě鍕厱闂佸綊娼ч悘婵嬫偄閳ь剛鐥娑樹壕闂佺粯顨呴悧蹇撯枔閹达箑绀傞柕濞垮労濞堢増绻涢幘铏暈闁搞劍鐟╅弻鍛村及韫囨洖绔奸梺?
- * 
+ *
  * 闂婎偄娲ら幊姗€濡磋箛娑樻嵍闁靛绠戦。鏌ユ煛閸繍妲规繛锝呯－閸栨牜绱掑Ο缁樻畼闂佸憡鍔曢懟顖炴偩椤掆偓琚欓柡鍥╁仦閸婄敻鎮圭€ｎ亜鏆熼柡浣靛€曢～銏ゅΧ閸涱厽鐦ｉ梺杞版祰閸╁洭鍩€?
  */
 export function registerPodOngoingAliases(): void {
-    let mappedCount = 0;
-    
+    let _mappedCount = 0;
+
     // 1. 闂佸搫瀚慨鎾儍?Trigger
     const triggersToAdd: TriggerEntry[] = [];
     for (const entry of triggerRegistry) {
-        const { sourceDefId, timing, rawCallback, fallbackFootprint } = entry;
-        
+        const {
+            sourceDefId,
+            timing,
+            rawCallback,
+            canTrigger,
+            optional,
+            mandatory,
+            phase,
+            playerContext,
+            baseScoped,
+            perInstance,
+            sourceScope,
+            effectContract,
+            global,
+            globalZones,
+            fallbackFootprint,
+        } = entry;
+
         // 闁荤姴鎼悿鍥╂崲閸愵煈鍟呴柤纰卞墰閻ュ懘鏌?_pod 闂?
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
-        
+
         const podDefId = `${sourceDefId}_pod`;
-        
+
         // 婵犵鈧啿鈧綊鎮?POD 闂佺粯顨呴悧濠傦耿閺夋鍟呴柤纰卞墰閻ュ懏绻涙径鍫濆闁哥偘绮欓弫宥呯暆閸愵亜鍔滈柡澶嗘櫅濞村嫮妲愬▎鎰枖鐎广儱鐗滃ú顒勬煟閳哄倻澧俊顖氼槸椤曪綀绠涢弮鈧弳鍫ユ煕閹邦剛鐒跨紒?
         const alreadyRegistered = triggerRegistry.some(
             e => e.sourceDefId === podDefId && e.timing === timing
         );
         if (alreadyRegistered) continue;
-        
+
         // 濠电儑缍€椤曆勬叏閻愬搫绀嗛柡澶庢硶缁愨剝绻涙径鍫濆闁哥偘绮欏畷姘旈崟鈹惧亾?
         triggersToAdd.push({
             sourceDefId: podDefId,
             timing,
             rawCallback,
             callback: rawCallback,
-            optional: entry.optional,
-            phase: entry.phase,
-            perInstance: entry.perInstance,
-            sourceScope: entry.sourceScope,
-            global: entry.global,
-            globalZones: entry.globalZones,
-            fallbackFootprint });
-        mappedCount++;
+            canTrigger,
+            optional,
+            mandatory,
+            phase,
+            playerContext,
+            baseScoped,
+            perInstance,
+            sourceScope,
+            effectContract,
+            global,
+            globalZones,
+            fallbackFootprint,
+        });
+        _mappedCount++;
     }
-    
+
     // 闂佸綊娼х紞濠囧闯閸濆媱搴ｆ嫚閹绘帩娼遍梺鎸庣☉閻楁挻瀵奸埡鍛鐎广儱鎳忛煬顒勬⒑椤掆偓缁夋潙顔忔繝姘睄闁哄牆鐏氶崣蹇涙煛閳ь剛鎲撮崟顒侇啀缂傚倷绀佺€氬摜妲?
     for (const entry of triggersToAdd) {
         registerTrigger(entry.sourceDefId, entry.timing, entry.callback, {
+            canTrigger: entry.canTrigger,
             optional: entry.optional,
+            mandatory: entry.mandatory,
             phase: entry.phase,
+            playerContext: entry.playerContext,
+            baseScoped: entry.baseScoped,
             perInstance: entry.perInstance,
             sourceScope: entry.sourceScope,
+            effectContract: entry.effectContract,
             global: entry.global,
             globalZones: entry.globalZones,
-                fallbackFootprint: entry.fallbackFootprint });
+            fallbackFootprint: entry.fallbackFootprint,
+            generatedPodAlias: true,
+        });
     }
-    
+
     // 2. 闂佸搫瀚慨鎾儍?Restriction
     const restrictionsToAdd: RestrictionEntry[] = [];
     for (const entry of restrictionRegistry) {
         const { sourceDefId, restrictionType, checker } = entry;
-        
+
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
-        
+
         const podDefId = `${sourceDefId}_pod`;
-        
+
         const alreadyRegistered = restrictionRegistry.some(
             e => e.sourceDefId === podDefId && e.restrictionType === restrictionType
         );
         if (alreadyRegistered) continue;
-        
-        restrictionsToAdd.push({ sourceDefId: podDefId, restrictionType, checker });
-        mappedCount++;
+
+        restrictionsToAdd.push({ sourceDefId: podDefId, restrictionType, checker, generatedPodAlias: true });
+        _mappedCount++;
     }
-    
+
     restrictionRegistry.push(...restrictionsToAdd);
-    
+
     // 3. 闂佸搫瀚慨鎾儍?Protection
     const protectionsToAdd: ProtectionEntry[] = [];
     for (const entry of protectionRegistry) {
         const { sourceDefId, protectionType, checker } = entry;
-        
+
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
-        
+
         const podDefId = `${sourceDefId}_pod`;
-        
+
         const alreadyRegistered = protectionRegistry.some(
-            e => e.sourceDefId === podDefId && e.protectionType === protectionType
+            e => e.sourceDefId === podDefId
+                && e.protectionType === protectionType
+                && e.consumable === entry.consumable
         );
         if (alreadyRegistered) continue;
-        
-        protectionsToAdd.push({ sourceDefId: podDefId, protectionType, checker });
-        mappedCount++;
+
+        protectionsToAdd.push({
+            sourceDefId: podDefId,
+            protectionType,
+            checker,
+            consumable: entry.consumable,
+            generatedPodAlias: true,
+        });
+        _mappedCount++;
     }
-    
+
     protectionRegistry.push(...protectionsToAdd);
-    
-    // 4. 闂佸搫瀚慨鎾儍?BaseAbilitySuppression
+
+    // 4. 闂佸搫瀚慨鎾儍?Interceptor
+    const interceptorsToAdd: InterceptorEntry[] = [];
+    for (const entry of interceptorRegistry) {
+        const { sourceDefId, interceptor } = entry;
+
+        if (sourceDefId.endsWith('_pod')) continue;
+        if (getTitanDef(sourceDefId)) continue;
+
+        const podDefId = `${sourceDefId}_pod`;
+
+        const alreadyRegistered = interceptorRegistry.some(
+            e => e.sourceDefId === podDefId && e.interceptor === interceptor
+        );
+        if (alreadyRegistered) continue;
+
+        interceptorsToAdd.push({ sourceDefId: podDefId, interceptor, generatedPodAlias: true });
+        _mappedCount++;
+    }
+
+    interceptorRegistry.push(...interceptorsToAdd);
+
+    // 5. 闂佸搫瀚慨鎾儍?BaseAbilitySuppression
     const suppressionsToAdd: { sourceDefId: string; checker: BaseAbilitySuppressionChecker }[] = [];
     for (const entry of baseAbilitySuppressionRegistry) {
         const { sourceDefId, checker } = entry;
-        
+
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
-        
+
         const podDefId = `${sourceDefId}_pod`;
-        
+
         const alreadyRegistered = baseAbilitySuppressionRegistry.some(
-            e => e.sourceDefId === podDefId
+            e => e.sourceDefId === podDefId && e.checker === checker
         );
         if (alreadyRegistered) continue;
-        
-        suppressionsToAdd.push({ sourceDefId: podDefId, checker });
-        mappedCount++;
+
+        suppressionsToAdd.push({ sourceDefId: podDefId, checker, generatedPodAlias: true });
+        _mappedCount++;
     }
-    
+
     baseAbilitySuppressionRegistry.push(...suppressionsToAdd);
-    
+
+    // 6. 闂佸搫瀚慨鎾儍?BaseScoringSuppression
+    const scoringSuppressionsToAdd: { sourceDefId: string; checker: BaseScoringSuppressionChecker }[] = [];
+    for (const entry of baseScoringSuppressionRegistry) {
+        const { sourceDefId, checker } = entry;
+
+        if (sourceDefId.endsWith('_pod')) continue;
+        if (getTitanDef(sourceDefId)) continue;
+
+        const podDefId = `${sourceDefId}_pod`;
+
+        const alreadyRegistered = baseScoringSuppressionRegistry.some(
+            e => e.sourceDefId === podDefId && e.checker === checker
+        );
+        if (alreadyRegistered) continue;
+
+        scoringSuppressionsToAdd.push({ sourceDefId: podDefId, checker, generatedPodAlias: true });
+        _mappedCount++;
+    }
+
+    baseScoringSuppressionRegistry.push(...scoringSuppressionsToAdd);
+
     // 闂佸搫瀚慨鎾儍閻樼鍋撻悷鐗堟拱闁搞劍宀搁弫宥夊醇濠靛棗娈ラ梺鐓庮殠娴滄粍鎱ㄩ埡鍛強闁绘灏欏▓?POD 闂佺粯顨呴悧濠傦耿娴煎瓨鍎?trigger/restriction/protection闂?
 }
 
@@ -807,21 +1093,51 @@ export function getRegisteredOngoingEffectIds(): {
     triggerIds: Map<string, TriggerTiming[]>;
     interceptorIds: Set<string>;
     baseAbilitySuppressionIds: Set<string>;
+    baseScoringSuppressionIds: Set<string>;
 } {
-    const protectionIds = new Set(protectionRegistry.map(e => e.sourceDefId));
-    const restrictionIds = new Set(restrictionRegistry.map(e => e.sourceDefId));
-    const interceptorIds = new Set(interceptorRegistry.map(e => e.sourceDefId));
-    const baseAbilitySuppressionIds = new Set(baseAbilitySuppressionRegistry.map(e => e.sourceDefId));
+    const protectionIds = new Set(
+        protectionRegistry
+            .filter((entry) => !shouldHideGeneratedPodOngoingAlias(protectionRegistry, entry.sourceDefId))
+            .map(e => e.sourceDefId),
+    );
+    const restrictionIds = new Set(
+        restrictionRegistry
+            .filter((entry) => !shouldHideGeneratedPodOngoingAlias(restrictionRegistry, entry.sourceDefId))
+            .map(e => e.sourceDefId),
+    );
+    const interceptorIds = new Set(
+        interceptorRegistry
+            .filter((entry) => !shouldHideGeneratedPodOngoingAlias(interceptorRegistry, entry.sourceDefId))
+            .map(e => e.sourceDefId),
+    );
+    const baseAbilitySuppressionIds = new Set(
+        baseAbilitySuppressionRegistry
+            .filter((entry) => !shouldHideGeneratedPodOngoingAlias(baseAbilitySuppressionRegistry, entry.sourceDefId))
+            .map(e => e.sourceDefId),
+    );
+    const baseScoringSuppressionIds = new Set(
+        baseScoringSuppressionRegistry
+            .filter((entry) => !shouldHideGeneratedPodOngoingAlias(baseScoringSuppressionRegistry, entry.sourceDefId))
+            .map(e => e.sourceDefId),
+    );
 
     // trigger 闂傚倸娲犻崑鎾绘偡閺囨碍顦风紒缁樺哺閹?timing 婵烇絽娲犻崜婵囧閸涘瓨鏅€光偓閳ь剟寮妶鍡欘洸閹兼番鍨虹痪顖滅磼椤旂厧鈷旈柍銉︼耿閹啴宕熼顐㈡倎闁?
     const triggerIds = new Map<string, TriggerTiming[]>();
     for (const entry of triggerRegistry) {
+        if (shouldHideGeneratedPodOngoingAlias(triggerRegistry, entry.sourceDefId)) continue;
         const existing = triggerIds.get(entry.sourceDefId) ?? [];
         existing.push(entry.timing);
         triggerIds.set(entry.sourceDefId, existing);
     }
 
-    return { protectionIds, restrictionIds, triggerIds, interceptorIds, baseAbilitySuppressionIds };
+    return {
+        protectionIds,
+        restrictionIds,
+        triggerIds,
+        interceptorIds,
+        baseAbilitySuppressionIds,
+        baseScoringSuppressionIds,
+    };
 }
 
 // ============================================================================
@@ -846,6 +1162,19 @@ export function isBaseAbilitySuppressed(
     // 2. 濠碘槅鍋€閸嬫捇鏌＄仦璇插姎闁绘柡鍋撴繛瀛樼矊妤犵鈹冮埀顒€鈽夐幘绛瑰伐鐎规洟浜堕幃褍鐣濋埀顒€鈻撻幋锕€绠板ù锝堟閺侀箖鏌涘Ο渚剰闁?
     if (baseAbilitySuppressionRegistry.length === 0) return false;
     for (const entry of baseAbilitySuppressionRegistry) {
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
+        if (!isSourceActiveOnBase(filteredState, entry.sourceDefId, baseIndex)) continue;
+        if (entry.checker(filteredState, baseIndex)) return true;
+    }
+    return false;
+}
+
+export function isBaseScoringSuppressed(
+    state: SmashUpCore,
+    baseIndex: number
+): boolean {
+    if (baseScoringSuppressionRegistry.length === 0) return false;
+    for (const entry of baseScoringSuppressionRegistry) {
         const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
         if (!isSourceActiveOnBase(filteredState, entry.sourceDefId, baseIndex)) continue;
         if (entry.checker(filteredState, baseIndex)) return true;
@@ -1085,7 +1414,7 @@ export function isOperationRestricted(
                     // 闂佸憡甯楅悷銉ㄣ亹閸欏顩烽柕澶涢檮閿熴儵鎮峰▎蹇旑棏闁逞屽墯缁楊摰wer闂? 婵炴垶鎸哥粔纾嬨亹閺屻儱绠ラ柟鎯у暱濮ｅ鏌嶉妷锔剧畼婵炲牊鍨垮浠嬪箛椤掆偓閻撴垿鏌?
                     if (baseDef.id === 'base_tsars_palace') {
                         const hasBaseInfiltrate = base.ongoingActions.some(o =>
-                            o.ownerId === playerId && o.defId === 'ninja_infiltrate',
+                            (o.metadata?.sourceControllerId ?? o.ownerId) === playerId && o.defId === 'ninja_infiltrate',
                         );
                         if (hasBaseInfiltrate) {
                             continue;
@@ -1119,12 +1448,18 @@ export function isOperationRestricted(
                     // 闂佸吋鐪归崕鎵礊濮椻偓瀹曠兘濡搁…鎴濇畽闂佺硶鏅涢幖顐耿鐎涙鈻斿┑鐘插暞缁犳帡鏌ゆ總澶夌盎缂佽绶氶獮鎺曨槻闁糕晜顨婇幆?Infiltrate闂佹寧绋戝绌昦y-on-base 闁荤偞绋戦懟顖涙叏閳哄懏鏅鑸电〒缁€澶愭煕閹烘挾鎳佺紓宥嗭耿瀹曪綁顢涘▎搴ｉ瀺闂婎偄娲ㄩ弲顐﹀汲閹邦喗瀚氶柕澶嗘櫆椤庢瑩鏌涢幒鏇犲牚闁?
                     if (baseDef.id === 'base_antarctic_base') {
                         const hasBaseInfiltrate = base.ongoingActions.some(o =>
-                            o.ownerId === playerId && o.defId === 'ninja_infiltrate',
+                            (o.metadata?.sourceControllerId ?? o.ownerId) === playerId && o.defId === 'ninja_infiltrate',
                         );
                         if (hasBaseInfiltrate) {
                             continue;
                         }
                     }
+                    return true;
+                }
+            }
+            if (r.condition.sameNameAlreadyAtBase === true && restrictionType === 'play_minion') {
+                const minionDefId = extra?.minionDefId as string | undefined;
+                if (minionDefId && base.minions.some(minion => isSameNameDefId(minionDefId, minion.defId))) {
                     return true;
                 }
             }
@@ -1207,12 +1542,16 @@ export function fireTriggers(
     for (const entry of triggerRegistry) {
         if (entry.timing !== timing) continue;
         if (options?.phase && (entry.phase ?? 'reaction') !== options.phase) continue;
-        
+
         const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
         const getFilteredMatchState = () => (
             matchState && matchState.core === state
                 ? { ...matchState, core: filteredState }
                 : matchState
+        );
+        const canTriggerWithSource = (located: TriggerSourceLocation): boolean => (
+            !entry.canTrigger
+            || entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, ctx.now, ctx.playerId, located, ctx))
         );
 
         if (entry.global) {
@@ -1222,6 +1561,9 @@ export function fireTriggers(
                 timing,
                 entry.globalZones ?? ['hand', 'discard'],
                 ctx.playerId,
+                ctx,
+                candidate => !entry.canTrigger
+                    || entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, ctx.now, ctx.playerId, candidate, ctx)),
             );
             if (!located) continue;
             const result = entry.callback({
@@ -1230,7 +1572,7 @@ export function fireTriggers(
                 matchState: getFilteredMatchState(),
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
-                sourceControllerId: located.controllerId });
+                sourceControllerId: getTriggerSourcePlayerId(entry, located) ?? located.controllerId });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1243,7 +1585,7 @@ export function fireTriggers(
 
         const locatedSources = locateSources(filteredState, entry.sourceDefId);
         if (locatedSources.length === 0) {
-            if (!entry.perInstance && isSourceActive(filteredState, entry.sourceDefId)) {
+            if (!entry.perInstance && isSourceActive(filteredState, entry.sourceDefId) && canTriggerWithSource({})) {
                 const result = entry.callback({ ...fullCtx, state: filteredState, matchState: getFilteredMatchState() });
                 const triggerEvents = Array.isArray(result) ? result : result.events;
                 if (triggerEvents.length > 0) {
@@ -1260,10 +1602,12 @@ export function fireTriggers(
             ? locatedSources.filter(located => (
                 isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
                 && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
+                && canTriggerWithSource(located)
             ))
             : [selectSpecificSourceLocation(locatedSources, ctx, located => (
                 isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
                 && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
+                && canTriggerWithSource(located)
             ))].filter(located => located !== undefined);
         if (sourcesToExecute.length === 0) continue;
 
@@ -1274,7 +1618,7 @@ export function fireTriggers(
                 matchState: getFilteredMatchState(),
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
-                sourceControllerId: located.controllerId });
+                sourceControllerId: getTriggerSourcePlayerId(entry, located) ?? located.controllerId });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1290,10 +1634,10 @@ export function fireTriggers(
 
 function selectSpecificSourceLocation(
     locatedSources: TriggerSourceLocation[],
-    ctx: Omit<TriggerContext, 'timing'>,
+    ctx?: Pick<TriggerContext, 'sourceCardUid' | 'triggerMinionUid'>,
     isEligible?: (located: TriggerSourceLocation) => boolean,
 ): TriggerSourceLocation | undefined {
-    const preferredUids = [ctx.sourceCardUid, ctx.triggerMinionUid].filter(
+    const preferredUids = [ctx?.sourceCardUid, ctx?.triggerMinionUid].filter(
         (uid): uid is string => typeof uid === 'string' && uid.length > 0,
     );
     for (const preferredUid of preferredUids) {
@@ -1337,6 +1681,10 @@ export function fireTriggerForSource(
                 ? { ...matchState, core: filteredState }
                 : matchState
         );
+        const canTriggerWithSource = (located: TriggerSourceLocation): boolean => (
+            !entry.canTrigger
+            || entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, ctx.now, ctx.playerId, located, ctx))
+        );
 
         if (entry.global) {
             const located = selectGlobalTriggerSourceLocation(
@@ -1345,6 +1693,9 @@ export function fireTriggerForSource(
                 timing,
                 entry.globalZones ?? ['hand', 'discard'],
                 ctx.playerId,
+                ctx,
+                candidate => !entry.canTrigger
+                    || entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, ctx.now, ctx.playerId, candidate, ctx)),
             );
             if (!located) continue;
             const result = entry.callback({
@@ -1353,7 +1704,7 @@ export function fireTriggerForSource(
                 matchState: getFilteredMatchState(),
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
-                sourceControllerId: located.controllerId });
+                sourceControllerId: getTriggerSourcePlayerId(entry, located) ?? located.controllerId });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1366,7 +1717,7 @@ export function fireTriggerForSource(
 
         const locatedSources = locateSources(filteredState, entry.sourceDefId);
         if (locatedSources.length === 0) {
-            if (!entry.perInstance && isSourceActive(filteredState, entry.sourceDefId)) {
+            if (!entry.perInstance && isSourceActive(filteredState, entry.sourceDefId) && canTriggerWithSource({})) {
                 const result = entry.callback({ ...fullCtx, state: filteredState, matchState: getFilteredMatchState() });
                 const triggerEvents = Array.isArray(result) ? result : result.events;
                 if (triggerEvents.length > 0) {
@@ -1383,10 +1734,12 @@ export function fireTriggerForSource(
             ? locatedSources.filter(located => (
                 isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
                 && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
+                && canTriggerWithSource(located)
             ))
             : [selectSpecificSourceLocation(locatedSources, ctx, located => (
                 isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
                 && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
+                && canTriggerWithSource(located)
             ))].filter(located => located !== undefined);
         if (sourcesToExecute.length === 0) continue;
 
@@ -1397,7 +1750,7 @@ export function fireTriggerForSource(
                 matchState: getFilteredMatchState(),
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
-                sourceControllerId: located.controllerId });
+                sourceControllerId: getTriggerSourcePlayerId(entry, located) ?? located.controllerId });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1437,21 +1790,21 @@ function locateGlobalSources(
         if (zones.includes('hand')) {
             for (const card of player.hand ?? []) {
                 if (card.defId === sourceDefId) {
-                    locations.push({ uid: card.uid, controllerId: card.owner ?? player.id });
+                    locations.push({ uid: card.uid, controllerId: player.id });
                 }
             }
         }
         if (zones.includes('discard')) {
             for (const card of player.discard ?? []) {
                 if (card.defId === sourceDefId) {
-                    locations.push({ uid: card.uid, controllerId: card.owner ?? player.id });
+                    locations.push({ uid: card.uid, controllerId: player.id });
                 }
             }
         }
         if (zones.includes('deck')) {
             for (const card of player.deck ?? []) {
                 if (card.defId === sourceDefId) {
-                    locations.push({ uid: card.uid, controllerId: card.owner ?? player.id });
+                    locations.push({ uid: card.uid, controllerId: player.id });
                 }
             }
         }
@@ -1467,19 +1820,58 @@ function locateGlobalSources(
     return locations;
 }
 
+function buildExplicitGlobalSourceFallback(
+    entry: Pick<TriggerEntry, 'playerContext'>,
+    ctx?: Omit<TriggerContext, 'timing'>,
+): TriggerSourceLocation | undefined {
+    if (!ctx?.sourceCardUid || ctx.sourceControllerId === undefined) return undefined;
+    return {
+        uid: ctx.sourceCardUid,
+        baseIndex: ctx.sourceBaseIndex,
+        controllerId: ctx.sourceControllerId,
+        hostControllerId: entry.playerContext === 'sourceHostController' ? ctx.sourceControllerId : undefined,
+    };
+}
+
 function selectGlobalTriggerSourceLocation(
     state: SmashUpCore,
     entry: TriggerEntry,
     timing: TitanAwareTriggerTiming,
     zones: Array<'hand' | 'discard' | 'deck'>,
     playerId: PlayerId,
+    ctx?: Omit<TriggerContext, 'timing'>,
+    isEligible?: (located: TriggerSourceLocation) => boolean,
 ): TriggerSourceLocation | undefined {
-    if (!isSourceInZones(state, entry.sourceDefId, zones)) return undefined;
-    if (entry.playerContext !== 'sourceController') return {};
-    if (timing !== 'onTurnStart' && timing !== 'onTurnEnd') return {};
-    return locateGlobalSources(state, entry.sourceDefId, zones).find(located =>
-        isTurnBoundarySourceControllerEligible(entry, timing, located, playerId),
+    if (!isSourceInZones(state, entry.sourceDefId, zones)) {
+        if (
+            timing === 'onMinionDiscardedFromBase'
+            && zones.includes('discard')
+            && ctx?.triggerMinionDefId === entry.sourceDefId
+            && ctx.triggerMinionUid
+        ) {
+            return {
+                uid: ctx.triggerMinionUid,
+                baseIndex: ctx.baseIndex,
+                controllerId: ctx.triggerMinion?.controller ?? ctx.controllerId ?? playerId,
+            };
+        }
+        return undefined;
+    }
+    const located = selectSpecificSourceLocation(
+        locateGlobalSources(state, entry.sourceDefId, zones),
+        ctx,
+        candidate => (
+            (timing !== 'onTurnStart' && timing !== 'onTurnEnd')
+            || isTurnBoundarySourceControllerEligible(entry, timing, candidate, playerId)
+        ) && (!isEligible || isEligible(candidate)),
     );
+    if (located) return located;
+    if (entry.playerContext !== 'sourceController' && entry.playerContext !== 'sourceHostController') {
+        return {};
+    }
+    const fallback = buildExplicitGlobalSourceFallback(entry, ctx);
+    if (!fallback || (isEligible && !isEligible(fallback))) return undefined;
+    return fallback;
 }
 
 // ============================================================================
@@ -1540,7 +1932,7 @@ function isSourceActive(state: SmashUpCore, sourceDefId: string): boolean {
     if ((state.titans ?? []).some(titan => titan.defId === sourceDefId && titan.location.zone === 'base')) {
         return true;
     }
-    
+
     return false;
 }
 

@@ -26,14 +26,14 @@
 import { describe, expect, it, beforeAll } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
-import { resolveAbilityRuntimePrompt } from '../domain/abilityRuntime';
+import { getAbilityRuntimePromptHandler, resolveAbilityRuntimePrompt } from '../domain/abilityRuntime';
 import { clearBaseAbilityRegistry, triggerBaseAbility, triggerExtendedBaseAbility } from '../domain/baseAbilities';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import { appendScoringFrameDeferredPayload, consumeScoringFrameDeferredPayload, createScoringSession, setScoringSession } from '../domain/scoringSession';
+import { appendScoringFrameDeferredPayload, buildPendingPostScoringActionEvents, consumeScoringFrameDeferredPayload, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, CardInstance } from '../domain/types';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
@@ -215,6 +215,49 @@ describe('10th Anniversary bases', () => {
         );
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
+    });
+
+    it('base_ossuary 埋葬 borrowed 弃牌堆随从时应保留真实 owner', () => {
+        const core = makeState({
+            bases: [makeBase('base_ossuary')],
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('borrowed-ossuary-card', 'skeletons_returned_one', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const result = triggerBaseAbilityWithMS('base_ossuary', 'onTurnStart', makeCtx({
+            state: core,
+            baseDefId: 'base_ossuary',
+            baseIndex: 0,
+        }));
+
+        const interaction = getInteractionsFromResult(result)[0];
+        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-ossuary-card');
+        const handler = getInteractionHandler('base_ossuary');
+        expect(interaction?.data?.sourceId).toBe('base_ossuary');
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+
+        const resolved = handler!(
+            result.matchState!,
+            '0',
+            option.value,
+            interaction.data,
+            dummyRandom,
+            1001,
+        );
+        const finalCore = applyEvents(resolved.state.core, resolved.events as any);
+        const buried = finalCore.bases[0].buriedCards?.find(card => card.uid === 'borrowed-ossuary-card');
+
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-ossuary-card',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'discard',
+        }));
+        expect(finalCore.players['0'].discard.some(card => card.uid === 'borrowed-ossuary-card')).toBe(false);
     });
 
     it('base_arena 在此基地首次打出随从后，应提供额外行动或抽牌交互', () => {
@@ -756,11 +799,76 @@ describe('base_innsmouth_base: 印斯茅斯 - 弃牌堆卡入牌库底', () => {
         const resolved = handler!(reaction!.state as any, '0', option.value, current.data, dummyRandom, 1002);
 
         expect(resolved?.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
-        expect((resolved?.state.sys.interaction.queue?.[0] as any)?.data?.sourceId).toBe('base_innsmouth_base_choose_player');
+        expect(getInteractionsFromMS(resolved!.state as any).some((interaction: any) =>
+            interaction?.data?.sourceId === 'base_innsmouth_base_choose_player',
+        )).toBe(true);
     });
 });
 
 describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
+    it('base_innsmouth_base_choose_card: 选择 borrowed 弃牌堆卡时应放到其拥有者牌库底', () => {
+        const result = triggerBaseAbilityWithMS('base_innsmouth_base', 'onMinionPlayed', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_innsmouth_base', {
+                    minions: [makeMinion('m1', '0', 2, 'innsmouth_the_locals')],
+                })],
+                players: {
+                    '0': makePlayer('0', {
+                        discard: [makeCard('borrowed-discard-card', 'wizard_scry', 'action', '1')],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('owner-deck-tail', 'alien_collector', 'minion', '1')],
+                    }),
+                },
+            }),
+            baseDefId: 'base_innsmouth_base',
+            baseIndex: 0,
+            minionUid: 'm1',
+        }));
+        const choosePlayer = getInteractionsFromResult(result)[0];
+        const choosePlayerOption = choosePlayer.data.options.find((entry: any) => entry.value?.targetPlayerId === '0');
+        const choosePlayerHandler = getInteractionHandler('base_innsmouth_base_choose_player');
+        const chooseCardHandler = getInteractionHandler('base_innsmouth_base_choose_card');
+
+        expect(choosePlayer?.data?.sourceId).toBe('base_innsmouth_base_choose_player');
+        expect(choosePlayerOption).toBeDefined();
+        expect(choosePlayerHandler).toBeDefined();
+        expect(chooseCardHandler).toBeDefined();
+
+        const step1 = choosePlayerHandler!(
+            result.matchState!,
+            '0',
+            choosePlayerOption.value,
+            choosePlayer.data,
+            dummyRandom,
+            1840,
+        );
+        const chooseCard = (step1?.state.sys as any).interaction?.queue?.[0];
+        const chooseCardOption = chooseCard?.data?.options?.find((entry: any) =>
+            entry.value?.cardUid === 'borrowed-discard-card'
+        );
+
+        expect(chooseCard?.data?.sourceId).toBe('base_innsmouth_base_choose_card');
+        expect(chooseCardOption).toBeDefined();
+
+        const resolved = chooseCardHandler!(
+            step1.state as any,
+            '0',
+            chooseCardOption.value,
+            chooseCard.data,
+            dummyRandom,
+            1841,
+        );
+        const finalCore = applyEvents(resolved.state.core, resolved.events as any);
+
+        expect(finalCore.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-discard-card');
+        expect(finalCore.players['0'].deck.map(card => card.uid)).not.toContain('borrowed-discard-card');
+        expect(finalCore.players['1'].deck.map(card => card.uid)).toEqual([
+            'owner-deck-tail',
+            'borrowed-discard-card',
+        ]);
+    });
+
     it('base_innsmouth_base_choose_card: 若所选卡已不在弃牌堆则不再放牌库底', () => {
         const result = triggerBaseAbilityWithMS('base_innsmouth_base', 'onMinionPlayed', makeCtx({
             state: makeState({
@@ -1010,10 +1118,161 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
                 playerId: '0',
                 cardUid: 'dk1',
                 defId: 'alien_collector',
+                ownerId: '0',
                 baseIndex: 0,
                 targetBaseDefId: 'base_secret_garden',
                 power: 2,
             },
+        ]);
+    });
+
+    it('base_greenhouse: 直接打出 borrowed 牌库随从时应保留真实 owner', () => {
+        const core = makeState({
+            bases: [makeBase('base_secret_garden')],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('borrowed-greenhouse', 'alien_collector', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const result = triggerBaseAbilityWithMS('base_greenhouse', 'afterScoring', makeCtx({
+            state: core,
+            baseIndex: 0,
+            baseDefId: 'base_greenhouse',
+            rankings: [{ playerId: '0', power: 5, vp: 4 }],
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-greenhouse');
+        const handler = getInteractionHandler('base_greenhouse');
+
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+
+        const resolved = handler!(
+            makeMatchState(core),
+            '0',
+            option.value,
+            {
+                ...interaction.data,
+                continuationContext: {
+                    ...interaction.data.continuationContext,
+                    baseIndex: 0,
+                },
+            },
+            dummyRandom,
+            1854,
+        );
+        const played = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+
+        expect(played?.payload).toEqual(expect.objectContaining({
+            cardUid: 'borrowed-greenhouse',
+            fromDeck: true,
+            ownerId: '1',
+        }));
+        const nextCore = applyEvents(core, resolved.events);
+        expect(nextCore.players['0'].deck.map(card => card.uid)).toEqual([]);
+        expect(nextCore.bases[0].minions).toEqual([
+            expect.objectContaining({
+                uid: 'borrowed-greenhouse',
+                controller: '0',
+                owner: '1',
+            }),
+        ]);
+    });
+
+    it('base_greenhouse: replacement deferred 打出 borrowed 牌库随从时应保留真实 owner', () => {
+        const result = triggerBaseAbilityWithMS('base_greenhouse', 'afterScoring', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_greenhouse')],
+                players: {
+                    '0': makePlayer('0', {
+                        deck: [makeCard('borrowed-greenhouse-deferred', 'alien_collector', 'minion', '1')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+            }),
+            baseDefId: 'base_greenhouse',
+            rankings: [{ playerId: '0', power: 5, vp: 4 }],
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-greenhouse-deferred');
+        const handler = getInteractionHandler('base_greenhouse');
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+
+        const scoredState = makeMatchState(makeState({
+            bases: [makeBase('base_greenhouse')],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('borrowed-greenhouse-deferred', 'alien_collector', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+        }));
+        const resolved = handler!(
+            appendScoringFrameDeferredPayload(
+                setScoringSession(scoredState, {
+                    ...createScoringSession(scoredState.core, [0]),
+                    currentBaseRef: { slotIndex: 0, baseDefId: 'base_greenhouse' },
+                    currentStep: 'awaiting-interactions',
+                }),
+                {
+                    deferredEvents: [
+                        {
+                            type: SU_EVENTS.BASE_CLEARED,
+                            payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
+                            timestamp: 1854,
+                        },
+                        {
+                            type: SU_EVENTS.BASE_REPLACED,
+                            payload: {
+                                baseIndex: 0,
+                                oldBaseDefId: 'base_greenhouse',
+                                newBaseDefId: 'base_secret_garden',
+                            },
+                            timestamp: 1854,
+                        },
+                    ],
+                },
+            ),
+            '0',
+            option.value,
+            {
+                ...interaction.data,
+                continuationContext: {
+                    ...interaction.data.continuationContext,
+                    baseIndex: 0,
+                },
+            },
+            dummyRandom,
+            1855,
+        );
+
+        const consumed = consumeScoringFrameDeferredPayload(resolved.state);
+        expect(consumed.deferredActions).toEqual([
+            expect.objectContaining({
+                kind: 'playMinionOnReplacementBase',
+                cardUid: 'borrowed-greenhouse-deferred',
+                ownerId: '1',
+            }),
+        ]);
+
+        const emittedEvents = buildPendingPostScoringActionEvents(consumed.state, consumed.deferredActions, 1856);
+        const played = emittedEvents.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+        expect(played?.payload).toEqual(expect.objectContaining({
+            cardUid: 'borrowed-greenhouse-deferred',
+            baseDefId: 'base_secret_garden',
+            fromDeck: true,
+            ownerId: '1',
+        }));
+        const nextCore = applyEvents(scoredState.core, emittedEvents);
+        expect(nextCore.bases[0].minions).toEqual([
+            expect.objectContaining({
+                uid: 'borrowed-greenhouse-deferred',
+                controller: '0',
+                owner: '1',
+            }),
         ]);
     });
 
@@ -1085,6 +1344,14 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             dummyRandom,
             1001,
         );
+        const existingInteractions = getInteractionsFromMS(reaction!.state as any);
+        if (existingInteractions.some((interaction: any) => interaction?.data?.sourceId === 'base_greenhouse')) {
+            expect(existingInteractions.some((interaction: any) =>
+                interaction?.data?.sourceId === 'base_greenhouse',
+            )).toBe(true);
+            return;
+        }
+
         const current = reaction!.state.sys.interaction.current as any;
         const option = current.data.options.find((entry: any) => entry.id.startsWith('trigger:'));
         const handler = getInteractionHandler('smashup_reaction_choose');
@@ -1094,7 +1361,9 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
         const resolved = handler!(reaction!.state as any, '0', option.value, current.data, dummyRandom, 1002);
 
         expect(resolved?.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
-        expect((resolved?.state.sys.interaction.queue?.[0] as any)?.data?.sourceId).toBe('base_greenhouse');
+        expect(getInteractionsFromMS(resolved!.state as any).some((interaction: any) =>
+            interaction?.data?.sourceId === 'base_greenhouse',
+        )).toBe(true);
     });
 });
 
@@ -1599,6 +1868,59 @@ describe('base_enchanted_glade: 魔法林地 - 附着行动卡抽牌', () => {
 });
 
 describe('base_fairy_ring: 仙灵圈 - 首次打随从额外额度', () => {
+    it('branching choice prompt 走 runtime owner 合同而不是普通 interaction handler', () => {
+        const core = makeState({
+            bases: [makeBase('base_fairy_ring', {
+                minions: [makeMinion('m1', '0', 3)],
+            })],
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayedPerBase: { 0: 1 },
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', makeCtx({
+            state: core,
+            matchState: makeMatchState(core),
+            baseDefId: 'base_fairy_ring',
+            baseIndex: 0,
+            minionUid: 'm1',
+        }));
+
+        const prompt = getInteractionsFromResult(result)[0] as any;
+        const actionOption = prompt?.data?.options?.find((entry: any) => entry.value?.branchId === 'extra_action');
+
+        expect(prompt?.data?.sourceId).toBe('base_fairy_ring');
+        expect(prompt?.data?.runtimePrompt).toMatchObject({
+            owner: 'smashup-ability-runtime',
+            sourceId: 'smashup_branching_choice',
+        });
+        expect(getInteractionHandler('base_fairy_ring')).toBeUndefined();
+        expect(getAbilityRuntimePromptHandler('base_fairy_ring')).toBeUndefined();
+        expect(getAbilityRuntimePromptHandler('smashup_branching_choice')).toBeDefined();
+        expect(actionOption).toBeDefined();
+
+        const resolved = resolveAbilityRuntimePrompt(
+            result.matchState!,
+            '0',
+            actionOption.value,
+            prompt.data,
+            dummyRandom,
+            1000,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                limitType: 'action',
+                reason: 'base_fairy_ring',
+            }),
+        }));
+    });
+
     it('首次打出随从时获得额外额度', () => {
         const core = makeState({
             bases: [makeBase('base_fairy_ring', {

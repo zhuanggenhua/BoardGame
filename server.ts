@@ -918,8 +918,10 @@ router.post('/games/:name/:matchID/join', async (ctx) => {
         return;
     }
 
-    // 分配凭证
-    const joinSeat = resolveJoinSeat(result.metadata.players, requestedPlayerID);
+    const latestMetadataForJoin = (await storage.fetch(matchID, { metadata: true })).metadata ?? result.metadata;
+
+    // 分配凭证时必须基于最新 metadata，避免旧 join 请求把其它 seat 的最新信息覆回去。
+    const joinSeat = resolveJoinSeat(latestMetadataForJoin.players, requestedPlayerID);
     if (!joinSeat.playerID) {
         if (joinSeat.reason === 'player_not_found') {
             ctx.throw(404, `Player ${requestedPlayerID} not found`);
@@ -935,7 +937,7 @@ router.post('/games/:name/:matchID/join', async (ctx) => {
 
     const playerID = joinSeat.playerID;
     const credentials = nanoid(21);
-    const metadata = result.metadata;
+    const metadata = latestMetadataForJoin;
 
     // 解析真实用户标识
     const authHeader = ctx.get('authorization');
@@ -995,7 +997,7 @@ router.post('/games/:name/:matchID/leave', async (ctx) => {
         return;
     }
 
-    const metadata = result.metadata;
+    const metadata = (await storage.fetch(matchID, { metadata: true })).metadata ?? result.metadata;
     const playerMeta = metadata.players[playerID];
     if (!playerMeta) {
         ctx.throw(404, `Player ${playerID} not found`);

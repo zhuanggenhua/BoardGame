@@ -223,10 +223,7 @@ async function withOnlineMatch(browser: any, baseURL: string | undefined, run: (
 
 async function dismissRevealOverlay(page: any): Promise<void> {
     const overlay = page.getByTestId('reveal-overlay');
-    await overlay.click({
-        force: true,
-        position: { x: 16, y: 16 },
-    });
+    await page.getByTestId('reveal-dismiss-btn').click({ force: true });
     await expect(overlay).toBeHidden({ timeout: 3000 });
 }
 

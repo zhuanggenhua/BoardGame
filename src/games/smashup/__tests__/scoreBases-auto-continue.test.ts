@@ -485,6 +485,45 @@ describe('scoreBases 阶段自动推进', () => {
         expect(result?.playerId).toBe('0');
     });
 
+    it('scoreBases 只剩空壳 legacy responseWindow 时，仍应自动推进', () => {
+        const core = makeMinimalCore({
+            bases: [makeBase('base_pirate_cove', [
+                makeMinion('0', 'robot_hoverbot', 5),
+            ])],
+            scoringEligibleBaseIndices: [0],
+        });
+
+        const state: MatchState<SmashUpCore> = {
+            core,
+            sys: {
+                phase: 'scoreBases',
+                flowHalted: false,
+                interaction: { current: null, queue: [] },
+                responseWindow: {
+                    current: {
+                        id: 'legacy-window-empty-shell',
+                        windowType: 'meFirst',
+                        sourceId: 'legacy_me_first',
+                        responderQueue: [],
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                    },
+                    history: [],
+                },
+            } as any,
+        };
+
+        const result = smashUpFlowHooks.onAutoContinueCheck!({
+            state,
+            events: [],
+            random: { next: () => 0.5 },
+        });
+
+        expect(result).toBeDefined();
+        expect(result?.autoContinue).toBe(true);
+        expect(result?.playerId).toBe('0');
+    });
+
     it('interaction 仅以 isBlocked 形式存在时，AI 不应错误生成 advance-phase', () => {
         const state: MatchState<SmashUpCore> = {
             core: makeMinimalCore({

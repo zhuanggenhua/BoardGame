@@ -2,7 +2,7 @@
  * 通用卡牌特写队列组件
  *
  * 展示其他玩家打出的卡牌特写，支持队列堆叠。
- * 点击空白区域或卡牌即可关闭当前特写。
+ * 默认不阻塞底层游戏操作；点击卡牌本体即可关闭当前特写。
  *
  * 面向百游戏设计：
  * - 游戏层通过 renderCard 注入卡牌渲染
@@ -42,12 +42,12 @@ function CardSpotlightQueueInner<TData = unknown>({
     onDismiss,
     renderCard,
     indicatorPosition = 'bottom',
-    dismissLabel = '点击关闭',
-    queueLabel = '{count} 张待查看 · 点击继续',
+    dismissLabel = '关闭后继续',
+    queueLabel = '{count} 张待查看 · 关闭后继续',
 }: CardSpotlightQueueProps<TData>) {
     const current = queue[0];
 
-    const handleClick = useCallback(() => {
+    const handleDismiss = useCallback(() => {
         if (current) {
             onDismiss(current.id);
         }
@@ -59,18 +59,17 @@ function CardSpotlightQueueInner<TData = unknown>({
         <AnimatePresence mode="wait">
             <motion.div
                 key={current.id}
-                className="fixed inset-0 flex items-center justify-center"
+                className="fixed inset-0 flex items-center justify-center pointer-events-none"
                 style={{ zIndex: UI_Z_INDEX.overlayRaised }}
                 data-testid="card-spotlight-queue"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                onClick={handleClick}
                 data-interaction-allow
             >
                 {/* 半透明背景 */}
-                <div className="absolute inset-0 bg-black/20" />
+                <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
                 {/* 卡牌内容 */}
                 <motion.div
@@ -80,6 +79,7 @@ function CardSpotlightQueueInner<TData = unknown>({
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.8, opacity: 0, y: -20 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    onClick={handleDismiss}
                 >
                     {renderCard(current)}
                 </motion.div>

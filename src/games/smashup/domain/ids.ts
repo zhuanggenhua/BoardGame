@@ -10,6 +10,7 @@ export const SMASHUP_ATLAS_IDS = {
     BASE5: 'smashup:base5',
     BASE6: 'smashup:base6',
     BASE7: 'smashup:base7',
+    BASE8: 'smashup:base8',
     CARDS1: 'smashup:cards1',
     CARDS2: 'smashup:cards2',
     CARDS3: 'smashup:cards3',
@@ -19,6 +20,7 @@ export const SMASHUP_ATLAS_IDS = {
     CARDS7: 'smashup:cards7',
     CARDS8: 'smashup:cards8',
     CARDS9: 'smashup:cards9',
+    CARDS10: 'smashup:cards10',
     TITANS: 'smashup:titans',
 } as const;
 
@@ -44,6 +46,8 @@ export const SMASHUP_FACTION_IDS = {
     SHARKS: 'sharks',
     TORNADOS: 'tornados',
     MYTHIC_GREEKS: 'mythic_greeks',
+    SHAPESHIFTERS: 'shapeshifters',
+    CYBORG_APES: 'cyborg_apes',
     GHOSTS: 'ghosts',
     GHOSTS_POD: 'ghosts_pod',
     IGNOBLES: 'ignobles',
@@ -132,6 +136,8 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.SHARKS]: '鲨鱼',
     [SMASHUP_FACTION_IDS.TORNADOS]: '龙卷风',
     [SMASHUP_FACTION_IDS.MYTHIC_GREEKS]: '希腊神话',
+    [SMASHUP_FACTION_IDS.SHAPESHIFTERS]: '变形者',
+    [SMASHUP_FACTION_IDS.CYBORG_APES]: '电子猿',
     [SMASHUP_FACTION_IDS.ALIENS]: '外星人',
     [SMASHUP_FACTION_IDS.ALIENS_POD]: '外星人 (POD版)',
     [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS]: '古埃及人',

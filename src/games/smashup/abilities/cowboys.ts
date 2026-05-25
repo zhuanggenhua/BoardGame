@@ -203,11 +203,13 @@ export function registerCowboysAbilities(): void {
     registerTrigger('cowboys_sheriff', 'beforeScoring', cowboysSheriffBeforeScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('cowboys_gold_strike', 'onMinionPlayed', cowboysGoldStrikeOnMinionPlayed, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        canTrigger: ctx => ctx.sourceControllerId === ctx.playerId,
     });
     registerTrigger('cowboys_dynamite_surprise', 'onDeckInspected', cowboysDynamiteSurpriseSeenTrigger, {
         global: true,
@@ -696,30 +698,37 @@ const cowboysDynamiteSurpriseSeenPromptProgram = createPromptProgram<CowboysDyna
         const playedCard = sourceCards.find(card => card.uid === context.cardUid && isDynamiteSurpriseDefId(card.defId));
         if (!playedCard) return { events: [] };
 
-        const remainingSourceCards = sourceCards.filter(card => card.uid !== context.cardUid);
-        const nextCore: SmashUpCore = {
-            ...state.core,
-            players: {
-                ...state.core.players,
-                [context.ownerPlayerId]: {
-                    ...owner,
-                    ...(context.sourceZone === 'hand' ? { hand: remainingSourceCards } : { deck: remainingSourceCards }),
-                    discard: [...owner.discard, playedCard],
+        const sourceRemovalEvent: SmashUpEvent = context.sourceZone === 'hand'
+            ? {
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: {
+                    playerId: context.ownerPlayerId,
+                    cardUids: [context.cardUid],
                 },
-            },
-        };
-        const nextState: MatchState<SmashUpCore> = { ...state, core: nextCore };
+                timestamp,
+            }
+            : {
+                type: SU_EVENTS.CARDS_MILLED,
+                payload: {
+                    playerId: context.ownerPlayerId,
+                    cardUids: [context.cardUid],
+                    reason: 'cowboys_dynamite_surprise_seen',
+                },
+                timestamp,
+            };
 
         return {
-            matchState: nextState,
-            events: buildValidatedDestroyEvents(nextState, {
-                minionUid: selected.minionUid,
-                minionDefId: selected.defId,
-                fromBaseIndex: selected.baseIndex,
-                destroyerId: context.ownerPlayerId,
-                reason: 'cowboys_dynamite_surprise_seen',
-                now: timestamp,
-            }),
+            events: [
+                sourceRemovalEvent,
+                ...buildValidatedDestroyEvents(state, {
+                    minionUid: selected.minionUid,
+                    minionDefId: selected.defId,
+                    fromBaseIndex: selected.baseIndex,
+                    destroyerId: context.ownerPlayerId,
+                    reason: 'cowboys_dynamite_surprise_seen',
+                    now: timestamp,
+                }),
+            ],
         };
     },
 });
@@ -1290,7 +1299,7 @@ function collectStagecoachCardsOnBase(
         }));
 
     const ongoingActions = base.ongoingActions
-        .filter(action => action.ownerId === playerId)
+        .filter(action => ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === playerId)
         .map((action) => ({
             kind: 'ongoing_base' as const,
             uid: action.uid,
@@ -1406,15 +1415,30 @@ function buildGoldDrawAndDeckEvents(
     now: number,
 ): SmashUpEvent[] {
     const restOfDeck = core.players[playerId]?.deck.filter(card => card.uid !== chosenCard.uid && !remainingCards.some(entry => entry.uid === card.uid)) ?? [];
+    const sourceRemaining = remainingCards.filter(card => card.owner === playerId || !core.players[card.owner]);
+    const borrowedByOwner = new Map<PlayerId, CardInstance[]>();
+    for (const card of remainingCards) {
+        if (card.owner === playerId || !core.players[card.owner]) continue;
+        borrowedByOwner.set(card.owner, [...(borrowedByOwner.get(card.owner) ?? []), card]);
+    }
     return [
         {
             type: SU_EVENTS.CARDS_DRAWN,
             payload: { playerId, count: 1, cardUids: [chosenCard.uid] },
             timestamp: now,
         } as CardsDrawnEvent,
+        ...Array.from(borrowedByOwner.entries()).map(([ownerId, cards]) => ({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: {
+                playerId: ownerId,
+                deckUids: [...cards.map(card => card.uid), ...core.players[ownerId].deck.map(card => card.uid)],
+                sourcePlayerId: playerId,
+            },
+            timestamp: now,
+        }) as DeckReorderedEvent),
         {
             type: SU_EVENTS.DECK_REORDERED,
-            payload: { playerId, deckUids: [...remainingCards.map(card => card.uid), ...restOfDeck.map(card => card.uid)] },
+            payload: { playerId, deckUids: [...sourceRemaining.map(card => card.uid), ...restOfDeck.map(card => card.uid)] },
             timestamp: now,
         } as DeckReorderedEvent,
     ];

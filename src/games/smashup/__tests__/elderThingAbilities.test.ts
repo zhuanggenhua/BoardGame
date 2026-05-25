@@ -589,6 +589,76 @@ describe('远古之物派系能力', () => {
             expect(interactions.length).toBe(1);
         });
 
+        it('elder_thing_begin_the_summoning_pod 选择被他人拥有的弃牌随从时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('a1', 'elder_thing_begin_the_summoning_pod', 'action', '0')],
+                        deck: [makeCard('p0-deck-a', 'test_minion', 'minion', '0')],
+                        discard: [makeCard('borrowed-minion', 'test_minion', 'minion', '1')],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('p1-deck-a', 'test_minion', 'minion', '1')],
+                    }),
+                },
+            });
+
+            const play = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any, defaultRandom);
+            expect(play.success).toBe(true);
+
+            const prompt = (play.finalState.sys as any)?.interaction?.current;
+            expect(prompt?.data?.sourceId).toBe('elder_thing_begin_the_summoning_pod');
+
+            const resolved = runCommand(play.finalState, {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { optionId: prompt.data.options[0].id },
+            } as any, defaultRandom);
+            expect(resolved.success).toBe(true);
+            expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);
+            expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a']);
+            expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-minion', 'p1-deck-a']);
+        });
+
+        it('elder_thing_begin_the_summoning 选择被他人拥有的弃牌随从时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('a1', 'elder_thing_begin_the_summoning', 'action', '0')],
+                        deck: [makeCard('p0-deck-a', 'test_minion', 'minion', '0')],
+                        discard: [makeCard('borrowed-minion', 'test_minion', 'minion', '1')],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('p1-deck-a', 'test_minion', 'minion', '1')],
+                    }),
+                },
+            });
+
+            const play = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any, defaultRandom);
+            expect(play.success).toBe(true);
+
+            const prompt = (play.finalState.sys as any)?.interaction?.current;
+            expect(prompt?.data?.sourceId).toBe('elder_thing_begin_the_summoning');
+
+            const resolved = runCommand(play.finalState, {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { optionId: prompt.data.options[0].id },
+            } as any, defaultRandom);
+            expect(resolved.success).toBe(true);
+            expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);
+            expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a']);
+            expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-minion', 'p1-deck-a']);
+        });
+
         it('弃牌堆无随从时只给额外行动', () => {
             const state = makeState({
                 players: {

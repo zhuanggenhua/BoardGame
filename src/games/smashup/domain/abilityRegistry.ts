@@ -7,7 +7,7 @@
 
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
 import type { SmashUpCore, SmashUpEvent, AbilityTag, ActiveDuel, ValidationResult } from './types';
-import { getTitanDef } from '../data/cards';
+import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
 import {
     createEffectProgram,
     executeAbilityProgram,
@@ -81,6 +81,7 @@ export interface RegisteredAbility {
     createContext: AbilityProgramContextFactory<any>;
     execute: AbilityExecutor;
     validateUse?: AbilityUseValidator;
+    generatedPodAlias?: boolean;
 }
 
 export type AbilityRegistration =
@@ -103,6 +104,7 @@ function normalizeRegistration(registration: AbilityRegistration): RegisteredAbi
             program,
             createContext,
             execute: createProgramExecutor(program, createContext),
+            generatedPodAlias: false,
         };
     }
 
@@ -114,6 +116,7 @@ function normalizeRegistration(registration: AbilityRegistration): RegisteredAbi
             createContext: contextFactory,
             execute: createProgramExecutor(program, contextFactory),
             validateUse: registration.validateUse,
+            generatedPodAlias: false,
         };
     }
 
@@ -123,6 +126,7 @@ function normalizeRegistration(registration: AbilityRegistration): RegisteredAbi
         createContext,
         execute: createProgramExecutor(program, createContext),
         validateUse: registration.validateUse,
+        generatedPodAlias: false,
     };
 }
 
@@ -316,15 +320,14 @@ export function registerPodAbilityAliases(): void {
     for (const [defId, tagMap] of allEntries) {
         // 跳过已经是 _pod 和非完整 defId 的条目
         if (defId.endsWith('_pod')) continue;
+        if (defId.includes('_pod_')) continue;
         if (getTitanDef(defId)) continue;
 
         const podDefId = `${defId}_pod`;
-        // 如果 _pod 版本已经有自己的注册，跳过（不覆盖最新定制)
-        if (registry.has(podDefId)) continue;
-
-        const podTagMap = new Map<AbilityTag, RegisteredAbility>();
+        const podTagMap = registry.get(podDefId) ?? new Map<AbilityTag, RegisteredAbility>();
         for (const [tag, definition] of tagMap.entries()) {
-            podTagMap.set(tag, definition);
+            if (podTagMap.has(tag)) continue;
+            podTagMap.set(tag, { ...definition, generatedPodAlias: true });
         }
         registry.set(podDefId, podTagMap);
     }
@@ -334,11 +337,30 @@ export function registerPodAbilityAliases(): void {
 export function getRegisteredAbilityKeys(): Set<string> {
     const keys = new Set<string>();
     for (const [defId, tagMap] of registry.entries()) {
+        if (shouldHideGeneratedPodAbilityAlias(defId, tagMap)) continue;
         for (const tag of tagMap.keys()) {
             keys.add(`${defId}::${tag}`);
         }
     }
     return keys;
+}
+
+function shouldExposePodAbilityAlias(defId: string): boolean {
+    const podCard = getCardDef(`${defId}_pod`);
+    if (podCard) {
+        return true;
+    }
+    return Boolean(getBaseDef(`${defId}_pod`) || getTitanDef(`${defId}_pod`));
+}
+
+function shouldHideGeneratedPodAbilityAlias(
+    defId: string,
+    tagMap: Map<AbilityTag, RegisteredAbility>,
+): boolean {
+    if (!defId.endsWith('_pod')) return false;
+    if (!tagMap.size) return false;
+    if ([...tagMap.values()].some((definition) => !definition.generatedPodAlias)) return false;
+    return !shouldExposePodAbilityAlias(defId.slice(0, -4));
 }
 
 

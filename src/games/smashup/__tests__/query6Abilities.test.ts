@@ -382,6 +382,53 @@ describe('忍者派系能力（第6批）', () => {
         expect(current).toBeUndefined();
         expect(events.filter(e => e.type === SU_EVENTS.MINION_RETURNED).length).toBe(0);
     });
+
+    it('ninja_disguise: 打出 borrowed 手牌随从时应保留真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('a1', 'ninja_disguise', 'action', '0'),
+                        makeCard('borrowed-hand-minion', 'ninja_master', 'minion', '1'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'b1', minions: [makeMinion('return-me', 'ninja_shinobi', '0', 2)], ongoingActions: [] },
+                { defId: 'b2', minions: [], ongoingActions: [] },
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const chooseMinionsPrompt: any = matchState.sys.interaction?.current?.data;
+        expect(chooseMinionsPrompt?.sourceId).toBe('ninja_disguise_choose_minions');
+        const returnOption = chooseMinionsPrompt.options.find((option: any) => option.value?.minionUid === 'return-me');
+        expect(returnOption).toBeTruthy();
+
+        const afterReturnSelection = runCommand(
+            matchState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: returnOption.id } },
+            defaultRandom,
+        );
+        const playPrompt: any = afterReturnSelection.finalState.sys.interaction?.current?.data;
+        expect(playPrompt?.sourceId).toBe('ninja_disguise_choose_play1');
+        const borrowedOption = playPrompt.options.find((option: any) => option.value?.cardUid === 'borrowed-hand-minion');
+        expect(borrowedOption).toBeTruthy();
+
+        const afterPlay = runCommand(
+            afterReturnSelection.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: borrowedOption.id } },
+            defaultRandom,
+        );
+
+        const playedEvent: any = afterPlay.events.find(event => event.type === SU_EVENTS.MINION_PLAYED);
+        expect(playedEvent?.payload?.ownerId).toBe('1');
+        const playedMinion = afterPlay.finalState.core.bases[0].minions.find(minion => minion.uid === 'borrowed-hand-minion');
+        expect(playedMinion?.controller).toBe('0');
+        expect(playedMinion?.owner).toBe('1');
+        expect(afterPlay.finalState.core.players['0'].hand.some(card => card.uid === 'borrowed-hand-minion')).toBe(false);
+    });
 });
 
 // ============================================================================
@@ -461,6 +508,236 @@ describe('巫师派系能力（第6批）', () => {
         const { events, matchState } = execPlayAction(state, '0', 'a1');
         const drawEvents = events.filter(e => e.type === SU_EVENTS.CARDS_DRAWN);
         expect(drawEvents.length).toBe(0);
+    });
+
+    it('wizard_mass_enchantment: 打出附着到随从的行动时应保留目标上下文并触发 base_enchanted_glade', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_mass_enchantment', 'action', '0')],
+                    deck: [makeCard('draw-a', 'draw_card_1', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('d1', 'ninja_smoke_bomb', 'action', '1')],
+                }),
+            },
+            bases: [
+                {
+                    defId: 'base_enchanted_glade',
+                    minions: [makeMinion('host-0', 'test_host', '0', 3)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const playMass = execPlayAction(state, '0', 'a1');
+        const chooseAction = (playMass.matchState.sys as any).interaction?.current;
+        expect(chooseAction?.data?.sourceId).toBe('wizard_mass_enchantment');
+
+        const chooseActionResult = runCommand(playMass.matchState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: chooseAction.data.options[0].id },
+            timestamp: 1001,
+        }, defaultRandom);
+        expect(chooseActionResult.success).toBe(true);
+
+        const chooseTarget = (chooseActionResult.finalState.sys as any).interaction?.current;
+        expect(chooseTarget?.data?.sourceId).toBe('wizard_mass_enchantment_choose_minion');
+
+        const resolveTarget = runCommand(chooseActionResult.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: chooseTarget.data.options[0].id },
+            timestamp: 1002,
+        }, defaultRandom);
+        expect(resolveTarget.success).toBe(true);
+
+        const actionPlayed = resolveTarget.events.find(event => event.type === SU_EVENTS.ACTION_PLAYED) as any;
+        expect(actionPlayed?.payload).toEqual(expect.objectContaining({
+            playerId: '0',
+            cardUid: 'd1',
+            defId: 'ninja_smoke_bomb',
+            ownerId: '1',
+            isExtraAction: true,
+            targetBaseIndex: 0,
+            targetType: 'minion',
+            targetMinionUid: 'host-0',
+        }));
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: expect.objectContaining({
+                playerId: '0',
+                count: 1,
+                cardUids: ['draw-a'],
+            }),
+        }));
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'd1',
+                defId: 'ninja_smoke_bomb',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'minion',
+                targetBaseIndex: 0,
+                targetMinionUid: 'host-0',
+            }),
+        }));
+        expect(resolveTarget.finalState.core.bases[0].minions[0].attachedActions).toEqual(expect.arrayContaining([
+            expect.objectContaining({ uid: 'd1', defId: 'ninja_smoke_bomb', ownerId: '1' }),
+        ]));
+        expect((resolveTarget.finalState.sys as any).interaction?.current).toBeUndefined();
+        expect(resolveTarget.finalState.core.players['0'].hand.map(card => card.uid)).toContain('draw-a');
+    });
+
+    it('wizard_mass_enchantment: 打出无 onPlay 的基地 ongoing 时应保留目标上下文，并让 base_enchanted_glade 以 base-target 语义入队但不抽牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_mass_enchantment', 'action', '0')],
+                    deck: [makeCard('draw-a', 'draw_card_1', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('d1', 'steampunk_escape_hatch', 'action', '1')],
+                }),
+            },
+            bases: [
+                {
+                    defId: 'base_enchanted_glade',
+                    minions: [makeMinion('host-0', 'test_host', '0', 3)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const playMass = execPlayAction(state, '0', 'a1');
+        const chooseAction = (playMass.matchState.sys as any).interaction?.current;
+        expect(chooseAction?.data?.sourceId).toBe('wizard_mass_enchantment');
+
+        const chooseActionResult = runCommand(playMass.matchState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: chooseAction.data.options[0].id },
+            timestamp: 1101,
+        }, defaultRandom);
+        expect(chooseActionResult.success).toBe(true);
+
+        const chooseTarget = (chooseActionResult.finalState.sys as any).interaction?.current;
+        expect(chooseTarget?.data?.sourceId).toBe('wizard_mass_enchantment_choose_base');
+
+        const resolveTarget = runCommand(chooseActionResult.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: chooseTarget.data.options[0].id },
+            timestamp: 1102,
+        }, defaultRandom);
+        expect(resolveTarget.success).toBe(true);
+
+        const actionPlayed = resolveTarget.events.find(event => event.type === SU_EVENTS.ACTION_PLAYED) as any;
+        expect(actionPlayed?.payload).toEqual(expect.objectContaining({
+            playerId: '0',
+            cardUid: 'd1',
+            defId: 'steampunk_escape_hatch',
+            ownerId: '1',
+            isExtraAction: true,
+            targetBaseIndex: 0,
+            targetType: 'base',
+        }));
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'd1',
+                defId: 'steampunk_escape_hatch',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 0,
+            }),
+        }));
+        expect(resolveTarget.finalState.core.bases[0].ongoingActions).toEqual(expect.arrayContaining([
+            expect.objectContaining({ uid: 'd1', defId: 'steampunk_escape_hatch', ownerId: '1' }),
+        ]));
+        const queued = resolveTarget.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        expect(queued?.payload?.triggers).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceDefId: 'base_enchanted_glade',
+                ownerPlayerId: '0',
+                actionTargetBaseIndex: 0,
+                actionTargetType: 'base',
+                sourceEventId: 'action-played:d1:1102',
+                frameId: 'action-played-frame:d1:1102',
+            }),
+        ]));
+        const queuedTriggerId = queued?.payload?.triggers?.[0]?.id;
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TRIGGER_CONSUMED,
+            payload: expect.objectContaining({
+                triggerId: queuedTriggerId,
+            }),
+        }));
+        expect(resolveTarget.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+        expect(resolveTarget.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('draw-a');
+    });
+
+    it('wizard_mass_enchantment: 借打他人拥有的 minion ongoing 到 Brownie 身上时也应保留 sourcePlayerId', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_mass_enchantment', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('d1', 'ninja_smoke_bomb', 'action', '1')],
+                    hand: [makeCard('brownie-discard-a', 'sharks_mako', 'minion', '1')],
+                }),
+            },
+            bases: [
+                {
+                    defId: 'base_ancient_ruins',
+                    minions: [makeMinion('brownie-a', 'trickster_brownie', '1', 2)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const playMass = execPlayAction(state, '0', 'a1');
+        const chooseAction = (playMass.matchState.sys as any).interaction?.current;
+        expect(chooseAction?.data?.sourceId).toBe('wizard_mass_enchantment');
+
+        const chooseActionResult = runCommand(playMass.matchState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: chooseAction.data.options[0].id },
+            timestamp: 1111,
+        }, defaultRandom);
+        expect(chooseActionResult.success).toBe(true);
+
+        const chooseTarget = (chooseActionResult.finalState.sys as any).interaction?.current;
+        expect(chooseTarget?.data?.sourceId).toBe('wizard_mass_enchantment_choose_minion');
+
+        const resolveTarget = runCommand(chooseActionResult.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: chooseTarget.data.options[0].id },
+            timestamp: 1112,
+        }, defaultRandom);
+        expect(resolveTarget.success).toBe(true);
+
+        expect(resolveTarget.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'd1',
+                defId: 'ninja_smoke_bomb',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'minion',
+                targetBaseIndex: 0,
+                targetMinionUid: 'brownie-a',
+            }),
+        }));
+        expect(resolveTarget.finalState.core.bases[0].minions[0].attachedActions).toEqual(expect.arrayContaining([
+            expect.objectContaining({ uid: 'd1', defId: 'ninja_smoke_bomb', ownerId: '1' }),
+        ]));
     });
 
     it('wizard_portal: 有随从时创建选择 Prompt 让玩家选随从', () => {
@@ -574,6 +851,64 @@ describe('巫师派系能力（第6批）', () => {
         expect(optionUids).not.toContain('d3');
     });
 
+    it('wizard_portal_order: borrowed action 放回牌库顶时应回到拥有者牌库并带 sourcePlayerId', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_portal', 'action', '0')],
+                    deck: [
+                        makeCard('borrowed-a', 'test_a', 'action', '1'),
+                        makeCard('own-a1', 'test_a2', 'action', '0'),
+                        makeCard('own-a2', 'test_a3', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'test_tail', 'action', '1')],
+                }),
+            },
+        });
+
+        const playPortal = execPlayAction(state, '0', 'a1');
+        const chooseFirst = (playPortal.matchState.sys as any).interaction?.current;
+        expect(chooseFirst?.data?.sourceId).toBe('wizard_portal_order');
+
+        const chooseOwnA1 = runCommand(playPortal.matchState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: {
+                optionId: chooseFirst.data.options.find((option: any) => option.value?.cardUid === 'own-a1')?.id,
+            },
+            timestamp: 1101,
+        }, defaultRandom);
+        expect(chooseOwnA1.success).toBe(true);
+
+        const chooseSecond = (chooseOwnA1.finalState.sys as any).interaction?.current;
+        expect(chooseSecond?.data?.sourceId).toBe('wizard_portal_order');
+
+        const resolveOrder = runCommand(chooseOwnA1.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: {
+                optionId: chooseSecond.data.options.find((option: any) => option.value?.cardUid === 'own-a2')?.id,
+            },
+            timestamp: 1102,
+        }, defaultRandom);
+        expect(resolveOrder.success).toBe(true);
+
+        const topdeckEvents = resolveOrder.events.filter((event) => event.type === SU_EVENTS.CARD_TO_DECK_TOP) as any[];
+        expect(topdeckEvents).toContainEqual(expect.objectContaining({
+            payload: expect.objectContaining({
+                cardUid: 'borrowed-a',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                reason: 'wizard_portal',
+            }),
+        }));
+        expect(resolveOrder.finalState.core.players['0'].deck.map((card) => card.uid)).toEqual(expect.arrayContaining(['own-a1', 'own-a2']));
+        expect(resolveOrder.finalState.core.players['0'].deck).toHaveLength(2);
+        expect(resolveOrder.finalState.core.players['1'].deck.map((card) => card.uid)).toEqual(['borrowed-a', 'p1-tail']);
+    });
+
     it('wizard_scry: 单张行动卡时创建 Prompt', () => {
         const state = makeState({
             players: {
@@ -634,6 +969,54 @@ describe('巫师派系能力（第6批）', () => {
         const optionUids = (current?.data?.options ?? []).map((option: any) => option.value?.cardUid).filter(Boolean);
         expect(optionUids).toEqual(['fresh-action', 'fresh-action-2']);
         expect(optionUids).not.toContain('old-action');
+    });
+
+    it('wizard_scry: 选择当前牌库中的 borrowed 行动时仍应进入当前玩家手牌并只重洗当前玩家牌库', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_scry', 'action', '0')],
+                    deck: [
+                        makeCard('borrowed-action', 'test_a', 'action', '1'),
+                        makeCard('own-minion', 'test_m', 'minion', '0'),
+                        makeCard('own-action', 'test_a2', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'test_m2', 'minion', '1')],
+                }),
+            },
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const current = (matchState.sys as any).interaction?.current;
+        expect(current?.data?.sourceId).toBe('wizard_scry');
+        const borrowedOptionId = current.data.options.find((option: any) =>
+            option.value?.cardUid === 'borrowed-action')?.id;
+        expect(borrowedOptionId).toBeDefined();
+
+        const resolved = runCommand(matchState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: borrowedOptionId },
+            timestamp: 1101,
+        }, defaultRandom);
+        expect(resolved.success).toBe(true);
+
+        const drawEvent = resolved.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
+        expect(drawEvent?.payload).toEqual(expect.objectContaining({
+            playerId: '0',
+            cardUids: ['borrowed-action'],
+        }));
+        const reorderEvent = resolved.events.find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
+        expect(reorderEvent?.payload).toEqual(expect.objectContaining({
+            playerId: '0',
+            deckUids: ['own-minion', 'own-action'],
+        }));
+        expect(reorderEvent.payload.sourcePlayerId).toBeUndefined();
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('borrowed-action');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['own-minion', 'own-action']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail']);
     });
 
     it('wizard_scry: 牌库无行动卡时无事件', () => {

@@ -3,7 +3,9 @@ import { SU_COMMANDS, SU_EVENTS, type MinionDestroyedEvent, type SmashUpCore } f
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { collectTriggers } from '../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { processDestroyTriggers } from '../domain/reducer';
 import { makeCard, makeMatchState, makeMinion, makePlayer, makeState, getInteractionsFromMS } from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
@@ -298,6 +300,173 @@ describe('giant_ants_pod: Who Wants to Live Forever? (POD)', () => {
         );
 
         expect(choose.finalState.core.players['0']?.deck[0]?.uid).toBe('c2');
+    });
+
+    it('search 分支选择被他人拥有的牌库牌时，仍应进入其拥有者牌库顶', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'giant_ant_who_wants_to_live_forever_pod', 'action', '0')],
+                    deck: [
+                        makeCard('borrowed-deck-card', 'test_card_1', 'action', '1'),
+                        makeCard('own-deck-card', 'test_card_2', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('owner-deck-card', 'test_card_3', 'action', '1')],
+                }),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt: any = getInteractionsFromMS(play.finalState)[0]?.data;
+        expect(prompt?.sourceId).toBe('giant_ant_who_wants_to_live_forever_pod_search');
+        const borrowedOption = prompt?.options?.find((o: any) => o?.value?.cardUid === 'borrowed-deck-card');
+        expect(borrowedOption).toBeDefined();
+
+        const choose = runCommand(
+            play.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: borrowedOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(choose.finalState.core.players['0']?.deck.map(card => card.uid)).toEqual(['own-deck-card']);
+        expect(choose.finalState.core.players['1']?.deck.map(card => card.uid)).toEqual(['borrowed-deck-card', 'owner-deck-card']);
+    });
+
+    it('destroy 分支点中被我控制但归对手拥有的随从时，仍应进入其拥有者弃牌堆', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'giant_ant_who_wants_to_live_forever_pod', 'action', '0')],
+                    deck: [],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('borrowed-1', 'robot_microbot_alpha', '0', 2, '1'),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt: any = getInteractionsFromMS(play.finalState)[0]?.data;
+        expect(prompt?.sourceId).toBe('giant_ant_who_wants_to_live_forever_pod_destroy');
+        const borrowedOption = prompt?.options?.find((o: any) => o?.value?.minionUid === 'borrowed-1');
+        expect(borrowedOption).toBeDefined();
+
+        const choose = runCommand(
+            play.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: borrowedOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const destroyEvent = choose.events.find((e: any) =>
+            e.type === SU_EVENTS.MINION_DESTROYED && e.payload?.minionUid === 'borrowed-1'
+        ) as MinionDestroyedEvent | undefined;
+        expect(destroyEvent?.payload.ownerId).toBe('1');
+        expect(choose.finalState.core.players['1']?.discard.some(card => card.uid === 'borrowed-1')).toBe(true);
+        expect(choose.finalState.core.players['0']?.discard.some(card => card.uid === 'borrowed-1')).toBe(false);
+    });
+});
+
+describe('giant_ants_pod: Worker POD replay', () => {
+    it('从弃牌堆重打 borrowed Worker POD 时应保留真实 owner', () => {
+        const beforeDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('borrowed-worker-pod', 'giant_ant_worker_pod', '0', 2, '1')],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(beforeDiscardCore, 'onMinionDiscardedFromBase', {
+            state: beforeDiscardCore,
+            matchState: makeMatchState(beforeDiscardCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'borrowed-worker-pod',
+            triggerMinionDefId: 'giant_ant_worker_pod',
+            triggerMinion: beforeDiscardCore.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 2010,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.some((trigger: any) => trigger.sourceDefId === 'giant_ant_worker_pod')).toBe(true);
+
+        const afterDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('borrowed-worker-pod', 'giant_ant_worker_pod', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'base_a', minions: [], ongoingActions: [] },
+                { defId: 'base_b', minions: [], ongoingActions: [] },
+            ],
+            triggerQueue: queued.payload.triggers,
+        });
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState(afterDiscardCore),
+            defaultTestRandom,
+            2010,
+        );
+        const prompt: any = getInteractionsFromMS(resolved?.state ?? makeMatchState(afterDiscardCore))[0]?.data;
+        const baseOneOption = prompt?.options?.find((option: any) => option?.value?.baseIndex === 1);
+        expect(prompt?.sourceId).toBe('giant_ant_worker_pod_replay');
+        expect(baseOneOption).toBeDefined();
+
+        const chooseBase = runCommand(
+            resolved!.state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOneOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const played = chooseBase.events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+        expect(played?.payload).toEqual(expect.objectContaining({
+            cardUid: 'borrowed-worker-pod',
+            fromDiscard: true,
+            ownerId: '1',
+        }));
+        expect(chooseBase.finalState.core.players['0']?.discard.some(card => card.uid === 'borrowed-worker-pod')).toBe(false);
+        expect(chooseBase.finalState.core.bases[1].minions).toEqual([
+            expect.objectContaining({
+                uid: 'borrowed-worker-pod',
+                controller: '0',
+                owner: '1',
+            }),
+        ]);
     });
 });
 

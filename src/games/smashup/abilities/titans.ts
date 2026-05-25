@@ -51,6 +51,7 @@ import {
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent } from '../domain/bury';
 import { continueActiveDuel } from '../domain/duel';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerInterceptor, registerProtection, registerRestriction, registerTrigger } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getPlayerEffectivePowerOnBase, registerTitanPowerModifier } from '../domain/ongoingModifiers';
@@ -60,6 +61,7 @@ import {
     getDeferredReplacementBaseDefId,
 } from '../domain/scoringSession';
 import { validateActionPlaySemantics } from '../domain/playLegality';
+import { actionLikeNeedsPlayBase, actionLikeNeedsPlayMinion } from '../domain/utils';
 import {
     registerTitanSpecialValidator,
     registerTitanOngoingActivationValidator,
@@ -68,6 +70,7 @@ import {
 import type {
     ActionCardDef,
     ActionPlayedEvent,
+    CardInstance,
     CardTransferredEvent,
     CardsDrawnEvent,
     MadnessDrawnEvent,
@@ -245,6 +248,77 @@ function isStandardAction(defId: string): boolean {
     return def?.type === 'action' && (def as ActionCardDef).subtype === 'standard';
 }
 
+type CreampuffActionTargetMode = 'none' | 'base' | 'minion';
+
+function getCreampuffActionTargetMode(defId: string): CreampuffActionTargetMode | undefined {
+    const def = getCardDef(defId) as ActionCardDef | undefined;
+    if (!def || def.type !== 'action' || def.subtype !== 'standard') return undefined;
+    if (actionLikeNeedsPlayMinion(def)) return 'minion';
+    if (actionLikeNeedsPlayBase(def)) return 'base';
+    return 'none';
+}
+
+function buildCreampuffActionTargetOptions(
+    state: SmashUpCore,
+    playerId: string,
+    card: { uid: string; defId: string },
+    effectiveHandSize: number,
+): PromptOption<{ cardUid: string; defId: string; targetBaseIndex?: number; targetMinionUid?: string }>[] {
+    const mode = getCreampuffActionTargetMode(card.defId);
+    if (!mode) return [];
+
+    if (mode === 'none') {
+        return validateActionPlaySemantics(state, playerId, {
+            defId: card.defId,
+            effectiveHandSize,
+        }).valid
+            ? [{
+                id: 'play',
+                label: '直接打出',
+                value: { cardUid: card.uid, defId: card.defId },
+                displayMode: 'button' as const,
+            }]
+            : [];
+    }
+
+    if (mode === 'base') {
+        return state.bases
+            .map((base, targetBaseIndex) => ({ base, targetBaseIndex }))
+            .filter(({ targetBaseIndex }) => validateActionPlaySemantics(state, playerId, {
+                defId: card.defId,
+                targetBaseIndex,
+                effectiveHandSize,
+            }).valid)
+            .map(({ base, targetBaseIndex }) => ({
+                id: `base-${targetBaseIndex}`,
+                label: getBaseDef(base.defId)?.name ?? base.defId,
+                value: { cardUid: card.uid, defId: card.defId, targetBaseIndex },
+                displayMode: 'card' as const,
+            }));
+    }
+
+    return state.bases.flatMap((base, targetBaseIndex) =>
+        base.minions
+            .filter(minion => validateActionPlaySemantics(state, playerId, {
+                defId: card.defId,
+                targetBaseIndex,
+                targetMinionUid: minion.uid,
+                effectiveHandSize,
+            }).valid)
+            .map(minion => ({
+                id: `minion-${minion.uid}`,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+                value: {
+                    cardUid: card.uid,
+                    defId: card.defId,
+                    targetBaseIndex,
+                    targetMinionUid: minion.uid,
+                },
+                displayMode: 'card' as const,
+            })),
+    );
+}
+
 function getDagonMatchingMinionCount(state: AbilityContext['state'], baseIndex: number, playerId: string): number {
     const base = state.bases[baseIndex];
     if (!base) return 0;
@@ -266,9 +340,13 @@ function getOwnActionCountOnBase(state: AbilityContext['state'], baseIndex: numb
     const base = state.bases[baseIndex];
     if (!base) return 0;
 
-    let total = base.ongoingActions.filter(action => action.ownerId === playerId).length;
+    let total = base.ongoingActions.filter(action =>
+        (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === playerId),
+    ).length;
     for (const minion of base.minions) {
-        total += minion.attachedActions.filter(action => action.ownerId === playerId).length;
+        total += minion.attachedActions.filter(action =>
+            (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === playerId),
+        ).length;
     }
     return total;
 }
@@ -297,20 +375,22 @@ function kaijuGorgodzollaSpecial(ctx: AbilityContext): AbilityResult {
 
 function kaijuGorgodzollaOnMinionPlayed(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.baseIndex === undefined) return [];
-    const titan = getGorgodzollaOnBase(ctx.state, ctx.playerId, ctx.baseIndex);
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    const titan = getGorgodzollaOnBase(ctx.state, titanControllerId, ctx.baseIndex);
     if (!titan) return [];
     return [addTitanPowerCounter(titan.uid, 1, 'kaiju_gorgodzolla', ctx.now)];
 }
 
 function kaijuGorgodzollaOnActionPlayed(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (ctx.baseIndex === undefined) return [];
-    const titan = getGorgodzollaOnBase(ctx.state, ctx.playerId, ctx.baseIndex);
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    const titan = getGorgodzollaOnBase(ctx.state, titanControllerId, ctx.baseIndex);
     if (!titan) return [];
 
     const events: SmashUpEvent[] = [
         addTitanPowerCounter(titan.uid, 1, 'kaiju_gorgodzolla', ctx.now),
     ];
-    const player = ctx.state.players[ctx.playerId];
+    const player = ctx.state.players[titanControllerId];
     const canDraw = ((player?.deck.length ?? 0) + (player?.discard.length ?? 0)) > 0;
     if (!ctx.matchState || !canDraw) {
         return events;
@@ -318,7 +398,7 @@ function kaijuGorgodzollaOnActionPlayed(ctx: TriggerContext): TriggerResult | Sm
 
     const interaction = createSimpleChoice(
         `titan_kaiju_gorgodzolla_draw_${titan.uid}_${ctx.now}`,
-        ctx.playerId,
+        titanControllerId,
         '哥佐拉：你可以抽 1 张牌',
         [
             { id: 'draw', label: '抽 1 张牌', value: { draw: true }, displayMode: 'button' as const },
@@ -374,7 +454,8 @@ function explorersVeryLargeBoulderOnMinionMoved(ctx: TriggerContext): TriggerRes
     if (ctx.moveFromBaseIndex === undefined || ctx.moveToBaseIndex === undefined) return [];
     if (ctx.moveFromBaseIndex === ctx.moveToBaseIndex) return [];
 
-    const titan = getVeryLargeBoulderOnBase(ctx.state, ctx.playerId, ctx.moveFromBaseIndex);
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    const titan = getVeryLargeBoulderOnBase(ctx.state, titanControllerId, ctx.moveFromBaseIndex);
     if (!titan) return [];
     if (!ctx.matchState) return [];
 
@@ -614,13 +695,14 @@ function ignoblesTheHillThatStrollsOnMinionAffected(ctx: TriggerContext): Trigge
     if (!ctx.matchState || ctx.affectType !== 'control_change' || !ctx.triggerMinion || ctx.baseIndex === undefined) {
         return [];
     }
-    if (ctx.triggerMinion.owner !== ctx.playerId || ctx.triggerMinion.controller === ctx.playerId) {
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.triggerMinion.owner !== titanControllerId || ctx.triggerMinion.controller === titanControllerId) {
         return [];
     }
 
     const interaction = createSimpleChoice(
         `titan_ignobles_the_hill_that_strolls_counter_${ctx.now}`,
-        ctx.playerId,
+        titanControllerId,
         'The Hill That Strolls: place a +1 power counter on that minion?',
         [
             { id: 'place', label: '放置标记', labelKey: 'ui.place_counter', value: { place: true }, displayMode: 'button' as const },
@@ -795,10 +877,7 @@ function getCreampuffPlayableActions(
     const dedup = new Map<string, typeof player.discard[number]>();
     for (const card of player.discard) {
         if (!isStandardAction(card.defId)) continue;
-        if (!validateActionPlaySemantics(core, ctx.playerId, {
-            defId: card.defId,
-            effectiveHandSize: ctx.effectiveHandSize,
-        }).valid) {
+        if (buildCreampuffActionTargetOptions(core, ctx.playerId, card, ctx.effectiveHandSize).length === 0) {
             continue;
         }
         dedup.set(card.uid, card);
@@ -843,6 +922,86 @@ function buildCreampuffActionOptions(
         _source: 'discard' as const,
         displayMode: 'card' as const,
     }));
+}
+
+function resolveCreampuffActionPlay(params: {
+    state: MatchState<SmashUpCore>;
+    playerId: string;
+    cardUid: string;
+    defId: string;
+    random: AbilityContext['random'];
+    timestamp: number;
+    titanBaseIndex: number;
+    targetBaseIndex?: number;
+    targetMinionUid?: string;
+}): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
+    const {
+        state,
+        playerId,
+        cardUid,
+        defId,
+        random,
+        timestamp,
+        titanBaseIndex,
+        targetBaseIndex,
+        targetMinionUid,
+    } = params;
+    const player = state.core.players[playerId];
+    const actionCard = player?.discard.find(card => card.uid === cardUid && card.defId === defId);
+    if (!player || !actionCard || !isStandardAction(actionCard.defId)) {
+        return { state, events: [] };
+    }
+    const ownerId = actionCard.owner;
+
+    const effectiveHandSize = getExternalActionEffectiveHandSize(state, playerId);
+    const validation = validateActionPlaySemantics(state.core, playerId, {
+        defId,
+        targetBaseIndex,
+        targetMinionUid,
+        effectiveHandSize,
+    });
+    if (!validation.valid) {
+        return { state, events: [] };
+    }
+
+    const events: SmashUpEvent[] = [
+        recoverCardsFromDiscard(playerId, [cardUid], 'ghosts_creampuff_man_talent', timestamp),
+        buildActionPlayedEvent({
+            playerId,
+            cardUid,
+            defId,
+            ownerId,
+            isExtraAction: true,
+            targetBaseIndex,
+            targetMinionUid,
+            timestamp,
+        }) as SmashUpEvent,
+    ];
+
+    const result = appendResolvedActionAbility({
+        state,
+        events,
+        playerId,
+        cardUid,
+        defId,
+        random,
+        timestamp,
+        baseIndex: targetBaseIndex ?? titanBaseIndex,
+        targetMinionUid,
+        handSizeAfterPlay: state.core.players[playerId]?.hand.length ?? 0,
+    });
+    result.events.push({
+        type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+        payload: {
+            cardUid,
+            defId,
+            ownerId,
+            ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            reason: 'ghosts_creampuff_man_talent',
+        },
+        timestamp,
+    } as SmashUpEvent);
+    return result;
 }
 
 function ghostsCreampuffManSpecial(ctx: AbilityContext): AbilityResult {
@@ -1025,12 +1184,25 @@ function getTimeBoxCounter(titan: TitanState | undefined) {
     return Number(titan?.metadata?.timeBoxCounters ?? 0);
 }
 
-function buildTimeBoxMetadataEvent(titanUid: string, counterCount: number, reason: string, now: number): SmashUpEvent {
+function isTimeBoxPlayArmed(titan: TitanState | undefined): boolean {
+    return titan?.metadata?.timeBoxPlayArmed === true;
+}
+
+function buildTimeBoxMetadataEvent(
+    titanUid: string,
+    counterCount: number,
+    reason: string,
+    now: number,
+    options?: { armed?: boolean },
+): SmashUpEvent {
     return {
         type: SU_EVENTS.TITAN_METADATA_UPDATED,
         payload: {
             titanUid,
-            metadataUpdate: { timeBoxCounters: Math.max(0, counterCount) },
+            metadataUpdate: {
+                timeBoxCounters: Math.max(0, counterCount),
+                timeBoxPlayArmed: options?.armed === true,
+            },
             reason,
         },
         timestamp: now,
@@ -1073,8 +1245,6 @@ function queueTimeBoxPlayInteraction(
 }
 
 function buildTimeBoxCounterProgress(ctx: TriggerContext, reason: string): TriggerResult | SmashUpEvent[] {
-    if (getTitanByController(ctx.state, ctx.playerId)) return [];
-
     const titan = (ctx.state.titans ?? []).find(candidate =>
         candidate.defId === 'time_travelers_time_box'
         && candidate.ownerId === ctx.playerId
@@ -1085,10 +1255,12 @@ function buildTimeBoxCounterProgress(ctx: TriggerContext, reason: string): Trigg
     const currentCounter = getTimeBoxCounter(titan);
     const nextCounter = currentCounter + 1;
     const events: SmashUpEvent[] = [
-        buildTimeBoxMetadataEvent(titan.uid, nextCounter, reason, ctx.now),
+        buildTimeBoxMetadataEvent(titan.uid, nextCounter, reason, ctx.now, {
+            armed: nextCounter >= 5,
+        }),
     ];
 
-    if (currentCounter < 5 && nextCounter >= 5) {
+    if (nextCounter >= 5) {
         const nextMatchState = queueTimeBoxPlayInteraction(
             ctx.matchState,
             ctx.state,
@@ -1122,7 +1294,9 @@ function timeTravelersTimeBoxSpecial(ctx: AbilityContext): AbilityResult {
 
     return {
         events: [
-            buildTimeBoxMetadataEvent(titan.uid, 0, 'time_travelers_time_box_special', ctx.now),
+            buildTimeBoxMetadataEvent(titan.uid, 0, 'time_travelers_time_box_special', ctx.now, {
+                armed: false,
+            }),
             playTitan(titan, ctx.playerId, ctx.baseIndex, 'time_travelers_time_box_special', ctx.now),
         ],
     };
@@ -1340,8 +1514,21 @@ function superSpiesMoonZeroThreeOnDeckInspected(ctx: TriggerContext): TriggerRes
     if ((ctx.state.moonZeroThreeTriggeredTurnByTitan ?? {})[titan.uid] === ctx.state.turnNumber) {
         return [];
     }
+    const nextMatchState = ctx.matchState
+        ? {
+            ...ctx.matchState,
+            core: {
+                ...ctx.matchState.core,
+                moonZeroThreeTriggeredTurnByTitan: {
+                    ...(ctx.matchState.core.moonZeroThreeTriggeredTurnByTitan ?? {}),
+                    [titan.uid]: ctx.matchState.core.turnNumber,
+                },
+            },
+        }
+        : undefined;
     return {
         events: [addTitanPowerCounter(titan.uid, 1, 'super_spies_moon_zero_three_on_deck_inspected', ctx.now)],
+        ...(nextMatchState ? { matchState: nextMatchState } : {}),
     };
 }
 
@@ -1896,21 +2083,35 @@ function trickstersBigFunnyGiantOnTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
     return events;
 }
 
-function trickstersBigFunnyGiantOnMinionPlayed(ctx: AbilityContext): AbilityResult | SmashUpEvent[] {
-    if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return [];
+function findEligibleBigFunnyGiantMinionPlay(ctx: {
+    state: SmashUpCore;
+    playerId: string;
+    baseIndex?: number;
+    triggerMinionUid?: string;
+}): { titan: TitanState; discardable: CardInstance[] } | undefined {
+    if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return undefined;
     const titan = (ctx.state.titans ?? []).find(candidate =>
         candidate.defId === 'tricksters_big_funny_giant'
         && candidate.location.zone === 'base'
         && candidate.location.baseIndex === ctx.baseIndex,
     );
     if (!titan || titan.controllerId === ctx.playerId) {
-        return [];
+        return undefined;
     }
 
     const discardable = getBigFunnyGiantDiscardableHandCards(ctx.state, ctx.playerId, ctx.triggerMinionUid);
     if (discardable.length === 0) {
+        return undefined;
+    }
+    return { titan, discardable };
+}
+
+function trickstersBigFunnyGiantOnMinionPlayed(ctx: AbilityContext): AbilityResult | SmashUpEvent[] {
+    const eligible = findEligibleBigFunnyGiantMinionPlay(ctx);
+    if (!eligible) {
         return [];
     }
+    const { discardable } = eligible;
     if (!ctx.matchState) {
         return [{
             type: SU_EVENTS.CARDS_DISCARDED,
@@ -2109,8 +2310,13 @@ function ittyCrittersRainborocAfterScoring(ctx: {
         : { events: [], matchState: nextMatchState };
 }
 
-function ittyCrittersRainborocOnMinionPlayed(ctx: AbilityContext): AbilityResult | SmashUpEvent[] {
-    if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return [];
+function findEligibleRainborocTitanForMinionPlayed(ctx: {
+    state: SmashUpCore;
+    playerId: string;
+    baseIndex?: number;
+    triggerMinionUid?: string;
+}): TitanState | undefined {
+    if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return undefined;
 
     const titan = (ctx.state.titans ?? []).find(candidate =>
         candidate.defId === 'itty_critters_rainboroc'
@@ -2118,24 +2324,29 @@ function ittyCrittersRainborocOnMinionPlayed(ctx: AbilityContext): AbilityResult
         && candidate.location.baseIndex === ctx.baseIndex
         && candidate.controllerId === ctx.playerId,
     );
-    if (!titan) {
-        return [];
-    }
+    if (!titan) return undefined;
 
     if ((ctx.state.rainborocTriggeredTurnByTitan ?? {})[titan.uid] === ctx.state.turnNumber) {
-        return [];
+        return undefined;
     }
 
     const triggerMinion = ctx.state.bases[ctx.baseIndex]?.minions.find(minion =>
         minion.uid === ctx.triggerMinionUid,
     );
-    if (!triggerMinion || triggerMinion.controller !== ctx.playerId) {
-        return [];
-    }
+    if (!triggerMinion || triggerMinion.controller !== ctx.playerId) return undefined;
 
     const triggerDef = getCardDef(triggerMinion.defId) as MinionCardDef | undefined;
     const triggerPower = triggerDef?.power ?? triggerMinion.basePower;
     if (triggerPower > 2) {
+        return undefined;
+    }
+
+    return titan;
+}
+
+function ittyCrittersRainborocOnMinionPlayed(ctx: AbilityContext): AbilityResult | SmashUpEvent[] {
+    const titan = findEligibleRainborocTitanForMinionPlayed(ctx);
+    if (!titan) {
         return [];
     }
 
@@ -2379,26 +2590,27 @@ function bearCavalryMajorUrsaTalent(ctx: AbilityContext): AbilityResult {
 
 function bearCavalryMajorUrsaOnTitanMoved(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (!ctx.matchState || ctx.baseIndex === undefined) return [];
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
 
     const titan = (ctx.state.titans ?? []).find(candidate =>
         candidate.defId === 'bear_cavalry_major_ursa'
         && candidate.location.zone === 'base'
         && candidate.location.baseIndex === ctx.baseIndex
-        && candidate.controllerId === ctx.playerId,
+        && candidate.controllerId === titanControllerId,
     );
     if (!titan) return [];
 
-    const targets = getMajorUrsaEnemyMinionTargets(ctx.state, ctx.playerId, ctx.baseIndex);
+    const targets = getMajorUrsaEnemyMinionTargets(ctx.state, titanControllerId, ctx.baseIndex);
     if (targets.length === 0) return [];
 
     const interaction = createSimpleChoice(
         `titan_bear_cavalry_major_ursa_choose_minion_${ctx.now}`,
-        ctx.playerId,
+        titanControllerId,
         '大熊座：选择一个对手战力≤3的随从移动',
         [
             ...buildMinionTargetOptions(targets, {
                 state: ctx.state,
-                sourcePlayerId: ctx.playerId,
+                sourcePlayerId: titanControllerId,
                 sourceDefId: titan.defId,
                 effectType: 'move',
             }),
@@ -2422,12 +2634,13 @@ function bearCavalryMajorUrsaOnTitanMoved(ctx: TriggerContext): TriggerResult | 
 
 function bearCavalryMajorUrsaOnMinionMoved(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return [];
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
 
     const titan = (ctx.state.titans ?? []).find(candidate =>
         candidate.defId === 'bear_cavalry_major_ursa'
         && candidate.location.zone === 'base'
         && candidate.location.baseIndex === ctx.baseIndex
-        && candidate.controllerId === ctx.playerId,
+        && candidate.controllerId === titanControllerId,
     );
     if (!titan) {
         return [];
@@ -2441,7 +2654,7 @@ function bearCavalryMajorUrsaOnMinionMoved(ctx: TriggerContext): TriggerResult |
         .filter((baseIndex): baseIndex is number => baseIndex !== undefined)
         .flatMap(baseIndex => ctx.state.bases[baseIndex]?.minions ?? [])
         .find(minion => minion.uid === ctx.triggerMinionUid);
-    if (!movedMinion || movedMinion.controller === ctx.playerId) {
+    if (!movedMinion || movedMinion.controller === titanControllerId) {
         return [];
     }
 
@@ -2687,6 +2900,9 @@ function queueDeathOnSixLegsTransferInteraction(
 }
 
 function giantAntsDeathOnSixLegsBeforeDiscard(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) {
+        return [];
+    }
     if (!ctx.triggerMinion || !ctx.sourceCardUid || !ctx.sourceControllerId) {
         return [];
     }
@@ -2700,6 +2916,10 @@ function giantAntsDeathOnSixLegsBeforeDiscard(ctx: TriggerContext): TriggerResul
     }
 
     return [addTitanPowerCounter(titan.uid, 1, 'giant_ants_death_on_six_legs', ctx.now)];
+}
+
+function isDestroyPipelineDiscardTrigger(ctx: TriggerContext): boolean {
+    return typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('minion-discarded-from-base:');
 }
 
 function buildTitanMetadataUpdateEvent(
@@ -2877,16 +3097,42 @@ function buildInvisibleNinjaPeekResult(
 
     let deckSnapshot = [...player.deck];
     const events: SmashUpEvent[] = [];
+    const splitSourceDiscardCards = (shuffledDiscard: CardInstance[]): CardInstance[] => {
+        const sourceDiscardCards: CardInstance[] = [];
+        const borrowedByOwner = new Map<string, CardInstance[]>();
+        for (const card of shuffledDiscard) {
+            if (card.owner !== playerId && state.players[card.owner]) {
+                borrowedByOwner.set(card.owner, [...(borrowedByOwner.get(card.owner) ?? []), card]);
+            } else {
+                sourceDiscardCards.push(card);
+            }
+        }
+        for (const [ownerId, cards] of borrowedByOwner.entries()) {
+            events.push({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ownerId,
+                    sourcePlayerId: playerId,
+                    deckUids: [
+                        ...state.players[ownerId].deck.map(card => card.uid),
+                        ...cards.map(card => card.uid),
+                    ],
+                },
+                timestamp: now,
+            });
+        }
+        return sourceDiscardCards;
+    };
 
     if (deckSnapshot.length === 0 && player.discard.length > 0) {
-        deckSnapshot = random.shuffle([...player.discard]);
+        deckSnapshot = splitSourceDiscardCards(random.shuffle([...player.discard]));
         events.push({
             type: SU_EVENTS.DECK_REORDERED,
             payload: { playerId, deckUids: deckSnapshot.map(card => card.uid) },
             timestamp: now,
         });
     } else if (deckSnapshot.length === 1 && player.discard.length > 0) {
-        const shuffledDiscard = random.shuffle([...player.discard]);
+        const shuffledDiscard = splitSourceDiscardCards(random.shuffle([...player.discard]));
         deckSnapshot = [deckSnapshot[0], ...shuffledDiscard];
         events.push({
             type: SU_EVENTS.DECK_REORDERED,
@@ -2904,10 +3150,12 @@ function buildInvisibleNinjaPeekResult(
 }
 
 function invisibleNinjaOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
-    const titan = (ctx.state.titans ?? []).find(candidate =>
-        candidate.defId === 'ninjas_invisible_ninja' && candidate.ownerId === ctx.playerId,
-    );
-    if (!titan) return [];
+    const titan = ctx.sourceCardUid
+        ? getTitanByUid(ctx.state, ctx.sourceCardUid)
+        : (ctx.state.titans ?? []).find(candidate =>
+            candidate.defId === 'ninjas_invisible_ninja' && candidate.controllerId === ctx.playerId,
+        );
+    if (!titan || titan.defId !== 'ninjas_invisible_ninja') return [];
 
     const events: SmashUpEvent[] = [
         buildTitanMetadataUpdateEvent(
@@ -2981,11 +3229,17 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
         return [];
     }
 
+    const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId;
     const destroyAnotherPlayersCard =
-        ctx.destroyerId === controllerId
+        ctx.timing === 'onMinionDestroyed'
+        && ctx.destroyerId === controllerId
         && !!ctx.triggerMinion
-        && ctx.triggerMinion.owner !== controllerId;
-    const returnedOwnMinion = !!ctx.triggerMinionUid;
+        && destroyedControllerId !== controllerId;
+    const returnedPlayerId = ctx.eventPlayerId ?? ctx.playerId;
+    const returnedOwnMinion =
+        ctx.timing === 'onCardReturnedToHand'
+        && !!ctx.triggerMinionUid
+        && returnedPlayerId === controllerId;
     if (!destroyAnotherPlayersCard && !returnedOwnMinion) {
         return [];
     }
@@ -3017,6 +3271,21 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
     };
 
     return { events: peek.events, matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function canTriggerInvisibleNinjaTriggered(ctx: TriggerContext): boolean {
+    const controllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.timing === 'onMinionDestroyed') {
+        const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId;
+        return ctx.destroyerId === controllerId
+            && !!ctx.triggerMinion
+            && destroyedControllerId !== controllerId;
+    }
+
+    const returnedPlayerId = ctx.eventPlayerId ?? ctx.playerId;
+    return ctx.timing === 'onCardReturnedToHand'
+        && !!ctx.triggerMinionUid
+        && returnedPlayerId === controllerId;
 }
 
 function killerKudzuOnTurnStart(ctx: TriggerContext): SmashUpEvent[] {
@@ -3317,16 +3586,17 @@ function buildTheBrideEffectEvents(
 }
 
 function theBrideOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
-    if (!ctx.matchState || getTitanByController(ctx.state, ctx.playerId)) return [];
-    const titan = getOwnedSetAsideTitan(ctx.state, ctx.playerId, 'frankenstein_the_bride');
+    const titanControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (!ctx.matchState || getTitanByController(ctx.state, titanControllerId)) return [];
+    const titan = getOwnedSetAsideTitan(ctx.state, titanControllerId, 'frankenstein_the_bride');
     if (!titan) return [];
 
-    const branchOptions = buildTheBrideStartBranchOptions(ctx.state, ctx.playerId, []);
+    const branchOptions = buildTheBrideStartBranchOptions(ctx.state, titanControllerId, []);
     if (branchOptions.length === 0) return [];
 
     const interaction = createSimpleChoice(
         `titan_frankenstein_the_bride_start_choose_branch_${ctx.now}`,
-        ctx.playerId,
+        titanControllerId,
         'The Bride: choose the first effect',
         branchOptions,
         {
@@ -3366,6 +3636,23 @@ function theBrideOnPowerCounterChanged(ctx: TriggerContext): SmashUpEvent[] {
         buildTitanMetadataUpdateEvent(titan.uid, { theBrideTriggeredTurn: ctx.state.turnNumber }, 'frankenstein_the_bride_ongoing', ctx.now),
         ...buildStandardDrawEvents(ctx.state, controllerId, 1, ctx.random, ctx.now),
     ];
+}
+
+function canTriggerTheBrideOnPowerCounterChanged(ctx: TriggerContext): boolean {
+    if (
+        ctx.affectType !== 'power_change'
+        || ctx.counterChangeKind !== 'added'
+        || (ctx.counterDelta ?? 0) <= 0
+    ) {
+        return false;
+    }
+
+    const controllerId = ctx.triggerMinion?.controller;
+    if (!controllerId) return false;
+    const titan = getControlledTitanOnBase(ctx.state, 'frankenstein_the_bride', controllerId);
+    if (!titan) return false;
+    if (ctx.sourceCardUid && ctx.sourceCardUid !== titan.uid) return false;
+    return Number(titan.metadata?.theBrideTriggeredTurn ?? -1) !== ctx.state.turnNumber;
 }
 
 function buildTheBrideExtraActionOptions(state: AbilityContext['state'], playerId: string) {
@@ -3487,6 +3774,7 @@ export function registerTitanAbilities(): void {
     registerTrigger('dinosaurs_fort_titanosaurus', 'onActionPlayed', fortTitanosaurusOnActionPlayed, {
         optional: true,
         baseScoped: false,
+        playerContext: 'sourceController',
     });
 
     registerAbility('ninjas_invisible_ninja', 'special', invisibleNinjaSpecial);
@@ -3506,16 +3794,19 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('ninjas_invisible_ninja', 'onTurnStart', invisibleNinjaOnTurnStart, {
         global: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('ninjas_invisible_ninja', 'onMinionDestroyed', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',
+        canTrigger: canTriggerInvisibleNinjaTriggered,
     });
     registerTrigger('ninjas_invisible_ninja', 'onCardReturnedToHand', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',
+        canTrigger: canTriggerInvisibleNinjaTriggered,
     });
 
     registerAbility('killer_plants_killer_kudzu', 'special', killerKudzuSpecial);
@@ -3552,10 +3843,12 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('killer_plants_killer_kudzu', 'onTurnStart', killerKudzuOnTurnStart, {
         global: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('killer_plants_killer_kudzu', 'onTitanRemovedFromPlay', killerKudzuOnTitanRemovedFromPlay, {
         optional: true,
         global: true,
+        playerContext: 'sourceController',
     });
 
     registerAbility('frankenstein_the_bride', 'talent', theBrideTalent);
@@ -3574,6 +3867,8 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('frankenstein_the_bride', 'onMinionAffected', theBrideOnPowerCounterChanged, {
         baseScoped: false,
+        canTrigger: canTriggerTheBrideOnPowerCounterChanged,
+        playerContext: 'sourceController',
     });
 
     registerAbility('super_spies_moon_zero_three', 'special', superSpiesMoonZeroThreeSpecial);
@@ -3618,6 +3913,7 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('penguins_emperor_penguin', 'onTurnStart', penguinsEmperorPenguinOnTurnStart, {
         global: true,
+        playerContext: 'sourceController',
     });
 
     registerTitanSpecialValidator('changerbots_mergacon', () =>
@@ -3631,6 +3927,7 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('changerbots_mergacon', 'onTurnStart', changerbotsMergaconOnTurnStart, {
         global: true,
+        playerContext: 'sourceController',
     });
     registerTitanPowerModifier('changerbots_mergacon', ({ state, titan }) =>
         (state.titanOngoingSuppressedUntilTurnEnd ?? []).includes(titan.uid) ? 0 : 3);
@@ -3654,6 +3951,7 @@ export function registerTitanAbilities(): void {
         global: true,
     });
     registerTrigger('itty_critters_rainboroc', 'onMinionPlayed', ittyCrittersRainborocOnMinionPlayed, {
+        canTrigger: (ctx) => !!findEligibleRainborocTitanForMinionPlayed(ctx),
     });
 
     registerAbility('kaiju_gorgodzolla', 'special', kaijuGorgodzollaSpecial);
@@ -3662,8 +3960,12 @@ export function registerTitanAbilities(): void {
             ? null
             : 'You can only play Gorgodzolla on a base where you have at least two actions');
     registerTrigger('kaiju_gorgodzolla', 'onMinionPlayed', kaijuGorgodzollaOnMinionPlayed, {
+        playerContext: 'sourceController',
+        canTrigger: (ctx) => ctx.baseIndex !== undefined
+            && !!getGorgodzollaOnBase(ctx.state, ctx.sourceControllerId ?? ctx.playerId, ctx.baseIndex),
     });
     registerTrigger('kaiju_gorgodzolla', 'onActionPlayed', kaijuGorgodzollaOnActionPlayed, {
+        playerContext: 'sourceController',
     });
 
     registerAbility('explorers_very_large_boulder', 'special', explorersVeryLargeBoulderSpecial);
@@ -3680,6 +3982,7 @@ export function registerTitanAbilities(): void {
         playerContext: 'sourceController',
     });
     registerTrigger('explorers_very_large_boulder', 'onTurnEnd', explorersVeryLargeBoulderOnTurnEnd, {
+        playerContext: 'sourceController',
     });
 
     registerAbility('ignobles_the_hill_that_strolls', 'special', ignoblesTheHillThatStrollsSpecial);
@@ -3702,7 +4005,14 @@ export function registerTitanAbilities(): void {
         baseScoped: false,
     });
 
-    registerAbility('time_travelers_time_box', 'special', timeTravelersTimeBoxSpecial);
+    registerAbility('time_travelers_time_box', 'special', {
+        execute: timeTravelersTimeBoxSpecial,
+        validateUse: (ctx) => (
+            isTimeBoxPlayArmed(getTitanByUid(ctx.state, ctx.cardUid))
+                ? null
+                : '时间盒子的进场机会已经结束'
+        ),
+    });
     registerAbility('time_travelers_time_box', 'talent', timeTravelersTimeBoxTalent);
     registerTitanSpecialValidator('time_travelers_time_box', ({ titan }) =>
         getTimeBoxCounter(titan) >= 5 ? null : '时间盒子的计数还未达到 5');
@@ -3711,10 +4021,12 @@ export function registerTitanAbilities(): void {
     registerTrigger('time_travelers_time_box', 'onTurnStart', timeTravelersTimeBoxOnTurnStart, {
         global: true,
         optional: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('time_travelers_time_box', 'onCardReturnedToHand', timeTravelersTimeBoxOnCardReturnedToHand, {
         global: true,
         optional: true,
+        playerContext: 'sourceController',
     });
 
     registerTrigger('pecos_bill', 'onDuelStarted', pecosBillOnDuelStarted, {
@@ -3733,6 +4045,7 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('sphinx', 'onTurnStart', sphinxOnTurnStart, {
         global: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('sphinx', 'afterScoring', (ctx) => sphinxAfterScoring({
         state: ctx.state,
@@ -3863,6 +4176,7 @@ export function registerTitanAbilities(): void {
 
     registerTrigger('bear_cavalry_major_ursa', 'onTitanMoved', bearCavalryMajorUrsaOnTitanMoved, {
         optional: true,
+        playerContext: 'sourceController',
     });
     registerTitanTalentValidator('bear_cavalry_major_ursa', ({ state, titan }) => {
         if (titan.location.zone !== 'base') return '该泰坦当前不在场';
@@ -3892,6 +4206,7 @@ export function registerTitanAbilities(): void {
         global: true,
         optional: true,
         baseScoped: false,
+        playerContext: 'sourceController',
     });
 
     registerAbility('werewolves_great_wolf_spirit', 'special', werewolvesGreatWolfSpiritSpecial);
@@ -3906,6 +4221,7 @@ export function registerTitanAbilities(): void {
     registerAbility('werewolves_great_wolf_spirit', 'talent', werewolvesGreatWolfSpiritTalent);
     registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, {
         optional: true,
+        playerContext: 'sourceController',
     });
     registerTitanTalentValidator('werewolves_great_wolf_spirit', ({ state, titan, playerId }) => {
         if (titan.location.zone !== 'base') return '该泰坦当前不在场';
@@ -3946,8 +4262,10 @@ export function registerTitanAbilities(): void {
             : '没有可移动的基地';
     });
     registerTrigger('tricksters_big_funny_giant', 'onTurnEnd', trickstersBigFunnyGiantOnTurnEnd, {
+        playerContext: 'sourceController',
     });
     registerTrigger('tricksters_big_funny_giant', 'onMinionPlayed', trickstersBigFunnyGiantOnMinionPlayed, {
+        canTrigger: (ctx) => !!findEligibleBigFunnyGiantMinionPlay(ctx),
     });
     registerTrigger('tricksters_big_funny_giant', 'afterScoring', (ctx) => trickstersBigFunnyGiantAfterScoring({
         state: ctx.state,
@@ -4177,9 +4495,29 @@ export function registerTitanInteractionHandlers(): void {
         ];
 
         if (remainingShown.length > 0) {
+            const sourceRemaining = remainingShown.filter(card => card.owner === playerId || !state.core.players[card.owner]);
+            const borrowedByOwner = new Map<string, CardInstance[]>();
+            for (const card of remainingShown) {
+                if (card.owner === playerId || !state.core.players[card.owner]) continue;
+                borrowedByOwner.set(card.owner, [...(borrowedByOwner.get(card.owner) ?? []), card]);
+            }
+            for (const [ownerId, cards] of borrowedByOwner.entries()) {
+                events.push({
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: {
+                        playerId: ownerId,
+                        sourcePlayerId: playerId,
+                        deckUids: [
+                            ...state.core.players[ownerId].deck.map(card => card.uid),
+                            ...cards.map(card => card.uid),
+                        ],
+                    },
+                    timestamp,
+                } as SmashUpEvent);
+            }
             const shuffled = random.shuffle([
                 ...player.deck.filter(card => !shownUidSet.has(card.uid)),
-                ...remainingShown,
+                ...sourceRemaining,
             ]);
             events.push({
                 type: SU_EVENTS.DECK_REORDERED,
@@ -4220,14 +4558,26 @@ export function registerTitanInteractionHandlers(): void {
         if (selectedUidSet.size === 0) return { state, events: [] };
 
         const selectedFromDiscard = player.discard.filter(card => selectedUidSet.has(card.uid));
-        const shuffled = random.shuffle([...player.deck, ...selectedFromDiscard]);
+        const cardsByOwner = new Map<string, CardInstance[]>();
+        for (const card of selectedFromDiscard) {
+            const ownerId = state.core.players[card.owner] ? card.owner : playerId;
+            cardsByOwner.set(ownerId, [...(cardsByOwner.get(ownerId) ?? []), card]);
+        }
         return {
             state,
-            events: [{
-                type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: shuffled.map(card => card.uid) },
-                timestamp,
-            } as SmashUpEvent],
+            events: Array.from(cardsByOwner.entries()).map(([ownerId, cards]) => {
+                const owner = state.core.players[ownerId] ?? player;
+                const shuffled = random.shuffle([...owner.deck, ...cards]);
+                return {
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: {
+                        playerId: ownerId,
+                        deckUids: shuffled.map(card => card.uid),
+                        ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+                    },
+                    timestamp,
+                } as SmashUpEvent;
+            }),
         };
     });
 
@@ -5072,14 +5422,27 @@ export function registerTitanInteractionHandlers(): void {
 
     registerInteractionHandler('titan_time_travelers_time_box_play', (state, playerId, value, data, _random, timestamp) => {
         const selected = value as { baseIndex?: number; baseDefId?: string; skip?: boolean } | undefined;
-        if (selected?.skip) {
-            return { state, events: [] };
-        }
-
         const continuation = (data as {
             continuationContext?: { titanUid?: string; titanDefId?: string };
         } | undefined)?.continuationContext;
         const titan = continuation?.titanUid ? getTitanByUid(state.core, continuation.titanUid) : undefined;
+        if (selected?.skip) {
+            return titan
+                ? {
+                    state,
+                    events: [
+                        buildTimeBoxMetadataEvent(
+                            titan.uid,
+                            getTimeBoxCounter(titan),
+                            'time_travelers_time_box_prompt_skip',
+                            timestamp,
+                            { armed: false },
+                        ),
+                    ],
+                }
+                : { state, events: [] };
+        }
+
         if (selected?.baseIndex === undefined || !titan || !canControllerPlayTitan(state.core, playerId, titan.uid)) {
             return { state, events: [] };
         }
@@ -5087,7 +5450,9 @@ export function registerTitanInteractionHandlers(): void {
         return {
             state,
             events: [
-                buildTimeBoxMetadataEvent(titan.uid, 0, 'time_travelers_time_box_prompt_play', timestamp),
+                buildTimeBoxMetadataEvent(titan.uid, 0, 'time_travelers_time_box_prompt_play', timestamp, {
+                    armed: false,
+                }),
                 playTitan(
                     titan,
                     playerId,
@@ -5241,6 +5606,7 @@ export function registerTitanInteractionHandlers(): void {
         if (!selected?.cardUid || !selected.defId || continuation?.baseIndex === undefined) {
             return { state, events: [] };
         }
+        const trueOwnerId = state.core.players[playerId]?.hand.find(card => card.uid === selected.cardUid)?.owner ?? playerId;
 
         return {
             state,
@@ -5251,7 +5617,7 @@ export function registerTitanInteractionHandlers(): void {
                 cardUid: selected.cardUid,
                 defId: selected.defId,
                 baseIndex: continuation.baseIndex,
-                trueOwnerId: playerId,
+                trueOwnerId,
                 buriedFrom: 'hand',
                 reason: 'sphinx_talent',
                 random,
@@ -5313,6 +5679,7 @@ export function registerTitanInteractionHandlers(): void {
             targetPlayerId: selected.targetPlayerId,
             cardUid: peek.card.uid,
             defId: peek.card.defId,
+            ownerId: peek.card.owner,
         };
 
         return {
@@ -5324,7 +5691,7 @@ export function registerTitanInteractionHandlers(): void {
     registerInteractionHandler('titan_super_spies_moon_zero_three_resolve', (state, _playerId, value, data, _random, timestamp) => {
         const selected = value as { placement?: 'top' | 'bottom' } | undefined;
         const continuation = (data as {
-            continuationContext?: { targetPlayerId?: string; cardUid?: string; defId?: string };
+            continuationContext?: { targetPlayerId?: string; cardUid?: string; defId?: string; ownerId?: string };
         } | undefined)?.continuationContext;
         if (!selected?.placement || !continuation?.targetPlayerId || !continuation.cardUid || !continuation.defId) {
             return { state, events: [] };
@@ -5334,6 +5701,7 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
+        const ownerId = continuation.ownerId ?? continuation.targetPlayerId;
         return {
             state,
             events: [{
@@ -5341,7 +5709,8 @@ export function registerTitanInteractionHandlers(): void {
                 payload: {
                     cardUid: continuation.cardUid,
                     defId: continuation.defId,
-                    ownerId: continuation.targetPlayerId,
+                    ownerId,
+                    ...(ownerId !== continuation.targetPlayerId ? { sourcePlayerId: continuation.targetPlayerId } : {}),
                     reason: 'super_spies_moon_zero_three_talent',
                 },
                 timestamp,
@@ -5376,16 +5745,17 @@ export function registerTitanInteractionHandlers(): void {
             payload: {
                 cardUid: card.uid,
                 defId: card.defId,
-                ownerId: playerId,
+                ownerId: card.owner,
                 reason: 'penguins_emperor_penguin_talent',
+                sourcePlayerId: playerId,
             },
             timestamp,
         } as SmashUpEvent);
         events.push({
             type: SU_EVENTS.DECK_REORDERED,
             payload: {
-                playerId,
-                deckUids: random.shuffle([...player.deck.map(candidate => candidate.uid), card.uid]),
+                playerId: card.owner,
+                deckUids: random.shuffle([...(state.core.players[card.owner]?.deck ?? []).map(candidate => candidate.uid), card.uid]),
             },
             timestamp,
         } as SmashUpEvent);
@@ -5477,12 +5847,15 @@ export function registerTitanInteractionHandlers(): void {
         if (!player || !card) {
             return { state, events: [] };
         }
+        const ownerId = card.owner;
+        const ownerDeck = state.core.players[ownerId]?.deck ?? [];
 
         const deckEvent: SmashUpEvent = {
             type: SU_EVENTS.DECK_REORDERED,
             payload: {
-                playerId,
-                deckUids: random.shuffle([...player.deck, card]).map(candidate => candidate.uid),
+                playerId: ownerId,
+                deckUids: random.shuffle([...ownerDeck, card]).map(candidate => candidate.uid),
+                ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
             },
             timestamp,
         };
@@ -5571,79 +5944,6 @@ export function registerTitanInteractionHandlers(): void {
                     selected.baseDefId,
                 ),
             ],
-        };
-    });
-
-    registerInteractionHandler('titan_bear_cavalry_major_ursa_choose_talent_mode', (state, playerId, value, data, _random, timestamp) => {
-        const selected = value as { branch?: 'counter' | 'move' } | undefined;
-        const continuation = (data as {
-            continuationContext?: { titanUid?: string; titanDefId?: string; baseIndex?: number };
-        } | undefined)?.continuationContext;
-        if (!selected?.branch || !continuation?.titanUid || !continuation.titanDefId || continuation.baseIndex === undefined) {
-            return { state, events: [] };
-        }
-
-        if (selected.branch === 'counter') {
-            const base = state.core.bases[continuation.baseIndex];
-            if (!base || base.minions.length === 0) {
-                return { state, events: [] };
-            }
-
-            const interaction = createSimpleChoice(
-                `titan_bear_cavalry_major_ursa_choose_counter_target_${timestamp}`,
-                playerId,
-                '大熊座：选择此处一个随从放置 +1 战力标记',
-                buildMinionTargetOptions(
-                    base.minions.map(minion => ({
-                        uid: minion.uid,
-                        defId: minion.defId,
-                        baseIndex: continuation.baseIndex!,
-                    })),
-                    { state: state.core, sourcePlayerId: playerId, effectType: 'affect' },
-                ),
-                { sourceId: 'titan_bear_cavalry_major_ursa_choose_counter_target', targetType: 'minion' },
-            );
-            return {
-                state: queueInteraction(state, interaction),
-                events: [],
-            };
-        }
-
-        const baseOptions = getOtherBaseOptions(state.core, continuation.baseIndex);
-        if (baseOptions.length === 0) {
-            return { state, events: [] };
-        }
-
-        const interaction = createSimpleChoice(
-            `titan_bear_cavalry_major_ursa_choose_destination_${timestamp}`,
-            playerId,
-            'Major Ursa: choose a base to move to',
-            buildBaseTargetOptions(baseOptions, state.core),
-            {
-                sourceId: 'titan_bear_cavalry_major_ursa_choose_destination',
-                targetType: 'base',
-                titleKey: 'ui.titan_major_ursa_choose_base_title',
-            },
-        );
-        (interaction.data as { continuationContext?: unknown }).continuationContext = {
-            titanUid: continuation.titanUid,
-            fromBaseIndex: continuation.baseIndex,
-            titanDefId: continuation.titanDefId,
-        };
-        return {
-            state: queueInteraction(state, interaction),
-            events: [],
-        };
-    });
-
-    registerInteractionHandler('titan_bear_cavalry_major_ursa_choose_counter_target', (state, _playerId, value, _data, _random, timestamp) => {
-        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
-        if (!selected?.minionUid || selected.baseIndex === undefined) {
-            return { state, events: [] };
-        }
-        return {
-            state,
-            events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'bear_cavalry_major_ursa_talent', timestamp)],
         };
     });
 
@@ -5763,52 +6063,80 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
-        const effectiveHandSize = getExternalActionEffectiveHandSize(state, playerId);
-        if (!validateActionPlaySemantics(state.core, playerId, {
-            defId: selected.defId,
-            effectiveHandSize,
-        }).valid) {
-            return { state, events: [] };
-        }
-
         const continuation = (data as { continuationContext?: { titanBaseIndex?: number } } | undefined)?.continuationContext;
         const baseIndex = continuation?.titanBaseIndex ?? 0;
-        const events: SmashUpEvent[] = [
-            recoverCardsFromDiscard(playerId, [selected.cardUid], 'ghosts_creampuff_man_talent', timestamp),
-            {
-                type: SU_EVENTS.ACTION_PLAYED,
-                payload: {
-                    playerId,
-                    cardUid: selected.cardUid,
-                    defId: selected.defId,
-                    isExtraAction: true,
+        const effectiveHandSize = getExternalActionEffectiveHandSize(state, playerId);
+        const targetMode = getCreampuffActionTargetMode(selected.defId);
+        if (targetMode && targetMode !== 'none') {
+            const targetOptions = buildCreampuffActionTargetOptions(state.core, playerId, actionCard, effectiveHandSize);
+            if (targetOptions.length === 0) {
+                return { state, events: [] };
+            }
+            const interaction = createSimpleChoice(
+                `titan_ghosts_creampuff_man_action_target_${timestamp}`,
+                playerId,
+                '奶油泡芙美人：选择额外行动的目标',
+                targetOptions,
+                {
+                    sourceId: 'titan_ghosts_creampuff_man_action_target',
+                    targetType: targetMode,
+                    responseValidationMode: 'live',
                 },
-                timestamp,
-            } as SmashUpEvent,
-        ];
+            );
+            (interaction.data as { optionsGenerator?: unknown; continuationContext?: unknown }).optionsGenerator = (nextState: AbilityContext['matchState']) => {
+                const nextPlayer = nextState.core.players[playerId];
+                const nextCard = nextPlayer?.discard.find(card => card.uid === selected.cardUid && card.defId === selected.defId);
+                if (!nextCard) return [];
+                return buildCreampuffActionTargetOptions(
+                    nextState.core,
+                    playerId,
+                    nextCard,
+                    getExternalActionEffectiveHandSize(nextState, playerId),
+                );
+            };
+            (interaction.data as { continuationContext?: unknown }).continuationContext = {
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                titanBaseIndex: baseIndex,
+            };
+            return {
+                state: queueInteraction(state, interaction),
+                events: [],
+            };
+        }
 
-        const result = appendResolvedActionAbility({
+        return resolveCreampuffActionPlay({
             state,
-            events,
             playerId,
             cardUid: selected.cardUid,
             defId: selected.defId,
             random,
             timestamp,
-            baseIndex,
-            handSizeAfterPlay: state.core.players[playerId]?.hand.length ?? 0,
+            titanBaseIndex: baseIndex,
         });
-        result.events.push({
-            type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-            payload: {
-                cardUid: selected.cardUid,
-                defId: selected.defId,
-                ownerId: playerId,
-                reason: 'ghosts_creampuff_man_talent',
-            },
+    });
+
+    registerInteractionHandler('titan_ghosts_creampuff_man_action_target', (state, playerId, value, data, random, timestamp) => {
+        const selected = value as { cardUid?: string; defId?: string; targetBaseIndex?: number; targetMinionUid?: string } | undefined;
+        const continuation = (data as {
+            continuationContext?: { cardUid?: string; defId?: string; titanBaseIndex?: number };
+        } | undefined)?.continuationContext;
+        const cardUid = selected?.cardUid ?? continuation?.cardUid;
+        const defId = selected?.defId ?? continuation?.defId;
+        if (!cardUid || !defId) {
+            return { state, events: [] };
+        }
+        return resolveCreampuffActionPlay({
+            state,
+            playerId,
+            cardUid,
+            defId,
+            random,
             timestamp,
-        } as SmashUpEvent);
-        return result;
+            titanBaseIndex: continuation?.titanBaseIndex ?? 0,
+            targetBaseIndex: selected?.targetBaseIndex,
+            targetMinionUid: selected?.targetMinionUid,
+        });
     });
 
     registerInteractionHandler('titan_fairies_spirit_of_the_forest_clash_move', (state, _playerId, value, data, _random, timestamp) => {

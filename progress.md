@@ -1,3 +1,499 @@
+## Session: 2026-05-19 SmashUp yuanhou effect atom / shared seam completion audit
+
+- **Status:** in_progress
+- 2026-05-25 22:51 +08：继续按 `trueOwnerId: playerId` 横向筛非 Ancient Egyptians producer，命中 [`baseAbilities_expansion.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities_expansion.ts>) 的 `base_ossuary`。新增 [`expansionBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionBaseAbilities.test.ts>) gate `base_ossuary 埋葬 borrowed 弃牌堆随从时应保留真实 owner`，首轮 failed，实际 buried card 为 `trueOwnerId: '0'`；最小修复为 `base_ossuary` handler 从当前玩家弃牌堆 live card 回查 owner，再传给 `buildBuryCardEvents()`。验证：focused `base_ossuary` => 修复后 `1 file passed, 2 passed`；邻近 `base_ossuary|base_innsmouth_base_choose_card|base_inventors_salon|base_greenhouse` => `1 file passed, 13 passed`。该格只闭合 Ossuary 从当前玩家弃牌堆埋葬 borrowed 卡的 true-owner provenance，不外推所有 discard-bury producer、Skeletons Returned One、Titans Sphinx 或长期任务完成。
+- 2026-05-25 22:43 +08：继续离开前一批 hand-bury prompt，按 `trueOwnerId: playerId` 扫到 Ancient Egyptians 另一个入口：`ancientEgyptiansBurySelfOnPlay()` 的自埋行动仍直接把 `trueOwnerId` 写成 `ctx.playerId`。新增 [`expansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionAbilities.test.ts>) gate `ancient_egyptians_you_can_take_it_with_you 自埋 borrowed 行动时应保留真实 owner`，首轮 failed，实际 buried card 为 `trueOwnerId: '0'`；最小修复在 [`ancient_egyptians.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ancient_egyptians.ts>) 的 `ancientEgyptiansBurySelfOnPlay()` 改用 live hand owner 回查。验证：focused 修后 `1 file passed, 1 passed`；邻近组合 `ancient_egyptians_pyramid_engineer talent|ancient_egyptians_lost_knowledge|ancient_egyptians_seal_the_tomb|ancient_egyptians_you_can_take_it_with_you 自埋 borrowed|base_pyramids 在出牌阶段|base_pyramids 埋葬 borrowed` => `2 files passed, 7 passed`。该格只闭合 Ancient Egyptians 自埋行动从当前手牌打出时的 true-owner provenance，不外推所有 `buriedFrom:'play'`、所有自埋行动或长期任务完成。
+- 2026-05-25 22:36 +08：按长期 JSON 点名的下一格，把 Ancient Egyptians 相邻 hand-bury caller 补成 dedicated focused green evidence，而不是继续口头说“实现已经一起改了”。新增 [`expansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionAbilities.test.ts>) 两条 gate：`ancient_egyptians_lost_knowledge 埋葬 borrowed 手牌时应保留真实 owner`、`ancient_egyptians_seal_the_tomb 埋葬 borrowed 手牌时应保留真实 owner`；新增 [`newBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newBaseAbilities.test.ts>) gate：`base_pyramids 埋葬 borrowed 手牌时应保留真实 owner`。三条 focused 验证 `2 files passed, 3 passed`；邻近组合 `ancient_egyptians_pyramid_engineer talent|ancient_egyptians_lost_knowledge|ancient_egyptians_seal_the_tomb|base_pyramids 在出牌阶段|base_pyramids 埋葬 borrowed` => `2 files passed, 6 passed`。这批只证明 `Lost Knowledge / Seal the Tomb / Pyramids` 当前也被 live-hand owner 回查覆盖，不外推 discard/deck 来源、所有 bury caller，或长期任务完成；下一步离开 Ancient Egyptians hand-bury，继续筛其它当前区位玩家写入最终 owner 的 sibling。
+- 2026-05-25 22:27 +08：这轮先处理交接里提到的 `borrowed skeletons_lord_of_bones`，当前实际不是应删除的假红测，而是一条真实 `CARD_BURIED.trueOwnerId` 红灯：P0 手牌里持有 owner=1 的 borrowed 牌，`Lord of Bones` 埋葬后 trueOwner 被写成 `0`。我只在 [`skeletons.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/skeletons.ts>) 给该 handler 补 live hand owner 回查，focused `newFactionAbilities.test.ts -t "skeletons_lord_of_bones 天赋可选择从手牌埋葬|borrowed skeletons_lord_of_bones"` 已从 `1 failed` 转成 `1 file passed, 2 passed`。随后按同一主线补 [`expansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionAbilities.test.ts>) gate `ancient_egyptians_pyramid_engineer talent 埋葬 borrowed 手牌时应保留真实 owner`，首轮同样 failed，根因是 [`ancient_egyptians.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ancient_egyptians.ts>) 多个从手牌埋葬的 handler 仍直接写 `trueOwnerId: playerId`。当前已在 Ancient Egyptians 内统一让 Pyramid Engineer / Lost Knowledge / Seal the Tomb / Pyramids 按 live hand owner 写 buried trueOwner。最后继续验证 `borrowed skeletons_grave_goods 首次埋葬 borrowed 手牌时应保留真实 trueOwnerId`，首轮同样 failed，现已把 `skeletons_grave_goods` 首次埋葬和 bonus 额外埋葬两个 hand-bury 出口都改成 live hand owner。验证：Pyramid Engineer focused 修后 `1 file passed, 1 passed`；Grave Goods focused + 邻近两条 `1 file passed, 3 passed`；相邻 `expansionAbilities.test.ts + newFactionAbilities.test.ts -t "ancient_egyptians_pyramid_engineer talent|ancient_egyptians_seal_the_tomb|skeletons_lord_of_bones"` => `2 files passed, 5 passed`。这说明不是死循环，仍在继续收新的 owner provenance 红灯；但只闭合当前手牌来源 bury caller，不外推所有埋葬来源或长期任务完成。
+- 2026-05-25 21:52 +08：这轮继续沿 `owner-only runtime consumer / source provenance` 主线推进，又打出并收掉了一条新的真红灯，而且是连续两层断口，不是状态空转。新增 [`vampiresPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/vampiresPod.test.ts>) focused gate `borrowed Fledgling Vampire POD 从当前玩家手牌埋葬时，仍应保留真实 trueOwnerId` 后，首轮先不是埋葬 owner 错，而是更早一步就发现 trigger 根本没入队：destroyer 手牌里的 borrowed `Fledgling POD` 没有被 `playerContext:'sourceController'` 的 global trigger 选成 source。回读后确认 shared 根因在 [`ongoingEffects.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/ongoingEffects.ts>) 的 `locateGlobalSources()`：手牌/弃牌堆/牌库 source 旧实现把 `controllerId` 写成 `card.owner`，不是当前区位玩家 `player.id`。修完这一层后，同一条 focused gate 继续红灯坐实第二层断口：[`vampires.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vampires.ts>) 的 `vampireFledglingPodBuryBasePromptProgram` 把 `CARD_BURIED.trueOwnerId` 写成当前玩家 `1`，不是 borrowed 卡真实 owner `0`。最小修复只落在这两处：shared 侧仅把 hand/discard/deck global source 的 `controllerId` 改成 `player.id`；卡牌侧仅让 `vampireFledglingPodBurySourcePromptProgram` 透传所选卡真实 owner，再由 bury-base prompt 写回 `trueOwnerId`。验证：focused `pnpm vitest run src/games/smashup/__tests__/vampiresPod.test.ts -t "borrowed Fledgling Vampire POD 从当前玩家手牌埋葬时，仍应保留真实 trueOwnerId"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `pnpm vitest run src/games/smashup/__tests__/vampiresPod.test.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts -t "Fledgling Vampire POD|queued onMinionDestroyed 全局 Vampire POD|Dinner Date POD|Vampire Summon Wolves"` => `2 files passed, 11 passed`。这说明当前不是死循环，而是在继续把新的 shared + card-level provenance seam 打掉；但它只闭合 borrowed `Fledgling POD` 的 global source controller 与 buried trueOwner 这条链，不外推所有 global trigger、所有 bury caller，或整个长期任务已完成。
+- 2026-05-25 21:33 +08：这轮没有停在刚收掉的 `Hideout POD / Zombie Overrun` 上做状态回写，而是继续顺着同一条 `owner-only runtime consumer` 主线往前，又打出并收口了一条新的 focused 红灯。新增 [`reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>) focused gate `sourceController queued onMinionAffected trigger 处理 borrowed Dinner Date POD 时，destroyerId 仍应归控制者` 后，首轮直接失败在 `MINION_DESTROYED.payload.destroyerId === '1'`，把断口钉在 [`vampires.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vampires.ts>) 的 `vampireDinnerDatePodDestroyHost()`：queued trigger 已按 `playerContext:'sourceController'` 正确入队，但 callback resolve 时仍把 `buildValidatedDestroyEvents(...)` 的 `destroyerId` 写成 `attachment.ownerId`，导致 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Dinner Date POD` 在控制者 P0 的 affect 真链上消灭宿主时，销毁归属被洗回真实 owner。最小修复只落在这一条 callback：统一改成 `attachment.metadata?.sourceControllerId ?? attachment.ownerId`，不扩到 `Dinner Date` 非 POD、`Summon Wolves`、`The Count` 或其它 Vampires sibling。验证：focused `pnpm vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts -t "sourceController queued onMinionAffected trigger 处理 borrowed Dinner Date POD 时，destroyerId 仍应归控制者"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `pnpm vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts src/games/smashup/__tests__/vampiresPod.test.ts -t "Dinner Date POD|dinner_date_pod|borrowed Dinner Date"` => `2 files passed, 5 passed`。这说明当前不是死循环，而是在继续打新的 focused 红灯；但它只闭合 borrowed `Dinner Date POD` 的 destroyer provenance seam，不外推整个 Vampires、所有 `onMinionAffected` destroy producer，或整个长期任务已完成。
+- 2026-05-25 21:24 +08：我没有停在刚收掉的 `Zombie Overrun` restriction 上，而是顺着同样的 `owner-only runtime consumer` 继续往前，马上又打出了一条新的 focused 红灯并收口。新增 [`baseFactionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/baseFactionOngoing.test.ts>) focused gate `borrowed Hideout POD 应按控制者而不是真实 owner 阻止其他玩家把随从移动到此基地` 后，首轮直接红灯坐实：[`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 的 `trickster_hideout_pod` 移动拦截器仍只按 `hideout.ownerId` 判“是不是其他玩家”，导致 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Hideout POD` 会错误放行 P1 把随从移动进基地，同时反向阻止控制者 P0。最小修复只落在这一条 interceptor：统一改成 `hideout.metadata?.sourceControllerId ?? hideout.ownerId`，不扩到 `hideout_pod` talent、基础版 `Hideout` 保护、或其它 Tricksters sibling。验证：focused `pnpm vitest run src/games/smashup/__tests__/baseFactionOngoing.test.ts -t "borrowed Hideout POD 应按控制者而不是真实 owner 阻止其他玩家把随从移动到此基地"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `pnpm vitest run src/games/smashup/__tests__/baseFactionOngoing.test.ts -t "trickster_hideout|borrowed Hideout|Hideout POD|POD 版会阻止其他玩家把随从移动到此基地|POD 版允许拥有者把自己的随从移动到此基地|POD 版不沿用旧版行动牌保护"` => `1 file passed, 8 passed`。这说明当前不是死循环，而是在继续把新的 owner/controller seam 逐格打掉；但它只闭合 borrowed `Hideout POD` 的移动拦截 controller seam，不外推整个 Tricksters、所有 interceptor consumer，或整个长期任务已完成。
+- 2026-05-25 21:20 +08：这轮没有回扫已经转绿的 `Infiltrate` family，而是按长期 JSON 明确要求离开该主题，继续打新的 `owner-only restriction/runtime gate`。新增 [`zombieInteractionChain.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/zombieInteractionChain.test.ts>) focused gate `borrowed zombie_overrun 应按控制者而不是真实 owner 限制其他玩家打随从到此基地` 后，首轮直接红灯坐实：[`zombies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/zombies.ts>) 的 `zombieOverrunRestriction()` 仍只按 `overrun.ownerId` 判“其他玩家”，导致 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `zombie_overrun` 会错误放行真实 owner P1 打随从到该基地，同时反向拦住控制者 P0。最小修复只落在这一条 restriction：统一改成 `overrun.metadata?.sourceControllerId ?? overrun.ownerId`，不扩到 `zombieOverrunSelfDestruct()`、其它 Zombies sibling、或 shared restriction framework。验证：focused `pnpm vitest run src/games/smashup/__tests__/zombieInteractionChain.test.ts -t "borrowed zombie_overrun 应按控制者而不是真实 owner 限制其他玩家打随从到此基地"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `pnpm vitest run src/games/smashup/__tests__/zombieInteractionChain.test.ts src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts -t "zombie_overrun|Zombie Overrun|Overrun|泛滥横行"` => `4 files passed, 8 passed`。这说明当前不是死循环，而是在继续用新的 focused 红灯推进；但它只闭合 borrowed `Zombie Overrun` 的 restriction controller seam，不外推整个 Zombies、所有 restriction consumer，或整个长期任务已完成。
+- 2026-05-25 21:03 +08：这轮没有停在刚修完的 shared modifier 上，而是继续顺着同一条 `metadata.sourceControllerId 已持久化，但 base-ability gate 仍只读 ownerId` 主线，再打出一条新的真红灯并收口。新补 [`newBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newBaseAbilities.test.ts>) focused gates `borrowed Infiltrate 由控制者控制时，应阻止 Laboratorium 给控制者打出的首个随从放指示物` 与 `borrowed Infiltrate 由控制者控制时，应阻止 Moot Site 给控制者打出的首个随从 +2 临时力量` 后，首轮都直接失败；随后补第三条 `borrowed Infiltrate 由控制者控制时，应阻止 Golem Schloß 给冠军的随从放指示物`，把断口统一钉在 [`baseAbilities.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities.ts>) 的三条 `ninja_infiltrate` gate：旧实现都还在按 `o.ownerId` 判“谁能忽略基地能力”，导致 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Infiltrate` 无法替控制者 P0 屏蔽 `Laboratorium / Moot Site / Golem Schloß`。最小修复只落在这三条 gate：统一改成 `metadata.sourceControllerId ?? ownerId`，不扩到 `base_mountains_of_madness`、其它基地能力、restriction 或 shared base-ability framework。验证：focused `newBaseAbilities.test.ts -t "borrowed Infiltrate 由控制者控制时，应阻止 Laboratorium|borrowed Infiltrate 由控制者控制时，应阻止 Moot Site|borrowed Infiltrate 由控制者控制时，应阻止 Golem Schlo"` => 首轮 `2 failed`，修复后 `1 file passed, 3 passed`；邻近 `newBaseAbilities.test.ts + baseAbilityIntegration.test.ts + baseAbilitiesPrompt.test.ts -t "borrowed Infiltrate|Castle Blood|The Hill|Laboratorium|Moot Site"` => `3 files passed, 4 passed`。这说明当前不是死循环，而是在继续收掉新的 shared gate seam；但它只闭合 `ninja_infiltrate` 在这三条基地能力上的 controller provenance，不外推 `base_mountains_of_madness` 或整个长期任务已完成。
+- 2026-05-25 21:10 +08：我继续顺着同一条 `ninja_infiltrate` base-ability gate 主线往下补，还真又打到一条红灯，而不是只在已绿的三条周围做文档收口。新增 [`newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>) focused gate `borrowed Infiltrate 由控制者控制时，应阻止 Mountains of Madness 让控制者自己打出的随从拥有者抽疯狂卡` 后，第一版夹具因为误把 `minion.owner` 做成与 `Infiltrate.ownerId` 相同，先给了一个假绿；我立刻把夹具收紧成“普通己方随从 + borrowed Infiltrate”，第二次首轮就红灯坐实：[`baseAbilities.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities.ts>) 的 `base_mountains_of_madness` 旧实现虽然 effect 是“随从拥有者抽疯狂卡”，但 gate 仍把“这张随从是否受基地能力影响”错误绑在 `ownerId`，导致 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Infiltrate` 无法替控制者 P0 屏蔽这条基地能力。最小修复只落在这一条 gate：新增 `controllerId = playedMinion?.controller ?? ctx.playerId`，gate 统一按 `metadata.sourceControllerId ?? ownerId` 对齐控制者判断，但继续保留未被屏蔽时 `drawMadnessCards(ownerId, ...)` 的拥有者抽牌语义。验证：focused `newOngoingAbilities.test.ts -t "borrowed Infiltrate 由控制者控制时，应阻止 Mountains of Madness"` => 首轮 failed，修复后 `1 file passed, 1 passed`。这说明当前不是死循环，而是在继续沿同 family 收掉新的真红灯；但它只闭合 `base_mountains_of_madness` 这一格，不外推整个 `sourceControllerId` 主线、所有基地能力，或整个长期任务已完成。
+- 2026-05-25 20:56 +08：这轮没有继续在旧 `queued onTurnStart / per-instance` family 里空转，而是按长期 JSON 明确写的 `metadata.sourceControllerId 已持久化，但 runtime consumer / modifier / restriction / base-ability gate 仍只读 ownerId` 主线，直接把 shared modifier helper 打成了红灯再收口。新补 [`ongoingModifiers.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ongoingModifiers.test.ts>) focused gates `borrowed 睡眠孢子应按控制者而不是真实 owner 压低对手随从` 与 `borrowed 旋转弹头发射器应按控制者而不是真实 owner 给控制者随从 +2` 后，首轮都直接失败，断口统一钉在 [`ongoingModifiers.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/ongoingModifiers.ts>) 的声明式 helper：`target='opponentMinions' | 'ownerMinions' | 'firstOwnerMinion'` 三个分支仍只按 `action.ownerId` 计数，导致 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Sleep Spores / Rotary Slug Thrower` 把控制权语义洗回真实 owner。最小修复只落在这一处 shared helper：新增 `getControllerId = metadata.sourceControllerId ?? ownerId`，并让这三条计数分支统一按控制者判断；不扩到 scoring helper、base ability gate、restriction 或别的 callback。验证：focused `ongoingModifiers.test.ts -t "borrowed 睡眠孢子应按控制者而不是真实 owner 压低对手随从|borrowed 旋转弹头发射器应按控制者而不是真实 owner 给控制者随从"` => 首轮 `2 failed`，修复后 `1 file passed, 2 passed`；邻近 `ongoingModifiers.test.ts -t "睡眠孢子|旋转弹头发射器|Shipwreck Cove|Becalmed Shores|Door to the Beyond|Full Moon|borrowed steampunk_aggromotive"` => `1 file passed, 12 passed`。这说明当前不是死循环，而是在继续收掉新的 shared seam；但它只闭合声明式 base ongoing modifier 的 controller provenance 这一格，不外推整个 `sourceControllerId` 主线、所有 base ability gate，或整个长期任务已完成。
+- 2026-05-25 20:05 +08：这轮继续沿长期 JSON 已经锚定的 `queued runtime context / owner-source provenance` 主线推进，没有回扫 `waiting overlay` 或旧四派系红点，而是打到了一条更底层的 per-instance source seam。新增 focused gate `queued onTurnStart trigger 处理同基地两张 borrowed zombie_overrun 时，应逐实例入队并各自自毁回真实 owner discard` 后，首轮直接红灯坐实：[`zombies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/zombies.ts>) 旧注册没标 `perInstance:true`，`collectTriggers(...)` 只给两张同基地 `zombie_overrun` 排出 1 条 trigger；而 runtime callback `zombieOverrunSelfDestruct()` 又按全场同名 ongoing 扫描，不按 `sourceCardUid` 精确结算当前实例。最小修复只落在这一条链：给 `zombie_overrun / zombie_overrun_pod` 的 `onTurnStart` trigger 补 `perInstance:true`，并把 callback 改成必须按 `ctx.sourceCardUid + ctx.sourceBaseIndex` 找到当前实例后才 emit `ONGOING_DETACHED`，`ownerId` 继续保留真实 owner。验证：focused `reactionQueueSourceRuntimeContext.test.ts -t "queued onTurnStart trigger 处理同基地两张 borrowed zombie_overrun 时，应逐实例入队并各自自毁回真实 owner discard"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `reactionQueueSourceRuntimeContext.test.ts + reactionQueueEventPlayerContext.test.ts + zombieInteractionChain.test.ts -t "zombie_overrun|Zombie Overrun|Overrun|泛滥横行"` => `3 files passed, 6 passed`。这说明当前不是死循环，而是在继续把新的 queued/runtime sibling 打成红灯再收口；但它只闭合 `zombie_overrun` 的 per-instance source/runtime 这一格，不外推整个 Zombies、所有 turn-boundary ongoing、或整个长期任务已完成。
+- 2026-05-25 19:55 +08：这轮继续沿长期 JSON 已经锚定的 `post-process producer / queued runtime context / true-owner provenance` 主线推进，没有回扫旧 `waiting overlay` 文案，也不是围着 `Invisible Ninja` 原地转。最新 focused 红灯是 [`reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>) 新增 gate `borrowed Mermaid Desert Island 应按控制者回合开始自毁，但进入真实拥有者弃牌堆`：首轮直接失败在 `ONGOING_DETACHED.payload.ownerId === '0'`，把断口钉在 [`mermaids.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/mermaids.ts>) 的 `mermaidsDesertIslandOnTurnStart()`，因为 queued trigger 虽已按 `sourceController` 正常入队，但 runtime detach 仍把 discard owner 直接写成 `ctx.sourceControllerId`。最小修复只落在这一个 callback：按 `ctx.sourceCardUid` 从 live `minion.attachedActions` 回找真实 attached action owner，查不到才 fallback 到控制者。验证：focused `reactionQueueEventPlayerContext.test.ts -t "borrowed Mermaid Desert Island 应按控制者回合开始自毁，但进入真实拥有者弃牌堆"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `reactionQueueEventPlayerContext.test.ts + smashup.smoke.test.ts -t "Desert Island|desert_island|Mermaid Desert Island"` => `1 file passed, 2 passed, 1 file skipped`。这说明当前不是死循环，而是在继续收掉新的 borrowed/runtime sibling；但它只闭合 `borrowed Mermaid Desert Island` 这一格，不外推整个 Mermaids、所有 attached-action turn-start self-destruct callback，或整个长期任务已完成。
+- 2026-05-25 19:41 +08：这轮没有继续停在“为什么还没完”的状态维护，而是顺着长期 JSON 里已经写死的 `post-process producer / queued runtime context / true-owner provenance` 主线，直接打出一条新的 focused 红灯并修绿：[`reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>) 新增 gate `sourceController queued onTurnStart trigger 在 borrowed Invisible Ninja 上仍应把 prompt 交给当前控制者，并保留 start-turn metadata` 后，首轮直接失败在 `prompt?.playerId === undefined`，把断口钉在 [`titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `invisibleNinjaOnTurnStart()`：旧实现仍按 `candidate.ownerId === ctx.playerId` 找泰坦，导致 `ownerId='1'、controllerId='0'` 的 borrowed `Invisible Ninja` 在 P0 回合开始进入 queued runtime resolve 时，既不给 P0 弹 `titan_ninjas_invisible_ninja_start_turn` prompt，也不会写 `metadata.invisibleNinjaStartTurn=27`。最小修复只落在这一个 executor：优先按 `ctx.sourceCardUid` 回找 live titan，只有 direct caller 缺 `sourceCardUid` 时才 fallback 到 `controllerId === ctx.playerId`，并保留 `defId==='ninjas_invisible_ninja'` 防御。验证：focused `reactionQueueEventPlayerContext.test.ts -t "sourceController queued onTurnStart trigger 在 borrowed Invisible Ninja 上仍应把 prompt 交给当前控制者，并保留 start-turn metadata"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `reactionQueueEventPlayerContext.test.ts + smashup.smoke.test.ts -t "Invisible Ninja|invisible_ninja"` => `1 file passed, 4 passed, 1 file skipped`。这说明当前不是死循环，而是在继续收掉新的 borrowed/runtime sibling；但它只闭合 `borrowed Invisible Ninja` 这一格，不外推整个 Titans/Ninjas、所有 onTurnStart titan trigger，或整个长期任务已完成。
+- 2026-05-25 19:28 +08：这轮先把“为什么一直没完”收成可验证事实，而不是继续空转。最新真进展不是旧 `Stasis Field` 或 `waiting overlay` 回潮，而是 [`reactionQueueSourceRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts>) 新补的 focused gate `borrowed world_champs_bewitched 在宿主回手后的 queued runtime resolve 中仍应保留真实 owner` 已首轮红灯后转绿，而且失败是沿真链连续暴露 3 层断口：一，[`reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>) 的 `processReturnToHandTriggers()` 在 `MINION_RETURNED` 宿主回手分支里，把 borrowed attached action 的 `sourceControllerId/ownerPlayerId` 洗回宿主玩家；二，修完 collector 后，[`world_champs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/world_champs.ts>) 的 `worldChampsBewitchedTransferOnLeave()` continuation 仍把 runtime `ownerId` 直接取成 `ctx.sourceControllerId`；三，修完 continuation 后，[`reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `SU_EVENTS.ONGOING_ATTACHED` 在 borrowed reattach 时没有同步从真实 owner 弃牌堆移除旧卡位，形成“基地已重新附着、弃牌堆仍残留同一 UID”的双写。现已最小修复为：`reducer.ts` collector 改成优先读 `metadata.sourceControllerId ?? sourcePlayerId ?? ownerId`；`world_champs.ts` continuation 改为优先按 `sourceCardUid` 从 live state 回找真实 owner；`reduce.ts` 的 `ONGOING_ATTACHED` 在 `sourcePlayerId !== ownerId` 时同时从控制者区与真实 owner 区清理旧卡位。验证：focused `reactionQueueSourceRuntimeContext.test.ts -t "borrowed world_champs_bewitched 在宿主回手后的 queued runtime resolve 中仍应保留真实 owner"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `reactionQueueSourceRuntimeContext.test.ts + newFactionAbilities.test.ts + baseScoring.test.ts -t "world_champs_bewitched|Bewitched|borrowed world_champs_bewitched|queued onCardReturnedToHand per-instance trigger 在对手回手宿主时仍应把 world_champs_bewitched 的转移权交给行动拥有者|MINION_RETURNED 真链回手宿主时也应把 world_champs_bewitched attached source 入队"` => `3 files passed, 10 passed`；`git diff --check -- src/games/smashup/domain/reducer.ts src/games/smashup/abilities/world_champs.ts src/games/smashup/domain/reduce.ts src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` => 仅 LF/CRLF warning。边界也同步收紧：`Stasis Field` 当前 dedicated gate 已绿，不再把它当 open residual；下一步切到其它 `post-process producer / queued runtime context / true-owner provenance` sibling，不回扫这条已转绿的 `Bewitched`。
+- 2026-05-25 19:03 +08：这轮又拿到了一条新的真红灯并修绿，而且这次已经不是继续围着 `Seal the Tomb` 或 `systems.ts` 打转，而是把 shared `bury.ts` 本体打穿了。目标是 [`bury.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/bury.ts>) 的 `executeUncoveredAction()` / `handleUncoverOngoingPickTargetMinion()`：它们在翻开 buried action/ongoing 时会先构造前置 `ACTION_PLAYED + ONGOING_ATTACHED`，但旧实现仍把未 preview 这些 prefix events 的 `currentState.core` 直接传给 onPlay executor。我在 [`expansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionAbilities.test.ts>) 新增 focused gate `bury.uncoverBuriedCard 翻开 fairies_enchantment 后响应 minus 时，应在 prompt state 上看到已附着的 ongoing 并写入 metadata` 后，首轮直接红灯坐实：`uncoverBuriedCard()` 翻开 `fairies_enchantment` 后，prompt 虽然弹出，但同一条 prompt state 上响应 `minus` 时只留下 `SYS_INTERACTION_RESOLVED`，没有重新发出带 `metadata.fairiesEnchantmentMode='minus'` 的 `ONGOING_ATTACHED`。这把根因钉死在“prompt state 漂出了旧 core”：`fairies_enchantment` 的 prompt resolve 要从 `state.core.bases[baseIndex].ongoingActions` 找自己，但返回出去的 prompt state 根本还没带上这张刚附着的 ongoing。最小修复只落在 `bury.ts`：新增 `previewEventsOnMatchState(...)`，让 uncover action/ongoing 两个入口在 executor 返回 `matchState` 时，把前置 `ACTION_PLAYED/ONGOING_ATTACHED` 与 executor 自己的 emitted events preview 回返回的 `matchState.core`；不扩到 shared `systems.ts`，也不改普通 minion uncover 分支。验证：focused `expansionAbilities.test.ts -t "bury.uncoverBuriedCard 翻开 fairies_enchantment 后响应 minus 时，应在 prompt state 上看到已附着的 ongoing 并写入 metadata"` => 首轮 failed，修复后 `1 file passed, 1 passed`；整文件 `expansionAbilities.test.ts` => `1 file passed, 34 passed`；整文件 `buryEngine.test.ts` => `1 file passed, 14 passed`；`git diff --check -- src/games/smashup/domain/bury.ts src/games/smashup/__tests__/expansionAbilities.test.ts` => 仅 LF/CRLF warning。这个进展只闭合 `bury.ts` 的 uncover action prompt-state core-vs-prefix-events seam，不外推所有 bury/uncover caller、所有 ongoing prompt family，或整个长期任务已完成；下一步继续横向筛其它“返回 prompt/matchState，但返回态 core 仍停在 prefix events 之前”的 sibling，而不是回扫刚转绿的 `fairies_enchantment from buried / Seal the Tomb / Hideout POD`。
+- 2026-05-25 18:47 +08：这轮又拿到了一条新的真红灯并修绿，而且不是继续围着 Bear Cavalry 或 `systems.ts` 打转。目标是 [`ancient_egyptians.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ancient_egyptians.ts>) 的 `ancientEgyptiansSealTheTombUncoverPromptProgram.onResolve()`：它在 `uncover` 多选里循环调用 `uncoverBuriedCard(...)`，但旧实现只把 `result.state` 往后传，没有把前一张翻开的 emitted events 先 preview 回 `currentState.core`。我补了 focused gate `ancient_egyptians_seal_the_tomb 真实 uncover 多选若先翻开随从再翻开 Blessing of Anubis，后者也应看到新翻开的随从` 后，首轮直接红灯坐实：P0 真实打出 `Seal the Tomb` 进入 `uncover` 模式，先选 `buried-mummy`、再选 `buried-blessing` 后，最终 `buried-mummy.tempPowerModifier === 0`，说明第二张 `Blessing of Anubis` 根本没看到第一张刚翻开的随从。这次我没有去扩 shared `systems.ts`，也没改 `bury.ts` 的通用翻开合同，而是只在 caller 上补一个窄 helper `applyPreviewEventsToMatchState(...)`：每次 `uncoverBuriedCard(...)` 返回后，都先把 `result.events` reduce 到 `result.state.core`，再把这个 preview state 传给下一轮选择。验证：focused `expansionAbilities.test.ts -t "ancient_egyptians_seal_the_tomb 真实 uncover 多选若先翻开随从再翻开 Blessing of Anubis，后者也应看到新翻开的随从"` => 首轮 failed，修复后 `1 file passed, 1 passed`；整文件 `expansionAbilities.test.ts` => `1 file passed, 33 passed`；`git diff --check -- src/games/smashup/abilities/ancient_egyptians.ts src/games/smashup/__tests__/expansionAbilities.test.ts` => 仅 LF/CRLF warning。这个进展只闭合 `Seal the Tomb` 的 multi-uncover preview-core seam，不外推所有 Ancient Egyptians、所有 bury/uncover caller，或整个长期任务已完成；下一步继续沿同型“for-loop 只传 `result.state` 不 preview events”的 runtime prompt caller 横向筛 sibling，而不是回扫刚转绿的 `Seal the Tomb / Hideout POD / Bear Cavalry`。
+- 2026-05-25 18:34 +08：这轮拿到了一条新的真红灯并已转绿，而且不是再围着 Bear Cavalry 打转。目标是 [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 的 `tricksterHideoutPodSwapPromptProgram.onResolve()`：它在“从牌库交换”分支里会同时预改 `players[playerId].hand/deck` 与 `bases[*].ongoingActions`，并 emitted `DECK_REORDERED`。旧测试只直接调用 handler，所以一直没踩到真实 `SYS_INTERACTION_RESPOND` 收口；我补了 focused gate `从牌库交换时经过真实 SYS_INTERACTION_RESPOND 收口后，不应因 DECK_REORDERED 丢失 ongoing 交换结果` 后，首轮直接红灯坐实：响应完成后 P0 牌库只剩 `['d-extra']`，`oa1` 没进手牌也没留在牌库，说明 [`systems.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/systems.ts>) 的 `mergePromptResultCoreWithPreEventState(...)` 在 emitted event 纯为 `DECK_REORDERED` 时，把 handler 预改的 `players[playerId].deck/hand` 整块抹回了 `coreBeforeHandler`；随后 reducer 再按 `deckUids=['oa1','d-extra']` 重排时，因为 live deck 里已经没有 `oa1` witness，最终只剩 `d-extra`。这次我没有给 `trickster_hideout_pod_swap` 加卡牌迁移事件，也没有扩大成所有玩家区 side-state 保留，而是只在 helper 上补一个窄分支：当 emitted events 全部都是 `DECK_REORDERED` 时，按事件里的 `playerId` 精确保留 `result.state.core.players[*].hand/deck`；base 静态区仍沿用现有精确保留逻辑。验证：focused `ongoingTalent.test.ts -t "从牌库交换时经过真实 SYS_INTERACTION_RESPOND 收口后，不应因 DECK_REORDERED 丢失 ongoing 交换结果|从牌库交换时把藏身处洗回牌库，而不是回手|从手牌交换时把藏身处回到手牌，并继续给出消灭选项|从手牌交换被他人拥有的持续战术时，换进基地的 ongoing 仍应保留真实 ownerId"` => `1 file passed, 4 passed`；整文件 `ongoingTalent.test.ts` => `1 file passed, 29 passed`；`git diff --check -- src/games/smashup/domain/systems.ts src/games/smashup/__tests__/ongoingTalent.test.ts` => 仅 LF/CRLF warning。这个进展只闭合 `trickster_hideout_pod_swap` 的 pure-`DECK_REORDERED` 响应收口 seam，不外推所有牌库换位 talent、所有 `DECK_REORDERED` producer，或整个长期任务已完成；下一步继续横向筛其它“events 不足以表达来源区迁移”的 prompt resolver，而不是回扫刚转绿的 `Hideout POD / General Ivan POD / Superiority POD`。
+- 2026-05-25 18:27 +08：我先把上一轮已经补到 [`newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>) 但没落档的 `bear_cavalry_superiority_pod` direct gate 正式核销成 green evidence，避免再把它误当成“下一条可修红灯”。这条 gate `bear_cavalry_superiority_pod 在真实 prompt 响应 draw 后应关闭保护标记并正常摸牌` 走的是完整 `USE_TALENT -> SYS_INTERACTION_RESPOND(draw)` 真链，验证点不是“有没有新实现”，而是确认当前 `events + matchState` 混合 resolver 在这格没有继续丢状态：`draw` 分支会产生 `CARDS_DRAWN`，同时 `protect` 模式不会残留到结算后。复跑结果：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newOngoingAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "bear_cavalry_superiority_pod 在真实 prompt 响应 draw 后应关闭保护标记并正常摸牌"` => `1 file passed, 1 passed`。这一步没有改业务逻辑，只是把一条已验证邻近从“工作树里有测试”升级成“长期状态里有证据”；下一步继续离开 `General Ivan POD / Superiority POD`，回到 still-open `runtime prompt + emitted events + side-state carry-through` inventory 找新的真红灯。
+- 2026-05-25 18:17 +08：这轮没有在 `yuanhouFactionAbilities.test.ts` 的旧残留上打转，而是顺着 `runtime prompt + emitted events + side-state carry-through` 主线，继续从 Bear Cavalry 里打出一条新的 focused 红灯并修绿：`bear_cavalry_general_ivan_pod 在真实 prompt 响应 yes 后应保留每回合限一次记录，并阻止同回合第二次触发`。首轮先用真实 `fireTriggers(onMinionMoved) -> SYS_INTERACTION_RESPOND(yes)` 坐实失败形状：旧 [`bear_cavalry.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/bear_cavalry.ts>) 的 `bearCavalryGeneralIvanPodPromptProgram.onResolve` 只手改 `matchState.core.specialLimitUsed`，没有发已有 reducer 支持的 `SU_EVENTS.SPECIAL_LIMIT_USED`，所以 `resolved.finalState.core.specialLimitUsed === undefined`，第二次移动同回合仍会再弹一次 prompt。这次我没有继续给 [`systems.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/systems.ts>) 扩 shared merge 特判，而是只改 caller：把 `yes/no` 两分支都统一改成 emitted `SPECIAL_LIMIT_USED(limitGroup='bear_cavalry_general_ivan_pod_0', abilityDefId='bear_cavalry_general_ivan_pod')`，让限次状态回到标准 reducer 合同里。验证：focused `newOngoingAbilities.test.ts -t "bear_cavalry_general_ivan_pod 在真实 prompt 响应 yes 后应保留每回合限一次记录，并阻止同回合第二次触发"` => `1 file passed, 1 passed`；邻近 `newOngoingAbilities.test.ts -t "bear_cavalry_"` => `1 file passed, 27 passed`；`git diff --check -- src/games/smashup/abilities/bear_cavalry.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts` => 仅 LF/CRLF warning。这个进展只闭合 `General Ivan POD` 的 runtime prompt limit-state carry-through seam，不外推整个 Bear Cavalry、所有 prompt-side state caller，或整个长期任务已完成；下一步继续回到 still-open runtime seam inventory，优先找其它“预改 core 但已有标准领域事件可表达”的 sibling，不回扫刚转绿的 `General Ivan POD`。
+- 2026-05-25 17:55 +08：我把 `yuanhouFactionAbilities.test.ts` 最后 2 条残留也收掉了，并且这次不是再去硬改业务逻辑。先用 focused 复现坐实两条失败形状：`Cellular Bonding -> Stasis Field` 并不是 `isBaseScoringSuppressed()` 被隐式代理，而是测试夹具把宿主随从设成了 `sharks_megalodon`，`scoreOneBase(...)` 合法地先排了 `beforeScoring:sharks_megalodon` 真触发器，所以旧断言“立即看到 BASE_SCORED”本身就不成立；`Biolab me-first restriction` 则不是 restriction 优先级回归，而是手工拼的 `legacy responseWindow` 会被 `getNormalizedLegacyReactionWindow(...)` 归一成 `activePlayerId=currentPlayerId`，导致它永远先报“等待对方响应”。这轮的最小修法全部落在 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>)：一是把 `Stasis Field` 用例里的宿主/队友从 `sharks_megalodon` 换成没有 `beforeScoring` 真触发器的 `sharks_mako`，并把基地断点收成 4，只验证“未显式适配的 copied Stasis 不会代理基地压制/回合开始自毁”；二是给 `The Vats` 的 me-first 校验用例补 `scoringEligibleBaseIndices=[0]`，并改成 `startSmashUpReactionSession(...)` 的 frame-backed session，不再手工伪造旧窗口。验证分两段：focused `yuanhouFactionAbilities.test.ts -t "变形者：细胞结合复制未显式适配的 Stasis Field 时不应隐式代理基地压制或回合开始自毁|变形者基地：生体培养缸在 Me First 随从响应窗口也禁止同名随从打到这里"` => `2 passed`；随后整文件 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 249 passed`。这次的真实进展不是“又调了两个参数”，而是把最后 2 条 failure 明确降级成测试夹具/断言漂移，并把整份四派系代表性行为单测清成全绿；但它仍不等于整个长期 shared seam 审计完成，下一步要离开这份文件，回到长期状态 JSON 里仍在开放的 shared family。
+- 2026-05-25 17:08 +08：顺着 `runtime prompt + emitted events + side-state` 主线继续下钻后，我把下一条真红灯从猜测收成了 focused 绿灯：`cowboys_stagecoach` 在“同时搬运会发 `MINION_MOVED` 的随从”和“只靠预改 `core` 挪位置的基地持续行动”时，旧 [`systems.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/systems.ts>) 只保留 `timedPowerModifiers`，会把 [`cowboys.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cowboys.ts>) `relocateStagecoachStaticCards(...)` 已经搬走的 `ongoingActions / buriedCards` 再抹回 `coreBeforeHandler`。我先在 [`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 补 focused gate `cowboys_stagecoach 同时搬运随从与基地持续行动时，不应因随从移动事件而丢失持续行动的真实迁移`，首轮直接红灯坐实 `gold-1` 仍留在 source base。现已最小修复为：`mergePromptResultCoreWithPreEventState(...)` 除 `timedPowerModifiers` 外，再按 emitted events 影响面精确保留 base 静态区 side-state；仅当 emitted events 不包含 `ONGOING_ATTACHED/DETACHED`、`CARD_BURIED`、`BURIED_CARD_*` 这类会自己改 `ongoingActions / buriedCards` 的事件时，才把 `result.state.core.bases[*].ongoingActions / buriedCards` 透传回去，不保留整块 `bases`，避免双应用。验证：focused `newFactionAbilities.test.ts -t "cowboys_stagecoach 可把同一基地上至多两个己方随从移动到另一个基地|cowboys_stagecoach 也可搬运基地上的持续行动和埋葬牌|cowboys_stagecoach 同时搬运随从与基地持续行动时，不应因随从移动事件而丢失持续行动的真实迁移|cowboys_stagecoach 应按控制者而不是真实 owner 搬运基地上的 borrowed 持续行动|cowboys_stagecoach 也可搬运你控制的泰坦|fairies_glymmer 对其他随从的 -4 力量会在你的下回合开始时结束|fairies_glymmer 对自己的 \\+1 力量也会在你的下回合开始时结束"` => `1 file passed, 7 passed`；整文件 `newFactionAbilities.test.ts` => `1 file passed, 281 passed`。这格只闭合 `runtime prompt + base static zone carry-through` 这一个 shared seam，不外推 Cowboys、所有 base static-zone prompt caller 或整个 ability runtime family 已完成。
+- 2026-05-25 16:44 +08：这轮没有再回扫旧 residual，而是直接对准 `newFactionAbilities.test.ts` 当时唯一真红灯 `fairies_glymmer 对其他随从的 -4 力量会在你的下回合开始时结束`。根因不是 `fairies.ts` 的减力事件没生效，而是 [`systems.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/systems.ts>) 在 ability runtime prompt resolve 且 `emittedEvents.length > 0` 时，会把 `result.state.core` 整块回退成 `coreBeforeHandler`，导致 [`fairies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/fairies.ts>) 的 `appendTimedPowerModifier(...)` 已写入的 `timedPowerModifiers` 被抹掉；于是 `enemy-1.powerModifier` 虽然先被 `PERMANENT_POWER_ADDED/-4` 改成了 0 战力，但 `TURN_STARTED(turnNumber=3)` 时没有任何 timed entry 可回退。现已最小修复为：只在 `systems.ts` 新增 `mergePromptResultCoreWithPreEventState(...)`，在 prompt handler 既返回 events、又需要回退 pre-event core 的分支上，仅把 `result.state.core.timedPowerModifiers` 带回去，其他 core 字段仍保持 `coreBeforeHandler`，避免把已由 domain events 表达的改动双应用。随后继续补了 sibling gate `fairies_glymmer 对自己的 +1 力量也会在你的下回合开始时结束`，确认同一 helper 的 self-bonus 分支也会正确在 `TURN_STARTED(turnNumber=3)` 时回退到 4。验证：focused `newFactionAbilities.test.ts -t "fairies_glymmer 对其他随从的 -4 力量会在你的下回合开始时结束|fairies_glymmer 对自己的 \\+1 力量也会在你的下回合开始时结束"` => `1 file passed, 2 passed`；整文件 `newFactionAbilities.test.ts` => `1 file passed, 280 passed`；`git diff --check -- src/games/smashup/domain/systems.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` => 仅 LF/CRLF warning。该格只闭合 `runtime prompt + timedPowerModifiers carry-through` 这一个 shared seam，并把 `Glymmer` 的 target-other / self-bonus 两个分支都补成 direct gate，不外推所有 non-event core side-state、所有 timed effect producer，或整个 ability runtime family 已完成。
+- 2026-05-25 16:16 +08：`tornados_ripped_off` 这条 scoped gate 先前看起来像红灯，实际是测试宿主选错了：`shayuFactionAbilities.test.ts` 里 targetMinion 用了 `robot_microbot_alpha`，会被同控制者的 `source-minion` 额外加 1，把 `fairies_enchantment` 的 `-1` 抵消掉；改成稳定的 `sharks_mako` 后，`borrowed Fairies Enchantment` 的 `metadata/sourcePlayerId` 迁移与移动后 modifier 一起转绿。验证：focused `shayuFactionAbilities.test.ts -t "龙卷风：扯走把 borrowed Fairies Enchantment 移到另一基地后，应保留 metadata 与 sourcePlayerId|龙卷风：扯走把 borrowed 附着行动移到 Brownie 身上时，应保留 sourcePlayerId 并把 queued 事件玩家留给真正行动玩家"` => `1 file passed, 2 passed`；`git diff --check -- src/games/smashup/__tests__/shayuFactionAbilities.test.ts src/games/smashup/abilities/tornados.ts` => passed（仅 LF/CRLF warning）。这格只记成 scoped green evidence，不外推整个 Tornados/Fairies 或 owner/source 主线已完成。
+- 2026-05-25 15:41 +08：这轮没有继续在 `ninjas.ts / tricksters.ts` 横向泛扫，而是按上一格 state 明确收敛到一个单点红灯：[`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 新增的 focused gate `borrowed world_champs_high_speed_chase 应按控制者而不是真实 owner 转移行动并移动随从且+3` 在首轮修掉 source-base 查找后，剩余唯一失败是复用天赋校验报错从期望的“本回合天赋已使用”退回成“只能使用自己的持续行动卡天赋”。这次我没有去改 shared validator，而是直接回读 [`world_champs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/world_champs.ts>) 与 [`reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>)，坐实根因是 `High Speed Chase` 自己在转移后重新发 `ONGOING_ATTACHED` 时只保留 `ownerId`，没把 borrowed 场景的 `sourcePlayerId` 与原 metadata 一起透传，导致 live state 重新附着后丢掉 `sourceControllerId`，`USE_TALENT` 校验自然回退成 true owner 视角。现已最小修复为：只在 `world_champs_high_speed_chase_base` 的 reattach payload 上补 `...(ongoing.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {})` 与 `metadata: ongoing.metadata`；同时把测试补硬为重新附着后必须保留 `metadata.sourceControllerId === '0'`。验证：focused `newFactionAbilities.test.ts -t "borrowed world_champs_high_speed_chase 应按控制者而不是真实 owner 转移行动并移动随从且\+3"` => `1 file passed, 1 passed`；邻近 `newFactionAbilities.test.ts -t "world_champs_high_speed_chase"` => `1 file passed, 2 passed`；`git diff --check -- src/games/smashup/abilities/world_champs.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` 通过（仅 LF/CRLF warning）。这格只闭合 borrowed `world_champs_high_speed_chase` 的 reattach controller metadata seam，不外推整个 World Champs、所有 move/reattach caller、所有 `ONGOING_ATTACHED` producer，或整条长期任务已完成；下一步继续横向筛 still-open handbuilt `ONGOING_ATTACHED` producer / runtime consumer，优先找 live state 已依赖 `metadata.sourceControllerId`、但 reattach/move 后仍可能丢 provenance 的 sibling。
+- 2026-05-25 15:27 +08：离开 `ninjas.ts` 之后，我没有回到大范围泛扫，而是顺着静态筛选命中 [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 里另一条同型 callback：`trickster_flame_trap_pod` 的 `onTurnStart` 注册层已经是 `playerContext:'sourceController'`，但 callback 本体仍写着 `trap.ownerId !== trigCtx.playerId`。我先在 [`reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>) 新增 focused gate `borrowed Flame Trap POD 应按控制者而不是真实 owner 在控制者回合开始弹出 breakpoint prompt`；首轮直接红灯，形状非常干净：queued trigger 已正常入队，但 resolve 后没有任何 interaction，`prompt?.playerId` 为 `undefined`。随后只把这个 callback 的过滤点收紧为 `trap.metadata?.sourceControllerId ?? trap.ownerId`，不碰它的 `onMinionPlayed` 自毁/消灭链，也不扩到 `Pay the Piper`、`Brownie` 或其他 Tricksters sibling。验证：focused `reactionQueueEventPlayerContext.test.ts -t "borrowed Flame Trap POD 应按控制者而不是真实 owner 在控制者回合开始弹出 breakpoint prompt"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `reactionQueueEventPlayerContext.test.ts -t "Flame Trap POD"` => `1 file passed, 2 passed`。这格只闭合 borrowed `trickster_flame_trap_pod` 的 turn-start breakpoint prompt controller seam，不外推整个 Tricksters、所有 onTurnStart prompt callback，或整条长期任务已完成；下一步继续横向筛下一个 still-open `metadata.sourceControllerId` runtime consumer。
+- 2026-05-25 15:22 +08：顺着 `Smoke Bomb` 的同文件静态筛选继续往下，我没有再去扫别的派系，而是把 `ninja_infiltrate / ninja_assassination` 这两个 owner-only turn-boundary sibling 也做成了 borrowed dedicated gate。`reactionQueueEventPlayerContext.test.ts` 新增 `borrowed Ninja Infiltrate 应按控制者而不是真实 owner 在控制者回合开始自毁` 与 `borrowed Ninja Assassination 应按控制者而不是真实 owner 在控制者回合结束消灭宿主` 后，首轮两条都直接红灯，且失败形状一致：queued trigger 已正常入队，但 callback 本体仍按 `a.ownerId !== trigCtx.playerId` / `assassinationCard.ownerId === trigCtx.playerId` 过滤，最终只留下 `TRIGGER_CONSUMED`。现已只在 [`ninjas.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ninjas.ts>) 收紧这两个 callback：`Infiltrate` 的自毁判定改成 `metadata.sourceControllerId ?? ownerId`，`Assassination` 的触发归属与 `destroyerId` 也统一改按控制者，不碰 `onPlay`、base restriction、`Disguise`、`Smoke Bomb` 之外的其它 Ninjas 分支。验证：focused `reactionQueueEventPlayerContext.test.ts -t "borrowed Ninja Infiltrate|borrowed Ninja Assassination"` => 首轮 `2 failed`，修复后 `1 file passed, 2 passed`；邻近 `reactionQueueEventPlayerContext.test.ts -t "Ninja Infiltrate|Ninja Assassination"` => `1 file passed, 4 passed`。这格只闭合 borrowed `ninja_infiltrate` 的 turn-start self-destruct controller seam 与 borrowed `ninja_assassination` 的 turn-end destroy-host/destroyer controller seam，不外推整个 Ninjas、所有 attached action turn-boundary callback，或整条长期任务已完成；下一步离开 `ninjas.ts`，继续横向筛下一个 still-open `metadata.sourceControllerId` runtime consumer。
+- 2026-05-25 15:15 +08：这轮没有继续泛扫 `ownerId` seam，而是先把已经坐实红灯的 `borrowed ninja_smoke_bomb` 做成最小闭环。两条新增 focused gate 先后锁住了 [`ninjas.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ninjas.ts>) 里仍裸读 `ownerId` 的两个 runtime consumer：`baseFactionOngoing.test.ts` 的 `borrowed Smoke Bomb 应按控制者而不是真实 owner 保护控制者的随从不受其他玩家行动影响` 首轮坐实 protection checker 还在按 `bomb.ownerId` 判“其他玩家”；`reactionQueueEventPlayerContext.test.ts` 的 `borrowed Ninja Smoke Bomb 应按控制者而不是真实 owner 在控制者回合开始自毁` 首轮坐实 queued trigger 已入队但 callback 仍按 `attached.ownerId !== trigCtx.playerId` 直接跳过 detach。现已最小修复为：只把这两个 consumer 都收紧成 `metadata.sourceControllerId ?? ownerId`，不扩到 `ninja_infiltrate / ninja_assassination / ninja_disguise` 或其它 Ninjas sibling。验证：focused 两条各自从 failed 转成 `1 file passed, 1 passed`；邻近 `baseFactionOngoing.test.ts -t "ninja_smoke_bomb|Smoke Bomb"` => `1 file passed, 4 passed`；邻近 `reactionQueueEventPlayerContext.test.ts -t "Ninja Smoke Bomb|ninja_smoke_bomb"` => `1 file passed, 2 passed`。这格只闭合 borrowed `ninja_smoke_bomb` 的 action-protection controller seam 与 turn-start self-destruct controller seam，不外推整个 Ninjas、所有 attached-action protection、所有 onTurnStart 自毁 callback，或整条长期任务已完成；下一步继续离开 `Smoke Bomb`，横向筛下一个 still-open `metadata.sourceControllerId` runtime consumer。
+- 2026-05-25 15:07 +08：继续横向筛 still-open `ownerId` seam 时，我没有再回扫 `Hideout / Killer Plants`，而是命中了另一条同型 protection checker：[`innsmouth.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/innsmouth.ts>) 的 `innsmouthInPlainSightChecker()` 还在直接用 `sight.ownerId` 判“保护谁”和“谁算其他玩家”。我先在 [`expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>) 新增 focused gate `borrowed in_plain_sight 应按控制者而不是真实 owner 保护控制者的低力量随从不受其他玩家影响`；首轮直接红灯，坐实 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `in_plain_sight` 面对 P0 的 2 力量随从时，`isMinionProtected(...,'affect')` 仍返回 `false`。随后只把该 checker 的控制者判定收紧为 `sight.metadata?.sourceControllerId ?? sight.ownerId`，不碰原版/POD 的力量判断分支，也不扩到 `return_to_the_sea` 或其他 Innsmouth sibling。验证：focused `expansionOngoing.test.ts -t "borrowed in_plain_sight 应按控制者而不是真实 owner 保护控制者的低力量随从不受其他玩家影响"` => 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `expansionOngoing.test.ts -t "innsmouth_in_plain_sight|borrowed in_plain_sight"` => `1 file passed, 5 passed`。这格只闭合 borrowed `innsmouth_in_plain_sight` 的 protection-checker controller seam，不外推整个 Innsmouth、所有 affect protection、所有 POD/base 力量分支，或整条长期任务已完成；下一步继续横向筛 still-open `ownerId` consumer / `_pod` alias bleed，不回扫刚转绿的 `in_plain_sight / Hideout / Entangled / Choking Vines / fairies_magic_ward / yuanhou.ts`。
+- 2026-05-25 15:00 +08：在收窄验证 `trickster_hideout` 本体 borrowed seam 时，我没有忽略宽子集里冒出的 `hideout_pod` 旧红点，而是先回读了 `matchesDefId()` 语义，确认这不是随机串扰：[`utils.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/utils.ts>) 明确把 `_pod` 视为基础版同名，因此 [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 里 `trickster_hideout` protection checker 用 `matchesDefId(...,'trickster_hideout')` 去找来源时，会把 `trickster_hideout_pod` 也误吞进来，导致现有 gate `POD 版不沿用旧版行动牌保护` 为红。现已最小修复为：只把这条基础版 checker 的 base/attached 两处来源识别改成精确 `defId === 'trickster_hideout'`，不碰 `hideout_pod` 自己的 talent/interceptor，也不改别的 Tricksters card。验证：`baseFactionOngoing.test.ts -t "保护同基地己方随从不受对手行动卡影响|borrowed Hideout 打在基地上|borrowed Hideout 贴在随从上|不保护敌方随从|POD 版不沿用旧版行动牌保护"` => `1 file passed, 5 passed`。这格只闭合 `trickster_hideout` 对 `trickster_hideout_pod` 的 protection alias bleed，不外推所有 `_pod` alias、所有 Tricksters protection、或整条长期任务已完成。
+- 2026-05-25 14:55 +08：继续横向扫 `ownerId` seam 时，我没有把 `Hideout POD` 的旧 residual 混进来，而是先把 `trickster_hideout` 本体的 borrowed protection seam 单独坐实并收绿。具体是：[`baseFactionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/baseFactionOngoing.test.ts>) 新增两条 focused gate `borrowed Hideout 打在基地上时，应按控制者而不是真实 owner 保护控制者的随从`、`borrowed Hideout 贴在随从上时，应按控制者而不是真实 owner 保护控制者的随从`；首轮两条都直接红灯，坐实 [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 的 `trickster_hideout` protection checker 在“打在基地上”和“贴在随从上”两种入口里都还只按 `ownerId` 判受保护对象与敌我来源。随后只把这两处判定统一收紧为 `metadata.sourceControllerId ?? ownerId`，不碰 `hideout_pod`、talent、Brownie 或其他 Tricksters sibling。验证：focused `baseFactionOngoing.test.ts -t "borrowed Hideout"` => 首轮 `2 failed`，修复后 `1 file passed, 2 passed`；收窄到 `保护同基地己方随从不受对手行动卡影响|borrowed Hideout 打在基地上|borrowed Hideout 贴在随从上|不保护敌方随从` => `1 file passed, 4 passed`。中途宽过滤词 `trickster_hideout|borrowed Hideout` 会带出已知旧红点 `POD 版不沿用旧版行动牌保护`；它是当前文件里的既有 residual，不是这轮 `trickster_hideout` borrowed seam 的回归，也不算本轮已完成项。这格只闭合 borrowed `trickster_hideout` 的 action-protection controller seam，不外推 `hideout_pod`、所有 protection alias、所有 Tricksters、或整条长期任务已完成；下一步继续横向筛 still-open `ownerId` consumer，不回扫刚转绿的 `Hideout / Entangled / Choking Vines / fairies_magic_ward / yuanhou.ts`。
+- 2026-05-25 14:49 +08：在继续静态筛选时，我没有盲目换到新文件，而是先回读了同一段 `killer_plants.ts`，结果当场坐实之前那条 `borrowed Entangled` 保护 gate 其实还不够硬：旧用例让 true owner 和控制者都在基地上有随从，无法区分 `killerPlantEntangledChecker()` 到底按谁判断“这里有你的随从”。我补了一条更窄的 focused gate：[`newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>) 新增 `borrowed Entangled 在只有控制者随从而没有真实 owner 随从时，也应按控制者触发保护`；首轮直接红灯坐实 checker 仍只按 `entangled.ownerId` 判基地上是否有“你的随从”。随后只把 [`killer_plants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/killer_plants.ts>) 的 `killerPlantEntangledChecker()` 里这条归属判定改成 `entangled.metadata?.sourceControllerId ?? entangled.ownerId`，不碰它的 self-destruct callback，也不扩到 `protectedFromEntangled` 的 affect-source 语义。验证：focused `newOngoingAbilities.test.ts -t "borrowed Entangled 在只有控制者随从而没有真实 owner 随从时，也应按控制者触发保护"` 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `newOngoingAbilities.test.ts -t "borrowed Entangled|killer_plant_entangled"` => `1 file passed, 6 passed`。这格只闭合 borrowed `killer_plant_entangled` 的 protection-checker controller seam，不外推整个 Killer Plants、所有 move protection、所有 affect-source 语义，或整条长期任务已完成；下一步继续横向筛 still-open `ownerId` consumer，不回扫刚转绿的 `Entangled self-destruct / Entangled protection / Choking Vines / fairies_magic_ward / yuanhou.ts`。
+- 2026-05-25 14:44 +08：这轮没有停在“Fairies / yuanhou.ts 已经转绿”的旧格上，而是继续沿同一条 `metadata.sourceControllerId` 已持久化、但 runtime callback 仍可能只读 `ownerId` 的主线往下收，新增并收绿了一条 `borrowed killer_plant_choking_vines` 的 dedicated focused gate。具体做法是：先在 [`expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>) 补 `borrowed Choking Vines 应按控制者而不是真实 owner 在控制者回合开始消灭宿主`，首轮直接红灯坐实 [`killer_plants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/killer_plants.ts>) 的 `killerPlantChokingVinesTrigger()` 仍只按 `attached.ownerId !== ctx.playerId` 判“是不是你的回合开始”；随后只把这条 callback 收紧为 `attached.metadata?.sourceControllerId ?? attached.ownerId`。验证：focused `expansionOngoing.test.ts -t "borrowed Choking Vines 应按控制者而不是真实 owner 在控制者回合开始消灭宿主"` 首轮 failed，修复后 `1 file passed, 1 passed`；邻近 `expansionOngoing.test.ts -t "killer_plant_choking_vines|borrowed Choking Vines"` => `1 file passed, 2 passed`。这格只闭合 borrowed `killer_plant_choking_vines` 的 turn-start destroy-host controller seam，不外推整个 Killer Plants、所有 attached action turn-start callback、所有 destroy producer，或整条长期任务已完成；下一步继续横向筛仍显式写 `ownerId === ctx.playerId / ownerId !== ctx.playerId`、且 live state 已持久化 `metadata.sourceControllerId` 的 runtime consumer / restriction / candidate builder sibling，不回扫刚转绿的 `fairies_magic_ward / yuanhou.ts / killer_plant_choking_vines`。
+- 2026-05-25 14:34 +08：没有停在 `yuanhou.ts` 里兜圈，而是按上一格 state 里写明的方向横切到 `fairies_magic_ward`。这次不是旧红灯回潮，而是一条新的同型 restriction seam：[`fairies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/fairies.ts>) 的 `fairiesMagicWardRestrictionChecker()` 仍只按 `action.ownerId !== ctx.playerId` 判“其他玩家”，对 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Magic Ward` 会把限制对象错认成控制者自己。现已在 [`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 补上 focused gate `borrowed fairies_magic_ward 应按控制者而不是真实 owner 限制其他玩家在此基地打行动`，并把 restriction 收紧为按 `metadata.sourceControllerId ?? ownerId` 判控制者。验证：focused `newFactionAbilities.test.ts -t "borrowed fairies_magic_ward 应按控制者而不是真实 owner 限制其他玩家在此基地打行动"` => `1 file passed, 1 passed`；邻近 `newFactionAbilities.test.ts -t "fairies_magic_ward|borrowed fairies_magic_ward|fairies_ladybug"` => `1 file passed, 2 passed`。这格当前只记成 dedicated green evidence，不外推整个 Fairies、所有 restriction consumer、或整条 shared controller 主线已完成；下一步继续横向扫同型 restriction/provider/candidate-builder seam。
+- 2026-05-25 14:24 +08：继续沿同一条 `metadata.sourceControllerId` 已持久化、但 runtime consumer / prompt owner 仍看 true owner 的主线推进，这轮又在 [`yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>) 收掉了 3 格。第一组是 `Missing Uplink`：`cyborgApesMissingUplink()` 与 `shapeshiftersCellularBondingMissingUplink()` 都先把“本回合该给谁抽牌”算成控制者，但数场上实例时仍只按 `action.ownerId` 聚合，导致 borrowed `Missing Uplink` 与 borrowed `Cellular Bonding -> Missing Uplink` 在控制者回合结束不会抽牌。现已在 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>) 新增 focused gate `borrowed 丢失中继应按控制者而不是真实 owner 在控制者回合结束抽牌`、`borrowed 细胞结合复制丢失中继后也应按控制者而不是真实 owner 触发抽牌`，并把这两个 consumer 的实例计数统一改成按 `getOngoingActionControllerId(action)` 聚合。第二格是 `Flying Monkey`：`cyborgApesFlyingMonkeyAfterScoring()` 旧实现仍把 afterScoring 移动选择 prompt 交给 `action.ownerId`，对 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Flying Monkey` 会把移动选择权错给真实 owner。现已新增 focused gate `borrowed 飞猴在计分后应把移动选择权交给控制者而不是真实 owner`，并把 prompt player 改成 `getOngoingActionControllerId(action)`。验证：`yuanhouFactionAbilities.test.ts -t "borrowed 丢失中继|borrowed 细胞结合复制丢失中继|丢失中继在拥有者回合结束从 attachedActions 触发抽牌|细胞结合复制丢失中继后能从附着行动触发抽牌|丢失中继在多 owner 混挂时只聚合当前拥有者的实例|丢失中继在额外回合结束时也应按拥有者实例数抽牌"` => `1 file passed, 6 passed`；`yuanhouFactionAbilities.test.ts -t "电子猿：飞猴在计分后按玩家选择另一基地并可跳过自动移动|电子猿：borrowed 飞猴在计分后应把移动选择权交给控制者而不是真实 owner"` => `1 file passed, 2 passed`；`git diff --check -- src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` => passed。到这一步，`yuanhou.ts` 里原先挂着的 `Monkey On Your Back / Going Bananas / Shielding / Mindraker / Missing Uplink / Cellular Bonding->Missing Uplink / Flying Monkey` 这条 owner-only consumer 链已基本清空，下一步适合离开这个文件，转去下一个 still-open sibling，比如 `fairies_magic_ward` 这类 restriction consumer。
+- 2026-05-25 14:14 +08：继续沿同一份 [`yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>) 把 `super_spies_mindraker` 的 restriction seam 也收掉了，没有把 `Mole` 长链混进来。当前 `registerRestriction('super_spies_mindraker','play_action',...)` 仍只按 `action.ownerId !== ctx.playerId` 判“其他玩家”；对 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Mindraker` 来说，这会让 P1 在计分窗口错误绕过禁令，同时把真正控制者 P0 误判成被禁。现已在 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>) 新增 focused gate `borrowed Mindraker 应按控制者而不是真实 owner 在计分窗口阻止其他玩家向该基地打行动`，并把 restriction 本体统一改成按 `getOngoingActionControllerId(action) !== ctx.playerId`。验证：`yuanhouFactionAbilities.test.ts -t "超级间谍：心灵扳机只在该基地计分窗口阻止其他玩家向该基地打行动|超级间谍：borrowed Mindraker 应按控制者而不是真实 owner 在计分窗口阻止其他玩家向该基地打行动"` => `1 file passed, 2 passed`；`git diff --check -- src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` => passed。到这一步，原先挂在 `yuanhou.ts` 里的 `Monkey On Your Back / Going Bananas / Shielding / Mindraker` 四格 owner-only consumer 都已切成 dedicated green，不再是 still-open residual；下一步可转去同文件剩余 `Missing Uplink` 一组仍显式扫 `action.ownerId === ownerId` 的 turn-end consumer。
+- 2026-05-25 14:08 +08：继续沿 `yuanhou.ts` 剩余裸读 `ownerId` 的 controller seam 往下收，没有回扫已封账家族。这轮先命中同一文件段的 3 条 runtime consumer：`locateMonkeyOnYourBackHost()`、`cyborgApesGoingBananas()`、`cyborgApesShielding()` 仍把 borrowed ongoing/attached action 的控制者洗回真实 owner。现已在 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>) 新增 3 条 focused gate：`borrowed 猴子在你的背上应按控制者找到宿主并在结算后回到真实拥有者牌库底`、`borrowed Going Bananas 应按控制者而不是真实 owner 移除其他玩家控制的基地与附着行动`、`borrowed 护盾应按控制者而不是真实 owner 摧毁宿主上其他玩家控制的行动`；随后在 [`yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>) 只补一个局部 helper `getOngoingActionControllerId(...)`，并让这 3 个 consumer 统一改按 `metadata.sourceControllerId ?? ownerId` 判控制者，保留 detach / deck-bottom 的 true owner 落点不变。验证：`yuanhouFactionAbilities.test.ts -t "电子猿：为了香蕉只摧毁其他玩家打到指定基地和仆从上的行动|电子猿：borrowed Going Bananas 应按控制者而不是真实 owner 移除其他玩家控制的基地与附着行动|电子猿：护盾打出时摧毁该仆从上其他玩家的行动并保留己方行动|电子猿：borrowed 护盾应按控制者而不是真实 owner 摧毁宿主上其他玩家控制的行动|电子猿：护盾持续保护宿主上的其他行动不受对手行动影响|电子猿：borrowed 猴子在你的背上应按控制者找到宿主并在结算后回到真实拥有者牌库底|电子猿：猴子在你的背上天赋摧毁同基地敌方低力量随从并把本卡放到底"` => `1 file passed, 7 passed`；`git diff --check -- src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` => passed。中途用宽过滤词把一条旧 `Mole + Going Bananas` 计分窗口测试误带进来，失败点是它自己的 `smashup_reaction_choose` 收口，不是这轮 borrowed controller seam 的原始位点；本轮最终验证已收窄回 7 条直接相关 gate。
+- 2026-05-25 13:56 +08：继续推进时又收掉一组共享 helper 的真 seam，而且不是回扫 2026-05-22 那轮 collector eligibility 旧账。当前在 [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 里，`canTriggerTricksterBaseOngoingAgainstOtherPlayer()` 仍只按 `source.ownerId === ctx.playerId` 判“是不是其他玩家”；它同时服务 `trickster_flame_trap / trickster_pay_the_piper` 及 POD 版，而四条 callback 本体也都还在直接看 `ownerId`。这意味着 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Flame Trap / Pay the Piper` 会把“其他玩家”洗回真实 owner，导致控制者视角下本该触发的 onMinionPlayed 链直接失效。我先在 [`baseFactionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/baseFactionOngoing.test.ts>) 补了 4 条 focused gate：`borrowed Flame Trap`、`borrowed Flame Trap POD`、`borrowed Pay the Piper`、`borrowed Pay the Piper POD`；然后只在这一组 helper/callback 上把控制者判定统一收紧为 `metadata.sourceControllerId ?? ownerId`，并把 `Flame Trap POD` 的 `destroyerId` 改成控制者。验证：`baseFactionOngoing.test.ts -t "borrowed Flame Trap|borrowed Pay the Piper|Flame Trap POD|Pay the Piper POD"` => `1 file passed, 4 passed`；邻近 `baseFactionOngoing.test.ts -t "trickster_flame_trap|trickster_pay_the_piper"` => `1 file passed, 6 passed`。这轮只闭合 `trickster_flame_trap / trickster_pay_the_piper` 标准版与 POD 版在 borrowed onMinionPlayed 场景下的 controller seam，不外推整个 Tricksters、所有 POD、`Flame Trap POD` 的 onTurnStart breakpoint prompt 或整条长期任务已完成；下一步优先继续扫 `yuanhou.ts` 里 `Monkey On Your Back / Going Bananas / Shielding / Mindraker` 这几处剩余裸 `ownerId` 读法。
+- 2026-05-25 13:48 +08：继续推进时又补齐了一条 dedicated focused gate，而且还在同一条 `metadata.sourceControllerId` 已持久化、但 runtime callback 仍可能只读 `ownerId` 的主线上，不是回扫旧 family。具体是 `borrowed Week of Sharks`：[`reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>) 之前已有 owner-only gate `sourceController queued onTurnEnd trigger 仍应只在拥有者回合结束让 Week of Sharks 给拥有者抽牌`，但仍缺 borrowed dedicated gate。当前已新增 `borrowed Week of Sharks 应按控制者而不是真实 owner 在控制者回合结束抽牌`，并在 [`sharks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/sharks.ts>) 把 `sharksWeekOfSharksTrigger()` 三处 owner-only 读取统一改成 `metadata.sourceControllerId ?? ownerId`。验证：`reactionQueueEventPlayerContext.test.ts -t "Week of Sharks|borrowed Week of Sharks"` => `1 file passed, 2 passed`；当前已确认 queued trigger 的 `ownerPlayerId/sourceControllerId` 都保持 `0`，resolve 后 `week-draw-borrowed` 进入 P0 hand 而不是 P1 hand。这格同样只记成 dedicated green evidence，不冒称“首轮红灯已证实”；但它已经把 `sharks_week_of_sharks.only_owner_turn_end_draw_one` 的 borrowed controller 分支正式锁住。下一步继续留在同类 still-open `ownerId` consumer 上，优先扫 [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 和 `yuanhou.ts` 里剩余裸读 `ownerId` 的候选，而不是回扫已转绿的 `Week of Sharks / Stasis Field / Infiltrate / Skeletons / Killer Plants`。
+- 2026-05-25 13:44 +08：继续推进时又补齐了一条 dedicated focused gate，而且仍在同一条 `metadata.sourceControllerId` 已持久化、但 runtime callback 仍可能只读 `ownerId` 的主线上，不是回扫旧 family。具体是 `borrowed Stasis Field`：[`reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>) 之前只有 owner-only gate `sourceController queued onTurnStart trigger 仍应只在拥有者回合开始触发 Stasis Field 自毁`，还缺 borrowed dedicated gate。当前已新增 `borrowed Stasis Field 应按控制者而不是真实 owner 在控制者回合开始自毁`，并在 [`yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>) 把 `timeTravelersStasisFieldTurnStart()` 从 `action.ownerId === ctx.playerId` 收紧为 `action.metadata?.sourceControllerId ?? action.ownerId`。验证：`reactionQueueEventPlayerContext.test.ts -t "Stasis Field|borrowed Stasis Field"` => `1 file passed, 2 passed`；当前已确认 queued trigger 的 `ownerPlayerId/sourceControllerId` 都保持 `0`，resolve 后 `stasis-borrowed` 从基地离场并进入真实拥有者 P1 的 discard。这格我只记成 dedicated green evidence，不冒称“首轮红灯已证实”；但它已经把 `time_travelers_stasis_field.destroy_at_owner_turn_start` 的 borrowed controller 分支正式锁住。下一步继续留在同类 still-open `ownerId` consumer 上，优先扫 [`sharks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/sharks.ts>)、[`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 和 `yuanhou.ts` 里剩余裸读 `ownerId` 的候选，而不是回扫已转绿的 `Stasis Field / Infiltrate / Skeletons / Killer Plants`。
+- 2026-05-25 13:40 +08：继续推进时又拿到两条新的真红灯并都已转绿，而且都还在同一条 `metadata.sourceControllerId` 已持久化、但 runtime callback 仍只读 `ownerId` 的主线上，不是回扫旧家族。第一条是 `borrowed killer_plant_overgrowth`：`newOngoingAbilities.test.ts` 新增 focused gate `borrowed Overgrowth 应按控制者而不是真实 owner 在控制者回合开始降低临界点` 后，首轮直接坐实 [`killer_plants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/killer_plants.ts>) 的 `killerPlantOvergrowthTrigger()` 仍只按 `a.ownerId === ctx.playerId` 判“你的回合开始”，导致 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Overgrowth` 在 P0 回合开始时没有任何 `BREAKPOINT_MODIFIED(reason='killer_plant_overgrowth')`。第二条是 `borrowed killer_plant_entangled`：同文件新增 focused gate `borrowed Entangled 应按控制者而不是真实 owner 在控制者回合开始自毁` 后，首轮直接坐实 `killerPlantEntangledDestroyTrigger()` 仍只按 `entangled.ownerId !== ctx.playerId` 判是否自毁，结果 borrowed `Entangled` 在 P0 回合开始时没有 `ONGOING_DETACHED(defId='killer_plant_entangled')`。现已最小修复为：两处都统一改按 `metadata.sourceControllerId ?? ownerId` 判控制者，不扩到 `killer_plant_choking_vines`、protection checker、其它 Killer Plants sibling 或 shared onTurnStart framework。验证：`newOngoingAbilities.test.ts -t "borrowed Overgrowth|borrowed Entangled|killer_plant_overgrowth|killer_plant_entangled"` 首轮 failed，修复后 `1 file passed, 11 passed`。这两格只闭合 borrowed `Overgrowth` 的 turn-start breakpoint modifier seam 与 borrowed `Entangled` 的 turn-start self-destruct seam，不外推整个 Killer Plants、所有 protection checker、所有 onTurnStart ongoing、或整条长期任务已完成；下一步应继续顺着同一类 `ownerId` consumer 往 [`yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>) / [`sharks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/sharks.ts>) / [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 的 still-open sibling 继续找 focused 红灯，而不是回扫刚转绿的 `Infiltrate / Skeletons / Killer Plants`。
+- 2026-05-25 12:26 +08：继续推进时又拿到两条新的真红灯并都已转绿，而且都在新的 `Frankenstein owner-only runtime consumer / attached-action sourceController` seam 上，不是回扫 `The Bride / fairies_enchantment / destroy-discard inventory`。第一条是 `borrowed german_engineering`：`newFactionAbilities.test.ts` 新增 focused gate `borrowed german_engineering 应按控制者而不是真实 owner 在该基地给控制者打出的随从+1指示物` 后，首轮直接坐实 [`frankenstein.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/frankenstein.ts>) 的 `isFrankensteinGermanEngineeringEligible()` 仍只按 `action.ownerId === playerId` 判归属，导致 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `German Engineering` 在 P0 真实 `PLAY_MINION` 链上完全不给 `m1` 加 counter。现已最小修复为：eligibility 改按 `metadata.sourceControllerId ?? ownerId` 判控制者。第二条是 `borrowed Frankenstein Uberserum`：`reactionQueueEventPlayerContext.test.ts` 新增 focused gate `borrowed Frankenstein Uberserum 应按控制者而不是真实 owner 在控制者回合开始给宿主加 1 标记` 后，首轮先坐实 queued trigger 根本不入队，根因在 [`ongoingEffects.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/ongoingEffects.ts>) 的 `locateSources()` 对 attached action 仍把 `controllerId` 固定成 `attached.ownerId`；补完这层后，第二轮又坐实 [`frankenstein.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/frankenstein.ts>) 的 `frankenstein_uberserum` callback 仍只按 `ownerId` 判控制者，executor 只吐 `TRIGGER_CONSUMED`。现已最小修复为：`locateSources()` 的 attached action `controllerId` 改按 `metadata.sourceControllerId ?? sourcePlayerId ?? ownerId`，`frankenstein_uberserum` callback 也统一按同一口径判控制者，`hostControllerId` 保持宿主控制者不变。验证：focused `reactionQueueEventPlayerContext.test.ts --testNamePattern "borrowed Frankenstein Uberserum|sourceController queued onTurnStart trigger 仍应只在拥有者回合开始让 Frankenstein Uberserum 给宿主加 1 标记|German Engineering"` => `1 file passed, 3 passed`；focused `newFactionAbilities.test.ts --testNamePattern "borrowed german_engineering|德国工程学：在该基地打出随从后应给该随从\\+1指示物"` => `1 file passed, 2 passed`；`git diff --check -- frankenstein.ts ongoingEffects.ts newFactionAbilities.test.ts reactionQueueEventPlayerContext.test.ts` 通过（仅 LF/CRLF warning）。这两格只闭合 borrowed `German Engineering` 与 borrowed `Uberserum` 的 controller seam，不外推整个 Frankenstein、所有 attached action、或整个 owner/source 主线已完成；下一步应优先继续留在 `Frankenstein` 同 family 里筛 `grave_situation` 等仍只读 `ownerId` 的 sibling，而不是跳回已封账家族。
+- 2026-05-25 12:16 +08：继续推进时又拿到一条新的真红灯并已转绿，而且不是回扫旧 family：`borrowed fairies_enchantment` 的二段 resolve/runtime attach provenance 旧实现直接坏在 [`fairies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/fairies.ts>)。新增 focused gate `borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId` 后，首轮直接坐实 `fairiesEnchantmentPromptProgram.onResolve()` 只发 `SYS_INTERACTION_RESOLVED`，不会重发带 metadata 的 `ONGOING_ATTACHED`；最小根因有两层：continuation 没带原卡 `uid`，二段 resolve 只能用 `action.ownerId === playerId` 回捞 ongoing，借打他人拥有的 `fairies_enchantment` 时直接找不到；同时旧回写事件也不会把 borrowed `sourcePlayerId` 带回 `ONGOING_ATTACHED`。现已最小修复为：`fairiesEnchantmentProgram` 把 `attachedCardUid: ctx.cardUid` 带进 continuation，二段 resolve 按 `uid` 精确找回当前 ongoing，并从 `attached.metadata.sourcePlayerId/sourceControllerId` 恢复 borrowed provenance 后写回新的 `ONGOING_ATTACHED`。验证：focused `newFactionAbilities.test.ts --testNamePattern "fairies_enchantment 选择 -1 模式后会写入 metadata 并降低基地上随从力量|borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId|fairies_enchantment 在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过并记录 both 模式"` => `1 file passed, 3 passed`；相邻 `newFactionAbilities.test.ts --testNamePattern "fairies_enchantment|fairies_ladybug|fairies_tinx"` => `1 file passed, 5 passed`；`git diff --check -- fairies.ts + newFactionAbilities.test.ts` 通过（仅 LF/CRLF warning）。这格只闭合 `borrowed fairies_enchantment` 的二段 resolve lookup/provenance seam，不外推所有 Fairies、所有二段 prompt、所有 borrowed ongoing attach 或整个 owner/source 主线；下一步仍应继续找新的 still-open shared seam，而不是把这格误报成“快做完了”。
+- 2026-05-25 12:05 +08：继续推进时没有回扫已封账对象，这轮命中了一个新的 `effect-contract queued interaction` 真红灯并已收口：`The Bride` 的 `sourceId='titan_frankenstein_the_bride_start_choose_target'` prompt 用 `targetUid + selectedTargetUids` 表达“当前目标 + 已选目标”，但 [`reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 旧 generic footprint 既不认 `selectedTargetUids`，也不会把这条链的 `targetUid` 收进 minion 资源集合，focused gate 首轮直接坐实 writes 只剩 `titan:bride-titan`。现已只对该 `sourceId` 补 source-specific 映射：把 option/continuation/runtime continuation 里的 `targetUid` 与 `selectedTargetUids` 写成 `minion` footprint，并把 `titanUid` 额外补成 `cardInstance` witness；不扩到 generic `targetUid`。验证：focused `reactionQueueOrdering.test.ts --testNamePattern "continuationContext.selectedTargetUids 数组应映射到多张 minion footprint，而不是只记当前第二次分支选中的目标|continuationContext.playedHandUids 数组应映射到多张 cardInstance footprint，而不是只记当前第二次手牌候选"` => `1 file passed, 2 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 68 passed`；`git diff --check -- reactionResources.ts + reactionQueueOrdering.test.ts` 通过（仅 LF/CRLF warning）。这格只闭合 `The Bride` 这条 source-specific queued interaction footprint seam，不外推 generic `targetUid`、所有 Titans prompt 或整个 `reactionResources` family 已完成；下一步应离开当前已连续转绿的 `reactionResources` sibling，回到其它 still-open shared seam。
+- 2026-05-25 11:30 +08：继续沿 destroy/discard sibling 主线推进，这轮先把 `world_champs_bewitched` 的 destroy 真链双起 transfer seam 真正打成红灯并收口。新增 focused gate `world_champs_bewitched 在 destroy -> processDestroyTriggers 真链里不应因同一宿主同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双起转移交互` 后，首轮直接坐实：同一宿主被消灭进入 owner discard 真链时，会排出两条 `sourceDefId='world_champs_bewitched'` 的 queued trigger。第一刀只在 callback 里补 discard guard 没有见效，反证重复发生在 queue 阶段而不是执行阶段；最小根因是 [`world_champs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/world_champs.ts>) 的 `worldChampsBewitchedTransferOnLeave` 同时挂 `onMinionDestroyed + onMinionDiscardedFromBase`，而 discard 注册侧没有在 `collectTriggers(...)` 前拦掉 destroy 管线派生的第二拍。现已最小修复为：保留 callback guard，同时新增 `canQueueWorldChampsBewitchedLeaveTrigger()` 并挂到 `world_champs_bewitched` 的三个 trigger 注册上，让 `timing==='onMinionDiscardedFromBase' && sourceEventId =~ /^minion-discarded-from-base:/` 时直接不入队；不扩到 return-to-hand fallback、prompt handler 或其它 World Champs sibling。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "world_champs_bewitched 在 destroy -> processDestroyTriggers 真链里不应因同一宿主同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双起转移交互|world_champs_bewitched 宿主回手时应给行动控制者创建 per-instance 转移交互"` => `1 file passed, 2 passed`。这格只闭合 `world_champs_bewitched` 的 destroy/discard duplicate queued-transfer seam，不外推整个 World Champs、所有 attached-action leave trigger 或整个 destroy/discard family。
+- 2026-05-25 11:24 +08：继续沿 destroy/discard sibling 主线推进，这轮先把 `world_champs_samurai_chan` 的 destroy 真链双抽 seam 真正打成红灯并收口。新增 focused gate `world_champs_samurai_chan 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽` 后，首轮直接坐实：同一张 `Samurai Chan` 在 destroy -> owner discard 真链里会产出两条 `CARDS_DRAWN`。最小根因在 [`world_champs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/world_champs.ts>)：`worldChampsSamuraiChanTrigger()` 同时挂在 `onMinionDestroyed + onMinionDiscardedFromBase`，却没有区分 destroy 管线派生出来的 discard trigger。现已最小修复为：补 `isDestroyPipelineDiscardTrigger(ctx)`，并让 `worldChampsSamuraiChanTrigger()` 在 `timing==='onMinionDiscardedFromBase' && sourceEventId =~ /^minion-discarded-from-base:/` 时直接跳过 discard 分支，把 draw 只留给 `onMinionDestroyed` 一次；不扩到 `Bewitched / Mummy / Sheriff` 或其它 World Champs sibling。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "world_champs_samurai_chan 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽|world_champs_samurai_chan 因基地计分从场上进入弃牌堆后会抽一张牌"` => `1 file passed, 2 passed`。这格只闭合 `world_champs_samurai_chan` 的 destroy/discard duplicate draw seam，不外推整个 World Champs、所有 self-source dual-timing trigger 或整个 destroy/discard family。
+- 2026-05-25 11:18 +08：继续沿 destroy/discard sibling 主线推进，这轮又真实收掉了 `giant_ants_death_on_six_legs`。新增 focused gate `giant_ants_death_on_six_legs 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双加指示物` 后，首轮直接红灯坐实：同一名己方随从在 destroy -> owner discard 真链里会让 `Death on Six Legs` 泰坦收到两条 `TITAN_POWER_COUNTER_ADDED(reason='giant_ants_death_on_six_legs')`。最小根因在 [`titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>)：`giantAntsDeathOnSixLegsBeforeDiscard()` 同时挂在 `onMinionDestroyed + onMinionDiscardedFromBase`，却没有区分 destroy 管线派生出来的 discard trigger。现已只做一处最小修复：补 `isDestroyPipelineDiscardTrigger(ctx)`，在 `timing==='onMinionDiscardedFromBase' && sourceEventId =~ /^minion-discarded-from-base:/` 时跳过 discard 分支，把 destroy 真链加标记只留给 `onMinionDestroyed` 一次，不扩到其它 Titan 或其它 Giant Ants sibling。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "giant_ant_worker_pod 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重 replay|giant_ants_death_on_six_legs 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双加指示物"` => `1 file passed, 2 passed`。这格只闭合 `Death on Six Legs` 的 destroy/discard duplicate counter seam，不外推整个 Giant Ants、所有 Titan trigger 或整个 destroy/discard family。
+- 2026-05-25 11:12 +08：继续沿 destroy/discard sibling 主线推进，这轮不是回扫 `Samurai`，而是把下一颗 open 候选 `giant_ant_worker_pod` 真的打成了红灯并收口。现已在 `newFactionAbilities.test.ts` 新增 focused gate `giant_ant_worker_pod 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重 replay`，首轮直接坐实：同一只 `Worker POD` 在 destroy -> owner discard 真链里会排出两次 replay source。最小根因在 [`giant_ants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/giant_ants.ts>)：`giantAntWorkerPodReplayTrigger()` 同时挂在 `onMinionDestroyed + onMinionDiscardedFromBase`，但 callback 本体没有区分 destroy 管线派生出来的 discard trigger。随后只做一处最小修复：补 `isDestroyPipelineDiscardTrigger(ctx)`，当 `timing==='onMinionDiscardedFromBase' && sourceEventId =~ /^minion-discarded-from-base:/` 时跳过 discard 分支，把 destroy 真链 replay 只留给 `onMinionDestroyed` 一次，不扩到 `giant_ants_death_on_six_legs` 或其它 Giant Ants sibling。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "giant_ant_worker_pod 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重 replay|giant_ant_worker_pod 在宿主进入弃牌堆后仍会通过 queued discard trigger 提示从弃牌堆打到另一基地"` => `1 file passed, 2 passed`。这格只闭合 `Worker POD` 的 destroy/discard duplicate replay seam，不外推整个 Giant Ants、所有 dual-timing trigger 或整个 destroy/discard family。
+- 2026-05-25 09:03 +08：继续沿 `borrowed ongoing / sourceController queued runtime / owner-source provenance` 主线，又真实收掉一条新的 Bear Cavalry turn-boundary seam：`bear_cavalry_bear_necessities_pod` 的自毁 callback 仍只按 true owner 判“是不是你的下回合开始”。现有非 borrowed gate `拥有者下回合开始时会销毁已激活的口粮POD` 一直是绿的，但新增 focused gate `borrowed bear_cavalry_bear_necessities_pod 应按控制者而不是真实 owner 在下回合开始时自毁` 后，首轮直接红灯坐实：`ownerId='1', metadata.sourceControllerId='0'` 的 borrowed 口粮 POD 在 P0 回合开始时没有任何 `ONGOING_DETACHED`。最小根因就在 [`bear_cavalry.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/bear_cavalry.ts>) 的 `bearCavalryBearNecessitiesPodTurnStart()`：旧实现仍用 `a.ownerId === ctx.playerId` 过滤自毁对象，虽然 trigger 注册层已经是 `playerContext:'sourceController'`，但 runtime callback 还是把 live controller 洗回 true owner。现已最小修复为：该 callback 改按 `a.metadata?.sourceControllerId ?? a.ownerId` 判控制者，detach 仍保留真实 `ownerId` 进弃牌堆，不扩到 restriction、额外出牌限制、`Superiority POD` 或其它 Bear Cavalry sibling。验证：focused `newOngoingAbilities.test.ts --testNamePattern "bear_cavalry_bear_necessities_pod 应按控制者而不是真实 owner 在下回合开始时自毁|拥有者下回合开始时会销毁已激活的口粮POD|bear_cavalry_bear_necessities_pod 限制"` => 首轮 `1 failed, 3 passed`，修复后 `1 file passed, 4 passed`。当前只闭合 borrowed `Bear Necessities POD` 的 turn-start self-destruct controller seam，不外推所有 Bear Cavalry、所有 onTurnStart trigger、所有 POD ongoing self-destruct，或整个 owner/source 主线已完成。
+- 2026-05-25 08:55 +08：继续沿 `borrowed ongoing / sourceController queued runtime / owner-source provenance` 主线，又真实收掉两条同源 Bear Cavalry protection seam：`bear_cavalry_superiority` 的 borrowed protection 判定仍只按 true owner 识别“你的随从”，而 `bear_cavalry_superiority_pod` 还叠着一条更深的旧别名覆盖缝。新增 focused gates `borrowed bear_cavalry_superiority 应按控制者而不是真实 owner 保护己方随从` 与 `borrowed bear_cavalry_superiority_pod 的 protect 模式也应按控制者而不是真实 owner 保护己方随从` 后，首轮直接红灯坐实 borrowed controller 问题；扩大到 `superiority_pod 保护模式` 子集后，又坐实旧 `protect/draw` 生命周期本体也坏着：`protect` 分支在回合开始后仍不失效，`draw` 分支明明把 `superiorityProtect` 关掉了却依然继续保护。根因有三层：[`bear_cavalry.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/bear_cavalry.ts>) 的 `bearCavalrySuperiorityChecker()` 与 `bearCavalrySuperiorityPodProtection()` 仍只按 `ownerId` 判控制者；[`reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `TURN_STARTED` 对 ongoing/attached `talentUsed` 重置也只看 `ownerId`，会让 borrowed protect 模式跨控制者回合悬挂；同时 [`ongoingEffects.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/ongoingEffects.ts>) 的 protection `_pod` 自动别名在 `Superiority POD` 已显式注册 protection 的前提下，仍继续把普通版 checker 继承到 `_pod`，导致 `protect=false` 或 `talentUsed=false` 时还会被普通版逻辑兜底成“持续保护”。现已最小修复为：`bearCavalrySuperiorityChecker()` 与 `bearCavalrySuperiorityPodProtection()` 统一按 `metadata.sourceControllerId ?? ownerId` 判控制者；`reduce.ts` 的 `TURN_STARTED` 对 ongoing/attached 的 `talentUsed` 清理也改按同一口径；`ongoingEffects.ts` 的 protection `_pod` alias 生成收紧为“只要 POD 已显式注册同类型 protection，就不再继承普通版 alias”。验证：focused `newOngoingAbilities.test.ts --testNamePattern "borrowed bear_cavalry_superiority|bear_cavalry_superiority 保护|superiority_pod 保护模式"` => 首轮 `2 failed, 4 passed`，修复后 `1 file passed, 6 passed`；`git diff --check -- src/games/smashup/abilities/bear_cavalry.ts src/games/smashup/domain/reduce.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts` 通过（仅 LF/CRLF warning）。当前只闭合 borrowed `Superiority` protection seam 与 `Superiority POD` protect/draw 生命周期 seam，不外推所有 Bear Cavalry、所有 `_pod` alias、所有 protection family 或整个 owner/source 主线已完成。
+- 2026-05-25 08:46 +08：继续沿 `borrowed ongoing / sourceController queued runtime / owner-source provenance` 主线，又真实收掉一条新的 Bear Cavalry trigger seam：非 POD `bear_cavalry_high_ground` 的 direct `onMinionMoved` trigger 仍只按 true owner 判敌我、基地上“己方”随从和 destroyer。新增 focused gate `borrowed bear_cavalry_high_ground 应按控制者而不是真实 owner 消灭移入的对手随从` 后，首轮直接红灯坐实：`ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `High Ground` 面对 P1 移入随从时没有任何 `MINION_DESTROYED`。现已最小修复为：[`bear_cavalry.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/bear_cavalry.ts>) 的 `bearCavalryHighGroundTrigger()` 统一按 `ongoing.metadata?.sourceControllerId ?? ongoing.ownerId` 判控制者、基地上的“己方”随从和 destroyer，不扩到 `High Ground POD / Superiority / Bear Necessities` 等 sibling。验证：focused `newOngoingAbilities.test.ts --testNamePattern "borrowed bear_cavalry_high_ground|bear_cavalry_high_ground 触发|High Ground"` => 首轮 failed 后 `1 file passed, 3 passed`；`git diff --check -- src/games/smashup/abilities/bear_cavalry.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts` 通过（仅 LF/CRLF warning）。当前只闭合 borrowed `High Ground` 非 POD destroy trigger seam，不外推所有 Bear Cavalry、所有 onMinionMoved trigger、所有 destroyer 归属，或整个 owner/source 主线已完成。
+- 2026-05-25 08:43 +08：继续沿 `borrowed ongoing / sourceController queued runtime / owner-source provenance` 主线，又真实收掉一条新的 Bear Cavalry target-selection seam：`bear_cavalry_bear_necessities` 的“对手行动”候选生成与单目标直执行旁路仍只按 true owner 判“是不是其他玩家的行动”。新增 focused gate `bear_cavalry_bear_necessities 不应把自己控制但真实 owner 不同的 borrowed ongoing 当成对手行动目标` 后，首轮直接红灯坐实：当场上唯一“像对手行动”的对象只是 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed ongoing 时，旧链会直接产出 `ONGOING_DETACHED(cardUid='borrowed-ongoing')`。现已最小修复为：[`bear_cavalry.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/bear_cavalry.ts>) 的 `collectBearNecessitiesTargets()` 与 `bearCavalryBearNecessities()` 单目标 actionTargets 旁路都统一按 `metadata.sourceControllerId ?? ownerId` 判行动控制者，不扩到 `High Ground / Superiority / Bear Necessities POD` 等 sibling。验证：focused `onDestroyAbilities.test.ts --testNamePattern "bear_cavalry_bear_necessities 不应把自己控制但真实 owner 不同的 borrowed ongoing 当成对手行动目标|onDestroy 基础设施|bear_necessities"` => 首轮 failed 后 `1 file passed, 3 passed`；`git diff --check -- src/games/smashup/abilities/bear_cavalry.ts src/games/smashup/__tests__/onDestroyAbilities.test.ts` 通过（仅 LF/CRLF warning）。当前只闭合 borrowed `Bear Necessities` 的 opponent-action target collection seam，不外推所有 Bear Cavalry、所有 destroy action、所有 opponent-action candidate builder，或整个 owner/source 主线已完成。
+- 2026-05-25 08:37 +08：继续沿 `borrowed ongoing / sourceController queued runtime / owner-source provenance` 主线，又真实收掉两条同型 Steampunks sibling seam：`steampunk_change_of_venue` 的候选生成与 `steampunk_captain_ahab` 的目标基地判定仍只按 true owner 认“你的持续行动/你的目标基地”。新增 focused gates `steampunk_change_of_venue: 应允许取回由自己控制但真实 owner 不同的 borrowed ongoing` 与 `borrowed ongoing 也应被视为 captain_ahab 的可选目标基地` 后，首轮分别直接红灯坐实：前者甚至起不来 `steampunk_change_of_venue` prompt，后者不会产出 `MINION_MOVED`。现已最小修复为：[`steampunks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/steampunks.ts>) 的 `buildChangeOfVenueOngoingOptions()`、`buildCaptainAhabBaseOptions()` 与 `captain_ahab.validateUse` 都统一按 `metadata.sourceControllerId ?? ownerId` 判控制者，不扩到 replay 回手归属或其它 Steampunks sibling。验证：focused `expansionOngoing.test.ts --testNamePattern "borrowed ongoing 也应被视为 captain_ahab 的可选目标基地|由自己控制但真实 owner 不同的 borrowed ongoing|captain_ahab|change_of_venue"` => 首轮 failed 后 `1 file passed, 10 passed`；扩大到 `ornate_dome + change_of_venue + captain_ahab + steampunk_mechanic_target: 目标基地被对手 ornate_dome 封锁时不再附着` 子集 => `1 file passed, 15 passed`；`npx eslint src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` => `0 errors`；`git diff --check -- src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` 通过（仅 LF/CRLF warning）。当前只闭合 borrowed `Change of Venue` 候选生成与 borrowed `Captain Ahab` 目标基地判定 seam，不外推 replay 回手归属、所有 Steampunks sibling、所有 prompt candidate builder，或整个 owner/source 主线已完成。
+- 2026-05-25 08:31 +08：继续沿 `borrowed ongoing / sourceController queued runtime / owner-source provenance` 主线，又真实收掉一条新的 Steampunks restriction/onPlay seam：`steampunk_ornate_dome` 的 restriction 与 onPlay destroy branch 仍在按 true owner 判“谁是其他玩家”。新增 focused gates `borrowed ornate_dome 应按控制者而不是真实 owner 限制其他玩家打行动` 与 `borrowed ornate_dome onPlay 应按控制者而不是真实 owner 仅摧毁其他玩家行动` 后，首轮分别直接红灯坐实：borrowed `ornate_dome(ownerId='1', metadata.sourceControllerId='0')` 会错误放行 P1 在该基地打行动，且 onPlay 还会误 detach 同控制者的 `ally-borrowed`。现已最小修复为：[`steampunks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/steampunks.ts>) 的 `steampunkOrnateDomeChecker()`、`steampunkOrnateDomeOnPlay()` 全部统一按 `metadata.sourceControllerId ?? ownerId` 判控制者，不扩到其它 Steampunks sibling。验证：focused `expansionOngoing.test.ts --testNamePattern "borrowed ornate_dome|steampunk_ornate_dome: 华丽穹顶限制|华丽穹顶限制"` => 首轮 failed 后 `1 file passed, 4 passed`；扩大到 `steampunk_mechanic_target: 目标基地被对手 ornate_dome 封锁时不再附着` 的相邻子集 => `1 file passed, 5 passed`；`npx eslint src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` => `0 errors`；`git diff --check -- src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` 通过（仅 LF/CRLF warning）。当前只闭合 borrowed `Ornate Dome` 的 restriction/onPlay controller seam，不外推所有 Steampunks、所有 restriction、所有 onPlay destroy 分支，或整个 owner/source 主线已完成。
+- 2026-05-25 08:19 +08：继续沿 `borrowed ongoing / sourceController queued runtime / owner-source provenance` 主线，又真实收掉一条新的 runtime consumer seam：`commands.ts` 的 `USE_TALENT` ongoing 校验仍在按 true owner 挡 borrowed ongoing talent。旧实现直接用 `ongoing.ownerId !== command.playerId` 判“只能使用自己的持续行动卡天赋”；因此即使 live state 已持久化 `metadata.sourceControllerId='0'`，像 `trickster_hideout_pod(ownerId='1')` 这类 borrowed ongoing 也会被命令验证层拦掉。现已在 [`commandsValidation.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/commandsValidation.test.ts>) 新增 focused gate `allows borrowed ongoing talent when metadata.sourceControllerId matches the acting player`，并最小修复为：`USE_TALENT` 的 ongoing 分支优先按 `ongoing.metadata?.sourceControllerId ?? ongoing.ownerId` 识别控制者，不扩到其它命令族。验证：focused `commandsValidation.test.ts --testNamePattern "allows borrowed ongoing talent when metadata.sourceControllerId matches the acting player|trickster_hideout_pod talent|持续行动卡天赋"` => `1 file passed, 2 passed`；`npx eslint src/games/smashup/domain/commands.ts src/games/smashup/__tests__/commandsValidation.test.ts` => `0 errors, 1 existing warning`。当前只闭合 borrowed ongoing talent 的 command-validation controller seam，不外推所有 ongoing talent、所有 command validator、所有 borrowed runtime consumer，或整个 owner/source 主线已完成。
+- 2026-05-25 08:18 +08：继续沿 `borrowed ongoing / sourceController queued runtime / owner-source provenance` 主线，又真实收掉一条新的 deeper seam：`steampunk_aggromotive` 在 borrowed ongoing 下不只是旧 `describe.skip` 壳已退场，modifier/runtime consumer 本体也还在按 true owner 计基地总力量。focused gate `borrowed steampunk_aggromotive 应按控制者而不是真实 owner 给基地总力量 +5` 首轮直接坐实：真实 `reduce(ONGOING_ATTACHED{ ownerId:'1', sourcePlayerId:'0' })` 后，P0 在该基地明明有自己随从，但 `getPlayerEffectivePowerOnBase(..., '0')` 只有 `2`，没有应有的 `+5`，说明 [`ongoing_modifiers.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ongoing_modifiers.ts>) 仍只看 `ctx.ongoing.ownerId === ctx.playerId`。现已最小修复为：`steampunk_aggromotive` 改按 `ctx.ongoing.metadata?.sourceControllerId ?? ctx.ongoing.ownerId` 识别 ongoing 控制者，并在 [`ongoingModifiers.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/ongoingModifiers.ts>) 放宽 `BasePowerModifierContext.ongoing` 类型，允许 modifier consumer 读取 metadata；不扩到其它 Steampunks sibling，也不重构全局 ongoing schema。验证：focused `ongoingModifiers.test.ts --testNamePattern "borrowed steampunk_aggromotive|蒸汽机车|aggromotive"` => 首轮 failed 后 `1 file passed, 5 passed`；邻近 [`steampunk-aggromotive-fix.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/steampunk-aggromotive-fix.test.ts) 整文件 => `1 file passed, 8 passed`；`npx eslint src/games/smashup/abilities/ongoing_modifiers.ts src/games/smashup/domain/ongoingModifiers.ts src/games/smashup/__tests__/ongoingModifiers.test.ts` => `0 errors`；`git diff --check -- src/games/smashup/abilities/ongoing_modifiers.ts src/games/smashup/domain/ongoingModifiers.ts src/games/smashup/__tests__/ongoingModifiers.test.ts` 通过（仅 LF/CRLF warning）。当前只闭合 borrowed `Aggromotive` 的 base-total-power modifier controller seam，不外推所有 Steampunks、所有 base power modifier、所有 ongoing consumer，或整个 owner/source 主线已完成。
+- 2026-05-25 08:02 +08：继续沿 `borrowed ongoing owner/source provenance / sourceController queued runtime` 主线，又真实收掉一条新的 deeper seam：`cthulhu_complete_the_ritual` 在 borrowed ongoing 下不只是 2026-05-22 那条 turn-start metadata 已锁到控制者，runtime base-reset callback 本体也还在按 `ownerId === ctx.playerId` 找仪式本体。focused gate `queued onTurnStart trigger 处理 borrowed cthulhu_complete_the_ritual 时，仍应按控制者回合开始清场并换基地` 首轮直接坐实：真实 `reduce(ONGOING_ATTACHED{ ownerId:'1', sourcePlayerId:'0' })` 后，P0 回合开始能正确入队，但 `maybeResolveReactionQueue(...)` 只返回 `TRIGGER_CONSUMED`，没有 `CARD_TO_DECK_BOTTOM / BASE_REPLACED`。现已最小修复为：`cthulhu.ts` 的 `cthulhuCompleteTheRitualTrigger()` 优先按 `ctx.sourceCardUid` 精确锁定 queued source，fallback 再按 `ctx.sourceControllerId ?? ctx.playerId` 识别控制者对应实例；不扩到其它 Cthulhu sibling。验证：focused 与 `cthulhu_altar / cthulhu_furthering_the_cause / zombie_overrun / difference_engine` 同组聚焦 => `1 file passed, 5 passed`；整文件 `reactionQueueSourceRuntimeContext.test.ts` => `1 file passed, 33 passed`；既有 metadata gate `reactionQueueEventPlayerContext.test.ts -t "Cthulhu Complete the Ritual|Furthering the Cause|Cthulhu Altar|Zombie Overrun"` => `1 file passed, 6 passed`；既有 direct behavior gate `newOngoingAbilities.test.ts -t "complete_the_ritual|完成仪式"` => `1 file passed, 2 passed`；`git diff --check -- cthulhu.ts + reactionQueueSourceRuntimeContext.test.ts` 通过（仅 LF/CRLF warning）。当前只闭合 borrowed `Complete the Ritual` 的 runtime base-reset controller seam，不外推所有 Cthulhu、所有 `onTurnStart` trigger、所有 base reset / base replace 链，或整个 owner/source 主线已完成。
+- 2026-05-25 07:52 +08：继续沿 `borrowed ongoing owner/source provenance / sourceController queued runtime` 主线，又真实收掉一条新的 deeper seam：`cthulhu_furthering_the_cause` 在 borrowed ongoing 下不只是 queued metadata 已经锁到控制者，runtime callback 本体也还在按 `ongoing.ownerId` 判“这一回合有没有对手随从被消灭”以及 VP 该给谁。focused gate `queued onTurnEnd trigger 处理 borrowed cthulhu_furthering_the_cause 时，仍应按控制权判定对手并把 VP 给控制者` 首轮直接坐实：真实 `reduce(ONGOING_ATTACHED{ ownerId:'1', sourcePlayerId:'0' })` 后，P0 回合结束能正常入队，但 `maybeResolveReactionQueue(...)` 只返回 `TRIGGER_CONSUMED`，没有 `VP_AWARDED`。现已最小修复为：`cthulhu.ts` 的 `cthulhuFurtheringTheCauseTrigger()` 统一改按 `ctx.sourceControllerId ?? ongoing.ownerId` 作为控制者判断“对手是否被消灭”与 `VP_AWARDED.playerId`；不扩到其它 Cthulhu sibling。验证：focused `reactionQueueSourceRuntimeContext.test.ts` => 首轮 failed 后 `1 file passed, 1 passed`；整文件 `reactionQueueSourceRuntimeContext.test.ts` => `1 file passed, 32 passed`；既有 metadata gate `reactionQueueEventPlayerContext.test.ts -t "cthulhu_furthering_the_cause|Furthering the Cause|深化目标"` => `1 file passed, 2 passed`；既有 direct behavior gate `newOngoingAbilities.test.ts -t "cthulhu_furthering_the_cause|Furthering the Cause|深化目标"` => `1 file passed, 6 passed`；ESLint `cthulhu.ts + reactionQueueSourceRuntimeContext.test.ts` => `0 errors`。当前只闭合 borrowed `Furthering the Cause` 的 runtime opponent/recipient controller seam，不外推所有 Cthulhu、所有 `onTurnEnd` trigger、所有 VP 结算分支，或整个 owner/source 主线已完成。
+- 2026-05-25 07:45 +08：继续沿 `borrowed ongoing owner/source provenance / sourceController queued runtime` 主线，又真实收掉一条新的 deeper seam：`zombie_overrun` 在 borrowed ongoing 下不只是 queued metadata 已经锁到控制者，runtime self-destruct callback 本体也还在按 `overrun.ownerId` 判“是不是你的回合开始”。focused gate `queued onTurnStart trigger 处理 borrowed zombie_overrun 时，仍应按控制者回合自毁并把 detached card 送回真实 owner discard` 首轮直接坐实：真实 `reduce(ONGOING_ATTACHED{ ownerId:'1', sourcePlayerId:'0' })` 后，P0 回合开始能正常入队，但 `maybeResolveReactionQueue(...)` 只返回 `TRIGGER_CONSUMED`，没有 `ONGOING_DETACHED`。现已最小修复为：`zombies.ts` 的 `zombieOverrunSelfDestruct()` 统一改按 `ctx.sourceControllerId ?? overrun.ownerId` 作为控制者判断是否在这张 ongoing 的回合开始；`ONGOING_DETACHED.ownerId` 继续保留真实 owner，不扩到 restriction 或其它 Zombies sibling。验证：focused `reactionQueueSourceRuntimeContext.test.ts` => 首轮 failed 后 `1 file passed, 1 passed`；整文件 `reactionQueueSourceRuntimeContext.test.ts` => `1 file passed, 31 passed`；既有 metadata gate `reactionQueueEventPlayerContext.test.ts -t "zombie_overrun|Zombie Overrun|泛滥横行"` => `1 file passed, 2 passed`；非 skipped 行为 gate `zombieInteractionChain.test.ts -t "zombie_overrun|泛滥横行|overrun"` => `1 file passed, 2 passed`；ESLint `zombies.ts + reactionQueueSourceRuntimeContext.test.ts` => `0 errors`。当前只闭合 borrowed `Zombie Overrun` 的 runtime self-destruct controller seam，不外推所有 Zombies、所有 `onTurnStart` trigger、所有 base ongoing self-destruct，或整个 owner/source 主线已完成。
+- 2026-05-25 07:37 +08：继续沿 `borrowed ongoing owner/source provenance / sourceController queued runtime` 主线，又真实收掉一条新的 deeper seam：`cthulhu_altar` 在 borrowed ongoing 下不只是 2026-05-22 那条 collector eligibility 已前移，runtime eligibility/callback 本体也还在按 `ongoing.ownerId` 判“你在这里打了随从”。focused gate `queued onMinionPlayed trigger 处理 borrowed cthulhu_altar 时，仍应按控制者判定并把额外行动给控制者` 首轮直接坐实：真实 `reduce(ONGOING_ATTACHED{ ownerId:'1', sourcePlayerId:'0' })` 后，P0 在该基地打出随从，`collectTriggers(onMinionPlayed)` 返回 `undefined`，根本不会为 borrowed `cthulhu_altar` 入队。现已最小修复为：`cthulhu.ts` 的 `isCthulhuAltarEligibleForMinionPlayed()` 与 `cthulhuAltarTrigger()` 都统一改按 `ctx.sourceControllerId ?? ongoing.ownerId` 作为控制者，并给注册补 `playerContext:'sourceController'`，把“你在这里打随从”的语义固定到控制者而不是真实 owner；不扩到其它 Cthulhu sibling。验证：focused `reactionQueueSourceRuntimeContext.test.ts` => 首轮 failed 后 `1 file passed, 1 passed`；整文件 `reactionQueueSourceRuntimeContext.test.ts` => `1 file passed, 30 passed`；既有 collector gate `reactionQueueEventPlayerContext.test.ts -t "cthulhu_altar|祭坛|altar"` => `1 file passed, 1 passed`；既有 direct behavior gate `newOngoingAbilities.test.ts -t "cthulhu_altar|祭坛|altar"` => `1 file passed, 2 passed`；ESLint `cthulhu.ts + reactionQueueSourceRuntimeContext.test.ts` => `0 errors`。当前只闭合 borrowed `Cthulhu Altar` 的 runtime eligibility/callback controller seam，不外推所有 Cthulhu、所有 `onMinionPlayed` trigger、所有 contextual extra action，或整个 owner/source 主线已完成。
+- 2026-05-25 07:33 +08：继续沿 `borrowed ongoing owner/source provenance / sourceController queued runtime` 主线，又真实收掉一条新的 deeper seam：`steampunk_difference_engine` 在 borrowed ongoing 下不只是 2026-05-22 那条 queued metadata 曾错归 turn-boundary player，runtime callback 本体也还在按 `ongoing.ownerId` 判“你”与抽牌归属。focused gate `queued onTurnEnd trigger 处理 borrowed steampunk_difference_engine 时，仍应按控制者判定并让控制者抽牌` 首轮先坐实：真实 `reduce(ONGOING_ATTACHED{ ownerId:'1', sourcePlayerId:'0' })` 后，`collectTriggers(onTurnEnd)` 产出的 queued metadata 已经是 `ownerPlayerId/sourceControllerId='0'`，但 `maybeResolveReactionQueue(...)` 只返回 `TRIGGER_CONSUMED`，没有 `CARDS_DRAWN`。现已最小修复为：`steampunks.ts` 的 `steampunkDifferenceEngineTrigger()` 统一改按 `ctx.sourceControllerId ?? ongoing.ownerId` 作为控制者，基于该控制者检查“这里是否有你的随从”、读取谁的牌库、并把 `CARDS_DRAWN.playerId` 发给谁；不扩到其它 Steampunks sibling 或 base ongoing 全局字段。验证：focused `reactionQueueSourceRuntimeContext.test.ts` => 首轮 failed 后 `1 file passed, 1 passed`；整文件 `reactionQueueSourceRuntimeContext.test.ts` => `1 file passed, 29 passed`；既有 metadata gate `reactionQueueEventPlayerContext.test.ts -t "Difference Engine"` => `1 file passed, 1 passed`；既有行为 gate `expansionOngoing.test.ts -t "steampunk_difference_engine|差分机|Difference Engine"` => `1 file passed, 3 passed`；ESLint `steampunks.ts + reactionQueueSourceRuntimeContext.test.ts` => `0 errors`。当前只闭合 borrowed `Difference Engine` 的 runtime controller/owner consumer seam，不外推所有 Steampunks、所有 onTurnEnd trigger、所有 base ongoing callback，或整个 owner/source 主线已完成。
+- 2026-05-25 07:19 +08：继续沿 `borrowed ongoing owner/source provenance / sourceController queued runtime` 主线，又真实收掉一条新的 deeper seam：`bear_cavalry_high_ground_pod` 在 borrowed ongoing 下不仅是 2026-05-24 那条 trigger metadata 曾错归事件玩家，后续 persistent controller / callback / prompt / detach owner 也都会继续洗坏。`OngoingActionOnBase` 现场只存 `ownerId`，旧 `ongoingEffects.ts:locateSources(...)` 会把基地 ongoing controller 直接读成 true owner；`bearCavalryHighGroundPodTrigger()` 又继续用 `ongoing.ownerId` 判“是不是对手随从移入”和 prompt player；`bearCavalryHighGroundPodPromptProgram.onResolve()` 还把 `ONGOING_DETACHED.ownerId` 直接写成 `playerId`。新增 focused gate `queued onMinionMoved trigger 处理 borrowed bear_cavalry_high_ground_pod 时，仍应把 prompt 交给控制者并把 detached card 送回真实 owner discard` 后，首轮先坐实 queued trigger 仍是 `sourceControllerId/ownerPlayerId = '1'`，随后改成真实 `reduce(ONGOING_ATTACHED{ ownerId:'1', sourcePlayerId:'0' })` 夹具后，又直接坐实 High Ground POD 根本不给 P0 弹 prompt。现已最小修复为：`reduce.ts` 在 base ongoing attach 时持久化 `metadata.sourcePlayerId/sourceControllerId`；`ongoingEffects.ts` 对基地 ongoing 优先读该 metadata 作为 controller；`bear_cavalry.ts` 的 High Ground POD callback 改按 `ctx.sourceControllerId ?? ongoing.ownerId` 判断控制者/己方随从、prompt player 与 destroyer，并把 prompt context 中的 `ongoingOwnerId` 与 `playerId` 分离，`onResolve()` 的 `ONGOING_DETACHED.ownerId` 改回真实 owner。验证：focused `reactionQueueSourceRuntimeContext.test.ts` => 首轮 failed 后 `1 file passed, 1 passed`；整文件 `reactionQueueSourceRuntimeContext.test.ts` => `1 file passed, 28 passed`；既有 metadata gate `reactionQueueEventPlayerContext.test.ts -t "High Ground POD|sourceController queued onMinionMoved trigger 应把 High Ground POD 归给制高点拥有者而不是移入随从玩家"` => `1 file passed, 1 passed`；既有行为 gate `newOngoingAbilities.test.ts -t "bear_cavalry_high_ground|高地"` => `1 file passed, 2 passed`。当前只闭合 borrowed `High Ground POD` 的 persistent controller / callback / prompt / detach-owner 这条 shared seam，不外推所有 Bear Cavalry、所有基地 ongoing 或整个 owner/source 主线已完成。
+- 2026-05-25 06:55 +08：继续沿 `borrowed ONGOING_ATTACHED provenance / attached-action transfer sibling` 主线，又真实收掉一条新的 shared 真红灯：`fairies.ts / buildTransferAttachedActionEvents(...) -> ONGOING_ATTACHED.sourcePlayerId`。`fairies_tinx` 与 `fairies_ladybug/fairies_leaf_armor` 共用的 `buildTransferAttachedActionEvents(...)` 旧实现只保留 `ownerId`，不会在 borrowed 场景补 `sourcePlayerId`；新增 focused gate `fairies_tinx 把 borrowed 附着行动移到自己身上时，仍应保留 sourcePlayerId` 后，首轮直接坐实 emitted `su:ongoing_attached.payload` 只有 `ownerId='1'`、缺 `sourcePlayerId='0'`。现已最小修复为：只给 `buildTransferAttachedActionEvents(...)` 增加 `sourcePlayerId` 参数，并仅在 `attached.ownerId !== sourcePlayerId` 时给 `SU_EVENTS.ONGOING_ATTACHED.payload` 补 `sourcePlayerId`；caller 只在 `createTransferSelfAbilityProgram(...).onResolve()` 与 `fairiesTinxPromptProgram.onResolve()` 传入 `context.playerId`。验证：`pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "fairies_tinx 把 borrowed 附着行动移到自己身上时，仍应保留 sourcePlayerId|fairies_ladybug 会让附着随从不能被消灭"` => `1 file passed, 2 passed`。当前只闭合 Fairies attached-action transfer 这条 `sourcePlayerId` provenance seam，不外推整个 Fairies、所有 attached-action move/transfer caller、所有 `ONGOING_ATTACHED` producer，或整个 owner/source 主线已完成。
+- 2026-05-25 06:48 +08：继续沿 `borrowed ONGOING_ATTACHED provenance / move-base-ongoing sibling` 主线，又真实收掉一条新的 shared 真红灯：`mermaids_shipwreck_cove / borrowed move-base-ongoing -> ONGOING_ATTACHED.sourcePlayerId`。`src/games/smashup/abilities/mermaids.ts` 的 `buildMoveOngoingEvents(...)` 旧实现只会把移动后的 ongoing 重新附着为 `ownerId`，不会在 borrowed 场景补 `sourcePlayerId`；因此 queued `afterScoring` 真链里，当 `sourceControllerId='0'` 移动一张 `ownerId='1'` 的 borrowed `mermaids_shipwreck_cove` 时，`trickster_brownie` 这类 `onMinionAffected` consumer 会把真正移动玩家 provenance 洗回 true owner。新增 focused gate `queued afterScoring trigger 移动 borrowed mermaids_shipwreck_cove 时，仍应保留真正移动玩家的 sourcePlayerId` 后，首轮直接坐实 emitted `su:ongoing_attached.payload` 只有 `ownerId='1'`、缺 `sourcePlayerId='0'`。现已最小修复为：只给 `buildMoveOngoingEvents(...)` 新增 `sourcePlayerId` 参数，并仅在 `ownerId !== sourcePlayerId` 时给 `SU_EVENTS.ONGOING_ATTACHED.payload` 补 `sourcePlayerId`；caller 只在 `mermaidsOngoingMovePromptProgram.onResolve()` 传入 `context.playerId`。验证：`pnpm vitest run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts -t "queued afterScoring trigger 移动 borrowed mermaids_shipwreck_cove 时，仍应保留真正移动玩家的 sourcePlayerId|queued afterScoring trigger 移动被他人拥有的 mermaids_shipwreck_cove 时，仍应保留其真实 owner"` => `1 file passed, 2 passed`；`pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "mermaids_becalmed_shores 天赋会把这张持续行动移到另一个基地|mermaids_shipwreck_cove 在计分后可把这张持续行动移到另一个基地"` => `1 file passed, 2 passed`；`pnpm vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts -t "processAffectTriggers 处理 borrowed ONGOING_ATTACHED 时，Brownie 应继续把真正打牌玩家视为事件玩家"` => `1 file passed, 1 passed`。当前只闭合 `mermaids_shipwreck_cove / borrowed move-base-ongoing -> ONGOING_ATTACHED.sourcePlayerId` 这条 shared provenance seam，不外推整个 Mermaids、所有 ongoing move caller、所有 `ONGOING_ATTACHED` producer、所有 `processAffectTriggers` consumer，或整个 owner/source 主线已完成。
+- 2026-05-25 06:21 +08：继续沿 `borrowed ONGOING_ATTACHED provenance / onCardReturnedToHand sibling` 主线，先把 `world_champs_bewitched_transfer` 的一条新 shared 真红灯收掉，再把同 family 的旧失败判明为测试漂移。`src/games/smashup/abilities/world_champs.ts` 的 `worldChampsBewitchedTransferPromptProgram.onResolve` 旧实现只保留 `ownerId`，不会在 borrowed 转移附着时把真实行动玩家写进 `ONGOING_ATTACHED.sourcePlayerId`；新增 focused gate `world_champs_bewitched 离场转移 borrowed 持续行动到 Brownie 身上时也应保留 sourcePlayerId` 后首轮直接红灯，最小修复只补 `...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {})`。随后复跑 `world_champs_bewitched` 子集时，又发现旧失败 `宿主经 CARD_TRANSFERRED 从场上回手时也应通过 reducer 真链创建转移交互` 实际不是 reducer 又漏排，而是测试断言仍在找不存在的 `triggerMinionUid='returned-own'`；当前夹具里被回手的宿主 UID 明明是 `host-1`。现已把断言收紧到 `host-1`，子集整体转绿。验证：`pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "world_champs_bewitched 离场转移 borrowed 持续行动到 Brownie 身上时也应保留 sourcePlayerId"` => `1 file passed, 1 passed`；`pnpm vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts -t "processAffectTriggers 处理 borrowed ONGOING_ATTACHED 时，Brownie 应继续把真正打牌玩家视为事件玩家"` => `1 file passed, 1 passed`；`pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "world_champs_bewitched"` => `1 file passed, 5 passed`。当前只闭合 `world_champs_bewitched_transfer / borrowed attach -> ONGOING_ATTACHED.sourcePlayerId` 这条 shared provenance seam，并把 `CARD_TRANSFERRED` 那条旧失败降成测试漂移，不外推整个 World Champs、所有 `onCardReturnedToHand` consumer 或整个 owner/source 主线已完成。
+- 2026-05-25 05:07 +08：继续沿 `effect-contract queued interaction` 主线又收掉一条新的 shared 真红灯：`option.value.extraDeckUidsForShuffle -> multi-card footprint`。`shapeshifters_gelf_search` 的 deck-search option value 会把被先沉到底、结算后还要并回 `deckReordered(...)` 的补充牌 UID 列表写进 `extraDeckUidsForShuffle`；但旧 `reactionResources.ts` 的 card-array 白名单不会把这组 UID 写进 footprint。新增 focused gate `option.value.extraDeckUidsForShuffle 数组应映射到多张 cardInstance footprint，而不是只记当前牌库候选` 后，首轮直接坐实 writes 只有 `cardInstance:deck-minion-a` 与 `base:1`，缺 `cardInstance:gelf-self-bottomed`。现已最小修复为：只把 card-array 白名单从 `cardUids|topUids|bottomUids|removedActionUids|pickedToHandUids|playedHandUids` 扩到 `cardUids|topUids|bottomUids|removedActionUids|pickedToHandUids|playedHandUids|extraDeckUidsForShuffle`，不扩大到 generic `*Uids`、`remainingDeckUids`、`drawnUids` 或其它非 prompt key。验证：focused 首轮 failed 后 => `1 file passed, 1 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 56 passed`；`npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => `0 errors`。当前只闭合 `extraDeckUidsForShuffle` 的 multi-card footprint，不外推所有 deck-search prompt、所有 shuffle sibling 或整个 queued interaction family 已完成。
+- 2026-05-25 04:58 +08：继续沿 `effect-contract queued interaction` 主线又收掉一条新的 shared 真红灯：`continuationContext.playedHandUids -> multi-card footprint`。`ninja_disguise_choose_play2` 的第二次手牌选择会把第一次已经打过的手牌 UID 列表写进 `playedHandUids`，并继续用它过滤后续 hand options；但旧 `reactionResources.ts` 的 card-array 白名单不会把这组 UID 写进 footprint。新增 focused gate `continuationContext.playedHandUids 数组应映射到多张 cardInstance footprint，而不是只记当前第二次手牌候选` 后，首轮直接坐实 writes 只有 `cardInstance:hand-minion-b` 与 `base:0`，缺 `cardInstance:hand-minion-a`。现已最小修复为：只把 card-array 白名单从 `cardUids|topUids|bottomUids|removedActionUids|pickedToHandUids` 扩到 `cardUids|topUids|bottomUids|removedActionUids|pickedToHandUids|playedHandUids`，不扩大到 generic `*Uids`、`excludedCardUids`、`allowedCardUids` 或其它 continuation key。验证：focused 首轮 failed 后 => `1 file passed, 1 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 55 passed`；`npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => `0 errors`。当前只闭合 `playedHandUids` 的 multi-card footprint，不外推所有 hand-chaining prompt、所有 continuation UID 数组键或整个 queued interaction family 已完成。
+- 2026-05-25 04:55 +08：继续沿 `effect-contract queued interaction` 主线补了一条 dedicated green evidence，而不是新修 runtime：`continuationContext.usedCardUids -> multi-card footprint` 首轮直接转绿。新增 focused gate `continuationContext.usedCardUids 数组应映射到多张 cardInstance footprint，而不是只记当前弃牌堆候选`，夹具把 `usedCardUids:['used-a','used-b']` 放进 `continuationContext`，验证结果直接带出 `cardInstance:used-a/used-b`；这证明当前 regex `/(cardUids|topUids|bottomUids|removedActionUids|pickedToHandUids)$/i` 已覆盖 `usedCardUids`，它不是 still-open seam。验证：focused => `1 file passed, 1 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 55 passed`；`npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => `0 errors`；`git diff --check -- src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => passed（仅 LF/CRLF warning）。当前只说明 `usedCardUids` 这格已有 dedicated green evidence，不外推整个 queued interaction family 已完成。
+- 2026-05-25 04:47 +08：继续沿 `effect-contract queued interaction` 主线又收掉一条新的 shared 真红灯：`runtimePrompt.continuation.context.pickedToHandUids -> multi-card footprint`。`wizard_portal_order` 的 runtime continuation context 会把前一步已经拿进手牌的牌 UID 列表写进 `pickedToHandUids`，后续排序 prompt 会继续用它参与 live snapshot 过滤；但旧 `reactionResources.ts` 的 `addGenericResourcesFromValue(...)` 只会把 `cardUids|topUids|bottomUids|removedActionUids` 映射成多张 `cardInstance`，不会把 `pickedToHandUids` 写进 footprint。新 focused gate `runtimePrompt.continuation.context.pickedToHandUids 数组应映射到多张 cardInstance footprint，而不是只记当前排序候选` 首轮直接把 writes 打成 `['cardInstance:order-card-a']`，缺 `cardInstance:picked-a/picked-b`。现已最小修复为：只把 card-array 白名单从 `cardUids|topUids|bottomUids|removedActionUids` 扩到 `cardUids|topUids|bottomUids|removedActionUids|pickedToHandUids`，不扩大到 generic `*Uids`、`trackedAll`、`allTopCards` 或其它 continuation key。验证：focused => `1 file passed, 1 passed`；同组 5 条 continuation-array gate => `1 file passed, 5 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 54 passed`；`npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => `0 errors`；`git diff --check -- src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => passed（仅 LF/CRLF warning）。当前只闭合 `runtimePrompt.continuation.context.pickedToHandUids` 的 multi-card footprint，不外推所有 continuation UID 数组键、所有 Wizards prompt 或整个 queued interaction family 已完成。
+- 2026-05-25 04:42 +08：继续沿 `effect-contract queued interaction` 主线又收掉一条新的 shared 真红灯：`continuationContext.destroyedUids -> multi-minion footprint`。`werewolf_let_the_dog_out_targets` 的 continuation context 会把本轮已经摧毁过的随从 UID 列表写进 `destroyedUids`，用于后续候选过滤；但旧 `reactionResources.ts` 的 `addGenericResourcesFromValue(...)` 只会把 `movedUids|selectedMinionUids` 映射成多张 `minion`，不会把 `destroyedUids` 写进 footprint。新 focused gate `continuationContext.destroyedUids 数组应映射到多张 minion footprint，而不是只记当前选中的摧毁目标` 首轮直接把 writes 打成 `['minion:fresh-target','base:1']`，缺 `minion:destroyed-a/b`。现已最小修复为：只把 minion-array 白名单从 `movedUids|selectedMinionUids` 扩到 `movedUids|selectedMinionUids|destroyedUids`，不扩大到 generic `*Uids`、`excludedMinionUids`、`pickedToHandUids` 或其它 continuation key。验证：focused => `1 file passed, 1 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 52 passed`；`npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => `0 errors`；`git diff --check -- src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => passed（仅 LF/CRLF warning）。当前只闭合 `continuationContext.destroyedUids` 的 multi-minion footprint，不外推所有 continuation UID 数组键、所有 Werewolves prompt 或整个 queued interaction family 已完成。
+- 2026-05-25 04:29 +08：继续沿 queued snapshot family 往外扩，不只停在 `ongoingEffects/reactionSession`。这轮又命中一条新的 shared 真红灯：`baseAbilityQueue` 的 queued `afterScoring` base ability 对 `rankings` 也在透传 live 引用。新 focused gate `queued afterScoring base ability 真链不应让 rankings 快照被 live mutation 污染` 首轮直接把 `base-rankings:0:5:2` 打成 `base-rankings:9:99:7`，说明“基地能力队列”这一侧也会吃到 queue 后的 live mutation，而不是只修了 ongoing trigger 半边。现已只在 [baseAbilityQueue.ts](/D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilityQueue.ts) 的两处点位补最小深拷贝：1) `collectBaseAbilityTriggers()` 写入 `TriggerInstance.rankings` 时改为 `structuredClone(...)`；2) `registerBaseAbilityAsQueuedTrigger()` 还原 runtime `BaseAbilityContext.rankings` 时也改为 `structuredClone(...)`。验证：focused => `1 file passed, 1 passed`；整文件 `reactionQueueBaseAbilities.test.ts` => `1 file passed, 30 passed`；`npx eslint src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts src/games/smashup/domain/baseAbilityQueue.ts` => `0 errors`；`git diff --check -- src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts src/games/smashup/domain/baseAbilityQueue.ts` => passed（仅 LF/CRLF warning）。当前只闭合 queued `afterScoring` base ability 的 `rankings` snapshot 污染，不外推所有 base ability timing、所有 queued base collector 或整个 queued runtime inventory 已完成。
+- 2026-05-25 04:17 +08：继续沿同一个 queued snapshot family 往下挖，又连收三条新的 shared seam：`affectEvent`、`affectBatchTargets`、`duel/duelWinner`。这轮不是重复跑旧绿灯，而是在 `reactionQueueControllerRuntimeContext.test.ts` 新增三条 focused gate：`queued onMinionAffected 真链不应让 affectEvent 快照被 live mutation 污染` 首轮直接把 `affect:queued_affect_event_runtime:queued` 打成 `affect:mutated_affect_event_reason:mutated_affect_event_nested`；`queued onMinionAffected 真链不应让 affectBatchTargets 快照被 live mutation 污染` 首轮直接把 `batch-snapshot:ally-1:0` 打成 `batch-snapshot:mutated-target:9`；`queued onDuelResolved 真链不应让 duel 与 duelWinner 快照被 live mutation 污染` 首轮直接把 `duel-snapshot:duel_source_snapshot:queued` 打成 `duel-snapshot:mutated_duel_source:mutated_duel_winner_nested`。现已只在 `ongoingEffects.ts:createTriggerInstance()` 与 `reactionSession.ts:executeQueuedTrigger()` 两个 capture/replay 点，把 `affectEvent`、`affectBatchTargets`、`duel`、`duelChallenger/Challenged/Winner/Loser` 都改成 `structuredClone(...)` 深拷贝，不改业务 ability、duel 规则、affect 聚合、reaction ordering 或 TriggerInstance schema。验证：focused 三条同组 => `1 file passed, 3 passed`；整文件 `reactionQueueControllerRuntimeContext.test.ts` => `1 file passed, 15 passed`；`npx eslint src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/domain/reactionSession.ts` => `0 errors, 15 existing warnings`；`git diff --check -- src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/domain/reactionSession.ts` => passed（仅 LF/CRLF warning）。当前只闭合 `affectEvent / affectBatchTargets / duel*` 的 queued snapshot 污染，不外推所有 object/array payload、所有 queued runtime 字段或整个 queued runtime inventory 已完成。
+- 2026-05-25 04:07 +08：继续沿同一个 queued snapshot family 往下挖，又把 `inspectionTargetPlayerIds` 这条同型 seam 也坐实并收掉。新 focused gate `queued onDeckInspected 真链不应让 inspectionTargetPlayerIds 快照被 live mutation 污染` 首轮直接把 `targets:1,2` 打成 `targets:9,2`，证明 queue 之后 live target-player array 的原地改写会直接污染 queued executor。现已只在 `ongoingEffects.ts:createTriggerInstance()` 与 `reactionSession.ts:executeQueuedTrigger()` 两个 capture/replay 点，把 `inspectionTargetPlayerIds` 也改成 `structuredClone(...)` 深拷贝，不改其它 payload、业务 ability、reaction ordering 或 TriggerInstance schema。验证：focused 四条同组 `nested metadata + rankings + inspectionCards + inspectionTargetPlayerIds` => `1 file passed, 4 passed`；整文件 `reactionQueueControllerRuntimeContext.test.ts` => `1 file passed, 12 passed`；`npx eslint src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/domain/reactionSession.ts` => `0 errors, 15 existing warnings`；`git diff --check -- src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/domain/reactionSession.ts` => passed（仅 LF/CRLF warning）。当前只闭合 `triggerMinion.metadata / rankings / inspectionCards / inspectionTargetPlayerIds` 这四条 queued snapshot 污染，不外推所有 array/object payload、所有 queued runtime 字段或整个 queued runtime inventory 已完成。
+- 2026-05-25 04:02 +08：继续沿同一个 queued snapshot family 往下挖，又收掉两条新的 shared seam：`rankings` 与 `inspectionCards`。这轮不是回扫已转绿的业务牌例，而是在 `reactionQueueControllerRuntimeContext.test.ts` 新增两条 focused gate：`queued afterScoring 真链不应让 rankings 快照被 live mutation 污染` 首轮直接把 `rankings:0:5:4` 打成 `rankings:1:99:1`，`queued onDeckInspected 真链不应让 inspectionCards 快照被 live mutation 污染` 首轮直接把 `inspect:peek-a:card_a` 打成 `inspect:peek-mutated:card_mutated`。现已只在 `ongoingEffects.ts:createTriggerInstance()` 与 `reactionSession.ts:executeQueuedTrigger()` 两个 capture/replay 点，把 `rankings` 与 `inspectionCards` 都改成 `structuredClone(...)` 深拷贝；不改其它 payload、业务 ability、reaction ordering 或 TriggerInstance schema。验证：focused 三条同组 `nested metadata + rankings + inspectionCards` => `1 file passed, 3 passed`；整文件 `reactionQueueControllerRuntimeContext.test.ts` => `1 file passed, 11 passed`；`npx eslint src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/domain/reactionSession.ts` => `0 errors, 15 existing warnings`；`git diff --check -- src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/domain/reactionSession.ts` => passed（仅 LF/CRLF warning）。当前只闭合 `triggerMinion.metadata / rankings / inspectionCards` 这三条 queued snapshot 污染，不外推所有 array/object payload、所有 queued runtime 字段或整个 queued runtime inventory 已完成。
+- 2026-05-25 03:56 +08：回写一条新的 shared seam：`queued onMinionPlayed / lkiMinion.metadata nested snapshot`。这轮不再回扫已转绿的 Kraken / Very Large Boulder / Returned One 顶层 metadata，而是直接把怀疑点缩到 `lkiMinion.metadata` 的浅拷贝污染：在 `reactionQueueControllerRuntimeContext.test.ts` 新增 focused gate `queued onMinionPlayed 真链不应让 triggerMinion.metadata 的嵌套对象被 live mutation 污染`，首轮红灯直接坐实 queue 后把 live `metadata.nested.flag` 从 `queued` 改成 `mutated`，executor 实际读到的也是 `nested:mutated`。现已只在 `ongoingEffects.ts:createTriggerInstance()` 与 `reactionSession.ts:executeQueuedTrigger()` 两个 capture/replay 点，把 `lkiMinion.metadata` 从顶层展开改成 `structuredClone(...)` 深拷贝；不改其它 LKI 字段、duel/affect runtime、业务 ability 或 trigger 排序。验证：focused => `1 file passed, 1 passed`；整文件 `reactionQueueControllerRuntimeContext.test.ts` => `1 file passed, 9 passed`；`npx eslint src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/domain/reactionSession.ts` => `0 errors, 15 existing warnings`；`git diff --check -- src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/domain/reactionSession.ts` => passed（仅 LF/CRLF warning）。当前只闭合 `triggerMinion.metadata` 的 nested snapshot 污染，不外推所有 LKI 深拷贝、所有 metadata 载荷或整个 queued runtime inventory 已完成。
+- 2026-05-25 03:30 +08：回写一条新的 shared seam：`queued reaction frame / same-frame runtime shared-state holder`。先新增 `samurai_bushi` 的 dedicated gate，证明 `triggerMinionPower` 在 queued `onMinionDiscardedFromBase` 真链上已能从收集阶段传到 executor，不是新的 runtime 裂缝；随后新增 `双 Sprout 共享唯一 deck 候选时不应重复打出同一 UID` 的 queued frame gate，首轮在真实 `smashup_reaction_choose -> 依次选择两个 mandatory trigger` 链上坐实同一张 `wl-1` 被分别打到 `base_a/base_b` 两次。现已在 `reactionSession.ts` 增加按 `frameId ?? trigger.id` 复用的临时 `queuedTriggerRuntimeSharedState` holder，让同一 reaction frame 内的 queued triggers 共享 `triggerSharedState`，并在该 frame 排空时清理；不改 `killerPlantSproutTrigger` 本体、deck search 过滤、skip、reshuffle、其它 timing family 或可序列化 state 结构。验证：focused `reactionQueueControllerRuntimeContext.test.ts --testNamePattern "queued onTurnStart 双 Sprout 共享唯一候选时，仍不应重复打出同一张 deck UID|queued onMinionDiscardedFromBase 真链仍应把 Bushi 的 triggerMinionPower 传到 executor|queued onMinionAffected ongoing trigger 的 canTrigger 与 executor 都应继续拿到 affectBatchTargets"` => `1 file passed, 3 passed`；整文件 `reactionQueueControllerRuntimeContext.test.ts` => `1 file passed, 5 passed`；邻近 `reactionQueueEventPlayerContext.test.ts --testNamePattern "Sprout|sourceController queued onTurnStart trigger 仍应只在拥有者回合开始把 Sprout"` => `1 file passed, 2 passed`；ESLint `reactionSession.ts + reactionQueueControllerRuntimeContext.test.ts` => `0 errors, 8 existing warnings`。当前只闭合“同一 queued reaction frame 缺少 direct fireTriggers 式 runtime shared holder”这条 seam，不外推所有 `onTurnStart`、所有 `triggerSharedState` consumer 或整个 yuanhou 审计完成。
+- 2026-05-25 03:12 +08：回写一条新的 shared seam：`processAffectTriggers / queued onMinionAffected / affectBatchTargets runtime contract`。旧 `TriggerContext` 与 `processAffectTriggers()` 已有 `affectBatchTargets`，但 `TriggerInstance`、`createTriggerInstance()` 与 queued executor 恢复链没带这组批次目标快照，导致 `canTrigger()` 收集阶段能看到 batch，runtime executor 却拿不到。现已最小修复为：只给 `TriggerInstance` 增加 `affectBatchTargets`，并在 `ongoingEffects.ts` 写入、`reactionSession.ts` 恢复到 runtime `ctx`；新增 `reactionQueueControllerRuntimeContext.test.ts` focused gate 首轮红灯坐实 `trigger.affectBatchTargets===undefined`，修复后 focused => `1 file passed, 1 passed`；整文件 `reactionQueueControllerRuntimeContext.test.ts` => `1 file passed, 3 passed`；邻近 `reactionQueueEventPlayerContext.test.ts --testNamePattern "sourceController queued onMinionAffected trigger"` => `1 file passed, 5 passed`；ESLint `types.ts + ongoingEffects.ts + reactionSession.ts + reactionQueueControllerRuntimeContext.test.ts` => `0 errors, 17 existing warnings`。当前只闭合 `onMinionAffected` queued runtime 的 `affectBatchTargets` 合同，不外推整条 affect family。
+- 2026-05-25 02:34 +08：回写一条新的 shared seam：`borrowed ONGOING_ATTACHED -> onMinionAffected source provenance`。旧 `affect.ts` 在 `SU_EVENTS.ONGOING_ATTACHED` 里把 `sourcePlayerId/sourceControllerId` 错写成 `payload.ownerId`，现在已改成优先用 `payload.sourcePlayerId ?? payload.ownerId`，并补了 Brownie 这条真实 consumer 的 focused gate。验证：`reactionQueueEventPlayerContext.test.ts --testNamePattern "Brownie"` => `1 file passed, 3 passed`；`ongoingEffects.test.ts --testNamePattern "MINION_RETURNED、MINION_CONTROL_CHANGED、CARD_SUPPRESSED 被正确分类为随从 affect"` => `1 file passed, 1 passed`；ESLint 通过。当前只闭合 `ONGOING_ATTACHED` provenance 和 Brownie consumer，不外推整条 affect family。
+- 2026-05-25 02:21 +08：`effect-contract queued interaction / runtimePrompt.continuation.context.selectedMinionUids -> multi-minion footprint` 命中一条新的 shared 真红灯。生产侧 `ninja_disguise` 真链会把已选中、后续要回手的基地随从 UID 列表写进 `runtimePrompt.continuation.context.selectedMinionUids`，但旧 `reactionResources.ts` 的 `addGenericResourcesFromValue(...)` 只会把 `movedUids` 映射成多张 `minion`，不会把这类数组写进 footprint；结果 prompt 只记当前手牌候选 `cardUid` 与 `baseIndex`，不会记 `return-minion-a/b`。现已最小修复为：只把 minion-array 白名单从 `movedUids` 扩到 `movedUids|selectedMinionUids`，不扩大到 generic `selected*Uids`、`selectedTargetUids`、`playedHandUids` 或其它 runtime continuation key；同时在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增 focused gate `runtimePrompt.continuation.context.selectedMinionUids 数组应映射到多张 minion footprint，而不是只记当前手牌随从`。验证：focused 首轮 failed 后 => `1 file passed, 1 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 51 passed`；ESLint `reactionResources.ts + reactionQueueOrdering.test.ts` => `0 errors`；`git diff --check -- src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => 通过（仅 LF/CRLF warning）。这格只闭合 `runtimePrompt.continuation.context.selectedMinionUids` 的 multi-minion footprint，不外推所有 selected UID 数组键、所有 runtime continuation prompt 或整个 queued interaction family。
+- 2026-05-25 02:12 +08：`effect-contract queued interaction / runtimePrompt.continuation.context.removedActionUids -> multi-card footprint` 命中一条新的 shared 真红灯。生产侧 `miskatonic_those_meddling_kids_select` 会把已处理过的行动 UID 列表写进 `runtimePrompt.continuation.context.removedActionUids`，但旧 `reactionResources.ts` 的 `addGenericResourcesFromValue(...)` 只会把 `cardUids/topUids/bottomUids` 映射成多张 `cardInstance`，不会把这类数组写进 footprint；结果 prompt 只记当前选中的 `cardUid` 与 `baseIndex`，不会记 `removed-action-a/b`。现已最小修复为：只把数组白名单从 `cardUids|topUids|bottomUids` 扩到 `cardUids|topUids|bottomUids|removedActionUids`，不扩大到 generic `*Uids`、`allowedActionUids`、`inspectedUids` 或其它 runtime continuation key；同时在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增 focused gate `runtimePrompt.continuation.context.removedActionUids 数组应映射到多张 cardInstance footprint，而不是只记当前选中的行动卡`。验证：focused => `1 file passed, 1 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 50 passed`；ESLint `reactionResources.ts + reactionQueueOrdering.test.ts` => `0 errors`；`git diff --check -- src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => 通过（仅 LF/CRLF warning）。这格只闭合 `runtimePrompt.continuation.context.removedActionUids` 的 multi-card footprint，不外推所有 action UID 数组键、所有 runtime continuation prompt 或整个 queued interaction family。
+- 2026-05-25 01:00 +08：`shared-contract: runtime prompt response core-vs-events / cowboys_dynamite_surprise_seen zone transfer` 命中一条新的 scoped 真红灯，不是 inspection context 本体回退。旧 [`cowboys.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cowboys.ts>) 的 `cowboys_dynamite_surprise_seen` resolve 一边直接手改 `matchState.core.players[owner].hand/deck/discard`，一边返回 `MINION_DESTROYED` 事件；而 [`systems.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/systems.ts>) 对 runtime prompt 的共享合同是“有 emitted domain events 时保留 `result.state.sys`，但用这些 events 重建 core”，所以 reveal/inspect prompt 虽然能弹、目标随从也能炸掉，`dyn-1` 却会留在原 hand/deck。现已最小修复为：只改 `cowboys_dynamite_surprise_seen`，把源卡离开 hand/deck 改成标准 `CARDS_DISCARDED` / `CARDS_MILLED` 事件，再拼接既有 `buildValidatedDestroyEvents(...)`，不扩大到其它 inspection family 或 shared runtime executor。验证：[`reactionQueueInspectionRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueInspectionRuntimeContext.test.ts>) => `1 file passed, 2 passed`；[`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 中三条 `cowboys_dynamite_surprise(_pod)` direct gate => `1 file passed, 3 passed`；上一轮留下的 7-file shared inventory 复跑 => `7 files passed, 37 passed`。这格只闭合 `Dynamite Surprise Seen` 在 reveal hand / reveal deck 两种 inspection 来源下的源卡 zone transfer，不外推整个 inspection family、所有 runtime prompt caller，或整个 queued-trigger-runtime-context 已全量完成。
+- 2026-05-25 00:16 +08：`effect-contract queued interaction / ability runtime prompt continuation context -> structured footprint` 命中一条新的 shared 真红灯。旧 [`reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 的 `deriveFootprintFromInteraction()` 只读取 `interaction.data.continuationContext`，没有消费 ability runtime prompt 真实挂载的 `interaction.data.runtimePrompt.continuation.context`；因此像 [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 里的 `trickster_block_the_path` 这类 prompt，即使 runtime continuation 已携带 `cardUid/baseIndex/playerId`，仍会退回 `interaction:trickster_block_the_path:unstructured-options`。现已最小修复为：只在 `deriveFootprintFromInteraction()` 额外把 `runtimePrompt?.continuation?.context` 喂给 `addGenericResourcesFromValue(..., 'write')`，不扩大到 generic mode/factionId-only option 或其它 runtime surface；同时在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增 focused gate `ability runtime prompt 应从 runtimePrompt.continuation.context 推导 footprint，而不是退回 unstructured-options`，锁住 `trickster_block_the_path` 不再 fallback，且会写入 `cardInstance:block-path-a` 与 `base:0`。验证：focused `reactionQueueOrdering.test.ts --testNamePattern "runtimePrompt\\.continuation\\.context|trickster_block_the_path|pid-only|Cellular Bonding|Star Spawn|Mark of Sleep"` => `1 file passed, 5 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 45 passed`；ESLint `reactionResources.ts + reactionQueueOrdering.test.ts` => `0 errors`；`git diff --check` 通过（仅 LF/CRLF warning）。这格只闭合 ability runtime prompt continuation context 的 structured-footprint seam，不外推所有 mode-only / factionId-only / branchId-only prompt 或整个 queued interaction family。
+- 2026-05-24 22:10 +08：`externalActionPlay / helper default handSizeAfterPlay / recover-then-replay ghost threshold` 命中一条新的 shared helper 真红灯，不是 caller inventory 复读。旧 [`externalActionPlay.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/externalActionPlay.ts>) 只有 caller 显式传 `handSizeAfterPlay` 时才把“打出后手牌数”带进 executor；若 caller 漏传而事件链又是“先回手再立刻重打”，Ghosts 这类按出牌后手牌数结算的 onPlay 就会回退到 `player.hand.length - 1`，把已经 reduce 到出牌后现场的手牌再次少算 1。现已最小修复为：helper 默认把 `handSizeAfterPlay` 对齐到 `simCore.players[playerId]?.hand.length ?? 0`，显式 override 仍优先；并在 [`abilityRegistry.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/abilityRegistry.test.ts>) 新增 focused gate，直接锁住“从 discard 回手再额外打出 `ghost_seance` 且未显式传 `handSizeAfterPlay` 时，不应因少算 1 张手牌而误抽牌”。验证：focused `abilityRegistry.test.ts --testNamePattern "未提供 handSizeAfterPlay"` => `1 file passed, 1 passed`；邻近 `query6Abilities.test.ts -t "wizard_mass_enchantment"` => `1 file passed, 5 passed`；`expansionOngoing.test.ts -t "steampunk_mechanic|steampunk_change_of_venue"` => `1 file passed, 16 passed`；`smashup.smoke.test.ts -t "奶油泡芙美人天赋会弃 1 张牌，额外打出弃牌堆标准战术，并改放牌库底"` => `1 file passed, 1 passed`。这格只闭合 external action helper 的默认 post-play hand-size 合同，不外推整个 `externalActionPlay` family。
+- 2026-05-24 21:45 +08：`effect-contract queued interaction / pid-only player-target option -> playerControl footprint` 命中 `targetPlayerId + madnessUid` 的 player-target sibling。旧 [`reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 的 interaction option footprint 不认真实生产 prompt 使用的 `pid`；因此 [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 里 `trickster_mark_of_sleep` 这类 `value:{ pid }` 交互会退回 `interaction:...:unstructured-options`。现已最小修复为：只在 `deriveFootprintFromOption()` 层把 `pid` 映射成 `playerControl`，不扩大到 generic context/state 字段；同时在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增 `Mark of Sleep` 与 `pid-only` 两条 focused gate，锁住不再 fallback，且会写入 `playerControl:1`。验证：focused `--testNamePattern "Mark of Sleep|pid-only 结构化 player-target option"` => `1 file passed, 2 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 44 passed`；ESLint `reactionResources.ts + reactionQueueOrdering.test.ts` => `0 errors`；`git diff --check` 通过（仅 LF/CRLF warning）。这格只闭合 pid-only player-target prompt 的 structured-option footprint，不外推整个 queued interaction family。
+- 2026-05-24 21:41 +08：`effect-contract queued interaction / targetPlayerId + madnessUid structured option -> player/card footprint` 命中上一格 `actionUid-only` 的直接 sibling。旧 [`reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 既不认 `targetPlayerId`，也不认 `madnessUid`；因此 [`cthulhu.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cthulhu.ts>) 的 `cthulhu_star_spawn` 这类 player-target madness prompt 会退回 `interaction:...:unstructured-options`。现已最小修复为：只在 footprint 推导层把 `targetPlayerId` 映射成 `playerControl`，`madnessUid` 映射成 `cardInstance`，不扩大到其它 player/source 键；同时在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增 `Star Spawn` 与 `targetPlayerId + madnessUid` 两条 focused gate，锁住不再 fallback，且会写入 `playerControl:1` 与 `cardInstance:madness-1`。验证：focused `--testNamePattern "Star Spawn|targetPlayerId \\+ madnessUid"` => `1 file passed, 2 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 42 passed`；ESLint `reactionResources.ts + reactionQueueOrdering.test.ts` => `0 errors`；`git diff --check` 通过（仅 LF/CRLF warning）。这格只闭合 player-target madness prompt 的 structured-option footprint，不外推整个 queued interaction family。
+- 2026-05-24 21:35 +08：`effect-contract queued interaction / actionUid-only structured option -> cardInstance footprint` 命中一条新的 shared footprint gap。旧 [`reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 的 `deriveFootprintFromOption()` 不识别真实生产 prompt 使用的 `actionUid`，因此 [`yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>) 里 `shapeshifters_cellular_bonding_choose` 这类 attached-action 选择会退回 `interaction:...:unstructured-options`。现已最小修复为：只在 footprint 推导层把 `actionUid` 映射成 `cardInstance` 资源，不扩大到其它 mode-only prompt；同时在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增 `Cellular Bonding` 结构化 option 与 `actionUid-only` 两条 focused gate，锁住不再 fallback，且会写入 `cardInstance:bonded-action-1`。验证：focused `--testNamePattern "Cellular Bonding|actionUid-only 结构化交互 option"` => `1 file passed, 2 passed`；整文件 `reactionQueueOrdering.test.ts` => `1 file passed, 40 passed`；ESLint `reactionResources.ts + reactionQueueOrdering.test.ts` => `0 errors`；`git diff --check` 通过（仅 LF/CRLF warning）。这格只闭合 attached-action prompt 的 `actionUid-only` structured-option footprint，不外推整个 queued interaction family。
+- 2026-05-24 21:13 +08：`processReturnToHandTriggers / MINION_RETURNED / extended-base onCardReturnedToHand` 命中一条新的 shared post-process 真红灯。旧 [`reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>) 在 `processReturnToHandTriggers()` 里已经会为 `MINION_RETURNED / CARD_TRANSFERRED / BURIED_CARD_RETURNED_TO_HAND` 收集 ongoing `onCardReturnedToHand` trigger，但没有像 `processAffectTriggers()` 那样同步调用 `collectExtendedBaseAbilityTriggers(...)`；因此同一基地若同时命中 mandatory ongoing 与 mandatory extended base `onCardReturnedToHand`，queue 里只会留下 ongoing，extended base 会静默漏排。现已先在 [`reactionQueueBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts>) 新增 focused gate，首轮红灯坐实 `triggers.some(sourceDefId==='base_b') === false`；随后只在 reducer 的 `MINION_RETURNED / CARD_TRANSFERRED / BURIED_CARD_RETURNED_TO_HAND` 三条有 base 现场的 carrier 分支补 `collectExtendedBaseAbilityTriggers(...)`，把 `baseIndex / triggerMinionUid / triggerMinionDefId / controllerId / frameId / sourceEventId / reason` 一并透传，不改 `CARD_RECOVERED_FROM_DISCARD`、attached-source fallback 或其它 reaction family。验证：focused `reactionQueueBaseAbilities.test.ts --testNamePattern "processReturnToHandTriggers 命中 mandatory ongoing 与 mandatory extended base onCardReturnedToHand 时，应统一进入 reaction ordering"` => 首轮红灯后 `1 file passed, 1 passed`；整文件 `reactionQueueBaseAbilities.test.ts` => `1 file passed, 26 passed`；整文件 `reactionQueueOnCardReturnedToHand.test.ts` => `1 file passed, 15 passed`；`npx eslint src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` => `0 errors, 23 existing warnings`。这格只闭合 return-to-hand post-process 的 extended-base queued ordering sibling，不外推所有 `onCardReturnedToHand` consumer、所有 extended base timing 或整个 post-process family。
+- 2026-05-24 20:52 +08：`mythic_greeks_favor_of_athena` 的 discarded borrowed card 分流已收口。旧 `buildAthenaRevealEvents(...)` 在牌库不足 5 张时把 `player.discard` 全量洗入当前玩家 `deckSim`，会把 `owner='1'` 的 `borrowed-discard` 错洗进 `P0.deck`；现已按 `card.owner` 分流，borrowed 组单独生成 owner-scoped `DECK_REORDERED`，borrowed 场景补 `sourcePlayerId: playerId`。验证已复跑：focused `shayuFactionAbilities.test.ts --testNamePattern "雅典娜的恩惠"` => 1 file passed, 3 passed；整文件 `shayuFactionAbilities.test.ts` => 1 file passed, 21 passed；ESLint `mythic_greeks.ts + shayuFactionAbilities.test.ts` => 0 errors。当前只闭合 Athena discard reshuffle borrowed owner split，不外推 Mythic Greeks 全量。
+- 2026-05-24 最新进展补记：`zombie_they_keep_coming / zombie_lord / borrowed discard minion -> MINION_PLAYED.ownerId` 继续沿 handbuilt `MINION_PLAYED(fromDiscard)` producer 命中新的 Zombies 真红灯。旧 [`zombies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/zombies.ts>) 的 They Keep Coming 与 Zombie Lord 分支都从当前玩家 live discard 找到 source minion，但手工 `MINION_PLAYED(fromDiscard:true)` 没传 `ownerId`；因此 P0 从自己 discard 打出 `owner='1'` 的 borrowed minion 后，落地 owner 被洗成 P0。首轮 focused 红灯已坐实两条新增 gate 都收到 `owner='0'`；现已最小修复为两条分支都写入 `ownerId: discardCard.owner`。验证：focused `zombie_they_keep_coming: 从弃牌堆打出 borrowed|zombie_lord: 从弃牌堆打出 borrowed` => 首轮红灯后 `1 file passed, 2 passed`；整文件 `zombieWizardAbilities.test.ts` => `1 file passed, 30 passed`；ESLint `zombies.ts + zombieWizardAbilities.test.ts` => `0 errors`。这格只闭合 They Keep Coming / Zombie Lord 的 discard minion replay owner provenance，不外推 Zombies 全量、所有 fromDiscard minion replay caller 或整个 `MINION_PLAYED` producer family。
+- 2026-05-24 最新进展补记：`ghost_the_dead_rise / borrowed discard minion -> MINION_PLAYED.ownerId` 继续沿 handbuilt `MINION_PLAYED(fromDiscard)` producer 命中新的 Ghosts 真红灯。旧 [`ghosts.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ghosts.ts>) 的 The Dead Rise 在弃三张后构造可从 discard 打出的低力量随从候选时只保留 `cardUid/defId/power`，没有把 discard source card 的真实 `owner` 写入候选快照和二段 base context；因此 P0 从自己弃牌堆打出 `owner='1'` 的 borrowed 低力量随从后，落地随从 owner 被洗成 P0。现已最小修复为：`GhostDeadRiseCandidate`、play choice value 与 base context 都携带 `ownerId: card.owner`，单基地直落与二段 base resolve 两条 `MINION_PLAYED` 分支都写入 `payload.ownerId`，不改弃三张、候选力量阈值、skip 或普通从弃牌堆打出语义。新增 [`ghostsAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ghostsAbilities.test.ts>) focused gate `从弃牌堆打出 borrowed 低力量随从时，应保留真实 owner`，首轮红灯坐实落地 owner 错成当前玩家；修复后 focused => `1 file passed, 1 passed`，整文件 `ghostsAbilities.test.ts` => `1 file passed, 10 passed`，ESLint `ghosts.ts + ghostsAbilities.test.ts` => `0 errors, 1 existing warning`（`SU_EVENTS` unused import）。这格只闭合 The Dead Rise 的 discard minion replay owner provenance，不外推 Ghosts 全量、所有 fromDiscard minion replay caller 或整个 `MINION_PLAYED` producer family。
+- 2026-05-24 最新进展补记：`vampire_crack_of_dusk / borrowed discard minion -> MINION_PLAYED.ownerId` 继续沿 handbuilt `MINION_PLAYED(fromDiscard)` producer 命中新的 Vampires 真红灯。旧 [`vampires.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vampires.ts>) 的 Crack of Dusk 与 POD base resolve 分支只写 `playerId=context.playerId` 与 `fromDiscard:true`，没有把 live discard card 的真实 `owner` 透传给 `MINION_PLAYED.ownerId`；因此 P0 从自己弃牌堆打出 `owner='1'` 的 borrowed 低力量随从后，落地随从 owner 被洗成 P0。现已最小修复为：两个 base resolve 分支都从 `state.core.players[context.playerId].discard` 定位所选卡，写入 `ownerId: cardInDiscard.owner`，不改基地选择、fromDiscard、额外加 1 指示物或 POD 不消耗额度语义。新增 [`vampiresPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/vampiresPod.test.ts>) focused gate `破晓从弃牌堆打出 borrowed 低力量随从时，应保留真实 owner`，首轮红灯坐实 `minion.owner === '0'`；修复后 focused => `1 file passed, 1 passed`，整文件 `vampiresPod.test.ts` => `1 file passed, 13 passed`，ESLint `vampires.ts + vampiresPod.test.ts` => `0 errors, 43 existing warnings`。这格只闭合 Crack of Dusk / Crack of Dusk POD 的 discard minion replay owner provenance，不外推 Vampires/POD 全量、所有 fromDiscard minion replay caller 或整个 `MINION_PLAYED` producer family。
+- 2026-05-24 最新进展补记：`wizard_neophyte / borrowed source-deck top action -> current player hand or true-owner extra action attach` 已从 Wizards owner/source provenance sibling 开放候选降级为 dedicated green evidence，本轮没有改 runtime。复核 [`wizards.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/wizards.ts>) 后确认 `Neophyte` 的 source zone 是当前玩家自己的 deck：选择 `to_hand` 时 borrowed 顶牌应由 `CARDS_DRAWN.playerId='0'` 进入当前玩家 P0 hand，不改 P1 deck；选择 `play_extra` 时，当前玩家仍从 P0 deck 移除顶牌，但 `ACTION_PLAYED.ownerId` 与 `ONGOING_ATTACHED.ownerId` 必须保留该卡真实 owner。新增 [`wizard-neophyte-ongoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts>) 两条 focused gate：`borrowed-summon(owner='1')` 选择放入手牌后进入 P0 hand、P1 deck 保持 `p1-tail`；`borrowed-overrun(owner='1')` 选择作为额外 ongoing 打出后，事件链包含 `CARD_REMOVED_FROM_DECK.playerId='0'`、`ACTION_PLAYED.ownerId='1'`、`ONGOING_ATTACHED.ownerId='1'`，最终以 ownerId=1 附着到基地。验证：`wizard-neophyte-ongoing.test.ts --testNamePattern "borrowed"` => `1 file passed, 2 passed, 3 skipped`；整文件 `wizard-neophyte-ongoing.test.ts` => `1 file passed, 5 passed`；`npx eslint src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts` => `0 errors`；`git diff --check -- src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts` 仅 LF/CRLF warning。这格只证明 `wizard_neophyte` 当前的 source-deck/current-hand 与 play-extra true-owner provenance，不外推 Wizards 全量、所有 external action caller、所有 topdeck reveal/peek caller 或所有 borrowed-card zone producer。
+- 2026-05-24 最新进展补记：`wizard_scry / borrowed source-deck action -> current player hand + current deck shuffle` 已从 Wizards owner/source provenance sibling 开放候选降级为 dedicated green evidence，本轮没有改 runtime。复核 [`wizards.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/wizards.ts>) 后确认这条不是 owner-deck split 语义：它从当前玩家自己的 deck 选择行动，放入当前玩家自己的 hand，并只重洗当前玩家 deck。因此若 P0 deck 中存在 `owner='1'` 的 borrowed action，选择后仍应由 `CARDS_DRAWN.playerId='0'` 进入 P0 hand，且 `DECK_REORDERED.playerId='0'` 不应带 `sourcePlayerId` 去改 P1 deck。新增 [`query6Abilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/query6Abilities.test.ts>) focused gate `wizard_scry: 选择当前牌库中的 borrowed 行动时仍应进入当前玩家手牌并只重洗当前玩家牌库`，锁住 `borrowed-action(owner='1')` 从 P0 deck 进入 P0 hand，P0 deck 只剩 `own-minion/own-action`，P1 deck 保持 `p1-tail`。验证：`query6Abilities.test.ts --testNamePattern "wizard_scry"` => `1 file passed, 5 passed`；整文件 `query6Abilities.test.ts` => `1 file passed, 34 passed`。这格只证明 `wizard_scry` 当前属于 source-deck/source-hand green evidence，不外推 Wizards 全量、`wizard_neophyte`、所有 deck search/draw 或所有 borrowed-card zone producer。
+- 2026-05-24 最新进展补记：`base_innsmouth_base_choose_card / borrowed discard card -> owner deck bottom` 继续沿 `CARD_TO_DECK_BOTTOM(owner/source provenance)` family 命中新的 expansion base 真缝。旧 [`baseAbilities_expansion.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities_expansion.ts>) 的 `base_innsmouth_base_choose_player` 第二步生成 discard card options 时写 `value.ownerId=targetPlayerId`；因此 `P0.discard` 中 `owner='1'` 的 borrowed card 被选择后会错误放入 P0 deck bottom。现已最小修复为：option 携带真实 `c.owner` 与 `sourcePlayerId=targetPlayerId`，`base_innsmouth_base_choose_card` handler 再把 `ownerId/sourcePlayerId` 传给 `buildValidatedCardToDeckBottomEvents(...)`。新增 [`expansionBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionBaseAbilities.test.ts>) focused gate `base_innsmouth_base_choose_card: 选择 borrowed 弃牌堆卡时应放到其拥有者牌库底`，锁住 `borrowed-discard-card` 从 P0 discard 移除、不进入 P0 deck，并进入 P1 deck bottom。验证：`node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "base_innsmouth_base_choose_card: 选择 borrowed|queued reaction 选择温室"` => `1 file passed, 2 passed`；整文件 `expansionBaseAbilities.test.ts` => `1 file passed, 51 passed`；`git diff --check -- src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` 仅 LF/CRLF warning；长期 JSON 可解析。这格只闭合 Innsmouth Base 第二步 discard card -> owner deck bottom，不外推所有基地能力、所有 discard-to-bottom caller 或所有 `CARD_TO_DECK_BOTTOM` producer。
+- 2026-05-24 最新进展补记：`super_spies_moon_zero_three / borrowed inspected deck top -> owner deck bottom` 继续沿 inspect/peek continuation owner provenance 命中新的 Titan seam。旧 [`titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `titan_super_spies_moon_zero_three_choose_player` 在 peek 目标玩家牌库顶后，只把 `targetPlayerId/cardUid/defId` 写进 continuation；`titan_super_spies_moon_zero_three_resolve` 选择“放到底部”时直接把 `CARD_TO_DECK_BOTTOM.ownerId` 写成 `targetPlayerId`。因此 `P1.deck[0]` 若是 `owner='0'` 的 `borrowed-moon-top`，旧链会把它错误留在 P1 deck 底，而不是从 P1 deck 移出并放进真实 owner P0 deck 底。现已最小修复为：choose-player 阶段把 `peek.card.owner` 写入 continuation，resolve 阶段按该 `ownerId` 发 `CARD_TO_DECK_BOTTOM`，borrowed 场景补 `sourcePlayerId=targetPlayerId`。新增 [`smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/smashup.smoke.test.ts>) focused gate `三号空间站天赋查看 borrowed 牌库顶并放到底部时，应进入其拥有者牌库底`，首轮红灯坐实 `borrowed-moon-top` 未进入 P0 deck；修复后锁住 `P0.deck=['p0-deck-a','borrowed-moon-top']`、`P1.deck=['moon-target-next']`。验证：`smashup.smoke.test.ts --testNamePattern "三号空间站天赋"` => 首轮红灯后 `1 file passed, 2 passed`；`yuanhouFactionAbilities.test.ts --testNamePattern "super_spies_moon_zero_three|三号空间站"` => `1 file passed, 7 passed`。这格只闭合 Moon Zero Three talent inspect -> bottom 的 borrowed owner continuation，不外推整个 Super Spies、所有 Titan、所有 inspectDeck/peekDeckTop caller 或所有 `CARD_TO_DECK_BOTTOM` producer。
+- 2026-05-24 最新进展补记：`cthulhu_servitor / borrowed discard action -> owner deck top` 继续沿 `DECK_REORDERED(sourcePlayerId)` family 命中新的 Cthulhu sibling seam，不是 Servitor 自毁 owner 修复的复读。旧 [`cthulhu.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cthulhu.ts>) 的 `cthulhuServitorPromptProgram.onResolve` 从当前玩家 discard 选行动后，直接发 `DECK_REORDERED.playerId=playerId` 且 `deckUids=[actionCard.uid,...player.deck]`；因此 `P0.discard` 中 `owner='1'` 的 `borrowed-action` 会被错误放进 P0 deck 顶。现已最小修复为：所选行动仍从当前玩家 live discard 读取，但 `DECK_REORDERED.playerId` 与 deck snapshot 改按 `actionCard.owner`，borrowed 场景补 `sourcePlayerId=playerId`。新增 [`talentAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/talentAbilities.test.ts>) focused gate `选择被他人拥有的弃牌行动时，仍应放回其拥有者牌库顶而不是当前玩家牌库顶`；该 gate 先暴露出旧 `execute(INTERACTION_COMMANDS.RESPOND)` 测试夹具不能真正驱动 InteractionSystem 结算，已改为真实 `runCommand(USE_TALENT -> RESPOND)`，最终锁住 `borrowed-action` 进入 `P1.deck=['borrowed-action','p1-deck-a']`，不进入 P0 deck 且从 P0 discard 移除。验证：`talentAbilities.test.ts --testNamePattern "cthulhu_servitor.*选择被他人拥有|cthulhu_servitor（仆人 talent）"` => `1 file passed, 6 passed`；`cthulhuExpansionAbilities.test.ts --testNamePattern "cthulhu_it_begins_again|选择被他人拥有的弃牌行动"` => `1 file passed, 6 passed`；整文件 `talentAbilities.test.ts` => `1 file passed, 22 passed`；ESLint `npx eslint src/games/smashup/abilities/cthulhu.ts src/games/smashup/__tests__/talentAbilities.test.ts` => `0 errors, 7 warnings`（既有 unused warnings）。这格只闭合 Servitor talent 后续 discard action -> owner deck top，不外推整个 Cthulhu、所有 Servitor 分支、所有 discard action topdeck/shuffle caller 或所有 `DECK_REORDERED` producer。
+- 2026-05-24 最新进展补记：`base_drakkar / Vikings empty-deck discard reshuffle borrowed card -> owner deck split` 继续沿 Vikings peek/prepare helper 命中新 seam。旧 [`vikings.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vikings.ts>) 的 `getTopDeckCardWithReshuffle()` / `prepareTopDeckCards()` 在目标玩家 deck 为空时，会把目标 discard 全量洗成 `DECK_REORDERED.playerId=targetPlayerId`；因此 `P1.discard` 中真实 `owner='0'` 的 borrowed card 会被错误洗进 P1 deck，并可能被 `base_drakkar` / `vikings_shield_maiden` 揭示后转移给发动者。现已最小修复为：新增 `prepareTopDeckForVikingPeek(...)`，目标 deck 为空时将 borrowed cards 按真实 owner 分流到 owner-scoped `DECK_REORDERED(sourcePlayerId=targetPlayerId)`，目标玩家 deck snapshot 只保留目标自有或无有效 owner fallback 卡；`resolveRevealAndStealTopCard(...)` 改用 prepared snapshot 并显式 inspect/reveal，`prepareTopDeckCards(...)` 也复用该 helper。新增 [`newBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newBaseAbilities.test.ts>) focused gate `base_drakkar 目标弃牌堆重洗时应分流 borrowed 卡，只揭示目标玩家自有牌`，锁住 `borrowed-d2(owner='0')` 不进 P0 hand、回到 P0 deck，`own-d3(owner='1')` 被揭示/转移到 P0 hand，且 P1 discard/deck 清空。验证：focused `newBaseAbilities.test.ts --testNamePattern "base_drakkar.*borrowed|base_drakkar 会在目标牌库为空"` => `1 file passed, 2 passed`；`base_drakkar` 子集 => `1 file passed, 5 passed`；Vikings peek 邻近 `newFactionAbilities.test.ts --testNamePattern "vikings_shield_maiden|vikings_cast_the_runes|vikings_raiding_party"` => `1 file passed, 9 passed`；Vikings 子集 `vikings_` => `1 file passed, 14 passed`；`base_drakkar|base_longhouse` 子集 => `1 file passed, 7 passed`；ESLint `npx eslint src/games/smashup/abilities/vikings.ts src/games/smashup/__tests__/newBaseAbilities.test.ts` => `0 errors, 22 warnings`（既有 `any` warnings）。这格只闭合 Vikings peek/prepare helper 的 empty-deck reshuffle borrowed 分流，不外推所有 `peekDeckTop` caller、所有 `DECK_REORDERED` producer、所有 Vikings 或所有 base reveal/steal 能力。
+- 2026-05-24 最新进展补记：`princesses_sleeping_beauty / onMinionDiscardedFromBase fallback borrowed discard -> owner deck shuffle` 继续沿 `onMinionDiscardedFromBase` 与 borrowed owner/source provenance 交叉面命中新的 fallback 真缝，不是 2026-05-22 `eventPlayer` dedicated gate 的复读。旧 [`princesses.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/princesses.ts>) 的 `princessesSleepingBeautyOnDiscarded()` 在没有 `ctx.triggerMinion` LKI、只能从 discard fallback 定位时，会把“卡在哪个玩家 discard”当作洗回牌库的 owner；因此 `borrowed-sleep-a(owner='1')` 若位于 `P0.discard`，真实触发玩家仍是 P0 时，旧链会把它错误留在 P0 区域。现已最小修复为：fallback 从 discard card 实例读取 `card.owner` 作为真实 owner，并把 discard 所在玩家作为 `sourcePlayerId` 传入 `shuffleCardIntoDeck()` / `buildValidatedCardToDeckBottomEvents()` / `DECK_REORDERED`。新增 [`reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>) focused gate `eventPlayer queued onMinionDiscardedFromBase trigger 从弃牌堆 fallback 定位 borrowed Sleeping Beauty 时仍应洗回真实拥有者牌库`，锁住 `borrowed-sleep-a` 从 `P0.discard` 移除、不会进入 `P0.deck`，并进入 `P1.deck=['owner-deck-a','borrowed-sleep-a']`。验证：focused `reactionQueueEventPlayerContext.test.ts --testNamePattern "borrowed Sleeping Beauty"` => `1 file passed, 1 passed`；整文件 `reactionQueueEventPlayerContext.test.ts` => `1 file passed, 102 passed`；Princesses 邻近 `newFactionAbilities.test.ts --testNamePattern "princesses_sleeping_beauty|princesses_direct_to_dvd_sequel|princesses_woodland_helpers|princesses_marie_degraw"` => `1 file passed, 7 passed`。这格只闭合 Sleeping Beauty 的 discard fallback / borrowed owner 分支，不外推整个 Princesses、所有 Sleeping Beauty 场景、所有 `onMinionDiscardedFromBase` trigger 或所有 deck shuffle producer。
+- 2026-05-24 最新进展补记：`vampire_the_count_pod_talent / timed permanent power modifier` 继续收掉同文件整跑暴露的 runtime state+events seam。根因是 The Count POD talent 的 prompt resolver 旧实现同时返回 `matchState.core.timedPowerModifiers` side-state 与 `PERMANENT_POWER_ADDED` domain event；而 shared ability runtime 为了修复 `events + nextProgram` 双吃，会在 runtime prompt 产出 events 时回退 `result.state.core`，导致 `timedPowerModifiers` 被丢弃，`TURN_STARTED(turnNumber=3)` 无法把 `powerModifier=-1` 清回 0。现已把临时期限改进事件合同：`PermanentPowerAddedEvent.payload` 增量支持 `expiresOnTurnNumber?: number`，[`reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 在处理 `PERMANENT_POWER_ADDED` 时同步写入 `timedPowerModifiers`，[`vampires.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vampires.ts>) 的 The Count POD talent 与 Wolf Pact POD minion -1 都改为返回带 expiry 的 `PERMANENT_POWER_ADDED` 事件，不再靠 runtime side-state。验证：focused `vampiresPod.test.ts --testNamePattern "talent 的 -1 应持续到自己下回合开始"` => `1 file passed, 1 passed`；整文件 `vampiresPod.test.ts` => `1 file passed, 12 passed`。这格只闭合 Vampires POD 两个“直到你的下回合开始”的 permanent modifier expiry 合同，不外推所有 timed effect、所有 runtime prompt side-state 或所有 `PERMANENT_POWER_ADDED` producer。
+- 2026-05-24 最新进展补记：`vampire_wolf_pact_pod_action / borrowed discard card -> owner deck shuffle` 继续沿 `DECK_REORDERED(sourcePlayerId)` family 命中新的 Vampires POD 对象级真缝，不是 `vampire_the_count / vampire_opportunist` destroy owner/controller 旧格回扫。旧 [`vampires.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vampires.ts>) 的 `vampireWolfPactPodActionPromptProgram.onResolve` 从当前玩家 discard 选择一张卡后，直接把 `player.deck + card.uid` 洗成 `DECK_REORDERED.playerId=playerId`；因此 `P0.discard` 中 `owner='1'` 的 `borrowed-discard` 会错误进入 P0 deck。现已在 [`vampiresPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/vampiresPod.test.ts>) 新增 focused gate `战术面选择被他人拥有的弃牌时，仍应洗回其拥有者牌库而不是当前玩家牌库`，首轮红灯坐实 `P0.deck=['p0-deck-a','borrowed-discard']`。最小修复只改该 action prompt resolver：仍从行动玩家 live discard 取 source card，但按 `card.owner` 选择真实 owner deck，生成 owner-scoped `DECK_REORDERED`，borrowed 组补 `sourcePlayerId: playerId`。验证：focused `vampiresPod.test.ts --testNamePattern "战术面选择被他人拥有的弃牌"` 首轮红灯后转绿 => `1 file passed, 1 passed`；邻近 `vampiresPod.test.ts --testNamePattern "Wolf Pact POD|狼之契约|战术面|随从面"` => `1 file passed, 3 passed`；整文件 `vampiresPod.test.ts` 在 The Count POD timing seam 修复后一并转为 `1 file passed, 12 passed`。这格只闭合 Wolf Pact POD 战术面的 borrowed discard card -> owner deck shuffle 分支，不外推 Vampires/POD 全量、所有 discard-shuffle caller 或所有 `DECK_REORDERED` producer。
+- 2026-05-24 最新进展补记：`killer_plants_killer_kudzu / borrowed discard minion -> owner deck shuffle` 继续沿 `DECK_REORDERED(sourcePlayerId)` family 命中新的 Titan 对象级真缝，不是 `onTitanRemovedFromPlay` queue owner 旧格回扫。旧 [`titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `titan_killer_plants_killer_kudzu_recycle` handler 会从当前玩家 discard 多选随从，然后直接把 `player.deck + selectedFromDiscard` 洗成 `DECK_REORDERED.playerId=playerId`；因此 `P0.discard` 中 `owner='1'` 的 `borrowed-sprout` 会错误进入 `P0.deck`。现已在 [`reactionQueueTitanRemovedFromPlay.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueTitanRemovedFromPlay.test.ts>) 新增 focused gate，真实走 `TITAN_REMOVED_FROM_PLAY -> smashup_reaction_choose -> titan_killer_plants_killer_kudzu_removed -> recycle prompt -> 选择 borrowed-sprout`，首轮红灯坐实 `P0.deck=['p0-deck-a','borrowed-sprout']`。最小修复只改 recycle handler：所选 discard minions 按真实 `card.owner` 分组，为每个 owner 生成 owner-scoped `DECK_REORDERED`，borrowed 组补 `sourcePlayerId: playerId`。验证：focused `reactionQueueTitanRemovedFromPlay.test.ts --testNamePattern "回收被他人拥有的弃牌随从"` 首轮红灯后转绿 => `1 file passed, 1 passed`；整文件 `reactionQueueTitanRemovedFromPlay.test.ts` => `1 file passed, 2 passed`。这格只闭合 Killer Kudzu recycle 的 borrowed discard minion -> owner deck shuffle 分支，不外推 Killer Plants 全量、所有 Titan recycle caller 或所有 `DECK_REORDERED` producer。
+- 2026-05-24 最新进展补记：`samurai_honor_the_ancestors / borrowed discard minion -> owner deck shuffle` 继续沿“从当前玩家弃牌堆洗回牌库时仍把 borrowed card 绑定当前玩家”的 `DECK_REORDERED(sourcePlayerId)` family 命中一条新的对象级真缝，不是 `base_sakura_garden` 的 destroy-ledger Samurai 旧格回扫。旧 [`samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 的 `buildHonorAncestorsEvents()` 会取当前玩家 discard 前 N 张随从并直接把 `player.deck + selectedCards` 洗成 `DECK_REORDERED.playerId=playerId`；因此 `P0.discard` 中 `owner='1'` 的 `borrowed-ronin` 会错误进入 `P0.deck`。现已在 [`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 新增 focused gate `samurai_honor_the_ancestors 洗回被他人拥有的弃牌随从时，应进入其拥有者牌库`，首轮红灯坐实 `P0.deck=['p0-deck-a','borrowed-ronin']`。最小修复只改 `buildHonorAncestorsEvents()`：保留给目标随从加 1 个力量指示物不变，所选 discard minions 按真实 `card.owner` 分组，为每个 owner 生成 owner-scoped `DECK_REORDERED`，borrowed 组补 `sourcePlayerId: playerId`。验证：focused `newFactionAbilities.test.ts --testNamePattern "洗回被他人拥有的弃牌随从"` => `1 file passed, 1 passed`；邻近 `newFactionAbilities.test.ts --testNamePattern "samurai_honor_the_ancestors"` => `1 file passed, 2 passed`。额外尝试整文件 `newFactionAbilities.test.ts` 当前仍有 8 个 unrelated 失败（Vikings/Dynamite Surprise/Giant Ants/World Champs/Fairies 等既有开放项），不能作为本轮 Samurai 绿证据。这格只闭合 `samurai_honor_the_ancestors` 的 borrowed discard minion -> owner deck shuffle 分支，不外推 Samurai 全量、所有 discard-shuffle caller 或所有 `DECK_REORDERED` producer。
+- 2026-05-24 最新进展补记：`giant_ant_who_wants_to_live_forever_pod / search deck borrowed card -> owner deck top` 继续沿“borrowed deck card 被放回牌库顶时仍绑定当前玩家”的 family 命中一条新的对象级真红灯，不是同卡 destroy 分支对 borrowed minion owner 归属的复读。旧 [`giant_ants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/giant_ants.ts>) 的 `giantAntWhoWantsToLiveForeverPodSearchPromptProgram` 会在 prompt 候选里列出当前玩家牌库内所有牌，但 resolver 又用 `card.owner !== context.playerId` 直接空收口；因此当 `P0.deck` 内存在 `owner='1'` 的 borrowed `borrowed-deck-card` 时，玩家能选到它，但结算后它仍留在 `P0.deck`，不会进入真实 owner 的 `P1.deck`。现已在 [`giantAntsPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/giantAntsPod.test.ts>) 新增 focused gate `search 分支选择被他人拥有的牌库牌时，仍应进入其拥有者牌库顶`，首轮红灯坐实 `P0.deck=['borrowed-deck-card','own-deck-card']` 未变化；最小修复只改该 search resolver：按 live `card.owner` 写 `CARD_TO_DECK_TOP.ownerId`，并在 borrowed 场景补 `sourcePlayerId: context.playerId`。验证：focused `giantAntsPod.test.ts --testNamePattern "search 分支选择被他人拥有的牌库牌时，仍应进入其拥有者牌库顶|can still search when you have no minion to destroy|destroy 分支点中被我控制但归对手拥有的随从时，仍应进入其拥有者弃牌堆"` => `1 file passed, 3 passed`；整文件 `giantAntsPod.test.ts` => `1 file passed, 8 passed`。这格只闭合 `giant_ant_who_wants_to_live_forever_pod` 的 search-deck borrowed card -> owner deck top 分支，不外推整个 Giant Ants、所有 deck-search caller 或所有 `CARD_TO_DECK_TOP` producer。
+- 2026-05-23 最新进展补记：`elder_thing_elder_thing / borrowed self-to-deck-bottom + failed_destroy -> owner provenance` 这轮继续沿“借来的随从自己回牌库底时仍把 owner 洗成当前玩家”的 still-open family 命中一条新的对象级真红灯，不是 `elder_thing_begin_the_summoning_pod` 的 borrowed discard topdeck 回顶复读，也不是 `elder_thing_elder_thing_pod` 的 shared `MINION_PLAYED` owner seam 回扫。旧 [`elder_things.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/elder_things.ts>) 的 `elderThingChoicePromptProgram` 与 `elderThingDestroyFirst/SecondPromptProgram` 在 direct `deckbottom` 与 `failed_destroy` 三个回底分支里都把 `CARD_TO_DECK_BOTTOM.ownerId` 写成 `context.playerId`；因此当 `elder_thing_elder_thing(controller='0', owner='1')` 被 P0 打到基地后，无论是直接选择“将本随从放到牌库底”，还是 destroy 链第一目标出现后其余 live 候选全部离场触发 `failed_destroy`，旧链都会把它错误沉进 `P0.deck`。现已把三个分支统一改为按 `findMinionOnBases(state.core, context.cardUid)?.minion.owner ?? context.playerId` 读取 live source minion 的真实 owner；并在 [`elderThingsPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/elderThingsPod.test.ts>) 实际补跑两条 focused gate，分别锁住 direct `deckbottom` 与 `failed_destroy` 回底分支最终都进入 `P1.deck`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/elderThingsPod.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "destroy option disabled and you can put it to deck bottom \\(FAQ\\)|failed_destroy 仍应把 borrowed 远古之物放回其拥有者牌库底"` => `1 file passed, 2 passed`。这格只闭合 `elder_thing_elder_thing` 在 borrowed self-to-deck-bottom / failed_destroy 场景下的 owner provenance，不外推整个 Elder Things、所有 self-bottom caller，或全部 `CARD_TO_DECK_BOTTOM` producer 已完成。
+- 2026-05-23 最新进展补记：`wizard_mass_enchantment / borrowed ongoing attach -> owner provenance` 这轮继续沿“借来的 ongoing 在真实附着后仍把 owner 洗成当前玩家”的 still-open family 命中一条新的对象级真红灯，不是 `trickster_hideout_pod` 的 ongoing swap seam 复读，也不是 `elder_thing_begin_the_summoning_pod` 的 discard topdeck 回顶缝回扫。旧 [`wizards.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/wizards.ts>) 的 `resolveWizardExternalActionPlay()` 在 `playMode === 'ongoing-base' / 'ongoing-minion'` 两个分支里都把 `ONGOING_ATTACHED.ownerId` 直接写成 `context.playerId`；因此当 `wizard_mass_enchantment` 从对手牌库顶真实外部打出一张 `owner='1'` 的 borrowed `ninja_smoke_bomb / steampunk_escape_hatch` 时，旧链会把这张 ongoing 错附着成 `ownerId='0'`。我直接在现有 [`query6Abilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/query6Abilities.test.ts>) 的两条 `wizard_mass_enchantment` gate 上补 owner provenance 断言，首轮红灯已坐实 `su:ongoing_attached.payload.ownerId === '0'`。现已把 `resolveWizardExternalActionPlay()` 的 `ongoing-base/minion` 两个分支统一改为按 `sourceCard.owner` 写 `ownerId`，不动其它 Wizards topdeck/portal/reveal 路径。验证：focused `query6Abilities.test.ts --testNamePattern "wizard_mass_enchantment: 打出附着到随从的行动时应保留目标上下文并触发 base_enchanted_glade|wizard_mass_enchantment: 打出无 onPlay 的基地 ongoing 时应保留目标上下文，并让 base_enchanted_glade 以 base-target 语义入队但不抽牌"` => `1 file passed, 2 passed`；邻近 `query6Abilities.test.ts --testNamePattern "wizard_mass_enchantment"` => `1 file passed, 5 passed`。这格只闭合 `wizard_mass_enchantment` 在 borrowed ongoing attach 场景下的 owner provenance，不外推整个 Wizards、所有 external replay caller，或全部 ongoing attach producer 已完成。
+- 2026-05-23 最新进展补记：`elder_thing_begin_the_summoning_pod / borrowed discard minion -> owner deck top` 这轮继续沿“borrowed discard 自己回牌库顶时仍把 owner 写成当前玩家”的 still-open family 命中一条新的对象级真红灯，不是 `penguins_emperor_penguin_talent` 的 borrowed hand topdeck 复读，也不是 `trickster_hideout_pod` 的 ongoing swap seam 回扫。旧 [`elder_things.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/elder_things.ts>) 的 `elderThingBeginTheSummoningPodPromptProgram` 在把所选弃牌堆随从放到牌库顶时直接写 `CARD_TO_DECK_TOP.ownerId = context.playerId`；因此当 `P0` 选择自己 discard 中一张 `owner='1'` 的 borrowed `borrowed-minion` 时，会被错误放进 `P0.deck`。新增 focused gate [`elderThingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/elderThingAbilities.test.ts>)：`elder_thing_begin_the_summoning_pod 选择被他人拥有的弃牌随从时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶`，首轮红灯已坐实 `P0.deck === ['borrowed-minion','p0-deck-a']`。现已把该 POD prompt handler 改为按 `inDiscard.owner` 写 `ownerId`，并显式补 `sourcePlayerId: context.playerId`，确保 borrowed source 会从当前玩家 discard 移走后，真正进入其拥有者牌库顶。验证：`elderThingAbilities.test.ts --testNamePattern "elder_thing_begin_the_summoning"` => `1 file passed, 5 passed`。这格只闭合 `elder_thing_begin_the_summoning_pod` 在 borrowed discard minion 场景下的 owner provenance，不外推整个 Elder Things、所有 discard-topdeck caller，或全部 `CARD_TO_DECK_TOP` producer 已完成。
+- 2026-05-23 最新进展补记：`trickster_hideout_pod / borrowed ongoing swap -> owner provenance` 这轮继续沿“borrowed ongoing 被移动/换位后仍把 owner 洗成当前玩家”的 still-open family 命中一条新的对象级真红灯，不是 `mermaids_shipwreck_cove` 的 queued move owner 复读，也不是 `ghost_make_contact_pod` 的 detach seam 回扫。旧 [`tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 的 `tricksterHideoutPodSwapPromptProgram` 在把选中的基地持续战术换进基地时直接写 `{ ownerId: playerId }`；因此当 `P0` 从自己手牌换入一张 `owner='1'` 的 borrowed `trickster_flame_trap_pod` 时，基地上的新 ongoing 会被错误写成 `ownerId='0'`。新增 focused gate [`ongoingTalent.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ongoingTalent.test.ts>)：`从手牌交换被他人拥有的持续战术时，换进基地的 ongoing 仍应保留真实 ownerId`，首轮红灯已坐实 `base[0].ongoingActions[0].ownerId === '0'`。现已把该 handler 改为先从所选 `hand/deck` 实例读取真实 `selectedCard.owner`；若实例已不在原区则直接收口为空事件，若仍在原区则把换进基地的 ongoing 改写为 `ownerId: selectedCard.owner`。验证：`ongoingTalent.test.ts --testNamePattern "trickster_hideout_pod（藏身处 POD ongoing talent）"` => `1 file passed, 4 passed`。这格只闭合 `trickster_hideout_pod` 在 borrowed ongoing swap 场景下的 owner provenance，不外推整个 Tricksters、所有 ongoing swap/talent，或全部 ongoing move/detach family 已完成。
+- 2026-05-23 最新进展补记：`itty_critters_rainboroc / borrowed discard minion -> owner deck shuffle` 这轮继续沿“borrowed discard 自己洗回牌库时仍把 `DECK_REORDERED.playerId` 写成当前玩家”的 still-open family 命中一条新的对象级真红灯，不是前面已闭合的 `Direct to DVD Sequel / Cthulhu / Cream Puff Man` 复读。旧 [`titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `titan_itty_critters_rainboroc_choose_discard` 直接发 `DECK_REORDERED.playerId=playerId` 且 `deckUids=random.shuffle([...player.deck, card])`；因此当 `P0` 选择自己 discard 中一张 `owner='1'` 的 borrowed `rain-borrowed-minion` 时，会被错误洗进 `P0.deck`。新增 focused gate [`smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/smashup.smoke.test.ts>)：`彩虹鸟天赋选择被他人拥有的弃牌随从时，仍应洗回其拥有者牌库而不是当前玩家牌库`，首轮红灯已坐实 `DECK_REORDERED.payload.playerId === '0'`。现已把该 handler 改为按 `card.owner` 写 `playerId`，牌库快照改基于真实 owner deck，且仅在 borrowed 场景补 `sourcePlayerId: playerId`。验证：focused `1 file passed, 1 passed`；邻近 `彩虹鸟天赋会把低战力随从从弃牌堆洗回牌库，并可继续移动到其他基地|彩虹鸟天赋选择被他人拥有的弃牌随从时，仍应洗回其拥有者牌库而不是当前玩家牌库` => `1 file passed, 2 passed`。这格只闭合 `itty_critters_rainboroc` 在 borrowed discard minion 场景下的 owner-scoped shuffle provenance，不外推整个 `Itty Critters` Titans、所有 `DECK_REORDERED` producer，或全部 borrowed-discard family 已完成。
+- 2026-05-23 最新进展补记：`ghosts_creampuff_man / borrowed discard action self-to-deck-bottom / owner provenance` 这轮继续沿“borrowed action 自己回底时仍把 owner 写成当前玩家”的 still-open family 命中一条新的对象级真红灯，不是前面已闭合的 Cream Puff Man `base-target/minion-target` 目标上下文分支复读。旧 [`titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `resolveCreampuffActionPlay(...)` 在额外打出弃牌行动并结算完后，仍把 `CARD_TO_DECK_BOTTOM.payload.ownerId` 直接写成 `playerId`；因此当 `P0` 从自己的 discard 额外打出一张 `owner='1'` 的 borrowed `cyborg_apes_going_bananas` 时，会被错误沉进 `P0.deck`。新增 focused gate [`reactionQueueActionPlayedExternalDiscard.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueActionPlayedExternalDiscard.test.ts>)：`Cream Puff Man 从弃牌堆额外打出被他人拥有的标准行动后，仍应沉回其拥有者牌库底`，首轮红灯已坐实 `CARD_TO_DECK_BOTTOM.payload.ownerId === '0'`。现已把 `resolveCreampuffActionPlay(...)` 改为按 `actionCard.owner` 写 `ownerId`，并仅在 borrowed 场景补 `sourcePlayerId: playerId`。验证：focused `1 file passed, 1 passed`；`reactionQueueActionPlayedExternalDiscard.test.ts` 整文件 `1 file passed, 3 passed`；`git diff --check -- src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/reactionQueueActionPlayedExternalDiscard.test.ts` 通过（仅 LF/CRLF warning）。这格只闭合 `ghosts_creampuff_man` 在 borrowed discard standard action 场景下的 self-to-deck-bottom owner provenance，不外推整个 `Ghosts` Titans、所有 external discard replay，或全部 borrowed-action family 已完成。
+- 2026-05-23 最新进展补记：`princesses_direct_to_dvd_sequel / borrowed discard minion -> owner deck shuffle` 这轮继续沿 `topdeck/shuffle owner provenance` family 命中一条新的对象级真红灯，不是 `Woodland Helpers` 的 borrowed action 回底复读，也不是 `Sleeping Beauty` 的 destroy-self shuffle 分支回扫。新增 [`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) focused gate `princesses_direct_to_dvd_sequel 选择被他人拥有的弃牌随从时，仍应洗回其拥有者牌库而不是当前玩家牌库` 后，首轮先坐实旧 [`princesses.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/princesses.ts>) 的 `resolvePrincessesDirectToDvdSequelSelection(...)` 仍把 `player.discard` 里的所选卡直接 `random.shuffle([...player.deck, card])`，再发 `DECK_REORDERED.playerId=当前玩家`，导致 `owner='1'` 的 borrowed `borrowed-discard` 被错误洗进 `P0.deck` 并误参与当前玩家摸牌。最小修复仍限制在 `princesses.ts` 本地：改为读取 `card.owner` 作为真实 owner，用 `buildValidatedCardToDeckBottomEvents(... ownerId=card.owner, sourcePlayerId=playerId, expectedLocation:'discard')` 把 borrowed source 从当前玩家 discard 移走，再发 `DECK_REORDERED.playerId=ownerId`；若 `ownerId===playerId`，保留原“洗入自己的 deck 后摸其顶牌”语义，若 `ownerId!==playerId`，摸牌则回到 `buildStandardDrawEvents(state.core, playerId, 1, ...)` 按行动玩家自己的 deck 处理。验证：focused `newFactionAbilities.test.ts --testNamePattern "princesses_direct_to_dvd_sequel 会把弃牌堆随从洗回牌库并抽 1|princesses_direct_to_dvd_sequel 选择被他人拥有的弃牌随从时，仍应洗回其拥有者牌库而不是当前玩家牌库"` => `1 file passed, 2 passed`；邻近 `newFactionAbilities.test.ts --testNamePattern "princesses_direct_to_dvd_sequel 会把弃牌堆随从洗回牌库并抽 1|princesses_direct_to_dvd_sequel 选择被他人拥有的弃牌随从时，仍应洗回其拥有者牌库而不是当前玩家牌库|princesses_sleeping_beauty 被消灭时会洗回牌库而不是进弃牌堆"` => `1 file passed, 3 passed`。这格只闭合 `princesses_direct_to_dvd_sequel` 在 borrowed discard minion 场景下的 owner provenance，并给 `princesses_sleeping_beauty` 补了一个邻近 green evidence；不外推整个 Princesses、所有 shuffle caller，或全部 `DECK_REORDERED` producer 已完成。
+- 2026-05-23 最新进展补记：`vikings_huscarl / local toDeckTop caller family / borrowed hand -> owner deck top` 这轮继续沿 `borrowed hand/discard -> owner deck top/shuffle` family 命中一条新的对象级真红灯，不是 `Time Raider / Repeater Perfect / Emperor Penguin / Cthulhu` 的复读。新增 [`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) focused gate `vikings_huscarl 选择被他人拥有的手牌时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶` 后，首轮先坐实旧 [`vikings.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vikings.ts>) 的本地 helper `toDeckTop(playerId, ...)` 仍把 `CARD_TO_DECK_TOP.payload.ownerId` 写死成当前玩家，导致 `owner='1'` 的 borrowed `borrowed-1` 从 P0 手牌发动 `vikings_huscarl` 后错误进入 `P0.deck`。最小修复没有动 shared reducer，而是只在 `vikings.ts` 本地收口这组 hand-topdeck caller：`buildHandCardOptions(...)` 透传 `ownerId`，`toDeckTop(...)` 扩成显式 `ownerId` 并在 borrowed 场景补 `sourcePlayerId: playerId`，再把 `vikings_huscarl / vikings_raider / vikings_berserk / base_longhouse` 这四条 caller 都改按真实 owner 回顶。验证：focused `newFactionAbilities.test.ts --testNamePattern "vikings_huscarl 天赋会把手牌放到牌库顶并给自身 \+2 力量|vikings_huscarl 选择被他人拥有的手牌时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶"` => `1 file passed, 2 passed`；邻近 `newFactionAbilities.test.ts --testNamePattern "vikings_huscarl 天赋会把手牌放到牌库顶并给自身 \+2 力量|vikings_huscarl 选择被他人拥有的手牌时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶|vikings_raider 会把揭示的低力量随从作为额外随从直接打出|vikings_berserk_pod 会把手牌压到牌库顶并给你的随从 \+4 力量"` => `1 file passed, 3 passed`；`newBaseAbilities.test.ts --testNamePattern "base_longhouse 改为主动基地能力：使用后会把手牌置于牌库顶并给此基地己方随从 \+2 力量|base_longhouse_pod reuses the active base ability to topdeck and buff"` => `1 file passed, 2 passed`。这格只闭合 `vikings_huscarl` 在 borrowed hand 场景下的 owner provenance，并给 `vikings_raider / vikings_berserk / base_longhouse` 的同文件 sibling 补邻近 green evidence；不外推整个 Vikings、所有 `CARD_TO_DECK_TOP` caller，或其它 `shuffleCardIntoDeck / DECK_REORDERED` family 已完成。
+- 2026-05-23 最新进展补记：`time_travelers_time_raider / time_travelers_repeater_perfect / borrowed discard -> owner deck bottom/top` 这轮继续沿刚才的 owner/source provenance family 又命中两条 sibling 真红灯。新增 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>) focused gates `时间掠夺者选择被他人拥有的弃牌时，仍应进入其拥有者牌库底而不是当前玩家牌库底` 与 `往复时间者选择被他人拥有的弃牌行动时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶` 后，首轮分别坐实旧 [`yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>) 仍把 `buildValidatedCardToDeckBottomEvents(... ownerId: ctx.playerId ...)` 与 `cardToDeckTop(card, playerId, ...)` 写成当前玩家。最小修复是两步：1) `Time Raider` 自动分支与 handler 都改按 `card.owner` 写 `ownerId`，并显式补 `sourcePlayerId: playerId`；2) `cardToDeckTop()` 扩成支持 `sourcePlayerId`，让 `Repeater Perfect` 自动分支与 handler 都按 `card.owner` 回顶、按 `playerId` 标记来源。验证：focused => `1 file passed, 2 passed`；邻近 `时间掠夺者天赋允许选择弃牌堆任意一张放到牌库底|时间掠夺者弃牌堆只有一张牌时应自动放到牌库底且不弹 prompt|时间掠夺者选择被他人拥有的弃牌时，仍应进入其拥有者牌库底而不是当前玩家牌库底|往复时间者进场允许选择弃牌堆行动放到牌库顶|往复时间者弃牌堆只有一张行动时应自动放到牌库顶且不弹 prompt|往复时间者选择被他人拥有的弃牌行动时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶"` => `1 file passed, 6 passed`。这格只闭合 `Time Raider / Repeater Perfect` 在 borrowed discard 场景下的 owner provenance，不外推全部 `deck top/bottom` caller、全部 discard consumer，或整个 Time Travelers family 已完成。
+- 2026-05-23 最新进展补记：`penguins_emperor_penguin_talent / borrowed hand minion -> owner deck top` 这轮又命中一条新的 owner/source provenance 真红灯，不是 `Time Walk` / `Favor of Dionysus` 的复读。新增 [`smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/smashup.smoke.test.ts>) focused gate `企鹅帝皇天赋选择被他人拥有的 borrowed 手牌随从时，仍应洗回其拥有者牌库` 后，首轮先坐实 [`titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 旧实现把 `CARD_TO_DECK_TOP.payload.ownerId` 与 `DECK_REORDERED.payload.playerId` 都写死成当前玩家；把 producer 改成真实 `card.owner` 后，又要求 [`reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `CARD_TO_DECK_TOP` 像 `CARD_TO_DECK_BOTTOM` 一样消费 `sourcePlayerId`，先从 `sourcePlayerId ?? ownerId` 的手牌/牌库/弃牌移除，再把牌真正放回 `ownerId` 的牌库顶。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "企鹅帝皇天赋选择被他人拥有的 borrowed 手牌随从时，仍应洗回其拥有者牌库"` => `1 file passed, 1 passed`；邻近 `--testNamePattern "企鹅帝皇天赋会把手中的低战力随从洗回牌库，并为泰坦增加 1 枚力量指示物|企鹅帝皇天赋选择被他人拥有的 borrowed 手牌随从时，仍应洗回其拥有者牌库"` => `1 file passed, 2 passed`。这格只闭合 `penguins_emperor_penguin_talent` 的 borrowed hand/discard minion 回顶到拥有者牌库，以及 shared `CARD_TO_DECK_TOP` 对 `sourcePlayerId` 的对称支持；不外推所有 `CARD_TO_DECK_TOP` caller、所有 `DECK_REORDERED` producer，或整个 Penguins family 已完成。
+- 2026-05-23 继续推进：`wizard_mass_enchantment / base-target ongoing sibling` 这格已明确判定为测试断言漂移，不是新的 `externalActionPlay` runtime 红灯。接手前新增的 `query6Abilities.test.ts` 用例把 `base_enchanted_glade` 误写成“基地 target 的 ongoing 也应抽牌”，但源码 [`baseAbilities_expansion.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities_expansion.ts>) 明确只在 `actionTargetType==='minion'` 时抽牌；因此 base-target sibling 的正确合同是：`ACTION_PLAYED.targetBaseIndex=0,targetType='base'` 与 `ONGOING_ATTACHED.targetBaseIndex=0` 保留，`base_enchanted_glade` 仍会以 `actionTargetType='base'` 入队/消费，但不会产出 `CARDS_DRAWN`。现已把测试收紧为断言 `TRIGGER_QUEUED -> TRIGGER_CONSUMED` 和“不抽牌”，复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/query6Abilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "wizard_mass_enchantment: 打出无 onPlay 的基地 ongoing 时应保留目标上下文，并让 base_enchanted_glade 以 base-target 语义入队但不抽牌|wizard_mass_enchantment: 打出附着到随从的行动时应保留目标上下文并触发 base_enchanted_glade"` => `1 file passed, 2 passed`。这格只说明新增 sibling 用例此前把规则写错了，不外推整个 `externalActionPlay` 或 `Wizards` family 已完成；下一格继续留在 `externalActionPlay / processAffectTriggers` 主线找真正 still-open 的 caller/seam。
+- 2026-05-23 继续推进：`externalActionPlay / steampunks replay final resolve` 这轮不只修了 `mechanic` 一条链，还把同文件 sibling 的 final-resolve gate 补齐。先前新增的 `steampunk_mechanic_target: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文` 首轮直接抛 `ReferenceError: appendResolvedActionAbility is not defined`，最小修复只补 `steampunks.ts` 的 helper 导入；修复后 `expansionOngoing.test.ts -t "steampunk_mechanic_target: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文|steampunk_mechanic_target: 恢复一张 ongoing 后不应双重回手，并应继续停留在选基地 prompt|steampunk_mechanic_target: 若待附着的 ongoing 已不在手牌则不再附着到基地"` => `1 file passed, 3 passed`。随后又补 `steampunk_change_of_venue_choose_base: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文`，复跑 `expansionOngoing.test.ts -t "steampunk_change_of_venue_choose_base: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文|steampunk_change_of_venue: 取回 ongoing 后不应双重离场/回手，并应继续停留在重打目标 prompt|steampunk_change_of_venue_choose_base: 若待重打的 ongoing 已不在手牌则不再附着"` => `1 file passed, 3 passed`。这说明当前不是“只修一个缺 import 就停”，而是已经把 `steampunks.ts` 里两条 external replay final branch 都锁到了真正落地阶段；下一格继续找别的 `externalActionPlay / processAffectTriggers` still-open caller。
+- 2026-05-23 继续推进：`externalActionPlay / steampunk_mechanic_target / ongoing replay final resolve` 这次打到一条真实红灯，不是再补静态门。给 `expansionOngoing.test.ts` 新增 `steampunk_mechanic_target: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文` 后，首轮直接炸出 `ReferenceError: appendResolvedActionAbility is not defined`，堆栈落在 `src/games/smashup/abilities/steampunks.ts:657` 的最终重打分支，说明之前这条链其实从没真正落到 replay helper。最小修复只补了 `appendResolvedActionAbility` 导入；复跑 `expansionOngoing.test.ts -t "steampunk_mechanic_target: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文|steampunk_mechanic_target: 恢复一张 ongoing 后不应双重回手，并应继续停留在选基地 prompt|steampunk_mechanic_target: 若待附着的 ongoing 已不在手牌则不再附着到基地"` => `1 file passed, 3 passed`。新增 gate 现在锁住 `ACTION_PLAYED.targetBaseIndex=0,targetType='base'` 和 `ONGOING_ATTACHED.targetBaseIndex=0`，并确认没有再因缺 import 在最终落地时崩掉。下一格继续留在 `externalActionPlay / processAffectTriggers` 主线，不回扫已收口的 `steampunk_mechanic_target` 或刚补的 `MINION_RETURNED attached-source provenance`。
+- 2026-05-23 继续推进：`externalActionPlay / steampunk_change_of_venue / attached-on-minion ongoing replay` 这次命中的是另一条真实 caller 红灯，不是 `mechanic` 缺 import 的复读，也不是 `withSimulatedMatchState` 邻近绿证据。新增 `expansionOngoing.test.ts` 用例 `steampunk_change_of_venue: 应允许取回附着在随从上的 ongoing，并继续进入重打随从目标 prompt` 后，首轮坐实旧 [`steampunks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/steampunks.ts>) 的 `buildChangeOfVenueOngoingOptions()` 与 `findOngoingBaseIndexByUid()` 都只扫 `base.ongoingActions`，完全漏掉 `minion.attachedActions`，导致附着在随从上的 `ninja_smoke_bomb` 既进不了候选，也定位不到所属基地。最小修复只把这两个 helper 扩成同时扫描 `base.ongoingActions` 与 `minion.attachedActions`，不动其它 replay 逻辑；随后补的 `steampunk_change_of_venue_choose_minion: 重打无 onPlay 的随从附着 ongoing 时仍应保留 ACTION_PLAYED 目标随从上下文` 也确认最终落地会继续保留 `ACTION_PLAYED.targetBaseIndex=0,targetType='minion',targetMinionUid='target-1'`，并产出对应 `ONGOING_ATTACHED.targetType='minion'`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "steampunk_change_of_venue: 应允许取回附着在随从上的 ongoing，并继续进入重打随从目标 prompt|steampunk_change_of_venue_choose_minion: 重打无 onPlay 的随从附着 ongoing 时仍应保留 ACTION_PLAYED 目标随从上下文|steampunk_change_of_venue: 取回 ongoing 后不应双重离场/回手，并应继续停留在重打目标 prompt|steampunk_change_of_venue_choose_base: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文|steampunk_change_of_venue_choose_base: 若待重打的 ongoing 已不在手牌则不再附着"` => `1 file passed, 5 passed`。这格只闭合 `Change of Venue` 对随从附着 ongoing 的候选/定位与 minion-target final-resolve，不外推整个 `Steampunks`、所有 replay caller 或整个 `externalActionPlay` family 已完成。
+- 2026-05-23 继续推进：`processReturnToHandTriggers / MINION_RETURNED / attached source leaves play` 这格这次没有回红，而是补成 dedicated green gate，证明当前不是围着旧 seam 原地复读。`reactionQueueOnCardReturnedToHand.test.ts -t "MINION_RETURNED 让宿主从场上回手时，已随宿主离场的附着 source 也应按显式 source provenance 入队|CARD_TRANSFERRED 让宿主从场上回手时，已随宿主离场的附着 source 也应按显式 source provenance 入队"` => `1 file passed, 2 passed`；新增的 `MINION_RETURNED` sibling gate 明确锁住 queued trigger 继续保留 `sourceCardUid='attached-source'`、`sourceControllerId='0'`、`ownerPlayerId='0'`、`eventPlayerId='1'` 与 `triggerMinionUid='return-host'`，不再只靠旧的 `CARD_TRANSFERRED` 邻近用例旁证。下一格应继续离开这条 return-to-hand sibling，转去 `externalActionPlay / processAffectTriggers` 的 still-open family，而不是回扫已锁住的 attached-source provenance。
+- 2026-05-23 继续推进：`withSimulatedMatchState(...) + events + nextProgram` 这条 shared seam 又补到 Steampunks，确认上轮遗漏的是 caller inventory 不是 runtime 回红。`expansionOngoing.test.ts -t "steampunk_mechanic_target: 恢复一张 ongoing 后不应双重回手，并应继续停留在选基地 prompt|steampunk_mechanic_target: 若待附着的 ongoing 已不在手牌则不再附着到基地|steampunk_change_of_venue: 取回 ongoing 后不应双重离场/回手，并应继续停留在重打目标 prompt|steampunk_change_of_venue_choose_base: 若待重打的 ongoing 已不在手牌则不再附着"` => `1 file passed, 4 passed`，新增两条 dedicated gate 分别锁住 `steampunk_mechanic` 的 recover-once 和 `steampunk_change_of_venue` 的 detach+recover-once。按当前静态搜索，显式 `withSimulatedMatchState` caller 现仅分布在 `frankenstein.ts(3)`、`elder_things.ts(1)`、`steampunks.ts(2)`，都已各有 dedicated gate；下一格应转去别的 still-open family，而不是继续回扫这条 seam。
+- 2026-05-23 继续推进：沿 `frankenstein_angry_mob` 命中的 `withSimulatedMatchState(...) + events + nextProgram` shared seam 没再空转，已补三条邻近 dedicated green gate。`frankensteinFaq.test.ts -t "Blitzed: may remove 0 counters and still destroy a power 0 minion|Blitzed: removing one counter should not double-apply before the follow-up remove prompt"` => `1 file passed, 2 passed`，锁定 `Blitzed` 第一次移除后只会少 1 个指示物且仍停在 remove prompt；`elderThingsPod.test.ts -t "decliner does not force the caster to play from discard|playing one discard minion and continuing should not double-play it before the next may-play decision"` => `1 file passed, 2 passed`，锁定 `Spreading Horror POD` 第一次从弃牌堆打出后只落地 1 次并继续回到下一轮 may-play decision；`newFactionAbilities.test.ts -t "尸体商店\\+雄蜂：选择防止消灭时，应先结算雄蜂且不进入指示物分配|尸体商店\\+雄蜂：选择不防止消灭时，应在确认消灭后再进入指示物分配|尸体商店：第一次分配指示物后不应双加，并应继续停留在下一轮分配 prompt"` => `1 file passed, 3 passed`，锁定 `Body Shop` 第一次分配后只加 1 个指示物且仍停在 distribute prompt。最小门禁 `git diff --check -- src/games/smashup/__tests__/frankensteinFaq.test.ts src/games/smashup/__tests__/elderThingsPod.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` 通过（仅 LF/CRLF warning）；这条 seam 的三个高价值 caller 当前都有 dedicated gate，下一格应换到别的 still-open family 或剩余未锁 caller，而不是回扫已转绿的 Angry Mob / Blitzed / Body Shop / Spreading Horror POD。
+- 2026-05-23 同步收口：`frankenstein_angry_mob` 命中的 `borrowed hand -> owner deck bottom` 与 `ability runtime prompt events + nextProgram 双吃` shared seam 已回写到 `task_plan.md`、`evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` 与 `.omx+` 长期状态 JSON；聚焦验证 `newFactionAbilities.test.ts` 的 2 条 Angry Mob gate => `1 file passed, 2 passed`，邻近 `elderThingsPod.test.ts -t "decliner does not force the caster to play from discard"` => `1 file passed, 1 passed`；最小门禁 `git diff --check -- src/games/smashup/abilities/frankenstein.ts src/games/smashup/domain/abilityHelpers.ts src/games/smashup/domain/reduce.ts src/games/smashup/domain/systems.ts src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/elderThingsPod.test.ts` 通过（仅 LF/CRLF warning），长期 JSON `ConvertFrom-Json` 通过。
+- 2026-05-23 同步收口：已把 `time_travelers_time_walk` 的 borrowed self-to-deck-bottom owner seam 回写到 `task_plan.md`、`evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` 与 `.omx+` 长期状态 JSON，并复跑 focused `Time Walk` 双用例 => `1 file passed, 2 passed`；最小门禁 `git diff --check -- src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` 通过（仅 task/progress LF/CRLF warning），长期 JSON `ConvertFrom-Json` 通过。
+- 2026-05-23 最新进展补记：`frankenstein_angry_mob` 这轮新命中的不是 `Time Walk` 的复读，而是一条同时跨 `CARD_TO_DECK_BOTTOM` 与 shared runtime prompt 的真红灯。旧 [`frankenstein.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/frankenstein.ts>) 在 `frankensteinAngryMobChooseCardPromptProgram` 里默认把所选手牌按当前玩家处理；因此当 P0 选择一张 `owner='1'` 的 borrowed `borrowed-hand` 时，首轮先坐实它被错误放进 `P0.deck`。把 `sourceCard.owner + sourcePlayerId` 接进 [`abilityHelpers.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/abilityHelpers.ts>) 后，又继续暴露出两层 shared seam：一是 [`reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `CARD_TO_DECK_BOTTOM` 在 `sourcePlayerId !== ownerId` 时只追加 owner deck、不先去重 owner 三区，使同 uid 事件一旦被重复吃到就会把 `borrowed-hand` 在 `P1.deck` 落两次；二是更底层的 [`systems.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/systems.ts>) 对 ability runtime prompt 仍沿用“前推 `result.state`，再把 `result.events` 交给后续 reduce”的路径，导致像 Angry Mob 这种 `onResolve` 同时返回 `events + nextProgram`，且 `nextProgram` 依赖 `withSimulatedMatchState(state, events)` 的链，会把同一批 `CARD_TO_DECK_BOTTOM + POWER_COUNTER_ADDED` 双吃成 `P1.deck=['p1-deck-a','borrowed-hand','borrowed-hand']` 与 `monster1.powerCounters===2`。现已最小收口为：`reduce.ts` 在 `sourcePlayerId != ownerId` 时先从 owner hand/discard/deck 去重再统一 append 一次；`systems.ts` 对 ability runtime prompt 且 `emittedEvents.length>0` 的分支，把 `result.state.core` 退回 `coreBeforeHandler`，只保留交互/sys 侧模拟态，避免 domain events 重复 reduce。验证：focused `newFactionAbilities.test.ts -t "愤怒的民众：若所选手牌已离开手牌，不应凭旧交互再塞回牌库|愤怒的民众：选择被他人拥有的手牌时，仍应进入其拥有者牌库底而不是当前玩家牌库底"` => `1 file passed, 2 passed`；邻近 `elderThingsPod.test.ts -t "decliner does not force the caster to play from discard"` => `1 file passed, 1 passed`。这格只闭合 `frankenstein_angry_mob` 的 borrowed hand -> owner deck bottom 分支，以及“ability runtime prompt 返回 events + nextProgram 时不得双吃 domain events”这条由 Angry Mob 命中的 shared seam；不外推所有 prompt runtime、所有 `withSimulatedMatchState(...)` caller 或全部 `CARD_TO_DECK_BOTTOM` caller 已全量收口。
+- 2026-05-23 最新进展补记：`time_travelers_time_walk` 命中一条新的 borrowed self-to-deck-bottom owner seam，不是前面 `Favor of Dionysus` 的 deck-top 复读，也不是 `mermaids_shipwreck_cove` 的 ongoing move seam。旧 [`yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>) 在 `timeTravelersTimeWalk()` 里先把 `buildValidatedCardToDeckBottomEvents(... ownerId: ctx.playerId ...)` 写死成当前玩家；因此当 `P0` 打出一张 `owner='1'` 的 borrowed `time_travelers_time_walk` 时，首轮红灯已坐实 `walk-a` 被错误沉进 `P0.deck`。把 `ownerId` 改成真实 owner 之后，又继续暴露出更细的 helper 假设：`buildValidatedCardToDeckBottomEvents(... expectedLocation:'any')` 默认只在 `ownerId` 自己的手牌/牌库/弃牌里查 source card，于是 borrowed `Time Walk` 会连 `CARD_TO_DECK_BOTTOM` 事件都不再生成，表现成 `walk-a` 既不在 `P0.deck` 也不在 `P1.deck`。最终最小修复是两步：1) 在 `yuanhou.ts` 本地新增 `findCardOwnerAcrossPlayerZones(...)`，先按 `cardUid/defId` 从全体玩家 `hand/discard/deck` 读取 source action 的真实 `card.owner`；2) `timeTravelersTimeWalk()` 不再走默认假设 owner-zone 的 `buildValidatedCardToDeckBottomEvents(...)`，改为直接发一条 `CARD_TO_DECK_BOTTOM(ownerId=真实 owner)`。验证：focused `yuanhouFactionAbilities.test.ts -t "被他人拥有的时间漫步结算后，仍应进入其拥有者牌库底而不是当前玩家牌库底"` => `1 file passed, 1 passed`；邻近 `yuanhouFactionAbilities.test.ts -t "时间旅行者：时间漫步授予本回合额外随从和行动、抽两张，并将本牌放牌库底|被他人拥有的时间漫步结算后，仍应进入其拥有者牌库底而不是当前玩家牌库底"` => `1 file passed, 2 passed`。这格只闭合 `time_travelers_time_walk` 在 borrowed self-to-deck-bottom 场景下的 owner provenance，不外推整个 `Time Travelers`、所有 self-to-deck-bottom action，或 shared `buildValidatedCardToDeckBottomEvents` 已全量适配 borrowed source。
+- 2026-05-23 最新进展补记：`mermaids_shipwreck_cove` 命中一条新的 ongoing-move owner provenance 真红灯，不是 `shipwreck_cove` 的 response owner 或 `ghost_make_contact_pod` 的 detach seam 回扫。旧 [`mermaids.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/mermaids.ts>) 在 `mermaidsShipwreckCoveAfterScoring()` 里把 move prompt continuation 的 `ownerId` 直接写成 `ctx.sourceControllerId`；因此当 queued afterScoring 触发移动一张 `owner='1'`、但当前由 `sourceControllerId='0'` 结算的 borrowed `mermaids_shipwreck_cove` 时，旧实现会在 `buildMoveOngoingEvents(...)` 中把这张牌的 detach/reattach owner 洗成 `0`。新增 focused gate [`reactionQueueSourceRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts>)：`queued afterScoring trigger 移动被他人拥有的 mermaids_shipwreck_cove 时，仍应保留其真实 owner`，首轮红灯已坐实移动后 `base[1].ongoingActions['ship-1'].ownerId === '0'`。现已在 `mermaids.ts` 本地新增 `findOngoingOwnerOnBases(...)`，让 `mermaidsShipwreckCoveAfterScoring()` 与共用同一 move prompt 的 `mermaidsBecalmedShoresTalent()` 在创建 continuation 前都先按 `cardUid/defId` 从场上 ongoingActions 读取真实 `ownerId`。验证：focused `1 file passed, 1 passed`；`reactionQueueSourceRuntimeContext.test.ts` 整文件 `1 file passed, 26 passed`；邻近 `newFactionAbilities.test.ts -t "mermaids_becalmed_shores 天赋会把这张持续行动移到另一个基地|mermaids_shipwreck_cove 在计分后可把这张持续行动移到另一个基地"` => `1 file passed, 2 passed`。这格只闭合 `mermaids_shipwreck_cove` 的 borrowed ongoing move owner provenance，并顺带保住同路径 `mermaids_becalmed_shores` talent 入口；不外推整个 `Mermaids`、所有 ongoing move effect，或所有 queued afterScoring trigger 已完成。
+- 2026-05-23 最新进展补记：`ghost_make_contact_pod` 命中一条新的 detached-action owner provenance 真红灯，不是 `Cream Puff Man / Secret Agent / Favor of Dionysus` 那组 `ACTION_PLAYED` consumer 的回扫。旧 [`ghosts.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ghosts.ts>) 在 `ghostMakeContactPod()` 的“手牌仍有其他卡则自毁”分支里，把 `ONGOING_DETACHED.payload.ownerId` 直接写成 `ctx.playerId`；因此当 `P0` 打出一张 `owner='1'` 的 borrowed `ghost_make_contact_pod` 且因手里还有别的牌而立即自毁时，这张行动会被错误送进 `P0.discard`。新增 focused gate [`ghostsAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ghostsAbilities.test.ts>)：`被他人拥有时自毁仍应进入其拥有者弃牌堆，而不是当前玩家弃牌堆`，首轮红灯已坐实 `P0.discard === ['p0-discard-a','a1']`。现已在 `ghosts.ts` 本地新增 `findCardOwnerAcrossPlayerZones(...)`，于 `ghostMakeContactPod()` 创建 detach 事件前按 `cardUid/defId` 扫描全体玩家 `hand/discard/deck` 读取 source action 的真实 `card.owner`，再把该 `ownerId` 写入 `ONGOING_DETACHED`。验证：focused `1 file passed, 1 passed`；`ghostsAbilities.test.ts` 整文件 `1 file passed, 9 passed`。这格只闭合 `ghost_make_contact_pod` 在 borrowed ongoing-action 自毁场景下的 detach-owner provenance，不外推整个 `Ghosts`、所有 `ONGOING_DETACHED` producer，或全部 borrowed-action family 已完成。
+- 2026-05-23 最新进展补记：`cthulhu_servitor` 命中一条新的对象级 owner/controller provenance 真红灯，不是 `cthulhu_furthering_the_cause` 或 `shared destroy ledger` 的回扫。旧 [`cthulhu.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cthulhu.ts>) 在 `cthulhuServitorProgram` 里把自毁 `destroyMinion(...)` 的 `ownerId` 直接写成 `ctx.playerId`；因此当 `cthulhu_servitor(controller='0', owner='1')` 被 P0 使用 talent 自毁时，会被错误送进控制者 P0 的弃牌堆。新增 focused gate [`cthulhu.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/abilities/cthulhu.test.ts>)：`被他人控制时自毁仍应进入自己拥有者的弃牌堆`，首轮红灯已坐实 `destroyEvt.payload.ownerId === '0'`，而不是预期的 `'1'`。现已把 `cthulhuServitorProgram` 收紧为先按 `findMinionOnBases(ctx.state, ctx.cardUid)` 取 source minion，再把自毁 owner 改成 `sourceMinion?.owner ?? ctx.playerId`。验证：focused `1 file passed, 1 passed`；`cthulhu_servitor（仆人 talent）` 邻近子集 `1 file passed, 5 passed`；这格只闭合 `cthulhu_servitor` 自毁在 borrowed-minion 场景下的 owner/controller 语义，不外推整个 Cthulhu、所有 self-destroy ability，或所有 destroy producer 已完成。
+- 2026-05-23 最新进展补记：`giant_ant_who_wants_to_live_forever_pod` 命中一条新的 owner/controller provenance 真红灯，不是前面 `shared destroy ledger` 或 `world_champs_diva` 的回扫。旧 [`giant_ants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/giant_ants.ts>) 在 `giant_ant_who_wants_to_live_forever_pod_destroy` 交互 resolve 时，候选是按 `collectOwnMinions(..., playerId)` 用 `controller` 收集，但真正发 `destroyMinion(...)` 时却把 `ownerId` 也硬写成 `context.playerId`。这意味着如果你控制了一个归对手拥有的 borrowed minion，这张牌会把它当成你的牌去销毁并送进错误弃牌堆。新增 focused gate [`giantAntsPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/giantAntsPod.test.ts>)：`destroy 分支点中被我控制但归对手拥有的随从时，仍应进入其拥有者弃牌堆`，首轮红灯已坐实 `destroyEvent.payload.ownerId === '0'`，而不是预期的 `'1'`。现已把 `destroyMinion(...)` 的 `ownerId` 参数改成所选随从真实 `minion.owner`，`destroyerId` 仍保留 `context.playerId`。验证：focused `1 file passed, 1 passed`；`giantAntsPod.test.ts + vampiresPod.test.ts` 的 `Who Wants to Live Forever` 邻近子集 `2 files passed, 3 passed`；这格只闭合 `giant_ant_who_wants_to_live_forever_pod` destroy 分支在 borrowed minion 场景下的 owner/controller 语义，不外推整个 Giant Ants、所有 self-destroy action，或所有 borrowed-minion consumer 已完成。
+- 2026-05-23 最新进展补记：`world_champs_diva` 又命中一条新的 owner/controller provenance 真红灯，不是前面 `shared destroy ledger` 那格的回扫。旧 [`world_champs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/world_champs.ts>) 的 `buildDivaMirroredEvent()` 在复制 `MINION_DESTROYED` 时把 `ownerId` 直接写成 `divaControllerId`；于是当 Diva 是被借走的随从（`controller='0', owner='1'`）且复制了 destroy 效果后，自己会被错误送进控制者 `P0` 的弃牌堆，而不是拥有者 `P1` 的弃牌堆。新增 focused gate [`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>)：`world_champs_diva 在被他人控制时复制 destroy 效果后，仍应进入自己拥有者的弃牌堆`，首轮已坐实 `world_champs_diva_copy_destroyed.payload.ownerId === '0'`，而不是预期的 `'1'`。现已让 `buildDivaMirroredEvent()` 显式接收 `divaOwnerId`，并把复制 destroy 事件改为 `ownerId: divaOwnerId`、`controllerId: divaControllerId`；从而既保住弃牌去向语义，也保留 controller provenance 供后续 destroy consumer 使用。验证：focused `1 file passed, 1 passed`；Diva/Aramis 邻近子集 `4 passed`；`git diff --check -- src/games/smashup/abilities/world_champs.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` => passed（仅 LF/CRLF warning）。这格只闭合 `world_champs_diva` 复制 destroy 效果时的 owner/controller 语义，不外推所有 `World Champs`、所有 copied event，或 `MINION_RETURNED`/其它 mirrored branch 已一并完成。
+- 2026-05-23 最新进展补记：`shared destroy ledger / MINION_DESTROYED controller provenance payload gap` 这轮不是卡在同一处打转，而是上一格 `sharks_blood_in_the_water` 收口后继续抬出来的一条更底层 shared seam。旧 [`reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 在归约 `MINION_DESTROYED` 写 `turnDestroyedMinions` 时只读 live `minion.controller`；一旦 destroy 事件来自 queued/delayed 路径，live minion 已经不在基地上，就会在 `reduce.ts:2112` 类位置直接炸掉 `Cannot read properties of undefined (reading 'controller')`。这不能简单回退成 `ownerId`，否则会把前面刚收口的 `base_sakura_garden / cthulhu_furthering_the_cause / vampire_the_count / vampire_opportunist / robot_microbot_archive` 的 controller 语义重新打坏。现已在 [`types.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/types.ts>) 给 `MinionDestroyedEvent.payload` 增量补 `controllerId?: PlayerId`，并让 [`abilityHelpers.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/abilityHelpers.ts>) 的 `destroyMinion()/buildValidatedDestroyEvents()` 在 live witness 还在时把 controller provenance 一起写进 destroy 事件；[`reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 记录 destroy ledger 时改为优先吃 `payload.controllerId ?? minion?.controller ?? ownerId`。同时已补齐当前明确会丢 live minion 的 destroy producer：[`killer_plants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/killer_plants.ts>)、[`elder_things.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/elder_things.ts>)、[`ninjas.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ninjas.ts>) 的相关 destroy 事件写法。验证：`reactionQueueEventPlayerContext.test.ts -t "Time Box|Sprout|Choking Vines|Ninja Assassination|Dunwich Horror"` => `1 file passed, 7 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 101 passed`；`shayuFactionAbilities.test.ts` 整文件 => `1 file passed, 17 passed`。这格只闭合 delayed/queued destroy 路径下的 controller provenance payload gap，不外推所有手写 `MINION_DESTROYED` producer 或整个 destroy/discard family 已完成；同时也把上一格 `Blood in the Water` 里“整文件仍被污染”的口径正式降成历史态，因为那条 shared seam 现已收口。
+- 2026-05-23 最新进展补记：`ninjas_invisible_ninja` 这轮不是 recover green evidence，而是命中一条新的 destroy/return provenance 真红灯，且已明确作废 2026-05-21 那段“当前 consumer 不形成活跃泄漏”的旧收口口径。旧 [`titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 一边把 destroy 分支写成按 `triggerMinion.owner` 判定“another player's minion”，另一边又把 returned 分支错误写成 `returnedOwnMinion = !!ctx.triggerMinionUid`，导致任何带 `triggerMinionUid` 的 destroy 事件都可能误落到“回手”分支，之前那条 borrowed-enemy destroy 正例之所以绿，是被错误 returned fallback 蒙对了。现已把 `invisibleNinjaTriggered()` 收紧为 `destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId` 与 `ctx.timing === 'onCardReturnedToHand'` 双分支判定，并新增 `canTriggerInvisibleNinjaTriggered()` 挂到 `onMinionDestroyed/onCardReturnedToHand` 两个注册点，把“自己消灭己方随从”与“他人随从回到他人手牌”都挡在 queue 入口外。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "ninjas_invisible_ninja|Invisible Ninja"` => `2 files passed, 8 passed`；`git diff --check -- src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` => passed（仅 LF/CRLF warning）。这格只闭合 `ninjas_invisible_ninja` 的 destroy/return provenance 与 queue 入口过滤，不外推整个 Titans / Ninjas / onCardReturnedToHand family 已完成。
+- 2026-05-23 最新进展补记：`sharks_blood_in_the_water` 这轮命中的是一条新的 `perInstance ongoing source isolation` 真红灯，不是前面 `Hammerhead/Chum` 或 `Mako` 的回扫。旧 [`sharks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/sharks.ts>) 虽然把 `sharks_blood_in_the_water` 注册成 `perInstance` source，但 `sharksBloodInTheWaterTrigger(ctx)` 真正执行时仍扫描整座基地的所有同名 ongoing action；结果 queue 里明明只结算 `blood-p0` 这一条 source，也会顺手给同基地另一位玩家的 `blood-p1` 一起发 extra minion quota。新增 focused 红灯 [`reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)：`queued onMinionDestroyed 的单个 sharks_blood_in_the_water source 不应重复结算同基地其他玩家的同名行动`，首轮 `LIMIT_MODIFIED.playerId` 实际为 `['0','1']`，而不是预期的 `['0']`。现已把 `sharksBloodInTheWaterTrigger(ctx)` 收紧为：若存在 `ctx.sourceCardUid`，只结算该 `sourceCardUid` 对应的那一张 ongoing action；只有 direct fallback 无 `sourceCardUid` 时才保留旧的整基地扫描语义。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "queued onMinionDestroyed 的单个 sharks_blood_in_the_water source 不应重复结算同基地其他玩家的同名行动|queued onMinionDestroyed 多个 Sharks counter source 同时在场时，每个 source 只能结算自身一次|queued onMinionDestroyed 全局 Sharks Mako 应选择 destroyer 自己的 source"` => `1 file passed, 3 passed`。这格只闭合 `Blood in the Water` 在 queued per-instance source 下不再越权结算同基地其他玩家的同名 ongoing action，不外推整个 Sharks 或全部 `onMinionDestroyed` ongoing；同时明确写死当前 `reactionQueueEventPlayerContext.test.ts` 整文件与 `shayuFactionAbilities.test.ts` 整文件都被独立的 `reduce.ts:2112 minion.controller` 共享红口污染，不能拿来作为本格收口证据。
+- 2026-05-23 最新进展补记：`robot_microbot_archive` 这轮不是 green evidence，而是命中一条新的 owner/controller provenance 真红灯。源码复核已确认 `reducer.ts` 的 destroy 链把 `ctx.playerId` 传成被消灭随从 `ownerId`，真正的控制权另走 `ctx.controllerId` / `triggerMinion.controller`；但 `abilities/robots.ts` 里的 Archive 旧实现却把 `trigCtx.playerId` 同时当成 Archive 收益方和“你的 Microbot”判定来源。已在 `baseFactionOngoing.test.ts` 新增 focused 红灯 `被我方控制但归对手拥有的微型机被消灭时，Archive 仍应按控制权给我方抽牌`：P0 控制 Archive 与 stolen `robot_microbot_guard(controller=0, owner=1)`，触发 `onMinionDestroyed(playerId=1, controllerId=0)` 后首轮失败，`drawEventsP0.length` 实际为 `0`。最小修复是把收益玩家统一收敛为 `destroyedControllerId = triggerMinion.controller ?? ctx.controllerId ?? ctx.playerId`，并按该 controller 统计 Archive、读取牌库并写回 `CARDS_DRAWN.playerId`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseFactionOngoing.test.ts --configLoader native --testNamePattern "被我方控制但归对手拥有的微型机被消灭时，Archive 仍应按控制权给我方抽牌|微型机被消灭时 archive 控制者抽牌|对手的微型机（含 Alpha 视为）被消灭时不触发|Archive 自身作为微型机被消灭时也会触发抽牌"` => `1 file passed, 6 passed`；邻近真实命令链 `specialInteractionChain.test.ts -t "微型机被消灭时 archive 拥有者抽1张牌"` => `1 file passed, 1 passed`。这格只闭合 `robot_microbot_archive` 在 stolen microbot owner/controller 分离下的 destroy provenance，不外推整个 Robots / onMinionDestroyed family 已完成。
+- 2026-05-23 最新进展补记：`pendingSave` 这条现在不是 runtime 再红，而是总规范和 SmashUp 本地 guide 自己打架，我已经把这条规范合同缝收口。旧 [`docs/ai-rules/engine-systems.md`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/engine-systems.md>) 还写着“不得按 sourceId 过滤拯救交互”，但当前 SmashUp runtime / [`ENGINE_GUIDE.md`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/rule/ENGINE_GUIDE.md>) / [`reactionQueueDestroyPendingSaveContract.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueDestroyPendingSaveContract.test.ts>) 已明确要求交互式 replacement 继续走 `PREVENT_DESTROY_SOURCE_IDS`。本轮已把总规范改成“通用原则 + SmashUp 当前 runtime 例外”的两层口径，显式点名 `base_nine_lives_intercept / giant_ant_drone_prevent_destroy / pirate_buccaneer_move` 三个已锁 sourceId，并把 `reactionQueueDestroyPendingSaveContract.test.ts` 扩成第 3 条静态门禁，要求项目总规范也必须显式承认这条白名单合同，避免以后再被总规范误导去删 `PREVENT_DESTROY_SOURCE_IDS`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueDestroyPendingSaveContract.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 3 passed`；`git diff --check -- docs/ai-rules/engine-systems.md src/games/smashup/__tests__/reactionQueueDestroyPendingSaveContract.test.ts` => passed（仅 LF/CRLF warning）；`.omx+` 长期状态 JSON 解析通过。该格只收口文档/静态合同，不外推 pendingSave runtime 已重写。
+- 2026-05-23 最新进展补记：`vampireBuffetE2E.test.ts` 这条最后的 `describe.skip` 已转绿，当前 SmashUp 测试目录内历史 `skip` 已清零。复核后确认旧文件不是“玩法坏了”，而是窗口假设漂移：`Buffet` 旧用例想在同一条测试里继续证明 afterScoring 放指示物，但当前权威状态里 `BASE_SCORED` 已先发生，更稳的 bridge 是“真实打出 -> 离手入弃 -> 写入 pendingAfterScoringSpecials”；`We Are The Champions` 旧用例则还在断言响应窗里会先写 `SPECIAL_AFTER_SCORING_ARMED`，而当前合同已经是“在 afterScoring 响应窗口中立即起交互”。本轮已将 [`vampireBuffetE2E.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/vampireBuffetE2E.test.ts>) 改成当前口径的 2 条 gate，并复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/vampireBuffetE2E.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 2 passed`。随后重新枚举 `skip`：`rg -n "\\b(it|test|describe)\\.skip\\(" src/games/smashup/__tests__ -S` 已无输出。
+- 2026-05-23 最新进展补记：`elder-thing-multi-select-integration.test.ts` 也已退场，不再把未接线的 Elder Thing 集成壳挂成开放 skip。复核发现它不是待修 runtime，而是连 `GameTestRunner` / `SmashUpCore` / `PLAYER_IDS` 都没接好的旧草稿；而它想锁的 Elder Thing 两段选择合同已经被 [`elder-thing-multi-select.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/elder-thing-multi-select.test.ts>)、[`choice-audit-fixes.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/choice-audit-fixes.test.ts>)、[`newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>) 与 [`elderThingsPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/elderThingsPod.test.ts>) 承接。本轮已删除 [`elder-thing-multi-select-integration.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/elder-thing-multi-select-integration.test.ts>)，并复跑 Elder Thing 邻近子集 => `2 files passed, 10 passed`（同次过滤下 `elderThingsPod.test.ts` 整文件跳过，不构成失败）。随后剩余 skip 已降到 1 条，仅剩 `vampireBuffetE2E`，并已在下一格清零。
+- 2026-05-23 最新进展补记：`steampunk-aggromotive-bug.test.ts` 也已退场，不再把 Aggromotive 的基地总力量问题挂成开放 skip。复核发现它只是早期错误模型残壳，还在按“第一个随从吃 +5、移除后力量跳到第二个随从”写测试；而当前生产实现早已在 [`ongoing_modifiers.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ongoing_modifiers.ts>) 按 `registerBasePowerModifier('steampunk_aggromotive')` 记为“拥有者在该基地有随从时，总力量 +5”，并已被 [`steampunk-aggromotive-fix.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/steampunk-aggromotive-fix.test.ts>) 与 [`ongoingModifiers.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ongoingModifiers.test.ts>) 两条现代绿测覆盖。 本轮已删除 [`steampunk-aggromotive-bug.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/steampunk-aggromotive-bug.test.ts>)，并复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/steampunk-aggromotive-fix.test.ts src/games/smashup/__tests__/ongoingModifiers.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "steampunk_aggromotive|基地级别力量修正（蒸汽机车 steampunk_aggromotive）"` => `2 files passed, 10 passed`。同时重新枚举剩余 skip：现在只剩 2 条，分别是 `elder-thing-multi-select-integration`、`vampireBuffetE2E`。
+- 2026-05-23 最新进展补记：`ninja-hidden-ninja-interaction-bug.test.ts` 这条 skip 也已退场，不再把 Hidden Ninja 的交互创建问题挂成开放债务。复核发现它是更早的 `systems:[] + 手写 responseWindow` 调试壳；而它想验证的真实合同“P0 在 Me First 窗口打出 Hidden Ninja 后，应创建 `sourceId='ninja_hidden_ninja'` 的 hand 选择交互”现在已经被两条现代绿测承接：[`ninja-hidden-ninja-interaction-bug-repro.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts>) 锁真实复现场景下的交互创建，[`ninja-hidden-ninja-no-minions.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ninja-hidden-ninja-no-minions.test.ts>) 锁“无随从自动收口 / 有随从保持窗口打开”。本轮已删除 [`ninja-hidden-ninja-interaction-bug.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug.test.ts>)，并复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts src/games/smashup/__tests__/ninja-hidden-ninja-no-minions.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `2 files passed, 3 passed`。同时重新枚举剩余 skip：现在只剩 3 条，分别是 `elder-thing-multi-select-integration`、`steampunk-aggromotive-bug`、`vampireBuffetE2E`。
+- 2026-05-23 最新进展补记：`wizard-archmage-debug.test.ts` 这条 skip 不是待修 runtime，而是纯调试壳，现已直接退场。复核发现它验证的仍是“从弃牌堆打出大法师应获得额外行动”，而这个合同现在已经被两条更现代的绿测覆盖：[`wizard-archmage-discard-play.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/wizard-archmage-discard-play.test.ts>) 锁直接 `PLAY_MINION fromDiscard`，[`wizard-archmage-zombie-interaction.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/wizard-archmage-zombie-interaction.test.ts>) 锁 `They Keep Coming` 的真实 merged-value discard-play prompt。继续保留这个旧 debug skip 只会把已闭合对象伪装成开放债务，因此本轮已删除 [`wizard-archmage-debug.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/wizard-archmage-debug.test.ts>)，并复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/wizard-archmage-discard-play.test.ts src/games/smashup/__tests__/wizard-archmage-zombie-interaction.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `2 files passed, 3 passed`。同时重新枚举剩余 skip：现在只剩 4 条，分别是 `elder-thing-multi-select-integration`、`ninja-hidden-ninja-interaction-bug`、`steampunk-aggromotive-bug`、`vampireBuffetE2E`。
+- 2026-05-23 最新进展补记：`interactionChainE2E.test.ts` 里那条 `alien_probe` 历史 skip 也已经降噪，不再把“sourceId 传递问题需要深入调试”挂在开放面。真正的现状是：旧 skip 还停留在早期错误语义“看牌库顶并放顶/底”，而当前 `alien_probe` 真实主流程早已是“选对手 → 看该对手手牌 → 选一张随从让其弃掉”。本轮已把这条 skip 改成 focused gate：P0 打出 `alien_probe` 后，先进入 `sourceId='alien_probe_choose_target'`、`targetType='player'` 的选对手 prompt；选中 P1 后进入 `sourceId='alien_probe'`，且只允许选择 P1 手牌中的随从 `p1-m1`，行动卡 `p1-a1` 保持禁用。最终断言 `p1-m1` 从 P1 手牌进入弃牌堆、`p1-a1` 仍留在 P1 手牌、P2 手牌完全不受影响。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/interactionChainE2E.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "选对手 → 选其手牌中的随从 → 该对手弃掉该随从"` => `1 file passed, 1 passed`。这格只补交互链总表里的 dedicated green evidence，不外推所有 inspect/discard prompt 或整个 Aliens family 已完成。
+- 2026-05-23 最新进展补记：`wizard-archmage-zombie-interaction.test.ts` 这条历史 skip 已确认不是 runtime 红灯，而是旧 `GameTestRunner + autoRespond` 壳没有跟上当前 `zombie_they_keep_coming` 的 merged-value prompt 协议。现已把它重写成 focused gate：P0 真实打出 `zombie_they_keep_coming` 后，先断言出现 `sourceId='zombie_they_keep_coming'`、`targetType='discard_minion'` 的交互，再用一次 `RESPOND { optionId, mergedValue:{ cardUid, defId, baseIndex } }` 把 `wizard_archmage` 从弃牌堆真实打到基地。最终断言 `archmage-1` 从 discard 消失并进入基地、`actionsPlayed===1`、`actionLimit===2`，且本步结算只写出 1 条 `LIMIT_MODIFIED(reason='wizard_archmage')`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/wizard-archmage-zombie-interaction.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 1 passed`；`git diff --check -- src/games/smashup/__tests__/wizard-archmage-zombie-interaction.test.ts` => passed（仅 LF/CRLF warning）。这格只补 `They Keep Coming -> Archmage` 的 dedicated green evidence，不外推所有 Zombies/Wizards、所有 discard-play 或整个 onMinionPlayed family 已完成。
+- 2026-05-23 最新进展补记：`vampire_opportunist` 这条历史 skip 也已确认不是 runtime 红灯，而是旧用例自己只打出了 `vampire_big_gulp`，却没继续响应它的真实目标选择 prompt，导致 destroy 链根本没走完。现已把 [`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 中旧 skip 改成 focused gate：P0 真实打出 `vampire_big_gulp` 后，先断言出现 `sourceId='vampire_big_gulp'` 的 prompt，再选择敌方 `e1` 完成真实 destroy 链，最终断言 `vampire_opportunist` 写出 `POWER_COUNTER_ADDED(reason='vampire_opportunist')`、宿主 `m0.powerCounters===1`，且 `e1` 已离场。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "投机主义"` => `1 file passed, 3 passed`；`git diff --check -- src/games/smashup/__tests__/newFactionAbilities.test.ts` => passed（仅 LF/CRLF warning）。这格只补 dedicated green evidence，不外推所有吸血鬼 destroy trigger、所有 ongoing action 或整个 `newFactionAbilities` 文件已完成。
+- 2026-05-23 最新进展补记：`igor-ondestroy-idempotency.test.ts` 这条历史 `describe.skip` 也已从过时夹具转成现代 focused gate，不再把 `Igor + House of Nine Lives` 继续挂成“pendingSave 可能让 onDestroy 提前触发”的开放怀疑。当前生产合同并不是旧 skip 假设的 `base_nine_lives` 裸防止消灭，而是 `base_house_of_nine_lives` 先通过 `base_nine_lives_intercept` 把 destroy 暂缓成 pendingSave，只有玩家明确选择“不拯救”后，才恢复带 `reason='九命之屋：玩家选择不拯救'` 的 `MINION_DESTROYED`，再进入 Phase 2 真正触发 `frankenstein_igor`。本轮已把用例改成两段式 gate：Phase 1 断言只出现 `base_nine_lives_intercept`、无 `frankenstein_igor`、无 `MINION_DESTROYED`；随后用真实 handler 选择不拯救，再次走 `processDestroyTriggers(...)`，断言 `frankenstein_igor` prompt 恰好出现 1 次。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/igor-ondestroy-idempotency.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 4 passed`；`git diff --check -- src/games/smashup/__tests__/igor-ondestroy-idempotency.test.ts` => passed（仅 LF/CRLF warning）。这格只补 dedicated green evidence，不外推所有 onDestroy / pendingSave / Frankenstein 语义已完成。
+- 2026-05-23 最新进展补记：`test-alien-scout-afterscore.test.ts` 也已从过时 skip 夹具改成现代 focused gate。虽然仓库里已有 `alien-scout-pod-afterscore.test.ts`、`alien-scout-no-duplicate-scoring.test.ts`、`reactionQueueSourceRuntimeContext.test.ts` 等邻近覆盖，但这条旧 skip 仍缺一条“单卡真实计分流” dedicated gate。本轮重写后只保留 1 条当前主流程断言：`ADVANCE_PHASE` 进入基地计分后继续打开 `alien_scout_return`（必要时先经 `smashup_reaction_choose` 选入），选择 `yes` 后 `scout-0` 仅回手 1 次，基地随后替换为 `base_faceless_city`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/test-alien-scout-afterscore.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 1 passed`；`git diff --check -- src/games/smashup/__tests__/test-alien-scout-afterscore.test.ts` => passed（仅 LF/CRLF warning）。这格只补 dedicated green evidence，不外推所有 alien_scout / afterScoring 语义已完成。
+- 2026-05-23 最新进展补记：`miskatonic-scout-afterscore.test.ts` 已确认不是开放 runtime 红灯，而是历史规则口径漂移。源码复核显示 [`baseAbilities_expansion.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities_expansion.ts>) 当前只为 `base_miskatonic_university_base` 注册 `onMinionPlayed`，现有 [`baseAbilityIntegrationE2E.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/baseAbilityIntegrationE2E.test.ts>) 与 [`expansionBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionBaseAbilities.test.ts>) 也一致只覆盖打出随从后的 Prompt。本轮已把历史 `describe.skip` 重写成 focused gate：计分时不会先进入 `base_miskatonic_university_base`，而是直接继续 `alien_scout_return`（或经 `smashup_reaction_choose` 选入 Scout prompt）；最终仅保留原有 1 张 `special_madness`，没有额外发生密大基地的疯狂牌效果。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/miskatonic-scout-afterscore.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 1 passed`；`git diff --check -- src/games/smashup/__tests__/miskatonic-scout-afterscore.test.ts` => passed（仅 LF/CRLF warning）。这格只收掉历史 skip 噪音，不外推 Miskatonic 或 afterScoring family 已完成。
+- 2026-05-23 最新进展补记：继续把历史 `describe.skip` 从“开放噪音”改成现代 focused gate。[`mothership-scout-afterscore-bug.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/mothership-scout-afterscore-bug.test.ts>) 现已重写为当前主流程夹具，覆盖 `base_the_mothership -> alien_scout_return -> alien_scout_return -> pirate_first_mate_choose_base` 四段 afterScoring 链，并兼容当前树可能先给 `smashup_reaction_choose`、也可能直接进对象 prompt 的形态。新 gate 在每一段交互解决后都断言基地仍未提前清场；最终确认 `mate-1` 成功移到基地 1、`scout-1` 只回手 1 次，且直到最后一个 prompt 收口后基地才替换为 `base_secret_garden`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/mothership-scout-afterscore-bug.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 1 passed`；`git diff --check -- src/games/smashup/__tests__/mothership-scout-afterscore-bug.test.ts` => passed（仅 LF/CRLF warning）。这格只收掉对象级多段 afterScoring 历史 skip 债务，不外推整个 afterScoring family 已完成。
+- 2026-05-23 最新进展补记：这轮没有再空扫已转绿 runtime，而是把一条历史 `describe.skip` 债务真正转成现代 focused gate。[`wizard-academy-scout-afterscore.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/wizard-academy-scout-afterscore.test.ts>) 现已重写为当前主流程夹具：`ADVANCE_PHASE` 后先直接进入 `base_wizard_academy` prompt，解决基地牌库顶选择后继续打开 `alien_scout_return`，并在 Scout prompt 出现前断言基地尚未被清场/替换、`scout-0` 仍在场；最后选择回手，确认 `scout-0` 只回手 1 次且基地替换为 `base_secret_garden`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/wizard-academy-scout-afterscore.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 1 passed`；`git diff --check -- src/games/smashup/__tests__/wizard-academy-scout-afterscore.test.ts` => passed（仅 LF/CRLF warning）。这格只收掉历史 skip 债务并补 object-level green evidence，不外推整个 afterScoring family 已完成。
+- 2026-05-23 最新进展补记：这轮继续沿上一拍缩出来的 `abilityBehaviorAudit` 实点收口，确认不是业务 runtime 新红，而是审计器自身有 2 类漂移。第一类是迁移 allowlist 没跟上当前树：`zombies.ts` 现在确实仍保留两处 `registerAbility(...)`（`zombie_overrun/_pod` 的 no-op onPlay），`yuanhou.ts` 也仍是显式 `registerInteractionHandler(...)` 重仓文件；第二类是 generated POD alias 可见性：`pirate_first_mate_pod / alien_scout_pod / ancient_egyptians_mummy_pod` 的 afterScoring 语义已经由 `registerPodOngoingAliases()` 继承基础版 trigger，但 `getRegisteredOngoingEffectIds()` 会刻意隐藏 generated alias，导致 `hasSpecialSemanticsRegistration()` 只查显式 ongoing 注册时把三张卡误报为“缺 special/afterScoring 语义”。现已在 [`abilityBehaviorAudit.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/abilityBehaviorAudit.test.ts>) 把 `zombies.ts / yuanhou.ts` 补进遗留 allowlist，并在 [`helpers/auditUtils.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/helpers/auditUtils.ts>) 让 `checkOngoingRegistration()` 对“本卡无显式 ongoing 注册的 `_pod` defId”回退查询基础版 defId。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilityBehaviorAudit.test.ts --config vitest.config.audit.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 26 passed`；`git diff --check -- src/games/smashup/__tests__/abilityBehaviorAudit.test.ts src/games/smashup/__tests__/helpers/auditUtils.ts` => passed（仅 LF/CRLF warning）。结论：这格收掉的是 audit helper / allowlist drift，不是新增 gameplay/runtime 修复，也不外推 zombies / yuanhou 已全量迁完。
+- 2026-05-23 最新进展补记：这轮先停掉“继续在 `abilityBehaviorAudit` 上空耗”的旧路径，改成把 audit 里还挂着的 POD alias 差集拆成 dedicated runtime gate。新增 [`reactionQueueSourceRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts>) 两条 focused gate：`queued afterScoring per-instance trigger 在对手计分时仍应把 pirate_first_mate_pod 的后续选择权交给控制者`、`queued afterScoring per-instance trigger 在对手计分时仍应把 alien_scout_pod 的选择权交给控制者`；同时在 [`reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>) 新增 `sourceController queued afterScoring trigger 仍应把 Mummy POD 的埋葬 prompt 交给木乃伊控制者`。三条都直接转绿，没有暴露新的 queue/runtime 真缝：前两条分别确认对手计分时 `pirate_first_mate_pod` 与 `alien_scout_pod` 的 queued trigger 仍会把 prompt 交回控制者 P0，后者继续落到 `alien_scout_return`；第三条确认 `ancient_egyptians_mummy_pod` 在 reaction choose 中仍由 P0 选择，并进一步进入 `ancient_egyptians_mummy_after_scoring`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "pirate_first_mate_pod|pirate_first_mate 的后续选择权交给控制者"` => `1 file passed, 2 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "pirate_first_mate_pod|alien_scout_pod|Mummy POD"` => `2 files passed, 3 passed`；`git diff --check -- src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` => passed。结论：这 3 条当前应从“abilityBehaviorAudit 残噪”降级为 dedicated runtime green gate，不外推整个 pirates / aliens / ancient_egyptians 已完成。
+- 2026-05-23 最新进展补记：`时间旅行者：时间流逝在同一计分响应窗先结算后，仍应继续保留虫洞 special 入口` 这条先前被我挂成 residual 的红灯，现已确认不是 runtime 真缝，而是测试断言漂移。关键事实不是“outer afterScoring 没给 Time Is Fleeting / Wormhole”，而是**首个** `smashup_reaction_choose` 实际绑定在 `resolutionFrameId='onMinionDiscardedFromBase:onMinionDiscardedFromBase:0'` 的 nested `Jumper` frame 上；只有先消费这层 `Jumper optional trigger`，外层 `score-after:0:0` optional 响应窗才会恢复出来，并正确暴露 `play_action:time-fleeting-a:none` 与 `play_action:wormhole-a:0`。据此我把 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>) 的用例改成按真实 frame 分层断言：先处理 nested `Jumper` prompt，再验证 `Time Is Fleeting`、再回到外层选择 `Wormhole`，最后再接受一拍 follow-up `smashup_reaction_choose` 收口。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间旅行者：时间流逝在同一计分响应窗先结算后，仍应继续保留虫洞 special 入口|时间旅行者：跳跃者在普通基地计分弃牌后仍可通过 optional reaction 回手|时间旅行者：时间流逝真实计分后应使用选择的弃牌堆基地替换已计分基地|时间旅行者：虫洞允许选择任意数量的这里己方随从洗入牌库"` => `1 file passed, 4 passed`；`git diff --check -- src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts src/games/smashup/domain/reactionSession.ts` => passed（仅 LF/CRLF warning）。这格只修正测试口径，不新增任何 runtime/effect-contract 结论；先前把它描述成 “top-level afterScoring special 候选暴露 residual” 的判断作废。
+- 2026-05-23 最新进展补记：继续沿 `base afterScoring / multi-player prompt chain` 命中一条新的 runtime 红灯，不是旧绿格复述。`base_ninja_dojo` 的文本是“在这个基地计分后，冠军可以消灭任意一个随从”；平局冠军时，旧注册把整条 `afterScoring` trigger 记成 `mandatory:false`，导致 reaction queue 先弹 `smashup_reaction_choose`，允许当前响应者整体跳过所有冠军的消灭资格。现已在 [`reactionQueueBaseOptionalClockwise.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts>) 新增 focused regression `base_ninja_dojo 平局冠军时不应先把整条 tied-champion 链暴露成 reaction_choose`，并把 [`baseAbilities.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities.ts>) 中 `base_ninja_dojo.afterScoring` 改为“整条 mandatory、每位冠军自己的 prompt 内再各自 skip”。验证：focused `...reactionQueueBaseOptionalClockwise.test.ts -t "base_ninja_dojo 平局冠军时不应先把整条 tied-champion 链暴露成 reaction_choose"` => `1 file passed, 1 passed`；整文件 `...reactionQueueBaseOptionalClockwise.test.ts...` => `1 file passed, 7 passed`；邻近 `...baseAbilityIntegrationE2E.test.ts -t "基地达标 → Interaction 冠军消灭随从"` => `1 file passed, 1 passed`；`...baseAbilitiesPrompt.test.ts -t "base_ninja_dojo"` => `1 file passed, 3 passed`；`git diff --check -- src/games/smashup/domain/baseAbilities.ts src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts src/games/smashup/__tests__/baseAbilityIntegrationE2E.test.ts` => passed（仅 LF/CRLF warning）。这格只证明 `Ninja Dojo` 的 tied-champion whole-trigger optionality 已收口，不外推整个 afterScoring family 已全量完成。
+- 2026-05-22 最新进展补记：继续沿 `extended-base / onBaseRevealed` 真正命中一条 runtime 红灯，不是 inventory gate。`base_sheep_shrine` 的文本是“这张基地入场后，每位玩家可以移动一个他们的随从到这”，但旧注册把整条 `onBaseRevealed` 触发器标成 `mandatory:false`，结果当前反应玩家会先在 `smashup_reaction_choose` 里拿到“整条 Sheep Shrine 是否执行”的跳过权，能够一次跳过所有玩家的移动资格。现已在 [`reactionQueueOnBaseRevealed.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts>) 新增 focused regression `base_sheep_shrine 不应把整条多玩家移动链暴露成当前玩家可整体跳过的 optional trigger`，首轮红灯直接坐实 queued trigger 的 `mandatory=false`；随后把 [`baseAbilities_expansion.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities_expansion.ts>) 中 `base_sheep_shrine` 改成“整体 mandatory、每位玩家自己的 prompt 内再各自 skip”。验证：focused `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "base_sheep_shrine 不应把整条多玩家移动链暴露成当前玩家可整体跳过的 optional trigger"` => `1 file passed, 1 passed`；整文件 `...reactionQueueOnBaseRevealed.test.ts...` => `1 file passed, 6 passed`；邻近 `...expansionBaseAbilities.test.ts -t "base_sheep_shrine|base_the_pasture"` => `1 file passed, 2 passed`；`npx eslint src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts` => 0 errors；`git diff --check -- src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts` => passed（仅 LF/CRLF warning）。这格只证明 `Sheep Shrine` 的 whole-trigger optionality 已收口，不外推整个 `onBaseRevealed` 或 multi-player base chain 已全量完成。
+- 2026-05-22 最新进展补记：继续沿 `fireTriggers direct caller inventory` 收一格绿色合同门禁。生产侧当前 `fireTriggers(...)` 直执行调用只剩三个合法例外：`domain/duel.ts` 的 `onDuelResolved` / `onDuelStarted`，以及 `domain/reducer.ts` 的 destroy replacement `onMinionDestroyed`。新增 [`reactionQueueFireTriggersCallerContract.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueFireTriggersCallerContract.test.ts>)，递归扫描生产源码，排除 `domain/ongoingEffects.ts` 定义文件后，锁定 caller 清单必须等于上述三条，且 reducer destroy caller 必须保留 `phase:'replacement'`。验证：新文件 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueFireTriggersCallerContract.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 1 passed`；Pecos Bill duel smoke 三条 => `1 file passed, 3 passed`；pendingSave replacement 邻近 `madMonsterPartyPreventedDestroy.test.ts` / `giantAntsPod.test.ts` / `buccaneer-pod-limit.test.ts` 过滤复跑 => `3 files passed, 6 passed, 9 skipped`。本格不改 runtime，只把 direct `fireTriggers` caller 面固化成 inventory gate，不外推所有 direct fire caller 或 duel/replacement family 全量完成。
+- 2026-05-22 最新进展补记：继续沿 `direct trigger caller / fireTriggerForSource inventory` 收一个 shared seam 防回归门禁。`fireTriggerForSource(...)` 是绕过 queued collector 的直执行入口，当前生产侧只允许一个已审计例外：`processImmediateStartTurnMinionTriggers()` 在 start-turn 窗口内，对刚被打出的当前玩家随从立即处理其自身 `onTurnStart`，并用 `skipImmediateStartTurnMinionTriggers: true` 防递归。新增 [`reactionQueueDirectTriggerCallerContract.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueDirectTriggerCallerContract.test.ts>)，递归扫描生产源码，排除定义文件 `domain/ongoingEffects.ts` 后要求唯一 caller 只在 `domain/index.ts`，并断言它位于 `processImmediateStartTurnMinionTriggers` 函数内、使用 `playedEvent.payload.defId` + `'onTurnStart'`。首次红灯只是测试窗口截取过短，已改为 `lastIndexOf` 函数边界判断；复跑新文件 `1 file passed, 1 passed`。邻近验证：`ongoingEffects.test.ts -t "fireTriggerForSource"` => `1 file passed, 3 passed`；`reactionQueueEventPlayerContext.test.ts -t "Water Lily POD|Sprout POD|Choking Vines|Entangled POD|Zombie Overrun POD"` => `1 file passed, 5 passed`。本格不改 runtime，只把 direct caller 例外收窄成 inventory gate，不外推整个 onTurnStart family。
+- 2026-05-22 最新进展补记：继续沿 `destroy pendingSave replacement / interactive replacement contract` 没有直接改 runtime，而是把当前仍实际存在的 `PREVENT_DESTROY_SOURCE_IDS` 白名单合同补成 dedicated green gate。新增 [`reactionQueueDestroyPendingSaveContract.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueDestroyPendingSaveContract.test.ts>)，静态锁定 `base_nine_lives_intercept`、`giant_ant_drone_prevent_destroy`、`pirate_buccaneer_move` 三个会创建 pending-save 交互的 replacement sourceId 必须全部进入 `processDestroyTriggers()` 白名单；同时要求 `src/games/smashup/rule/ENGINE_GUIDE.md` 的 sourceId 示例与 runtime 白名单一致。验证：新文件 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueDestroyPendingSaveContract.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 2 passed`；邻近 `madMonsterPartyPreventedDestroy.test.ts` / `giantAntsPod.test.ts` / `buccaneer-pod-limit.test.ts` 过滤 `prevent|pendingSave|雄蜂|Buccaneer|buccaneer|pirate_buccaneer_move|giant_ant_drone_prevent_destroy` => `3 files passed, 6 passed, 9 skipped`。本格是合同防回归/绿色证据，不是 pendingSave 架构重写；`docs/ai-rules/engine-systems.md` 要求“不按 sourceId 过滤”和 SmashUp 本地 guide 当前“白名单必填”仍是待裁决规范冲突，不能把这格误报成总收口。
+- 2026-05-22 最新进展补记：继续沿 `ACTION_PLAYED side branch / construction inventory` 把前面多条 side branch 修复沉淀成 dedicated static gate。新增 [`reactionQueueActionPlayedConstruction.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueActionPlayedConstruction.test.ts>)，递归扫描 `src/games/smashup` 生产源码，除唯一工厂 `domain/actionPlayEvent.ts` 与非玩法元数据 `tutorial.ts` 外，禁止重新出现 `type: SU_EVENTS.ACTION_PLAYED` / `type: SU_EVENT_TYPES.ACTION_PLAYED` 裸构造。首跑红灯命中 `tutorial.ts:151`，确认它只是教学 `advanceOnEvents` 元数据后收窄白名单；复跑新文件 `1 file passed, 1 passed`。邻近 `reactionQueueBaseAbilities.test.ts -t "ACTION_PLAYED|onActionPlayed|base_enchanted_glade"` 仍为 `1 file passed, 3 passed`。本格不改 runtime，只把 `Duel / buried ongoing / Cream Puff Man / triggered Vampire POD / Miskatonic Madness` 等已收口的 construction 合同变成后续会红的 inventory gate，不外推所有 `ACTION_PLAYED` caller 目标语义已全量完成。
+- 2026-05-22 最新进展补记：继续沿 `post-process side branch / protection sibling ordering` 核 `filterProtectedReturnEvents` 与 `filterProtectedDeckBottomEvents`。这次没有命中新 runtime 红灯，而是补 dedicated green gates，证明 return/deck-top/bottom 两类 sibling wrapper 已正确继承 `filterProtectedAffectEvents()` 的 source-batched working-core 语义：当前置不同来源事件先移除 `Shielding` 后，后续异源 `MINION_RETURNED` / `CARD_TO_DECK_BOTTOM` / `CARD_TO_DECK_TOP` 不会再被 stale core 保护吞掉。新增 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>) 用例 `电子猿：护盾被前置不同来源事件移除后，不应继续保护随后回手的宿主`、`电子猿：护盾被前置不同来源事件移除后，不应继续保护随后放到牌库底的宿主` 与 `电子猿：护盾被前置不同来源事件移除后，不应继续保护随后放到牌库顶的宿主`。验证：focused `1 file passed, 3 passed`；Shielding/Clyde/Primate Park 邻近矩阵 `1 file passed, 13 passed`；更宽 Shielding 子集 `1 file passed, 9 passed`；`npx eslint src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` => `0 errors, 1 warning`（既有 unused warning）。本格只把 return/deck-placement sibling 候选降为 green evidence，不外推 protection family 或 yuanhou 全量完成。
+- 2026-05-22 最新进展补记：继续沿 `external action play / shared carrier tolerance` 命中并收掉 `externalActionPlay / ongoing-without-onPlay executor tolerance / wizard_mass_enchantment minion-target ACTION_PLAYED context` 真缝。旧 `src/games/smashup/domain/externalActionPlay.ts` 的 `appendResolvedActionAbility()` 会对所有外部打出的行动强制 `requireOnPlay(...)`，与正常 `PLAY_ACTION` 对“ongoing 且无 onPlay executor”允许仅附着、不额外执行的语义不一致；`wizard_mass_enchantment` 从牌库顶外部打出 `ninja_smoke_bomb` 时，首轮红灯直接抛 `SmashUp ability 缺少声明: ninja_smoke_bomb::onPlay (externalActionPlay.appendResolvedActionAbility)`。现已改为先 `resolveSpecial(defId) ?? resolveOnPlay(defId)`，并对 `subtype === 'ongoing'` 且无 executor 的外部打出路径比照正常出牌静默跳过，不再抛错；非 ongoing 仍保留原有严格性。新增 [`query6Abilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/query6Abilities.test.ts>) focused gate `wizard_mass_enchantment: 打出附着到随从的行动时应保留目标上下文并触发 base_enchanted_glade`，修复后确认 `ACTION_PLAYED.payload.targetBaseIndex=0`、`targetType='minion'`、`targetMinionUid='host-0'`，且 `base_enchanted_glade` 真实抽到 `draw-a`。验证：`query6Abilities.test.ts -t "wizard_mass_enchantment"` => `1 file passed, 4 passed`；邻近 `expansionOngoing.test.ts -t "steampunk_mechanic|steampunk_change_of_venue"` => `1 file passed, 9 passed`；`npx eslint src/games/smashup/domain/externalActionPlay.ts src/games/smashup/__tests__/query6Abilities.test.ts` => `0 errors, 13 warnings`；`git diff --check -- src/games/smashup/domain/externalActionPlay.ts src/games/smashup/__tests__/query6Abilities.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` passed；long-term JSON `ConvertFrom-Json` passed。该格只闭合 external action play 对无 `onPlay` ongoing 的容忍语义，以及 `wizard_mass_enchantment -> minion target attached action -> base_enchanted_glade` 这条真链，不外推所有 external replay、所有 Wizards 或整个 external action play family 已完成。
+- 2026-05-22 最新进展补记：继续沿 `post-process side branch / protection sibling ordering` 收掉 `filterProtectedMoveEvents / filterProtectedDestroyEvents / source-batched Shielding protection` 真缝。上一格已修 `filterProtectedAffectEvents()`，但 move/destroy 两个 sibling filter 仍对整批事件一直用入口 `core` 判断保护；如果前置不同来源事件已经让 `Shielding` 离场，后续对手来源的 `MINION_MOVED` / `MINION_DESTROYED` 仍会借旧现场被 Shielding 错误拦掉。现已让 `filterProtectedMoveEvents()` 与 `filterProtectedDestroyEvents()` 同样维护本地 `workingCore`，按来源 key 延迟推进：同一来源批次保留原现场，不同来源切换时先 flush/reduce 前一批输出事件，再判断后续保护。新增 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>) 用例 `电子猿：护盾被前置不同来源事件移除后，不应继续保护随后移动的宿主` 与 `电子猿：护盾被前置不同来源事件移除后，不应继续保护随后被消灭的宿主`，首轮红灯均只剩前置 `ONGOING_DETACHED`、后续 move/destroy 被错误吞掉，修复后转绿。验证：focused `1 file passed, 2 passed`；Shielding/Clyde/Primate Park 邻近矩阵 `1 file passed, 10 passed`；更宽 Shielding 子集 `1 file passed, 6 passed`；`npx eslint src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` => `0 errors, 24 warnings`（warning 为既有 any/unused 类）。本格只闭合 move/destroy sibling protection stale core，不外推所有 protection family、所有 replacement/interceptor 或 yuanhou 全量完成。
+- 2026-05-22 最新进展补记：继续沿 `post-process side branch / processAffect sibling ordering` 收掉 `filterProtectedAffectEvents / source-batched Shielding protection` 真缝。旧过滤器对整批事件一直用传入 `core` 判断保护；如果同批里前置不同来源事件已经让宿主上的 `Shielding` 离场，后续对手来源的 attached action 离场仍会借旧现场被错误保护。初始修法暴露出关键语义边界：`Going Bananas` 同一来源批次里，`Shielding` 应继续保护整批影响，即使本身也在本批次离场；因此最终实现改成按影响来源分组推进本地 `workingCore`，来源切换时才 flush/reduce 已输出事件。新增 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>) 用例 `电子猿：护盾被前置不同来源事件移除后，不应继续保护随后离场的同宿主其他行动`，配合既有 `护盾持续保护宿主上的其他行动不受对手行动影响` 共同锁住“同源批内持续保护 / 异源前置离场后不再保护”两面。验证：focused `1 file passed, 1 passed`；Shielding/Clyde/Primate Park 邻近矩阵 `1 file passed, 8 passed`；更宽 Shielding 子集 `1 file passed, 4 passed`；`npx eslint src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` => `0 errors, 24 warnings`（warning 为既有 any/unused 类）。本格只闭合 source-batched affect protection，不外推所有 protection family 或 yuanhou 全量完成。
+- 2026-05-22 最新进展补记：继续沿 `post-process side branch / processReturn sibling ordering` 核 `execute()` 后处理链时，没有直接把“外层只同步 sys”当成 bug，而是补出一条可观测 Clyde 2.0 同批事件红灯。`processClydeDetachChoices()` 旧实现用原始 `state.core` 查 `ONGOING_DETACHED` 的 attached action 宿主和 Clyde；若同批事件先 `MINION_MOVED` 把宿主从 Clyde 所在基地移走，再处理该宿主上的 `ONGOING_DETACHED`，旧 detector 仍按移动前现场创建 `cyborg_apes_clyde_2_0_detach` prompt。现已在 [`src/games/smashup/domain/reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>) 让 `processClydeDetachChoices()` 对非拦截事件顺序 reduce 本地 `matchState.core`，再用推进后的现场判断是否仍有同基地 Clyde；无合格 Clyde 时保留原 detach 事件。新增 [`yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>) 用例 `电子猿：克莱德2.0处理同批离场事件时，应按前置移动后的现场判断是否仍同基地`，首轮红灯收到错误 Clyde prompt，修复后转绿。验证：focused `1 file passed, 1 passed`；Clyde/Primate Park 邻近子集 `1 file passed, 6 passed`；`npx eslint src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` => `0 errors, 24 warnings`（warning 为既有 any/unused 类）。整文件 `yuanhouFactionAbilities.test.ts` 当前仍有 9 个既有红项，不能用作本格收口，也不能外推 yuanhou 全量完成。
+- 2026-05-22 门禁补记：`CARD_RECOVERED_FROM_DISCARD multi-card returned frame` 本轮状态回写后已复跑门禁。验证：focused `reactionQueueOnCardReturnedToHand.test.ts -t "CARD_RECOVERED_FROM_DISCARD 同批回手多张随从"` => `1 file passed, 1 passed`；`reactionQueueOnCardReturnedToHand.test.ts` 整文件 => `1 file passed, 14 passed`；`newFactionAbilities.test.ts -t "ninjas_invisible_ninja 在弃牌堆同时回两张随从|ninjas_invisible_ninja 在对手回手自己的随从"` => `1 file passed, 1 passed`；`zombieWizardAbilities.test.ts -t "CARD_RECOVERED_FROM_DISCARD|not_enough_bullets|Not Enough Bullets|同名"` => `1 file passed, 5 passed`；`reactionQueueEventPlayerContext.test.ts -t "Invisible Ninja|Time Box|world_champs_bewitched|onCardReturnedToHand"` => `1 file passed, 3 passed`；`npx eslint src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts` => `0 errors, 23 warnings`（warning 为既有 any/unused 类，不作为本格失败）；long-term JSON `ConvertFrom-Json` passed；`git diff --check -- src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` passed（仅 LF/CRLF warning；当前 evidence 文件在本 worktree 仍是 untracked，已额外对 `task_plan.md / progress.md / evidence` 跑 trailing whitespace 内容检查并通过；`reducer.ts` 全文件仍有既有 trailing whitespace 行，本轮只依赖 `git diff --check` 确认未新增）。
+- 2026-05-22 最新进展补记：先把上一轮已经落代码但未落状态的 `processReturnToHandTriggers / CARD_RECOVERED_FROM_DISCARD / multi-card returned frame` 收成正式 evidence。旧状态曾把 `CARD_RECOVERED_FROM_DISCARD` 多张 `cardUids` 记为“当前 live consumer 下的表达能力边界”，但继续红灯验证后坐实这仍是 shared carrier 真缝：同批 recover 两张随从时，旧实现只为第一张 recovered minion 生成 returned trigger frame，第二张随从没有独立 `triggerMinionUid/sourceEventId/frameId`。现已在 [`src/games/smashup/domain/reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>) 将 `findRecoveredMinionFromDiscard` 收紧为逐卡 `findRecoveredCardFromDiscard`，并新增 `buildRecoveredCardReturnFrameMeta(payload, cardUid, eventIndex)`；`CARD_RECOVERED_FROM_DISCARD` 分支会遍历 `payload.cardUids`，逐张从旧弃牌堆快照找回 recovered card，为每张卡独立收集 `onCardReturnedToHand` trigger，source/frame 形如 `card-returned-to-hand:CARD_RECOVERED_FROM_DISCARD:<cardUid>:<playerId>:<eventIndex>:<now>`。新增 [`reactionQueueOnCardReturnedToHand.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts>) 用例 `CARD_RECOVERED_FROM_DISCARD 同批回手多张随从时，应按每张随从分别打开 returned trigger frame`，首轮红灯只收到 `discard-minion-a`，修复后同时收到 `discard-minion-a/discard-minion-b` 且两个 frameId 不同。验证记录：focused `1 file passed, 1 passed`；`reactionQueueOnCardReturnedToHand.test.ts` 整文件 `1 file passed, 14 passed`；`newFactionAbilities.test.ts -t "ninjas_invisible_ninja 在弃牌堆同时回两张随从|ninjas_invisible_ninja 在对手回手自己的随从"` => `1 file passed, 1 passed`；`zombieWizardAbilities.test.ts -t "CARD_RECOVERED_FROM_DISCARD|not_enough_bullets|Not Enough Bullets|同名"` => `1 file passed, 5 passed`；`reactionQueueEventPlayerContext.test.ts -t "Invisible Ninja|Time Box|world_champs_bewitched|onCardReturnedToHand"` => `1 file passed, 3 passed`。这格只闭合 recovered-discard 多卡 returned frame，不外推所有 return-to-hand consumer 或整个 yuanhou 四派系完成。
+- 2026-05-22 最新进展补记：继续沿 `ACTION_PLAYED side branch / hand-written event helper alignment` 判定 `miskatonic_librarian_pod_play_madness`。这条生产分支是静态扫描中剩余的直接手写 `SU_EVENTS.ACTION_PLAYED`，但它只把手牌中的 `special_madness` 作为额外行动打出；当前 Madness 是无目标行动，不需要像 Cream Puff Man 那样补 base/minion 目标 prompt。本轮把该分支改为调用 `buildActionPlayedEvent(...)`，并在现有 `madnessAbilities.test.ts` 中补负向断言，锁定 `ACTION_PLAYED.payload.targetBaseIndex/targetType/targetMinionUid` 均不存在，避免未来误把 Madness extra play 伪造成目标行动。验证：`madnessAbilities.test.ts -t "miskatonic_librarian_pod extra mode queues the Madness onPlay interaction"` => `1 file passed, 1 passed`；`reactionQueueBaseAbilities.test.ts -t "ACTION_PLAYED|onActionPlayed|base_enchanted_glade"` => `1 file passed, 3 passed`。这格是绿色合同门禁与 helper 对齐，不是新 runtime bug；不外推所有 Miskatonic、所有 Madness 或所有 extra action 已完成。
+- 2026-05-22 门禁补记：本轮 Cream Puff Man external discard target context 工作面已通过最小门禁。long-term JSON `ConvertFrom-Json` passed；repo 内 `git diff --check -- src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/reactionQueueActionPlayedExternalDiscard.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` passed（仅 LF/CRLF warning）；外部 long-term JSON 位于 `C:\Users\zhuagenbao\.codex\.omx\state\...`，不属于当前 git repository，`git diff --check` 不能作用到它，已用 JSON 解析替代内容门禁。测试：`reactionQueueActionPlayedExternalDiscard.test.ts` => `1 file passed, 1 passed`；`smashup.smoke.test.ts -t "奶油泡芙|Cream Puff|ghosts_creampuff_man|奶油泡芙美人"` => `1 file passed, 3 passed`；新文件 + smoke 合并过滤 => `2 files passed, 4 passed`；`reactionQueueBaseAbilities.test.ts -t "ACTION_PLAYED|onActionPlayed|base_enchanted_glade"` => `1 file passed, 3 passed`。
+- 2026-05-22 最新进展补记：继续沿 `ACTION_PLAYED side branch / external discard action play` 收掉 `ghosts_creampuff_man` 一条弃牌堆额外打出行动的目标上下文真缝。Cream Puff Man 允许弃一张手牌后从弃牌堆额外打出一张标准行动；旧 `getCreampuffPlayableActions()` 只用无目标 `validateActionPlaySemantics(...)` 过滤候选，导致 `cyborg_apes_going_bananas` 这类需要选择基地目标的标准行动被静默排除。旧 resolve 分支还手写无目标 `ACTION_PLAYED`，即使放行目标行动，也会让依赖目标基地的 base `onActionPlayed` consumer 看不到 `targetBaseIndex/targetType`。现已在 `src/games/smashup/abilities/titans.ts` 增加 Cream Puff Man 专用的 `none/base/minion` 目标模式与候选生成；需要目标的行动先进入 `titan_ghosts_creampuff_man_action_target` 二段 prompt，最终由 `resolveCreampuffActionPlay(...)` 统一调用 `buildActionPlayedEvent(...)` 写入 `targetBaseIndex/targetMinionUid`，并继续执行行动能力与 `CARD_TO_DECK_BOTTOM`。新增 `src/games/smashup/__tests__/reactionQueueActionPlayedExternalDiscard.test.ts` 用例 `Cream Puff Man 从弃牌堆额外打出需要基地目标的标准行动时，应保留目标上下文`，覆盖从弃手牌、选择 `Going Bananas`、选择目标基地 1、产生 `ACTION_PLAYED.targetBaseIndex=1,targetType=base`、触发 `ONGOING_DETACHED`、本行动沉到牌库底。已验证：focused 新文件 `1 file passed, 1 passed`；Cream Puff smoke `1 file passed, 3 passed`；新文件 + smoke 合并相关过滤 `2 files passed, 4 passed`；`reactionQueueBaseAbilities.test.ts -t "ACTION_PLAYED|onActionPlayed|base_enchanted_glade"` => `1 file passed, 3 passed`。这格不外推所有 external action play、所有 discard replay、所有 Titan special 或整个 `ACTION_PLAYED` family 已完成。
+- 2026-05-23 最新进展补记：`ghosts_creampuff_man` 这格没有停在 `base-target`，而是继续补到了 `minion-target` dedicated green evidence。新增同文件用例 `Cream Puff Man 从弃牌堆额外打出需要随从目标的标准行动时，应保留目标上下文并触发 base_enchanted_glade`：P0 弃手牌后从 discard 选 `alien_beam_up`，再在 `titan_ghosts_creampuff_man_action_target` 里点 `base_enchanted_glade` 上的 `enemy-target`；断言 `ACTION_PLAYED.payload` 保留 `targetBaseIndex=0`、`targetType='minion'`、`targetMinionUid='enemy-target'`，并真实产生 `MINION_RETURNED(reason='alien_beam_up')`。首轮失败已确认不是 runtime bug，而是测试自己只看 `resolved.events`、漏走了 `postProcessSystemEvents(...)`，所以没把 `base_enchanted_glade` 的 `CARDS_DRAWN(draw-a)` 收进证据；补上真实 post-process carrier 后转绿。验证：`reactionQueueActionPlayedExternalDiscard.test.ts -t "Cream Puff Man 从弃牌堆额外打出需要随从目标的标准行动时，应保留目标上下文并触发 base_enchanted_glade"` => `1 file passed, 1 passed`；`reactionQueueActionPlayedExternalDiscard.test.ts` 整文件 => `1 file passed, 2 passed`；`git diff --check -- src/games/smashup/__tests__/reactionQueueActionPlayedExternalDiscard.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` 通过。该格只把 Cream Puff Man external discard standard action 从 `base-target` 扩到 `minion-target`，不外推整个 external discard / ACTION_PLAYED family 已完成。
+- 2026-05-22 最新进展补记：继续沿 `effectContract queued interaction / baseAbilityQueue explicit footprint source context` 收掉一条普通 base ability / extended base ability 与普通 queued trigger 不对称的真缝。上一格 `collectTriggers()` 已让显式 `effectContract` 保留 source card 读取，但 `baseAbilityQueue.ts` 的 `collectBaseAbilityTriggers(...)` 与 `collectExtendedBaseAbilityTriggers(...)` 仍直接把显式 contract 写入 `TriggerInstance.derivedFootprint`，不会补 source base read；同一 frame 另一条 trigger 替换该基地时，ordering 看不到 `base:baseIndex` 读写冲突，可能自动执行而不是弹 `smashup_reaction_choose`。现已在 `src/games/smashup/domain/baseAbilityQueue.ts` 新增 `cloneEffectContractWithBaseSourceContext(...)`，让普通与 extended base ability 的显式 `effectContract` 都在保留原 reads/writes 后补 `{ kind:'base', index: baseIndex }` read；`deriveFootprint` 路径保持原合同，避免扩大改动面。新增 focused gates `queued base ability 的显式 effectContract 仍应保留 source base 读取，避免同帧替换基地时跳过排序` 与 `queued extended base ability 的显式 effectContract 仍应保留 source base 读取，避免同帧替换基地时跳过排序`，均验证 `derivedFootprint.reads` 含 source base 且同 frame `BASE_REPLACED` 会进入 `smashup_reaction_choose`。验证：focused `source base 读取` => `1 file passed, 2 passed`；`reactionQueueBaseAbilities.test.ts` 整文件 => `1 file passed, 24 passed`；`reactionQueueOrdering.test.ts -t "explicit effectContract|显式 effectContract|source card|source base"` => `1 file passed, 2 passed`。该格只闭合 queued base / extended base ability 的显式 `effectContract` source-base read ordering，不外推所有基地能力、所有 effectContract 或整条 reaction ordering 已完成。
+- 2026-05-22 最新进展补记：继续沿 `effectContract queued interaction / explicit footprint source context` 收掉一条显式 contract 与 runtime probe 的非对称真缝。旧实现中，触发器若带显式 `effectContract`，`collectTriggers()` 会直接把它写入 `TriggerInstance.derivedFootprint`；随后 `reactionOrdering.resolveTriggerFootprint()` 因已存在 `derivedFootprint` 直接返回，不会再走 `deriveFootprintFromTriggerProbe()`，因此丢掉 probe 默认补的触发源本体读取。若同一 frame 另一条 trigger 移除该 source card，排序系统看不到 source 读写冲突，可能自动执行而不是弹 `smashup_reaction_choose`。现已在 `src/games/smashup/domain/ongoingEffects.ts` 新增显式 contract 的 source-context 克隆：保留原 reads/writes，同时补 `sourceInstance(uid)`、`cardInstance(uid)` 与 `playerControl(sourcePlayerId)` 读取。新增 focused gate `trigger 的显式 effectContract 仍应保留 source card 读取，避免被同帧移除 source 时跳过排序`，首轮红灯为未出现 `smashup_reaction_choose`，修复后转绿。验证：focused => `1 file passed, 1 passed`；`reactionQueueOrdering.test.ts` 整文件 => `1 file passed, 38 passed`；`ongoingEffects.test.ts` 整文件 => `1 file passed, 39 passed`。该格只证明显式 `effectContract` 的 queued trigger 不再丢触发源本体读取，不外推所有 `effectContract` 对象级语义、所有 reaction ordering 或所有 queued trigger family 完成。
+- 2026-05-22 最新进展补记：沿 `reactionSession / response-window play_action target context` 核对 `ReactionChoiceValue.play_action` 只携带 `targetBaseIndex`、不携带 `targetMinionUid` 的疑点。代码检查显示 `buildPlayableCardOptions()` 只生成响应窗口可打行动选项，而 `commands.ts` 只允许 `getActionLikeResponseWindowTiming(...)` 声明过的 response action 进入 `smashup_reaction_choose`；当前数据层没有 `responseWindowNeedsMinion/specialNeedsMinion` 合同，普通 `playNeedsMinion` 行动不会进入响应窗口。为避免后续反复把这格当红口，新增 `src/games/smashup/__tests__/reactionSessionResponseActionTargetContext.test.ts`，锁定所有 response-window action 当前都不得要求打出时 `targetMinionUid`，直到 reaction choice 合同显式扩展。验证：新文件整文件 => `1 file passed, 1 passed`；邻近 `response-window-skip.test.ts -t "smashup_reaction_choose 的旧 play_action option 若已从 live hand 消失|invalid activePlayerId 不在 turnOrder"` => `1 file passed, 2 passed`；`abilityBehaviorAudit.test.ts` 整文件当前仍有既有 `zombies.ts/yuanhou.ts/POD afterScoring` 红项，本格不把该整文件作为证据。该格只把 `reactionSession.play_action targetMinionUid` 候选降为 dedicated green/data-contract gate，不外推所有 response-window 或未来新增 minion-target response action 已支持。
+- 2026-05-22 最新进展补记：继续沿 `ACTION_PLAYED side branch / buried ongoing target context` 收掉一条埋葬 ongoing 行动目标上下文真缝。`bury.ts` 的 `executeUncoveredAction()` 旧实现会先手写无目标 `ACTION_PLAYED`，再解析 ongoing 附着到基地/随从的目标；当埋葬的 `ancient_egyptians_ancient_curse_pod` 翻开并自动附着到 `base_enchanted_glade` 的唯一随从时，旧事件 payload 缺 `targetBaseIndex/targetType/targetMinionUid`，导致依赖目标随从的 `base_enchanted_glade.onActionPlayed` 不触发抽牌。新增 focused gate `uncovering a buried ongoing action should preserve target context for queued onActionPlayed base abilities`，首轮红灯直接显示 `ACTION_PLAYED.payload` 只有 `playerId/cardUid/defId/isExtraAction/fromBuried`。现已改为先解析 buried ongoing 目标，再统一用 `buildActionPlayedEvent(...)` 发带目标上下文的 `ACTION_PLAYED`；需要二段目标 prompt 的路径仍在目标选择后发事件，不提前发无目标事件。验证：focused 红转绿 `1 file passed, 1 passed`；`buryEngine.test.ts` 整文件 => `1 file passed, 11 passed`；`reactionQueueBaseAbilities.test.ts` 整文件 => `1 file passed, 22 passed`；`smashup.smoke.test.ts -t "buried|埋葬|sphinx"` => `1 file passed, 7 passed`。该格只闭合 buried ongoing 自动目标解析路径，不外推所有 buried action、所有二段 target prompt 或整个 ACTION_PLAYED family 完成。
+- 2026-05-22 最新进展补记：继续沿 `ACTION_PLAYED side branch / queued-trigger-runtime-context` 收掉一条决斗行动目标上下文真缝。`duel.ts` 的 `playActionAsDuelCard()` 与 `playOngoingActionAsDuelCard()` 旧实现手写 `ACTION_PLAYED` 只带 `playerId/cardUid/defId`，即使决斗有 `duel.baseIndex` 或持续行动 target prompt 已选了基地/随从，也没有把 `targetBaseIndex/targetType/targetMinionUid` 写入事件。由于 `postProcessSystemEvents()` 只在 `ACTION_PLAYED.payload.targetBaseIndex !== undefined` 时收集基地 `onActionPlayed`，这会让 `base_enchanted_glade` 这类依赖“行动附着到这里的随从”的基地能力在决斗中完全漏触发。新增 focused gate `决斗中打出附着到随从的行动时，应保留目标基地上下文并触发基地 onActionPlayed`，首轮红灯直接显示 `ACTION_PLAYED.payload` 缺少三项 target 字段。现已改为使用 `buildActionPlayedEvent(...)`：标准决斗行动写入 `targetBaseIndex: duel.baseIndex`，决斗持续行动写入玩家选择的 `targetBaseIndex/targetMinionUid`。验证：focused 红转绿 `1 file passed, 1 passed`；`reactionQueueActionPlayedDuel.test.ts + reactionQueueBaseAbilities.test.ts` => `2 files passed, 23 passed`；`smashup.smoke.test.ts -t "决斗|duel|Duel|cowboys_sheriff|pecos_bill"` => `1 file passed, 7 passed`。该格只闭合决斗内 `ACTION_PLAYED` target metadata，不外推所有 external action play、discard replay、Miskatonic/POD helper 或整个 ACTION_PLAYED family 完成。
+- 2026-05-22 最新进展补记：继续沿 `processReturnToHandTriggers / queued-trigger-runtime-context / attached source leaves play` 收掉 `world_champs_bewitched` 的 `MINION_RETURNED` sibling 真缝。上一轮已修 `CARD_TRANSFERRED` 宿主回手时 attached action source 已离场导致漏排 queue，但 `MINION_RETURNED` 分支仍只按普通 returned card 触发 `onCardReturnedToHand`，没有把事件前宿主 LKI 上的 attached action source 带进 collector。新增 focused gate `MINION_RETURNED 真链回手宿主时也应把 world_champs_bewitched attached source 入队`，首轮失败为 `processed.events` 里没有 `TRIGGER_QUEUED`。现已在 `src/games/smashup/domain/reducer.ts` 给 `MINION_RETURNED` 分支补 `findReturnedMinionLkiFromPlay(...)`，并对每张 attached action 用显式 `sourceCardUid/sourceControllerId/sourceBaseIndex` + `sourceDefIds:[attachedAction.defId]` 定向收集。验证：focused 红转绿 `1 file passed, 1 passed`；`reactionQueueOnCardReturnedToHand.test.ts` 整文件 => `1 file passed, 13 passed`；`reactionQueueSourceRuntimeContext.test.ts -t "world_champs_bewitched|MINION_RETURNED 真链回手宿主"` => `1 file passed, 2 passed`；`newFactionAbilities.test.ts -t "world_champs_bewitched"` => `1 file passed, 4 passed`；`reactionQueueSourceRuntimeContext.test.ts` 整文件 => `1 file passed, 23 passed`。该格只闭合 `MINION_RETURNED + host attached action leaves play`，不外推所有 return-to-hand consumer 或整个 World Champs。
+- 2026-05-22 扫描补记：转向 `onMinionDiscardedFromBase` 后先核 shared ordering/LKI 基础门禁。生产注册包括 Samurai、Frankenstein Igor、Giant Ant Worker POD、Sleeping Beauty、Gremlin POD、Death on Six Legs、World Champs Bewitched/Samurai Chan、Doppelganger/Copycat/Jumper 等。当前先跑 `reactionQueueOnMinionDiscardedFromBase.test.ts` 整文件 => `1 file passed, 4 passed`，说明 shared ordering、discard self-trigger fallback、attached-action LKI 这三类基础门禁仍绿。Samurai 注册多数没有显式 `playerContext`，但 callback 语义主要使用离场前 `sourceControllerId` 或 LKI metadata，暂未在 shared gate 层命中新红灯；后续若继续查 Samurai，应按对象级 owner/controller 语义补 dedicated 红灯，而不是把整批无 `playerContext` 直接判错。
+- 2026-05-22 最新进展补记：继续沿 `processAffectTriggers / onMinionAffected post-event power projection` 收掉 `vampire_dinner_date_pod` 真实聚合路径漏触发。上一格只证明 direct `collectTriggers` 在宿主当前有效力量已为 0 时会入队；但 `processAffectTriggers()` 会在 reduce 当前 power-change event 之前收集 trigger，导致宿主从有效力量 1 被本次 `POWER_COUNTER_REMOVED` 降到 0 时，旧 `canTriggerVampireDinnerDatePod()` 仍按事前有效力量 1 判断，不入队。新增红灯用例 `processAffectTriggers 在本次力量变化刚好让 Dinner Date POD 宿主变为 0 时应入队`，首轮 `TRIGGER_QUEUED` 为空。现已在 `src/games/smashup/abilities/vampires.ts` 新增 `getProjectedDinnerDateHostPower(ctx, minion, baseIndex)`，对 `POWER_COUNTER_ADDED/REMOVED`、`TEMP_POWER_ADDED`、`PERMANENT_POWER_ADDED` 进行本次事件后力量投影，保留非 power-change 路径的当前现场判断。验证：红灯 focused 失败后转绿；`reactionQueueEventPlayerContext.test.ts -t "Dinner Date POD"` => `1 file passed, 2 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 97 passed`；`vampiresPod.test.ts` 整文件 => `1 file passed, 11 passed`。这格不改变 `processAffectTriggers` 整体“事前收集、事后 reduce”的合同，只补 Dinner Date POD 对当前 power-change event 的 projected eligibility。
+- 2026-05-22 扫描补记：本轮完成生产侧 `onMinionAffected` 注册块复核。当前注册集中在 `frankenstein_the_bride`、`ignobles_the_hill_that_strolls`、`vampires_ancient_lord`、`trickster_brownie`、`trickster_brownie_pod`、`vampire_dinner_date_pod`、`world_champs_aramis`、`world_champs_diva`。其中 Bride/Brownie/Dinner Date 是本轮新闭合项；Aramis/Diva/Hill/Ancient Lord 已有 `reactionQueueEventPlayerContext.test.ts` dedicated sourceController gate；`trickster_brownie_pod.onMinionAffected` 是 no-op 注册，已有 `baseFactionOngoing.test.ts` 的 “POD 版不沿用旧版 onMinionAffected 触发” 口径。当前不再把生产 `onMinionAffected` 注册块本身列为优先开放残口；下一格转向 `processAffectTriggers` 聚合、effect-contract queued interaction、extended base side branch 或其它 post-process 旁路。
+- 2026-05-22 门禁补记：本轮 The Bride 工作面已通过最小门禁。`Get-Content ... long-term-task\smashup-yuanhou-faction-effect-audit-2026-05-16.json -Raw | ConvertFrom-Json | Out-Null` => passed；`git diff --check -- src/games/smashup/abilities/titans.ts src/games/smashup/abilities/tricksters.ts src/games/smashup/abilities/vampires.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` => passed（仅 LF/CRLF warning）；focused `The Bride 的抽牌|The Bride 的起始` => `1 file passed, 2 passed`；`smashup.smoke.test.ts -t "The Bride|新娘|身体改造"` => `1 file passed, 3 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 96 passed`。测试 stderr 中的 `BASE_REPLACED newBaseDefId base_faceless_city not found in baseDeck` 为既有诊断输出，退出码为 0，本轮不处理。
+- 2026-05-22 最新进展补记：继续沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionAffected sourceController ownership` 收掉 `frankenstein_the_bride` owner/context 真缝。The Bride 在己方随从新增 +1 指示物后应给该随从控制者抽 1 张；旧注册没有显式 `playerContext`，P1 给 P0 随从加指示物时 queued trigger 的 `ownerPlayerId` 会错落到事件玩家 P1。现已在 `src/games/smashup/abilities/titans.ts` 抽出 `canTriggerTheBrideOnPowerCounterChanged(ctx)`，挂到 `frankenstein_the_bride.onMinionAffected`，并补 `playerContext:'sourceController'`。新增 `reactionQueueEventPlayerContext.test.ts` 用例 `sourceController queued onMinionAffected trigger 仍应把 The Bride 的抽牌结算归给泰坦控制者`：首轮红灯坐实 `ownerPlayerId='1' / playerContext='eventPlayer'`；修复后 queued owner/sourceController 均为 P0，且 `maybeResolveReactionQueue(...)` 真实产出 `CARDS_DRAWN.playerId='0'`。验证：focused `The Bride 的抽牌|The Bride 的起始` => `1 file passed, 2 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 96 passed`；`smashup.smoke.test.ts -t "The Bride|新娘|身体改造"` => `1 file passed, 3 passed`。这格不外推所有 Titans、所有 power-counter affect trigger 或整条 `onMinionAffected` family 完成。
+- 2026-05-22 最新进展补记：继续沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionAffected collector eligibility` 收掉 `trickster_brownie` 空 trigger 真缝。Brownie 只应在 Brownie 本体被对手卡牌效果影响且对手有手牌时入队；旧注册没有 collector 级 `canTrigger`，同基地其它随从被影响时也会排 `trickster_brownie` trigger，callback 才因 `triggerMinionDefId !== 'trickster_brownie'` 回空。现已在 `src/games/smashup/abilities/tricksters.ts` 抽出 `canTriggerTricksterBrownieAffected(ctx)`，挂到 `trickster_brownie.onMinionAffected`，并补 `playerContext:'sourceController'`。新增 `reactionQueueEventPlayerContext.test.ts` 用例 `collectTriggers onMinionAffected 只应在 Brownie 本体被对手影响且对手有手牌时入队`：首轮红灯为 `robot_microbot` 被影响时仍有 1 个 Brownie trigger；修复后该分支不入队，真正影响 `brownie-a` 且 P1 有手牌时入队，queued trigger 为 `sourceCardUid='brownie-a'`、`sourceControllerId/ownerPlayerId='0'`、`eventPlayerId='1'`。验证：focused `Brownie 本体` => `1 file passed, 1 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 95 passed`；`baseFactionOngoing.test.ts -t "trickster_brownie|Brownie|布朗尼"` => `1 file passed, 13 passed`。`baseFactionOngoing.test.ts` 整文件当前仍有既有 `trickster_hideout_pod` 红灯，本格不把该整文件作为收口证据。
+- 2026-05-22 门禁补记：本轮 Dinner Date POD 工作面已通过最小门禁。`Get-Content ... long-term-task\smashup-yuanhou-faction-effect-audit-2026-05-16.json -Raw | ConvertFrom-Json | Out-Null` => passed；`git diff --check -- src/games/smashup/abilities/vampires.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` => passed（仅 LF/CRLF warning）；`reactionQueueEventPlayerContext.test.ts -t "Dinner Date POD"` => `1 file passed, 1 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 94 passed`；`vampiresPod.test.ts` 整文件 => `1 file passed, 11 passed`。测试 stderr 中的 `BASE_REPLACED newBaseDefId base_faceless_city not found in baseDeck` 与“本回合你还没有消灭过随从”均为既有测试诊断输出，退出码为 0，本轮不处理。
+- 2026-05-22 最新进展补记：继续沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionAffected collector eligibility` 收掉 `vampire_dinner_date_pod` 空 trigger 真缝。Dinner Date POD 只应在被附着宿主有效力量变为 0 时入队并消灭宿主；旧注册没有 collector 级 `canTrigger`，宿主仍大于 0 时也会先排 mandatory queued trigger，callback 才回空，且 queued owner 默认落到事件玩家。现已在 `src/games/smashup/abilities/vampires.ts` 抽出 `canTriggerVampireDinnerDatePod(ctx)`，挂到 `vampire_dinner_date_pod.onMinionAffected`，并补 `playerContext:'sourceController'`。新增 `reactionQueueEventPlayerContext.test.ts` 用例 `collectTriggers onMinionAffected 只应在 Dinner Date POD 宿主有效力量为 0 时入队`：宿主有效力量仍为 2 时 `collectTriggers(...)` 返回 `undefined`；宿主有效力量为 0 时 queued trigger 保留 `sourceDefId='vampire_dinner_date_pod'`、`sourceCardUid='dinner-date-a'`、`sourceControllerId/ownerPlayerId='0'`、`eventPlayerId='1'`。验证记录：focused `Dinner Date POD` 首轮红灯后转绿；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 94 passed`；`vampiresPod.test.ts` 整文件 => `1 file passed, 11 passed`。这格不外推所有 onMinionAffected、所有 Vampire POD、Dinner Date POD 真实 UI 入口或整条 affect family 完成。
+- 2026-05-22 门禁补记：本轮 The Pasture + expansion base queued reaction 工作面已通过最小门禁。`Get-Content ... long-term-task\smashup-yuanhou-faction-effect-audit-2026-05-16.json -Raw | ConvertFrom-Json | Out-Null` => passed；`git diff --check -- src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` => passed（仅 LF/CRLF warning）；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `2 files passed, 72 passed`。
+- 2026-05-22 最新进展补记：`expansionBaseAbilities.test.ts` 整文件暴露的 `base_innsmouth_base_choose_player` / `base_greenhouse` 两条失败已确认是测试断言漂移，不是 runtime 语义红灯。当前 `queueInteraction` 合同是“没有 current 时新交互立即成为 current”，而旧测试只检查 `state.sys.interaction.queue[0]`，因此在 queued reaction 选择后真实 prompt 已存在但断言读错位置。现已把两条断言改为复用现有 `getInteractionsFromMS(...)`，同时检查 `current + queue`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 50 passed`。这格不改 runtime，只消掉当前整文件红态与错误候选残项。
+- 2026-05-22 最新进展补记：继续沿 `processMoveTriggers / queued extended base ability / first-move count` 收掉 `base_the_pasture` 一条真缝。`The Pasture` 注释旧口径假设 `processMoveTriggers` 在 `MINION_MOVED` reduce 前触发，因此 `moveCount === 0` 表示首次移动；但当前 reducer 已先把本次 `MINION_MOVED` reduce 到 after-move 现场再收集 queued extended base trigger，queued executor 消费时 `minionsMovedToBaseThisTurn[player][base]` 已包含本次移动。旧逻辑因此会把首次移动误判成非首次，导致 `base_the_pasture` 交互不开。现已在 `src/games/smashup/domain/baseAbilities_expansion.ts` 识别 `ctx.sourceEventId` 以 `minion-moved:` 开头的 queued move frame：queued frame 下允许 `moveCount === 1` 代表首次移动，direct caller 仍按 `moveCount === 0` 判定。新增 focused gate `processMoveTriggers 首次移动到 The Pasture 时应按移动前计数打开扩展基地交互`，验证本轮复跑 `reactionQueueBaseAbilities.test.ts -t "The Pasture"` => `1 file passed, 1 passed`，`reactionQueueBaseAbilities.test.ts` 整文件 => `1 file passed, 22 passed`，`expansionBaseAbilities.test.ts -t "base_the_pasture"` => `1 file passed, 1 passed`，`expansionBaseAbilities.test.ts` 整文件在修正旧位置断言后 => `1 file passed, 50 passed`。
+- 2026-05-22 最新进展补记：继续沿 `queued-trigger-runtime-context / reaction-trigger-choice / buried action -> onActionPlayed base ability parity` 命中一条 post-process side-branch 真缝。普通行动打出后会由 `postProcessSystemEvents()` 统一走 `collectBaseAbilityTriggers(...) + collectTriggers(...)`，但埋葬行动翻开路径在 `bury.ts` 里额外直接 `triggerBaseAbility(onActionPlayed)`，绕过了 base ability 的 `canTrigger/ownerPlayerId/ordering` queue 合同。新增 focused gate `uncovered buried action should respect queued base onActionPlayed canTrigger instead of direct execution`，首轮红灯为 `canTrigger:false` 的基地能力仍产生 `base_bury_queue_test_ran` feedback。现已移除 `executeUncoveredAction()` 与 `handleUncoverOngoingPickTargetMinion()` 中的直接基地能力执行，让 buried action 的 `ACTION_PLAYED` 事件回到 pipeline 后处理统一入队。验证：focused 红转绿 => `1 file passed, 1 passed`；`buryEngine.test.ts` 整文件 => `1 file passed, 10 passed`；`reactionQueueBaseAbilities.test.ts` 整文件 => `1 file passed, 21 passed`；埋葬/Sphinx smoke 子集 => `1 file passed, 7 passed`。该证据只证明 buried action 的 base onActionPlayed side branch 不再绕过 queue eligibility，不外推所有 buried/minion uncover 或全部 action post-process family 完成。
+- 2026-05-22 最新进展补记：继续沿 `baseAbilityQueue / queued base ability options context / frame provenance` 命中一条 shared contract 真缝。`collectBaseAbilityTriggers(...)` 与 `collectExtendedBaseAbilityTriggers(...)` 已把 `frameId/sourceEventId` 写入 `TriggerInstance`，queued executor 也会把这些字段传给 base ability executor，但 options 阶段的 `ownerPlayerId/canTrigger/deriveFootprint` context 没有拿到同一份字段；普通 base collector 还漏传 `destroyerId/controllerId/reason` 到 options context。新增 focused gates `普通/extended queued base ability 的 canTrigger/deriveFootprint 应看到 frameId/sourceEventId 等运行时上下文` 首轮红灯均为 `queued === undefined`。现已在 `src/games/smashup/domain/baseAbilityQueue.ts` 补齐普通 options context 的 `destroyerId/controllerId/reason/frameId/sourceEventId`，以及 extended options context 的 `frameId/sourceEventId`。验证：focused 红转绿 => `1 file passed, 2 passed`；`reactionQueueBaseAbilities.test.ts` 整文件 => `1 file passed, 21 passed`；邻近 `reactionQueueOnBaseRevealed.test.ts` => `1 file passed, 5 passed`。该证据只证明 queued base ability options 与 executor 的 runtime provenance 已对齐，不外推所有基地能力语义或整条 reaction queue family 完成。
+- 2026-05-22 最新进展补记：继续沿 `source selection / canTrigger eligibility` 查最后一个直接入口，命中 `fireTriggerForSource(...)` 同族真缝。`fireTriggerForSource` 是显式 sourceDefId 的 direct caller，但本地 source selection 仍没有纳入 `canTrigger`；focused 红灯同样显示 `source-p0` 不合格、`source-p1` 合格时会执行 `source-p0`。现已在该入口复用 `canTriggerWithSource(...)`，让 per-instance 和 non-perInstance source 列表都先通过 `entry.canTrigger(buildTriggerEligibilityContext(...))`。验证：`ongoingEffects.test.ts -t "fireTriggerForSource non-perInstance source selection"` 首轮红灯后转绿 => `1 file passed, 1 passed`；`ongoingEffects.test.ts` 整文件 => `1 file passed, 39 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 93 passed`。这格只证明显式 sourceDefId direct caller 的本地 source selection 已对齐 `canTrigger`，不外推所有 fireTriggerForSource 使用场景或所有 trigger callback 语义已完成。
+- 2026-05-22 最新进展补记：继续沿 `source selection / canTrigger eligibility` 查相邻 direct path，命中 `fireTriggers(...)` 同族真缝。前一格修的是 queued `collectTriggers(...)`，但 direct `fireTriggers(...)` 的非 `perInstance` source selection 仍只按位置和 turn-boundary owner 过滤，没纳入 `canTrigger`；focused 红灯显示 `source-p0` 不合格、`source-p1` 合格时，direct path 仍执行了 `source-p0`。现已在 `src/games/smashup/domain/ongoingEffects.ts` 为 direct fire path 增加 `canTriggerWithSource(...)`，让 per-instance 和 non-perInstance source 列表都先通过 `entry.canTrigger(buildTriggerEligibilityContext(...))`。验证：`ongoingEffects.test.ts -t "fireTriggers non-perInstance source selection"` 首轮红灯后转绿 => `1 file passed, 1 passed`；`ongoingEffects.test.ts` 整文件 => `1 file passed, 38 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 93 passed`。这格只证明 direct fire path 的本地 source selection 已对齐 `canTrigger`，不外推所有 fireTriggers caller 或所有 replacement/immediate trigger 已完成。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / non-perInstance source selection / canTrigger eligibility` 继续筛，命中一条 shared collector 真缝。非 `perInstance` trigger 有多个同名 source 时，旧 collector 会先用 `selectSpecificSourceLocation(...)` 选第一个同名 source，再在后续 `canTrigger` 阶段丢弃；如果第一个 source 不合格、后面的 source 合格，就会把整条 trigger 误过滤。新增 focused gate `collectTriggers non-perInstance source selection 应跳过 canTrigger 不合格的同名 source`，场上 `source-p0/source-p1` 同名 source，`canTrigger` 只允许 `sourceControllerId==='1'`，断言 queued trigger 必须选 `source-p1` 且 `ownerPlayerId/sourceControllerId='1'`、`eventPlayerId='0'`。现已把 `entry.canTrigger(buildTriggerEligibilityContext(...))` 纳入 non-perInstance source selection 的 `isEligible` 谓词。验证：`reactionQueueEventPlayerContext.test.ts -t "non-perInstance source selection"` => `1 file passed, 1 passed`；`ongoingEffects.test.ts` 整文件 => `1 file passed, 37 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 93 passed`。这格不外推所有 trigger source selection、所有 global source 或整条 reaction queue family 已完成。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，命中 `kaiju_gorgodzolla` 异基地空 trigger 真缝。Gorgodzolla 的 onMinionPlayed 语义只在其所在基地有随从打出后获得 1 枚力量指示物；旧注册没有 collector 级 `canTrigger`，Titan 在基地 0 时，基地 1 打随从仍会排出 `kaiju_gorgodzolla` queued trigger，callback 才因找不到同基地 Titan 回空。新增 focused gate 首轮红灯为异基地仍有 1 个 `kaiju_gorgodzolla` trigger；现已在 `src/games/smashup/abilities/titans.ts` 给 `kaiju_gorgodzolla.onMinionPlayed` 补注册侧过滤，复用 `getGorgodzollaOnBase(ctx.state, ctx.sourceControllerId ?? ctx.playerId, ctx.baseIndex)`。验证：`reactionQueueEventPlayerContext.test.ts -t "Gorgodzolla 所在基地|Gorgodzolla 在对手打随从"` 红灯后转绿 => `1 file passed, 2 passed`；`smashup.smoke.test.ts -t "哥佐拉"` => `1 file passed, 4 passed`；`reactionQueueEventPlayerContext.test.ts -t "owner/手牌|controller/力量|Brownie POD|Archmage|Gorgodzolla 所在基地|Gorgodzolla 在对手打随从"` => `1 file passed, 10 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 92 passed`。这格不外推所有 Kaiju、Gorgodzolla action/draw 分支、特殊进场限制或整条 `onMinionPlayed` family 已完成。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，命中 `wizard_archmage` 空 trigger 真缝。大法师的 onMinionPlayed 语义只在打出的大法师本体进场时给本回合额外行动；旧注册没有 collector 级 `canTrigger`，场上已有大法师时普通随从进场也会排出 `wizard_archmage` queued trigger，callback 才因 `triggerMinionDefId !== 'wizard_archmage'` 回空。新增 focused gate 首轮红灯为普通 `robot_microbot` 进场时 queued 中仍有 1 个 `wizard_archmage` trigger；现已在 `src/games/smashup/abilities/wizards.ts` 给 `wizard_archmage.onMinionPlayed` 补 `canTrigger: ctx.triggerMinionDefId === 'wizard_archmage'`。验证：`reactionQueueEventPlayerContext.test.ts -t "Archmage"` 红灯后转绿 => `1 file passed, 1 passed`；`baseFactionOngoing.test.ts -t "wizard_archmage|大法师"` => `1 file passed, 4 passed`；`reactionQueueEventPlayerContext.test.ts -t "owner/手牌|controller/力量|Brownie POD|Archmage"` => `1 file passed, 8 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 91 passed`。这格不外推所有 Wizards、Archmage POD、从弃牌堆打出全链或整条 `onMinionPlayed` family 已完成。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，命中 `trickster_brownie_pod` 空 trigger 真缝。`Brownie POD` 的语义是每回合一次，当对手在另一基地打出随从后你抽 1 张；旧注册没有 collector 级 `canTrigger`，导致自己在另一基地打随从、对手在同基地打随从、Brownie POD 已在本回合触发、或控制者无 deck/discard 可抽时仍会先排出无效果 queued trigger。新增 focused gate 首轮红灯在 P0 自己打随从时仍出现 1 个 `trickster_brownie_pod` trigger；现已在 `src/games/smashup/abilities/tricksters.ts` 抽出 `canTriggerTricksterBrowniePod()`，入队前检查对手、异基地、once-per-turn metadata 与可抽牌来源。验证：`reactionQueueEventPlayerContext.test.ts -t "Brownie POD"` 红灯后转绿 => `1 file passed, 1 passed`；`reactionQueueEventPlayerContext.test.ts -t "owner/手牌|controller/力量|Brownie POD"` => `1 file passed, 7 passed`；`baseFactionOngoing.test.ts -t "Brownie POD|brownie_pod|布朗尼 POD"` => `1 file passed, 4 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 90 passed`。这格不外推所有 Tricksters、所有 POD、所有 draw trigger 或整条 `onMinionPlayed` family 已完成。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，收掉一组 Tricksters ongoing/minion 空 trigger 真缝。`trickster_flame_trap`、`trickster_flame_trap_pod`、`trickster_pay_the_piper`、`trickster_pay_the_piper_pod` 的真实语义都要求“其他玩家把随从打到该 ongoing 所在基地”，其中 Pay the Piper 还要求行动玩家仍有可弃手牌；`trickster_leprechaun` / POD 还要求对手打出的随从战力低于 Leprechaun，POD 版同回合未触发。上一轮 `canTrigger` 插错到了 `trickster_brownie`、`trickster_brownie_pod`、`trickster_gremlin_pod` 注册块，导致 `flame_trap`、`flame_trap_pod`、`pay_the_piper_pod` 仍排空 trigger。现已把错挂的 `canTrigger` 移回对应 `onMinionPlayed` 注册块，并保留 `trickster_leprechaun` / POD 与基础 `pay_the_piper` 的 collector 过滤。验证：`reactionQueueEventPlayerContext.test.ts -t "owner/手牌|controller/力量"` => `1 file passed, 6 passed`；`baseFactionOngoing.test.ts -t "trickster_flame_trap|trickster_pay_the_piper|trickster_leprechaun"` => `1 file passed, 5 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 89 passed`。这格不外推所有 Tricksters、所有 POD 行为、所有 hand discard 选择链或整条 `onMinionPlayed` family 已完成。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，命中 `tricksters_big_funny_giant` 空 trigger 真缝。`Big Funny Giant` 的 onMinionPlayed 语义只在其他玩家把随从打到它所在基地、且该玩家还有剩余可弃手牌时触发；旧注册没有 collector 级 `canTrigger`，导致 Big Funny Giant 控制者自己在该基地打随从时 collector 也会排出 `tricksters_big_funny_giant` queued trigger，callback 才因 `titan.controllerId === ctx.playerId` 回空。新增 focused gate `collectTriggers onMinionPlayed 只应在对手有剩余手牌时为 Big Funny Giant 排出 trigger`，首轮红灯为 owner 自己打随从时 queued 中仍有 1 个 `tricksters_big_funny_giant` trigger。现已在 `src/games/smashup/abilities/titans.ts` 抽出 `findEligibleBigFunnyGiantMinionPlay()`，callback 与注册侧 `canTrigger` 复用同一 eligibility，并覆盖“对手无剩余手牌也不入队”。验证：focused `Big Funny Giant` 红灯后转绿 => `1 file passed, 2 passed`；`smashup.smoke.test.ts -t "滑稽巨人在场时|滑稽巨人在拥有者回合结束"` => `1 file passed, 3 passed`。这格不外推所有 Tricksters titan、所有 hand-discard trigger 或整条 onMinionPlayed collector family。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，命中 `itty_critters_rainboroc` 空 trigger 真缝。`Rainboroc` 的 onMinionPlayed 语义只在其控制者自己在该基地打出战力 2 或更低的随从、且本回合该 Rainboroc 尚未触发时加 1 个泰坦力量指示物；旧注册没有 collector 级 `canTrigger`，导致对手在该基地打低战力随从时 collector 仍会排出 `itty_critters_rainboroc` queued trigger，callback 才回空。新增 focused gate `collectTriggers onMinionPlayed 不应在对手打到 Rainboroc 基地时为 Rainboroc 排出空 trigger`，首轮红灯为 queued 中仍有 1 个 `itty_critters_rainboroc` trigger。现已在 `src/games/smashup/abilities/titans.ts` 抽出 `findEligibleRainborocTitanForMinionPlayed()`，callback 与注册侧 `canTrigger` 复用同一 eligibility。验证：focused `Rainboroc` 红灯后转绿 => `1 file passed, 1 passed`；`smashup.smoke.test.ts -t "彩虹鸟只会在每回合第一次你在这里打出战力 2 或更低的随从后获得 1 枚力量指示物"` => `1 file passed, 1 passed`；`reactionQueueSourceRuntimeContext.test.ts -t "itty_critters_rainboroc"` => `1 file passed, 1 passed`。同轮 `skeletons_returned_one` 补 `非 Returned One 本体被打出时不入队` direct gate，focused `Returned One` => `1 file passed, 1 passed`，该候选未复现红口。这格不外推所有 titan onMinionPlayed、Rainboroc afterScoring/talent 全分支或整条 onMinionPlayed collector family。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，命中 `frankenstein_german_engineering` 空 trigger 真缝。`German Engineering` 是附着基地的 ongoing action，语义只在其 owner 自己把随从打到该基地时，给该随从 +1 指示物；旧注册没有 `sourceScope:'triggerBase'` 与 collector 级 `canTrigger`，导致对手在同基地打随从时 collector 仍会排出 `frankenstein_german_engineering` queued trigger，DSL `when` 才因 owner 不匹配回空。新增 focused gate `collectTriggers onMinionPlayed 不应在对手打到德国工程基地时为 German Engineering 排出空 trigger`，首轮红灯为 queued 中仍有 1 个 `frankenstein_german_engineering` trigger。现已在 `src/games/smashup/abilities/frankenstein.ts` 抽出 `isFrankensteinGermanEngineeringEligible()`，DSL `when` 与注册侧 `canTrigger` 复用同一 eligibility，并增加 `sourceScope:'triggerBase'`。验证：focused `German Engineering` => `1 file passed, 1 passed`；`newFactionAbilities.test.ts -t "german_engineering|German Engineering|德国工程"` => `1 file passed, 1 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 80 passed`。这格不外推所有 Frankenstein ongoing action、所有 power-counter action 或整条 onMinionPlayed collector family。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，命中 `cthulhu_altar` 空 trigger 真缝。`Cthulhu Altar` 是附着基地的 ongoing action，语义只在其 owner 自己把随从打到该基地时给额外行动；旧注册没有 `sourceScope:'triggerBase'` 与 `canTrigger`，导致对手在该基地打随从时 collector 仍会排出 `cthulhu_altar` queued trigger，callback 才因 `ongoing.ownerId !== ctx.playerId` 回空。新增 focused gate `collectTriggers onMinionPlayed 不应在对手打到祭坛基地时为 Cthulhu Altar 排出空 trigger`，首轮红灯为 queued 中仍有 1 个 `cthulhu_altar` trigger。现已在 `src/games/smashup/abilities/cthulhu.ts` 抽出 `isCthulhuAltarEligibleForMinionPlayed()`，callback 与注册侧 `canTrigger` 复用同一 eligibility，并增加 `sourceScope:'triggerBase'`。验证：focused `Cthulhu Altar` => `1 file passed, 1 passed`；`newOngoingAbilities.test.ts -t "cthulhu_altar"` => `1 file passed, 2 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 79 passed`。`ongoingE2E.test.ts -t "cthulhu_altar"` 本轮全跳过，不作为证据。这格不外推所有 Cthulhu ongoing action、所有 contextual extra action 或整条 onMinionPlayed collector family。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，命中 `world_champs_smart_set_up` 空 trigger 真缝。`Smart Set-Up` 语义是“每回合第一次有随从打到附着基地后抽 1 张”，旧注册没有 `canTrigger`，第二次及以后有随从打到同一基地时，collector 仍会排出 `world_champs_smart_set_up` trigger，执行时才因 `minionsPlayedPerBase` 回空。新增 focused gate `collectTriggers onMinionPlayed 不应在非本回合首次打到基地时为 Smart Set-Up 排出空 trigger`，首轮红灯为 queued 中仍有 1 个 `world_champs_smart_set_up` trigger。现已在 `src/games/smashup/abilities/world_champs.ts` 抽出 `canTriggerWorldChampsSmartSetUp()`，callback 与注册侧 `canTrigger` 复用同一 eligibility，非首次打到附着基地时入队前过滤。验证：focused `Smart Set-Up` => `1 file passed, 1 passed`；既有正向 `newFactionAbilities.test.ts -t "world_champs_smart_set_up"` => `1 file passed, 1 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 78 passed`。这格不外推所有 World Champs attached action 或所有 onMinionPlayed trigger。
+- 2026-05-22 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionPlayed collector eligibility` 继续筛，命中 `cowboys_gold_strike` 空 mandatory trigger 真缝。`Gold Strike` 是附着基地的 ongoing action，语义只在其控制者自己把随从打到该基地时抽牌；旧注册只在 callback 内部判断 `ctx.playerId !== ctx.sourceControllerId` 后回空，导致 P1 在 P0 的 Gold Strike 所在基地打随从时，collector 仍会为 P0 的 `cowboys_gold_strike` 排一个不会产生效果的 mandatory queued trigger。新增 focused gate `collectTriggers onMinionPlayed 不应在对手打随从时为 Gold Strike 排出空 trigger`，确认自己打随从时仍入队，对手打随从时 `collectTriggers(...)` 直接返回 `undefined`。现已在 `src/games/smashup/abilities/cowboys.ts` 给 `cowboys_gold_strike.onMinionPlayed` 补 `canTrigger: ctx => ctx.sourceControllerId === ctx.playerId`。验证：`reactionQueueEventPlayerContext.test.ts` + `newFactionAbilities.test.ts` 聚焦 `Gold Strike|cowboys_gold_strike` => `2 files passed, 3 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 77 passed`。尝试复跑 `reactionQueueEventPlayerContext.test.ts + newFactionAbilities.test.ts` 整组时，`newFactionAbilities.test.ts` 有 2 条 Giant Ants 旧用例红灯，本格不把该整文件作为收口证据。
+- 2026-05-22 最新进展补记：沿刚收掉的 `global onMinionDestroyed source selection` 同族继续筛，命中 `sharks_mako` 真红灯。`sharks_mako` 语义是“你消灭随从后，可作为额外随从打到那里”，但旧注册只有 `global:true, globalZones:['hand']`，没有 `playerContext:'sourceController'` 与 source eligibility；P0/P1 都有 `sharks_mako` 时，P1 destroyer 的 queued trigger 会被错误归到 P0 hand source。新增 focused gate `queued onMinionDestroyed 全局 Sharks Mako 应选择 destroyer 自己的 source`，首轮红灯为 `[sourceCardUid, ownerPlayerId, sourceControllerId] === ['mako-p0','0','0']`，期望 `['mako-p1','1','1']`。现已在 `src/games/smashup/abilities/sharks.ts` 给 `sharks_mako` 补 `sourceIsDestroyer`、`playerContext:'sourceController'` 与 `canTrigger: sourceIsDestroyer`。验证：focused `Sharks Mako` => `1 file passed, 1 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 76 passed`；`shayuFactionAbilities.test.ts` 整文件 => `1 file passed, 17 passed`。这格不外推整个 Sharks、所有 hand global trigger 或整条 destroy family 已完成。
+- 2026-05-22 最新进展补记：继续沿 `queued-trigger-runtime-context / reaction-trigger-choice / global onMinionDestroyed source selection` 收掉三张全局 Vampire POD sibling 真缝。`vampire_buffet_pod`、`vampire_mad_monster_party_pod`、`vampire_fledgling_vampire_pod` 的语义都是“你消灭随从后”由 destroyer 自己的来源牌触发；旧 global source selection 在 P0/P1 都有同名 POD source 时只按 defId 选第一个命中 source，导致 destroyer 是 P1 时也可能把 queued trigger 归到 P0 的手牌 source。现已在 `src/games/smashup/domain/ongoingEffects.ts` 让 `selectGlobalTriggerSourceLocation(...)` 接受 `isEligible`，并在 global collector/fallback 中用 trigger `canTrigger(buildTriggerEligibilityContext(...))` 过滤候选；同时在 `src/games/smashup/abilities/vampires.ts` 为三张 POD 补 `playerContext:'sourceController'` 与 `canTrigger: sourceIsDestroyer`，要求 `sourceControllerId === destroyerId`。新增/修正 `reactionQueueEventPlayerContext.test.ts` 参数化用例 `queued onMinionDestroyed 全局 Vampire POD %s 应选择 destroyer 自己的 source`，覆盖 Buffet POD、Mad Monster Party POD、Fledgling Vampire POD 三个 sourceDefId。验证：focused `全局 Vampire POD` => `1 file passed, 3 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 75 passed`；`vampiresPod.test.ts` 整文件 => `1 file passed, 11 passed`；`ongoingEffects.test.ts` 整文件 => `1 file passed, 37 passed`。这格不外推所有 global trigger、所有 Vampire POD 或整条 destroy family 已完成。
+- 2026-05-22 最新进展补记：继续沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionDestroyed per-instance source isolation` 主线收掉一条 Vampires POD sibling 真缝。`vampire_the_count_pod` 旧注册没有 `perInstance`，`collectTriggers()` 只会为该 defId 选一个 source 入队；同时注册未写 `playerContext:'sourceController'`，owner 默认落到事件玩家；callback 又扫描全场 Count POD，为所有 Count POD 逐个创建 prompt。新增/修正 `reactionQueueEventPlayerContext.test.ts` 用例 `queued onMinionDestroyed 多个 The Count POD 控制者不同时，应按 sourceController 分别给选择权`，首轮红灯为 `count-p0` owner 错成事件玩家且 `count-p1` 未入队；修复后 queue 同时包含 `count-p0/0` 与 `count-p1/1`，P0 选择自己的 Count POD trigger 后得到 `vampire_the_count_pod_add_counter` prompt。实现侧在 `src/games/smashup/abilities/vampires.ts` 给该 trigger 补 `perInstance:true, playerContext:'sourceController'`，并让 queued 路径按当前 `ctx.sourceCardUid/sourceControllerId` 只结算当前 source；无 source provenance 的 direct fallback 仍保留旧扫描语义。验证：focused => `1 file passed, 1 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 72 passed`；`vampiresPod.test.ts -t "The Count POD"` => `1 file passed, 2 passed`；`vampiresPod.test.ts` 整文件 => `1 file passed, 11 passed`。这格不外推所有 Vampires、所有 optional destroy trigger 或整条 onMinionDestroyed family 已完成。
+- 2026-05-22 最新进展补记：继续沿 `queued-trigger-runtime-context / reaction-trigger-choice / onMinionDestroyed per-instance source isolation` 主线收掉一条 Sharks sibling 真缝。`sharks_hammerhead` 与附着行动 `sharks_chum` 同时在同一基地作为 mandatory `onMinionDestroyed` source 时，旧 `sharksDestroyedCounterTrigger(ctx)` 每次执行都会扫描整座基地并给所有 Hammerhead/Chum 宿主加 counter；在 queued per-instance trigger 下，这会让每个 source 结算时重复执行整座基地效果。现已在 `src/games/smashup/abilities/sharks.ts` 让该 trigger 优先按 `ctx.sourceCardUid` 只结算当前 source：source 是 `sharks_hammerhead` 时只给自身 +1，source 是 `sharks_chum` 时只给其宿主 +1；保留无 `sourceCardUid` 的旧 direct fallback。新增/修正 `reactionQueueEventPlayerContext.test.ts` 用例 `queued onMinionDestroyed 多个 Sharks counter source 同时在场时，每个 source 只能结算自身一次`，先确认 queue 内有 `sharks_chum / sharks_hammerhead` 两个 source，再选择 Chum trigger，并断言自动继续结算剩余 Hammerhead trigger 后两者各只 +1，`POWER_COUNTER_ADDED.reason` 精确为 `['sharks_chum','sharks_hammerhead']`。验证：focused => `1 file passed, 1 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `1 file passed, 71 passed`；`shayuFactionAbilities.test.ts` 整文件 => `1 file passed, 17 passed`。这格不外推整个 Sharks、所有 `onMinionDestroyed` trigger 或所有 per-instance mandatory ordering 已完成。
+- 2026-05-22 最新进展补记：完成 `registerTrigger(..., timing)` 与生产入口的静态差集核对。生产目录下当前所有已注册 timing 都至少有对应 `collectTriggers()` 或 `fireTriggers()` 入口：`afterScoring / beforeScoring / onActionPlayed / onBuriedCardUncovered / onCardBuried / onCardReturnedToHand / onDeckInspected / onDuelResolved / onDuelStarted / onMinionAffected / onMinionDestroyed / onMinionDiscardedFromBase / onMinionMoved / onMinionPlayed / onTitanMoved / onTitanRemovedFromPlay / onTurnEnd / onTurnStart`。其中 `onDuelStarted` 是合法特例：`startDuel()` 里直接 `fireTriggers(core, 'onDuelStarted', ...)` 并把 `matchState` prompt 应用回去，不走 queued collector。复跑 `smashup.smoke.test.ts -t "pecos_bill 可在你成为 challenger 时弃 1 张牌部署到该决斗基地|pecos_bill 在你赢得决斗后会摸 1 张牌|pecos_bill 若在决斗中进入已有泰坦的基地"` => `1 file passed, 3 passed`。结论：`onTitanRemovedFromPlay` 之后暂未发现新的“注册 timing 完全无人消费”缺口；下一格应转向“有入口但 callback/prompt player provenance 或 side branch 仍不对称”的 still-object/shared family。
+- 2026-05-22 最新进展补记：继续沿 `post-process family / queued collector` 主线推进，命中一条新的生产收集缺口：`onTitanRemovedFromPlay` 已经有注册和 handler，但 `postProcessSystemEvents()` 的 titan 后处理循环旧实现只处理 `TITAN_PLAYED / TITAN_MOVED`，没有消费 `TITAN_REMOVED_FROM_PLAY`，所以 `killer_plants_killer_kudzu` 离场后的可选回收/抽牌 prompt 在生产真链上不会入队。现已在 `src/games/smashup/domain/index.ts` 增加 `_processedTitanRemovedEvents` 去重，并对 `TITAN_REMOVED_FROM_PLAY` 调 `collectTriggers(titanCore, 'onTitanRemovedFromPlay', ...)`，携带 `sourceCardUid / sourceControllerId / sourceBaseIndex / frameId / sourceEventId`；同时在 `src/games/smashup/abilities/titans.ts` 给 `killer_plants_killer_kudzu.onTitanRemovedFromPlay` 补 `playerContext:'sourceController'`。新增 `src/games/smashup/__tests__/reactionQueueTitanRemovedFromPlay.test.ts` focused gate，场景为 current player 是 P1、Killer Kudzu owner/controller 是 P0，断言 queue 与后续 `titan_killer_plants_killer_kudzu_removed` prompt 都归 P0。验证：focused `1 passed`；`reactionQueueEventPlayerContext.test.ts -t "Killer Kudzu"` `1 passed`；`smashup.smoke.test.ts` titan clash/移动邻近 `4 passed`；eslint 0 errors（28 warnings 为既有 any/unused 类警告）。这格是真修复 `TITAN_REMOVED_FROM_PLAY -> onTitanRemovedFromPlay` collector 缺口，不外推整个 titan/post-process family 已完成。
+- 2026-05-22 最新进展补记：完成当前 `onMinionDiscardedFromBase` 注册点的 scoreOneBase/邻近真实入口覆盖审计。注册清单共 24 个：Samurai 13 个、`trickster_gremlin_pod`、`vikings_viking_funeral`、`princesses_sleeping_beauty`、`giant_ants_death_on_six_legs`、`world_champs_bewitched`、`world_champs_samurai_chan`、`giant_ant_worker_pod`、`frankenstein_igor`、`shapeshifters_doppelganger`、`shapeshifters_copycat`、`time_travelers_jumper`。当前证据落点分别是 `baseScoring.test.ts` direct gates、`yuanhouFactionAbilities.test.ts` 普通基地计分 Jumper/Copycat recover gates、以及 `reactionQueueEventPlayerContext.test.ts` eventPlayer gates；本轮又补齐 `Doppelganger` 和 `Samurai-Chan POD / Bushi POD` evidence 缺口。因此下一格应退出这条注册点重复扫绿格，转去更宽的 still-object/shared family。
+
+- 2026-05-22 最新进展补记：做 `onMinionDiscardedFromBase` 注册点与 `scoreOneBase` direct-gate 覆盖审计时，发现 `samurai_samurai_chan_pod` / `samurai_bushi_pod` 不是测试缺口，而是 evidence 落账缺口。`baseScoring.test.ts` 已有 `scoreOneBase 会让 Samurai-Chan POD 在基地计分弃牌后抓 1 张牌`、`scoreOneBase 会保留武士 POD 计分弃牌瞬间的有效战力并额外给 1VP`、`scoreOneBase 会把武士 POD 的临时力量也计入弃牌时的 +1VP 判定` 三条用例；本轮复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "Samurai-Chan POD|武士 POD"` => `1 file passed, 3 passed`。已把这两张 POD self-source scoreOneBase 入口补回 task_plan/evidence 口径，避免下轮再误判成未覆盖候选。
+
+- 2026-05-22 最新进展补记：继续从 `scoreOneBase -> onMinionDiscardedFromBase` 剩余候选里把 `shapeshifters_doppelganger` 降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Doppelganger 在基地计分弃牌后提示从牌库打随从到原基地`，场景为 P0 的 `shapeshifters_doppelganger` 在普通基地计分弃牌，P0 牌库有两张可搜随从；断言当前交互为 `shapeshifters_doppelganger_search`、`playerId='0'`、`allowedCardUids=['dopp-candidate-a','dopp-candidate-b']`，并保留 skip 选项。验证：focused `Doppelganger` => `1 file passed, 1 passed`；同组 `Doppelganger|Way of the Warrior POD|Honor the Fallen POD|Shogun POD|Final Haiku POD|World Champs Samurai Chan|Way of the Warrior|Bewitched|Death on Six Legs|Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 19 passed`。这格不改 runtime，只把 Doppelganger 从“只有 queued eventPlayer gate / destroy 真入口 L3”的状态补成 scoreOneBase 入口也有可复查 direct gate；不外推实际选择候选后的完整计分收口、所有 deck search 或全部 scoreOneBase family。
+
+- 2026-05-22 最新进展补记：继续把 `samurai_way_of_the_warrior_pod` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Way of the Warrior POD 标记的随从在计分弃牌后给施放者抽两张`，场景为 P0 已打出的 `samurai_way_of_the_warrior_pod` 在 discard，目标 `samurai_ronin_pod` 带 draw metadata，并在当前第 1 回合计分弃牌；断言 `CARDS_DRAWN.playerId='0'` 且抽到 `warrior-pod-draw-a/warrior-pod-draw-b`。验证：focused => `1 file passed, 1 passed`；同组 `Way of the Warrior POD|Honor the Fallen POD|Shogun POD|Final Haiku POD|World Champs Samurai Chan|Way of the Warrior|Bewitched|Death on Six Legs|Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 18 passed`。这格不改 runtime，只证明 POD 版 Way of the Warrior 在 scoreOneBase 清场入口下也通过真实来源牌 + metadata 保留施放者归属和抽两张语义。
+- 2026-05-22 最新进展补记：继续把 `samurai_honor_the_fallen_pod` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Honor the Fallen POD 在基地计分弃牌后按离场随从 LKI 抽牌`，场景为基地 0 挂有 P0 的 `samurai_honor_the_fallen_pod`，同基地己方 `samurai_ronin_pod` 因计分弃牌；断言 `CARDS_DRAWN.playerId='0'` 且抽到 `honor-pod-draw-a`。验证：focused => `1 file passed, 1 passed`；同组 `Honor the Fallen POD|Shogun POD|Final Haiku POD|World Champs Samurai Chan|Way of the Warrior|Bewitched|Death on Six Legs|Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 17 passed`。这格不改 runtime，只证明 POD base ongoing 在 scoreOneBase 清场入口下也保留同基地离场随从 LKI 和控制者抽牌归属。
+- 2026-05-22 最新进展补记：继续把 `samurai_shogun_pod` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Shogun POD 在其他己方 POD 随从计分弃牌后获得 1 个力量指示物`，场景为基地 0 的己方 `samurai_ronin_pod` 计分弃牌，基地 1 的 `samurai_shogun_pod` 仍在场；断言 `POWER_COUNTER_ADDED.minionUid='shogun-pod-a'` 且 `reason='samurai_shogun'`。验证：focused => `1 file passed, 1 passed`；同组 `Shogun POD|Final Haiku POD|World Champs Samurai Chan|Way of the Warrior|Bewitched|Death on Six Legs|Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 16 passed`。这格不改 runtime，只证明 POD other-friendly scoring discard 分支在 scoreOneBase 清场入口下也保留 source live witness 与离场随从 LKI。
+- 2026-05-22 最新进展补记：继续把 `samurai_final_haiku_pod` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Final Haiku POD 在宿主计分弃牌后给其他己方随从 +2 临时力量`，场景为 P0 的 `samurai_bushi_pod` 宿主带 `samurai_final_haiku_pod` 在基地 0 计分弃牌，基地 1 同时有己方 POD 随从和敌方随从；断言 `TEMP_POWER_ADDED` 只给己方 `haiku-pod-ally-a`，不给敌方 `haiku-pod-enemy-a`。验证：focused => `1 file passed, 1 passed`；同组 `Final Haiku POD|World Champs Samurai Chan|Way of the Warrior|Bewitched|Death on Six Legs|Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 15 passed`。这格不改 runtime，只证明 POD attached-action 宿主计分弃牌入口下也保留 source action LKI、宿主离场 witness 和己方目标过滤。
+- 2026-05-22 最新进展补记：继续把 `world_champs_samurai_chan` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 World Champs Samurai Chan 自身在基地计分弃牌后抽 1 张牌`，场景为 P0 的 `world_champs_samurai_chan` 在普通基地达到断点并因计分弃牌；断言 `CARDS_DRAWN.playerId='0'` 且抽到 `wc-chan-draw-a`。验证：focused => `1 file passed, 1 passed`；同组 `World Champs Samurai Chan|Way of the Warrior|Bewitched|Death on Six Legs|Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 14 passed`。这格不改 runtime，只证明 World Champs 版 Samurai Chan 的 self-source discard trigger 在 scoreOneBase 清场入口下也保留 sourceController 与 triggerMinionUid。
+- 2026-05-22 最新进展补记：继续把 `samurai_way_of_the_warrior` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Way of the Warrior 标记的随从在计分弃牌后给施放者抽两张`，场景为 P0 已打出的 `samurai_way_of_the_warrior` 在 discard，目标随从 `warrior-marked-a` 带 `samuraiWayOfTheWarriorDrawUntilTurnNumber=2` 与 `samuraiWayOfTheWarriorDrawPlayerId='0'`，并在当前第 1 回合计分弃牌；断言 `CARDS_DRAWN.playerId='0'` 且抽到 `warrior-draw-a/warrior-draw-b`。首轮红灯为测试夹具只写 metadata、没保留来源行动卡；补 P0 discard 中的 `warrior-action-a` 后 focused 转绿。验证：focused => `1 file passed, 1 passed`；同组 `Way of the Warrior|Bewitched|Death on Six Legs|Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 13 passed`。这格不改 runtime，只证明 Way of the Warrior 在 scoreOneBase 清场入口下能通过真实来源牌 + metadata 保留施放者归属和抽两张语义。
+- 2026-05-22 最新进展补记：继续把 `world_champs_bewitched` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Bewitched 在宿主计分弃牌后提示行动拥有者转移附着`，场景为 P1 普通宿主 `robot_microbot_alpha` 带 P0 的 `world_champs_bewitched` 在基地 0 计分弃牌，基地 1 有可转移目标 `bewitched-target-a`；断言当前交互 `sourceId='world_champs_bewitched_transfer'`、`playerId='0'`，候选包含 `bewitched-target-a` 且不包含原宿主 `bewitched-host-a`，runtime continuation 保留 `sourceCardUid='bewitched-action-a'`、`sourceDefId='world_champs_bewitched'`、`ownerId='0'`、`triggerMinionUid='bewitched-host-a'`。验证：focused => `1 file passed, 1 passed`；同组 `Bewitched|Death on Six Legs|Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 12 passed`。这格不改 runtime，只证明 Bewitched 在 scoreOneBase 清场入口下也保留 attached-action source、行动拥有者归属、原宿主排除和转移目标候选。
+- 2026-05-22 最新进展补记：继续把 `giant_ants_death_on_six_legs` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Death on Six Legs 在己方随从计分弃牌后获得 1 个力量指示物`，场景为 P0 控制的 Giant Ant 随从在基地 0 计分弃牌，P0 控制的 `Death on Six Legs` 泰坦在基地 1；断言 `TITAN_POWER_COUNTER_ADDED.titanUid='six-legs-titan-a'`、`amount=1`、`reason='giant_ants_death_on_six_legs'`。验证：focused => `1 file passed, 1 passed`；同组 `Death on Six Legs|Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 11 passed`。这格不改 runtime，只证明 Death on Six Legs 在 scoreOneBase 清场入口下也保留 sourceController 和 triggerMinion LKI。
+- 2026-05-22 最新进展补记：继续把 `frankenstein_igor` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Igor 在计分弃牌后给控制者创建放置指示物目标选择`，场景为 P0 的 Igor 在基地 0 计分弃牌，基地 0 另有己方随从，基地 1 也有己方随从；断言当前交互 `sourceId='frankenstein_igor'`、`playerId='0'`，候选包含 `igor-same-base-ally` 与 `igor-other-base-ally`，不包含 `igor-score-a`。验证：focused => `1 file passed, 1 passed`；同组 `Igor|Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 10 passed`。这格不改 runtime，只证明 Igor 在 scoreOneBase 清场入口下也保留 triggerMinion LKI、控制者归属和目标排除自身。
+- 2026-05-22 最新进展补记：继续把 `giant_ant_worker_pod` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Worker POD 在计分弃牌后提示从弃牌堆打到另一基地`，场景为 P0 的 Worker POD 在基地 0 计分弃牌，基地 1 作为唯一可选其它基地；断言当前交互 `sourceId='giant_ant_worker_pod_replay'`、`playerId='0'`，候选 `baseIndex` 包含 1 且不包含原基地 0。验证：focused => `1 file passed, 1 passed`；同组 `Worker POD|Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 9 passed`。这格不改 runtime，只证明 Worker POD 在 scoreOneBase 清场入口下也保留 replay prompt、控制者归属和“另一个基地”过滤。
+- 2026-05-22 最新进展补记：继续把 discard-zone self-trigger sibling `trickster_gremlin_pod` 的 `scoreOneBase` 入口从开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Gremlin POD 在被他人控制但归自己拥有时计分弃牌后给拥有者抽牌`，场景为 P1 控制、P0 拥有的 Gremlin POD 因基地计分弃牌；断言 `CARDS_DRAWN.playerId='0'` 且抽到 `gremlin-draw-a`，P1 不抽牌。验证：focused => `1 file passed, 1 passed`；同组 `Gremlin POD|Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 8 passed`。这格不改 runtime，只证明 Gremlin POD 在 scoreOneBase 清场入口下也保留 owner/controller 分离和 discard self-trigger source 定位。
+- 2026-05-22 最新进展补记：继续把非 Samurai attached-action sibling `vikings_viking_funeral` 从 `scoreOneBase -> onMinionDiscardedFromBase` 开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Viking Funeral 在宿主计分弃牌后奖励 1VP 并移出该宿主`，场景为宿主 `vikings_huscarl` 带 `vikings_viking_funeral` 计分弃牌；断言 `VP_AWARDED.reason='vikings_viking_funeral'` 且 `CARD_REMOVED_FROM_GAME.cardUid='funeral-host-a'`。验证：focused => `1 file passed, 1 passed`；同组 `Final Haiku|Viking Funeral|Shogun|Honor the Fallen|Sakura Garden|Samurai Chan|Bushi` => `1 file passed, 7 passed`。这格不改 runtime，只证明 Viking Funeral 在 scoreOneBase 清场入口下也能保留 attached-action LKI、discard 后处理和 owner 归属。
+- 2026-05-22 最新进展补记：继续把 `samurai_final_haiku` 的 attached-action scoring discard 分支从 `scoreOneBase -> onMinionDiscardedFromBase` 开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Final Haiku 在宿主计分弃牌后给其他己方随从 +2 临时力量`，场景为基地 0 的宿主带 `samurai_final_haiku` 计分弃牌，基地 1 同时有己方与敌方随从；断言 `TEMP_POWER_ADDED` 只给己方 `haiku-ally-a`，不给敌方 `haiku-enemy-a`。验证：focused => `1 file passed, 1 passed`；同组 `Honor the Fallen|Sakura Garden|Samurai Chan|Shogun|Final Haiku|Bushi` => `1 file passed, 6 passed`。这格不改 runtime，只证明 Final Haiku 在 scoreOneBase 清场入口下能保留 attached-action LKI 与宿主离场 witness。
+- 2026-05-22 最新进展补记：继续把 `samurai_shogun` 从 `scoreOneBase -> onMinionDiscardedFromBase` 同族开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Shogun 在其他己方随从计分弃牌后获得 1 个力量指示物`，场景为基地 0 的己方 `samurai_ronin` 计分弃牌，基地 1 的 `samurai_shogun` 仍在场；断言 `scoreOneBase(...)` 结果包含 `POWER_COUNTER_ADDED.payload.minionUid='shogun-a'` 且 `reason='samurai_shogun'`。验证：focused `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "scoreOneBase 会让 Shogun 在其他己方随从计分弃牌后获得 1 个力量指示物"` => `1 file passed, 1 passed`；同组 `Honor the Fallen|Sakura Garden|Samurai Chan|Shogun|Bushi` => `1 file passed, 5 passed`。这格不改 runtime，只证明 Shogun 的 other-friendly scoring discard 分支当前保留 source live witness 与离场随从 LKI，不外推 attached-action Samurai trigger、POD 全矩阵或全部 scoreOneBase interleave。
+- 2026-05-22 最新进展补记：继续把 Samurai self-source 分支从 `scoreOneBase -> onMinionDiscardedFromBase` 同族开放候选降级为 dedicated green evidence。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 两条用例：`scoreOneBase 会让 Samurai Chan 自身在基地计分弃牌后按 self-source LKI 抽牌`，断言抽到 `chan-draw-a`；`scoreOneBase 会让 Bushi 自身在基地计分弃牌后按离场力量 LKI 得分`，断言存在 `VP_AWARDED.reason='samurai_bushi'`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "Samurai Chan|Bushi"` => `1 file passed, 2 passed`。这两条证明 self-source 与离场力量 LKI 在 scoreOneBase 入口下仍可用，不外推 Samurai 全部 onMinionDiscardedFromBase trigger。
+- 2026-05-22 最新进展补记：继续把 `base_sakura_garden` 从 `scoreOneBase -> onMinionDiscardedFromBase` 同族开放候选降级为 dedicated green evidence。风险点和 `Honor the Fallen` 类似，都是如果计分清场/后续 frame 交错时丢掉 `ctx.triggerMinion`，callback 会无法按离场随从控制者抽牌。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Sakura Garden 在基地计分弃牌后按离场随从 LKI 抽牌`，普通基地计分后断言 `CARDS_DRAWN.playerId='0'` 且抽到 `sakura-draw-a`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "Sakura Garden"` => `1 file passed, 1 passed`。这只降级 `base_sakura_garden` 这一邻近，不外推所有基地级 discarded-from-base trigger。
+- 2026-05-22 最新进展补记：沿 `scoreOneBase -> onMinionDiscardedFromBase` 下一格筛 `samurai_honor_the_fallen`，没有发现 runtime 红灯，但补成 dedicated green evidence。风险点是 `Honor the Fallen` callback 依赖 `ctx.triggerMinion.controller`，如果计分清场/后续 frame 交错时丢掉离场随从 LKI，就会静默不抽牌。新增 `src/games/smashup/__tests__/baseScoring.test.ts` 用例 `scoreOneBase 会让 Honor the Fallen 在基地计分弃牌后按离场随从 LKI 抽牌`，普通基地计分后直接断言 `CARDS_DRAWN.playerId='0'` 且抽到 `honor-draw-a`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "Honor the Fallen"` => `1 file passed, 1 passed`。这把该候选降级为已验证邻近，不外推 Samurai 全部 discarded-from-base trigger。
+- 2026-05-22 最新进展补记：这轮没有继续扩新坑，先把上一轮已经落代码但未落状态的 `Jumper / copied Jumper / Sleeping Beauty` 证据补齐。核心 bug 是 `scoreOneBase()` 会先创建 `onMinionDiscardedFromBase` optional frame，随后又 push `afterScoring` mandatory frame；旧 `smashup_reaction_choose` 的 live validation 每次取 active frame，导致当前 Jumper recover prompt 用 afterScoring frame 校验，响应被判“无效的选择”。现已在 `src/games/smashup/domain/reactionSession.ts` 让 `optionsGenerator` 按创建 prompt 时的 `session.frameId` 找回对应 session；`src/games/smashup/abilities/yuanhou.ts` 中 `Jumper / Copycat copied Jumper` 在真实进 discard 时继续走 `CARD_RECOVERED_FROM_DISCARD`，若计分清场延迟前仍在基地上则用 `MINION_RETURNED` 从基地回 owner 手牌，并对 `base_temple_of_goju` 最高力量放底分支提前禁止 recover trigger；`src/games/smashup/abilities/princesses.ts` 的 `Sleeping Beauty` 同步支持计分清场前从基地直接洗回 owner deck。验证：`yuanhouFactionAbilities.test.ts` 聚焦 6 条 Jumper/Copycat/Temple 分支 => `1 file passed, 6 passed`；`baseScoring.test.ts -t "Sleeping Beauty"` => `1 file passed, 1 passed`。这是真实收掉 `scoreOneBase -> onMinionDiscardedFromBase -> reaction frame live validation` 的 shared bug，但不外推整个 reaction runtime 或所有 discarded-from-base family 已完成。
+- 2026-05-22 最新进展补记：这轮继续沿 `onMinionDiscardedFromBase` 家族推进，真实收掉 `trickster_gremlin_pod` 的 discard-zone self-trigger 入队红灯。首轮 focused `Gremlin POD` 失败不是抽牌归属错，而是 `collectTriggers()` 根本没有排出 `trickster_gremlin_pod`：`queued?.payload?.triggers?.[0]?.sourceDefId` 为 `undefined`。根因是 `trickster_gremlin_pod.onMinionDiscardedFromBase` 没声明 `global: true, globalZones:['discard']`，而这类“自己已经离场进入弃牌堆后触发”的来源不能只靠 live base locate。现已在 `src/games/smashup/abilities/tricksters.ts` 对齐 `Sleeping Beauty / Doppelganger` 同族注册合同；修复后 P1 控制但 P0 拥有的 Gremlin POD 被弃置进 P0 discard 时会正确入队，并由 LKI `triggerMinion.owner='0'` 给 P0 抽牌。同轮邻近整文件暴露 `processDestroyTriggers()` 链式 destroy 后续 discard 分支裸读 `minion.controller` 的崩溃，已在 `src/games/smashup/domain/reducer.ts` 改成 `minion?.controller ?? ownerId` 并传 `controllerId`。验证：`reactionQueueEventPlayerContext.test.ts -t "Gremlin POD"` => `1 passed`；`reactionQueueEventPlayerContext.test.ts` 整文件 => `70 passed`；`onDestroyAbilities.test.ts -t "trickster_gremlin_pod"` => `1 passed`；`onDestroyAbilities.test.ts` 整文件 => `14 passed`。这格是新的真实修复，不是回旧 waiting overlay objective，也不外推整个 destroy/discard family 已完成。
+- 2026-05-21 最新进展补记：这轮继续沿 `onMinionDiscardedFromBase` 家族往下钻，又坐实一条新的 sibling stale-context seam：`src/games/smashup/abilities/giant_ants.ts` 里的 `giant_ant_worker_pod` 旧实现把“destroy / scoring discard 两种时机都发生在 reducer 移除随从前，此时仍可从基地读取到真实 counters”写死在 callback 里；但 queued discard trigger 真正执行时宿主已进 discard，live base lookup 直接回空，于是本应给控制者的 `giant_ant_worker_pod_replay` 交互彻底消失。我先在 `src/games/smashup/__tests__/newFactionAbilities.test.ts` 补 focused regression `giant_ant_worker_pod 在宿主进入弃牌堆后仍会通过 queued discard trigger 提示从弃牌堆打到另一基地`，首次红灯直接坐实 `current?.data?.sourceId === undefined`；随后只做一处最小修复：让 `giantAntWorkerPodReplayTrigger()` 优先读取 queued executor 恢复出来的 `ctx.triggerMinion` 来判断 `controller/powerCounters`，只有 direct caller 没带 `triggerMinion` 时才 fallback 到 live base lookup。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "giant_ant_worker_pod 在宿主进入弃牌堆后仍会通过 queued discard trigger 提示从弃牌堆打到另一基地"` => `1 file passed, 1 passed`；`git diff --check -- src/games/smashup/abilities/giant_ants.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前不是继续围着旧 `goal` 文案或刚修过的 `Igor / Final Haiku / Viking Funeral` 打转，而是在同一家族里又真实收掉了一条“callback 假设 live base 还在、却没吃 queued triggerMinion witness”的最小残口。
+- 2026-05-21 最新进展补记：这轮又补上一条和 `samurai_final_haiku / vikings_viking_funeral` 同家族、但不是同一病根复读的新 seam：`src/games/smashup/abilities/frankenstein.ts` 里的 `frankenstein_igor` 旧实现不是 attached-action host 判定问题，而是 queued discard trigger 真正执行时，仍回头用 `ctx.state.bases[ctx.baseIndex].minions.find(ctx.triggerMinionUid)` 从 live base 取离场随从的 `controller`；一旦宿主已经进 discard，这个 lookup 就会回空，导致本应交给控制者的目标选择交互直接消失。现已把逻辑收紧成“优先读取 queued executor 恢复出来的 `ctx.triggerMinion?.controller`，只有 direct caller 没带 `triggerMinion` 时才 fallback 到 live base lookup”，并在 `src/games/smashup/__tests__/newFactionAbilities.test.ts` 新增 focused regression `frankenstein_igor 在宿主进入弃牌堆后仍会通过 queued discard trigger 给控制者创建目标选择交互`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "frankenstein_igor 在宿主进入弃牌堆后仍会通过 queued discard trigger 给控制者创建目标选择交互"` => `1 file passed, 1 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newOngoingAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "frankenstein_igor: 基地结算弃置触发"` => `1 file passed, 6 passed`。这格说明当前不是继续围着旧 `goal` 文案打转，而是在 `onMinionDiscardedFromBase` 家族里又真实收掉了一条“callback 仍回头查 live base 才拿 controller”的 sibling stale-context seam。
+- 2026-05-21 最新进展补记：这轮又补上一条和 `vikings_viking_funeral` 同病根、但不是同一对象复读的新 seam：`src/games/smashup/abilities/samurai.ts` 里的 `samuraiFinalHaikuTrigger()` 旧实现虽然要验证的是“Final Haiku 当时确实贴在这只离场宿主上”，实际却仍硬依赖 `findAttachedActionHost(ctx.state, ctx.sourceCardUid, ctx.sourceBaseIndex)` 回头查 live host；queued discard trigger 真正执行时宿主已进 discard，就会直接回空。现已把判定收紧成“优先吃 queued executor 恢复出来的 `ctx.triggerMinion.attachedActions`，只有这份 attached-action LKI 缺失时才 fallback 到 live host”，并在 `src/games/smashup/__tests__/newFactionAbilities.test.ts` 新增 focused regression `samurai_final_haiku 在宿主进入弃牌堆后仍会通过 queued discard trigger 给其他己方随从 +2 力量`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_final_haiku 在宿主进入弃牌堆后仍会通过 queued discard trigger 给其他己方随从 \\+2 力量|vikings_viking_funeral"` => `1 file passed, 2 passed`；`git diff --check -- src/games/smashup/domain/reactionSession.ts src/games/smashup/abilities/vikings.ts src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueOnMinionDiscardedFromBase.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前不是被旧 `goal` 文案拉回同一症状，而是 `onMinionDiscardedFromBase` 家族里又真实收掉了一条“callback 仍回头查 live host”的 sibling stale-context seam。
+- 2026-05-21 最新进展补记：这轮已经从“goal 标题滞后导致看起来像死循环”的状态里再收掉一条真正的新 seam，不是继续围着旧 `Spy / waiting overlay` 文案打转。命中的是真 queued runtime 的 `attached-action LKI` 缺口：`TriggerInstance` 入队时虽然会记录 `lkiMinion.attachedActionDefIds`，但 `src/games/smashup/domain/reactionSession.ts` 真正执行 queued trigger 时重建出来的 `triggerMinion.attachedActions` 仍是空数组；于是像 `vikings_viking_funeral` 这种需要确认“这张 attached action 当时确实贴在这只宿主上”的 `onMinionDiscardedFromBase` 回调，只要宿主已经进 discard，就会回头查当前基地 live state 并直接回空。现已只做两处最小修复：1) 在 `reactionSession.ts` 恢复 `triggerMinion` 时，把 `attachedActionDefIds` 重建成最小 attached-action LKI，并保留当前 `trigger.sourceCardUid/sourceDefId`；2) 把 `src/games/smashup/abilities/vikings.ts` 的 `vikingsVikingFuneralTrigger()` 改成优先吃 `ctx.triggerMinion.attachedActions`，不再要求宿主执行时仍在当前基地。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOnMinionDiscardedFromBase.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "attached-action LKI"` => `1 file passed, 1 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "vikings_viking_funeral"` => `1 file passed, 1 passed`；`git diff --check -- src/games/smashup/domain/reactionSession.ts src/games/smashup/abilities/vikings.ts src/games/smashup/__tests__/reactionQueueOnMinionDiscardedFromBase.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前继续锚点已经重新挂回 active goal 对应的长期任务主线，但执行入口是本地 state / plan 里的 shared seam，而不是旧 objective 的字面残项。
+- 2026-05-21 最新进展补记：这轮已经把一条新的 `Skeletons onBuriedCardUncovered optional/per-instance owner seam` 真正落到代码和验证里，不是继续围着旧 `Spy / waiting overlay` 标题转。`src/games/smashup/abilities/skeletons.ts` 里 `registerTrigger('skeletons_lord_of_bones', 'onBuriedCardUncovered', ...)` 与 `registerTrigger('skeletons_gravestones', 'onBuriedCardUncovered', ...)` 的 callback 本来就都按 `ctx.sourceControllerId ?? ctx.playerId` 把后续交互交还给来源控制者，但注册侧旧实现没显式写 `playerContext:'sourceController'`，所以当对手翻开埋葬牌时，queued trigger 的 `ownerPlayerId` 仍可能错落到事件玩家。我先在 `src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` 新增两条 focused regression：`queued onBuriedCardUncovered per-instance trigger 在对手翻开埋葬牌时仍应把 skeletons_lord_of_bones 的选择权交给控制者` 与 `queued onBuriedCardUncovered per-instance trigger 在对手翻开埋葬牌时仍应把 skeletons_gravestones 的选择权交给控制者`；首次红灯都直接坐实 owner 错位。随后只做两处最小修复：给这两条 trigger 都补上 `playerContext:'sourceController'`。验证：`node --max-old-space-size=8192 .\\node_modules\\vitest\\vitest.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1 -t "queued afterScoring trigger 在对手计分时仍应把 skeletons_gravestones 的选择权交给控制者|queued onBuriedCardUncovered per-instance trigger 在对手翻开埋葬牌时仍应把 skeletons_lord_of_bones 的选择权交给控制者|queued onBuriedCardUncovered per-instance trigger 在对手翻开埋葬牌时仍应把 skeletons_gravestones 的选择权交给控制者"` => `1 file passed, 3 passed`；`node --max-old-space-size=8192 .\\node_modules\\vitest\\vitest.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1 -t "skeletons_lord_of_bones 天赋可挖掘这里任意埋葬牌而不只限自己|skeletons_gravestones 计分后可把自己埋葬到另一个基地|skeletons_gravetender 每回合仅首次埋葬/挖掘触发抽牌"` => `1 file passed, 3 passed`；`git diff --check -- src/games/smashup/abilities/skeletons.ts src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前主线仍是 `queued-trigger-runtime-context / reaction-trigger-choice` 的最小真缝下钻，不外推整个 `skeletons`、所有 buried family，或旧 goal 文案里的 shared transport residual 已重新变成当前 blocker。
+- 2026-05-21 最新进展补记：这轮“为什么像死循环”已经进一步落成一个新的先红后绿，不是口头解释。`world_champs_bewitched` 的 owner seam 之前虽已在 `reactionQueueSourceRuntimeContext.test.ts` 转绿，但 reducer 真链仍卡在 `CARD_TRANSFERRED`：宿主随从从场上回手时，附着的 `world_champs_bewitched` 会先随 `detachCardUidFromBases(...)` 一起离场进 discard，旧 `collectTriggers(advancedCore, 'onCardReturnedToHand', ...)` 因为只会从 after-transfer 现场 locate source，导致这张 per-instance source 根本不入队，`newFactionAbilities.test.ts` 里的 `world_champs_bewitched 宿主经 CARD_TRANSFERRED 从场上回手时也应通过 reducer 真链创建转移交互` 就一直缺 `TRIGGER_QUEUED`。我这次只做两处最小修复：1) `src/games/smashup/domain/ongoingEffects.ts` 在 caller 已用 `sourceDefIds` 收窄、且显式提供 `sourceCardUid/sourceControllerId/sourceBaseIndex` 时，允许 per-instance trigger 用这组 provenance 作为 fallback source 入队；2) `src/games/smashup/domain/reducer.ts` 的 attached-action 回手分支按 `sourceDefIds:[attachedAction.defId]` 定向收集，避免 fallback 误扫 unrelated sourceDefId。顺手补了一条更底层 regression `CARD_TRANSFERRED 让宿主从场上回手时，已随宿主离场的附着 source 也应按显式 source provenance 入队`。验证改用 `vitest --pool threads` 规避本机 `forks` worker OOM：`node --max-old-space-size=8192 .\\node_modules\\vitest\\vitest.mjs run src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1 -t "CARD_TRANSFERRED 让宿主从场上回手时，已随宿主离场的附着 source 也应按显式 source provenance 入队"` => `1 passed`；`node --max-old-space-size=8192 .\\node_modules\\vitest\\vitest.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1 -t "world_champs_bewitched 宿主经 CARD_TRANSFERRED 从场上回手时也应通过 reducer 真链创建转移交互"` => `1 passed`；`node --max-old-space-size=8192 .\\node_modules\\vitest\\vitest.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1 -t "queued onCardReturnedToHand per-instance trigger 在对手回手宿主时仍应把 world_champs_bewitched 的转移权交给行动拥有者"` => `1 passed`。这格说明当前不是围着旧 `Spy / waiting overlay` goal 文案空转，而是又真实收掉了一条 `onCardReturnedToHand + CARD_TRANSFERRED + attached action host leaves play` shared seam；但不外推整个 `world_champs` 或整个 return-to-hand family 已审完。
+- 2026-05-21 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / optional-per-instance trigger owner` 主线继续后，`src/games/smashup/abilities/yuanhou.ts` 里又坐实了一对同族的 `afterScoring per-instance owner` 错位，而不是回到旧 overlay 残项。`cyborgApesFlyingMonkeyAfterScoring()` 与 `shapeshiftersCellularBondingFlyingMonkey()` 回调本来就分别按 `action.ownerId / bondingAction.ownerId` 把 `cyborg_apes_flying_monkey_move` 交还给行动拥有者，但注册 `registerTrigger('cyborg_apes_flying_monkey', 'afterScoring', ...)` 与 `registerTrigger('shapeshifters_cellular_bonding', 'afterScoring', ...)` 的旧实现都只写了 `perInstance + sourceScope:'triggerBase'`，没显式写 `playerContext:'sourceController'`，导致当 `eventPlayer='1' / sourceController='0'` 时，queued trigger 的 `ownerPlayerId` 都错落到 `1`。我先在 `src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` 新增两条 focused regression：`queued afterScoring per-instance trigger 在对手计分时仍应把 cyborg_apes_flying_monkey 的选择权交给控制者` 与 `queued afterScoring per-instance trigger 在对手计分时仍应把 shapeshifters_cellular_bonding 的飞猴选择权交给控制者`，首次红灯都直接坐实 `queued.payload.triggers[0].ownerPlayerId === '1'`；随后只做两处最小修复：给 `src/games/smashup/abilities/yuanhou.ts` 中这两条 trigger 都补上 `playerContext:'sourceController'`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "queued afterScoring per-instance trigger 在对手计分时仍应把 cyborg_apes_flying_monkey 的选择权交给控制者|queued afterScoring per-instance trigger 在对手计分时仍应把 shapeshifters_cellular_bonding 的飞猴选择权交给控制者"` => `2 passed`；`$env:NODE_OPTIONS='--max-old-space-size=4096'; node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "电子猿：飞猴在计分后按玩家选择另一基地并可跳过自动移动|电子猿：飞猴真实计分后移动宿主并摧毁本行动进入弃牌"` => `2 passed`。这格说明当前不是围着旧 `The Spy Who Ditched Me / waiting overlay` 标题空转，而是 `afterScoring optional/per-instance owner` 家族又真实收掉一对 `sourceController/eventPlayer` seam；但不外推整个 `yuanhou` 或所有 afterScoring per-instance trigger 已审完。
+- 2026-05-21 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / optional-per-instance trigger owner` 主线继续后，`src/games/smashup/abilities/aliens.ts` 的 `alien_scout` 也坐实了一条新的 `afterScoring per-instance owner` 错位，而不是回到旧 overlay 残项。`alienScoutAfterScoringPerInstance()` 回调本来就按 `scout.controller` 把 `alien_scout_return` 交还给侦察兵控制者，但注册 `registerTrigger('alien_scout', 'afterScoring', ...)` 的旧实现只写了 `perInstance + sourceScope:'triggerBase'`，没显式写 `playerContext:'sourceController'`，导致当 `eventPlayer='1' / sourceController='0'` 时，queued trigger 的 `ownerPlayerId` 错落到 `1`。我先在 `src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` 新增 focused regression `queued afterScoring per-instance trigger 在对手计分时仍应把 alien_scout 的选择权交给控制者`，首次红灯直接坐实 `queued.payload.triggers[0].ownerPlayerId === '1'`；随后只做一处最小修复：给 `src/games/smashup/abilities/aliens.ts` 的该 trigger 补上 `playerContext:'sourceController'`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "queued afterScoring per-instance trigger 在对手计分时仍应把 alien_scout 的选择权交给控制者"` => `1 passed`；`$env:NODE_OPTIONS='--max-old-space-size=4096'; node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterScoring-rescoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "base_great_library 与 alien_scout 同时进入 afterScoring 时，先结算抽牌也不会触发命令异常"` => `1 passed`；`$env:NODE_OPTIONS='--max-old-space-size=4096'; node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/alien-scout-pod-afterscore.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `4 passed`。这格说明当前不是围着旧 `The Spy Who Ditched Me / waiting overlay` 标题空转，而是 `afterScoring optional/per-instance owner` 家族又真实收掉一条 `sourceController/eventPlayer` seam；但不外推整个 `aliens` 或所有 afterScoring per-instance trigger 已审完。
+- 2026-05-21 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / optional-per-instance trigger owner` 主线继续后，`src/games/smashup/abilities/innsmouth.ts` 的 `innsmouth_return_to_the_sea` 也坐实了一条新的 `afterScoring per-instance owner` 错位，而不是回到旧 overlay 残项。`innsmouthReturnToTheSeaAfterScoring()` 回调本来就按 `armedEntry.playerId` 执行 `innsmouth_return_to_the_sea` 后续交互，但注册 `registerTrigger('innsmouth_return_to_the_sea', 'afterScoring', ...)` 的旧实现只写了 `perInstance + sourceScope:'triggerBase'`，没显式写 `playerContext:'sourceController'`，导致当 `eventPlayer='1' / sourceController='0'` 时，queued trigger 的 `ownerPlayerId` 错落到 `1`。我先在 `src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` 新增 focused regression `queued afterScoring per-instance trigger 在对手计分时仍应把 innsmouth_return_to_the_sea 的选择权交给控制者`，首次红灯直接坐实 `queued.payload.triggers[0].ownerPlayerId === '1'`；随后只做一处最小修复：给 `src/games/smashup/abilities/innsmouth.ts` 的该 trigger 补上 `playerContext:'sourceController'`。修复后再把测试口径收回真实链：这条 queued afterScoring per-instance trigger 不先弹 `smashup_reaction_choose`，而是直接进入 `innsmouth_return_to_the_sea` prompt。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "queued afterScoring per-instance trigger 在对手计分时仍应把 innsmouth_return_to_the_sea 的选择权交给控制者"` => `1 passed`；`$env:NODE_OPTIONS='--max-old-space-size=4096'; node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterscoring-response-window-execution.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "重返深海"` => `2 passed`；`$env:NODE_OPTIONS='--max-old-space-size=4096'; node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterscoring-card-registration.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "innsmouth_return_to_the_sea 应该走统一 afterScoring trigger"` => `1 passed`。中间一度把两个邻近 vitest 并发跑爆成 OOM，已纠偏回串行最小验证；这格说明当前不是围着旧 `The Spy Who Ditched Me / waiting overlay` 标题空转，而是 `afterScoring optional/per-instance owner` 家族又真实收掉一条 `sourceController/eventPlayer` seam；但不外推整个 `innsmouth` 或所有 afterScoring per-instance trigger 已审完。
+- 2026-05-21 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / optional-per-instance trigger owner` 主线继续后，`src/games/smashup/abilities/giant_ants.ts` 的 `giant_ant_we_are_the_champions` 也坐实了一条新的 `afterScoring per-instance owner` 错位，而不是回到旧 overlay 残项。`giantAntWeAreTheChampionsAfterScoring()` 回调本来就按 `armedEntry.playerId` 创建 `giant_ant_we_are_the_champions_choose_snapshot_source` 交互，但注册 `registerTrigger('giant_ant_we_are_the_champions', 'afterScoring', ...)` 与 POD 版的旧实现都只写了 `perInstance + sourceScope:'triggerBase'`，没显式写 `playerContext:'sourceController'`，导致当 `eventPlayer='1' / sourceController='0'` 时，queued trigger 的 `ownerPlayerId` 错落到 `1`。我先在 `src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` 新增 focused regression `queued afterScoring per-instance trigger 在对手计分时仍应把 giant_ant_we_are_the_champions 的确认权交给控制者`，首次红灯直接坐实 `queued.payload.triggers[0].ownerPlayerId === '1'`；随后只做两处最小修复：给 `src/games/smashup/abilities/giant_ants.ts` 的基础版和 POD 版 afterScoring trigger 都补上 `playerContext:'sourceController'`。修复后再把测试口径收回真实链：这条 queued afterScoring per-instance trigger 不先弹 `smashup_reaction_choose`，而是直接进入 `giant_ant_we_are_the_champions_choose_snapshot_source`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "queued afterScoring per-instance trigger 在对手计分时仍应把 giant_ant_we_are_the_champions 的确认权交给控制者"` => `1 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterScoring-rescoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "afterScoring 通过统一反应入口打出我们乃最强后，不会重新给同一基地计分"` => `1 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterscoring-response-window-execution.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "我们乃最强"` => `2 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterscoring-card-registration.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "giant_ant_we_are_the_champions 应该走统一 afterScoring trigger"` => `1 passed`。这格说明当前不是围着旧 `The Spy Who Ditched Me / waiting overlay` 标题空转，而是 `afterScoring optional/per-instance owner` 家族又真实收掉一条 `sourceController/eventPlayer` seam；但不外推整个 `giant_ants` 或所有 afterScoring per-instance trigger 已审完。
+- 2026-05-21 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / optional/per-instance trigger owner` 主线继续后，`src/games/smashup/abilities/cthulhu.ts` 的 `cthulhu_chosen` 也坐实了一条新的 `beforeScoring per-instance owner` 错位，而不是回到旧 overlay 残项。`cthulhuChosenBeforeScoringPerInstance()` 回调本来就按 `chosen.controller` 创建 `cthulhu_chosen_confirm` 确认交互，但注册 `registerTrigger('cthulhu_chosen', 'beforeScoring', ...)` 的旧实现只写了 `perInstance: true`，没显式写 `playerContext:'sourceController'`，导致当 `eventPlayer='1' / sourceController='0'` 时，queued trigger 的 `ownerPlayerId` 错落到 `1`。我先在 `src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` 新增 focused regression `queued beforeScoring per-instance trigger 在对手计分时仍应把 cthulhu_chosen 的确认权交给控制者`，首次红灯直接坐实 `queued.payload.triggers[0].ownerPlayerId === '1'`；随后只做一处最小修复：给 `src/games/smashup/abilities/cthulhu.ts` 的该 trigger 补上 `playerContext:'sourceController'`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts src/games/smashup/__tests__/cthulhu-chosen-display-mode.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "queued beforeScoring per-instance trigger 在对手计分时仍应把 cthulhu_chosen 的确认权交给控制者|cthulhu_chosen beforeScoring|cthulhu_chosen 计分前确认应是 generic 按钮交互"` => `2 files passed, 7 passed, 1 file skipped`。这格说明当前不是围着旧 `The Spy Who Ditched Me / waiting overlay` 标题空转，而是 `beforeScoring optional/per-instance owner` 家族又真实收掉一条 `sourceController/eventPlayer` seam；但不外推整个 `cthulhu` 或所有 per-instance beforeScoring trigger 已审完。
+- 2026-05-21 最新进展补记：沿 `queued-trigger-runtime-context / reaction-trigger-choice / optional trigger owner` 主线继续后，`src/games/smashup/abilities/pirates.ts` 的 `pirate_king` 也坐实了一条新的 `beforeScoring` owner 错位，而不是旧海盗链路复读。`pirateKingBeforeScoring()` 回调本来就按每个 `king.controller` 创建 prompt，但注册 `registerTrigger('pirate_king', 'beforeScoring', ...)` 的旧实现没显式写 `playerContext:'sourceController'`，导致当 `eventPlayer='1' / sourceController='0'` 时，queued trigger 的 `ownerPlayerId` 错落到 `1`。我先在 `src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` 新增 focused regression `queued beforeScoring trigger 在对手计分时仍应把 pirate_king 的选择权交给控制者`，首次红灯直接坐实 `queued.payload.triggers[0].ownerPlayerId === '1'`；随后只做一处最小修复：给 `src/games/smashup/abilities/pirates.ts` 的该 trigger 补上 `playerContext:'sourceController'`。修复后再把测试口径收回真实链：这条 queued mandatory beforeScoring 不先经过 `smashup_reaction_choose`，而是直接进入 `pirate_king_move` prompt；最终响应 `yes` 后 prompt 收口。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "queued beforeScoring trigger 在对手计分时仍应把 pirate_king 的选择权交给控制者|queued afterScoring trigger 在对手计分时仍应把 mermaids_shipwreck_cove 的选择权交给控制者|queued afterScoring trigger 在对手计分时仍应把 skeletons_gravestones 的选择权交给控制者|计分前将不在计分基地的海盗王移过去|POD 版计分前也会移动到计分基地|已在计分基地时不产生移动事件"` => `2 files passed, 6 passed`。这格说明当前不是围着旧 `The Spy Who Ditched Me / waiting overlay` 标题打转，而是 `beforeScoring optional/per-instance owner` 家族又真实收掉一条 `sourceController/eventPlayer` seam；但不外推整个 pirates 或所有 beforeScoring trigger 已审完。
+- 2026-05-21 最新进展补记：`bear_cavalry_major_ursa` 这次又补到一条新的同族 owner seam，但不是 `onMinionMoved` 那条旧 consumer 复读。`src/games/smashup/abilities/titans.ts` 的 `registerTrigger('bear_cavalry_major_ursa', 'onTitanMoved', ...)` 旧实现是 `optional`，却没显式写 `playerContext:'sourceController'`；而 callback `bearCavalryMajorUrsaOnTitanMoved()` 又直接把 `ctx.playerId` 当成泰坦控制者和 prompt 所有人。于是当 `eventPlayer='1' / sourceController='0'` 时，queued trigger 的 `ownerPlayerId` 先错落到 `1`。我先在 `src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` 新增 focused regression `sourceController queued onTitanMoved trigger 仍应把 Major Ursa 的选择权交给泰坦控制者`，首次红灯直接坐实 `queued.payload.triggers[0].ownerPlayerId === '1'`；随后只做一处最小修复：给 `src/games/smashup/abilities/titans.ts` 的 `bear_cavalry_major_ursa.onTitanMoved` trigger 补上 `playerContext:'sourceController'`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "sourceController queued onTitanMoved trigger 仍应把 Major Ursa 的选择权交给泰坦控制者|sourceController queued onMinionMoved trigger 不应把 eventPlayer 误当成泰坦控制者|大熊座移动后可继续选择对手 3 或更低随从并移动到其他基地"` => `2 files passed, 3 passed`。这格说明当前不是只在 `afterScoring optional owner` 那一支绕圈，而是 `sourceController/eventPlayer` 同族又真实收掉了一条 `onTitanMoved optional trigger owner` seam；但不外推整个 `titans` 或所有 `onTitanMoved` queued trigger 已审完。
+- 2026-05-21 最新进展补记：`mermaids_shipwreck_cove` 这次不是 `alien_scout` 那种假同型，而是又一条真实的 `optional queued trigger owner` seam。我先在 `src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` 补 focused regression `queued afterScoring trigger 在对手计分时仍应把 mermaids_shipwreck_cove 的选择权交给控制者`，把场景收窄到 `eventPlayer='1' / sourceController='0' / ongoing ownerId='0'`；第一次红灯先坐实 `ownerPlayerId` 掉到了 `1`，随后只做一处最小修复：给 `src/games/smashup/abilities/mermaids.ts` 的 `registerTrigger('mermaids_shipwreck_cove', 'afterScoring', ...)` 补上 `playerContext:'sourceController'`。复跑时又顺手清掉一层会制造“像死循环”的假噪音：这条用例的首层交互本来就该是 `smashup_reaction_choose`，不是直接进 `mermaids_shipwreck_cove_after_scoring`。最终验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "queued afterScoring trigger 在对手计分时仍应把 mermaids_shipwreck_cove 的选择权交给控制者|queued afterScoring trigger 仍应把 sourceCardUid/sourceControllerId 传给后续 prompt 与执行结果|mermaids_shipwreck_cove 在计分后可把这张持续行动移到另一个基地"` => `2 files passed, 3 passed`。这格说明当前不是在 `reaction-trigger-choice` 里原地打转，而是又真实收掉了一条 `afterScoring` optional trigger owner seam；但不外推整个 `mermaids` 或所有 `afterScoring` trigger 已全量审完。
+- 2026-05-21 最新进展补记：Sheriff 不是孤例；沿同一条 `queued-trigger-runtime-context / reaction-trigger-choice` 继续下钻后，`src/games/smashup/abilities/world_champs.ts` 的 `world_champs_mummy` 也坐实了同型 owner 错位。`worldChampsMummyAfterScoring()` 回调一直按 `ctx.sourceControllerId` 构造埋葬 prompt，但注册 `registerTrigger('world_champs_mummy', 'afterScoring', ...)` 的旧实现同样没显式写 `playerContext:'sourceController'`，于是当 `eventPlayer='1' / sourceController='0'` 时，queued trigger 的 `ownerPlayerId` 仍先错落到 `1`。我在 `src/games/smashup/__tests__/newFactionAbilities.test.ts` 新增 focused 红灯 `world_champs_mummy 在其他玩家的计分后触发时，埋葬选择权仍应交给 Mummy 控制者`，第一次失败直接坐实 `queued.payload.triggers[0].ownerPlayerId === '1'`；随后只做一处最小修复：给 `world_champs_mummy` 的 `afterScoring` trigger 补上 `playerContext:'sourceController'`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "world_champs_sheriff 在其他玩家的计分前触发时，决斗选择权仍应交给 Sheriff 控制者|world_champs_sheriff 在计分前可发起决斗并消灭落败随从|world_champs_mummy 在其他玩家的计分后触发时，埋葬选择权仍应交给 Mummy 控制者|world_champs_mummy 在计分后可埋葬到其他基地|world_champs_aramis 在对手于你回合中用行动影响阿拉密斯后，仍应把额外行动给到阿拉密斯控制者"` => `1 file passed, 5 passed`；`git diff --check -- src/games/smashup/abilities/world_champs.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前不是只围着 Sheriff 做局部补丁，而是 `optional queued trigger owner` 在 `beforeScoring / afterScoring` 两个 World Champs prompt trigger 上都已被真实坐实并收掉；但不外推整个 `world_champs` 或所有 `optional` trigger 已全量审完。
+- 2026-05-21 最新进展补记：这次“为什么像死循环”已经继续落到新的先红后绿，而不是只停在口径解释。沿当前 `task_plan.md / progress.md / 长期 JSON` 的 `queued-trigger-runtime-context / reaction-trigger-choice` 主线继续后，我又在 `src/games/smashup/abilities/world_champs.ts` 命中一条和 `Aramis` 同族的 owner 错位：`world_champs_sheriff` 的 `beforeScoring` 回调本身一直按 `ctx.sourceControllerId` 构造 prompt，但注册 `registerTrigger('world_champs_sheriff', 'beforeScoring', ...)` 时旧实现没显式写 `playerContext:'sourceController'`，导致当 `eventPlayer='1' / sourceController='0'` 时，queued trigger 的 `ownerPlayerId` 真会错落到 `1`。我先在 `src/games/smashup/__tests__/newFactionAbilities.test.ts` 新增 focused 红灯 `world_champs_sheriff 在其他玩家的计分前触发时，决斗选择权仍应交给 Sheriff 控制者`，第一次失败直接坐实 `queued.payload.triggers[0].ownerPlayerId === '1'`；随后只做一处最小修复：给 `world_champs_sheriff` 的 `beforeScoring` trigger 补上 `playerContext:'sourceController'`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "world_champs_sheriff 在其他玩家的计分前触发时，决斗选择权仍应交给 Sheriff 控制者|world_champs_sheriff 在计分前可发起决斗并消灭落败随从|world_champs_aramis 在对手于你回合中用行动影响阿拉密斯后，仍应把额外行动给到阿拉密斯控制者"` => `1 file passed, 3 passed`；`git diff --check -- src/games/smashup/abilities/world_champs.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前不是继续围着旧 `goal.objective` 的 overlay 标题空转，而是 `optional queued trigger owner` 又真实收掉一条新的 `sourceController/eventPlayer` seam；但不外推整个 `world_champs` 或所有 `beforeScoring` trigger 已全量审完。
+- 2026-05-21 最新进展补记：这次“为什么像死循环”没有停在口径解释，我已经沿当前 goal 对应的长期状态主线又真实收掉一条新的 `wrong-player-context + wrong-owner` 双层 seam。`src/games/smashup/abilities/world_champs.ts` 的 `worldChampsAramisOnMinionAffected()` 旧实现一边在执行时把 `ctx.playerId` 当成阿拉密斯控制者，一边在注册 `world_champs_aramis` 的 optional queued trigger 时又没声明 `playerContext:'sourceController'`；结果当 `eventPlayerId='1'`、`sourceControllerId='0'`、但当前仍是 `P0` 回合时，reaction queue 会把 trigger owner 错挂给 `1`，执行回调也继续按事件玩家挡掉本该给 `0` 的额外行动，看上去像“链又没继续”或“还是在旧 prompt/旧 goal 附近空转”。我先在 `src/games/smashup/__tests__/newFactionAbilities.test.ts` 新增 focused 红灯 `world_champs_aramis 在对手于你回合中用行动影响阿拉密斯后，仍应把额外行动给到阿拉密斯控制者`，并用定点日志确认 queued trigger 真值是 `ownerPlayerId='1' / eventPlayerId='1' / sourceControllerId='0'`，`runCommand(...)` 后 `resolved.events=[]`。随后做两处最小修复：1) `worldChampsAramisOnMinionAffected()` 不再拿 `ctx.playerId` 当控制者，而是统一使用 `aramisControllerId = ctx.sourceControllerId`；2) `registerTrigger('world_champs_aramis', 'onMinionAffected', ...)` 明确补上 `playerContext:'sourceController'`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "world_champs_aramis 在对手于你回合中用行动影响阿拉密斯后，仍应把额外行动给到阿拉密斯控制者|world_champs_fast_as_lightning 打到阿拉密斯后应进入包含女主角与阿拉密斯的反应窗|world_champs_fast_as_lightning 依次选择女主角与阿拉密斯后应正确收口并保留额外行动"` => `1 file passed, 3 passed`；`git diff --check -- src/games/smashup/abilities/world_champs.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前不是围着旧 `The Spy Who Ditched Me / waiting overlay` objective 打转，而是 `queued trigger owner / executor context` 又真实关掉一条新的 optional reaction seam；但不外推整个 `world_champs` 或所有 `onMinionAffected` family 已全量审完。
+- 2026-05-21 最新进展补记：这次“为什么像死循环”已经进一步落成一条新的最小真缝，而不是停在状态解释。active `goal.objective` 仍旧指向旧 `The Spy Who Ditched Me / waiting overlay`，但按当前 `task_plan.md / progress.md / 长期 JSON` 顶部继续后，我又顺着 `processMoveTriggers()` 邻近打掉了一条新的 `sourceController-adjacent onMinionMoved consumer` 错缝：`src/games/smashup/abilities/titans.ts` 的 `bearCavalryMajorUrsaOnMinionMoved()` 注册时明确使用 `playerContext:'sourceController'`，执行里却还把 `ctx.playerId` 同时当成泰坦控制者和“己方移动随从”过滤依据。现已先在 `src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` 新增 focused regression `sourceController queued onMinionMoved trigger 不应把 eventPlayer 误当成泰坦控制者`，构造 `eventPlayerId='1' / sourceControllerId='0'` 的 queued `onMinionMoved`；首次红灯时 `maybeResolveReactionQueue(...)` 只产出 `TRIGGER_CONSUMED`，完全没有 `TITAN_POWER_COUNTER_ADDED`，直接坐实 `Major Ursa` 误把事件玩家当成了泰坦控制者。随后把 `bearCavalryMajorUrsaOnMinionMoved()` 收紧为优先读取 `ctx.sourceControllerId ?? ctx.playerId`，并用同一 controllerId 同时判断 titan 归属与“是否为对手随从移动”。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "sourceController queued trigger 仍应把原事件玩家传给 onActionPlayed 回调|sourceController queued onMinionMoved trigger 不应把 eventPlayer 误当成泰坦控制者"` => `1 file passed, 2 passed`；邻近 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "硕大圆石会在随从从本基地移走后由泰坦控制者触发一次，并在移动后消灭低于标记数的随从|大熊座移动后可继续选择对手 3 或更低随从并移动到其他基地"` => `1 file passed, 2 passed`；`git diff --check -- src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前不是“有进展但又回到 transport 旧坑”，而是又真实关掉一条 `playerContext:'sourceController'` 本地 consumer seam；但不外推整个 `onMinionMoved` family 或所有泰坦 callback 都已审完。
+- 2026-05-21 最新进展补记：这轮“像死循环”的下一格已经真正落在 `processMoveTriggers()`，不是又回旧 `The Spy Who Ditched Me / waiting overlay` objective。旧实现整轮只拿初始 `core` 收集 `onMinionMoved`，既不顺序推进同批次前置 non-move sibling event，也不先把当前 `MINION_MOVED` reduce 到 after-move 现场；结果 moved-minion self trigger 会继续按 `fromBase` 入队。现已在 `src/games/smashup/__tests__/reactionQueueOrdering.test.ts` 新增两条 focused gate：`processMoveTriggers should collect moved-minion self triggers from the destination base after the move, not the stale from-base snapshot` 先红后绿，直接坐实旧实现把 `test_move_self` 错排到 `baseIndex=0`；`processMoveTriggers also advances prior non-move events before collecting later onMinionMoved triggers` 则把前置 `TITAN_PLAYED -> MINION_MOVED` 的 sibling state-carry 一并锁住。随后在 `src/games/smashup/domain/reducer.ts` 收紧成和 `processReturnToHandTriggers / processDeckInspectionTriggers / processAffectTriggers` 同族的两条不变量：1) 按 `filteredEvents` 顺序推进 `ms.core`；2) 对当前 `MINION_MOVED` 先 reduce 到 `advancedCore/advancedMatchState`，再从 after-move 现场收集 `toBase/fromBase/extended-base` queued triggers，并在无 extra queued 时仍带出最新 `matchState`。邻近矩阵首次把 `smashup.smoke.test.ts` 的 `硕大圆石会在随从从本基地移走后由泰坦控制者触发一次，并在移动后消灭低于标记数的随从` 打红，进一步暴露 `explorersVeryLargeBoulderOnMinionMoved()` 旧代码把 `ctx.playerId` 当成泰坦控制者；现已最小改为优先使用 `ctx.sourceControllerId ?? ctx.playerId`，从而保住前面刚修好的 `reactionQueueEventPlayerContext` 语义，不回退 `Secret Agent` 那条 event-player 真链。验证：`reactionQueueOrdering.test.ts -t "processMoveTriggers should collect moved-minion self triggers from the destination base after the move, not the stale from-base snapshot|processMoveTriggers also advances prior non-move events before collecting later onMinionMoved triggers|processMoveTriggers stamps queued onMinionMoved reactions with explicit frame ids|processMoveTriggers also stamps from-base queued onMinionMoved reactions with explicit frame ids"` => `1 file passed, 4 passed`；`reactionQueueBaseAbilities.test.ts -t "processMoveTriggers 命中 mandatory ongoing 与 mandatory extended base onMinionMoved 时，应统一进入 reaction ordering"` => `1 file passed, 1 passed`；`reactionQueueEventPlayerContext.test.ts` => `1 file passed, 1 passed`；`smashup.smoke.test.ts -t "硕大圆石会在随从从本基地移走后由泰坦控制者触发一次，并在移动后消灭低于标记数的随从"` => `1 file passed, 1 passed`；`git diff --check -- src/games/smashup/domain/reducer.ts src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前不是横向打转，而是 `move/post-process stale-core + sourceController-adjacent consumer` 又真实收掉了一组 shared seam；但不外推整个 `onMinionMoved` family 或所有 `playerContext:'sourceController'` callback 都已全量审完。
+- 2026-05-21 最新进展补记：这轮“像死循环”的根因已经坐实，不是没有真实进展，而是 active `goal.objective` 仍停在旧的 `The Spy Who Ditched Me / waiting overlay` 文案，和当前 worktree 的 `task_plan.md / progress.md / 长期 JSON` 已经转向的 `post-process family / queued-trigger-runtime-context` 主线发生了锚点分叉。现已明确把执行入口收紧为当前 worktree 与长期状态里的 `last_verified / next_actions`，并补跑最小门禁：`git diff --check -- src/games/smashup/domain/reducer.ts src/games/smashup/domain/reactionSession.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` 仅有 LF/CRLF warning；`C:\Users\zhuagenbao\.codex\.omx\state\long-term-task\smashup-yuanhou-faction-effect-audit-2026-05-16.json` 也已重新 `ConvertFrom-Json` 通过。结论：当前要解决的不是“继续追旧 objective”，而是把真实修复回写进状态，让下一次“继续”不会再被旧标题带偏。
+- 2026-05-21 最新进展补记：`reaction-trigger-choice / reaction session continuation` 这轮又真实关掉了一条 shared seam，不是删完临时日志后又回原点。`src/games/smashup/domain/reactionSession.ts` 的 `resolveSmashUpReactionChoice()` 旧实现会在 optional reaction 执行完当前 trigger 后，直接切到 continuation session，但没有先把旧的 `smashup_reaction_choose` interaction 收口；结果 session 虽已推进到下一响应者，UI prompt 仍残留旧 options，后续点击会被 live 选项校验判成 stale，表现成 `world_champs_fast_as_lightning` 这类链路在女主角后续阿拉密斯时像是“没有继续”，本质却是旧 prompt 挡住了 continuation。现已在 continuation 前先对仍为 `smashup_reaction_choose` 的 interaction 执行 `resolveInteraction(...)`，再 `setSmashUpReactionSession(...continuationSession)` 并 `advanceSmashUpReactionSession(...)`。本轮重新补跑最小回归：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts -t "processAffectTriggers 会先推进前置 sibling event，再为后续 affect event 收集 onMinionAffected|processDeckInspectionTriggers also advances prior non-inspection events before collecting onDeckInspected" --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 2 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts -t "processAffectTriggers 命中 mandatory ongoing 与 mandatory extended base onMinionAffected 时，应统一进入 reaction ordering" --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 1 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "world_champs_fast_as_lightning 依次选择女主角与阿拉密斯后应正确收口并保留额外行动" --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 1 passed`。这格说明当前不是“有局部绿灯但整个 reaction session 仍不稳”，而是 optional continuation 的旧 prompt stale seam 已被 focused + 邻近最小矩阵重新锁绿；但不外推整个 reaction session family 已全量审完。
+- 2026-05-21 最新进展补记：顺着刚修掉的 `return-to-hand-postprocess` sibling state-carry 模式继续往下找，我又在 `processDeckInspectionTriggers()` 里命中一条同型真缝。旧实现整轮固定拿初始 `core`，对同批次里前置的非 inspection 事件完全不推进现场；这会让像 `TITAN_PLAYED -> DECK_INSPECTED` 这种链路里，“刚进场的 onDeckInspected source”在同一批次后续 inspection 上继续不可见。现已在 [`src/games/smashup/__tests__/reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增 focused gate `processDeckInspectionTriggers also advances prior non-inspection events before collecting onDeckInspected`，夹具先让 `test_inspect_titan` 通过 `TITAN_PLAYED` 进场，再发 `DECK_INSPECTED`；首次红灯坐实 `TRIGGER_QUEUED === undefined`。随后在 [`src/games/smashup/domain/reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>) 把这条后处理也收紧成和最新 return-to-hand 一样的两条不变量：1) 同批次前置非 inspection 事件顺序 `reduce` 到 `ms.core`；2) inspection 事件本身也按 `advancedMatchState` 收集，并在无 `extraEvents` 时仍返回最新 `matchState`。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "processDeckInspectionTriggers stamps queued onDeckInspected reactions with explicit frame ids|processDeckInspectionTriggers also advances prior non-inspection events before collecting onDeckInspected"` => `1 file passed, 2 passed`；邻近 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "Moon Zero Three|三号空间站"` => `2 files passed, 10 passed`；`git diff --check -- src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前不是“把同一种写法到处机械套一遍”，而是又真实收掉一条 `onDeckInspected` family 的 sibling state-carry seam；但不外推整个 inspection/post-process family 已全量完成。
+- 2026-05-21 最新进展补记：`processReturnToHandTriggers()` 这次又补出了一层更内侧的 shared seam，不是围着同一格原地打转。上一拍已经把 return carrier 的 collector 切到 after-event 现场，但旧实现仍只会让同批次里的 `MINION_RETURNED / CARD_TRANSFERRED / CARD_RECOVERED_FROM_DISCARD / BURIED_CARD_RETURNED_TO_HAND` 自己推进 `ms.core`；若它们前面夹着别的非 return 事件，这些事件虽然已经进了 `events`，却不会同步推进现场，后续 returned-to-hand collector 仍可能沿旧 core 收集。更隐蔽的一层是：函数尾部旧逻辑只有 `extraEvents.length > 0` 才会带出 `matchState`，导致“现场已经被前面的 non-return event 推进，但这一轮恰好没有额外 queued trigger”时，更新过的 state 还会被直接丢掉。现已在 [`src/games/smashup/domain/reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>) 收紧成两条不变量：1) 同批次里所有非当前 return carrier 的事件都会顺序 `reduce` 到 `ms.core`；2) 只要 `ms` 已存在，就带出最新 `matchState`，不再依赖 `extraEvents.length`。配套在 [`src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts>) 新增 `同批次前一条非 return 事件也应顺序推进现场，而不是只让 return carrier 自己前进`，并把 `Time Box` 两条负例从“`processed.matchState` 必须是 undefined”改成更本质的“不创建交互且 `timeBoxCounters` 保持 4”。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 12 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间盒子：从场上行动回手会触发不在场 Time Box 加计数|时间盒子：BURIED_CARD_RETURNED_TO_HAND 从埋葬区回手时，也应触发不在场 Time Box 加计数|时间盒子：CARD_TRANSFERRED 从牌库进手牌时，不应误触发 onCardReturnedToHand|时间盒子：CARD_TRANSFERRED 从手牌转到手牌时，不应误触发 onCardReturnedToHand|ninjas_invisible_ninja 在弃牌堆随从回到自己手牌时也应给泰坦控制者创建抽牌交互|ninjas_invisible_ninja 在弃牌堆同时回两张随从时，不应依赖 recovered cardUids 的顺序才触发抽牌交互"` => `2 files passed, 6 passed`；`git diff --check -- src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` => passed（仅 LF/CRLF warning）。这格说明当前不是“有局部绿灯但仍卡在原地”，而是 `return-to-hand-postprocess` 又真实收掉一条“事件现场已推进，但 sibling post-process/返回路径没消费更新后 matchState”的 shared seam；但不外推整个 `onCardReturnedToHand` family 已全量完成。
+- 2026-05-21 最新进展补记：`processReturnToHandTriggers()` 这次又关掉了一条新的 stale-core seam，不是围着旧 goal 文案空转。旧实现整轮都拿初始 `core` 收集 `onCardReturnedToHand`，导致像 `MINION_RETURNED` 这种“卡刚从场上回到手牌，本事件归约后的现场才满足 global hand watcher 合法 zone”的分支，会继续按旧现场静默漏排。现已把 `MINION_RETURNED / CARD_TRANSFERRED / CARD_RECOVERED_FROM_DISCARD / BURIED_CARD_RETURNED_TO_HAND` 四条 return carrier 全部改成：先用事件前现场提取 provenance，再把当前事件 reduce 到 `advancedCore`，最后按这个 after-event 现场收集 queued `onCardReturnedToHand` triggers。配套在 `src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts` 新增 focused gate `global hand self-trigger 也应在刚回手后入队，而不是继续按旧现场漏排`，首次红灯直接坐实 `TRIGGER_QUEUED === undefined`；修复后复跑 focused `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "global hand self-trigger|CARD_RECOVERED_FROM_DISCARD 回手随从时，queued trigger 应继续拿到 returned minion provenance"` => `1 file passed, 2 passed`，整文件 `reactionQueueOnCardReturnedToHand.test.ts` => `1 file passed, 10 passed`；邻近 `yuanhouFactionAbilities.test.ts -t "时间盒子：从场上行动回手会触发不在场 Time Box 加计数|时间盒子：BURIED_CARD_RETURNED_TO_HAND 从埋葬区回手时，也应触发不在场 Time Box 加计数|时间盒子：CARD_TRANSFERRED 从牌库进手牌时，不应误触发 onCardReturnedToHand|时间盒子：CARD_TRANSFERRED 从手牌转到手牌时，不应误触发 onCardReturnedToHand"` => `1 file passed, 4 passed`。这格说明当前不是“有进展但又死循环”，而是 `return-to-hand-postprocess` 又真实收掉了一条“事件已进入下一现场，collector 仍按旧 core 收集”的 shared seam；但不外推整个 `onCardReturnedToHand` family 已全量完成。
+- 2026-05-21 最新进展补记：同一格 `return-to-hand-postprocess` 这次又补强了一层 direct gate，证明修复不只覆盖单事件。`reactionQueueOnCardReturnedToHand.test.ts` 新增 `同批次前一条回手事件已把 source 送进 hand 时，后一条 returned-to-hand 也应看到更新后的现场`，锁定同一批次两条 `MINION_RETURNED` 中，第一条先把 `global_return_self` 送回手牌，第二条再触发另一个 returned-to-hand 事件时，collector 必须沿用上一条事件更新后的现场继续看到 hand-zone source。验证：整文件 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOnCardReturnedToHand.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 11 passed`。这格说明刚才的修复不是只救活“当前事件 after-core”一个特例，连同批次后续事件也已锁住 continuity；下一轮不该再把这条 seam 误降成“只证明单事件 current-event 成立”的半证据。
+- 2026-05-21 进一步核对 `onCardReturnedToHand` 现存 consumer：`Time Box`、`Invisible Ninja`、`world_champs_bewitched` 都不依赖“完整 multi-recover cardUids 同步透传”才能工作；目前更像 `processReturnToHandTriggers()` 的表达能力边界，而不是已坐实的活跃玩法 bug。下一轮若继续沿这条线，只应再查更细的 returned-card consumer 或真正需要多张 recover provenance 的新对象，而不是把这块重新误报成红灯。
+- 2026-05-21 最新进展补记：afterScoring 这条 `replacement-base sibling action` 线这次没有再冒出新 runtime seam，但把上一拍已经落地的 shared contract 补齐成了完整 direct gate，不再只靠 `moveMinionToReplacementBase` 一条旁证。`replaceDeferredPostScoringReplacementBase()` 上一拍已同步改写 `moveMinionToReplacementBase / playMinionOnReplacementBase / playTitanOnReplacementBase` 三类 deferred action 的 `targetBaseDefId`，但测试只锁了第一种。现已在 `src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` 新增两条 focused gate：`改写 deferred replacement base 时，也应同步改写待补发 playMinionOnReplacementBase 的 targetBaseDefId` 与 `改写 deferred replacement base 时，也应同步改写待补发 playTitanOnReplacementBase 的 targetBaseDefId`。两条都直接用 `replaceDeferredPostScoringReplacementBase(...) -> consumeScoringFrameDeferredPayload(...) -> buildPendingPostScoringActionEvents(...)` 真链断言最终 payload 会落成 `baseDefId='base_faceless_city'`，而不是继续追旧 `base_secret_garden`。验证：focused `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "改写 deferred replacement base 时，也应同步改写待补发 deferredActions 的 targetBaseDefId|改写 deferred replacement base 时，也应同步改写待补发 playMinionOnReplacementBase 的 targetBaseDefId|改写 deferred replacement base 时，也应同步改写待补发 playTitanOnReplacementBase 的 targetBaseDefId"` => `1 file passed, 3 passed`；整文件 `...afterscoring-window-skip-base-clear.test.ts...` => `1 file passed, 18 passed`。这格说明当前不是又回到旧 `BASE_REPLACED` seam，而是把 `replacement-base sibling action` 这一层证据补全；下次不该再把 `playMinion/playTitan` 留成“实现改了但没 direct gate”的开放缺口。
+- 2026-05-21 最新进展补记：这轮看起来像“又在同一条 destroy/discard seam 上打转”，实际又往里收掉了一层更窄的 shared seam，不是旧 objective 原地死循环。上一拍只修到了 `processDestroyTriggers()` 必须在 confirmed destroy 后回到 `phase2Core/phase2State` 的 live/LKI 现场收集 `onMinionDiscardedFromBase`，但还漏了 `globalZones:['discard']` 的 self-trigger 特例：像 `Jumper / Doppelganger / Copycat-copied-Jumper` 这类 source 本体只有在刚进 discard 后才算“在合法 zone 内”的 trigger，旧 `selectGlobalTriggerSourceLocation()` 仍先用 `isSourceInZones()` 查 live zone，source 还没真的进 `phase2Core.discard` 时就会提前返回 `undefined`，导致 queued collector 虽已回到 phase2 现场，`global discard self-trigger` 仍被静默漏排。现已在 `src/games/smashup/domain/ongoingEffects.ts` 收紧 `selectGlobalTriggerSourceLocation(...)`：当 `timing==='onMinionDiscardedFromBase'`、`zones` 含 `discard`、且 `ctx.triggerMinionDefId === entry.sourceDefId` 时，允许用 `triggerMinionUid/baseIndex/controller` 构造一拍“虚拟 discard source”，从而让刚进弃牌堆的 self-trigger 正常入队；并把 `ctx` 透传到 3 个 `selectGlobalTriggerSourceLocation(...)` 调用点。配套在 `src/games/smashup/__tests__/reactionQueueOnMinionDiscardedFromBase.test.ts` 新增 `global discard self-trigger 在被他人控制时也应在刚进弃牌堆后入队`，锁定 `sourceDefId='global_discard_self'` 与 `triggerMinionUid='stolen-jumper'` 都真实进入 queued triggers；再复跑 `src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` 的 `时间旅行者：被他人控制的跳跃者被真实摧毁后应由 controller 决定，但仍回到 owner 手牌|时间盒子：被他人控制的跳跃者从弃牌堆回 owner 手牌后，应继续由 owner 获得第 5 枚计数进场选择`，确认 owner/controller split 与下游 `Time Box` 没被带歪。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOnMinionDiscardedFromBase.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "processDestroyTriggers 不应把 onMinionDiscardedFromBase 错过滤成只剩 triggerMinionDefId 来源|global discard self-trigger 在被他人控制时也应在刚进弃牌堆后入队"` => `1 file passed, 2 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间旅行者：被他人控制的跳跃者被真实摧毁后应由 controller 决定，但仍回到 owner 手牌|时间盒子：被他人控制的跳跃者从弃牌堆回 owner 手牌后，应继续由 owner 获得第 5 枚计数进场选择"` => `1 file passed, 2 passed`；同族矩阵 `reactionQueueOnCardReturnedToHand + reactionQueueOnMinionDiscardedFromBase + yuanhouFactionAbilities + smashup.smoke` 上 `-t "onCardReturnedToHand|onMinionDiscardedFromBase|时间盒子"` => `4 files passed, 27 passed`。这格说明当前不是围着旧 `The Spy Who Ditched Me / waiting overlay` objective 空转，而是又真实关掉了一条 `onMinionDiscardedFromBase -> global discard self-trigger` 的 collector/source-location seam。
+- 2026-05-21 最新进展补记：active goal 里那条旧 `The Spy Who Ditched Me Host/非目标页 waiting overlay` residual，这次又补上一层最小 direct gate，不再只靠多人 E2E 截图和 `MatchRoom live snapshot` 旁证。`src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx` 新增并跑绿 `Host 页先关闭私有 reveal overlay 后，仍只应保留非 owner discard prompt 的等待壳`：同页同时渲染 `PromptOverlay(non-owner discard prompt)` 与 `RevealOverlay(owner-only reveal)`，先确认 reveal 出现与等待壳存在，再点击 `reveal-dismiss-btn`，最终断言 reveal overlay 消失，但 Host 仍只看到单一 `正在等待 {{player}}`，不会泄露 `抛弃我的间谍：选择一张随从牌弃掉` 标题，也不会暴露 `鲨鱼 A / 鲨鱼 B` 候选按钮。验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "Host 页先关闭私有 reveal overlay 后，仍只应保留非 owner discard prompt 的等待壳"` => `1 file passed, 1 passed`。这格说明当前“像死循环”的那条旧 goal 文案至少在 renderer/component 层也已被 direct gate 锁住；后续不应再把它当开放主残项，而应回到 `processReturnToHandTriggers / afterScoring deferred side branch / replacement-base sibling action` 这类仍可能产出新红灯的 effect-atom/shared seam。
+- 2026-05-21 最新进展补记：这次“为什么像死循环”的下一格已经坐实成一条新的 scoring 真缝，而不是口径问题。`replaceDeferredPostScoringReplacementBase()` 旧实现虽然会把 deferred `BASE_REPLACED.newBaseDefId` 从旧 replacement base 改成新 replacement base，但不会同步改写同一 scoring frame 里已经缓存的 `deferredActions.targetBaseDefId`。结果是像 `Tortuga / Greenhouse / Titan replacement-base` 这类“先缓存待补发动作，再在同一 afterScoring 响应窗里改写 replacement base”的链路，会继续追旧 `base_secret_garden`。现已在 `src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` 新增 focused regression `改写 deferred replacement base 时，也应同步改写待补发 deferredActions 的 targetBaseDefId`，首次红灯直接坐实 `moveMinionToReplacementBase.targetBaseDefId==='base_secret_garden'`；随后在 `src/games/smashup/domain/scoringSession.ts` 收紧 `replaceDeferredPostScoringReplacementBase(...)`，同步改写 `moveMinionToReplacementBase / playMinionOnReplacementBase / playTitanOnReplacementBase` 三类 deferred action 的 `targetBaseDefId`。验证：focused `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "改写 deferred replacement base 时，也应同步改写待补发 deferredActions 的 targetBaseDefId"` => `1 file passed, 1 passed`；整文件 `...afterscoring-window-skip-base-clear.test.ts...` => `1 file passed, 16 passed`；邻近 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间旅行者基地：枢纽真实计分后若基地牌库已空且选择弃牌堆基地替换，应让所选基地替换并用其余弃牌堆与旧基地重建牌库|时间旅行者：时间流逝真实计分后若基地牌库已空且只剩一个合法基地弃牌堆候选，仍应使用该候选替换而不是退回旧 reshuffle 池"` => `1 file passed, 2 passed`。这格说明当前不是围着旧 waiting overlay objective 打转，而是又真实收掉了一条 `BASE_REPLACED` 与 deferredActions replacement target 没同步改写的 scoring seam。
+- 2026-05-21 最新进展补记：我没有把刚修好的 `Time Is Fleeting` seam 草率外推到 `The Nexus`。补完同族 focused gate 后，确认 `base_the_nexus` 在 `baseDeck` 为空时的真实语义并不等同于 `Time Is Fleeting`：赢家所选的弃牌堆基地会直接替换已计分基地，但剩余弃牌堆与旧基地仍会一起重建成新的 `baseDeck`。现已把新增用例从错误的“旧基地不应回灌进 reshuffle 池”改成正确边界 `时间旅行者基地：枢纽真实计分后若基地牌库已空且选择弃牌堆基地替换，应让所选基地替换并用其余弃牌堆与旧基地重建牌库`，并与 `Time Is Fleeting` 的 empty-deck seam 同组复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间旅行者基地：枢纽真实计分后若基地牌库已空且选择弃牌堆基地替换，应让所选基地替换并用其余弃牌堆与旧基地重建牌库|时间旅行者：时间流逝真实计分后若基地牌库已空且只剩一个合法基地弃牌堆候选，仍应使用该候选替换而不是退回旧 reshuffle 池"` => `1 file passed, 2 passed`。这格说明当前不是在 `scoreOneBase` 一族里盲目套同一种期望，而是把 `Time Is Fleeting` 真 bug 和 `The Nexus` 规则边界明确拆开锁住。
+- 2026-05-21 最新进展补记：刚才那条新增出来、会把当前 worktree 继续拖成红态的 `Time Is Fleeting` 失败，已经确认不是规则期望写错，而是 deferred post-scoring replacement 的 stale event 真缝。具体是：`scoreOneBase()` 初次排队时因为 `baseDeck` 为空，先写入了 `BASE_DECK_SHUFFLED(reason='base_deck_empty_reshuffle_discard')`；之后 `Time Is Fleeting` 在 afterScoring 响应窗里又通过 `BASE_DECK_REORDERED(reason='time_travelers_time_is_fleeting')` 把 `base_faceless_city` 从 `baseDiscard` 提前移到了 `baseDeck` 顶，并把 deferred `BASE_REPLACED` 改成了新基地，但旧的 empty-deck reshuffle deferred event 仍残留，最终把刚计分的 `base_monkey_lab` 又回灌进 `baseDeck`。现已在 `src/games/smashup/domain/scoringSession.ts` 收紧 `replaceDeferredPostScoringReplacementBase(...)`：当所选 replacement base 已经真实进入当前 `state.core.baseDeck` 时，同步删除那条 stale 的 `base_deck_empty_reshuffle_discard` deferred event。验证：focused `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间旅行者：时间流逝真实计分后若基地牌库已空且只剩一个合法基地弃牌堆候选，仍应使用该候选替换而不是退回旧 reshuffle 池"` => `1 file passed, 1 passed`；邻近 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts src/games/smashup/__tests__/baseScoring.test.ts src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间流逝|scoreOneBase 在 BASE_REPLACED 后应按新基地而不是旧基地排 onBaseRevealed 队列"` => `2 files passed, 8 passed`、`1 file skipped`。这格说明当前不是围着旧 goal 文案打转，而是又收掉一条 `deferred BASE_DECK_SHUFFLED` 与 afterScoring replacement choice 没同步失效的 scoring seam。
+- 2026-05-21 最新进展补记：沿 `post-process family / queued collector` 继续下钻后，又坐实一条新的 stale-core 真缝：`src/games/smashup/domain/index.ts` 的 `scoreOneBase()` 在构造 `BASE_REPLACED` 后排 `onBaseRevealed` 队列时，旧实现仍把旧 `core` 传给 `collectExtendedBaseAbilityTriggers(...)`，导致新基地揭示反应会被旧基地上下文吞掉。现已在 `src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts` 新增 focused regression `scoreOneBase 在 BASE_REPLACED 后应按新基地而不是旧基地排 onBaseRevealed 队列`，首次红灯直接坐实没有任何 `onBaseRevealed` queued event；随后在 `src/games/smashup/domain/index.ts` 改成先把 `BASE_CLEARED / BASE_DECK_SHUFFLED / BASE_REPLACED` 依次 reduce 到 `revealCore`，再按这个已换出的新基地现场收集 `onBaseRevealed`。验证：focused `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "scoreOneBase 在 BASE_REPLACED 后应按新基地而不是旧基地排 onBaseRevealed 队列"` => `1 file passed, 1 passed`；邻近 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `2 files passed, 24 passed`。这格说明当前不是围着旧 objective 文案打转，而是 `scoreOneBase -> BASE_REPLACED -> onBaseRevealed` 的 stale-core collector seam 又真实收掉一条新缝。
+- 2026-05-21 最新进展补记：在刚补完 `processAffectTriggers()` 的 extended base `onMinionAffected` queued ordering 后，我继续沿 `post-process family` 下钻，又坐实一条更大的 `destroy -> onMinionDiscardedFromBase` live/LKI seam。旧 `processDestroyTriggers()` 先把 `MINION_DESTROYED` reduce 到 `discardCore`，再用 `collectTriggers(discardCore, 'onMinionDiscardedFromBase', ..., { sourceDefIds:[minionDefId] })` 排队；结果不只是把像 `samurai_way_of_the_warrior`、`base_sakura_garden` 这类“非 triggerMinionDefId 来源”砍掉，连“被弃那张随从自己”的来源也会因为 source 已离场而定位不到。现已在 `src/games/smashup/__tests__/reactionQueueOnMinionDiscardedFromBase.test.ts` 先补 focused 红灯 `processDestroyTriggers 不应把 onMinionDiscardedFromBase 错过滤成只剩 triggerMinionDefId 来源`，首次失败直接坐实两类来源都缺失；随后在 `src/games/smashup/domain/reducer.ts` 改为：仅用 `discardCore` 判定“确实进入 owner discard”，但真正收集 queue 时回到 `phase2Core/phase2State` 的 live/LKI 现场，并去掉那条错误的 `sourceDefIds` 过滤。验证：focused `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOnMinionDiscardedFromBase.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "processDestroyTriggers 不应把 onMinionDiscardedFromBase 错过滤成只剩 triggerMinionDefId 来源"` => `1 file passed, 1 passed`；邻近 `reactionQueueOnMinionDiscardedFromBase.test.ts + reactionQueueBaseAbilities.test.ts` => `2 files passed, 21 passed`；再补真实 consumer 邻近 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "samurai_way_of_the_warrior 在 destroy -> processDestroyTriggers 真链进入弃牌堆时也会通过 queued onMinionDiscardedFromBase 抽牌|samurai_way_of_the_warrior 在目标因基地结算进入弃牌堆时也会抽一张牌|samurai_way_of_the_warrior_pod 在目标因基地结算进入弃牌堆时也会抽一张牌"` => `1 file passed, 3 passed`。这格说明当前不是围着旧 objective 空转，而是 `onMinionDiscardedFromBase` 的 shared collector/live-source 合同又真实收掉一条新缝。
+- 2026-05-21 最新进展补记：已经明确“为什么看起来像死循环”不是因为没有真进展，而是 active `goal.objective` 还停在旧的 `The Spy Who Ditched Me / waiting overlay` 文案，而当前 worktree 的 `task_plan.md` 与长期状态 JSON 已经转到 `queued-trigger-runtime-context / post-process family`。沿这个真实锚点继续下钻后，又在 `src/games/smashup/domain/reducer.ts` 命中一条新的同型真缝：`processAffectTriggers()` 旧实现只把 ongoing `onMinionAffected` 排进 queue，extended base `onMinionAffected` 完全漏排。现已仿照 move/destroy family，为 affect 分支补上 `collectExtendedBaseAbilityTriggers(...)` 入队，并先在 `src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` 增加 focused regression `processAffectTriggers 命中 mandatory ongoing 与 mandatory extended base onMinionAffected 时，应统一进入 reaction ordering`。第一次失败进一步暴露出一条测试夹具假红：用例误写成 `SU_EVENTS.POWER_COUNTERS_ADDED`，而真实 affect carrier 只认 `POWER_COUNTER_ADDED`；修正后复跑 focused `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "processAffectTriggers 命中 mandatory ongoing 与 mandatory extended base onMinionAffected 时，应统一进入 reaction ordering"` => `1 file passed, 1 passed`，整文件 `...reactionQueueBaseAbilities.test.ts...` => `1 file passed, 19 passed`。这格说明当前不是原地绕圈，而是 `post-process family` 又真实收掉一条 `onMinionAffected extended-base queued-ordering` seam，同时把一条会伪装成“实现仍红”的夹具错误降回测试层问题。
+- 2026-05-21 最新进展补记：我已经从 transport helper 线切回长期状态里更靠前的 `queued-trigger-runtime-context` 主线，并命中一条新的 instance-builder 真缝：`TriggerContext` 明明有整套 `duel / duelSourceId / duelOutcome / duelChallenger / duelChallenged / duelWinner / duelLoser / duelTie` 字段，但 `src/games/smashup/domain/types.ts` 的 `TriggerInstance`、`src/games/smashup/domain/ongoingEffects.ts` 的 `createTriggerInstance()`、以及 `src/games/smashup/domain/reactionSession.ts` 的 executor 恢复链都没带这组 duel 上下文。现已先在 `src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts` 补 focused regression `queued onDuelResolved ongoing trigger 的 canTrigger 与 executor 都应继续拿到 duel 上下文`，首次红灯直接坐实 `trigger.duelSourceId === undefined`；随后按最小 shared contract 补齐三处透传，并复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 file passed, 2 passed`。邻近 queued runtime matrix 再复跑 `reactionQueueControllerRuntimeContext.test.ts + reactionQueueSourceRuntimeContext.test.ts + reactionQueueInspectionRuntimeContext.test.ts + reactionQueueEventPlayerContext.test.ts` => `4 files passed, 6 passed`。这格属于典型的“collector eligibility 看得到 duel 字段，但真正入队/执行恢复时丢字段”的 shared seam 修复，不外推整个 duel family 已全量审完。
+- 2026-05-21 最新进展补记：刚才那两条 hidden `simple-choice` 的 `interactionId / title` fingerprint 红灯已经判明不是 runtime tracker 仍在吞新 prompt，也不是又一条测试夹具错误，而是 `src/engine/transport/server.ts` 的 `buildOnlineAiRecoveryFingerprint()` 在 `candidate.reason === 'hidden-interaction'` 下仍优先只读 shared `match.state.sys.interaction.current`；当 shared state 本来就看不到 owner-only prompt 时，它会直接回退到旧 `candidate.fingerprintHint ?? progressMarker`，因此 isolated fingerprint tests 会卡成 progressMarker，而 runtime drift gate 仍能靠 `applyPlayerView()` + 新 candidate hint 转绿。现已把 hidden 分支补成“shared current 缺失时回退读取该玩家 seat view 的 current”，并复跑 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "buildOnlineAiRecoveryFingerprint 在 hidden simple-choice 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 hidden simple-choice 的 sourceId/interactionId/options 相同但 title 漂移时，也必须变化|online AI watchdog 在 hidden-interaction 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须丢弃旧 tracker|online AI watchdog 在 hidden-interaction 的 sourceId/interactionId/options 相同但 title 漂移时，也必须丢弃旧 tracker"` => `1 file passed, 4 passed`。这格属于 hidden fingerprint builder 的真实 caller seam 修复，说明“为什么像死循环”主要是旧 objective 锚点错位 + shared seam 连续暴露，而不是同一红点一直没动。
+- 2026-05-21 最新进展补记：刚才那条仍像“死循环旧红点”的 hidden prompt drift 用例已确认不是 runtime 回退，而是测试夹具把 only-`skip` 的 hidden prompt 错断成第一次必须执行 `{ optionId:'confirm' }`。现已在 `src/engine/transport/__tests__/server.test.ts` 把这处错误预期修正为 `{ optionId:'skip' }`，并与 hidden drift 邻近矩阵同组复跑：`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 hidden-interaction 候选 fingerprint 漂移到新的 hidden prompt 时，应丢弃旧 tracker 而不是按旧 incident 继续上报失败|online AI watchdog 在 hidden-interaction 的 sourceId/title/count 相同但 option signature 漂移时，也必须丢弃旧 tracker|online AI watchdog 在 hidden-interaction 的 option id/disabled 相同但 value 漂移时，也必须丢弃旧 tracker|online AI watchdog 在 hidden-interaction 的 sourceId/title/options 相同但 slider 配置漂移时，也必须丢弃旧 tracker"` => `1 file passed, 4 passed`。这次是真把一个“看起来像主线又卡住”的旧红点降回测试预期错误，不新增实现语义。
+- 2026-05-21 最新进展补记：这轮“继续”已经重新挂回 active goal 对应的长期状态主线，但不再被旧 objective 文案牵着回扫 `The Spy Who Ditched Me / waiting overlay`。当前又补齐了一组 hidden `simple-choice` 的 shared transport direct gate：`src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` 新增 `title / option value / slider` 三条 `attemptKey` 漂移门禁，`src/engine/transport/__tests__/server.test.ts` 新增 hidden runtime `option value / slider` tracker drift 两条门禁。验证：`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "自动 hidden-interaction 的 title 漂移时，attemptKey 也必须跟随 fingerprint 变化|自动 hidden-interaction 的 option id/disabled 相同但 value 漂移时，attemptKey 也必须跟随 fingerprint 变化|自动 hidden-interaction 的 slider 配置漂移时，attemptKey 也必须跟随 fingerprint 变化"` => `1 file passed, 3 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 hidden-interaction 的 sourceId/title/count 相同但 option signature 漂移时，也必须丢弃旧 tracker|online AI watchdog 在 hidden-interaction 的 option id/disabled 相同但 value 漂移时，也必须丢弃旧 tracker|online AI watchdog 在 hidden-interaction 的 sourceId/title/options 相同但 slider 配置漂移时，也必须丢弃旧 tracker"` => `1 file passed, 3 passed`。这格属于 hidden `simple-choice` 的证据补齐，不是新的 runtime 修复；同组更宽泛的旧用例 `hidden prompt 漂移到新的 hidden prompt` 仍有 brittle mock 断言，需单独处理，不能和本轮新增绿灯混写成“整条 hidden family 已完成”。
+- 2026-05-21 最新进展补记：当前 worktree 的 effect atom / shared seam 主线又真实收掉一格 destroy family queue ordering，不是继续在旧 transport 标题下空转。`src/games/smashup/domain/reducer.ts` 的 `processDestroyTriggers()` 旧实现对 confirmed destroy 只把 ongoing `onMinionDestroyed` 排进 queue，extended base `onMinionDestroyed` 仍现场执行，导致 `base_crypt / base_the_field_of_honor / base_cave_of_shinies / base_rlyeh` 这类基地 destroy reaction 绕开统一 ordering。现已新增 `src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` focused regression `processDestroyTriggers 命中 mandatory ongoing 与 mandatory extended base onMinionDestroyed 时，应统一进入 reaction ordering`，先红后绿；修复后改为在 phase2 用 `collectExtendedBaseAbilityTriggers(...)` 入队，并保留 `base_the_field_of_honor / base_crypt` 的 batch once gate。验证：focused `... -t "processDestroyTriggers 命中 mandatory ongoing 与 mandatory extended base onMinionDestroyed 时，应统一进入 reaction ordering"` => `1 passed`；整文件 `reactionQueueBaseAbilities.test.ts` => `18 passed`；邻近 `newBaseAbilities.test.ts` 的 field_of_honor/base_crypt batch once 三条 => `3 passed`；`igor-double-trigger-bug.test.ts` 改为锁定 “Igor prompt 先出现，base_crypt 保留在 triggerQueue 等待继续” 后 => `1 passed`；`onDestroyAbilities.test.ts -t "onDestroy 与基地 onMinionDestroyed 同时触发"` => `1 passed`。这格属于 `reaction-trigger-choice` / destroy family 的真实 shared 修复，不外推整条 onDestroy/destroy family 已完成。
+- 2026-05-21 最新进展补记：当前 worktree 的执行锚点已从旧 transport 标题重新对齐到长期状态 JSON 的 effect atom / shared seam 主线，这次命中的是真正的新红灯而不是旧任务回潮。`src/games/smashup/domain/reducer.ts` 里的 `processMoveTriggers()` 旧实现对 ongoing `onMinionMoved` 会入队，但 target-base extended `onMinionMoved` 仍直接 `triggerExtendedBaseAbility(...)` 现场执行，导致 mandatory extended base move trigger 绕开统一 reaction ordering。现已新增 `src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` focused regression `processMoveTriggers 命中 mandatory ongoing 与 mandatory extended base onMinionMoved 时，应统一进入 reaction ordering`，先红后绿；修复后改为 `collectExtendedBaseAbilityTriggers(...)` 入队，并透传 `frameId/sourceEventId/reason/triggerMinionUid/triggerMinionDefId/controllerId`。验证：focused `... -t "processMoveTriggers 命中 mandatory ongoing 与 mandatory extended base onMinionMoved 时，应统一进入 reaction ordering"` => `1 passed`；整文件 `reactionQueueBaseAbilities.test.ts` => `17 passed`。这格属于 `reaction-trigger-choice` / move family 的真实 shared 修复，不外推整条 move/post-process family 已完成。
+- 2026-05-20 最新进展补记：又抓到一条新的 shared transport 真残口：`response-loop` 在先被 `stale/missing-private-overlay` 挡住、随后 `SYS_RESPONSE_WINDOW_FORCE_CLOSE` 又没有推进时，旧实现会先把 `response-loop` 在 revalidate 阶段静默退回 `response-window`，再把最终失败吞成粗粒度 `no_progress`。现已在 `revalidateRecoveryCandidate()` 里把同一 hard-close incident 的 `response-loop` 语义保住，并让 blocked fallback 也能上报 `private_overlay_stale / private_overlay_missing`；聚焦复跑 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "tryRecoverOnlineAiWithLegalAction 遇到 response-loop tracker 时，即使旧 candidate 仍是 response-window，也不应误走 emergency overlay fallback|online AI watchdog 在 response-loop 遇到 stale-private-overlay 时，不应再触发 overlay resync，而应直接强制关窗|online AI watchdog 在 response-loop 遇到 missing-private-overlay 时，不应再触发 overlay resync，而应直接强制关窗|online AI watchdog 在 response-loop 遇到 stale-private-overlay 且 force-close 无推进时，应上报 private_overlay_stale 而不是 no_progress|online AI watchdog 在 response-loop 遇到 missing-private-overlay 且 force-close 无推进时，应上报 private_overlay_missing 而不是 no_progress"` => `7 passed`。这格属于 shared transport 真修复，不外推其它 response-loop / response-window / hidden-interaction family 已全量完成。
+- 2026-05-20 最新进展补记：又抓到一条新的 fallback feedback provenance 真残口：`response-window` 在 strict + emergency playerView 后若仍是 `stale-private-overlay / missing-private-overlay`，旧实现虽然已经保住 `blockedKey`，但 fallback `RESPONSE_PASS` 若没有推进，最终 reason 仍被粗暴压成 `no_progress`。现已把这条链收紧为直接上报 `private_overlay_stale / private_overlay_missing`，并补齐 `response-window` 的 missing-private-overlay direct gate；聚焦复跑 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 response-window 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey|online AI watchdog 在 response-window 经 emergency playerView 后仍 missing-private-overlay 时，应上报 private_overlay_missing"` => `1 file passed, 2 passed`。这格属于 shared transport 真修复，不再把 response-window 的 overlay 缺失/失配吞成泛化 no-progress。
+- 2026-05-20 最新进展补记：`simple-choice` 的 `option.value drift` 已被坐实并修复。旧实现只把 visible/hidden `simple-choice` 的 `id/disabled` 写进 runtime fingerprint，没把 `value` 并进去，导致同 `interactionId/sourceId/title` 下把 `{kind:'pass'}` 与 `{done:true}` 这类真实控制值变化仍当同一 incident。现已把 option value 并入 `onlineAiRecovery.ts` 与 `server.ts` 两层 fingerprint，并补齐 `buildOnlineAiRecoveryFingerprint / runtime discard old tracker / attemptKey drift` 的 direct gate；聚焦与邻近矩阵已全部转绿（`9 passed`），这次是真修了一个 live seam，不是又回到旧对象级 family。
+- 2026-05-20 最新进展补记：已抓到并修掉一条新的 shared transport 真残口：`compare-roll-choice` 的 runtime / fallback fingerprint 之前只锁 `interactionId/sourceId`（外加通用 title/options），没把 `confirmValue` 写进 `onlineAiRecovery.ts` 的 candidate `fingerprintHint`，`server.ts` 的 compare-roll fallback fingerprint 也同样缺这格。结果是在同 `interactionId/sourceId` 下只要 `confirmValue` 漂移，watchdog 仍把它当旧 tracker，第二拍直接落成 `visible-interaction:recover-interaction:no_progress`。现已把 `confirmValue` 并入两层 fingerprint，并补齐 attemptKey / fingerprint / runtime discard 三条 direct gate；邻近 `compare-roll` 矩阵复跑 `7 passed`。
+- 2026-05-20 最新进展补记：已把 `response-loop windowType drift` 这格从“实现里看起来有、但矩阵没显式锁”补成两层 direct gate。新增 `buildOnlineAiRecoveryFingerprint 在 response-loop 的 id/source/queue 相同但 windowType 漂移时，也必须变化` 与 `online AI watchdog 在 response-loop 强制关窗后若 response-window 只变了 windowType，也不应继续沿旧 tracker 强制关窗`，聚焦复跑 => `2 passed`。这说明当前 `response-loop` 对 `windowType` 的 caller/handoff provenance 不是新 runtime 残口，而是此前缺了一格对称证据。
+- 2026-05-20 最新进展补记：已按当前 `goal/task_plan/长期状态` 对齐后，专门追了 `revalidateRecoveryCandidate()` 的 legal-only failure continuity seam，并新增最小直测 `online AI watchdog 在 legal-only failure revalidate 时若 stalled surface 已切到新 phase，不应沿旧 tracker 直接上报失败`。该用例直接转绿，说明“跨 tick 已切到新 phase 后被旧 tracker 吞掉”并不在 failure-revalidate 这一层复现；这条当前应降级为已证伪风险，而不是继续当成真残口反复打转。
+- 2026-05-20 最新进展：已确认 `seat-legal-only:legal_action_unavailable` 这条不是 reporter 假红，也不是 `revalidateRecoveryCandidate()` 单点漏口，而是 `src/engine/transport/server.ts` 的 `runOnlineAiRecoveryTick()` 顶层 continuity 缺口。旧逻辑在 `seat-legal-only` 候选的 `attemptKey/progressMarker` 漂移后，会把同一 stalled surface 误当成新 incident，直接重建 tracker 并 `continue`，导致第二 tick 根本进不了 recovery sequence，自然也打不出 failure feedback。现已补一层连续性门禁：当 `candidate.legalActionOnly === true` 且现有 tracker 仍属于 `response-loop / active-turn-legal-only / seat-legal-only` 家族时，不再因为 tracker key 漂移而重置 tracker。
+- 2026-05-20 本轮最小验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 human active 的 off-turn targetingRoll 若后续已无合法动作时，应上报 seat-legal-only:legal_action_unavailable"` => `1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 human active 的 off-turn targetingRoll 阶段也应代 AI 执行合法动作，避免 4 人选目标卡死|online AI watchdog 在 seat-legal-only 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey|online AI watchdog 在 seat-legal-only 经 emergency playerView 后仍 missing-private-overlay 时，应上报 private_overlay_missing|online AI watchdog 在 human active 的 off-turn targetingRoll 若后续已无合法动作时，应上报 seat-legal-only:legal_action_unavailable|resolveOnlineAiRecoveryCandidate 的 seat-legal-only 直接候选即使 actionId 相同，也应随 resolution.attemptKey 漂移生成新的 fingerprint 与 attemptKey|resolveOnlineAiRecoveryCandidate 的 seat-legal-only blocked 候选即使 blockedKey 相同，也应随 progressMarker 漂移生成新的 fingerprint 与 attemptKey"` => `6 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 human active 的 off-turn 防御阶段也应代 AI 执行合法动作，避免 defensiveRoll 卡死|resolveOnlineAiRecoveryCandidate 的 seat-legal-only 直接候选即使 actionId 相同，也应随 resolution.attemptKey 漂移生成新的 fingerprint 与 attemptKey|resolveOnlineAiRecoveryCandidate 的 seat-legal-only blocked 候选即使 blockedKey 相同，也应随 progressMarker 漂移生成新的 fingerprint 与 attemptKey"` => `3 passed`
+- 2026-05-20 当前结论：这次“有真实进展但像死循环”的最新一格，确实有一个 shared transport 真残口，但它已经被收敛到 `seat-legal-only` 的顶层 tracker continuity，而不是整条 response-loop/source 假红再次回潮。下一格应继续沿 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / overlay resync / fallback caller provenance 查其它 live seam，不再回扫已经闭掉的 stale-source 假红或对象级 family。
+- 2026-05-20 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "confirmValue 漂移"` => `3 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "可见 compare-roll-choice 只有 confirmValue 且无选项时，watchdog 应返回 CONFIRM 而不是 cancel|可见 compare-roll-choice 只有一个可选项时，watchdog 应返回 RESPOND 该选项而不是 cancel|可见 compare-roll-choice 的 confirmValue 漂移时，attemptKey 也必须跟随 fingerprint 变化|buildOnlineAiRecoveryFingerprint 在 compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 compare-roll-choice 的 interactionId/sourceId 相同但 confirmValue 漂移时，也必须变化|online AI watchdog 在 compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须丢弃旧 tracker|online AI watchdog 在 compare-roll-choice 的 interactionId/sourceId 相同但 confirmValue 漂移时，也必须丢弃旧 tracker"` => `7 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "buildOnlineAiRecoveryFingerprint 在 response-loop 的 id/source/queue 相同但 windowType 漂移时，也必须变化|online AI watchdog 在 response-loop 强制关窗后若 response-window 只变了 windowType，也不应继续沿旧 tracker 强制关窗"` => `2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 legal-only failure revalidate 时若 stalled surface 已切到新 phase，不应沿旧 tracker 直接上报失败"` => `1 passed`
+- 2026-05-19 已清掉一条把 completion audit 伪装成“又在死循环”的假红点：新增 `online AI watchdog 在 seat-legal-only 经 emergency playerView 后仍 missing-private-overlay 时，应上报 private_overlay_missing` 后，聚焦矩阵第一次失败并不是业务回退，而是旧用例 `tryRecoverOnlineAiWithLegalAction 在 seat-legal-only 遇到 missing-private-overlay 时，应使用 emergency playerView 重试合法动作` 仍用 `toEqual` 写死旧返回结构，没接受当前稳定返回里的 `blockedKey: null`。现已把该断言对齐到新返回契约，并复跑 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 seat-legal-only 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey|online AI watchdog 在 seat-legal-only 经 emergency playerView 后仍 missing-private-overlay 时，应上报 private_overlay_missing|tryRecoverOnlineAiWithLegalAction 在 seat-legal-only 遇到 missing-private-overlay 时，应使用 emergency playerView 重试合法动作"` => `1 file passed, 3 passed`。这格说明当前“像死循环”的最新一拍只是旧测试快照没跟上返回结构，不是 `seat-legal-only/private_overlay_missing` 语义再次回退。
+- 2026-05-19 又补一格 feedback caller direct gate：`reportOnlineAiRecoveryFeedback()` 之前只有“同一 `trackerKey` 即使 `progressMarker` 变化也不重复上报”的冷却测试，但还缺“同一 `trackerKey` 下不同 `incidentKind` 不应互相吞掉”的最小直测。本轮在 `src/engine/transport/__tests__/server.test.ts` 新增 `online AI watchdog 自动反馈的 dedupeKey 必须区分 incidentKind，同一 trackerKey 的失败与恢复不应互相吞掉`，并与既有 `trackerKey` 去重测试同组聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 自动反馈冷却期内应按 trackerKey 去重，即使 progressMarker 变化也不重复上报|online AI watchdog 自动反馈的 dedupeKey 必须区分 incidentKind，同一 trackerKey 的失败与恢复不应互相吞掉"` => `1 file passed, 2 passed`。这格说明观测层不会因为 dedupe 过粗而把“已恢复”继续压回旧失败，看起来像还在死循环。
+- 2026-05-19 又补一格 server-side caller negative gate：`resolveOnlineAiRecoveryCandidate()` 之前已经有“旧 `response-window` tracker 累计 `failureCount > 0` 时应直接升级成 `response-loop hard-close`”的正向测试，但还缺“同一 incident 且 `failureCount = 0` 时绝不能提前升级”的负向直测，容易让后续 completion audit 继续把这段逻辑当成可疑残口。本轮在 `src/engine/transport/__tests__/server.test.ts` 新增 `resolveOnlineAiRecoveryCandidate 在同一 response-window incident 但 failureCount 仍为 0 时，不应提前升级成 response-loop`，并与既有正向 gate 组合聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在旧 response-window tracker 已累计 failureCount 后，应直接进入 response-loop hard-close，而不是空转重建 tracker|resolveOnlineAiRecoveryCandidate 在同一 response-window incident 但 failureCount 仍为 0 时，不应提前升级成 response-loop"` => `1 file passed, 2 passed`。这格说明当前 `response-window -> response-loop` 升级条件已同时具备正反门禁，不再需要把“是否过早 hard-close”反复当成死循环嫌疑点。
+- 2026-05-19 又补一格 MatchRoom caller direct gate：`buildOnlineAiForceEndTurnTrackerKey()` 之前只有“语义漂移时必须换 key”的测试，没有“语义未变时不应因窗口 attemptKey 噪音换 key”的最小直测。本轮在 `src/pages/__tests__/matchSeatValidation.test.ts` 新增 `response-window candidate 若语义指纹未变，只是 attemptKey 因窗口噪音漂移，MatchRoom trackerKey 不应变化`，并与既有 `response-window candidate 的 fingerprintHint 漂移时，MatchRoom trackerKey 也必须变化` 同组聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "response-window candidate 的 fingerprintHint 漂移时，MatchRoom trackerKey 也必须变化|response-window candidate 若语义指纹未变，只是 attemptKey 因窗口噪音漂移，MatchRoom trackerKey 不应变化"` => `1 file passed, 2 passed`。这格说明当前“像死循环”的又一层来源确实只是 caller 去重合同先前缺了负向门禁，不是 runtime 还在把同语义窗口反复当成新 incident。
+- 2026-05-19 又补一格 shared transport direct gate：`hasOnlineAiRecoveryResolved()` 之前缺少“同一 AI 只是从 active-turn / visible-interaction / hidden-interaction / response-window / response-loop 切到 seat-legal-only 时仍不算 resolved”的最小直测，容易让后续 completion audit 误以为这条分支还在空转。本轮已在 `src/engine/transport/__tests__/server.test.ts` 新增 `GameTransportServer.hasOnlineAiRecoveryResolved（seat-legal-only sibling gate）`，并聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "seat-legal-only sibling gate|active-turn 即使已切到同一 AI 的|response-window 即使窗口已关闭，只要同一 AI 已切到 seat-legal-only|response-loop 即使窗口已关闭，只要同一 AI 已切到 seat-legal-only|visible-interaction 即使 shared prompt 已离开，只要同一 AI 已切到 seat-legal-only|hidden-interaction 即使 shared/seat view 都已收口，只要同一 AI 已切到 seat-legal-only"` => `9 passed`。这格说明当前“像死循环”的一部分确实只是 direct gate 证据缺口，不是 runtime 还在重复冒新 bug。
+- 2026-05-19 又补一格 live prompt control seam：`simple-choice` 的 `multi.min === 0` 允许空选也是现成 live 合同，但当前 worktree 之前没有 visible 路径的最小 direct gate。本轮在 `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` 新增 `可见 simple-choice 若允许空选且无控制项时，watchdog 应返回 RESPOND 空 optionIds 而不是 cancel`，并聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "可见 simple-choice 若允许空选且无控制项时，watchdog 应返回 RESPOND 空 optionIds 而不是 cancel"` => `1 passed`。这格说明允许空选的 visible `simple-choice` 也已有 direct gate，不再只是靠 `buildForceSkipPayloadFromSeatState()` 代码阅读旁证。
+- 2026-05-19 又补一格 live prompt control seam：`skip` 在 hidden 路径早已有 direct gate，但 visible 路径之前没有单独锁住。本轮在 `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` 新增 `可见 simple-choice 只剩 skip 控制项时，watchdog 应返回 RESPOND skip 而不是 cancel`，并与现有 hidden `skip` helper gate 组合聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "可见 simple-choice 只剩 skip 控制项时，watchdog 应返回 RESPOND skip 而不是 cancel|resolveForceSkippableHiddenAiInteraction 遇到 skip 时应优先 force-skip；若只剩非控制项 \\+ cancel 则不得自动取消"` => `1 file passed, 2 passed, 37 skipped`。这格说明 `skip` 现在也在 visible/hidden 两条 transport 路径都已有 direct gate，不再只是靠 hidden helper 旁证 visible 行为。
+- 2026-05-19 又补一格 live prompt control seam：`__cancel__` 也是现成 live control 合同，但当前 worktree 之前没有 visible/hidden transport 侧最小 direct gate。本轮在 `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` 新增 `可见 simple-choice 只剩 __cancel__ 控制项时，watchdog 应返回 RESPOND cancel option 而不是 generic cancel`，并在 `resolveForceSkippableHiddenAiInteraction` 现有用例里补了 hidden cancel-only 分支；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "可见 simple-choice 只剩 __cancel__ 控制项时，watchdog 应返回 RESPOND cancel option 而不是 generic cancel|resolveForceSkippableHiddenAiInteraction 遇到 skip 时应优先 force-skip；若只剩非控制项 \\+ cancel 则不得自动取消"` => `1 file passed, 2 passed, 36 skipped`。这格说明 `__cancel__` 在 visible/hidden 两条 transport 路径也已有 direct gate，不再只是靠 helper 逻辑旁证。
+- 2026-05-19 又补一格 live prompt control seam：`__emergency_skip__` 早已有 live producer（例如 SmashUp afterScoring/无可执行选项 prompt），但当前 worktree 之前没有 transport 侧最小 direct gate，容易在后续 completion audit 里被误当成“visible/hidden simple-choice 可能还会退回 generic cancel”的开放项。本轮在 `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` 新增两条最小直测：`可见 simple-choice 只剩 __emergency_skip__ 控制项时，watchdog 应返回 RESPOND emergency skip 而不是 cancel`，以及 `resolveForceSkippableHiddenAiInteraction` 的 hidden `__emergency_skip__` only 分支；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "可见 simple-choice 只剩 __emergency_skip__ 控制项时，watchdog 应返回 RESPOND emergency skip 而不是 cancel|resolveForceSkippableHiddenAiInteraction 遇到 skip 时应优先 force-skip；若只剩非控制项 \\+ cancel 则不得自动取消"` => `1 file passed, 2 passed, 35 skipped`。这格说明 `__emergency_skip__` 在 visible/hidden 两条 transport 路径都已有 direct gate；其中 hidden 分支还顺手锁住了它真实会走 `interaction-choice / 强制跳过 AI 可选效果` 这条专门 contract，而不是通用 `force-end-turn` 包装。
+- 2026-05-19 又补一格 live prompt control seam：`src/engine/transport/onlineAiRecovery.ts` 的 `simple-choice` forced-command 虽然已经支持 `done` 控制项，但当前 worktree 之前没有 transport 侧 direct gate，容易在后续 completion audit 里被误当成“可能还会退回 generic cancel”的开放项。本轮在 `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` 新增两条最小直测：`可见 simple-choice 只剩 done 控制项时，watchdog 应返回 RESPOND done 而不是 cancel` 与 `resolveForceSkippableHiddenAiInteraction` 的 hidden done-only 分支；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "可见 simple-choice 只剩 done 控制项时，watchdog 应返回 RESPOND done 而不是 cancel|resolveForceSkippableHiddenAiInteraction 遇到 skip 时应优先 force-skip；若只剩非控制项 \\+ cancel 则不得自动取消"` => `1 passed / 2 passed / 34 skipped`。这格说明 `done` 控制项在 visible/hidden 两条 transport 路径都已有 direct gate，不再只是靠 `MatchRoom` 间接测试或读 helper 代码旁证。
+- 2026-05-19 新补一格 `response-loop same-incident continuity`：旧 `src/engine/transport/server.ts` 的 `runOnlineAiRecoverySequence()` 在 `currentCandidate.reason === 'response-loop'` 下，只允许续接 `response-window / active-turn / active-turn-legal-only / seat-legal-only`；如果 `resolveOnlineAiRecoveryCandidate()` 已明确返回“同一 incident 仍是 response-loop”，sequence 反而会直接删 tracker，下一 tick 又假性退回 `response-window`。现已把 `nextCandidate.reason === 'response-loop'` 纳入 follow-up tracker 白名单，并新增 `online AI watchdog 在 response-loop 同一 incident 仍然成立时，不应在 sequence 内把 tracker 丢回 response-window` 先红后绿。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 response-loop 同一 incident 仍然成立时，不应在 sequence 内把 tracker 丢回 response-window"` => `1 passed`；邻近矩阵复跑 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "resolveOnlineAiRecoveryCandidate 在 tracker 已进入 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window|online AI watchdog 在 response-loop 同一 incident 仍然成立时，不应在 sequence 内把 tracker 丢回 response-window|online AI watchdog 在 response-loop 强制关窗后，应把同一 AI 交给 active-turn tracker 继续推进|online AI watchdog 在 response-loop 强制关窗后若已切到新的 response-window incident，不应继续沿旧 tracker 强制关窗|online AI watchdog 在 response-loop 强制关窗后若已切到新的 visible-interaction incident，不应继续沿旧 tracker 吞掉新交互|online AI watchdog 在 response-loop 强制关窗后若已切到新的 hidden-interaction incident，不应继续沿旧 tracker 吞掉新私有交互"` => `6 passed`。这格说明当前“像死循环”的一部分确实是 shared transport 的 sequence 生命周期真残口，不只是旧 goal / 旧计划口径噪音。
+- 2026-05-19 已把这轮 `overlay resync cooldown` 的最后一格收成 helper 级直测：`src/engine/transport/server.ts` 的 `maybeTriggerOnlineAiOverlayResync()` 现在按 `${matchID}:${playerId}:${blockedKey}:${buildAiProgressMarker(match.state)}` 去重；`src/engine/transport/__tests__/server.test.ts` 里的 `online AI watchdog 在 blockedKey 相同但 progressMarker 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉` 也已改成直接调用 helper，避开完整 watchdog tick 的广播噪音。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 触发 overlay resync 后应按冷却去重，避免连续广播风暴|online AI watchdog 遇到同 seat 的新 blockedKey 时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|online AI watchdog 在 blockedKey 相同但 progressMarker 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|online AI watchdog 在 response-window id 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉"` => `4 passed`；`git diff --check -- src/engine/transport/server.ts src/engine/transport/__tests__/server.test.ts` => passed（仅 LF/CRLF warning）。这格说明旧“35 次 broadcastState”是测法过粗，不是 runtime 仍在死循环。
+- 2026-05-19 又补一格 `legal-only` family 的 incident key：`src/engine/transport/onlineAiRecovery.ts` 的 `active-turn-legal-only` 现在会把 `buildAiProgressMarker(sharedState)` 并进 fingerprint/attemptKey，避免同一 AI 同一 phase 的新现场复用旧 key；`src/engine/transport/server.ts` 的 `seat-legal-only` 直接候选也改成优先使用 `resolution.attemptKey`，blocked 候选附带 `progressMarker`。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"active-turn-legal-only candidate 即使同一 AI 与 phase，也应随 progressMarker 漂移生成新的 fingerprint 与 attemptKey|AI 对 AI 的 defensiveRoll legal-only fallback 即使 defenderId 相同，也应随 pendingAttack.sourceAbilityId 漂移生成新的 fingerprint 与 attemptKey\"` => `3 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"resolveOnlineAiRecoveryCandidate 的 seat-legal-only 直接候选即使 actionId 相同，也应随 resolution.attemptKey 漂移生成新的 fingerprint 与 attemptKey|resolveOnlineAiRecoveryCandidate 的 seat-legal-only blocked 候选即使 blockedKey 相同，也应随 progressMarker 漂移生成新的 fingerprint 与 attemptKey|resolveOnlineAiRecoveryCandidate 在 defensiveRoll off-turn 场景应给出 seat-legal-only 候选\"` => `3 passed`。
+- 2026-05-19 又补一格 `MatchRoom` 的 seat recovery caller provenance：`src/pages/MatchRoom.tsx` 现已抽出 `buildOnlineAiIdleSeatRecoveryKey()` 与 `buildOnlineAiSubmitBlockedRecoveryKey()`，让 `idle-active-ai` 与 `submit-blocked-ai` 不再只按“玩家 + 阶段 / action kind”拼粗 recoveryKey，而会跟随 `buildAiProgressMarker(sharedState)` 与 `resolution.attemptKey` 一起漂移；`resolveOnlineAiSeatRecoveryAttempt()` 也改成纯 helper，确认同 key 冷却拒绝不会再把下一次重试窗口继续往后推。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "idle-active-ai recoveryKey 即使同一玩家与阶段，也应随 progressMarker 漂移而变化|submit-blocked-ai recoveryKey 即使同一玩家与 action kind，也应随 attemptKey 漂移而变化"` => `1 passed / 2 tests passed`，`git diff --check -- src/pages/MatchRoom.tsx src/pages/__tests__/matchSeatValidation.test.ts` => passed（仅 LF/CRLF warning）。
+- 2026-05-19 又补一格 `onlineAiRecovery.ts` 的 `response-window queue signature` caller provenance：旧自动 `RESPONSE_PASS` 与手动 `SYS_RESPONSE_WINDOW_FORCE_CLOSE` 的 `fingerprintHint / attemptKey` 都只带 `responderId + windowType + sourceId + windowId`，没带 `responderQueue`。现已在 `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` 先补红灯 `纯 AI 响应窗口中，自动 watchdog 的 response-window candidate 也应随 responderQueue signature 漂移生成新的 fingerprint 与 attemptKey`，确认同 `id/type/source/currentResponder` 但 queue 漂移时旧 `fingerprintHint` 没变；随后在 `src/engine/transport/onlineAiRecovery.ts` 把 `queueSignature` 并入自动与手动 `response-window` 的 `fingerprintHint / attemptKey`，并聚焦复跑 `手动强制结束应直接强制关闭响应窗口 / 手动 queue drift / 自动 provenance / 自动 queue drift` => `4 passed`。这次补的是更内层的 `response-window` caller provenance，不外推整个 `onlineAiRecovery` family 已完成。
+- 2026-05-19 又补一格 `response-window queue signature drift`：`server.test.ts` 新增 `online AI watchdog 在 response-window queue signature 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉`，与 `id/source/windowType/responder drift` 同组复跑 `5 passed`。这次把 `response-window` 的 `responderQueue` 从 blockedKey 供源补接到 overlay resync caller，不外推整条 `response-window` family 已全量完成。
+- 2026-05-19 又补一格 `response-window windowType drift`：`onlineDecisionView.test.ts` 新增 `private-required response-window 即使 id/source/responder/queue 相同，只要 windowType 漂移，blockedKey 也必须变化`，并与既有 `id/source/responder/queue` 邻近矩阵同组复跑 `5 passed`；同时 `server.test.ts` 新增 `online AI watchdog 在 response-window windowType 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉`，并与既有 `id/source/responder drift` 同组复跑 `4 passed`。这次把 `windowType` 从实现旁证提升成 blockedKey 供源 + overlay resync caller 两层 direct gate，不外推整条 `response-window` family 已完成。
+- 2026-05-19 又补一格上游 `blockedKey` provenance：`onlineDecisionView.test.ts` 之前对 `private-required response-window` 的 blockedKey 只直锁了 `responder` 与 `queue signature` 漂移，`window id / sourceId` 仍只靠 `buildResolvedDecisionSemanticBlockedKey()` 代码旁证。现已新增两条最小直测：`private-required response-window 即使 type/source/responder/queue 相同，只要 window id 漂移，blockedKey 也必须变化` 与 `private-required response-window 即使 id/type/responder/queue 相同，只要 source 漂移，blockedKey 也必须变化`，并与既有 `responder / queue` 两条同组复跑 `4 passed`。这次补的是 `engine/ai` 上游 blockedKey 供源，不外推 `server.ts` 的 overlay resync / response-loop caller 全量完成。
+- 2026-05-19 已继续把 `hasOnlineAiRecoveryResolved()` 的 `hidden/visible sibling-family` 从“只锁 response-window/active-turn”补齐到也锁 `visible/hidden/response-loop`：`server.test.ts` 新增 `hidden-interaction -> response-loop` 与 `visible-interaction -> response-loop` 两条最小直测，并与既有 `hidden->response-window / visible->response-window / hidden->visible / visible->hidden` 同组复跑 `6 passed`。这次只补 direct gate 证据，不新增实现语义。
+- 2026-05-19 已继续把 `hasOnlineAiRecoveryResolved()` 的 `hidden/visible sibling-family` 对称性补齐：此前 `hidden-interaction` 只锁了切到 `response-window / active-turn` 不算 resolved，`visible-interaction` 只锁了切到 `response-window / active-turn` 不算 resolved；现已在 `server.test.ts` 新增 `hidden-interaction -> visible-interaction` 与 `visible-interaction -> hidden-interaction` 两条最小直测，并与既有 `hidden->response-window` / `visible->response-window` 同组复跑 `4 passed`。这次只补 direct gate 证据，不新增实现语义。
+- 2026-05-19 已继续把 `resolveOnlineAiRecoveryCandidate()` 的 `response-loop tracker` 退回条件补到 “human restored” 一格：`server.test.ts` 新增 `resolveOnlineAiRecoveryCandidate 在 response-loop tracker 下若 responderQueue 重新带回 human，应退回 response-window 而不是继续 hard-close`，并与 `旧 responder 漂移 / existing-response-loop-key / response-window stale responder` 同组复跑 `4 passed`。这次补的是 candidate-level caller provenance，不新增 runtime 语义。
+- 2026-05-19 已继续把 `hasOnlineAiRecoveryResolved()` 的 `response-loop` 对称性补齐到“other AI responder”一格：此前 `response-window` 已显式锁住“切到别的 AI 响应者才算 resolved”，`response-loop` 这组只锁了当前 AI / 空 responder / human / 窗口关闭。现已在 `server.test.ts` 补入 `response-loop-other-ai-turn` 断言，并与既有 `response-window resolved gate` / `response-loop resolved gate` 同组复跑 `2 passed`。这次只补 direct gate 证据，不新增实现语义。
+- 2026-05-19 已继续把 `resolveOnlineAiRecoveryCandidate()` 的 `response-loop existing tracker` provenance 从“旧窗口 key 漂移”补到“旧 responder key 漂移”一格：`server.test.ts` 新增 `resolveOnlineAiRecoveryCandidate 在旧 response-loop tracker 仍指向旧 responder 时，应退回 response-window 而不是继续 hard-close`，并与既有 `human-still-queued / stale-window-key / stale-responder-key / existing-response-loop-key` 同组复跑 `5 passed`。这次补的是 candidate-level caller provenance，不新增 runtime 语义。
+- 2026-05-19 已继续把 `resolveOnlineAiRecoveryCandidate()` 的 `response-window -> response-loop` 升级前置条件从“旧窗口 key 漂移”补到“旧 responder key 漂移”一格：`server.test.ts` 新增 `resolveOnlineAiRecoveryCandidate 在 tracker key 已漂移到旧 responder 时，不应把 response-window 升级成 response-loop`，并与既有 `human-still-queued / stale-window-key / existing-response-loop-key` 同组复跑 `4 passed`。这次补的是 candidate-level caller provenance，不新增 runtime 语义。
+- 2026-05-19 已继续把 `response-loop` 的 caller provenance 从“只有 window id direct gate”补到 `sourceId / currentResponder` 两格最小直测：`server.test.ts` 新增 `buildOnlineAiRecoveryFingerprint 在 response-loop 的 window id/queue 相同但 sourceId 漂移时，也必须变化` 与 `buildOnlineAiRecoveryFingerprint 在 response-loop 的 window/source 相同但当前 responder 漂移时，也必须变化`，并和既有 `response-window/response-loop window id drift` 同组复跑 `4 passed`。这次只补 direct gate 证据，不新增 runtime 语义，也不再把 `response-loop` source/responder drift 当开放 residual。
+- 2026-05-19 又补两条 `hasOnlineAiRecoveryResolved()` 的 sibling-family direct gate：此前 `response-loop / response-window` 只有“切到 visible-interaction / active-turn 不算 resolved”，缺少对称的 `hidden-interaction` 最小直测，长期状态里这组 family 已补齐的说法过于依赖外推。现已在 `server.test.ts` 新增 `response-loop 即使窗口已关闭，只要同一 AI 已切到 hidden-interaction 也不算 resolved` 与 `response-window 即使窗口已关闭，只要同一 AI 已切到 hidden-interaction 也不算 resolved`，并与既有 visible/active-turn 邻近矩阵同组复跑 `6 passed`。这次只补证据缺口，不宣称实现语义新增。
+- 2026-05-19 已把这轮真正卡住的 `response-loop -> seat-legal-only` sequence handoff 补成绿态：旧 `runOnlineAiRecoverySequence()` 在 `response-loop` 强关窗后若同一 AI 切到新 reason，会把任何非 `response-window` 的 next candidate 都当成旧 tracker 漂移而直接丢弃，导致 `seat-legal-only` 这类合法续跑 reason 接不上。现已收紧为仅对 `active-turn / active-turn-legal-only / seat-legal-only` 续接新 tracker，而 `visible/hidden-interaction` 这类新 incident 仍立即断开旧链；并新增直测 `online AI watchdog 在 response-loop 强制关窗后若已切到 seat-legal-only，应交给新的 legal-only tracker 继续推进`。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "response-loop 强制关窗后若已切到 active-turn-legal-only|response-loop 强制关窗后若已切到 seat-legal-only|response-loop 强制关窗后若已切到新的 hidden-interaction incident"` => `3 passed`；这次闭的是 sequence-level handoff，不外推所有 response-loop follow-up family 已完成。
+- 2026-05-19 继续口径已重新对齐到活跃 `goal` 对应的 shared transport 长任务，但实际执行锚点仍以 `task_plan.md + progress.md + C:\Users\zhuagenbao\.codex\.omx\state\long-term-task\smashup-yuanhou-faction-effect-audit-2026-05-16.json` 为准，而不是 `goal.objective` 里过时的 `The Spy Who Ditched Me / waiting overlay` 文案。
+- 2026-05-19 刚刚复跑 `server.ts` 邻近的 8 条 `response-loop / response-window / active-turn` 聚焦矩阵，结果已回到 `8 passed`；这说明当前 worktree 并没有继续卡在那次 `RESPONSE_PASS` 试探性扩语义的红态上，用户感受到的“像死循环”主要来自执行锚点分裂和上一轮把“继续扩大语义”与“先恢复稳定绿态”混在一起。
+- 2026-05-19 新补的 handoff 直测里，`response-loop -> active-turn-legal-only` 继续保持绿态，但我把 `response-loop -> seat-legal-only` 先降级为 direct probe 后发现当前候选层并不会自然产出这条链，因此这不是已闭环事实，不能误报成又多收了一条 handoff。
+- 2026-05-19 又补一格 shared transport handoff：`response-loop` 强关窗后若现场切到新的 `hidden-interaction`，旧 tracker 不会继续吞掉新私有交互；新直测 `online AI watchdog 在 response-loop 强制关窗后若已切到新的 hidden-interaction incident，不应继续沿旧 tracker 吞掉新私有交互` 已 `passed`，并与 visible / response-window / active-turn 邻近矩阵同组复跑 `4 passed`。这条说明当前“像死循环”的外观至少不是 shared transport 还在同一 tracker 上循环吞新 incident。
+- 2026-05-19 completion audit 又补到一条真实 live kind：`multistep-choice` 在 Dice Throne / Summoner Wars / SmashUp 都有 producer，但 `buildOnlineAiRecoveryFingerprint()` 旧实现只把它压成 `kind + interactionId + sourceId`。现已补 `title/dtType/maxSteps/minSteps/allowedDieIds/completedDieIds/diceOwnerId/targetOpponentDice` 级语义指纹，并先转绿 `buildOnlineAiRecoveryFingerprint 在 multistep-choice 的 sourceId 相同但可选/已完成骰集合漂移时，也必须变化`；随后继续补 runtime gate，锁定 `online AI watchdog 在 multistep-choice 的 sourceId 相同但可选/已完成骰集合漂移时，也必须丢弃旧 tracker`，聚焦复跑 `3 passed`。这说明 multistep 不只是 key 变细，watchdog 续跑也不会沿旧 tracker 连打第二次 `SYS_INTERACTION_CANCEL`。
+- 2026-05-19 completion audit 继续去假目标：已复核 `pending-damage` 当前只存在于 `src/engine/transport/server.ts` 的 diagnostic / fingerprint 分支，不在 `src/engine/transport/onlineAiRecovery.ts` 的 `ForceEndTurnStalledAiReason` live candidate 集里；全仓搜索也未发现任何 `reason:'pending-damage'` 的 runtime producer。结论是它现阶段仍是“有 fingerprint 兼容、无 live recovery candidate”的诊断残枝，后续不得再把它当成 shared transport 主线开放项，只在真正引入 live candidate producer 时再补 runtime gate。
+- 2026-05-19 completion audit 新补一格 forced-command seam：`compare-roll-choice` 不是只能走 generic cancel 的纯展示壳。`src/engine/transport/onlineAiRecovery.ts` 现已对“`compare-roll-choice` + 无 options + 有 `confirmValue`”的 visible-interaction 兜底改走 `SYS_INTERACTION_CONFIRM`，避免 watchdog 把应当 `CONFIRM -> RESOLVED` 的 compare-roll 收口误吞成 cancel。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "compare-roll-choice 只有 confirmValue 且无选项时，watchdog 应返回 CONFIRM 而不是 cancel|可见 simple-choice 只有 Pass 控制项时，watchdog 应返回 RESPOND pass 而不是 cancel"` => `2 passed`。
+- 2026-05-19 completion audit 再补一格 runtime gate：`compare-roll-choice` 现在不只是 fingerprint 正确，`online AI watchdog 在 compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须丢弃旧 tracker` 也已转绿，确认它不会像普通 generic visible prompt 那样把旧 tracker 带进新 compare frame。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须丢弃旧 tracker|buildOnlineAiRecoveryFingerprint 在 compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化"` => `2 passed`。
+- 2026-05-19 completion audit 再补一格 compare-roll forced-command 语义：对照 `src/games/dicethrone/ai.ts` 后确认，`compare-roll-choice` 不仅“无 options + confirmValue”要走 `SYS_INTERACTION_CONFIRM`，单一 enabled option 的 compare-roll 也应走 `SYS_INTERACTION_RESPOND` 而不是 generic cancel。现已补到 `src/engine/transport/onlineAiRecovery.ts`，并以 `onlineAiRecovery-gameover.test.ts` 锁住 `compare-roll-choice 只有一个可选项时，watchdog 应返回 RESPOND 该选项而不是 cancel`；聚焦验证 `... -t "可见 compare-roll-choice 只有 confirmValue 且无选项时，watchdog 应返回 CONFIRM 而不是 cancel|可见 compare-roll-choice 只有一个可选项时，watchdog 应返回 RESPOND 该选项而不是 cancel|可见 simple-choice 只有 Pass 控制项时，watchdog 应返回 RESPOND pass 而不是 cancel"` => `3 passed`。
+- 2026-05-19 interaction-kind inventory 继续排除假目标：`slider-choice` 当前全仓只存在于 `InteractionSystem.ts` 的类型/创建器和 `PromptOverlay.tsx` 的 UI 分支，没有任何 `createSliderChoice(...)` producer，也没有 transport/watchdog 侧直测命中；现阶段不得把它当 shared transport 的 live prompt seam 继续追。
+- 2026-05-19 最新进展：已把 `dt:token-response / dt:bonus-dice` 从 generic visible-interaction fallback 收紧成专门 transport seam。`resolveForceEndTurnForStalledAi()` 现在对这两类 live prompt kind 会走正确的 `SKIP_TOKEN_RESPONSE / SKIP_BONUS_DICE_REROLL`，不再沿用 `SYS_INTERACTION_CANCEL`；`buildOnlineAiRecoveryFingerprint()` 也已带上 `pendingDamage.currentDamage/tokenUsageTotals` 与 `pendingBonusDiceSettlement.rerollCount/dice` 级语义。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "dt:token-response 的 interactionId 相同但伤害语义漂移时，也必须变化|dt:token-response 的 interactionId 相同但伤害语义漂移时，也必须丢弃旧 tracker|dt:bonus-dice 的 interactionId 相同但结算语义漂移时，也必须变化|dt:bonus-dice 的 interactionId 相同但结算语义漂移时，也必须丢弃旧 tracker"` => `4 passed`；相邻矩阵复跑 `... -t "dt:token-response 的 interactionId 相同但伤害语义漂移时，也必须变化|dt:bonus-dice 的 interactionId 相同但结算语义漂移时，也必须变化|dt:defender-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化|multistep-choice 的 sourceId 相同但可选/已完成骰集合漂移时，也必须变化|response-window 的 type/source/queue 相同但 window id 漂移时，也必须变化"` => `5 passed`。
+- 2026-05-19 最新进展：已补 `resolveOnlineAiEffectiveSeatState` 的生命周期门禁。`src/pages/__tests__/matchSeatValidation.test.ts` 新增 `staged override 只应作为 confirmed 到 state update 之间的一拍桥接，latestState 追平后应退回最新 seat state`，把 confirmed 后暂时 staging 的 seat override 与后续 authoritative state:update 追平分开，确认 override 只是桥接而不是长期保留旧 overlay。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"effective seat state 应优先读取临时 override|构建 force-skip/force-end-turn seatStates 时应统一走 effective seat state|confirmed 标记已追平 latestState 时无需 staging override；缺失或不一致时必须 staging|staged override 只应作为 confirmed 到 state update 之间的一拍桥接，latestState 追平后应退回最新 seat state\"` => `4 passed`，`git diff --check -- src/pages/__tests__/matchSeatValidation.test.ts` => passed（仅 LF/CRLF warning）。
+- 2026-05-19 最新进展：已补 `resolveForceAdvancePhaseAfterRecovery()` 的 negative caller gate。`src/pages/__tests__/matchSeatValidation.test.ts` 新增 `交互确认后若权威态仍 blocked，则不应误补 follow-up ADVANCE_PHASE` 与 `交互确认后若回合已交还给他人或 human，则不应误补 follow-up ADVANCE_PHASE`，锁定 force-end-turn / watchdog 确认后只有在权威态确实解锁且当前仍轮到 AI 时，才可补发下一手 `ADVANCE_PHASE`，避免确认后误推进造成旧链条看起来像没收口。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "交互收口确认后，仅在 AI 仍持有回合且界面已解锁时才补发 ADVANCE_PHASE|交互确认后若权威态仍 blocked，则不应误补 follow-up ADVANCE_PHASE|交互确认后若回合已交还给他人或 human，则不应误补 follow-up ADVANCE_PHASE"` => `3 passed`，`git diff --check -- src/pages/__tests__/matchSeatValidation.test.ts` => passed（仅 LF/CRLF warning）。
+- 2026-05-19 最新进展：已补 `MatchRoom` seat recovery cooldown helper 的持续 blocked 重试门禁。`resolveOnlineAiSeatRecoveryAttempt()` 现在在“同一 `recoveryKey` 仍处于冷却期”时不再把 `lastRecoveryAt` 往后推，因此持续 blocked 不会把下一次 seat resync 窗口永久续命成“只触发一次后像卡死”；`src/pages/__tests__/matchSeatValidation.test.ts` 新增 `持续 blocked 且 recoveryKey 未变化时，冷却拒绝不应把下一次重试窗口继续往后推`，并同步收紧原有冷却期断言。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "首次出现 recoveryKey|同一个 recoveryKey 在冷却期内不应重复触发 seat recovery|recoveryKey 漂移或超过冷却期后，应重新放行 seat recovery|持续 blocked 且 recoveryKey 未变化时，冷却拒绝不应把下一次重试窗口继续往后推"` => `1 passed / 4 tests passed`，`git diff --check -- src/pages/MatchRoom.tsx src/pages/__tests__/matchSeatValidation.test.ts` => passed（仅 LF/CRLF warning）。
+- 2026-05-19 最新进展：已把 `submitOnlineAiResolutionSequence` 再补到更贴近真实 prompt 收口链的一格。`src/pages/__tests__/matchSeatValidation.test.ts` 新增 `首步若是单命令交互收口，应在 state update 确认后继续提交 follow-up`，锁定第一步若只是单个 `SYS_INTERACTION_RESPOND`，sequence 也会在 `state update` 确认后继续提交第二步 follow-up；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "submitOnlineAiResolutionSequence"` => `1 passed / 3 tests passed`，`git diff --check -- src/pages/__tests__/matchSeatValidation.test.ts` => passed（仅 LF/CRLF warning）。
+- 2026-05-19 最新进展：已补 `submitOnlineAiResolutionSequence` 的 caller direct gate。`src/pages/__tests__/matchSeatValidation.test.ts` 新增 `首步 confirmed 后应继续提交 follow-up，并把 stepIndex 传给 onStepConfirmed/onCompleted` 与 `follow-up 失败时应把失败原因与第二步 resolution 上下文透传给 onRejected`，锁定 force-end-turn 多步恢复链在第二步失败时不会把上下文错记成第一步；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "submitOnlineAiResolutionSequence"` => `1 passed / 2 tests passed`，`git diff --check -- src/pages/__tests__/matchSeatValidation.test.ts` => passed（仅 LF/CRLF warning）。
+- 2026-05-19 最新进展：已补 `GameProvider` 的 authoritative overlay-clear direct gate。`src/engine/transport/__tests__/react.test.tsx` 新增 `new authoritative state should clear the previous owner-only overlay instead of keeping stale interaction state`，锁定第二帧权威态到来时旧 `owner-only-prompt / owner-only-overlay` 不会残留在渲染态；聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/react.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 passed / 5 tests passed`，`git diff --check -- src/engine/transport/__tests__/react.test.tsx` => passed。
+- 2026-05-19 最新进展：已补 `active-turn` 的 sibling-family direct gate。`hasOnlineAiRecoveryResolved()` 现在也有最小直测锁定：只要同一 AI 已切到 `visible-interaction / response-window / hidden-interaction / response-loop` 之一，就仍不算 resolved；只有 next candidate 为空时才收口。聚焦验证 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "active-turn 即使已切到同一 AI 的|legalActionOnly 即使已切到同一 AI 的|response-loop 也必须沿用 response-window 的 resolved gate"` => `9 passed`。
+- 2026-05-19 最新进展：已纠正 `active-turn legal-action-recovered` 的测试预期漂移。当前唯一红点不是实现红灯，而是 `server.test.ts` 两条 direct gate 旧断言把 `blockerFingerprint` 错比成最终 `progressMarker`；现已改为锁恢复开始前的 `buildAiProgressMarker(match.state)`，聚焦复跑 `online AI watchdog 完成 legal action 恢复后也应写入系统反馈|online AI watchdog 在 active-turn 的多步 legal action 链中，应只在最终交还回合后上报 resolved` => `2 passed`。
+- 2026-05-19 最新进展：已补 `seat-legal-only legal-action-recovered` 的 provenance direct gate。human active 的 off-turn `defensiveRoll` / `targetingRoll` 两个公开分支现在除了 `resolved` 外，也同步锁住 `reason=seat-legal-only:legal-action:advance-phase:legal-advance`，以及 `stateSnapshot/actionLog.blockerFingerprint` 分别含 `seat-legal-only:1:defensiveRoll:advance-phase:legal-advance` 与 `seat-legal-only:1:targetingRoll:advance-phase:legal-advance`。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 human active 的 off-turn targetingRoll 阶段也应代 AI 执行合法动作，避免 4 人选目标卡死"` => `1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 human active 的 off-turn 防御阶段也应代 AI 执行合法动作，避免 defensiveRoll 卡死"` => `1 passed`
+- 2026-05-19 最新进展：已补 `factionSelect` 的 `legal-action-recovered` provenance direct gate。`online AI watchdog 在 factionSelect 阶段应走 legal-action recovery，而不是 fallback ADVANCE_PHASE` 现在除了锁住 `resolved` 外，也同步锁住 `reason=active-turn-legal-only:legal-action:select-faction:select-faction:robots` 与 `stateSnapshot/actionLog.blockerFingerprint` 含 `active-turn-legal-only:2:factionSelect`。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 factionSelect 阶段应走 legal-action recovery，而不是 fallback ADVANCE_PHASE"` => `1 passed`
+- 2026-05-19 最新进展：已把 `visible-interaction` diagnostics gate 从“只看 stateSnapshot”补到“stateSnapshot + actionLog 双出口一致”。`online AI watchdog 自动反馈应携带交互选项与可选性诊断信息` 现已同时锁住 `dt-test-visible-choice` 会写进 `stateSnapshot/actionLog.blockerFingerprint`。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 自动反馈应携带交互选项与可选性诊断信息"` => `1 passed`
+- 2026-05-19 最新进展：已补 `active-turn-legal-only:legal_action_unavailable` 的 feedback direct gate。AI active 的 `targetingRoll` 下，无论 `legalActions` 为空还是合法动作执行失败、且本分支都不允许 fallback `ADVANCE_PHASE` 时，`stateSnapshot/actionLog.blockerFingerprint` 现在也会保留 `active-turn-legal-only:1:targetingRoll`，不再只靠 reason 级断言旁证。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 AI active 的 targetingRoll 且 legalActions 为空时，不得 fallback 到裸 ADVANCE_PHASE"` => `1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 active-turn-legal-only 的合法动作执行失败时，反馈 blockerFingerprint 也应保留 legal-only fingerprint"` => `1 passed`
+- 2026-05-19 最新进展：已补 `advance_guard_blocked` 的 feedback direct gate。watchdog fallback 到 `ADVANCE_PHASE` 前若发现当前已不是 AI 回合、最终以 `advance_guard_blocked` 失败时，`stateSnapshot/actionLog.blockerFingerprint` 现在也会保留 `legal-action-only:1:main2`，不再只靠 reason 级断言旁证。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog fallback 到 ADVANCE_PHASE 前应校验当前仍是 AI 回合，避免误推进 human 回合"` => `1 passed`
+- 2026-05-19 最新进展：已补 `shared-visible / missing-visible-state` 的 feedback direct gate。visible prompt 丢失 live visible state 且 watchdog fallback force command 最终以 `command_failed` 失败时，`stateSnapshot/actionLog.blockerFingerprint` 现在也会保留 `blockedKey`，不再只靠 helper 返回值旁证。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 visible-interaction 遇到 missing-visible-state 且 fallback force command 失败时，反馈 blockerFingerprint 应保留 blockedKey"` => `1 passed`
+- 2026-05-19 最新进展：已补 `active-turn` 的 blocked feedback direct gate。active turn 在 emergency playerView 后若仍 blocked，且 watchdog fallback force command 最终以 `command_failed` 失败时，`stateSnapshot/actionLog.blockerFingerprint` 现在也会保留 `blockedKey`，不再只靠实现阅读旁证。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 active-turn 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey"` => `1 passed`
+- 2026-05-19 最新进展：已补 `hidden-interaction` 的 blocked feedback direct gate。hidden prompt 在 emergency playerView 后若仍 blocked，且 watchdog fallback force command 最终以 `command_failed` 失败时，`stateSnapshot/actionLog.blockerFingerprint` 现在也会保留 `blockedKey`，不再只靠实现阅读旁证。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 hidden-interaction 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey"` => `1 passed`
+- 2026-05-19 最新进展：已补 `visible-interaction` 的 blocked feedback direct gate。visible prompt 在 emergency playerView 后若仍 blocked，且 watchdog fallback force command 最终以 `command_failed` 失败时，`stateSnapshot/actionLog.blockerFingerprint` 现在也会保留 `blockedKey`，不再只靠实现阅读旁证。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 visible-interaction 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey"` => `1 passed`
+- 2026-05-19 最新进展：已补 `response-window` 的 blocked feedback provenance。旧实现先把 `blockedKey` 保住，但若 emergency playerView 后仍是 `stale-private-overlay / missing-private-overlay`，fallback `RESPONSE_PASS` 最终仍会把 failure reason 吞成粗 `no_progress`。现已继续收紧为：`stateSnapshot/actionLog.blockerFingerprint` 保留 `blockedKey`，且 reason 直接落成 `private_overlay_stale / private_overlay_missing`，不再把 response-window 的 overlay 缺失/失配折叠成泛化 no-progress。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "response-window 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey|active-turn-legal-only 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey|seat-legal-only 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey"` => `3 passed`
+- 2026-05-19 最新进展：已补 `display-only-bonus` 的 runtime feedback provenance。human `main1` 遗留 AI `pendingBonusDiceSettlement(displayOnly)` 时，若 watchdog 代打 `SKIP_BONUS_DICE_REROLL` 失败，`stateSnapshot/actionLog.blockerFingerprint` 现在有 direct gate 锁住 `display-only-bonus:1:main1:display-only-bonus-feedback-1`，不再只靠 candidate 级 `fingerprintHint` 旁证。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "displayOnly pendingBonusDiceSettlement 若代打命令失败，反馈 blockerFingerprint 应保留 settlement id"` => `1 passed`
+- 2026-05-19 最新进展：已补 `seat-legal-only` 的 failure feedback provenance。`tryRecoverOnlineAiWithLegalAction()` 在 strict + emergency playerView 后仍 blocked 时，seat-legal-only failure 分支也会把 `blockedKey` 并回 candidate `fingerprintHint`，因此 `stateSnapshot/actionLog.blockerFingerprint` 不会只剩粗粒度 `seat-legal-only:${playerId}:${phase}`。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "seat-legal-only 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey"` => `1 passed`
+- 2026-05-19 最新进展：已补 `active-turn-legal-only` 的 failure feedback provenance。`tryRecoverOnlineAiWithLegalAction()` 现在会把 blocked `blockedKey` 带回运行时；当 strict + emergency playerView 后仍 blocked 时，legal-action-only failure 分支会把这格 provenance 并回 candidate `fingerprintHint`，从而让 `stateSnapshot/actionLog.blockerFingerprint` 不再丢失 `blockedKey`。
+- 2026-05-19 本轮补充验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "resolveOnlineAiRecoveryCandidate 在 tracker key 已漂移到旧窗口时，不应把 response-window 升级成 response-loop|resolveOnlineAiRecoveryCandidate 在 tracker 已进入 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window|active-turn-legal-only 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey"` => `3 passed`
+- 2026-05-19 最新进展：已补 `src/engine/transport/server.ts` 的 `response-loop` provenance，`resolveOnlineAiRecoveryCandidate()` 与 `runOnlineAiRecoverySequence()` 在 `response-window -> response-loop` 升级时都会把 `windowId/sourceId` 写进 `fingerprintHint`，避免 feedback/blockerFingerprint 把新窗口折回旧 incident。
+- 2026-05-19 本轮最小验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "resolveOnlineAiRecoveryCandidate 在 tracker key 已漂移到旧窗口时，不应把 response-window 升级成 response-loop|resolveOnlineAiRecoveryCandidate 在 tracker 已进入 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window"` => `2 passed`
+- 2026-05-19 新进展：已补 `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` 的 hidden-seat helper gate，锁定 `pendingInteractionId` 会触发 hidden seat inspection，且 `resolveForceSkippableHiddenAiInteraction()` 遇到 `skip` 会优先 force-skip，而“非控制项 + __cancel__”不会被自动取消。
+- 2026-05-19 本轮最小验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "pendingInteractionId 锁住响应窗口时|shared 当前交互还在时|resolveForceSkippableHiddenAiInteraction"` => `3 passed`
+- 2026-05-19 最新进展：已把 `interaction option signature` 与 `response-window queue signature` 并入 `src/engine/ai/onlineDecisionView.ts` 的 freshness / diagnostics，再由 `src/engine/ai/localRunner.ts` 合并进 blockedKey；同壳同 `id/source` 但候选集或 responderQueue 已变时，不再继续复用旧 cooldown。
+- 2026-05-19 最新验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/ai/__tests__/onlineDecisionView.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `15 passed`
+  - `git diff --check -- src/engine/ai/onlineDecisionView.ts src/engine/ai/localRunner.ts src/engine/ai/__tests__/onlineDecisionView.test.ts` => passed（仅 LF/CRLF warning）
+- 2026-05-19 新进展：已补 `src/games/summonerwars/__tests__/useGameEvents.rollback.test.tsx`，锁定 `useGameEvents` 在 optimistic rollback 后会清空旧 `diceResult`，恢复旧 `UNIT_ATTACKED` 不重播，只有后续新攻击事件才重新进入 UI；定向 vitest 已通过。
+- 2026-05-19 本轮最小验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/useGameEvents.rollback.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `1 passed`
+  - `git diff --check -- src/games/summonerwars/__tests__/useGameEvents.rollback.test.tsx` => passed
+- 已确认“有真实进展但像死循环”的直接原因不是代码没动，而是执行锚点分裂：
+  - 活跃 `goal.objective` 仍点名旧 `The Spy Who Ditched Me / waiting overlay` residual；
+  - 当前 worktree 根 `task_plan.md` 顶部仍是历史 `shayu` 任务；
+  - 真正最新的 operational target 在 `C:\Users\zhuagenbao\.codex\.omx\state\long-term-task\smashup-yuanhou-faction-effect-audit-2026-05-16.json` 的 `next_actions`。
+- 已确认这次“看起来又卡住”的另一个直接原因，是最新唯一红点其实来自测试口径错误，不是 transport/shared provenance 再次回退：`active-turn legal-action-recovered` 两条用例都应锁住初始 tracker marker，而不是最终 progress marker。
+- 已决定修正口径：
+  - 当前 worktree 的正式计划入口改由 `task_plan.md` 顶部新节接管；
+  - 后续继续推进时，一律以长期状态 JSON 为准，不再按旧 goal/task 顶部文案回扫已闭环对象级 family。
+- 2026-05-19 最新进展：已确认 `resolveOnlineAiRecoveryCandidate 在旧 response-loop tracker 仍指向旧 sourceId 时，应退回 response-window` 这条红灯不是 `server.ts` 新漏洞，而是测试夹具把“旧 sourceId”伪造错了。
+  - 旧用例用 `buildOnlineAiRecoveryFingerprint()` 去构造 `response-loop` 旧 tracker，helper 会按 live `match.state` 重新计算 fingerprint，把想注入的 `card-stale` 覆盖回当前 `card-live`，于是测试实际上种下的是“同一 incident”而不是“旧 sourceId incident”。
+  - 现已把该用例改成直接写入 literal stale tracker key：`1:response-loop:response-loop:1:main2:response-loop-stale-source-existing-tracker-1:afterCardPlayed:card-stale:1`，不再让 helper 把 source provenance 洗回 live state。
+- 2026-05-19 本轮最小验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "resolveOnlineAiRecoveryCandidate 在 tracker key 已漂移到旧窗口时，不应把 response-window 升级成 response-loop|resolveOnlineAiRecoveryCandidate 在 tracker key 已漂移到旧 responder 时，不应把 response-window 升级成 response-loop|resolveOnlineAiRecoveryCandidate 在 tracker key 已漂移到旧 sourceId 时，不应把 response-window 升级成 response-loop|resolveOnlineAiRecoveryCandidate 在旧 response-loop tracker 仍指向旧 responder 时，应退回 response-window 而不是继续 hard-close|resolveOnlineAiRecoveryCandidate 在旧 response-loop tracker 仍指向旧 sourceId 时，应退回 response-window 而不是继续 hard-close|resolveOnlineAiRecoveryCandidate 在 response-loop tracker 下若 responderQueue 重新带回 human，应退回 response-window 而不是继续 hard-close|resolveOnlineAiRecoveryCandidate 在 tracker 已进入 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window"` => `1 file passed, 7 passed`
+- 当前结论：
+  - 这次“像死循环”的最新一格并不是 shared transport 又退回，而是测试 helper 误把 stale source incident 重算成 live incident；
+  - `resolveOnlineAiRecoveryCandidate()` 这条 source-level gate 当前与实现语义一致，后续继续 shared transport completion audit 时，应回到 `hasOnlineAiRecoveryResolved()` / `tryRecoverOnlineAiWithLegalAction()` / overlay resync caller provenance 的剩余 live seam，不再围着这条假红重复扩样。
+- 当前动作：
+  - `useAnimationEffects` 的 rollback consumer gate 现已闭合，不再作为开放 residual；长期状态与 evidence 已同步承认 `src/games/dicethrone/__tests__/useAnimationEffects.rollback.test.tsx` => `1 passed`。
+  - 当前 active work item 已切回 `src/engine/transport/server.ts` 的 caller/resolved provenance：本轮刚补齐 `hasOnlineAiRecoveryResolved()` 的 `seat-legal-only sibling gate`，确认同一 AI 只是从 `active-turn / visible-interaction / hidden-interaction / response-window / response-loop` 切到 `seat-legal-only` 时仍不算 resolved。
+  - 最新验证：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "seat-legal-only sibling gate|active-turn 即使已切到同一 AI 的|response-window 即使窗口已关闭，只要同一 AI 已切到 seat-legal-only|response-loop 即使窗口已关闭，只要同一 AI 已切到 seat-legal-only|visible-interaction 即使 shared prompt 已离开，只要同一 AI 已切到 seat-legal-only|hidden-interaction 即使 shared/seat view 都已收口，只要同一 AI 已切到 seat-legal-only"` => `1 file passed, 9 passed`
+    - `git diff --check -- src/engine/transport/__tests__/server.test.ts progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` => passed（仅 LF/CRLF warning）
+  - 目标是把“同一 AI 只是换 surface，不等于 resolved”从 generic branch 旁证升级成 direct gate。
+  - 已把 `MatchRoom.resolveManualOnlineAiRecovery()` 的 blocked -> seat resync caller 逻辑抽成纯 helper `resolveManualBlockedOnlineAiSeatResync()`，并在 `matchSeatValidation.test.ts` 里补直测，确认 `blockedKey / blockedReason` 会原样进入 resync meta，而 `blockedKey=null` 时返回 `null`。
+  - 聚焦验证：`node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "seat resync 请求|原样保留 blockedKey"` => `2 passed | 104 skipped`
+  - 已继续落一格 direct gate 到 `src/engine/ai/onlineDecisionView.ts` / `src/engine/ai/localRunner.ts`：
+    - 不再凭想象把 `title/options` 塞进 freshness fingerprint；
+    - 改为把 `interactionId/kind/sourceId` 与 `responseWindow id/type/sourceId/responder` 写进 `ResolvedOnlineAiDecisionView.diagnostics`，并并入 `blockedKey`；
+    - 新增 `src/engine/ai/__tests__/onlineDecisionView.test.ts` 2 条直测，锁定 `blockedKey` 会携带 interaction semantic fingerprint，且 `sourceId` 漂移时即使 `turn/phase/currentPlayer/eventStream` 不变也会换键。
+  - 当前最小验证：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/engine/ai/__tests__/onlineDecisionView.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `9 passed`
+    - `git diff --check -- src/engine/ai/onlineDecisionView.ts src/engine/ai/localRunner.ts src/engine/ai/__tests__/onlineDecisionView.test.ts` => 仅既有 LF/CRLF warning，无 diff 空白错误
+  - 进一步补到 `src/engine/transport/onlineAiRecovery.ts` / `src/engine/transport/server.ts`：
+    - `buildInteractionRecoveryFingerprintHint()` 现在把 simple-choice 的 option signature 也并入 fingerprintHint；
+    - `buildOnlineAiRecoveryFingerprint()` 的 simple-choice 分支同步吃 `interactionId + option signature`，避免 visible simple-choice 在同 sourceId/title/min/count 下换帧后仍复用旧 tracker；
+    - `src/engine/transport/__tests__/server.test.ts` 新增 hidden-interaction option signature drift 与 visible simple-choice interactionId drift 两条直测，确认旧 tracker / recovery fingerprint 都会随 prompt 语义变化而换键；
+    - 又补一条 runtime gate：`online AI watchdog 在 visible-interaction 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须丢弃旧 tracker`，把这格从纯 fingerprint 直测推进到 `runOnlineAiRecoveryTick()` 真序列证据；
+  - 新最小验证：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"hidden-interaction 候选 fingerprint 漂移到新的 hidden prompt|online AI watchdog 在 hidden-interaction 的 sourceId/title/count 相同但 option signature 漂移时，也必须丢弃旧 tracker|buildOnlineAiRecoveryFingerprint 在 visible simple-choice 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须变化|visible-interaction|response-window|response-loop\"` => `22 passed | 136 skipped`
+    - `NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"visible-interaction 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须丢弃旧 tracker\"` => `1 passed | 163 skipped`
+  - 又继续往非 simple-choice prompt kind 下钻一格：
+    - `buildOnlineAiRecoveryFingerprint()` 的 `dt:card-interaction` 旧实现只看 `type/targetCount/requiresStatus/transferStatusId`，没带 `interactionId`，会把同语义但已换 frame 的新 prompt 继续误认成旧 tracker；
+    - 已在 `src/engine/transport/__tests__/server.test.ts` 先补红灯 `buildOnlineAiRecoveryFingerprint 在 dt:card-interaction 的 type/target/status 相同但 interactionId 漂移时，也必须变化`，确认缺口真实存在；
+    - 随后在 `src/engine/transport/server.ts` 把 `interactionId` 并入 `dt:card-interaction` fingerprint，并复跑同组直测转绿。
+  - 当前补充验证：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"buildOnlineAiRecoveryFingerprint 在 dt:card-interaction 的 type/target/status 相同但 interactionId 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 visible simple-choice 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须变化|DiceThrone afterCardPlayed 存在 pendingInteractionId 锁但 seat view 没有 hidden interaction 时，应回落到 RESPONSE_PASS\"` => `3 passed | 156 skipped`
+    - `node scripts/infra/vitest-cli-safe.mjs run src/engine/ai/__tests__/onlineDecisionView.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` => `9 passed`
+    - `NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"online AI watchdog 在 dt:card-interaction 的 type/target/status 相同但 interactionId 漂移时，也必须丢弃旧 tracker\"` => `1 passed | 165 skipped`
+  - 又沿同一条 fingerprint 线下钻到 `response-window / response-loop`：
+    - 旧 `buildOnlineAiRecoveryFingerprint()` 的响应窗口分支只看 `windowType/sourceId/queueSignature`，没带 `window id`，会把同来源同响应队列但已换 frame 的新窗口继续误认成旧 tracker；
+    - 已在 `src/engine/transport/server.ts` 把 `window id` 并入 `response-window / response-loop` fingerprint；
+    - `src/engine/transport/__tests__/server.test.ts` 新增 `buildOnlineAiRecoveryFingerprint 在 response-window 的 type/source/queue 相同但 window id 漂移时，也必须变化`。
+  - 最新聚焦验证：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"buildOnlineAiRecoveryFingerprint 在 response-window 的 type/source/queue 相同但 window id 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 dt:card-interaction 的 type/target/status 相同但 interactionId 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 visible simple-choice 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须变化|DiceThrone afterCardPlayed 存在 pendingInteractionId 锁但 seat view 没有 hidden interaction 时，应回落到 RESPONSE_PASS\"` => `4 passed | 156 skipped`
+  - 同分支的 `response-loop` 也补成 direct gate：
+    - `src/engine/transport/__tests__/server.test.ts` 新增 `buildOnlineAiRecoveryFingerprint 在 response-loop 的 type/source/queue 相同但 window id 漂移时，也必须变化`，不再只靠“和 response-window 共享实现”旁证；
+    - 聚焦复跑 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"buildOnlineAiRecoveryFingerprint 在 response-loop 的 type/source/queue 相同但 window id 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 response-window 的 type/source/queue 相同但 window id 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 dt:card-interaction 的 type/target/status 相同但 interactionId 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 visible simple-choice 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须变化|DiceThrone afterCardPlayed 存在 pendingInteractionId 锁但 seat view 没有 hidden interaction 时，应回落到 RESPONSE_PASS\"` => `5 passed | 156 skipped`
+  - 又把这层 `rw window id` 语义接到了真正的 overlay resync caller 上：
+    - `src/engine/transport/__tests__/server.test.ts` 新增 `online AI watchdog 在 response-window id 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉`；
+    - 这条不改实现，只证明这轮新补的 `blockedKey` 里的 `rw:` 片段会像 `interaction` 片段一样，真正参与 resync 冷却键判定；
+    - 聚焦复跑 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"online AI watchdog 在 response-window id 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|online AI watchdog 遇到同 seat 的新 blockedKey 时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|buildOnlineAiRecoveryFingerprint 在 response-loop 的 type/source/queue 相同但 window id 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 response-window 的 type/source/queue 相同但 window id 漂移时，也必须变化|DiceThrone afterCardPlayed 存在 pendingInteractionId 锁但 seat view 没有 hidden interaction 时，应回落到 RESPONSE_PASS\"` => `5 passed | 157 skipped`
+  - completion audit 继续发现 `buildOnlineAiRecoveryFingerprint()` 里 `pending-damage` 分支虽有实现，但当前 worktree 没有最小 direct gate：
+    - 已在 `src/engine/transport/__tests__/server.test.ts` 新增 `buildOnlineAiRecoveryFingerprint 在 pending-damage 的 responder/responseType 相同但 pending id 漂移时，也必须变化`；
+    - 这条不改实现，直接转绿，说明当前是审计覆盖缺口而不是实现 bug；
+    - 聚焦复跑 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"buildOnlineAiRecoveryFingerprint 在 pending-damage 的 responder/responseType 相同但 pending id 漂移时，也必须变化|online AI watchdog 在 response-window id 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|buildOnlineAiRecoveryFingerprint 在 response-loop 的 type/source/queue 相同但 window id 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 response-window 的 type/source/queue 相同但 window id 漂移时，也必须变化\"` => `4 passed | 159 skipped`
+  - completion audit 又补到 manual recovery 的 response-window 诊断 provenance：
+    - `resolveManualForceEndAiPhase()` 的 `response-window` 分支会把 `candidate.fingerprintHint` 直接写进后续 snapshot/actionLog 的 `blockerFingerprint`；
+    - 旧实现只写 `manual-response-window:${responderId}:${windowType}:${sourceId}`，没带 `windowId`，会把同 `windowType/sourceId` 但已换 frame 的手动强制关窗折叠成同一 blocker；
+    - 现已在 `src/engine/transport/onlineAiRecovery.ts` 把 `fingerprintHint` 收紧到 `manual-response-window:${responderId}:${windowType}:${sourceId}:${windowId}`，并在 `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` 的 `纯 AI 响应窗口中，手动强制结束应直接强制关闭响应窗口` 里同时锁定 `fingerprintHint` 与 `resolution.attemptKey`；
+    - 聚焦验证：`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "纯 AI 响应窗口中，手动强制结束应直接强制关闭响应窗口"` => `1 passed | 18 skipped`
+    - `git diff --check -- src/engine/transport/onlineAiRecovery.ts src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` => passed（仅 LF/CRLF warning）
+  - completion audit 再补一格 client caller provenance：
+    - `MatchRoom.resolveManualOnlineAiRecovery()` 之前只测了 `force-end-turn` 和 `legal-action` 两条返回路径，没有单独锁住 `blocked` 分支会不会把 `blockedKey / blockedReason` 原样交还给 `forceEndAiPhase -> requestSeatResync`；
+    - 现已在 `src/pages/__tests__/matchSeatValidation.test.ts` 新增 `手动强制结束在无 manual candidate 且 AI 决策被 blocked 时，应原样保留 blockedKey 与 blockedReason`；
+    - 聚焦验证：`node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "手动强制结束在无 manual candidate 且 AI 决策被 blocked 时，应原样保留 blockedKey 与 blockedReason"` => `1 passed | 104 skipped`
+    - 验证尾部有若干 `socket hang up` 噪音日志，但测试文件本身保持 `1 passed`，当前没有证据表明这条 helper gate 失败或回退
+  - completion audit 顺手清掉两条会反复诱导误判的“假目标”：
+    - 当前 worktree 里 `pending-damage` 与 `action-loop` 只剩 `server.ts` 的 fingerprint / 诊断兼容分支，没有在 `resolveForceEndTurnForStalledAi()`、`resolveManualForceEndAiPhase()` 或 `resolveManualOnlineAiRecovery()` 中找到 live candidate producer；
+    - 其中 `server.test.ts` 原有 `resolveForceEndTurnForStalledAi（action-loop）/ 重复交替动作循环应触发 action-loop 兜底` 标题与实际断言已经漂移，真实断言一直是 `active-turn -> ADVANCE_PHASE`；
+    - 现已把标题改成 `legacy action-loop residual`，明确这格当前是历史兼容/审计残枝，不再作为 shared transport 主线 residual 继续追。
+  - 又补一格 generic interaction source provenance：
+    - `buildOnlineAiRecoveryFingerprint()` 的 generic `visible/hidden interaction` fallback 现已至少带上 `sourceId`，不再把 compare-roll 这类非 simple-choice 交互压成只有 `kind + interactionId` 的粗键；
+    - 新增 `buildOnlineAiRecoveryFingerprint 在 compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化`；
+    - 聚焦验证：`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化|visible simple-choice 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须变化|dt:card-interaction 的 type/target/status 相同但 interactionId 漂移时，也必须变化"` => `1 file passed, 3 passed`
+  - 又补一格 DiceThrone defender provenance：
+    - `dt:defender-choice` 现已改成专门 fingerprint，显式带 `interactionId + defenderId + attackerId + targetRollValue + sourceId`；
+    - 新增 `buildOnlineAiRecoveryFingerprint 在 dt:defender-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化`；
+    - 聚焦验证：`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "dt:defender-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化|compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化|dt:card-interaction 的 type/target/status 相同但 interactionId 漂移时，也必须变化"` => `1 file passed, 3 passed`
+  - `dt:defender-choice` 又补成 runtime direct gate：
+    - 这条和 compare-roll 不同，当前 `onlineAiRecovery.ts` 的 visible-interaction fallback 确实会对它走 `SYS_INTERACTION_CANCEL`；
+    - 现已新增 `online AI watchdog 在 dt:defender-choice 的 interactionId 相同但 sourceId 漂移时，也必须丢弃旧 tracker`，显式锁住第一次 cancel 后若现场立即换成同 `interactionId` 但 `sourceId=attack-tip-b` 的新 defender prompt，watchdog 会删除旧 tracker、停止沿旧 incident 继续恢复，也不误上报 feedback；
+    - 聚焦验证：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 dt:defender-choice 的 interactionId 相同但 sourceId 漂移时，也必须丢弃旧 tracker"` => `1 passed | 169 skipped`
+  - 再把 `legalActionOnly` sibling-family resolved gate 补全到 `hidden-interaction / response-loop`：
+    - 这条 resolved gate 的实现本身是 generic 的，但直测原来只锁了 `visible-interaction / response-window`；
+    - 现已补 `hidden-interaction` 与 `response-loop` 两条 direct gate，确认同一 AI 只要还在 blocker 家族里就不算 resolved；
+    - 聚焦验证：`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "legalActionOnly 即使已切到同一 AI 的 hidden-interaction|legalActionOnly 即使已切到同一 AI 的 response-loop|legalActionOnly 即使已切到同一 AI 的 visible-interaction|legalActionOnly 即使已切到同一 AI 的 response-window"` => `1 file passed, 4 passed`
+  - 已清掉一条会把当前 worktree 继续拖成红态的假 blocker：
+    - 新加的 `online AI watchdog 在 compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须丢弃旧 tracker` runtime gate 复现后确认 `executed=[]`，不是偶发抖动；
+    - 根因不是实现回退，而是 compare-roll 当前并不属于 watchdog 的可执行 recovery family，这条测试错误地把 fingerprint provenance 预期成了 `SYS_INTERACTION_RESPOND` runtime 恢复；
+    - 现已删除这条不成立的 runtime gate，仅保留已经转绿的 `buildOnlineAiRecoveryFingerprint 在 compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化` direct gate，避免下轮再把 compare-roll 误当 live recovery 主线；
+    - 复跑：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "compare-roll-choice 的 interactionId 相同但 sourceId 漂移时，也必须变化|dt:card-interaction 的 type/target/status 相同但 interactionId 漂移时，也必须变化|visible-interaction 的 sourceId/title/option signature 相同但 interactionId 漂移时，也必须丢弃旧 tracker"` => `3 passed | 166 skipped`
+
+---
+
 ## Session: 2026-05-12 SmashUp shayu 通用入口矩阵补强与全量重审
 
 - **Status:** in_progress
@@ -1819,3 +2315,4065 @@
 - 重新运行类型检查：`npm run typecheck -- --pretty false` -> passed（npm 输出 unknown cli config --pretty 警告，不影响 tsc 结果）。
 - 重新运行 diff 空白检查：相关文件 `git diff --check` exit 0，仅 `progress.md` 保留 LF->CRLF 工作区警告。
 - 当前可宣称范围仍限定为：39 卡 + 6 基地 P0/P1 交互入口矩阵全量重审完成；没有新增浏览器 E2E 截图，不能宣称逐对象全量 L3 E2E 收口。
+
+## 2026-05-17 SmashUp yuanhou shared overlay residual 复核
+- `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/latency/__tests__/optimisticEngine.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "processCommand 不得污染上一帧 authoritative state 引用"` -> 1 passed / 29 skipped。
+- `PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-yuanhou-spy-ditched-mp BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-The Spy Who Ditched Me-真实多客户端下应只在目标玩家页面给出弃随从选择权"` -> 1 passed。
+- 现场核对：Host 非目标页未出现 `抛弃我的间谍` 标题或中央 waiting overlay，只保留正常棋盘与右侧等待区；Guest 页面出现真实弃随从 prompt，服务端权威状态只弃 `minion-b`，`interaction.current==null`。
+
+## 2026-05-17 SmashUp yuanhou Time Raider 边界补强
+- 在 `src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` 追加两条 `Time Raider` L2：单候选自动把唯一弃牌放到牌库底且不弹 prompt；空弃牌时返回 `feedback.discard_empty` 且不创建 prompt。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间掠夺者"` -> `3 passed / 145 skipped`。
+- 已回写 `evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md`：`time_travelers_time_raider.choose_discard_card` / `bottom_selected_card` 不再把单候选与空弃牌记为 residual，当前只剩多候选浏览器 scoped L3 分支。
+
+## 2026-05-17 SmashUp yuanhou Repeater Perfect 边界补强
+- 在 `src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` 追加两条 `Repeater Perfect` L2：单行动自动把唯一弃牌放到牌库顶且不弹 prompt；空弃牌时返回 `feedback.discard_empty` 且不创建 prompt。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "往复时间者"` -> `4 passed / 147 skipped`。
+
+## 2026-05-18 SmashUp yuanhou Repeater Perfect 单行动自动分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:10582>) 新增单页真实入口 E2E：
+  - `时间旅行者-Repeater Perfect-弃牌堆只剩一张行动时真实入口应自动放到牌库顶且不弹 prompt`
+- 目标边界：
+  - 不再只证明 `Repeater Perfect` 在混合弃牌堆里会弹出两张行动候选，并允许玩家选择第二张行动放到牌库顶。
+  - 明确锁定“弃牌堆里只剩 1 张行动”时，真实入口不会再弹 `time_travelers_repeater_perfect_choose` prompt，而是直接把那张唯一行动自动顶到牌库顶。
+- 测试做法：
+  - 复用 Portal Room 单页场景：P0 手牌里只有 `Repeater Perfect`，弃牌堆里有 1 张行动 `Time Walk` 和 1 张随从。
+  - 先截图保留真实起点，确认手牌区是 `Repeater Perfect`、弃牌堆里确实只有 1 张行动可回收。
+  - 打出 `Repeater Perfect` 到基地后，直接断言 `interaction.current==null`、`deck=['repeater-single-discard-action','repeater-single-deck-a']`、`discard` 只剩随从，并确认页面没有对应 option 节点。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-repeater-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Repeater Perfect-弃牌堆只剩一张行动时真实入口应自动放到牌库顶且不弹 prompt"` -> `1 passed`
+- 实际看图结论：
+  - 起始图里手牌区能直接看到 `Repeater Perfect`，右下弃牌堆里直接可见唯一行动 `Time Walk` 本体，说明这不是“弃牌全空”或“多行动 prompt 还没弹”的别的分支。
+  - 收口图里中央没有任何选择 prompt，`Portal Room` 上只剩刚打出的 `Repeater Perfect`，弃牌堆角标从 `2` 变成 `1`；结合状态断言可确认唯一行动已自动进牌库顶，而不是被留在弃牌堆。
+- 关键结论：
+  - `time_travelers_repeater_perfect.choose_discard_action` 的浏览器证据已从“只覆盖多候选选择第二张行动”升级成“多候选选择 + 单行动自动分支”。
+  - `time_travelers_repeater_perfect.top_selected_action` 当前也不再只靠多候选正向选择支撑；唯一行动自动顶牌现在同样有真实 UI 证据。空弃牌 feedback 仍由 L2 守门。
+
+## 2026-05-18 SmashUp yuanhou Time Raider 单候选自动沉底分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:11071>) 新增单页真实入口 E2E：
+  - `时间旅行者-Time Raider-弃牌堆只剩一张牌时真实入口应自动放到牌库底且不弹 prompt`
+- 目标边界：
+  - 不再只证明 `Time Raider` 在有两张弃牌时会弹出可选 prompt，并允许玩家选择 `Time Walk` 沉到底。
+  - 明确锁定“弃牌堆只剩 1 张牌”时，真实天赋入口不会弹 `time_travelers_time_raider_choose` prompt，而是直接把这张唯一弃牌自动沉到底。
+- 测试做法：
+  - 复用 Portal Room 单页场景：P0 场上已有 `Time Raider`，弃牌堆里只有 1 张 `Time Walk`。
+  - 先截图保留真实起点，确认 `Time Raider` 尚未标记“已用”，弃牌堆里确实只剩 1 张牌。
+  - 点击 `Time Raider` 天赋后，直接断言 `interaction.current==null`、`deck=['raider-single-deck-a','raider-single-discard-card']`、`discard=[]`、`talentUsed===true`，同时页面不存在对应 option 节点。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-raider-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Time Raider-弃牌堆只剩一张牌时真实入口应自动放到牌库底且不弹 prompt"` -> `1 passed`
+- 实际看图结论：
+  - 起始图里能直接看到场上的 `Time Raider` 与右下弃牌堆里的唯一弃牌 `Time Walk` 本体，说明这不是空弃牌或多候选 prompt 的别的分支。
+  - 收口图里中央没有任何选择 prompt，`Time Raider` 本体已经显示“已用”，右下弃牌堆角标从 `1` 变成 `0`；结合状态断言可确认唯一弃牌已自动进牌库底。
+- 关键结论：
+  - `time_travelers_time_raider.choose_discard_card` 的浏览器证据已从“只覆盖多候选选择分支”升级成“多候选选择 + 单候选自动分支”。
+  - `time_travelers_time_raider.bottom_selected_card` 当前也不再只靠多候选正向选择支撑；唯一弃牌自动沉底现在同样有真实 UI 证据。空弃牌 feedback 仍由 L2 守门。
+- 已回写 `evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md`：`time_travelers_repeater_perfect.choose_discard_action` / `top_selected_action` 不再把单行动与空弃牌记为 residual，当前只剩混合弃牌堆浏览器 scoped L3 分支。
+
+## 2026-05-17 SmashUp yuanhou Moon Zero Three 口径修正
+- 在 `src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` 追加 `Moon Zero Three` L2：没有任何可查看牌库时，validator 直接拒绝天赋，不会创建 prompt。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "三号空间站"` -> `3 passed / 154 skipped`。
+- 已回写 `evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md`：`super_spies_moon_zero_three.talent_top_bottom` 的“空牌库反馈”旧口径作废，改成 validator 拒绝 + L2 锁定。
+
+## 2026-05-17 SmashUp yuanhou ISI optional-pass cleanup
+- 定位：`ISI 摇摆据点` 的 `pass` 分支不是单卡语义错，而是 shared `smashup_reaction_choose` runtime prompt 在 `resolved.events=[]` 时仍把 `resolved.state.core` 回退成旧 `state.core`，导致 `triggerQueue` 与 stale prompt 被重新带回。
+- 修复：
+  - `src/games/smashup/domain/reactionSession.ts`：`registerAbilityRuntimePrompt('smashup_reaction_choose')` 只在存在待重放事件时才回退 `core`。
+  - `src/games/smashup/domain/systems.ts`：保留 `reaction_choose` 在无 emitted events 分支下的真实 `result.state`，避免再次丢失 pass 收口后的 core 变化。
+  - `src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts`：把 `超级间谍基地：ISI摇摆据点真实计分后可跳过响应并正常继续收口` 升级为检查 `interaction.current == null`、`responseWindow.current == null`、`triggerQueue` 已清空，并将最终权威状态对齐为 `P1/playCards`。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "超级间谍基地：ISI摇摆据点真实计分后可跳过响应并正常继续收口|时间旅行者：虫洞后全员让过会消费未选择的传送门室触发并收口"` -> `2 passed / 158 skipped`。
+  - `PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-yuanhou-isi-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-ISI摇摆据点-真实计分后跳过响应仍应完成收口并保留赢家牌库顺序"` -> `1 passed`。
+- 看图结论：
+  - `yuanhou-isi-swingin-pad-response-skip-choice.png`：真实 afterScoring 入口显示 `ISI摇摆据点 / 让过`，证明 pass 分支来自真实响应窗。
+  - `yuanhou-isi-swingin-pad-response-skip-resolved.png`：中央 prompt 消失、桌面恢复下一位玩家 `出牌阶段` 与 `结束回合`，不再残留 stale `smashup_reaction_choose`。
+
+## 2026-05-17 SmashUp yuanhou Time Is Fleeting 多客户端归属补证
+
+- 在 [e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts:984>) 新增：`时间旅行者-Time Is Fleeting-真实多客户端下赢家不是当前回合玩家时应只给赢家页面弃牌堆基地选择权`。
+- 目标边界：
+  - 不再只证明单页当前玩家分支。
+  - 真实验证 `winner != currentPlayer` 时，afterScoring 响应权是否只落在赢家页。
+  - 同时收口 `choose_base_from_discard` 与 `replace_new_base` 在多客户端赢家页分支上的浏览器证据。
+- 定向验证：
+  - `PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-yuanhou-time-fleeting-mp BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "时间旅行者-Time Is Fleeting-真实多客户端下赢家不是当前回合玩家时应只给赢家页面弃牌堆基地选择权"` -> `1 passed`。
+- 看图结论：
+  - `yuanhou-time-is-fleeting-winner-prompt-guest.png`：赢家 Guest 页出现 `时间流逝 / 让过`，且手牌里可直接看到 `Time Is Fleeting` 本体。
+  - `yuanhou-time-is-fleeting-current-player-no-choice-host.png`：当前回合玩家 Host 页没有 `时间流逝` 按钮，只显示等待 Guest 响应，说明选择权未镜像到错误页面。
+  - `yuanhou-time-is-fleeting-discard-base-choice-guest.png`：Guest 页只列 `The Vats / Faceless City / The Nexus` 三个基地弃牌堆候选，不含本次刚计分的 Monkey Lab。
+  - `yuanhou-time-is-fleeting-replaced-base-resolved-guest.png`：选择 `Faceless City` 后进入 P1 `出牌阶段`，原 Monkey Lab 已被 Faceless City 替换，右侧 `结束回合` 按钮恢复。
+
+## 2026-05-17 SmashUp yuanhou Wormhole 空选口径纠偏
+
+- `时间旅行者：虫洞空选时应让所有己方随从按正常计分清场进入弃牌堆` 的红灯不是业务实现缺口，而是旧断言把 `Portal Room` 后续额外回合的 `draw 2` / 弃牌洗回牌库链，误判成了 `Wormhole` 的“空选偷偷变全选”。
+- 重新定位时看到的关键事实：
+  - `playWormhole` 后，`wormhole-a` 已真实进 P0 discard，场上三只随从仍在，当前交互进入 `time_travelers_wormhole_choose`。
+  - `optionIds: []` 响应后，`chooseNone.events` 只有 `SYS_INTERACTION_RESOLVED(value=[])`，没有任何 `Wormhole` 领域事件。
+  - 真正把 `wormhole-a` 从 discard 再带回手牌的是 `Portal Room` 额外回合的后续 `draw 2`：牌库只剩 `deck-a` 时，系统先摸 `deck-a`，再把 discard reshuffle 成 `su:deck_reshuffled(deckUids=[wormhole-a,jumper-a,raider-a])` 并继续摸第二张 `wormhole-a`。
+- 已把 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:7963>) 的空选断言改成真正校验语义位点：
+  - `chooseNone.events` 不产生任何非 `SYS_*` 的 `Wormhole` 领域事件；
+  - `passPortalRoom.events` 中不存在 `su:card_to_deck_bottom(jumper-a/raider-a)`，也不存在 `su:deck_reordered(reason:'time_travelers_wormhole')`；
+  - 基地仍正常清场并替换为 `Faceless City`。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "虫洞"` -> `4 passed / 160 skipped`。
+- 结论：`Wormhole` 的空选/全选边界这轮没有发现新实现 bug；本次收掉的是一条被后续抽牌链污染过的错误测试口径。
+
+## 2026-05-17 SmashUp yuanhou Time Is Fleeting 单候选自动分支补强
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:5833>) 追加两条 `Time Is Fleeting` L2：
+  - 基地弃牌堆过滤后只剩 1 个合法候选时，special 直接 `BASE_DECK_REORDERED(reason:'time_travelers_time_is_fleeting')`，不创建 prompt。
+  - 真实 `scoreBases` 链上若只剩 1 个合法候选，打出 `Time Is Fleeting` 后不弹第二层 `time_travelers_time_is_fleeting_choose`，而是直接把 scored base 替换为该唯一候选。
+- 定向验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间流逝"` -> `5 passed / 162 skipped`。
+- 已回写 `evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md`：`time_travelers_time_is_fleeting.choose_base_from_discard` / `replace_new_base` 不再把单候选自动分支记成 residual，当前只剩多 special 排序。
+
+## 2026-05-17 SmashUp yuanhou Time Is Fleeting 多 special 排序闭合
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:6058>) 追加 L2：`时间旅行者：时间流逝在同一计分响应窗先结算后，仍应继续保留虫洞 special 入口`。
+- 目标边界：
+  - 不再只证明 `Time Is Fleeting` 自己能进 `time_travelers_time_is_fleeting_choose`。
+  - 明确锁定“同一 afterScoring 响应窗里先打 `Time Is Fleeting` 后，reaction session 还能把后续 `Wormhole` special 重新给回来”。
+  - 顺带验证 `replace_new_base` 与 `Wormhole` 的清场/洗回牌库效果不会互相吞掉。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间旅行者：时间流逝在同一计分响应窗先结算后，仍应继续保留虫洞 special 入口"` -> `1 passed / 167 skipped`。
+  - 随后复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间流逝"` -> `6 passed / 162 skipped`。
+- 关键结论：
+  - prompt 序列稳定为 `smashup_reaction_choose -> time_travelers_time_is_fleeting_choose -> smashup_reaction_choose -> time_travelers_wormhole_choose`。
+  - 最终状态为 `bases[0].defId='base_faceless_city'`、`P0 deck=['deck-rest','traveler-a']`、`P0 discard=['time-fleeting-a','wormhole-a','winner-a']`、`P1 discard=['enemy-a']`。
+  - `Time Is Fleeting` 对象级 residual 不再单独保留“多 special 排序”；后续只把更广泛的跨玩家/跨 frame reaction 排序继续留给 shared contract 审核。
+
+## 2026-05-17 SmashUp yuanhou Clyde 2.0 owner/controller 分离收紧
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:3035>) 追加两条 L2：
+  - `电子猿：克莱德2.0选择收入手牌时，敌方拥有的附着行动也应进入克莱德控制者手牌`
+  - `电子猿：克莱德2.0选择进入弃牌堆时，敌方拥有的附着行动应回到其拥有者弃牌堆`
+- 目标边界：
+  - 不再只证明 owner=controller 的常规两按钮分支。
+  - 明确锁定 `ownerId !== clyde.controller` 时，`returnToHand:true` 与 `returnToHand:false` 各自进区正确。
+- 测试做法：
+  - 直接用 `processClydeDetachChoices()` 为 `ownerId='1' / host.controller='0' / clyde.controller='0'` 造出真实 `cyborg_apes_clyde_2_0_detach` prompt。
+  - 随后仍走原始 `cyborg_apes_clyde_2_0_detach` handler + `ONGOING_DETACHED` reducer 收口，不伪造最终区结果。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "克莱德2.0选择收入手牌时，敌方拥有的附着行动也应进入克莱德控制者手牌|克莱德2.0选择进入弃牌堆时，敌方拥有的附着行动应回到其拥有者弃牌堆"` -> `2 passed / 168 skipped`
+  - 随后复跑 `... -t "克莱德2.0|灵长公园阻止这里随从身上的行动在离场时被 Clyde 2.0 收回手牌"` -> `5 passed / 165 skipped`
+- 关键结论：
+  - `returnToHand:true` 时 `foreign-shield` 进入 P0 hand，不进 P1 hand/discard。
+  - `returnToHand:false` 时 `foreign-shield` 进入 P1 discard，不进 P0 hand/discard。
+  - `cyborg_apes_clyde_2_0.may_put_it_into_your_hand_instead` 不再把 owner/controller 分离继续挂成 residual。
+
+## 2026-05-17 SmashUp yuanhou Missing Uplink residual 继续收紧
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:2949>) 追加两条 `Missing Uplink` L2：
+  - `电子猿：丢失中继在牌库不足时应先抽旧牌库顶部再洗弃牌续抽`
+  - `电子猿：丢失中继在多 owner 混挂时只聚合当前拥有者的实例`
+- 目标边界：
+  - 不再只证明“同 owner 的多实例会多抽”。
+  - 明确锁定 `buildStandardDrawEvents()` 在 owner turn-end 聚合链里遇到空牌库时，会先消费旧牌库顶部，再把 discard reshuffle 进 deck 继续抽。
+  - 同时锁定 action `ownerId` 才是聚合维度，即使两张 `Missing Uplink` 混挂在同一名敌方宿主身上，也只会在各自 owner 的回合结束时分别触发。
+- 测试做法：
+  - 牌库不足分支用 `deck=[deck-a] + discard=[discard-a,discard-b] + 2 张 Missing Uplink`，并给 `shuffle()` 固定 reverse，直接断言事件顺序为 `DECK_RESHUFFLED -> CARDS_DRAWN`，抽牌 uid 为 `['deck-a','discard-b']`。
+  - 多 owner 分支把 `ownerId=0/1` 的两张 `Missing Uplink` 混挂在同一名 `controller=1` 的宿主上，分别触发 `playerId='0'` 与 `playerId='1'` 的 `onTurnEnd`，确认只给对应 owner 抽 1。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "丢失中继|Missing Uplink"` -> `5 passed / 167 skipped`
+- 关键结论：
+  - `cyborg_apes_missing_uplink.owner_turn_end_draw_one_per_instance` 不再把“牌库不足洗弃牌”或“多 owner 混挂”继续挂成 residual。
+  - 当前只剩 scoped L3 外层边界：多客户端视角与更广的回合边界仍未外推完成。
+
+## 2026-05-17 SmashUp yuanhou Secret Volcano Headquarters residual 继续收紧
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:5190>) 追加两条 `Secret Volcano Headquarters` L2：
+  - `超级间谍基地：秘密火山总部在双方都翻出随从时应把两张展示随从都打到这里`
+  - `超级间谍基地：秘密火山总部在双方都翻出行动时不应把任何牌打到这里`
+- 目标边界：
+  - 不再只证明“P0 翻随从 / P1 翻行动”的混合单分支。
+  - 明确锁定 `baseSecretVolcanoHeadquarters()` 的 reveal 过滤规则：每位玩家都要 reveal 顶 1 张，但只有 reveal 出来的随从才允许进入 `MINION_PLAYED(fromDeck:true)`。
+- 测试做法：
+  - “双方都翻随从”分支直接断言 `REVEAL_DECK_TOP * 2 + MINION_PLAYED * 2`，最终基地上同时出现 `p0-minion-a/p1-minion-a`，双方牌库各自少掉 1 张顶牌。
+  - “双方都翻行动”分支断言仍有 2 次 `REVEAL_DECK_TOP`，但完全没有 `MINION_PLAYED`，基地保持空场，双方牌库顺序完全不变。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "秘密火山总部|Secret Volcano Headquarters"` -> `3 passed / 171 skipped`
+- 关键结论：
+  - `base_secret_volcano_headquarters.reveal_one_each_player_then_play_revealed_minions_here` 不再把“双方都翻随从 / 双方都翻行动”继续挂成 residual。
+  - 当前只剩多人局 `turnOrder` 扩展与真实 reveal 可见性边界仍未外推。
+
+## 2026-05-17 SmashUp yuanhou Secret Volcano Headquarters 三人 turnOrder 扩展已锁定
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:5244>) 追加一条 3 人局 `Secret Volcano Headquarters` L2：
+  - `超级间谍基地：秘密火山总部在三人 turnOrder 下应按顺序让每位玩家各展示一张并只打出其中的随从`
+- 目标边界：
+  - 不再只证明两人局 `turnOrder=['0','1']`。
+  - 明确锁定 base ability 会按 `turnOrder` 逐个处理所有玩家，而不是只处理前两名玩家或把 reveal 顺序打乱。
+- 测试做法：
+  - 夹具设为 `turnOrder=['0','1','2']`，其中 P0 顶牌是随从、P1 顶牌是行动、P2 顶牌是随从。
+  - 直接读取 `REVEAL_DECK_TOP.payload.targetPlayerId`，断言 reveal 顺序稳定为 `['0','1','2']`。
+  - 最终状态断言基地上只出现 `p0-minion-a/p2-minion-a` 两张展示随从，P1 顶牌行动仍完整留在牌库首位。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "秘密火山总部|Secret Volcano Headquarters"` -> `4 passed / 171 skipped`
+- 关键结论：
+  - `base_secret_volcano_headquarters.reveal_one_each_player_then_play_revealed_minions_here` 不再把多人局 `turnOrder` 扩展继续挂成 residual。
+  - 当前只剩真实 reveal 可见性边界仍未外推。
+
+## 2026-05-17 SmashUp yuanhou Discards Are Forever residual 继续收紧
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:4793>) 追加三条 `Discards Are Forever` L2：
+  - `超级间谍：弃牌永恒在顶牌直接是随从时只弃掉这一张展示牌`
+  - `超级间谍：弃牌永恒遇到空牌库玩家时应跳过该玩家并继续处理其他玩家`
+  - `超级间谍：弃牌永恒在三人 turnOrder 下应依次处理每位玩家直到各自翻到首个随从`
+- 目标边界：
+  - 不再只证明双人局里 `action -> minion` 和 `action -> action -> minion` 两条展示链。
+  - 明确锁定首张即随从时会立刻停止、空牌库玩家会被跳过、三人局会按 `turnOrder` 逐个处理。
+- 测试做法：
+  - 首张随从分支断言双方 discard 只新增 `首张随从`，不会吞掉后续 deck。
+  - 空牌库分支断言只产生 `targetPlayerId='1'` 的 `REVEAL_DECK_TOP`，P0 只弃本行动本身。
+  - 三人局分支直接读取 `REVEAL_DECK_TOP.payload.targetPlayerId=['0','1','2']`，并分别断言三位玩家各自 deck/discard 的收口结果。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "弃牌永恒|Discards Are Forever"` -> `4 passed / 174 skipped`
+- 关键结论：
+  - `super_spies_discards_are_forever.reveal_until_first_minion_then_mill_seen_cards` 不再把空牌库、顶牌直接是随从或三人 `turnOrder` 扩展继续挂成 residual。
+  - 当前只剩双人真实顶牌可见分支之外的浏览器可见性边界。
+
+## 2026-05-17 SmashUp yuanhou Moon Zero Three special 多合法基地与 controller 口径已锁定
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:9505>) 追加两条 `Moon Zero Three` L2：
+  - `三号空间站：多个合法基地并存时应允许打到任一合法基地并拒绝敌方随从所在基地`
+  - `三号空间站：判定其他玩家随从时应按控制者而非拥有者`
+- 目标边界：
+  - 不再只证明单合法基地/单非法基地。
+  - 明确锁定 special validator 既允许“己方随从基地 + 空基地”并存时任取其一，也把 `other player's minion` 判定固定在 controller，而不是 owner。
+- 测试做法：
+  - 多合法基地分支同时放入 `己方随从基地 / 空基地 / 敌方随从基地`，断言前两者 `validate(...ACTIVATE_SPECIAL)` 均为 valid，后者稳定拒绝。
+  - controller 分支用 `owner='1' / controller='0'` 的借来随从证明它不会阻挡 `Moon Zero Three`，而真正 `controller='1'` 的敌方随从仍会阻挡。
+  - 两条测试都实际执行一次 special，分别断言 Titan 最终落到所选合法基地。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "三号空间站"` -> `5 passed / 175 skipped`
+- 关键结论：
+  - `super_spies_moon_zero_three.special_summon_condition` 不再把多合法基地并存或 controller/owner 分离继续挂成 residual。
+  - 当前只剩 skip 分支与其它 Titan special 竞争窗口。
+
+## 2026-05-17 SmashUp yuanhou 1.21 Gigawatts 单一牌种自动分支已锁定
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:6006>) 追加一条 `1.21 Gigawatts` L2：
+  - `时间旅行者：1.21千兆瓦在弃牌堆只剩单一牌种时应自动洗回整副牌库且不弹牌种选择 prompt`
+- 目标边界：
+  - 不再只证明“弃牌堆同时有行动/随从时，玩家可在按钮 prompt 中二选一”。
+  - 明确锁定 `time_travelers_1_21_gigawatts` 在当前弃牌堆只剩单一牌种时，会直接自动选择该牌种，不创建 `time_travelers_1_21_gigawatts_choose` prompt。
+  - 同时锁定洗牌语义仍然是 `selected + player.deck` 一起 shuffle，而不是只洗弃牌或把所选牌种固定放到牌库顶。
+- 测试做法：
+  - 夹具设为 `discard=[action-a,action-b]`、`deck=[deck-a,deck-b]`，并把 `shuffle()` 固定为 reverse。
+  - 直接断言 `runCommand(PLAY_ACTION)` 后 `sys.interaction.current == null`，说明没有进入牌种按钮选择 prompt。
+  - 最终 deck 精确等于 `['deck-b','deck-a','action-b','action-a']`，discard 只剩本行动 `gigawatts-a`，证明自动分支也会把所选弃牌与现有整副牌库一起洗回。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "1.21千兆瓦|1.21 千兆瓦"` -> `2 passed / 180 skipped`
+- 关键结论：
+  - `time_travelers_1_21_gigawatts.choose_card_type` 不再把“单一牌种自动分支”继续挂成 residual。
+  - `time_travelers_1_21_gigawatts.shuffle_selected_type_to_deck` 也不再把“单一牌种自动分支下是否仍与现有 deck 一起 shuffle”继续挂成 residual。
+  - 当前 scoped L3 仍只覆盖双类型按钮分支；单一牌种自动分支继续由 L2 锁定，不外推成新的浏览器证据。
+
+## 2026-05-18 SmashUp yuanhou 1.21 Gigawatts 单一牌种自动分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:11273>) 新增单页真实入口 E2E：
+  - `时间旅行者-1.21-Gigawatts-弃牌堆只剩单一牌种时真实入口应自动洗回牌库且不弹按钮 prompt`
+- 目标边界：
+  - 不再只证明 `1.21 Gigawatts` 在双类型弃牌堆里会弹出“行动 / 仆从”按钮，并让玩家手动二选一。
+  - 明确锁定真实 UI 下“弃牌堆只剩单一牌种”时不会残留 `time_travelers_1_21_gigawatts_choose` 按钮 prompt，而是直接自动把该牌种与现有 deck 一起洗回牌库。
+- 测试做法：
+  - 夹具设为 P0 手牌只有 `gigawatts-single-hand`，弃牌堆只有两张行动 `gigawatts-single-discard-a/b`，牌库里另有两张现存牌。
+  - 点击手牌中的 `1.21 Gigawatts` 后，直接轮询 `interaction.current == null`、`discard` 只剩本行动、`deck` 集合同时包含原 deck 与两张行动弃牌，证明没有进入按钮选择层。
+  - 分别保留打出前与自动洗回后的共享截图，避免把“状态断言通过”误说成真实入口已经看过。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-gigawatts-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-1.21-Gigawatts-弃牌堆只剩单一牌种时真实入口应自动洗回牌库且不弹按钮 prompt"` -> `1 passed`
+- 实际看图结论：
+  - `yuanhou-gigawatts-single-type-before-play.png` 里手牌区能直接看到 `1.21 Gigawatts`，弃牌堆里直接可见两张行动牌，没有任何仆从弃牌；这张图确认本轮入口真的是“单一牌种自动分支”。
+  - `yuanhou-gigawatts-single-type-auto-shuffled.png` 里中央没有“行动 / 仆从”按钮 prompt，弃牌堆角标从 `2` 降到 `1`，说明两张行动已经离开弃牌堆，只剩本行动自己进入 discard。
+- 关键结论：
+  - `time_travelers_1_21_gigawatts.choose_card_type` 的浏览器证据已从“只覆盖双类型按钮分支”升级成“按钮二选一 + 单一牌种自动分支”都覆盖。
+  - `time_travelers_1_21_gigawatts.shuffle_selected_type_to_deck` 也不再只靠双类型正向选择支撑；单一牌种自动洗回现在同样有真实 UI 证据。
+
+## 2026-05-18 SmashUp yuanhou Spy 单卡自动查看分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:8143>) 新增单页真实入口 E2E：
+  - `超级间谍-Spy-牌库只剩一张时真实入口应自动查看且不弹重排 prompt`
+- 目标边界：
+  - 不再只证明 `Spy` 在牌库顶至少 3 张时会进入 `super_spies_spy_reorder`，并允许玩家做非默认顶/底重排。
+  - 明确锁定真实 `PLAY_MINION` 入口在牌库只剩 1 张时不会错误弹出重排 overlay，而是直接自动查看唯一顶牌并收口。
+- 测试做法：
+  - 夹具设为 P0 手牌只有 `spy-single-hand`，牌库只有 `spy-single-deck-a` 一张，基地为 `Secret Volcano Headquarters`。
+  - 先保留起始截图确认这轮真的是“牌库只剩 1 张”的自动分支，然后真实把 `Spy` 打到基地。
+  - 最终断言 `interaction.current==null`、`base0.minions` 含 `spy-single-hand`、`deck='spy-single-deck-a'` 且手牌已移除 `Spy`，并额外确认页面上不存在任何 `顶：...` 重排按钮。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-spy-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Spy-牌库只剩一张时真实入口应自动查看且不弹重排 prompt"` -> `1 passed`
+- 实际看图结论：
+  - `yuanhou-spy-single-card-before-play.png` 里底部手牌区只有 `Spy` 本体，左下牌库角标为 `1`，说明这轮确实是单卡自动分支。
+  - `yuanhou-spy-single-card-auto-inspected-without-reorder-prompt.png` 里 `Spy` 已落到 `Secret Volcano Headquarters`，中央没有任何顶/底重排 prompt 或按钮，桌面直接回到普通出牌态。
+- 关键结论：
+  - `super_spies_spy.inspect_self_top_three` 的浏览器证据已从“只覆盖顶三张可见 + 非默认重排”升级成“顶三张重排 + 单卡自动查看”都覆盖。
+  - `super_spies_spy.reorder_top_bottom_inspected_cards` 仍只按多于 1 张时的真实重排分支记 scoped L3，本轮不外推空牌库或单卡去重排。
+
+## 2026-05-18 SmashUp yuanhou For My Eyes Only 单卡自动查看分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:5437>) 新增单页真实入口 E2E：
+  - `超级间谍-For My Eyes Only-牌库只剩一张时真实入口应自动查看且不弹重排 prompt`
+- 目标边界：
+  - 不再只证明 `For My Eyes Only` 在牌库顶至少 5 张时会进入 `super_spies_for_my_eyes_only_reorder`，并允许玩家做非默认顶/底重排。
+  - 明确锁定真实无目标行动二次点击入口在牌库只剩 1 张时不会错误弹出重排 overlay，而是直接自动查看唯一顶牌并收口。
+- 测试做法：
+  - 夹具设为 P0 手牌只有 `eyes-single-hand`，牌库只有 `eyes-single-deck-a` 一张。
+  - 先保留起始截图确认这轮真的是“牌库只剩 1 张”的自动分支，再沿用现有无目标行动入口，连续点击两次同一张 `For My Eyes Only` 真实打出。
+  - 最终断言 `interaction.current==null`、`deck='eyes-single-deck-a'`、`discard` 含 `eyes-single-hand`、手牌已移除本行动，并额外确认页面上不存在任何 `顶：...` 重排按钮。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-eyes-single BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-For My Eyes Only-牌库只剩一张时真实入口应自动查看且不弹重排 prompt"` -> `1 passed`
+- 实际看图结论：
+  - `yuanhou-for-my-eyes-only-single-card-before-play.png` 里底部手牌区只有 `For My Eyes Only` 本体，左下牌库角标为 `1`，说明这轮确实是单卡自动分支。
+  - `yuanhou-for-my-eyes-only-single-card-auto-inspected-without-reorder-prompt.png` 里中央没有任何顶/底重排 prompt 或按钮，右下弃牌堆直接可见本行动本体，桌面回到普通出牌态。
+- 关键结论：
+  - `super_spies_for_my_eyes_only.inspect_self_top_five` 的浏览器证据已从“只覆盖顶五张可见 + 非默认重排”升级成“顶五张重排 + 单卡自动查看”都覆盖。
+  - `super_spies_for_my_eyes_only.reorder_top_bottom_inspected_cards` 仍只按多于 1 张时的真实重排分支记 scoped L3，本轮不外推空牌库或单卡去重排。
+
+## 2026-05-18 SmashUp yuanhou Spy / For My Eyes Only 空牌库无 prompt 分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:5512>) 与 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:8366>) 新增两条单页真实入口 E2E：
+  - `超级间谍-For My Eyes Only-牌库为空时真实入口不应创建重排 prompt`
+  - `超级间谍-Spy-牌库为空时真实入口不应创建重排 prompt`
+- 目标边界：
+  - 不再只靠 L2 证明这两张牌在牌库为空时“不应创建 reorder prompt”。
+  - 明确锁定真实入口里也不会出现空的顶/底重排 overlay、残留按钮，且两条链都能直接收口。
+- 测试做法：
+  - `Spy`：P0 手牌只有 `spy-empty-hand`、牌库为空；真实打到 `Secret Volcano Headquarters` 后直接断言 `interaction.current==null`、本体已进场、`deck=[]`、页面不存在 `顶：...` 重排按钮。
+  - `For My Eyes Only`：P0 手牌只有 `eyes-empty-hand`、牌库为空；沿用无目标行动真实入口连续点击两次打出后，直接断言 `interaction.current==null`、`discard` 含本行动、`deck=[]`、页面不存在 `顶：...` 重排按钮。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-empty-deck-inspect BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Spy-牌库为空时真实入口不应创建重排 prompt|超级间谍-For My Eyes Only-牌库为空时真实入口不应创建重排 prompt"` -> `2 passed`
+- 实际看图结论：
+  - `yuanhou-spy-empty-deck-before-play.png` 与 `yuanhou-for-my-eyes-only-empty-deck-before-play.png` 里左下牌库角标都直接是 `0`，说明两条链都确实落在空牌库分支。
+  - `yuanhou-spy-empty-deck-no-reorder-prompt.png` 里 `Spy` 已进场，中央没有任何顶/底重排 prompt 或按钮。
+  - `yuanhou-for-my-eyes-only-empty-deck-no-reorder-prompt.png` 里中央同样没有任何顶/底重排 prompt 或按钮，右下弃牌堆已出现本行动本体。
+- 关键结论：
+  - `super_spies_spy.inspect_self_top_three` 的浏览器证据现在已经覆盖“顶三张重排 + 单卡自动查看 + 空牌库无 prompt”三条入口。
+  - `super_spies_for_my_eyes_only.inspect_self_top_five` 的浏览器证据现在已经覆盖“顶五张重排 + 单卡自动查看 + 空牌库无 prompt”三条入口。
+
+## 2026-05-17 SmashUp yuanhou From Q With Love 短候选边界已锁定
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:4729>) 追加两条 `From Q With Love` L2：
+  - `超级间谍：来自Q的爱在投影手牌只剩一张时应只要求弃这一张`
+  - `超级间谍：来自Q的爱在投影手牌为空时不应创建弃牌 prompt`
+- 目标边界：
+  - 不再只证明“旧手牌 1 + 新抽牌 3”的 exact-2 分支。
+  - 明确锁定 `discardCount = min(2, projectedHand.length)` 在真实 `PLAY_ACTION` 链上同时覆盖 `projectedHand.length===1` 与 `===0`。
+- 测试做法：
+  - 单候选分支设为 `hand=[q-a,old-hand], deck=[]`，直接断言 prompt 仍会创建，但 `multi={min:1,max:1}` 且 `allowedCardUids=['old-hand']`，响应后 `discard` 含 `q-a/old-hand`、手牌清空。
+  - 空候选分支设为 `hand=[q-a], deck=[]`，直接断言 `PLAY_ACTION` 结束后 `interaction.current == null`，且 `discard=['q-a']`，不会错误创建空 discard prompt。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "来自Q的爱|From Q With Love"` -> `4 passed / 180 skipped`
+- 关键结论：
+  - `super_spies_from_q_with_love.draw_three_then_discard_two_from_projected_hand` 不再把“候选少于 2 / 投影手牌为空”继续挂成 residual。
+  - 当前 scoped L3 仍只覆盖 exact-2 的真实按钮分支；短候选和空候选继续由 L2 锁定，不外推成新的浏览器证据。
+
+## 2026-05-17 SmashUp yuanhou Doctor When specific-card 执行期负例已补
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:8297>) 追加一条 `Doctor When` L2：
+  - `时间旅行者：时间博士的立即额外随从执行前仍拒绝伪造同名诱饵`
+- 目标边界：
+  - 不再只证明 immediate extra prompt 里“看不到 `same-raider` 诱饵”。
+  - 明确锁定 `smashup_immediate_extra_minion` 的 execute 前复核同样要求 `specificCardUid===returned.uid`，不会因为手牌里已有另一张同名牌就被冒充。
+- 测试做法：
+  - 夹具设为 `doctor-a` 进场返回 `raider-a`，同时 P0 手牌里已有同名诱饵 `same-raider`。
+  - 先正常响应第一层 return prompt，确认 extra prompt 只列 `raider-a`。
+  - 再手工把 `same-raider` 伪造塞进该 prompt 并发送 `SYS_INTERACTION_RESPOND`，最终断言基地仍只有 `doctor-a`，而 `raider-a/same-raider` 两张都还留在手牌里。
+  - 同时复用 `may 可以跳过` 用例补断言：skip return 后不会产生 `LIMIT_MODIFIED(reason:'time_travelers_doctor_when')`，也不会残留第二层 extra prompt。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间博士|从头来过|Doctor When|Do Over"` -> `7 passed / 178 skipped`
+- 关键结论：
+  - `time_travelers_doctor_when.may_play_returned_minion_again` 现在不仅有 prompt 层的候选过滤，也有 execute 层的 `specificCardUid` 负例锁定。
+  - 当前 scoped L3 仍只覆盖 returned-card specific prompt 与真实打回分支；skip extra 分支继续由 L2/后续浏览器证据承接。
+
+## 2026-05-17 SmashUp yuanhou Do Over skip-extra 分支已锁定
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:5623>) 追加一条 `Do Over` L2：
+  - `时间旅行者：从头来过在放弃额外随从后应直接收口并保留刚返回的那张牌`
+- 目标边界：
+  - 不再只证明 returned-card extra prompt 的 specific-card 候选过滤和伪造同名诱饵拒绝。
+  - 明确锁定玩家在 `smashup_immediate_extra_minion` 里选择 skip 后，链路会直接收口，不会错误把 `jumper-a` 又打回基地。
+- 测试做法：
+  - 夹具设为 `Do Over` 返回 `jumper-a`，进入 `smashup_immediate_extra_minion` 后直接点击 skip。
+  - 断言最终 `interaction.current == null`，基地仍为空，而 `jumper-a` 继续留在 P0 手牌。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "从头来过|Do Over"` -> `3 passed / 183 skipped`
+- 关键结论：
+  - `time_travelers_do_over.may_play_returned_minion_again` 不再把 skip extra 分支继续挂成对象级 residual。
+  - 当前 scoped L3 仍只覆盖 returned-card specific prompt 与真实打回分支；skip extra 分支继续由 L2 锁定。
+
+## 2026-05-17 SmashUp yuanhou Doctor When skip-extra 分支已锁定
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:8421>) 追加一条 `Doctor When` L2：
+  - `时间旅行者：时间博士在放弃额外随从后应直接收口并保留刚返回的那张牌`
+- 目标边界：
+  - 不再只证明 returned-card specific prompt 的候选过滤、伪造同名诱饵拒绝，以及 skip return 不授予额度。
+  - 明确锁定玩家在 `smashup_immediate_extra_minion` 里选择 skip 后，链路会直接收口，不会错误把 `raider-a` 又打回基地。
+- 测试做法：
+  - 夹具设为 `doctor-a` 进场返回 `raider-a`，进入 `smashup_immediate_extra_minion` 后直接点击 skip。
+  - 断言最终 `interaction.current == null`，基地只剩 `doctor-a`，而 `raider-a` 继续留在 P0 手牌。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间博士|Doctor When"` -> `6 passed / 181 skipped`
+- 关键结论：
+  - `time_travelers_doctor_when.may_play_returned_minion_again` 不再把 skip extra 分支继续挂成对象级 residual。
+  - 当前 scoped L3 仍只覆盖 returned-card specific prompt 与真实打回分支；skip extra 分支继续由 L2 锁定。
+
+## 2026-05-17 SmashUp yuanhou The Nexus skip 分支已补到 scoped L3
+
+- 在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:10035>) 追加一条 `The Nexus` 真实计分 L2：
+  - `时间旅行者基地：枢纽真实计分后让过响应应继续按正常牌库顶替换基地`
+- 同时在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:9932>) 新增单页真实入口 E2E：
+  - `时间旅行者-The Nexus-真实计分后让过响应应继续按正常牌库顶替换基地`
+- 目标边界：
+  - 不再只证明赢家可选择 `Faceless City` 这条“正向替代”分支。
+  - 明确锁定赢家在 `base_the_nexus_choose` prompt 里点击 `跳过（照常抽新基地）` 后，会回退到正常 `baseDeck[0]` 翻新，而不是错误残留在 discard-base 选择链。
+- 测试做法：
+  - L2 用真实 `ADVANCE_PHASE -> smashup_reaction_choose -> base_the_nexus_choose -> skip` 链，直接断言 `BASE_REPLACED.newBaseDefId === 'base_monkey_lab'`、`baseDeck=[]`、`baseDiscard=['base_the_vats','base_faceless_city','base_primate_park','base_the_nexus']`。
+  - E2E 先从 afterScoring 响应窗点击 `联结点`，确认中央 prompt 同时列出三张基地弃牌堆候选与 `跳过（照常抽新基地）`，再真实点击 skip，最后等待 `Monkey Lab` 上桌且 prompt 收口。
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "枢纽|The Nexus"` -> `3 passed / 185 skipped`
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-the-nexus-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-The Nexus-真实计分后让过响应应继续按正常牌库顶替换基地"` -> `1 passed`
+- 关键结论：
+  - `base_the_nexus.choose_base_from_base_discard` 不再把 skip 只留在 L2/handler。
+  - `base_the_nexus.replace_new_base_with_selected_discard_base` 也不再只覆盖 `Faceless City` 分支；skip 后按 `baseDeck[0]` 正常翻新的真实入口现已补到 scoped L3。
+
+## 2026-05-17 SmashUp yuanhou Do Over / Doctor When skip-extra 浏览器证据已补
+
+- 这轮不是再补领域逻辑，而是把前两段“skip extra 继续由 L2 锁定”的过渡口径升级成真实浏览器证据。
+- 直接复跑 [e2e/smashup-yuanhou-time-travelers-specific-extra.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-time-travelers-specific-extra.e2e.ts:291>) 与 [e2e/smashup-yuanhou-time-travelers-specific-extra.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-time-travelers-specific-extra.e2e.ts:399>)：
+  - `时间旅行者-Do Over-真实入口放弃额外随从后应直接收口并保留刚返回的那张牌`
+  - `时间旅行者-Doctor When-真实入口放弃额外随从后应直接收口并保留刚返回的那张牌`
+- 复跑命令：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-specific-extra-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-time-travelers-specific-extra.e2e.ts`
+  - 结果：`4 passed`
+- 实际看图结论：
+  - `Do Over` prompt 图里能直接看到 returned `Jumper` 和“放弃这次额外随从”按钮；resolved 图里按钮已消失、`Portal Room` 仍为空、`Jumper` 还在手牌。
+  - `Doctor When` prompt 图里桌面上只剩 `Doctor When`，returned `Time Raider` 已回到底部手牌；resolved 图里 prompt 已清空，基地仍只剩 `Doctor When`，`Time Raider` 没被误自动打回。
+- 关键结论：
+  - `time_travelers_do_over.may_play_returned_minion_again` 的浏览器证据不再只覆盖 “specific-card prompt + 选择打回” 分支；`skip extra` 也已补到 scoped L3。
+  - `time_travelers_doctor_when.may_play_returned_minion_again` 同样不再只靠 L2 承接 `skip extra`；现在这条分支也有真实 UI 收口证据。
+
+## 2026-05-18 SmashUp yuanhou Faceless City skip 分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:1666>) 新增单页真实入口 E2E：
+  - `变形者基地-Faceless City-真实入口跳过搜寻后应直接收口并保留原牌库顺序`
+- 目标边界：
+  - 不再只证明 `Faceless City` 在多候选同名牌里能选择第二张 `same-b` 并把它收入手牌。
+  - 明确锁定同一条真实 prompt 里的 `跳过搜寻` 也能被玩家显式点击，并且点击后不会偷偷抽牌、不会残留搜索层、不会改乱原牌库顺序。
+- 测试做法：
+  - 复用现有 `Mako -> Faceless City -> deck=[same-skip-a,other-skip-card,same-skip-b]` 的多候选同名场景。
+  - 先确认 prompt 只列两张同名牌并真实显示 `跳过搜寻`，随后直接点击 skip。
+  - 最终断言 `interaction.current==null`、`hand.length===0`、`deck=['same-skip-a','other-skip-card','same-skip-b']`，且刚打出的 `faceless-skip-played` 仍在基地。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-faceless-city-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者基地-Faceless City-真实入口跳过搜寻后应直接收口并保留原牌库顺序"` -> `1 passed`
+- 关键结论：
+  - `base_faceless_city.may_choose_or_skip_same_name_card` 的浏览器证据已从“只覆盖选择第二张同名牌”升级成“选择 / skip 两条都覆盖”。
+  - `base_faceless_city` 当前不再把 skip 单独挂成浏览器 residual；自动单候选仍继续由 L2 锁定。
+
+## 2026-05-18 SmashUp yuanhou G.E.L.F. skip 分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:1351>) 新增单页真实入口 E2E：
+  - `变形者-GELF-真实入口跳过搜寻后应直接收口且不额外打出候选随从`
+- 目标边界：
+  - 不再只证明 `G.E.L.F.` 从牌库两张合格候选里能选择第二张并把它额外打回原基地。
+  - 明确锁定同一条真实搜索 prompt 里的 `放弃这次选择` 按钮也能被玩家显式点击，并且点击后不会偷偷补打一只候选、不会残留第二个 immediate extra prompt。
+- 测试做法：
+  - 复用现有 `G.E.L.F.` 天赋夹具：`deck=[copycat,mimic,doppelganger,gelf]`、`The Vats` 上只有一只 `G.E.L.F.`。
+  - 先确认真实 prompt 只列两张合格候选、隐藏过大候选与另一张 `G.E.L.F.`，且画面里真实出现 `放弃这次选择`。
+  - 随后直接点击 skip，并断言 `interaction.current==null`、`minions.length===0`、`hand.length===0`，且五张牌都仍在 P0 `deck`。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-gelf-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-GELF-真实入口跳过搜寻后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 实际看图结论：
+  - prompt 图里中央可直接看到 `G.E.L.F.` 搜索覆盖层、两张合格候选和 `放弃这次选择` 按钮，桌面上原 `G.E.L.F.` 已离场，不存在被隐藏的“默认自动打出”。
+  - resolved 图里搜索层与按钮都已消失，`The Vats` 仍为空，没有候选被偷偷打回基地。
+- 关键结论：
+  - `shapeshifters_gelf.extra_play_here` 的浏览器证据已从“只覆盖选择第二张候选”升级成“选择 / skip 两条都覆盖”。
+  - `shapeshifters_gelf` 当前不再把 skip 单独挂成浏览器 residual；更广 shared search 随机顺序与 forged late-deck 仍继续由 L2/shared 合同承接。
+
+## 2026-05-18 SmashUp yuanhou Really? skip 分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:3103>) 新增单页真实入口 E2E：
+  - `变形者-Really-真实入口跳过弃牌堆搜寻后应直接收口且不额外打出候选随从`
+- 目标边界：
+  - 不再只证明 `Really?` 从弃牌堆两张候选里能选择第二张，再把它打到玩家所选基地。
+  - 明确锁定第一层弃牌堆搜索 prompt 里的 `放弃这次选择` 也能被玩家显式点击，并且点击后不会偷偷进入第二层基地选择、不会把候选误打到任何基地。
+- 测试做法：
+  - 复用现有 `Really?` 夹具：`really-skip-target` 在 `Faceless City`，弃牌堆里有两张合格候选，另一基地 `The Vats` 为空。
+  - 先确认真实 prompt 里两张弃牌堆候选与 `放弃这次选择` 都可见，且被摧毁目标已经进弃牌堆。
+  - 随后直接点击 skip，并断言 `interaction.current==null`、`Faceless City/The Vats` 两个基地都保持空场、`really-skip-hand/really-skip-target/really-skip-discard-a/really-skip-discard-b` 都继续留在 P0 discard。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-really-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-Really-真实入口跳过弃牌堆搜寻后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 实际看图结论：
+  - prompt 图里中央可直接看到 `Really?` 的弃牌堆搜索覆盖层、两张候选和 `放弃这次选择` 按钮，底部已能看到 `Really?` 本体进弃牌堆。
+  - resolved 图里搜索层与按钮都已消失，`Faceless City` 与 `The Vats` 两个基地都还是空的，没有候选被偷偷补进来。
+- 关键结论：
+  - `shapeshifters_really.choose_discard_minion` 的浏览器证据已从“只覆盖选择第二张候选”升级成“选择 / skip 两条都覆盖”。
+  - `shapeshifters_really.play_extra_minion_any_base` 当前也不再只靠“选择候选后选基地”支撑 optional extra-play 语义；skip 分支现在同样有真实 UI 收口证据。
+
+## 2026-05-18 SmashUp yuanhou Transmogrify skip 分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:833>) 新增单页真实入口 E2E：
+  - `变形者-Transmogrify-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从`
+- 目标边界：
+  - 不再只证明 `Transmogrify` 从两张合格牌库候选里能选择第二张，再把它额外打回 `The Vats`。
+  - 明确锁定第一层牌库搜索 prompt 里的 `放弃这次选择` 也能被玩家显式点击，并且点击后不会偷偷把候选打回原基地、不会残留第二个 immediate extra prompt。
+- 测试做法：
+  - 复用现有 `Transmogrify` 夹具：`transmogrify-skip-target` 是 4 力 `G.E.L.F.`，牌库里有两张合格候选和一张过大候选。
+  - 先确认真实 prompt 里两张合格候选与 `放弃这次选择` 都可见、过大候选被隐藏，且被摧毁目标已经进弃牌堆。
+  - 随后直接点击 skip，并断言 `interaction.current==null`、`The Vats` 仍为空、`transmogrify-skip-hand/transmogrify-skip-target` 留在 discard、三张候选仍留在 deck。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-transmogrify-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-Transmogrify-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 实际看图结论：
+  - prompt 图里中央可直接看到 `Transmogrify` 的牌库搜索覆盖层、两张合格候选和 `放弃这次选择` 按钮，底部可见 `Transmogrify` 本体进弃牌堆。
+  - resolved 图里搜索层与按钮都已消失，`The Vats` 仍为空，没有牌库候选被偷偷补打回来。
+- 关键结论：
+  - `shapeshifters_transmogrify.search_equal_or_lower_power_deck_minion` 的浏览器证据已从“只覆盖选择第二张候选”升级成“选择 / skip 两条都覆盖”。
+  - `shapeshifters_transmogrify.play_extra_minion_here_and_shuffle` 当前也不再只靠“选择候选打回原基地”支撑 optional extra-play 语义；skip 分支现在同样有真实 UI 收口证据。
+
+## 2026-05-18 SmashUp yuanhou Doppelganger skip 分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:3499>) 新增单页真实入口 E2E：
+  - `变形者-Doppelganger-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从`
+- 目标边界：
+  - 不再只证明 `Doppelganger` 在 `Bacta immediate extra skip` 之后，能从牌库两张候选里选择第二张并把它打回原基地。
+  - 明确锁定 `shapeshifters_doppelganger_search` 里的 `放弃这次选择` 也能被玩家显式点击，并且点击后不会偷偷把候选打回 `The Vats`。
+- 测试做法：
+  - 复用现有 `Bacta -> Doppelganger` 夹具：先让 `Bacta` 摧毁 `Doppelganger`，等 `smashup_immediate_extra_minion` 出现后先点 `放弃这次额外随从`，再进入 `Doppelganger search`。
+  - 在第二层 search prompt 确认两张候选与 `放弃这次选择` 都可见，然后直接点击 skip。
+  - 最终断言 `interaction.current==null`、`The Vats` 保持空场、`bacta-doppelganger-skip-hand/doppelganger-skip-target` 留在 discard、两张候选继续留在 deck。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-doppelganger-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-Doppelganger-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 实际看图结论：
+  - prompt 图里中央可直接看到 `Doppelganger` 的牌库搜索覆盖层、两张候选和 `放弃这次选择` 按钮，顶部还保留前链 toast，说明确实是 `Bacta immediate extra skip` 之后的第二层搜索。
+  - resolved 图里搜索层与按钮都已消失，`The Vats` 仍为空，没有牌库候选被偷偷补打回来。
+- 关键结论：
+  - `shapeshifters_doppelganger.on_discard_from_base_search_deck_minion` 的浏览器证据已从“只覆盖进入 search”升级成“进入 search / skip 收口”两条都覆盖。
+  - `shapeshifters_doppelganger.play_extra_minion_original_base` 当前也不再只靠“选择候选打回原基地”支撑 optional extra-play 语义；skip 分支现在同样有真实 UI 收口证据。
+
+## 2026-05-18 SmashUp yuanhou Mitosis skip 分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:1076>) 新增单页真实入口 E2E：
+  - `变形者-Mitosis-真实入口跳过同名手牌选择后应直接收口且不额外打出候选随从`
+- 目标边界：
+  - 不再只证明 `Mitosis` 从两张同名手牌候选里能选择第二张，并把它额外打到目标基地。
+  - 明确锁定 same-name hand choice prompt 里的 `放弃这次选择` 也能被玩家显式点击，并且点击后不会偷偷把任何同名手牌候选打到 `The Vats`。
+- 测试做法：
+  - 复用现有 `Mitosis` 夹具：`mitosis-skip-target` 是场上的 `G.E.L.F.`，手牌里有两张同名 `G.E.L.F.` 和一张非同名 `Mimic`。
+  - 先确认真实 same-name prompt 里两张 `G.E.L.F.` 与 `放弃这次选择` 都可见，而 `Mimic` 不在候选中。
+  - 随后直接点击 skip，并断言 `interaction.current==null`、基地上仍只保留原目标、两张 `G.E.L.F.` 同名候选和 `Mimic` 都继续留在手里、`Mitosis` 本体进弃牌堆。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-mitosis-skip BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者-Mitosis-真实入口跳过同名手牌选择后应直接收口且不额外打出候选随从"` -> `1 passed`
+- 实际看图结论：
+  - prompt 图里中央可直接看到 `Mitosis` 的 same-name choice 覆盖层、两张 `G.E.L.F.` 候选和 `放弃这次选择` 按钮；底部手牌区还能直接看到那张非同名 `Mimic`，说明它没有混进候选集合。
+  - resolved 图里选择层与按钮都已消失，`The Vats` 上仍只保留原目标那只 `G.E.L.F.`，底部两张同名 `G.E.L.F.` 手牌都继续留在手里，没有被偷偷补打上场。
+- 关键结论：
+  - `shapeshifters_mitosis.choose_same_name_hand_minion` 的浏览器证据已从“只覆盖选择第二张候选”升级成“选择 / skip 两条都覆盖”。
+  - `shapeshifters_mitosis.play_selected_extra_minion_here` 当前也不再只靠“选择候选打到目标基地”支撑 optional extra-play 语义；skip 分支现在同样有真实 UI 收口证据。
+
+## 2026-05-18 超级间谍重排编辑器复核已完成
+
+- 当前 worktree 已重新跑通三条真实链：
+  - `超级间谍-Spy-真实入口可查看自己牌库顶三张并按非默认顶底顺序放回`
+  - `超级间谍-For My Eyes Only-真实入口可查看自己牌库顶五张并按非默认顶底顺序放回`
+  - `超级间谍-ISI摇摆据点-真实多客户端下赢家不是当前回合玩家时应只给赢家页面重排牌库`
+- 定向验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx --configLoader native --maxWorkers 1` -> `11 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Spy-真实入口可查看自己牌库顶三张并按非默认顶底顺序放回"` -> `1 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-For My Eyes Only-真实入口可查看自己牌库顶五张并按非默认顶底顺序放回"` -> `1 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-ISI摇摆据点-真实多客户端下赢家不是当前回合玩家时应只给赢家页面重排牌库"` -> `1 passed`
+- 实际看图结论：
+  - 复看的三张 prompt 截图已经统一成卡带 + 右侧编辑工具条，没有回到旧的“排列结果按钮墙”。
+  - 当前初始态只显示与选中卡有关的动作，`前移 / 重置` 不会在无效状态下同时露出。
+  - 因此这轮“截图里选项太多”的旧观察，已被当前截图和最新 E2E 结果推翻；旧图不再代表现状。
+
+## 2026-05-18 SmashUp yuanhou Operative 空选 0 人分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:8261>) 新增单页真实入口 E2E：
+  - `超级间谍-Operative-真实入口空选玩家后应直接收口且不展示任何牌库顶牌`
+- 目标边界：
+  - 不再只证明 `Operative` 第一层 prompt 能多选两位玩家，再进入第二层对展示顶牌做放底选择。
+  - 明确锁定 `any number of players` 的 `0` 也是真实合法入口：玩家不勾选任何对象就点击确认后，不应生成 reveal/top-bottom 第二层 prompt，也不应改变任何一位玩家的牌库顶顺序。
+- 测试做法：
+  - 复用现有 `Operative` 夹具：P0/P1 牌库各有两张顶牌，P0 从手牌把 `Operative` 打到 `Secret Volcano Headquarters`。
+  - 先确认第一层 prompt 里 `玩家0/玩家1` 都可见，且 Operative 本体已经落到基地上。
+  - 不勾选任何玩家，直接点击确认，并断言 `interaction.current==null`、两边牌库仍分别保持 `operative-empty-p0-top,operative-empty-p0-second` / `operative-empty-p1-top,operative-empty-p1-second`，同时页面不存在第二层展示牌 option。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-operative-empty BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Operative-真实入口空选玩家后应直接收口且不展示任何牌库顶牌"` -> `1 passed`
+- 实际看图结论：
+  - prompt 图里中央可直接看到“密探：选择要查看牌库顶牌的玩家”，`玩家0/玩家1` 两个按钮都处于未勾选状态且确认按钮可点，说明 `0` 不是只能靠 handler 接受的隐式边界，而是 UI 明确支持的端点。
+  - resolved 图里玩家选择 prompt 已消失，桌面回到正常出牌态，`Secret Volcano Headquarters` 上只剩 Operative，没有任何展示牌或第二层放底 prompt 出现。
+- 关键结论：
+  - `super_spies_operative.choose_players_to_reveal` 的浏览器证据已从“只覆盖选两人”升级成“0 人 / 2 人 两个端点都覆盖”。
+  - `super_spies_operative.bottom_any_revealed_cards` 仍只覆盖“已有展示牌后选择 1 张放底”的浏览器链；`0 张放底` 或更多可见性边界如果要继续补，应另开第二层 prompt 方向，不得把本条外推成整个对象全收口。
+
+## 2026-05-18 SmashUp yuanhou Operative 二步空选 0 张放底分支已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:8330>) 新增单页真实入口 E2E：
+  - `超级间谍-Operative-真实入口空选展示牌后应保持各牌库顶顺序并直接收口`
+- 目标边界：
+  - 不再只证明 `Operative` 第二层 prompt 能从两张展示顶牌里选 1 张放到对应牌库底。
+  - 明确锁定 `any number of those cards` 的 `0` 也是真实合法入口：两位玩家都已在第一层被选中、第二层展示牌也已经出现时，如果一个都不勾选直接确认，不应偷偷把任意展示牌沉到底，也不应残留第二层 prompt。
+- 测试做法：
+  - 复用现有 `Operative` 双玩家 reveal 夹具：先在第一层选择 `玩家0 + 玩家1`，进入第二层 `super_spies_operative_top_bottom`。
+  - 确认第二层 option 只含 `operative-bottom-empty-p0-top / operative-bottom-empty-p1-top` 两张展示牌后，不勾选任何展示牌直接确认。
+  - 最终断言 `interaction.current==null`，且两边牌库仍分别保持 `operative-bottom-empty-p0-top,operative-bottom-empty-p0-second` / `operative-bottom-empty-p1-top,operative-bottom-empty-p1-second`。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-operative-bottom-empty BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Operative-真实入口空选展示牌后应保持各牌库顶顺序并直接收口"` -> `1 passed`
+- 实际看图结论：
+  - prompt 图里能直接看到两位玩家都已在第一层被选中，而中间两张展示顶牌都处于未勾选状态；这说明第二层 `0` 不是后台 payload，而是用户真实可做的界面操作。
+  - resolved 图里第二层 prompt 已完全消失，桌面回到普通出牌态，`Secret Volcano Headquarters` 上只剩 Operative，没有任何展示牌被沉到底后的视觉副产物。
+- 关键结论：
+  - `super_spies_operative.bottom_any_revealed_cards` 的浏览器证据已从“只覆盖选 1 张放底”升级成“0 张 / 1 张 两个端点都覆盖”。
+  - 当前 `Operative` 对象的本地浏览器 residual 已从 `any number` 端点退回到更高层的多人非当前视角与伪造 payload/shared contract，不再把两层空选继续挂在对象级浏览器残项里。
+
+## 2026-05-18 SmashUp yuanhou Time Raider / Repeater Perfect 空弃牌 feedback 已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:11168>) 与 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:11745>) 新增两条单页真实入口 E2E：
+  - `时间旅行者-Repeater Perfect-弃牌堆为空时真实入口应提示无可选行动且不弹 prompt`
+  - `时间旅行者-Time Raider-弃牌堆为空时真实入口应提示无可选牌且不弹 prompt`
+- 目标边界：
+  - 不再只证明这两张卡在“有候选”和“只有 1 个候选”时能正确选择/自动处理。
+  - 明确锁定空弃牌时不会错误创建 `time_travelers_repeater_perfect_choose` / `time_travelers_time_raider_choose`，并且玩家界面能真实看到 `feedback.discard_empty` toast。
+- 测试做法：
+  - `Repeater Perfect`：P0 手牌只留 `Repeater Perfect`，牌库保留一张对照 `Jumper`，弃牌堆置空；真实打到 `Portal Room` 后等待 toast，并断言 `interaction.current==null`、`deck` 仍是 `repeater-empty-deck-a`、`discard=[]`、`base0.minions` 含 `repeater-empty-hand`。
+  - `Time Raider`：P0 场上已有 `Time Raider`，弃牌堆置空，牌库保留一张对照 `Jumper`；真实点击天赋后等待 toast，并断言 `interaction.current==null`、`deck` 仍是 `raider-empty-deck-a`、`discard=[]`、`talentUsed===true`。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-empty-discard-feedback BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Repeater Perfect-弃牌堆为空时真实入口应提示无可选行动且不弹 prompt|时间旅行者-Time Raider-弃牌堆为空时真实入口应提示无可选牌且不弹 prompt"` -> `2 passed`
+- 实际看图结论：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Repeater-Perfect-弃牌堆为空时真实入口应提示无可选行动且不弹-prompt\yuanhou-repeater-perfect-empty-discard-feedback-toast-locator.png` 与 `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Time-Raider-弃牌堆为空时真实入口应提示无可选牌且不弹-prompt\yuanhou-time-raider-empty-discard-feedback-toast-locator.png` 里都能直接看到 toast 文案 `弃牌堆中没有符合条件的卡牌`。
+  - `yuanhou-repeater-perfect-empty-discard-feedback-without-prompt.png` 里 `Portal Room` 下只剩已真实进场的 `Repeater Perfect`，中央没有任何候选按钮或覆盖层。
+  - `yuanhou-time-raider-empty-discard-feedback-without-prompt.png` 里 `Time Raider` 本体已显示“已用”，中央同样没有任何候选 prompt，顶部仍可见同一条 toast。
+- 关键结论：
+  - `time_travelers_repeater_perfect.choose_discard_action / top_selected_action` 的浏览器证据已从“混合弃牌堆选择第二张行动 + 单行动自动顶牌”补全到“空弃牌 feedback”。
+  - `time_travelers_time_raider.choose_discard_card / bottom_selected_card` 的浏览器证据已从“多候选选择 + 单候选自动沉底”补全到“空弃牌 feedback”。
+
+## 2026-05-18 审计规范已修正：多选不再默认要求全选按钮
+
+- 修正点：
+  - [docs/ai-rules/testing-audit.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/testing-audit.md>) 里 `D5 子项：交互模式语义匹配` 的 UI 模式验证，旧口径写成了“`multi` 存在就应显示 `全选`”。
+  - 现已改为：`multi` 只要求多选态与显式确认入口；`全选/取消全选` 只在候选很多、批量操作确实降低交互成本时才允许出现。
+- 原因：
+  - 旧规则会把少量候选的紧凑 prompt 误判成“不合格”，和当前 PromptOverlay 的紧凑动作栏、线性编辑器收敛方向直接冲突。
+  - 这会让后续审计继续盯着“按钮数量”，而不是“用户是否需要这些按钮”。
+- 结果：
+  - 规范与当前实现重新对齐，后续再审 `Operative`、`Spy`、`For My Eyes Only` 这类少候选多选 prompt 时，不会再被旧“必须有全选”口径带偏。
+
+## 2026-05-18 SmashUp yuanhou Spy manual-resync 恢复态已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts:1590>) 新增多客户端恢复态 E2E：
+  - `超级间谍-Spy-恢复可见触发 manual-resync 后私有顶三重排 prompt 仍只归行动玩家页面`
+- 目标边界：
+  - 不再只证明 `Spy` 在首次进入 prompt 时是 owner-only。
+  - 明确锁定 `hidden -> visible -> manual-resync` 之后，`super_spies_spy_reorder` 不会串到 Guest 页，也不会退回旧的排列按钮墙合同。
+- 测试做法：
+  - 夹具设为 P0 手牌只有 `spy-resync-hand`，牌库顶依次为 `spy-resync-deck-a/b/c`，真实把 `Spy` 打到 `Secret Volcano Headquarters`。
+  - Host 进入私有顶三重排 prompt 后，主动触发 `bg-shell-app-hidden -> bg-shell-app-visible`，并用 `installManualResyncTracker()` 断言 `manualResyncCount >= 1`。
+  - 恢复后确认 Host 仍保有 `super_spies_spy_reorder`，Guest 仍无 prompt，再按默认顺序直接 `确认顺序` 收口。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-spy-manual-resync BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-Spy-恢复可见触发 manual-resync 后私有顶三重排 prompt 仍只归行动玩家页面"` -> `1 passed`
+- 实际看图结论：
+  - [yuanhou-spy-manual-resync-reorder-prompt-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Spy-恢复可见触发-manual-resync-后私有顶三重排-prompt-仍只归行动玩家页面/yuanhou-spy-manual-resync-reorder-prompt-host.png>) 里 Host 页中央仍是 `间谍：将这几张牌按任意顺序放回牌库顶/底` 的线性编辑器，三张 inspected 卡带本体清晰可见；右侧初始态只剩 `移到牌库底 / 后移 / 确认顺序` 三个当前相关动作。
+  - [yuanhou-spy-manual-resync-no-reorder-prompt-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Spy-恢复可见触发-manual-resync-后私有顶三重排-prompt-仍只归行动玩家页面/yuanhou-spy-manual-resync-no-reorder-prompt-guest.png>) 里 Guest 页左上是 `对手 / 出牌阶段`，中央没有任何私有 editor、确认按钮或等待遮罩。
+  - [yuanhou-spy-manual-resync-resolved-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Spy-恢复可见触发-manual-resync-后私有顶三重排-prompt-仍只归行动玩家页面/yuanhou-spy-manual-resync-resolved-host.png>) 与 [yuanhou-spy-manual-resync-resolved-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Spy-恢复可见触发-manual-resync-后私有顶三重排-prompt-仍只归行动玩家页面/yuanhou-spy-manual-resync-resolved-guest.png>) 里两页都已回到普通棋盘态，没有残留 overlay。
+- 关键结论：
+  - `super_spies_spy.inspect_self_top_three / reorder_top_bottom_inspected_cards` 现在已补齐 2P owner-only 的 `manual-resync` 恢复态，不再只停在首次出现时的页归属。
+  - 你质疑的“截图里选项太多”对应的是 inspected 卡牌本体，不是旧的排列按钮墙；当前真正可执行的动作只有 3 个，符合少量候选的紧凑交互规范。
+
+## 2026-05-18 SmashUp yuanhou Operative manual-resync 双层恢复态已补到 scoped L3
+
+- 在 [e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts:1418>) 新增多客户端恢复态 E2E：
+  - `超级间谍-Operative-恢复可见触发 manual-resync 后两层 prompt 仍只归行动玩家页面`
+- 目标边界：
+  - 不再只证明 `Operative` 的第一层/第二层 prompt 在首次出现时是 owner-only。
+  - 明确锁定 `hidden -> visible -> manual-resync` 之后，第一层 `super_spies_operative_players` 和第二层 `super_spies_operative_top_bottom` 都不会串到 Guest 页，也不会把旧层残留到新层。
+- 测试做法：
+  - 夹具设为 P0 手牌只有 `operative-resync-hand`，P0/P1 牌库顶各两张。
+  - Host 真实打出 `Operative` 后，先在第一层玩家选择 prompt 上触发一次 `manual-resync`，确认仍只有 Host 保有 `玩家0/玩家1` 两个按钮。
+  - Host 只选 `玩家1` 进入第二层放底 prompt，再触发第二次 `manual-resync`，确认仍只有 Host 保有 `operative-resync-p1-top` 候选。
+  - 最后 Host 选择 `Jumper` 放底并收口，断言只改写 P1 牌库顶顺序。
+- 定向验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-operative-manual-resync BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-Operative-恢复可见触发 manual-resync 后两层 prompt 仍只归行动玩家页面"` -> `1 passed`
+- 实际看图结论：
+  - [yuanhou-operative-manual-resync-player-choice-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Operative-恢复可见触发-manual-resync-后两层-prompt-仍只归行动玩家页面/yuanhou-operative-manual-resync-player-choice-host.png>) 里 Host 页中央仍是第一层 `密探：选择要查看牌库顶牌的玩家`，只保留 `玩家0 / 玩家1 / 确认` 三个必要动作，没有多余辅助按钮。
+  - [yuanhou-operative-manual-resync-no-player-choice-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Operative-恢复可见触发-manual-resync-后两层-prompt-仍只归行动玩家页面/yuanhou-operative-manual-resync-no-player-choice-guest.png>) 里 Guest 页没有第一层 prompt、等待遮罩或按钮。
+  - [yuanhou-operative-manual-resync-top-bottom-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Operative-恢复可见触发-manual-resync-后两层-prompt-仍只归行动玩家页面/yuanhou-operative-manual-resync-top-bottom-host.png>) 里第二层只展示玩家1的 `Jumper` 顶牌本体，没有把 P0 顶牌夹进来，也没有 `全选` 噪音。
+  - [yuanhou-operative-manual-resync-no-top-bottom-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Operative-恢复可见触发-manual-resync-后两层-prompt-仍只归行动玩家页面/yuanhou-operative-manual-resync-no-top-bottom-guest.png>) 与收口后的 [resolved-host](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Operative-恢复可见触发-manual-resync-后两层-prompt-仍只归行动玩家页面/yuanhou-operative-manual-resync-resolved-host.png>) / [resolved-guest](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Operative-恢复可见触发-manual-resync-后两层-prompt-仍只归行动玩家页面/yuanhou-operative-manual-resync-resolved-guest.png>) 里都没有串页 prompt 或残留 overlay。
+- 关键结论：
+  - `super_spies_operative.choose_players_to_reveal / bottom_any_revealed_cards` 现在已补齐双层 owner-only 的 `manual-resync` 恢复态，不再只停在首次出现时的页归属。
+  - 这条链的“候选多”视觉对象仍只是玩家按钮和单张展示卡本体，不是旧的 `全选/按钮墙` 风格，当前交互仍符合紧凑 prompt 规范。
+  - 同日继续把“为什么截图里看起来还有很多选项”追到 shared UX 根因：不是 `Operative` 多给了候选，而是旧的 `RevealOverlay` 会在第二层 `super_spies_operative_top_bottom` 已经接管同一批展示卡时继续同屏悬浮，视觉上把单一流程拍成两层候选。
+  - 现已在 [src/games/smashup/ui/RevealOverlay.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/ui/RevealOverlay.tsx>) / [src/games/smashup/Board.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/Board.tsx>) 增加 suppression 合同：当当前玩家 prompt 已承接同一批 reveal/deck-top 卡时，RevealOverlay 在该页退场；Guest 页没有 owner prompt 时仍可保留公共 reveal。
+  - 已补 [src/games/smashup/__tests__/revealSystem.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/revealSystem.test.ts>) 3 条回归，并实际跑过 `npm run test -- src/games/smashup/__tests__/revealSystem.test.ts` -> `13 passed`。
+  - 已继续复跑两条真实多客户端链：`超级间谍-Operative-恢复可见触发 manual-resync 后两层 prompt 仍只归行动玩家页面` 与 `超级间谍-Operative-真实多客户端下两层 prompt 都应只出现在行动玩家页面`，均 `1 passed`；新增断言要求 Host 第二层 prompt 时 `data-testid="reveal-overlay"` 为 0。
+  - 我已实际打开 [yuanhou-operative-manual-resync-top-bottom-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Operative-恢复可见触发-manual-resync-后两层-prompt-仍只归行动玩家页面/yuanhou-operative-manual-resync-top-bottom-host.png>)：画面里只剩第二层标题、单张 `Jumper` 卡面与 `确认`，没有额外的 `牌库顶` 标题或第二层之外的 reveal 浮层；这次“选项太多”的旧截图口径已失效。
+
+## 2026-05-18 SmashUp yuanhou deck-reorder family 的 RevealOverlay 退场合同已补成浏览器级证据
+
+- 目标边界：
+  - 不把 `RevealOverlay` suppression 只停在 `Operative` 一张牌。
+  - 继续证明同一 shared 合同对 `super_spies_spy_reorder`、`super_spies_for_my_eyes_only_reorder`、`base_isis_swingin_pad_reorder` 也成立。
+- 测试改动：
+  - 在 [e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts>) 对以下真实链新增 `await expect(page.getByTestId('reveal-overlay')).toHaveCount(0)`：
+    - `超级间谍-Spy-恢复可见触发 manual-resync 后私有顶三重排 prompt 仍只归行动玩家页面`
+    - `超级间谍-For My Eyes Only-恢复可见触发 manual-resync 后私有顶五重排 prompt 仍只归行动玩家页面`
+    - `超级间谍-ISI摇摆据点-真实多客户端下赢家不是当前回合玩家时应只给赢家页面重排牌库`
+- 定向验证：
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-Spy-恢复可见触发 manual-resync 后私有顶三重排 prompt 仍只归行动玩家页面"` -> `1 passed`
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-For My Eyes Only-恢复可见触发 manual-resync 后私有顶五重排 prompt 仍只归行动玩家页面"` -> `1 passed`
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-ISI摇摆据点-真实多客户端下赢家不是当前回合玩家时应只给赢家页面重排牌库"` -> `1 passed`
+- 实际看图结论：
+  - [yuanhou-for-my-eyes-only-manual-resync-reorder-prompt-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-For-My-Eyes-Only-恢复可见触发-manual-resync-后私有顶五重排-prompt-仍只归行动玩家页面/yuanhou-for-my-eyes-only-manual-resync-reorder-prompt-host.png>) 里只有私有顶五重排编辑器、5 张 inspected 卡本体和右侧工具条，没有额外的 `牌库顶` 标题层或第二层之外的 reveal 浮层。
+  - [yuanhou-isi-swingin-pad-reorder-prompt.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-ISI摇摆据点-真实多客户端下赢家不是当前回合玩家时应只给赢家页面重排牌库/yuanhou-isi-swingin-pad-reorder-prompt.png>) 里赢家页只剩重排编辑器本体与暗化背景；没有额外 reveal 标题层。前面怀疑的“第二层叠层”复核后只是暗化背景，不是新的 live overlay bug。
+- 关键结论：
+  - 这次 `RevealOverlay` suppression 已经从 `Operative` 扩到整个 `deck-inspect-reorder` family 的浏览器级证据，不再只是单测或单对象结论。
+  - 后续如果再看到“截图里选项很多”，需要先区分：是 inspected card bodies + editor 本体，还是 shared overlay 没退场；这两类不能再混写。
+
+## 2026-05-18 SmashUp yuanhou Time Is Fleeting manual-resync 的旧 spotlight 干扰已收口
+
+- 触发原因：
+  - 在 `时间旅行者-Time Is Fleeting-恢复可见触发 manual-resync 后赢家页弃牌堆基地选择权仍只归赢家页面` 这条多客户端真实链里，新的 owner-only prompt 归属已经正确，但非赢家 Host 页仍残留一张巨大的 `Time Is Fleeting` action spotlight。
+  - 这不是“候选太多”，而是 shared action spotlight 在私有后续 prompt 期间没有退场，导致 waiting 页焦点错误。
+- 实现处理：
+  - 在 [src/games/smashup/Board.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/Board.tsx:1651>) 收紧 `CardSpotlightQueue` 显示门禁：
+    - 任意 `currentPrompt` 存在时，旧 action spotlight 直接退场；
+    - 当前页只是被 `interaction.isBlocked` 挂起、且没有可见 prompt / reaction window 时，也不再渲染旧 spotlight。
+  - 在 [e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts:4895>) 增加真实断言：Host 页进入隐藏子 prompt 等待态后，`data-testid="card-spotlight-queue"` 必须为 hidden。
+- 定向验证：
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "时间旅行者-Time Is Fleeting-恢复可见触发 manual-resync 后赢家页弃牌堆基地选择权仍只归赢家页面"` -> `1 passed`
+- 实际看图结论：
+  - [yuanhou-time-is-fleeting-manual-resync-discard-base-choice-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/时间旅行者-Time-Is-Fleeting-恢复可见触发-manual-resync-后赢家页弃牌堆基地选择权仍只归赢家页面/yuanhou-time-is-fleeting-manual-resync-discard-base-choice-guest.png>) 里赢家 Guest 页中央只剩 3 个合法基地候选，符合少量卡面候选的紧凑 prompt 形状。
+  - [yuanhou-time-is-fleeting-manual-resync-no-discard-base-choice-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/时间旅行者-Time-Is-Fleeting-恢复可见触发-manual-resync-后赢家页弃牌堆基地选择权仍只归赢家页面/yuanhou-time-is-fleeting-manual-resync-no-discard-base-choice-host.png>) 里 Host 页只剩棋盘与 `等待对方操作`，旧的 `Time Is Fleeting` 巨型特写已经消失。
+- 关键结论：
+  - 这条链现在的问题不再是“截图里看起来还有很多选项”。
+  - 赢家页的 3 张基地卡本体是合法候选；非赢家页的旧 spotlight 抢焦点问题已经作为 shared UX 根因修掉。
+
+## 2026-05-18 SmashUp yuanhou Baboom manual-resync 同一 shared 门禁已复用
+
+- 复核目的：
+  - 不把 `CardSpotlightQueue` 的退场门禁只停在 `Time Is Fleeting`。
+  - 继续验证同一个 shared UX 合同在 `Baboom` owner-only immediate extra-action prompt 上也成立。
+- 定向验证：
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "电子猿-Baboom-恢复可见触发 manual-resync 后 owner-only extra-action prompt 仍只归拥有者页面"` -> `1 passed`
+- 实际看图结论：
+  - [yuanhou-baboom-manual-resync-prompt-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/电子猿-Baboom-恢复可见触发-manual-resync-后-owner-only-extra-action-prompt-仍只归拥有者页面/yuanhou-baboom-manual-resync-prompt-host.png>) 里 Host 页只剩 `立刻打出一张额外战术，或放弃这次机会` 的 owner-only prompt 与真实候选卡本体，没有旧的巨型 action spotlight 抢焦点。
+  - [yuanhou-baboom-manual-resync-no-prompt-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/电子猿-Baboom-恢复可见触发-manual-resync-后-owner-only-extra-action-prompt-仍只归拥有者页面/yuanhou-baboom-manual-resync-no-prompt-guest.png>) 里 Guest 页只剩普通棋盘态，没有 prompt、等待遮罩或旧 spotlight。
+- 关键结论：
+  - 这条 shared UX 合同对 `time_travelers` 和 `cyborg_apes` 都成立。
+  - 后续再看“截图里有很多选项”，需要先分辨是不是候选本体，而不是旧 spotlight / reveal overlay 回来了。
+
+## 2026-05-18 SmashUp yuanhou Time Box / Portal Room 的等待态语义继续收紧
+
+- 本轮继续往 `time_travelers` 的 shared UX 面收口，不再回 `super_spies`：
+  - 在 [e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts>) 给 `Time Box` manual-resync 链补了显式门禁：
+    - owner-only reaction 阶段：Host / Guest 两页的 `card-spotlight-queue` 都必须 hidden，`reveal-overlay` 为 0，`me-first-overlay` 不可见。
+    - owner-only 进场 prompt 阶段：同样锁 `card-spotlight-queue hidden + reveal-overlay=0 + me-first-overlay hidden`。
+  - 定向复跑：
+    - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "时间旅行者-Time Box-恢复可见触发 manual-resync 后 owner-only reaction 与进场 prompt 仍只归 owner 页面"` -> `1 passed`
+- 逐图复核：
+  - [yuanhou-time-box-manual-resync-reaction-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/时间旅行者-Time-Box-恢复可见触发-manual-resync-后-owner-only-reaction-与进场-prompt-仍只归-owner-页面/yuanhou-time-box-manual-resync-reaction-host.png>) 里 Host 页中央只剩 `轮到你了！` + `跳过`，左下是小尺寸 `Time Box` rail 卡，不是旧大卡特写，也不是按钮墙。
+  - [yuanhou-time-box-manual-resync-no-reaction-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/时间旅行者-Time-Box-恢复可见触发-manual-resync-后-owner-only-reaction-与进场-prompt-仍只归-owner-页面/yuanhou-time-box-manual-resync-no-reaction-guest.png>) 里 Guest 页只有普通棋盘，没有 reaction、旧 spotlight 或 reveal 层。
+  - [yuanhou-time-box-manual-resync-play-prompt-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/时间旅行者-Time-Box-恢复可见触发-manual-resync-后-owner-only-reaction-与进场-prompt-仍只归-owner-页面/yuanhou-time-box-manual-resync-play-prompt-host.png>) 里中央只有标题、2 个高亮基地候选和 `跳过`；这是合法候选卡本体，不是选项噪音。
+- `Portal Room` 这条则额外澄清了等待层语义：
+  - 我一开始把 Host 页 `me-first-overlay` 当成“应该不存在”的对象，复跑后发现这是错误前提。
+  - 这条链里，**当前回合玩家页本来就应该进入 `计分后响应 / 等待赢家响应` 的等待层**；这不是 UX 脏态，而是合法流程提示。
+  - 因此测试已改成正确合同：
+    - Guest 页必须拿到 `Portal Room` 赢家 prompt；
+    - Host 页必须稳定看到 `计分后响应` 与 `等待...` 状态；
+    - 同时 Host / Guest 两页都不应残留 `card-spotlight-queue` 或 `reveal-overlay`。
+  - 定向复跑：
+    - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "时间旅行者-Portal Room-真实多客户端下赢家不是当前回合玩家时应只给赢家页面额外回合选择权"` -> `1 passed`
+- 逐图复核：
+  - [yuanhou-portal-room-winner-prompt-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/时间旅行者-Portal-Room-真实多客户端下赢家不是当前回合玩家时应只给赢家页面额外回合选择权/yuanhou-portal-room-winner-prompt-guest.png>) 里赢家 Guest 页中央只有 `传送门 / 让过` 两个反应按钮，不是多选墙。
+  - [yuanhou-portal-room-current-player-no-choice-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/时间旅行者-Portal-Room-真实多客户端下赢家不是当前回合玩家时应只给赢家页面额外回合选择权/yuanhou-portal-room-current-player-no-choice-host.png>) 里 Host 页中央是 `计分后响应 / 等待 ... 响应` 的合法等待层，不是串页 prompt，更不是旧 action 特写。
+- 关键结论：
+  - `Time Box` 的“候选多”只对应真实候选卡本体；`Portal Room` 的等待层则属于合法 after-scoring waiting overlay。
+  - 以后再审 “截图里有很多选项” 时，必须继续区分：
+    1. 合法候选卡本体；
+    2. 合法等待层；
+    3. 旧 spotlight / reveal overlay 没退场。
+
+## 2026-05-18 SmashUp yuanhou Bacta 双页 skip 语义纠偏
+
+- 本轮把 `变形者-Bacta the Future-真实多客户端下敌方 owner 可自行跳过额外随从且双方页面正常收口` 从错误前提里拉出来重审：
+  - 旧断言把 `放弃这次额外随从` 点击后的所有后续状态都当成失败，默认要求 `current == null`。
+  - 失败截图复核后确认这不是“强制额外随从”，而是 **skip 后进入合法 follow-up reaction**：Guest 页中央出现 `选择一个反应动作`，按钮只有 `模仿者 / 让过` 两个必要动作。
+- 已更新 [e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts:333>)：
+  - 先验证 Bacta 摧毁敌方随从后，`smashup_immediate_extra_minion` 只归 Guest 页面；
+  - Guest 点击 `放弃这次额外随从` 后，不再要求立即 `current == null`，而是显式要求进入 Guest 自己的 `smashup_reaction_choose`；
+  - 再由 Guest 点击 `让过`，最后才要求 Host/Guest 两页与服务端权威态同步收口。
+- 定向验证：
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "变形者-Bacta the Future-真实多客户端下敌方 owner 可自行跳过额外随从且双方页面正常收口"` -> `1 passed`
+- 实际看图结论：
+  - [yuanhou-bacta-enemy-owner-skip-prompt-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/变形者-Bacta-the-Future-真实多客户端下敌方-owner-可自行跳过额外随从且双方页面正常收口/yuanhou-bacta-enemy-owner-skip-prompt-guest.png>) 里 Guest 页中央只有 1 张合法额外随从候选 `Mimic` 和 1 个 `放弃这次额外随从` 按钮；这不是“选项太多”，而是 1 个候选 + 1 个 skip。
+  - [yuanhou-bacta-enemy-owner-skip-follow-up-reaction-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/变形者-Bacta-the-Future-真实多客户端下敌方-owner-可自行跳过额外随从且双方页面正常收口/yuanhou-bacta-enemy-owner-skip-follow-up-reaction-guest.png>) 里能直接看到 `选择一个反应动作` 与 `模仿者 / 让过` 两个按钮；这说明 skip 后出现的是后续 reaction，不是额外随从被强制打出。
+  - [yuanhou-bacta-enemy-owner-skipped-resolved-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/变形者-Bacta-the-Future-真实多客户端下敌方-owner-可自行跳过额外随从且双方页面正常收口/yuanhou-bacta-enemy-owner-skipped-resolved-guest.png>) 里 Guest 页已经回到普通棋盘态；候选随从仍在手牌，没有被强制打出。
+- 关键结论：
+  - `skip prompt` 本身是对的；真正要防的是“skip 后把合法后续 reaction 误报成 bug”。
+  - 这条链里“截图看起来有选项”并不违反易用性规范：真正可执行的动作只有 `候选随从 / skip`，以及下一步的 `触发 / 让过`，不是旧 overlay 残留造成的按钮墙。
+
+## 2026-05-18 SmashUp yuanhou Bacta 双页 hot-swap 残留已修
+
+- 在上面那条 Bacta 双页链继续往下看图后，发现还有一个独立的 shared UX 问题：
+  - 语义上 `skip` 后已经正确切到 `smashup_reaction_choose`；
+  - 但旧的手牌直选浮动条 `放弃这次额外随从` 仍会和新的 `模仿者 / 让过` 同屏短暂重叠。
+- 这不是规则 bug，而是典型的 **prompt 热切换残留**。命中根因：
+  - [src/games/smashup/Board.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/Board.tsx:349>) 上 `base/hand/minion/buried/titan/ongoing` 这几类棋盘侧浮动操作栏都带了退出动画；
+  - 当旧 prompt 退场、新 prompt 同帧进场时，旧浮动条会在截图里短暂残留。
+- 已收口：
+  - 在同文件加入 `promptHotSwapExit`，把这些 prompt-specific 浮动条的 `exit` 改成近乎立即退场；
+  - 在 [e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts:333>) 给 Bacta 双页链补断言：进入 follow-up reaction 后，Guest 页 `放弃这次额外随从` 按钮必须已经不在 DOM。
+- 定向验证：
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "变形者-Bacta the Future-真实多客户端下敌方 owner 可自行跳过额外随从且双方页面正常收口"` -> `1 passed`
+- 实际看图结论：
+  - [yuanhou-bacta-enemy-owner-skip-follow-up-reaction-guest.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/变形者-Bacta-the-Future-真实多客户端下敌方-owner-可自行跳过额外随从且双方页面正常收口/yuanhou-bacta-enemy-owner-skip-follow-up-reaction-guest.png>) 里现在只剩 `模仿者 / 让过` 两个 reaction 动作，旧的 `放弃这次额外随从` 浮动条已经消失。
+- 关键结论：
+  - 这次收掉的是真 UX bug，不是测试口径问题。
+  - 规范上以后要继续区分两件事：`skip` 后出现下一层 prompt 可能合法；但旧 prompt 的按钮/计数/浮动条和新 prompt 同屏，一定是残留。
+
+## 2026-05-18 SmashUp Time Box 棋盘直选假阳性高亮已修
+
+- 用户指出“截图里选项很多”后，我回看 `时间旅行者-Time Box-真实天赋可在正常额度用尽后额外打低战力随从与额外行动` 的失败图，确认不是按钮墙，而是更具体的 shared UX 缺口：
+  - `Jumpers` 选中后界面进入棋盘直选；
+  - 规则与单测都要求 `Time Box` 的额外低战力随从只能打到 Titan 所在基地；
+  - 但旧 UI 把 `Portal Room` 和 `The Nexus` 两个基地都亮成了可落点，形成“看起来能点，提交后才报错”的假阳性高亮。
+- 根因定位：
+  - [src/games/smashup/Board.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/Board.tsx:1360>) 的 `getDeployableBaseStateForCard(...)` 在 `cardMode === 'minion'` 分支里，没有完整镜像 `PLAY_MINION` validator 那条“全局额度已用尽且当前基地没有 base-limited quota 时应直接排除”的门禁。
+  - 结果是：命令校验会拒绝 `baseIndex=1`，但前端高亮仍把 `base-zone-1` 当成合法目标。
+- 实现收口：
+  - 在同函数里补上 `globalQuotaRemaining <= 0 && sameNameRemaining <= 0 && baseQuota <= 0 -> continue`，让棋盘直选高亮先按真实额度收窄；
+  - 把 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts:7206>) 的错误 prompt 断言改成真实合同：
+    - 当前不再期待 `smashup_immediate_extra_minion_base`；
+    - 而是要求进入 `board direct`，且 `base-zone-0` 未置灰、`base-zone-1` 已置灰，同时旧 `放弃这次额外随从` 按钮不在 DOM。
+- 定向验证：
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Time Box-真实天赋可在正常额度用尽后额外打低战力随从与额外行动"` -> `1 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "变形者基地-The Vats-真实入口会把同名随从所在基地置灰并只允许打到别的基地"` -> `1 passed`
+- 实际看图结论：
+  - [yuanhou-time-box-talent-board-direct-after-minion-choice.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-factions.e2e/时间旅行者-Time-Box-真实天赋可在正常额度用尽后额外打低战力随从与额外行动/yuanhou-time-box-talent-board-direct-after-minion-choice.png>) 里不再有中央 base prompt 或旧 skip 条；当前界面是棋盘直选态，但合法焦点只该留在 `Portal Room`。
+  - [yuanhou-time-box-talent-resolved.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-factions.e2e/时间旅行者-Time-Box-真实天赋可在正常额度用尽后额外打低战力随从与额外行动/yuanhou-time-box-talent-resolved.png>) 里 `Jumpers` 已落到 `Portal Room`，额外行动仍保留，说明“额外低战力随从 + 额外行动”两条额度链没有互相吞掉。
+- 规范回写：
+  - [docs/ai-rules/ui-ux.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/ui-ux.md>)：新增“棋盘直选高亮必须等于真实可落点”。
+  - [docs/ai-rules/testing-audit.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/testing-audit.md>)：新增“棋盘直选态必须单独验高亮假阳性”。
+  - `The Vats` 旧链复跑通过，说明这次 shared 收窄没有把现有“合法只剩另一个基地”的板面直选链打坏。
+- 交互友好性补强：
+  - [src/games/smashup/ui/BaseZone.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/ui/BaseZone.tsx>) 已把棋盘直选的“合法目标”发光加重，同时把非法基地改成更明显的禁用态（更低透明度、降亮度、降饱和、不可点击光标）。
+  - 复跑后截图复核：
+    - [yuanhou-time-box-talent-board-direct-after-minion-choice.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-factions.e2e/时间旅行者-Time-Box-真实天赋可在正常额度用尽后额外打低战力随从与额外行动/yuanhou-time-box-talent-board-direct-after-minion-choice.png>) 里 `Portal Room` 的合法落点比 `The Nexus` 更亮；后者没有再被渲染成“像可点一样”的同等焦点。
+    - [yuanhou-the-vats-same-name-base-blocked-other-base-still-legal.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-factions.e2e/变形者基地-The-Vats-真实入口会把同名随从所在基地置灰并只允许打到别的基地/yuanhou-the-vats-same-name-base-blocked-other-base-still-legal.png>) 里 `The Vats` 已明显更灰，`Portal Room` 保留正常亮度；这条 shared 视觉门禁没有只对 `Time Box` 生效。
+  - 兼容探针同步：
+    - [e2e/smashup/smashup-gameplay.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup/smashup-gameplay.e2e.ts>) 的旧探针原本只认 `ring-green-*` / `opacity-40`，本轮已改成识别新的 `ring-emerald-400` 与 `cursor-not-allowed` 禁用态。
+    - 定向复跑：`npm run test:e2e:ci:file -- e2e/smashup/smashup-gameplay.e2e.ts "额外随从额度显示"` -> `1 passed`
+## 2026-05-18 SmashUp deck reorder waiting UX 收口
+
+- 问题重新定性：
+  - 这轮不是继续卡在“超级间谍对象级玩法没做完”，而是 shared `deck-inspect-reorder` waiting UX 还留着噪音。
+  - 旧实现里，`PromptOverlay` 的非 owner deck reorder 页面虽然已经不允许提交，但仍会显示禁用编辑器，并且顶部/侧栏重复两处 `正在等待 {{player}}`；从截图看会像“这页也有很多可点项”，不符合等待页语义。
+- 本轮实现：
+  - [src/games/smashup/ui/PromptOverlay.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/ui/PromptOverlay.tsx>)：删除 deck reorder waiting header 上重复的 waiting 文案，当前只保留右侧等待块。
+  - [src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx>)：把旧合同从“显示等待文案并禁用确认顺序”改成“只显示等待态，不暴露任何编辑工具”。
+  - [docs/ai-rules/ui-ux.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/ui-ux.md>)：补充 `非 owner 等待页只能保留单一等待语义`。
+  - [docs/ai-rules/testing-audit.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/testing-audit.md>)：补充 `非 owner waiting overlay` 必须单独验证“是否还像可操作页面”。
+- 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `13 passed`
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 ... npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-Spy-恢复可见触发 manual-resync 后私有顶三重排 prompt 仍只归行动玩家页面"` -> `1 passed`
+- 实际看图结论：
+  - [yuanhou-spy-manual-resync-reorder-prompt-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-Spy-恢复可见触发-manual-resync-后私有顶三重排-prompt-仍只归行动玩家页面/yuanhou-spy-manual-resync-reorder-prompt-host.png>) 里中央是 3 张 inspected 顶牌本体，右侧真实可执行动作只有 `移到牌库底 / 后移 / 确认顺序` 三个；这不是旧的排列按钮墙。
+  - 当前“看起来很多”的主体是卡带本体，不是大量动作按钮；真正按钮数量已经压到少量线性编辑动作。
+  - 非 owner waiting contract 现在也从“禁用编辑器”进一步收紧成“纯等待态”，避免后续再把等待页截图误读成选项噪音。
+
+## 2026-05-18 SmashUp PromptOverlay 非 owner waiting 统一成单一语义
+
+- 继续横向检查后发现，重复 waiting 语义不只出现在 `deck reorder`：
+  - `compact multi`
+  - `card mode`
+  - `list mode`
+  这三条分支原来也会在标题区先显示一次 `正在等待 {{player}}`，再在内容区补一次 `等待对方选择…`，属于同根 UX 噪音。
+- 本轮实现：
+  - [src/games/smashup/ui/PromptOverlay.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/ui/PromptOverlay.tsx>)：
+    - 删除这三类分支标题区的等待文案；
+    - 把内容区统一成一处 `正在等待 {{player}}`；
+    - 保留标题，但不再让等待页同时像“说明区 + 操作区 + 等待区”三层并存。
+  - [src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx>)：
+    - 新增 `compact multi / card mode / list mode` 三条 non-owner 回归；
+    - 断言每种模式都只剩一处 `正在等待 {{player}}`，且不泄露候选按钮、候选卡面或确认按钮。
+- 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `16 passed`
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 ... npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-Operative-恢复可见触发 manual-resync 后两层 prompt 仍只归行动玩家页面"` -> `1 passed`
+- 边界澄清：
+  - 这条 E2E 也说明了一个重要事实：当前多人真实链里，很多 owner-only 私有 prompt 根本不会把 waiting overlay 发给 Guest 页；Guest 页看到的往往是普通棋盘或 reveal。
+  - 所以这轮收口的重点是 **renderer/shared prompt contract**，不是改 transport 策略。
+
+## 2026-05-18 SmashUp MeFirstOverlay waiting copy 继续与 PromptOverlay 对齐
+
+- 继续扫 shared overlay 后，`MeFirstOverlay` 没再发现“像可操作页”的额外按钮噪音，但 waiting copy 口气和 `PromptOverlay` 还不一致：
+  - 旧文案：`等待 {{player}} 响应...`
+  - 现行 prompt family 文案：`正在等待 {{player}}`
+- 本轮只做低风险收敛，不改交互结构：
+  - [src/games/smashup/ui/MeFirstOverlay.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/ui/MeFirstOverlay.tsx>) 的 non-owner status 改成 `正在等待 {{player}} 响应...`
+  - [src/games/smashup/__tests__/MeFirstOverlay.test.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/MeFirstOverlay.test.tsx>) 同步更新断言
+- 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/MeFirstOverlay.test.tsx src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `20 passed`
+- 结论：
+  - `MeFirstOverlay` 当前仍保持单一等待态，不暴露 `让过` 按钮给非当前响应玩家；
+  - 这步主要解决的是 shared waiting language consistency，不是新的规则或 transport 问题。
+
+## 2026-05-18 SmashUp PromptOverlay 非 owner waiting 壳层继续收窄
+
+- 这轮继续往 `PromptOverlay` 的 shared waiting UX 下钻，不再只看“有没有等待文案”，而是把非 owner 页的原 prompt 标题/候选壳层一起收掉。
+- 本轮实现：
+  - [src/games/smashup/ui/PromptOverlay.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/ui/PromptOverlay.tsx>)：非 owner 的普通 prompt 现在直接返回单一 waiting 壳层，避免再在等待页里同时看到标题、候选壳层和等待语义。
+  - [src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx>)：补了 `button-only / compact multi / card mode / list mode` 四条 non-owner 回归，明确断言原 prompt 标题不再泄露。
+  - [docs/ai-rules/ui-ux.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/ui-ux.md>)：补充“非 owner waiting prompt 不得继续保留原 prompt 标题/候选壳层”。
+  - [docs/ai-rules/testing-audit.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/testing-audit.md>)：把等待页审查从“有没有按钮”提升到“标题/候选壳层/控件是否都退干净”。
+- 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `16 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-The Spy Who Ditched Me-真实多客户端下应只在施放者页面私有展示无随从玩家手牌"` -> `1 passed`
+- 实图结论：
+  - [yuanhou-spy-who-ditched-me-multiplayer-reveal-dismissed-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-The-Spy-Who-Ditched-Me-真实多客户端下应只在施放者页面私有展示无随从玩家手牌/yuanhou-spy-who-ditched-me-multiplayer-reveal-dismissed-host.png>) 里 host 页只剩右下 `等待对方操作`，中央不再挂着原 prompt 标题/候选壳层；这比之前那张 host 图更接近单一等待语义。
+  - [yuanhou-spy-who-ditched-me-multiplayer-reveal-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-The-Spy-Who-Ditched-Me-真实多客户端下应只在施放者页面私有展示无随从玩家手牌/yuanhou-spy-who-ditched-me-multiplayer-reveal-host.png>) 里 Reveal 仍在，说明我没有把合法展示链搞坏。
+  - 这轮还没把所有 shared prompt family 都扫完，但“等待页像操作页”的这个共性缺陷已经继续收了一层。
+
+## 2026-05-18 SmashUp Board blocked waiting 结束回合区继续减法
+
+- 新发现已经从 `PromptOverlay` 下钻到组合层：host waiting 图里虽然中央 overlay 已退干净，但 `Board` 右下角仍同时显示 `等待对方操作`、额度徽章和 `显/隐` 切换，看起来仍像一组可操作入口。
+- 本轮实现：
+  - [src/games/smashup/Board.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/Board.tsx>)：新增 `isEndTurnBlocked` 收敛 `Board` 右下角状态；blocked 时强制保留单一等待状态牌，但不再渲染额度徽章和 `显/隐` 切换。
+  - 同时保留原合同：非 blocked 时大圆 `结束回合` 按钮与额度提示仍照常出现，没有被 waiting 态减法一起打掉。
+  - [docs/ai-rules/ui-ux.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/ui-ux.md>)：新增“棋盘 blocked waiting 不得继续暴露结束回合配套控件”。
+  - [docs/ai-rules/testing-audit.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/testing-audit.md>)：新增 `Board blocked waiting` 的截图/对照验收门禁。
+- 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `16 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "超级间谍-The Spy Who Ditched Me-真实多客户端下应只在施放者页面私有展示无随从玩家手牌"` -> `1 passed`
+  - `npm run test:e2e:ci:file -- e2e/smashup-yuanhou-jumper-multiplayer.e2e.ts "电子猿-Missing Uplink-真实多客户端下拥有者结束回合后双方页面都应同步额外抽牌结果"` -> `1 passed`
+- 实图结论：
+  - [yuanhou-spy-who-ditched-me-multiplayer-reveal-dismissed-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/超级间谍-The-Spy-Who-Ditched-Me-真实多客户端下应只在施放者页面私有展示无随从玩家手牌/yuanhou-spy-who-ditched-me-multiplayer-reveal-dismissed-host.png>) 里右下现在只剩单一 `等待对方操作` 状态牌；旧的 `随从/战术` 徽章和 `隐` 切换已经退出这个 waiting 区。
+  - [yuanhou-missing-uplink-multiplayer-before-end-turn-host.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-jumper-multiplayer.e2e/电子猿-Missing-Uplink-真实多客户端下拥有者结束回合后双方页面都应同步额外抽牌结果/yuanhou-missing-uplink-multiplayer-before-end-turn-host.png>) 里正常可操作态仍保留大圆 `结束回合` 按钮与额度提示，说明减法只打在 waiting 分支，没有误伤正常操作链。
+
+## 2026-05-18 审计工作流防空转补记
+
+- 这轮没有继续围着 `super_spies` 扩同类样例，而是把“对象级已闭合后必须换轴扩审”的门禁直接补进了 [docs/ai-rules/testing-audit.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/testing-audit.md>)：
+  - 已有 `shared-contract 签名 + 本地限定词 + scoped L3/L4` 的 effect atom，不允许再靠同对象同入口类型无限扩样冒充深入审计；
+  - 后续必须显式切到新的触发来源、多人归属、manual-resync / waiting / overlay seam、语义限定词差异，或 shared-contract family 横向影响面；
+  - 如果没有新的 `dirty reason`，只能复用旧证据，不能把“再补几条类似样例”写成新进展。
+- 同时把 [evidence/smashup/smashup-in-progress-long-description-chain-audit-2026-05-15.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/evidence/smashup/smashup-in-progress-long-description-chain-audit-2026-05-15.md>) 里的 `time_travelers_time_box` 从“只写 smoke”升级成可复查口径：
+  - 明确记录 `smashup_reaction_choose -> titan_time_travelers_time_box_play` 的 owner-only 双阶段入口；
+  - 补入真实天赋棋盘直选、真实第 5 枚计数进场并清零、多客户端 owner-only、manual-resync 双阶段归属四条 E2E 证据；
+  - 这样后面再审 `Time Box` 时，就该转去新的 shared seam 或新的本地限定词，而不是回到同一条已闭合链路重复扩样。
+
+## 2026-05-19 SmashUp 长描述审计补齐 Week of Sharks scoped L3
+
+- 这轮没有再回 `super_spies`。直接补当前长描述矩阵里仍是 `L2 only` 的 `sharks_week_of_sharks`。
+- 真实入口 E2E：
+  - [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts>) 新增 `鲨鱼-Week of Sharks-真实回合结束两张实例都满足时也只额外抽一张`
+  - 场景锁定：P0 两个不同基地各挂一张 `Week of Sharks`，两个基地都各有 P0 控制随从；结束回合后只允许一次额外抽牌，再叠加正常回合结束抽 2。
+- 验证结果：
+  - 标准 `npm run test:e2e:ci:file -- ...` 路径先撞到 runtime-manager 的 isolated 端口分配 bug：它会错误复用已占用的 `6273/20100/21100`，并在失败后留下孤儿 node 进程。
+  - 清掉孤儿端口后，改用 legacy globalSetup 隔离链复跑：
+    - `PW_ALLOW_LEGACY_GLOBAL_BOOTSTRAP=true PW_ISOLATE_PORTS=true PW_RUNTIME_SCOPE=week-of-sharks-legacy PW_WORKERS=1 PW_HEADED=false PW_USE_DEV_SERVERS=false PW_HAS_EXPLICIT_TARGET=true PW_TEST_TARGET=e2e/smashup-yuanhou-factions.e2e.ts PW_TEST_MATCH=e2e/smashup-yuanhou-factions.e2e.ts node node_modules/playwright/cli.js test e2e/smashup-yuanhou-factions.e2e.ts --grep "鲨鱼-Week of Sharks-真实回合结束两张实例都满足时也只额外抽一张"` -> `1 passed`
+  - 权威状态断言锁定：
+    - `P0 hand = week-draw-a,week-draw-b,week-draw-c`
+    - `P0 deck = week-draw-d,week-draw-e`
+    - `interaction.current == null`
+    - `currentPlayerIndex == 1`
+- 实图观察：
+  - [sharks-week-of-sharks-before-end-turn.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-factions.e2e/鲨鱼-Week-of-Sharks-真实回合结束两张实例都满足时也只额外抽一张/sharks-week-of-sharks-before-end-turn.png>)：两座基地上都已有己方随从，右下仍是 `结束回合` 可操作态，没有额外 prompt。
+  - [sharks-week-of-sharks-end-turn-drew-once.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-factions.e2e/鲨鱼-Week-of-Sharks-真实回合结束两张实例都满足时也只额外抽一张/sharks-week-of-sharks-end-turn-drew-once.png>)：回合已经切到下一位玩家，中央没有任何额外 draw/prompt overlay；虽然资源图未完整渲染卡面，但真实链已无残留交互。
+- 审计口径更新：
+  - [evidence/smashup/smashup-in-progress-long-description-chain-audit-2026-05-15.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/evidence/smashup/smashup-in-progress-long-description-chain-audit-2026-05-15.md>) 已把 `sharks_week_of_sharks` 从 `L2 only` 升成有真实结束回合入口的 `Pass / scoped L3`。
+  - 长描述矩阵当前剩余 `L2 only` 只剩：
+    - `fairies_spirit_of_the_forest`
+    - `princesses_heirloom`
+
+## 2026-05-19 SmashUp Spirit of the Forest 复跑阻塞记录
+
+- 为了继续消化剩余 `L2 only`，本轮尝试直接复用现有真实浏览器链：
+  - `PW_ALLOW_LEGACY_GLOBAL_BOOTSTRAP=true PW_ISOLATE_PORTS=true PW_RUNTIME_SCOPE=spirit-titania-legacy PW_WORKERS=1 PW_HEADED=false PW_USE_DEV_SERVERS=false PW_HAS_EXPLICIT_TARGET=true PW_TEST_TARGET=e2e/smashup/smashup-gameplay.e2e.ts PW_TEST_MATCH=e2e/smashup/smashup-gameplay.e2e.ts node node_modules/playwright/cli.js test e2e/smashup/smashup-gameplay.e2e.ts --grep "Fairies OR 分支：Titania 会先执行已选分支，再给剩余分支与跳过"`
+- 结果不是断言红灯，而是前端 bootstrap 崩溃：
+  - `global-setup.ts` 报 `服务启动进程已退出`
+  - Vite/esbuild 日志尾部是 `Error during dependency optimization: The service was stopped`
+- 结论：
+  - 这条当前记为环境级阻塞，不把它误写成 `Spirit of the Forest` 对象语义失败。
+  - 下轮若继续补 `fairies_spirit_of_the_forest`，优先走更稳定的单页夹具或先绕过这条 legacy bootstrap 崩溃链，而不是在同一启动错误上空转。
+
+## 2026-05-19 SmashUp Heirloom 真实入口与 shared spotlight UX 收口
+
+- 这轮不再回 `super_spies`，直接消化长描述矩阵剩余 `L2 only` 的 `princesses_heirloom`。
+- 真实定位出的根因有两层：
+  - `e2e/framework/GameTestContext.ts` 对“需要随从目标”的牌会误补第二次手牌点击，导致 `ongoing-minion` 选中态被取消；
+  - `src/components/game/framework/CardSpotlightQueue.tsx` 看起来像展示提示，实际上整屏遮罩会拦后续手牌点击，不符合非阻塞 UX。
+- 已完成修正：
+  - `GameTestContext.playCard(...)`：有 `targetMinionUid` 时不再反点同一张手牌。
+  - `CardSpotlightQueue.tsx`：改成非阻塞 overlay，整屏 `pointer-events-none`，只保留卡面本体可关闭；文案改为“点卡关闭，可继续操作”。
+  - `src/games/smashup/__tests__/actionSpotlightSuppression.test.tsx`：新增“spotlight 队列不抢全屏点击”回归。
+  - `e2e/smashup-princesses-heirloom.e2e.ts`：保留真实入口链，证明两张 `Heirloom` 可附着到同一宿主，`Ninja Poison` 的 `destroy` 链命中后两张 `Heirloom` 仍保留。
+- 验证：
+  - `npm run test -- src/games/smashup/__tests__/actionSpotlightSuppression.test.tsx` -> `4 passed`
+  - `PW_ALLOW_LEGACY_GLOBAL_BOOTSTRAP=true PW_ISOLATE_PORTS=true PW_RUNTIME_SCOPE=heirloom-final PW_WORKERS=1 PW_HEADED=false PW_USE_DEV_SERVERS=false PW_HAS_EXPLICIT_TARGET=true PW_TEST_TARGET=e2e/smashup-princesses-heirloom.e2e.ts PW_TEST_MATCH=e2e/smashup-princesses-heirloom.e2e.ts node node_modules/playwright/cli.js test e2e/smashup-princesses-heirloom.e2e.ts --grep "Heirloom-真实入口"` -> `1 passed`
+- 证据回写：
+  - `evidence/smashup/smashup-in-progress-long-description-chain-audit-2026-05-15.md` 已把 `princesses_heirloom` 从 `L2 only` 升到 `Pass / scoped L3`。
+  - 当前长描述矩阵只剩 `fairies_spirit_of_the_forest` 一个 `L2 only`。
+
+## 2026-05-19 SmashUp Spirit of the Forest 独立 scoped L3 收口
+
+- 为避免继续卡在旧 `e2e/smashup/smashup-gameplay.e2e.ts` 的 bootstrap 崩溃链，本轮没有再复用那条文件，而是新建 focused 真实入口：
+  - [e2e/smashup-fairies-spirit-of-the-forest.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-fairies-spirit-of-the-forest.e2e.ts>)
+- 真实链选择：
+  - 直接复刻 `Titania + Spirit of the Forest` 的 OR 连续分支场景；
+  - 用 `skipInitialization + setupScene` 绕开旧 gameplay 文件的 Vite/esbuild 启动不稳问题。
+- 验证结果：
+  - `PW_ALLOW_LEGACY_GLOBAL_BOOTSTRAP=true PW_ISOLATE_PORTS=true PW_RUNTIME_SCOPE=spirit-focused PW_WORKERS=1 PW_HEADED=false PW_USE_DEV_SERVERS=false PW_HAS_EXPLICIT_TARGET=true PW_TEST_TARGET=e2e/smashup-fairies-spirit-of-the-forest.e2e.ts PW_TEST_MATCH=e2e/smashup-fairies-spirit-of-the-forest.e2e.ts node node_modules/playwright/cli.js test e2e/smashup-fairies-spirit-of-the-forest.e2e.ts --grep "Titania 在丛林之灵在场时会先执行已选分支"` -> `1 passed`
+- 真实看图结论：
+  - `fairies-spirit-branch-prompt-visible.png`：首段 prompt 同时提供“额外打出一个随从 / 将一个随从移回其拥有者手牌”。
+  - `fairies-spirit-return-target-visible.png`：第一分支落到真实棋盘随从直选，不是 overlay 选项墙。
+  - `fairies-spirit-follow-up-prompt-visible.png`：第一分支结清后，只剩剩余分支与跳过，原回手分支已退出。
+  - `fairies-spirit-sequential-resolved.png`：`Titania` 已在基地，`enemy-first-mate` 已回到拥有者手牌，链路收口。
+- 证据回写：
+  - `evidence/smashup/smashup-in-progress-long-description-chain-audit-2026-05-15.md` 已把 `fairies_spirit_of_the_forest` 从 `L2 only` 升到 `Pass / scoped L3`。
+  - 至此，这份“实施中派系最长描述对象”矩阵已无 `L2 only` 残留；后续如继续推进，应切 shared seam / 新 dirty reason，而不是重复扩写已闭合对象。
+
+## 2026-05-19 SmashUp RevealOverlay 非阻塞 UX 合同统一
+
+- 新发现不是 `super_spies` 对象级玩法残缺，而是 shared `RevealOverlay` 仍保留旧语义：
+  - 文件头和 i18n 还写着“点击任意位置关闭”；
+  - 实现仍是整屏 `onClick` + 全屏 backdrop 命中；
+  - 这和前面已收口的 `CardSpotlightQueue` 非阻塞合同不一致，也会把“展示层”继续做成像 prompt 的假模态。
+- 本轮收口：
+  - [src/games/smashup/ui/RevealOverlay.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/ui/RevealOverlay.tsx>)：
+    - 根容器改成 `pointer-events-none`；
+    - 只给卡面区和单个 `关闭` 按钮恢复 `pointer-events-auto`；
+    - 去掉整屏点击关闭，统一成 `reveal-dismiss-btn` 最小关闭控件；
+    - 提示文案改成“关闭后可继续操作 / 关闭后继续”。
+  - [src/games/smashup/__tests__/revealSystem.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/revealSystem.test.ts>)：新增 shared L2，锁定 overlay 根容器非阻塞且显式存在 `reveal-dismiss-btn`。
+  - [docs/ai-rules/ui-ux.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/ui-ux.md>)：补“展示型 overlay 不得伪装成整屏可操作层”。
+  - [docs/ai-rules/testing-audit.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/testing-audit.md>)：补“展示型非阻塞 overlay 必须单独验是否抢整屏点击”。
+  - 顺手把相关 E2E helper 从点整屏 overlay 改成点 `reveal-dismiss-btn`，避免旧测试口径继续固化错误 UX。
+- 验证：
+  - `npm run test -- src/games/smashup/__tests__/revealSystem.test.ts` -> `15 passed`
+  - `npm run i18n:check` -> `no missing keys detected`
+  - `npm run test:e2e:ci:file -- e2e/smashup/smashup-innsmouth-locals-reveal-simple.e2e.ts` -> `2 passed`
+- 实际看图结论：
+  - [innsmouth-locals-reveal.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/smashup/smashup-innsmouth-locals-reveal-simple.e2e/打出“本地人”后应该显示展示-UI/innsmouth-locals-reveal.png>) 里中央只有 `P1 的牌库顶` 和 3 张 reveal 卡本体；右下 `结束回合` 仍可见，说明展示层没有把棋盘伪装成新的整屏 prompt。
+  - 这张图里的“看起来有 3 个对象”是合法 reveal 卡本体，不是额外动作按钮墙；真正可执行控件已收敛到单个 `关闭`。
+
+## 2026-05-19 SmashUp owner prompt 结束回合簇退场合同
+
+- 用户指出 `Spirit of the Forest` 的真实截图里，虽然中央 prompt 只有 2 个候选，但右下仍保留 `结束回合 + 额度徽章 + 显隐切换`，这会形成第二视觉焦点。
+- 根因不是 `super_spies` 单卡死循环，而是 shared `Board` 只收敛了 `blocked waiting`，没有收敛“当前玩家自己正在处理 prompt”的结束回合簇。
+- 本轮实现：
+  - [src/games/smashup/Board.tsx](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/Board.tsx>)：新增 `shouldSuppressEndTurnUiForOwnedPrompt = activePromptSurface !== 'none'`；只要当前玩家自己持有 prompt，就临时收起右下 `结束回合` 大按钮、额度徽章和显隐切换。prompt 解决后自动恢复。
+  - [e2e/smashup-fairies-spirit-of-the-forest.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-fairies-spirit-of-the-forest.e2e.ts>)：在 `Titania + Spirit of the Forest` 真实链里新增断言，锁定 prompt 激活时 `su-end-turn-action-button`、`su-end-turn-hints`、`su-end-turn-visibility-toggle` 都不存在；链路收口后 `su-end-turn-action-button` 恢复可见。
+  - [docs/ai-rules/ui-ux.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/ui-ux.md>) / [docs/ai-rules/testing-audit.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/testing-audit.md>)：补入 owner prompt 期间不得继续暴露结束回合簇的共享 UX / 审计门禁。
+- 验证：
+  - `PW_ALLOW_LEGACY_GLOBAL_BOOTSTRAP=true PW_ISOLATE_PORTS=true PW_RUNTIME_SCOPE=spirit-owned-prompt-focus PW_WORKERS=1 PW_HEADED=false PW_USE_DEV_SERVERS=false PW_HAS_EXPLICIT_TARGET=true PW_TEST_TARGET=e2e/smashup-fairies-spirit-of-the-forest.e2e.ts PW_TEST_MATCH=e2e/smashup-fairies-spirit-of-the-forest.e2e.ts node node_modules/playwright/cli.js test e2e/smashup-fairies-spirit-of-the-forest.e2e.ts --grep "Titania 在丛林之灵在场时会先执行已选分支"` -> `1 passed`
+  - `PW_ALLOW_LEGACY_GLOBAL_BOOTSTRAP=true PW_ISOLATE_PORTS=true PW_RUNTIME_SCOPE=bacta-hand-prompt-focus PW_WORKERS=1 PW_HEADED=false PW_USE_DEV_SERVERS=false PW_HAS_EXPLICIT_TARGET=true PW_TEST_TARGET=e2e/smashup-yuanhou-factions.e2e.ts PW_TEST_MATCH=e2e/smashup-yuanhou-factions.e2e.ts node node_modules/playwright/cli.js test e2e/smashup-yuanhou-factions.e2e.ts --grep "变形者-Bacta the Future-真实入口目标受Shell Game保护时仍给其拥有者立即额外随从机会"` -> `1 passed`
+- 实图结论：
+  - [fairies-spirit-branch-prompt-visible.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-fairies-spirit-of-the-forest.e2e/Fairies-OR-分支：Titania-在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过/fairies-spirit-branch-prompt-visible.png>)：中央只剩 `Titania` prompt 的标题与两枚候选按钮，右下结束回合簇已经退场，不再和 prompt 争主焦点。
+  - [fairies-spirit-return-target-visible.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-fairies-spirit-of-the-forest.e2e/Fairies-OR-分支：Titania-在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过/fairies-spirit-return-target-visible.png>)：切到棋盘直选后，只剩顶部指令横幅与真实目标随从，右下结束回合簇同样退场，说明这条合同不只覆盖 overlay prompt。
+  - [yuanhou-bacta-shell-protected-host-extra-minion-prompt.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-yuanhou-factions.e2e/变形者-Bacta-the-Future-真实入口目标受Shell-Game保护时仍给其拥有者立即额外随从机会/yuanhou-bacta-shell-protected-host-extra-minion-prompt.png>)：切到 hand 直承的 immediate extra minion prompt 时，中央是手牌候选与跳过入口，右下也没有结束回合簇，说明 owner prompt 抑制已覆盖 hand surface。
+  - [fairies-spirit-sequential-resolved.png](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/test-results/evidence-screenshots/_shared/smashup-fairies-spirit-of-the-forest.e2e/Fairies-OR-分支：Titania-在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过/fairies-spirit-sequential-resolved.png>)：prompt 解完后，右下 `结束回合` 与额度徽章恢复，说明这次减法只压在 prompt 激活窗口，没有误伤正常操作态。
+
+## 2026-05-19 SmashUp `Spy / For My Eyes Only` 重排截图失效回写
+
+- 用户指出“为什么截图里还是一堆选项”是有效 finding。根因不是这两张牌还在反复返工，而是旧的本地重排截图拍在 `owner prompt` 结束回合簇 suppression 落地之前，右下仍保留 `结束回合 + 额度徽章 + 显隐切换`，已不满足当前共享 UX 合同。
+- 当前已把这条要求补进 [docs/ai-rules/testing-audit.md](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/docs/ai-rules/testing-audit.md>)：shared UX 合同变化后，旧截图若仍带旧噪音控件，必须视为 stale，不能继续拿来做正向证据。
+- 同时已在 [e2e/smashup-yuanhou-factions.e2e.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/e2e/smashup-yuanhou-factions.e2e.ts>) 的两条真实重排链补硬断言：
+  - `超级间谍-For My Eyes Only-真实入口可查看自己牌库顶五张并按非默认顶底顺序放回`
+  - `超级间谍-Spy-真实入口可查看自己牌库顶三张并按非默认顶底顺序放回`
+- 新 gate 明确要求：进入 `super_spies_for_my_eyes_only_reorder` / `super_spies_spy_reorder` 时，`su-end-turn-action-button`、`su-end-turn-hints`、`su-end-turn-visibility-toggle` 都必须为 0；否则不允许产出新的 prompt 截图证据。
+
+## 2026-05-19 shared transport / UX 主线再纠偏
+
+- 这轮先把“是不是又在 `Super Spies` 上死循环”拆开核了三件事：
+  - `PromptOverlay` 的重排类 prompt 到底是不是按钮墙；
+  - 共享 consumer 的“同 id 但语义换了”本地残影 gate 还在不在；
+  - transport `hasOnlineAiRecoveryResolved()` 这条线最近补的 direct gate 现在是不是仍然全绿。
+- 直接验证结果：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "deck reorder prompts render a fixed editor instead of permutation button wall|deck reorder prompts dispatch the matched underlying option after local editing|prompt content switches reset local multi-select state and replace stale first-step UI|two-card multi card prompts keep a compact action bar without select-all noise|two-option multi button prompts also hide select-all noise|deck reorder prompt 不归当前页面所有时，应只显示等待态而不暴露编辑工具|card mode prompt 不归当前页面所有时，应只显示一处等待文案而不泄露候选卡面|list mode prompt 不归当前页面所有时，应只显示一处等待文案而不渲染文本按钮"` -> `1 file passed, 8 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/useInteractionState.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "buildOnlineAiRecoveryFingerprint 在 pending-damage 的 responder/responseType 相同但 pending id 漂移时，也必须变化|hasOnlineAiRecoveryResolved（hidden-interaction seat-view gate）|hasOnlineAiRecoveryResolved（response-window gate）|hasOnlineAiRecoveryResolved（visible-interaction gate）|hasOnlineAiRecoveryResolved（legalActionOnly gate）"` -> `1 file passed, 19 passed`
+- 当前收紧后的结论：
+  - `Spy / For My Eyes Only` 那张“看起来很多选项”的图，当前实现里不是按钮墙。重排 prompt 已有固定编辑器合同，左侧是 inspected cards，对外可执行控件只有右侧编辑动作和确认；这类图后续必须按“对象本体 vs 动作控件”分开审。
+  - `useInteractionState` 的同 id 语义漂移 reset gate 仍在，说明 shared consumer 这条线没有回退到“旧勾选残留”。
+  - transport 这组 `hidden / response-window / visible / legalActionOnly` resolved gate 仍然是绿的，当前没有出现“以为补了其实已经红回去”的假进展。
+- 本轮还顺手收紧了一个假 residual：
+  - `pending-damage` 目前只在 `server.ts` 的 diagnostic / fingerprint 层有辅助分支；
+  - [`src/engine/transport/onlineAiRecovery.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/onlineAiRecovery.ts>) 的 `ForceEndTurnStalledAiReason` 并不包含 `pending-damage`；
+  - 所以这条现在不能继续当成 `resolveOnlineAiRecoveryCandidate()` 的 live recovery family 去反复追，后续只把它当 fingerprint 证据层维护，除非代码先引入真正的 `pending-damage` candidate。
+- 下一步仍回 shared transport 主线：
+  - 继续查 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / overlay resync caller 的 provenance；
+  - 不再把 `Super Spies` 的重排截图或 `pending-damage` 误当成当前主阻塞。
+
+## 2026-05-19 response-window responder 漂移 direct gate 补齐
+
+- 继续往 shared transport / playerView / interaction friendliness 审时，又补了一条之前没被 direct test 锁死的语义轴：
+  - `response-window` 外壳可以不换 `id/type/source`；
+  - 但只要当前 responder 已经从 A 切到 B，本质上就是“控制权换人”；
+  - 这时 private overlay 如果还停在旧 responder，必须直接判 stale，`blockedKey` 也必须跟着变化，避免把新 waiting/control state 吞进旧 cooldown。
+- 本轮没有改实现，只补 direct gate，因为 [`src/engine/ai/onlineDecisionView.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/ai/onlineDecisionView.ts>) 本来就已经把 `sharedResponseWindow.currentResponderId !== privateResponseWindow.currentResponderId` 视为不新鲜。
+- 新增回归：
+  - [`src/engine/ai/__tests__/onlineDecisionView.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/ai/__tests__/onlineDecisionView.test.ts>)
+    - `response-window responder 漂移时，private-required 应判 stale-private-overlay`
+    - `private-required response-window 即使 id/type/source 相同，只要 responder 漂移，blockedKey 也必须变化`
+- 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/ai/__tests__/onlineDecisionView.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "response-window responder 漂移时，private-required 应判 stale-private-overlay|private-required response-window 即使 id/type/source 相同，只要 responder 漂移，blockedKey 也必须变化|private-required prompt 即使 interaction id 相同，只要 kind 漂移也必须判定 stale-private-overlay|private-required prompt 即使 interaction id 和 kind 相同，只要 sourceId 漂移也必须判定 stale-private-overlay"` -> `1 file passed, 4 passed`
+  - `git diff --check -- src/engine/ai/__tests__/onlineDecisionView.test.ts` -> `passed`
+- 当前结论：
+  - 这条再一次证明目前真正的主线是 shared decision / transport provenance，不是回到某张牌或某个 prompt family 继续扩样；
+  - `response-window responder drift` 现在也有 direct gate 了，后续若这类等待态/控制权错位再回退，应优先查 caller 传入了哪份 shared/private snapshot，而不是重新争论截图里是不是“很多选项”。
+
+## 2026-05-19 overlay resync cooldown 再补 responder drift caller gate
+
+- 在把 `response-window responder drift` 补成 `onlineDecisionView` direct gate 后，我又往 caller 层补了一格：
+  - 不只是 `response-window id drift` 应重新放行 overlay resync；
+  - **同一窗口壳子里如果 responder 已经换人，新的 blockedKey 也必须放行第二次 resync 广播**；
+  - 否则用户会遇到“控制权已经转移，但旧 cooldown 还把新的 waiting/control state 吞掉”的 shared UX 脏态。
+- 新增回归：
+  - [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)
+    - `online AI watchdog 在 response-window responder 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 response-window responder 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|online AI watchdog 在 response-window id 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|online AI watchdog 遇到同 seat 的新 blockedKey 时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉"` -> `1 file passed, 3 passed`
+  - `git diff --check -- src/engine/transport/__tests__/server.test.ts` -> `passed`
+- 夹具说明：
+  - 这条新测试里控制了 `resolveNextAiDispatch` 持续返回 blocked，所以日志里出现一次 `blocker_persisted` 是**故意保留第二个 blocked 作为夹具终态**，不是新的实现回归；
+  - 这条测试真正锁的是：第一次 responder=1 的 blockedKey 触发 1 次 resync，第二次 responder=2 的 blockedKey 仍会再触发 1 次 resync，总广播数必须为 2。
+- 当前结论：
+  - `response-window` 这条 shared transport 线现在同时锁住了：
+    - `window id drift -> resync cooldown 放行`
+    - `responder drift -> resync cooldown 放行`
+    - `same seat new blockedKey -> resync cooldown 放行`
+  - 后续若再出现 waiting/control 语义错位，应优先查更外层 `resolveNextAiDispatch` caller provenance 或 tracker 生命周期，而不是回到对象级 prompt 图。
+
+## 2026-05-19 overlay resync cooldown 再补 sourceId drift caller gate
+
+- 在 `response-window responder drift` 转绿后，又继续往同一条 cooldown provenance 主线补了一格：
+  - 不只是 `window id drift` 与 `responder drift` 应允许再次触发 overlay resync；
+  - **同一窗口壳子里如果 `sourceId` 已经漂移，新的 blockedKey 也必须允许再次触发 resync 广播**；
+  - 否则页面上已经是另一条来源链的新 prompt，旧 cooldown 还会把它误吞成“没变化”。
+- 新增回归：
+  - [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)
+    - `online AI watchdog 在 response-window sourceId 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 response-window sourceId 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|online AI watchdog 在 response-window id 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|online AI watchdog 在 response-window responder 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉"` -> `1 file passed, 3 passed`
+- 夹具说明：
+  - 日志里仍会看到一次最终 `blocker_persisted`，这是故意保留的第二个 blocked 终态，不是实现回退；
+  - 真正锁的是 `source-1` 与 `source-2` 两个不同 `blockedKey` 都能各自触发一次 overlay resync。
+- 当前结论：
+  - `response-window` 这条 shared transport 线现在 caller 层已经同时锁住 `window id / sourceId / responder` 三种漂移都能穿透 cooldown；
+  - 下一格不该再横向扩样同族 drift case，而应回到 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / emergency fallback caller，专找真正活着的 provenance 缺口。
+
+## 2026-05-19 自动 response-window candidate provenance 对齐 manual 分支
+
+- 继续往同一条 shared transport / caller provenance 主线下钻时，又看到一个会制造“明明换窗了但前端还像同一 incident”的粗键来源：
+  - `resolveForceEndTurnForStalledAi()` 的自动 `response-window` 分支旧实现只有 `suffix: response-window:${responderId}`；
+  - 它没有像 `resolveManualForceEndAiPhase()` 那样把 `windowType/sourceId/windowId` 带进 `fingerprintHint/attemptKey`；
+  - 这会让客户端 `trackerSemanticKey` 在自动 watchdog 路径上退回过粗键，重新把新开窗误折进旧 response-window incident。
+- 已修复：
+  - [`src/engine/transport/onlineAiRecovery.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/onlineAiRecovery.ts>) 的自动 `response-window` candidate 现在也会生成
+    - `fingerprintHint: response-window:${responderId}:${windowType}:${sourceId}:${windowId}`
+    - 同粒度 `resolution.attemptKey`
+- 新增回归：
+  - [`src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts>)
+    - `纯 AI 响应窗口中，自动 watchdog 的 response-window candidate 也应带 windowType/sourceId/windowId provenance`
+    - 连同既有 `纯 AI 响应窗口中，手动强制结束应直接强制关闭响应窗口` 同组复跑
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "纯 AI 响应窗口中，手动强制结束应直接强制关闭响应窗口|纯 AI 响应窗口中，自动 watchdog 的 response-window candidate 也应带 windowType/sourceId/windowId provenance"` -> `1 file passed, 2 passed`
+- 当前结论：
+  - `response-window` 的自动/手动两条 force-end 分支现在终于在 provenance 粒度上对齐，不再出现“manual 细、automatic 粗”的 caller contract 裂口；
+  - 下一格应继续回到 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / MatchRoom follow-up caller，看是否还剩别的 live candidate 在客户端侧仍沿用过粗 semantic key。
+
+## 2026-05-19 MatchRoom force-end-turn trackerKey 也已锁住 response-window fingerprint drift
+
+- 在把自动 `response-window` candidate 的 `fingerprintHint/attemptKey` 补细之后，我继续往客户端 caller 层补了一格最小 direct gate：
+  - [`MatchRoom.tsx`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/pages/MatchRoom.tsx>) 旧实现是在 effect 内联拼 `trackerKey`；
+  - 现在已抽成 `buildOnlineAiForceEndTurnTrackerKey()`，明确规则是：
+    - 优先用 `candidate.fingerprintHint`
+    - 否则才回退 `candidate.resolution.attemptKey`
+    - 再拼 `turnNumber/phase`
+  - 这样服务端已经细化过的 `response-window` provenance，才不会在客户端又被重新压回粗 incident key。
+- 新增回归：
+  - [`src/pages/__tests__/matchSeatValidation.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/pages/__tests__/matchSeatValidation.test.ts>)
+    - `response-window candidate 的 fingerprintHint 漂移时，MatchRoom trackerKey 也必须变化`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "response-window candidate 的 fingerprintHint 漂移时，MatchRoom trackerKey 也必须变化|状态 marker 已推进或 attemptKey 已切换时，不应重复重试|attemptKey 未变化且状态 marker 未推进时，应允许解锁重试"` -> `1 file passed, 3 passed`
+  - 尾部仍有既有 `ECONNRESET/socket hang up` 噪音，但文件结果为 `1 passed`，不影响这格门禁成立。
+- 当前结论：
+  - 现在不仅服务端 `response-window` candidate 变细了，客户端 `forceEndTurnTrackerRef` 的 semantic key 也确实会随 `fingerprintHint` 漂移而换 incident；
+  - 这又排除了一个“看起来像死循环，其实是前端还把新窗口当旧窗口”的 caller 裂口。下一格仍应回到 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / MatchRoom follow-up caller 的 live gap，而不是回头横向扩 `response-window` 同族样例。
+
+## 2026-05-19 `response-window -> response-loop` tracker continuity 真 bug 修复
+
+- 本轮继续查 `resolveOnlineAiRecoveryCandidate()` caller provenance 时，发现一条真实实现缺口：
+  - `response-window` 在同一 AI seat 上已被 watchdog 判定成循环并升级到 `response-loop` 后；
+  - 旧实现下一 tick 仍只拿 `response-window` key 去和 tracker 比较；
+  - 结果会把已进入 `response-loop` 语义的 incident 错误降回普通 `response-window`。
+- 已修复：
+  - [`src/engine/transport/server.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>) 现在在 `candidate.reason === 'response-window'` 时，会把同一 incident 的 `response-loop` tracker key 也视为同一轨道；
+  - 这样 tracker 一旦进入 `response-loop`，后续 tick 就不会错误退回 `RESPONSE_PASS` 路径。
+- 新增回归：
+  - [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)
+    - `resolveOnlineAiRecoveryCandidate 在 tracker 已进入 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window`
+- 验证：
+  - `node ..\\..\\scripts\\infra\\vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "resolveOnlineAiRecoveryCandidate 在 tracker 已进入 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window"` -> `1 passed`
+  - `node ..\\..\\scripts\\infra\\vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 响应循环时应强制关闭响应窗口|resolveOnlineAiRecoveryCandidate 在 responderQueue 里仍有 human 时，不应把 response-window 升级成 response-loop|resolveOnlineAiRecoveryCandidate 在 tracker key 已漂移到旧窗口时，不应把 response-window 升级成 response-loop|resolveOnlineAiRecoveryCandidate 在 tracker 已进入 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window|online AI watchdog 在 response-loop 遇到 stale-private-overlay 时，不应再触发 overlay resync，而应直接强制关窗|online AI watchdog 在 response-loop 遇到 missing-private-overlay 时，不应再触发 overlay resync，而应直接强制关窗|online AI watchdog 在 response-loop 强制关窗后，应把同一 AI 交给 active-turn tracker 继续推进"` -> `7 passed`
+- 当前结论：
+  - 这次是 shared watchdog 主线上的真实状态机 bug 修复，不是回头扩 `Super Spies`；
+  - 后续若再看到 response-loop family 回退，应优先查更外层 caller/source provenance，而不是重复争论 deck reorder 截图。
+
+## 2026-05-19 `response-window` reopen with human queued 不得误升 response-loop
+
+- 在修完 tracker continuity 后，我继续把同一条 response incident 线往序列级走，补出另一条真实不一致：
+  - [`resolveOnlineAiRecoveryCandidate()`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>) 早就有门禁：`responderQueue` 里只要还有 human，就**不要**把 `response-window` 升级成 `response-loop`；
+  - 但 [`runOnlineAiRecoverySequence()`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>) 里 `RESPONSE_PASS` 后窗口立刻重开这条分支，旧实现没复用这层门禁，会直接把同一 AI 的 reopen 窗口硬升成 `response-loop`，然后发 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`。
+- 已修复：
+  - `runOnlineAiRecoverySequence()` 的“`RESPONSE_PASS` 后 same-player `response-window` reopen -> 升级 `response-loop`”分支，现在必须额外满足 `!hasHumanResponderInCurrentWindow()`；
+  - 这样只有**纯 AI 响应循环**才会 hard-close；如果 queue 里还挂着 human，watchdog 不会越权把整窗强行关掉。
+- 新增直测：
+  - [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)
+    - `online AI watchdog 在 RESPONSE_PASS 后若窗口立刻重开但 responderQueue 里仍有 human，不应升级成 response-loop 强制关窗`
+- 验证：
+  - `node ..\\..\\scripts\\infra\\vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 RESPONSE_PASS 后若窗口立刻重开但 responderQueue 里仍有 human，不应升级成 response-loop 强制关窗"` -> `1 passed`
+  - `node ..\\..\\scripts\\infra\\vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "response-loop|response-window 升级成 response-loop|RESPONSE_PASS 后若窗口立刻重开但 responderQueue 里仍有 human|事件流有变化但同一 AI 响应窗口立刻重开"` -> `13 passed`
+- 当前结论：
+  - 现在 `response-window / response-loop` 这条 shared transport 线已经同时锁住：
+    - tracker 已进 `response-loop` 后不能假性降级；
+    - queue 中仍有 human 时不能误 hard-close；
+    - 纯 AI reopen loop 仍会 hard-close；
+  - 这组门禁比“看截图像不像按钮墙”更接近当前真正的主线风险。
+
+## 2026-05-19 `response-loop` success feedback provenance 修复
+
+- 继续沿同一条 shared watchdog / provenance 主线往下查时，又命中一条更靠后的证据污染：
+  - `runOnlineAiRecoverySequence()` 在 sequence 内把 `response-window` 升级成 `response-loop` 后；
+  - 旧实现虽然会真正执行 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`，但 `force-end-turn-success` 的 `trackerKey / stateSnapshot / actionLog` 仍可能沿用旧 `response-window` candidate；
+  - 结果是反馈 `reason` 已写成 `response-loop`，证据正文却还挂着旧 incident 语义，形成 provenance 自相矛盾。
+- 已修复 [`src/engine/transport/server.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>)：
+  - sequence 内一旦把同一 incident 升级成 `response-loop`，立即同步迁移 `tracker.key`；
+  - `force-end-turn-success` 上报时，不再盲用初始 `candidate`，而是按最终 `reportedReason` 构造反馈 candidate，让 `stateSnapshot / actionLog / blockerFingerprint` 与 `trackerKey` 保持同一条 `response-loop` 轨道。
+- 新增直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `online AI watchdog 在 sequence 内把 response-window 升级成 response-loop 后，成功反馈必须沿用 response-loop provenance`
+- 聚焦验证：
+  - `node ..\\..\\scripts\\infra\\vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "response-loop feedback provenance|response-loop-existing-tracker|response-loop-direct-hard-close|RESPONSE_PASS 后若窗口立刻重开但 responderQueue 里仍有 human|response-window 升级成 response-loop|response-loop 遇到"` -> `1 file passed, 6 passed`
+  - `git diff --check -- src/engine/transport/server.ts src/engine/transport/__tests__/server.test.ts` -> passed（仅 LF/CRLF warning）
+- 当前结论：
+  - 现在这条 shared transport 线不只在“会不会 hard-close”层面闭环，连成功反馈的 incident provenance 也已经对齐；
+  - 用户看到“还在 `Super Spies` 打转”的错觉，当前更多来自旧截图/旧 evidence 读法，而不是这条 watchdog 主线没有真实推进。
+
+## 2026-05-19 `response-loop` residual：失败反馈 provenance 对齐 + sequence 内禁止回退成 `response-window`
+
+- 在上一条 success provenance 修完后，我继续沿同一条 shared transport 主线往下查，确认还有两个 residual：
+  - `force-end-turn-failed` 仍可能出现 `trackerKey=response-loop`，但 `reason/stateSnapshot/actionLog` 退回 `response-window` 的证据污染；
+  - `runOnlineAiRecoverySequence()` 一旦在序列中把同一 incident 升级成 `response-loop`，后续 `nextCandidate` 仍可能退回普通 `response-window`，又走回 emergency playerView / overlay 那条旧分支。
+- 已修复 [`src/engine/transport/server.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>)：
+  - 新增 `resolveOnlineAiRecoveryReasonFromTrackerKey()` / `buildOnlineAiRecoveryReportedCandidate()`，让 `force-end-turn-failed` 也按最终 tracker 语义产出 feedback；
+  - 抽出 `buildResponseLoopRecoveryCandidate()`，把 sequence 内已经升级到 `response-loop` 的 incident 固定在同一条 hard-close 轨道上，不再回退成普通 `response-window` candidate。
+- 新增/更新回归：
+  - [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)
+    - `online AI watchdog 在 sequence 内把 response-window 升级成 response-loop 后，失败反馈也必须沿用 response-loop provenance`
+    - `online AI watchdog 在 sequence 内把 response-window 升级成 response-loop 后，成功反馈必须沿用 response-loop provenance`（复跑同组）
+- 聚焦验证：
+  - `node ..\\..\\scripts\\infra\\vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "失败反馈也必须沿用|成功反馈必须沿用"` -> `1 file passed, 2 passed`
+  - `node ..\\..\\scripts\\infra\\vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "response-loop feedback provenance|response-loop-existing-tracker|response-window 升级成 response-loop|response-loop failed feedback provenance|response-loop 遇到"` -> `1 file passed, 6 passed`
+  - `git diff --check -- src/engine/transport/server.ts src/engine/transport/__tests__/server.test.ts` -> passed（仅 LF/CRLF warning）
+- 当前结论：
+  - 这次不是回头刷 `Super Spies` 牌面，而是 shared watchdog 上又收掉两条真实 residual；
+  - 现在 `response-loop` family 的 success / failed feedback provenance 都已经和 tracker 轨道一致，sequence 内也不会刚升级完又退回 `response-window`。
+
+## 2026-05-19 `legal-action-recovered` 也对齐到最终 tracker provenance
+
+- 在 success / failed 两条 feedback 修完后，我继续查剩下的第三个出口：`legal-action-recovered`。
+- 旧实现这里仍直接拼 `candidate.reason`，虽然大多数时候不会炸，但如果 tracker 已经升级到 `response-loop`，这条反馈理论上也会留下同型 residual。
+- 已修复 [`src/engine/transport/server.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>)：
+  - `legal-action-recovered` 现在也会先按 `tracker.key` 解析最终 incident reason，再构造 reported candidate；
+  - 因此 `reason / stateSnapshot / actionLog / blockerFingerprint` 与 `trackerKey` 保持同轨，不再只靠“当前 candidate 大概率已经是对的”。
+- 新增直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `online AI watchdog 在 response-loop tracker 下走 legal-action-recovered 时，反馈也必须沿用 response-loop provenance`
+- 聚焦验证：
+  - `node ..\\..\\scripts\\infra\\vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "legal-action-recovered 时，反馈也必须沿用 response-loop provenance|失败反馈也必须沿用|成功反馈必须沿用"` -> `1 file passed, 3 passed`
+  - `git diff --check -- src/engine/transport/server.ts src/engine/transport/__tests__/server.test.ts` -> passed（仅 LF/CRLF warning）
+- 当前结论：
+  - 现在 `response-loop` family 三个 feedback 口都统一按最终 tracker 语义回写；
+  - 后续如果这条 shared transport 线再出 provenance 串线，优先查的就应该是更外层 caller / tracker 生命周期，而不是这三个反馈出口本身。
+
+## 2026-05-19 `tryRecoverOnlineAiWithLegalAction()` 也改按 tracker 语义决定 emergency fallback
+
+- 在把三个 feedback 出口都对齐后，我继续查更外层 caller，发现 `tryRecoverOnlineAiWithLegalAction()` 的 emergency overlay fallback 仍直接看 `candidate.reason`：
+  - 如果上游短暂漂移成“`trackerKey` 已是 `response-loop`，但旧 candidate 还长得像 `response-window`”，旧实现理论上仍会误走 emergency playerView / overlay resync；
+  - 这不是当前主链高频触发的 bug，但它是同型 residual，留着会继续污染后续诊断。
+- 已修复 [`src/engine/transport/server.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>)：
+  - `tryRecoverOnlineAiWithLegalAction()` 现在先按 `tracker.key` 解析 `reportedReason`；
+  - `shouldUseOnlineAiEmergencyOverlayFallback(...)`、retry 日志口径，以及 `maybeTriggerOnlineAiOverlayResync(...)` 的 `response-loop` 排除条件，都统一改看最终 tracker 语义，而不是旧 candidate。
+- 新增直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `tryRecoverOnlineAiWithLegalAction 遇到 response-loop tracker 时，即使旧 candidate 仍是 response-window，也不应误走 emergency overlay fallback`
+- 聚焦验证：
+  - `node ..\\..\\scripts\\infra\\vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "不应误走 emergency overlay fallback|legal-action-recovered 时，反馈也必须沿用 response-loop provenance|失败反馈也必须沿用|成功反馈必须沿用"` -> `1 file passed, 4 passed`
+  - `git diff --check -- src/engine/transport/server.ts src/engine/transport/__tests__/server.test.ts` -> passed（仅 LF/CRLF warning）
+- 当前结论：
+  - 现在不只是反馈出口，连 `tryRecoverOnlineAiWithLegalAction()` 这个 caller 级 fallback 决策，也已经优先服从最终 tracker 语义；
+  - 后续如果 `response-loop` family 还回退，优先查的就更明确是上游 candidate 生成/生命周期，而不是 feedback 或 emergency fallback 自己。
+
+## 2026-05-19 hidden force-skip caller provenance 收紧
+
+- 继续沿同一条 shared transport / playerView 主线往下查后，当前 worktree 里还留着一格“实现已写但状态没结算”的 residual：
+  - `resolveForceSkippableHiddenAiInteraction()` 虽然已经能识别 `skip/pass/__emergency_skip__/done` 这类可自动收口的 hidden prompt；
+  - 但 `force-skip` 自己的 incident key 旧口径仍可能只靠 `interactionId` 或粗粒度 `attemptKey`，导致同一 hidden interaction id 下如果 `sourceId/title/payload` 已漂移，`MatchRoom` 仍把新 prompt 折回旧 tracker，看起来像“又在原地自动跳过”。
+- 已收紧实现：
+  - [`src/engine/transport/onlineAiRecovery.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/onlineAiRecovery.ts>) 为 `ForceSkippableHiddenAiInteraction` 增加 `fingerprintHint`，并新增 `buildForceSkipFingerprintHint(...)`，把 `playerId + interactionId + sourceId + title + payloadSignature` 并进 `attemptKey/actionId`；
+  - [`src/pages/MatchRoom.tsx`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/pages/MatchRoom.tsx>) 抽出 `buildOnlineAiForceSkipTrackerKey(...)`，让 `forceSkipTrackerRef` 按 `fingerprintHint` 而不是旧 `${playerId}:${interactionId}` 换 incident。
+- 新增/复跑直测：
+  - [`src/pages/__tests__/matchSeatValidation.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/pages/__tests__/matchSeatValidation.test.ts>)
+    - `同一 hidden interaction id 下若 sourceId 漂移，force-skip fingerprint 与 MatchRoom trackerKey 也必须变化`
+    - `隐藏交互包含可执行选项但显式提供 skip/pass 时，仍应返回强制跳过 resolution`
+    - `隐藏的 AI simple-choice 只剩控制选项时，应返回强制跳过 resolution`
+  - [`src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts>)
+    - `resolveForceSkippableHiddenAiInteraction 遇到 skip 时应优先 force-skip；若只剩非控制项 + cancel 则不得自动取消`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "同一 hidden interaction id 下若 sourceId 漂移，force-skip fingerprint 与 MatchRoom trackerKey 也必须变化|隐藏交互包含可执行选项但显式提供 skip/pass 时，仍应返回强制跳过 resolution|隐藏的 AI simple-choice 只剩控制选项时，应返回强制跳过 resolution"` -> `1 file passed, 3 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "resolveForceSkippableHiddenAiInteraction 遇到 skip 时应优先 force-skip；若只剩非控制项 \+ cancel 则不得自动取消"` -> `1 file passed, 1 passed`
+  - `git diff --check -- src/engine/transport/onlineAiRecovery.ts src/pages/MatchRoom.tsx src/pages/__tests__/matchSeatValidation.test.ts src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` -> passed（仅 LF/CRLF warning）
+- 当前结论：
+  - 这次不是回头刷 `Secret Agent` 或别的对象级 prompt，而是把 hidden force-skip 这条 caller provenance 真正收紧到 incident 级；
+  - `hidden-seat inspection / force-skip helper` 现在不再是开放项，下一格应继续回到 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / overlay resync / fallback caller provenance 主线。
+
+## 2026-05-19 manual visible/hidden interaction attemptKey provenance 收紧
+
+- 继续回到 `onlineAiRecovery.ts` 主线后，又命中一条同型偏粗口：
+  - `manual-response-window` 之前已经改成把 `windowType/sourceId/windowId` 并入 `attemptKey`；
+  - 但 `resolveManualForceEndAiPhase()` 的 `manual-visible-interaction` / `manual-hidden-interaction` 旧实现仍只用 `interactionId` 生成 `suffix`，会把同 id 但 `sourceId/title/options` 已漂移的新 prompt 继续折回旧手动强制结束 incident。
+- 已修复 [`src/engine/transport/onlineAiRecovery.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/onlineAiRecovery.ts>)：
+  - `manual-visible-interaction` 与 `manual-hidden-interaction` 现在都直接复用 `buildInteractionRecoveryFingerprintHint(...)` 作为 `attemptKey` suffix；
+  - 因此 manual visible/hidden 两支和自动 watchdog、manual response-window 一样，都会随 `sourceId/title/payloadSignature` 漂移而换 incident。
+- 新增直测 [`src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts>)：
+  - `手动 visible-interaction 的 sourceId 漂移时，attemptKey 也必须跟随 fingerprint 变化`
+  - `手动 hidden-interaction 的 sourceId 漂移时，attemptKey 也必须跟随 fingerprint 变化`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "手动 visible-interaction 的 sourceId 漂移时，attemptKey 也必须跟随 fingerprint 变化|手动 hidden-interaction 的 sourceId 漂移时，attemptKey 也必须跟随 fingerprint 变化"` -> `1 file passed, 2 passed`
+  - `git diff --check -- src/engine/transport/onlineAiRecovery.ts src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` -> passed（仅 LF/CRLF warning）
+- 当前结论：
+  - 这条是真正的 live caller provenance 收敛，不是状态解释；
+  - 现在 manual visible/hidden / manual response-window / auto hidden force-skip 四条 incident key 已经对齐到细粒度 fingerprint，下一格更应该回到 `server.ts` 的 candidate/resolved/caller 交界面，而不是继续在 `MatchRoom` 或对象级玩法上兜圈子。
+
+## 2026-05-19 active-turn attemptKey 也收紧到 progressMarker
+
+- 继续回到 `server.ts / onlineAiRecovery.ts` 主线后，又命中一条更贴近 live watchdog 的细口：
+  - `active-turn` family 的 trackerKey 早就会随 `buildOnlineAiRecoveryFingerprint()` 跟着 progressMarker 换 incident；
+  - 但 `resolveForceEndTurnForStalledAi()` 的 `active-turn` 旧实现还只把 `resolution.attemptKey` 生成为 `force-end-turn:<playerId>:active-turn:<playerId>`，这会让 `submitOnlineAiResolution` / `lastAiAttemptKeyRef` 在不同 active-turn incident 之间仍看到同一个粗 attemptKey。
+- 已修复 [`src/engine/transport/onlineAiRecovery.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/onlineAiRecovery.ts>)：
+  - `active-turn` candidate 现在也会生成 `fingerprintHint = active-turn:${playerId}:${buildAiProgressMarker(sharedState)}`；
+  - `resolution.attemptKey` 与 `actionId` 都改跟随这条 fingerprint，不再只盯住玩家 id。
+- 新增直测 [`src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts>)：
+  - `active-turn candidate 即使同一 AI，也应随 progressMarker 漂移生成新的 fingerprint 与 attemptKey`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "active-turn candidate 即使同一 AI，也应随 progressMarker 漂移生成新的 fingerprint 与 attemptKey"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 26 passed`
+  - `git diff --check -- src/engine/transport/onlineAiRecovery.ts src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` -> passed（仅 LF/CRLF warning）
+- 当前结论：
+  - 这次不是只补 trackerKey，而是把 `active-turn` 真正提交给 transport client 的 `attemptKey` 也拉到了 incident 级；
+  - 现在 auto `active-turn`、manual visible/hidden、manual response-window、auto hidden force-skip 这几条 caller/provenance 线都已经摆脱了“粗 key 复用新 incident”的同型问题，下一格继续回到 `server.ts` 的 candidate/resolved/caller 交界面。
+
+## 2026-05-19 auto visible/hidden interaction attemptKey 也对齐到 fingerprint
+
+- 继续盘 `onlineAiRecovery.ts` 时，又发现一条更靠近 live watchdog 的同型残缝：
+  - 自动 `visible/hidden interaction` candidate 之前虽然已经有 `fingerprintHint = buildInteractionRecoveryFingerprintHint(...)`；
+  - 但 `resolution.attemptKey` 旧实现仍分别用 `${reason}:${interactionId}` 这类粗 suffix，等于 trackerKey 已经识别出新 incident，提交层还在复用旧 key。
+- 已修复 [`src/engine/transport/onlineAiRecovery.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/onlineAiRecovery.ts>)：
+  - 自动 `visible-interaction` / `hidden-interaction` 两条分支现在都直接用 `fingerprintHint` 作为 `buildForceEndTurnResolution(...)` 的 suffix；
+  - 因此 `attemptKey/actionId` 现在和 tracker/candidate fingerprint 同轨，不再只看 `interactionId`。
+- 新增直测 [`src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts>)：
+  - `自动 visible-interaction 的 sourceId 漂移时，attemptKey 也必须跟随 fingerprint 变化`
+  - `自动 hidden-interaction 的 sourceId 漂移时，attemptKey 也必须跟随 fingerprint 变化`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "自动 visible-interaction 的 sourceId 漂移时，attemptKey 也必须跟随 fingerprint 变化|自动 hidden-interaction 的 sourceId 漂移时，attemptKey 也必须跟随 fingerprint 变化"` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 28 passed`
+  - `git diff --check -- src/engine/transport/onlineAiRecovery.ts src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` -> passed（仅 LF/CRLF warning）
+- 当前结论：
+  - 现在 auto `visible/hidden interaction`、auto `active-turn`、manual visible/hidden、manual response-window、hidden force-skip 这几条 `attemptKey` 生成口都已对齐到 incident 级 fingerprint；
+  - `onlineAiRecovery.ts` 这层剩下更值得看的不再是“哪条分支还拿粗 `interactionId` 做 suffix”，而是 `server.ts` 的 candidate/resolved/caller 交界面。
+
+## 2026-05-19 display-only-bonus attemptKey 也对齐到 fingerprint
+
+- 继续把 `onlineAiRecovery.ts` 的 force-end-turn candidate 全盘过完后，又找到一条同型旧键：
+  - `display-only-bonus` 分支的 `fingerprintHint` 早就带了 `attackerId + phase + settlementId`；
+  - 但 `resolution.attemptKey` 旧实现还只用 `display-only-bonus:${attackerId}:${settlementId}`，等于 phase 漂移后 tracker 已分出新 incident，提交层仍可能复用旧 key。
+- 已修复 [`src/engine/transport/onlineAiRecovery.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/onlineAiRecovery.ts>)：
+  - `display-only-bonus` 现在也先生成 `fingerprintHint = display-only-bonus:${attackerId}:${phase}:${settlementId}`；
+  - `resolution.attemptKey/actionId` 直接跟随这条 fingerprint，不再只看 `settlementId`。
+- 新增直测 [`src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts>)：
+  - `display-only-bonus candidate 即使 settlementId 相同，也应随 phase 漂移生成新的 fingerprint 与 attemptKey`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "display-only-bonus candidate 即使 settlementId 相同，也应随 phase 漂移生成新的 fingerprint 与 attemptKey"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 29 passed`
+  - `git diff --check -- src/engine/transport/onlineAiRecovery.ts src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts` -> passed（仅 LF/CRLF warning）
+- 当前结论：
+  - `onlineAiRecovery.ts` 这一层现在连 `display-only-bonus` 的 submission-level attemptKey 也已和 fingerprint 对齐；
+  - 下一格更明确地回到 `server.ts` 的 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / fallback caller 交界面，不再在 candidate 构造层兜圈子。
+
+## 2026-05-19 `response-loop` 强关窗后不得把新 `response-window` incident 吞回旧 tracker
+
+- 这轮先把“为什么看起来像死循环”收窄成一条可复现的 sequence residual：
+  - 旧 `runOnlineAiRecoverySequence()` 在 `response-loop` 已经执行过一次 `SYS_RESPONSE_WINDOW_FORCE_CLOSE` 之后，只要同一 AI 又看到 `response-window`，就会默认继续沿旧 `tracker.key` 强关；
+  - 这会把 `windowId/sourceId` 已漂移的新响应窗口 incident 继续吞回旧 hard-close 轨道，表现成 watchdog 像在同一条 response-loop 上连续死顶。
+- 已补最小实现 [`src/engine/transport/server.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>)：
+  - 当 `currentCandidate.reason === 'response-loop'` 且下一个候选重新变成 `response-window` 时，先构造该窗口对应的 `response-loop` tracker key；
+  - 只有当它仍等于当前 `tracker.key`，才允许继续 hard-close；
+  - 若 key 已漂移，立即丢弃旧 tracker，交给下一 tick 以新 incident 重新建 tracker，不再在当前 sequence 里连续执行第二次 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`。
+- 新增直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `online AI watchdog 在 response-loop 强制关窗后若已切到新的 response-window incident，不应继续沿旧 tracker 强制关窗`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 response-loop 强制关窗后若已切到新的 response-window incident，不应继续沿旧 tracker 强制关窗"` -> `1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "resolveOnlineAiRecoveryCandidate 在 tracker 已进入 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window|online AI watchdog 在 RESPONSE_PASS 后若窗口立刻重开但 responderQueue 里仍有 human，不应升级成 response-loop 强制关窗|online AI watchdog 在 sequence 内把 response-window 升级成 response-loop 后，成功反馈必须沿用 response-loop provenance|online AI watchdog 在 sequence 内把 response-window 升级成 response-loop 后，失败反馈也必须沿用 response-loop provenance|online AI watchdog 在 response-loop tracker 下走 legal-action-recovered 时，反馈也必须沿用 response-loop provenance|online AI watchdog 在 response-loop 强制关窗后，应把同一 AI 交给 active-turn tracker 继续推进|online AI watchdog 在 response-loop 强制关窗后若已切到新的 response-window incident，不应继续沿旧 tracker 强制关窗"` -> `7 passed`
+- 当前结论：
+  - 这次收掉的不是 response-loop 已有的 success/failed/report provenance，而是更外层 sequence lifecycle residual；
+  - 现在 watchdog 不会再把“旧 response-loop 强关之后冒出的新窗口”误当成同一 incident 连续强关；
+  - 但这仍只说明 `response-loop force-close -> new incident handoff` 已闭，不外推 `server.ts` 其余 caller/resolved 交界全部完成。
+
+## 2026-05-19 `response-loop` 强关窗后新 `visible-interaction` 也不得吞回旧 tracker
+
+- 紧接着上条又补了一格同型 handoff residual：
+  - 旧 sequence 在 `response-loop` 强关后，如果现场不是新的 `response-window`，而是新的 `visible-interaction`，也会继续在同一 sequence 里尝试把它当成旧链路吞掉；
+  - 这会把一个新的可见交互继续挂在旧 `response-loop` tracker 下，最直接的外观就是多打一拍 `SYS_INTERACTION_CANCEL`。
+- 已再补一层最小实现 [`src/engine/transport/server.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>)：
+  - 当 `currentCandidate.reason === 'response-loop'` 且下一个候选切成新的 `visible-interaction`，先计算新候选自己的 tracker key；
+  - 如果这个新 key 已经漂移，就直接丢弃旧 tracker、等待下一 tick 以新 incident 重建，不再在当前 sequence 内继续执行取消命令。
+- 新增/验证 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `online AI watchdog 在 response-loop 强制关窗后若已切到新的 visible-interaction incident，不应继续沿旧 tracker 吞掉新交互`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 response-loop 强制关窗后若已切到新的 visible-interaction incident，不应继续沿旧 tracker 吞掉新交互"` -> `1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 response-loop 强制关窗后若已切到新的 visible-interaction incident，不应继续沿旧 tracker 吞掉新交互|online AI watchdog 在 response-loop 强制关窗后若已切到新的 response-window incident，不应继续沿旧 tracker 强制关窗|online AI watchdog 在 response-loop 强制关窗后，应把同一 AI 交给 active-turn tracker 继续推进|online AI watchdog 在 sequence 内把 response-window 升级成 response-loop 后，成功反馈必须沿用 response-loop provenance|online AI watchdog 在 sequence 内把 response-window 升级成 response-loop 后，失败反馈也必须沿用 response-loop provenance|online AI watchdog 在 response-loop tracker 下走 legal-action-recovered 时，反馈也必须沿用 response-loop provenance|resolveOnlineAiRecoveryCandidate 在 tracker 已进入 response-loop key 后，仍应继续返回 response-loop，而不是退回 response-window"` -> `7 passed`
+- 当前结论：
+  - 现在 `response-loop` 这条 sequence 线对新 `response-window` 与新 `visible-interaction` 都会正确 handoff，不会再沿旧 tracker 连续吞新 incident；
+  - 但这仍然只说明 `response-loop force-close -> new incident handoff` 更收紧了一层，不外推 `server.ts` 其余 caller/resolved 交界已全量完成。
+
+## 2026-05-19 goal 指针澄清 + overlay resync player scope direct gate
+
+- 先把“为什么看起来像死循环”收口成状态层判断，而不是继续被旧口径牵着走：
+  - `functions.get_goal` 读到的 active objective 仍写着 `The Spy Who Ditched Me Host/非目标页 waiting overlay residual`；
+  - 但 `progress.md` / 长期 JSON / 当前测试矩阵都已说明这条 residual 实质闭合，实际主线早已切到 `shared transport / playerView / caller provenance / completion audit`；
+  - 因此前面的“像一直在原地”主要不是没进展，而是 active goal 文案陈旧，外加连续几轮都在补同一主链上的相邻 direct gate，看起来像反复回扫同一问题。
+- 这轮继续沿真实主线补一格 `overlay resync cooldown` caller scope：
+  - `src/engine/transport/server.ts` 的 `maybeTriggerOnlineAiOverlayResync()` 冷却 key 里本来就包含 `${matchID}:${playerId}:${blockedKey}:${progressMarker}`；
+  - 但现有直测只锁了 `blockedKey` / `progressMarker` / response-window drift，还缺“同一 blockedKey 的不同 AI seat 不应互相吞掉”的最小 direct gate。
+- 新增直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `online AI watchdog 的 overlay resync 冷却必须区分 playerId，同一 blockedKey 的不同 AI seat 不应互相吞掉`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 触发 overlay resync 后应按冷却去重，避免连续广播风暴|online AI watchdog 遇到同 seat 的新 blockedKey 时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|online AI watchdog 在 blockedKey 相同但 progressMarker 漂移时，应允许再次触发 overlay resync，而不是被旧冷却一并吞掉|online AI watchdog 的 overlay resync 冷却必须区分 playerId，同一 blockedKey 的不同 AI seat 不应互相吞掉"` -> `1 file passed, 4 passed`
+- 当前结论：
+  - 现在 `overlay resync cooldown` 不只按 `blockedKey/progressMarker` 区分 incident，也明确按 `playerId` 区分 seat scope；
+  - 后续若再看到“像死循环”的 overlay 表象，不应再回头怀疑“不同 AI seat 共用了同一 resync 冷却”，而要继续查 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / `tryRecoverOnlineAiWithLegalAction()` 交界的剩余 caller provenance。
+
+## 2026-05-19 `allowNaturalAiContinuation` 在线/离线分支补成成对 direct gate
+
+- 继续查 `server.ts` completion audit 时，又命中一条此前只有正向旁证、没有负向门禁的 live seam：
+  - `runOnlineAiRecoverySequence()` 在 `legal-only -> active-turn` 过渡后，会根据 `hasLiveSeatConnection` 决定是把后续 active-turn 交回自然链，还是继续由 watchdog 自己收口；
+  - 当前 worktree 之前只有正向用例 `AI seat 在线时交回自然链`，缺少“seat 离线时绝不能交回自然链”的对称直测，容易让这条分支继续被误判成 completion audit 未闭合的噪音。
+- 新增直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `online AI watchdog 在 AI active 的 targetingRoll 阶段若 seat 离线，不应交回自然链，而应继续 watchdog 收口`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 AI active 的 targetingRoll 阶段也应连续执行 legal-only 动作，并在离开该阶段后交回自然链|online AI watchdog 在 AI active 的 targetingRoll 阶段若 seat 离线，不应交回自然链，而应继续 watchdog 收口"` -> `1 file passed, 2 passed`
+- 当前结论：
+  - `allowNaturalAiContinuation` 现在不再只是“在线时会交回自然链”的单边证据，而是明确补齐了“离线时 watchdog 必须继续收口”的负向 gate；
+  - 后续若再看到 `legal-only -> active-turn` 过渡像卡住，不应回头怀疑这条在线/离线分支没锁住，而要继续查更深的 candidate/resolved/caller 交界。
+
+## 2026-05-19 `loop_detected` 失败出口补成 direct gate
+
+- 继续做 `runOnlineAiRecoverySequence()` 的失败出口 completion audit 时，又发现一格真空白：
+  - 代码里早就有 `seenMarkers.has(nextMarker) -> loop_detected` 分支；
+  - 但当前 worktree 之前没有最小直测去证明 watchdog 会在“同一恢复序列内进度 marker 回到已见现场”时立刻上报 `loop_detected`，而不是继续空转或被别的 reason 吞掉。
+- 新增直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `online AI watchdog 在同一 sequence 内若进度 marker 回到已见现场，应上报 loop_detected 而不是继续空转`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在同一 sequence 内若进度 marker 回到已见现场，应上报 loop_detected 而不是继续空转|online AI watchdog 在 active-turn-legal-only 的合法动作执行失败时，反馈 blockerFingerprint 也应保留 legal-only fingerprint|online AI watchdog 在 AI active 的 targetingRoll 且 legalActions 为空时，不得 fallback 到裸 ADVANCE_PHASE"` -> `1 file passed, 3 passed`
+- 当前结论：
+  - `loop_detected` 现在不再只是代码阅读旁证，而是有了独立 direct gate；
+  - 后续若再看到 watchdog 像在同一 sequence 里打转，不应回头怀疑“这个 reason 可能根本没被覆盖”，而要继续查更外层 tracker handoff / feedback caller / resolved gate。
+
+## 2026-05-19 `private_overlay_missing` feedback reason 补成 direct gate
+
+- 继续扫 `runOnlineAiRecoverySequence()` / `tryRecoverOnlineAiWithLegalAction()` 的失败出口时，又命中一格只有半边覆盖的 family：
+  - `private_overlay_stale` 早已有 reason 级直测；
+  - 但 `private_overlay_missing` 之前主要只证明“会走 emergency playerView”，没有独立锁住最终 feedback reason 确实落成 `private_overlay_missing`。
+- 新增直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `online AI watchdog 在 active-turn-legal-only 经 emergency playerView 后仍 missing-private-overlay 时，应上报 private_overlay_missing`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 active-turn-legal-only 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey|online AI watchdog 在 active-turn-legal-only 经 emergency playerView 后仍 missing-private-overlay 时，应上报 private_overlay_missing|online AI watchdog 在 active-turn-legal-only 的合法动作执行失败时，反馈 blockerFingerprint 也应保留 legal-only fingerprint"` -> `1 file passed, 3 passed`
+- 当前结论：
+  - `private_overlay_missing` 不再只是靠实现映射旁证，而是已经和 `private_overlay_stale` 一样有了 reason 级 direct gate；
+  - 后续若再看到 private overlay family 的失败表象，不应回头怀疑“missing 只会被折叠成 generic legal_action_unavailable”，而要继续查更外层 tracker / candidate / resolved 交界。
+
+## 2026-05-19 `response-window / response-loop` resolved gate 误判纠偏
+
+- 这轮看起来“搞了很久像死循环”，实际是两层状态叠加：`functions.get_goal` 里的 active objective 仍停留在旧的 `The Spy Who Ditched Me Host/非目标页 waiting overlay residual`，而当前真实主线早已切到 shared transport / playerView / caller provenance completion audit；同时 `src/engine/transport/__tests__/server.test.ts` 里针对 `response-window / response-loop` 的 gate 断言又被误补串了，导致红灯看起来像业务没收口。
+- 现已把 `response-window` 与 `response-loop` 的关键断言重新对齐到实现语义，复跑 `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "response-window 只有窗口关闭、切到他人响应者或当前响应者变回 human 时才算 resolved|response-loop 也必须沿用 response-window 的 resolved gate，不得在同一 AI 仍是当前响应者时误判已收口|tryRecoverOnlineAiWithLegalAction 在 RESPONSE_PASS 后若只剩 empty responder 残窗，也应视为 resolved 并上报 legal-action-recovered"` => `1 file passed, 3 passed`。
+- 当前结论：这里不是业务逻辑死循环，而是“旧 goal 文案 + 断言串位”制造的假红点；后续继续沿 shared transport completion audit 往下查 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / `tryRecoverOnlineAiWithLegalAction()` 的剩余 caller seam 即可。
+
+## 2026-05-19 `response-window` fingerprint provenance 补到 source/responder 直测
+
+- 继续沿 `server.ts` 的 candidate/resolved/caller 主线下钻后，又命中一格“实现里其实已经带了，但 direct gate 仍不对称”的 provenance 缺口：
+  - `buildOnlineAiRecoveryFingerprint()` 对 `response-window` 早就会把 `sourceId` 与当前 responder 写进 tracker key；
+  - 但当前 worktree 之前只有 `window id drift` 的最小直测，缺少 `sourceId drift` 与 `currentResponderIndex drift` 两格，会让后续 completion audit 继续把这段 tracker key 语义误看成只靠外围 overlay resync/blockedKey 间接旁证。
+- 本轮在 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>) 新增两条 direct gate：
+  - `buildOnlineAiRecoveryFingerprint 在 response-window 的 window id/queue 相同但 sourceId 漂移时，也必须变化`
+  - `buildOnlineAiRecoveryFingerprint 在 response-window 的 window/source 相同但当前 responder 漂移时，也必须变化`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "buildOnlineAiRecoveryFingerprint 在 response-window 的 type/source/queue 相同但 window id 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 response-window 的 window id/queue 相同但 sourceId 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 response-window 的 window/source 相同但当前 responder 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 response-loop 的 type/source/queue 相同但 window id 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 response-loop 的 window id/queue 相同但 sourceId 漂移时，也必须变化|buildOnlineAiRecoveryFingerprint 在 response-loop 的 window/source 相同但当前 responder 漂移时，也必须变化"` => `1 file passed, 6 passed`
+- 当前结论：
+  - `response-window` 这条 tracker key 线现在不再只靠 `window id` 与外层 overlay resync/blockedKey 间接证明，`server.ts` 自身的 fingerprint 已对 `sourceId` 和当前 responder 漂移补齐 direct gate；
+  - 但这仍只说明 `buildOnlineAiRecoveryFingerprint()` 的 `response-window` provenance 更对称，不外推 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / `tryRecoverOnlineAiWithLegalAction()` 其余 caller seam 已全量完成。
+
+## 2026-05-20 `active-turn-legal-only:legal_action_unavailable` 顶层 continuity 补成 direct gate
+
+- 这轮不是又冒出一条新的 runtime 回退，而是把上一拍已经修掉的 `legal-only` 顶层 continuity 真残口补成对称证据：
+  - 先前已在 [`src/engine/transport/server.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>) 的 `runOnlineAiRecoveryTick()` 收紧 continuity：当 `candidate.legalActionOnly === true`，且当前 tracker 仍属于 `response-loop / active-turn-legal-only / seat-legal-only` 家族时，不再因为 `trackerKey` 随 `attemptKey/progressMarker` 漂移就重建新 tracker；
+  - 上一轮只把 `seat-legal-only:legal_action_unavailable` 这半边补成直测，`active-turn-legal-only` 仍停在“实现已修 + 邻近矩阵旁证”的状态，所以一旦只看 active goal 文案和旧进度，很容易误以为还在原地打转。
+- 本轮新增直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>)：
+  - `online AI watchdog 在 active-turn-legal-only 的 progressMarker 漂移但仍是同一 stalled surface 时，不应重建新 tracker 吞掉 legal_action_unavailable`
+- 直测锁住的关键事实：
+  - 第一 tick 先建立 `active-turn-legal-only` tracker；
+  - 手工让 `match.state.sys.eventStream.nextId` 漂移，制造 `progressMarker` 漂移但不换 incident；
+  - 第二 tick 仍无 `legalActions` 时，不执行命令、不重建 tracker，而是沿旧 tracker 真实进入 failure feedback；
+  - `feedbackReporter` 会收到 `active-turn-legal-only:follow-up-advance:legal_action_unavailable`，且 `trackerAfterFailure.key === trackerBeforeDrift.key`、`failureCount === 1`。
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 active-turn-legal-only 的 progressMarker 漂移但仍是同一 stalled surface 时，不应重建新 tracker 吞掉 legal_action_unavailable"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 AI active 的 targetingRoll 且 legalActions 为空时，不得 fallback 到裸 ADVANCE_PHASE|online AI watchdog 在 active-turn-legal-only 的 progressMarker 漂移但仍是同一 stalled surface 时，不应重建新 tracker 吞掉 legal_action_unavailable|online AI watchdog 在 active-turn-legal-only 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey|online AI watchdog 在 active-turn-legal-only 经 emergency playerView 后仍 missing-private-overlay 时，应上报 private_overlay_missing|online AI watchdog 在 active-turn-legal-only 的合法动作执行失败时，反馈 blockerFingerprint 也应保留 legal-only fingerprint|online AI watchdog 在 human active 的 off-turn targetingRoll 若后续已无合法动作时，应上报 seat-legal-only:legal_action_unavailable|online AI watchdog 在 seat-legal-only 经 emergency playerView 后仍 blocked 时，反馈 blockerFingerprint 应保留 blockedKey|online AI watchdog 在 seat-legal-only 经 emergency playerView 后仍 missing-private-overlay 时，应上报 private_overlay_missing"` -> `1 file passed, 8 passed`
+- 当前结论：
+  - 现在 `legal-only` 顶层 continuity 不再只有 `seat-legal-only` 半边被 direct gate 锁住，`active-turn-legal-only` 也有了对称直测；
+  - 这次新增的是 shared transport 顶层 continuity 的证据闭环，不是把整个 `runOnlineAiRecoveryTick()` / fallback caller / resolved gate 全量宣告完成；
+  - 下一格应继续沿 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / overlay resync / fallback caller provenance 查新的 live seam，不再回头把这条 continuity 当开放 residual。
+
+## 2026-05-20 `legal-only` 顶层 continuity 继续收紧：新 phase 必须建新 tracker
+
+- 在补完上一节的正向直测后，又继续沿同一 seam 做负向验证，确认当前“不是所有 legal-only 漂移都该续接旧 tracker”：
+  - 旧实现只要 `candidate.legalActionOnly === true`，且当前 tracker 仍在 `active-turn-legal-only / seat-legal-only / response-loop` 家族里，就会默认保 continuity；
+  - 这会把“同一 AI 仍在 legal-only family，但 stalled surface 已经从 `targetingRoll` 切到 `factionSelect`”这种新 incident 也沿旧 tracker 吞掉。
+- 新增红灯直测 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>) 先证实残口：
+  - `online AI watchdog 在 active-turn-legal-only 的 stalled surface 已切到新 phase 时，应重建新 tracker 而不是沿旧 tracker 继续`
+  - 红灯时肉眼可见 `blockerFingerprint` 已经变成 `active-turn-legal-only:1:factionSelect:...`，但 `trackerKey` 还黏在旧 `targetingRoll`；watchdog 直接沿旧 tracker 上报了 `legal_action_unavailable`。
+- 随后收紧实现 [`src/engine/transport/server.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/server.ts>)：
+  - 新增 `buildOnlineAiRecoveryContinuitySurfaceFingerprint()`，不再把所有 `legal-only` fingerprint 一概按“去掉最后一段”粗暴比较；
+  - `active-turn-legal-only` 现在按 `playerId + phase` 比 continuity surface；若是 `defensiveRoll`，再带上 `attackerId + sourceAbilityId`；
+  - `seat-legal-only` 的 direct-action 分支只按 `playerId + phase` 比 continuity surface，不让 `attemptKey` 漂移误伤同一 surface；blocked 分支则继续把 `blockedReason + blockedKey` 计入 continuity surface，仅忽略最后一段 `progressMarker`；
+  - 顶层 continuity gate 也改成只对 `active-turn-legal-only / seat-legal-only` 自身 reason 做同-surface 续接，不再把“仍在 legal-only family”直接等同于“还是同一个 stalled surface”。
+- 聚焦验证：
+  - 红灯：`node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 active-turn-legal-only 的 stalled surface 已切到新 phase 时，应重建新 tracker 而不是沿旧 tracker 继续"` -> failed（旧 `trackerKey` 仍指向 `targetingRoll`，且错误上报 failure）
+  - 绿灯矩阵：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 active-turn-legal-only 的 progressMarker 漂移但仍是同一 stalled surface 时，不应重建新 tracker 吞掉 legal_action_unavailable|online AI watchdog 在 active-turn-legal-only 的 stalled surface 已切到新 phase 时，应重建新 tracker 而不是沿旧 tracker 继续|online AI watchdog 在 AI active 的 targetingRoll 且 legalActions 为空时，不得 fallback 到裸 ADVANCE_PHASE|online AI watchdog 在 human active 的 off-turn targetingRoll 若后续已无合法动作时，应上报 seat-legal-only:legal_action_unavailable|online AI watchdog 在 response-loop 强制关窗后若已切到 active-turn-legal-only，应交给新的 legal-only tracker 继续推进|online AI watchdog 在 response-loop 强制关窗后若已切到 seat-legal-only，应交给新的 legal-only tracker 继续推进"` -> `1 file passed, 6 passed`
+- 当前结论：
+  - 现在顶层 continuity 已能区分“同一 stalled surface 的 progressMarker/blocked progress 漂移”和“已经切到新的 legal-only surface”；
+  - 这次是 `runOnlineAiRecoveryTick()` legal-only continuity 的真正语义收紧，不是又补一条旁证；
+  - 下一格继续查别的 live seam，优先还是 `resolveOnlineAiRecoveryCandidate()` / `hasOnlineAiRecoveryResolved()` / overlay resync / fallback caller provenance，不回头再围着 `legal-only` continuity 打转。
+
+## 2026-05-20 `hasOnlineAiRecoveryResolved()` 再补两格 sibling-family direct gate
+
+- 这轮没再碰 runtime 实现，而是把 `hasOnlineAiRecoveryResolved()` 里已经依赖 `hasSamePlayerRecoveryCandidate()` 的两条对称格补成显式证据：
+  - 旧矩阵已有 `active-turn -> visible/response-window/hidden/response-loop`；
+  - 也有 `legalActionOnly -> visible/response-window/hidden/response-loop`，以及 `active-turn-legal-only <-> seat-legal-only`；
+  - 但还缺 `active-turn -> seat-legal-only` 与 `legalActionOnly -> active-turn` 两格。
+- 已在 [`src/engine/transport/__tests__/server.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/engine/transport/__tests__/server.test.ts>) 把这两格并入现有 sibling gate `it.each(...)`：
+  - `active-turn 即使已切到同一 AI 的 seat-legal-only，只要 blocker 仍在也不算 resolved`
+  - `legalActionOnly 即使已切到同一 AI 的 active-turn，只要 blocker 仍在也不算 resolved`
+- 聚焦验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "active-turn 即使已切到同一 AI 的 visible-interaction，只要 blocker 仍在也不算 resolved|active-turn 即使已切到同一 AI 的 response-window，只要 blocker 仍在也不算 resolved|active-turn 即使已切到同一 AI 的 hidden-interaction，只要 blocker 仍在也不算 resolved|active-turn 即使已切到同一 AI 的 response-loop，只要 blocker 仍在也不算 resolved|active-turn 即使已切到同一 AI 的 seat-legal-only，只要 blocker 仍在也不算 resolved|legalActionOnly 即使已切到同一 AI 的 visible-interaction，只要 blocker 仍在也不算 resolved|legalActionOnly 即使已切到同一 AI 的 response-window，只要 blocker 仍在也不算 resolved|legalActionOnly 即使已切到同一 AI 的 hidden-interaction，只要 blocker 仍在也不算 resolved|legalActionOnly 即使已切到同一 AI 的 response-loop，只要 blocker 仍在也不算 resolved|legalActionOnly 即使已切到同一 AI 的 active-turn，只要 blocker 仍在也不算 resolved|legalActionOnly 即使在 active-turn-legal-only 与 seat-legal-only 之间切换，只要仍是同一 AI 就不算 resolved"` -> `1 file passed, 11 passed`
+- 当前结论：
+  - 这次补的是 completion audit 的 direct gate 对称性，不新增业务语义；
+  - `active-turn -> seat-legal-only` 与 `legalActionOnly -> active-turn` 不再是开放缺证项；
+  - 下一格继续回到真正还活着的 runtime seam，不再在 resolved-family 的相邻格上重复打转。
+
+## 2026-05-22 `skeletons_gravetender` sourceController buried trigger gate
+
+- 当前不是回旧 `The Spy Who Ditched Me / waiting overlay` objective 打转，而是在显式 `playerContext` dedicated queue diff 清零后，继续筛“未显式 `playerContext` 但 callback 依赖 source controller / event provenance”的 still-object-level family。
+- 新命中对象是 `skeletons_gravetender`：
+  - `registerTrigger('skeletons_gravetender', 'onCardBuried', ...)` 与 `registerTrigger('skeletons_gravetender', 'onBuriedCardUncovered', ...)` 旧注册只有 `perInstance:true`；
+  - `skeletonsGravetenderTriggered()` 实际按 `ctx.sourceControllerId` 给 Gravetender 控制者抽牌，并写 `skeletons_gravetender_once_per_turn` metadata；
+  - 对手翻开己方埋葬牌时，默认 eventPlayer owner 会把 queued trigger 归给翻牌玩家，和 callback 语义不一致。
+- 已做最小修复：
+  - [`src/games/smashup/abilities/skeletons.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/skeletons.ts>) 给 Gravetender 的 `onCardBuried` 与 `onBuriedCardUncovered` 两条 trigger 都补 `playerContext:'sourceController'`。
+  - [`src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts>) 新增 focused gate：`queued onBuriedCardUncovered per-instance trigger 在对手翻开己方埋葬牌时仍应把 skeletons_gravetender 归给控制者`。
+- 验证记录：
+  - focused + Skeletons buried 邻近：`reactionQueueSourceRuntimeContext.test.ts -t "queued onBuriedCardUncovered ... skeletons_gravetender ...|... skeletons_lord_of_bones ...|... skeletons_gravestones ..."` -> `1 file passed, 3 passed`
+  - 整文件：`reactionQueueSourceRuntimeContext.test.ts` -> `1 file passed, 21 passed`
+  - 对象级邻近：`newFactionAbilities.test.ts -t "skeletons_lord_of_bones ...|skeletons_gravestones ...|skeletons_gravetender 每回合仅首次埋葬/挖掘触发抽牌|skeletons_returned_one"` -> `1 file passed, 6 passed`
+- 当前结论：
+  - 这格是新的真实 owner/context 红灯转绿，不是对 `skeletons_lord_of_bones / skeletons_gravestones` 的复读。
+  - 不外推所有未显式 `playerContext` trigger 都已清零；下一格继续筛 callback 实际依赖 source/controller/event provenance 的 still-object-level family。
+
+## 2026-05-22 `ancient_egyptians_pharaoh` uncover owner-context gate
+
+- 沿 Gravetender 之后的 still-object-level family 继续筛，命中 `ancient_egyptians_pharaoh.onBuriedCardUncovered`：
+  - 旧注册只有 `perInstance:true`；
+  - `ancientEgyptiansPharaohOnUncover()` 实际直接按 `ctx.sourceControllerId` 给 Pharaoh 控制者抽 1 张；
+  - 对手翻牌时，默认 eventPlayer owner 会把 queued trigger 归给翻牌玩家。
+- 新增 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts>)：`queued onBuriedCardUncovered per-instance trigger 在对手翻牌时仍应让 ancient_egyptians_pharaoh 控制者抽牌`。
+  - 首次红灯：`ownerPlayerId` 实际为 `1`，预期为 `0`。
+- 已做最小修复：
+  - [`src/games/smashup/abilities/ancient_egyptians.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ancient_egyptians.ts>) 给 `registerTrigger('ancient_egyptians_pharaoh', 'onBuriedCardUncovered', ...)` 补 `playerContext:'sourceController'`。
+- 验证记录：
+  - focused 修复后：`1 file passed, 1 passed`
+  - `reactionQueueSourceRuntimeContext.test.ts` 整文件：`1 file passed, 22 passed`
+  - `reactionQueueEventPlayerContext.test.ts -t "Pharaoh|法老"`：`1 file passed, 1 passed`
+  - `smashup.smoke.test.ts -t "法老"`：`1 file passed, 1 passed`
+  - `newBaseAbilities.test.ts -t "base_star_portal"`：`1 file passed, 2 passed`
+  - 无效命令已确认：`src/games/smashup/__tests__/abilities/ancient-egyptians.test.ts` 当前 worktree 不存在，不能作为验证证据。
+- 当前结论：
+  - 这轮又真实收掉一条未显式 `playerContext` 的 owner/context 红灯，不是旧 waiting overlay 主线复读。
+  - 不外推 `base_star_portal.onCardBuried` 或 `pirate_buccaneer`；下一格继续逐个判定这些候选的真实 owner/event 语义。
+
+## 2026-05-22 `pirate_buccaneer` replacement owner/controller gate
+
+- 沿 Pharaoh 之后的 still-object-level family 继续筛，单独判定 `pirate_buccaneer` replacement/live minion owner 分支：
+  - `registerTrigger('pirate_buccaneer', 'onMinionDestroyed', ...)` 没有显式 `playerContext`，但它是 replacement phase，不走 queued reaction ordering。
+  - `processDestroyTriggers()` 在 replacement 阶段仍能把 live `triggerMinion` 传入；`buccaneerOnDestroyed()` 多基地 prompt 也会优先从 live minion 读取 `controller`，而不是直接信任事件 owner/playerId。
+- 新增 focused gate：
+  - [`src/games/smashup/__tests__/newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>)：`owner 与 controller 分离时，三基地选择 prompt 应交给当前控制者`。
+  - 夹具用 `owner='1' / controller='0' / playerId='1'`，并构造三基地场景，直接断言 `pirate_buccaneer_move` prompt 的 `playerId==='0'`。
+- 验证记录：
+  - focused：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newOngoingAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "owner 与 controller 分离时，三基地选择 prompt 应交给当前控制者"` -> `1 file passed, 1 passed`
+  - 同组矩阵：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newOngoingAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "pirate_buccaneer 触发器"` -> `1 file passed, 9 passed`
+- 当前结论：
+  - 这格没有新增 runtime 修复；它把 `pirate_buccaneer` 从开放候选降成 dedicated green evidence。
+  - 当前实现已证明 replacement 多基地 prompt 归当前控制者，不应再把 `pirate_buccaneer` 当成未决 owner/context 红口。
+  - 下一格继续判定 `base_star_portal.onCardBuried` 的 buried-card-controller/event provenance，或转回 `queued-trigger-runtime-context / onMinionDiscardedFromBase / onCardReturnedToHand` 邻近 live gap。
+
+## 2026-05-22 `base_star_portal` buried-card-controller provenance gate
+
+- 沿 `pirate_buccaneer` 之后继续判定 `base_star_portal.onCardBuried`：
+  - `buildBuryCardEvents()` 在埋牌事件旁路里把 `buriedCardControllerId` 写成执行埋葬动作的 `playerId`；
+  - `ancientEgyptiansStarPortalOnBuried()` 直接按 `ctx.buriedCardControllerId` 抽牌；
+  - 因此它的核心语义更像 “burier / buried-card controller draws”，不是 source controller owner prompt。
+- 新增 focused gate：
+  - [`src/games/smashup/__tests__/newBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newBaseAbilities.test.ts>)：`base_star_portal 在其他玩家埋牌到这里时让埋葬者抽牌`。
+  - 夹具用 P1 把自己的 `bury-me` 埋到 `base_star_portal`，随后 direct trigger context 故意设 `playerId='0'`、`buriedCardControllerId='1'`，断言 `CARDS_DRAWN.playerId==='1'`。
+- 验证记录：
+  - focused：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "base_star_portal 在其他玩家埋牌到这里时让埋葬者抽牌"` -> `1 file passed, 1 passed`
+  - 同组矩阵：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "base_star_portal"` -> `1 file passed, 3 passed`
+- 当前结论：
+  - 这格没有新增 runtime 修复；它把 `base_star_portal.onCardBuried` 从开放候选降成 dedicated green evidence。
+  - 当前实现应保持 `buriedCardControllerId` / event provenance，不应批量改成 `sourceController`。
+  - Pharaoh / Buccaneer / Star Portal 这组三个候选已经分别落成“红灯转绿 / green gate / green gate”；下一格应回到别的 queued runtime 或 shared transport live gap。
+
+## 2026-05-22 `vampire_mad_monster_party_pod` triggered ACTION_PLAYED target-base gate
+
+- 沿 `ACTION_PLAYED side branch` 继续筛触发/外部打出路径，命中 `vampire_mad_monster_party_pod`：
+  - 卡牌文本是“选择一个基地，并在该基地上你的每个随从上放置一个 +1 指示物。特殊：在你消灭一个随从后打出，选择其所在基地。”
+  - 触发 prompt 已拿到被消灭随从所在 `context.baseIndex`，但旧 `buildActionPlayedEvent(...)` 没写 `targetBaseIndex`。
+  - 这会让依赖行动目标基地的 `onActionPlayed` 后处理只看到一张无目标 extra action。
+- 已做最小修复：
+  - [`src/games/smashup/abilities/vampires.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vampires.ts>)：`vampireMadMonsterPartyPodPlayPromptProgram.onResolve` 的 `ACTION_PLAYED` 事件补 `targetBaseIndex: context.baseIndex`。
+  - [`src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts>)：新增红灯转绿 gate，断言触发打出 `Mad Monster Party POD` 时 `ACTION_PLAYED.payload.targetBaseIndex===1` 且 `targetType==='base'`。
+  - 同文件新增 `Buffet POD` 相反绿色门禁：它只“抽两张，消灭后打出”，触发打出的 `ACTION_PLAYED` 应保持无目标，不伪造 `targetBaseIndex/targetType`。
+- 验证记录：
+  - 红灯：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "vampire_mad_monster_party_pod triggered play preserves"` -> failed，`ACTION_PLAYED.payload` 缺 `targetBaseIndex/targetType`。
+  - 修复后 focused：同命令 -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 4 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/vampiresPod.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 11 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "onActionPlayed|ACTION_PLAYED|base_enchanted_glade"` -> `1 file passed, 3 passed`
+- 当前结论：
+  - 这格只证明 `Mad Monster Party POD` 的 triggered play 已保留“被消灭随从所在基地”目标上下文，且 `Buffet POD` 仍为无目标 triggered play。
+  - 不外推所有 Vampire POD、所有 triggered special、所有 ACTION_PLAYED side branch 或全部 base `onActionPlayed` consumer 已完成。
+
+## 2026-05-23 `baseDefId-only queued interaction` footprint fallback gate
+
+- 沿 `effect-contract queued interaction` 继续缩窄到最小 shared seam，命中 `base_the_nexus_choose` / `time_travelers_time_is_fleeting_choose` 这一类 discard-base choice prompt：
+  - 这类真实 prompt 的 option 只有 `{ baseDefId }`，没有 `baseIndex/minionUid/...`；
+  - 旧 `deriveFootprintFromInteraction()` 只认 `baseIndex` 等结构键，于是把它们降成 `fallbackReason=interaction:...:unstructured-options` 且 `reads/writes=[]`；
+  - `resourceFootprintsConflict()` 又把“fallback 且空 footprint”当成与所有 trigger 冲突，导致本来和 `CARDS_DRAWN` 之类互不冲突的 mandatory queue，也会被错误抬成 `smashup_reaction_choose`。
+- 新增 focused 红灯：
+  - [`src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts>)：`baseDefId-only queued interaction 不应因 footprint fallback 被错误抬成 reaction ordering`。
+  - 夹具让 `base_a.afterScoring` 打开 `sourceId='base_the_nexus_choose'` 的 simple choice，候选只有 `skip` 与 `value:{ baseDefId:'base_c' }`；同时让 `base_b.afterScoring` 只产出 `CARDS_DRAWN`。
+  - 首轮红灯坐实当前 seam：`maybeResolveReactionQueue(...)` 实际打开的是 `smashup_reaction_choose`，而不是 `base_the_nexus_choose`。
+- 已做最小修复：
+  - [`src/games/smashup/domain/reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 只在 interaction footprint 层补洞，不改 event/generic value 推导：
+  - `deriveFootprintFromOption()` 遇到 `option.value.baseDefId` 且没有 `baseIndex` 时，显式写入 `{ kind:'baseDeck' }`。
+  - 这样 `The Nexus / Time Is Fleeting` 这类 discard-base choice 会按真实 replacement-base 语义参与冲突比较，不再落成“空 fallback == 全局冲突”。
+- 验证记录：
+  - 红灯：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "baseDefId-only queued interaction 不应因 footprint fallback 被错误抬成 reaction ordering"` -> failed，收到 `smashup_reaction_choose`。
+  - focused 转绿：同命令 -> `1 file passed, 1 passed`
+  - 邻近整文件：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 25 passed`
+  - 同族 targeted：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间旅行者基地：枢纽|时间旅行者：时间流逝允许从基地弃牌堆选择替换基地|时间旅行者：时间流逝在基地弃牌堆只有一个合法候选时应自动放到基地牌库顶且不弹 prompt|时间旅行者：时间流逝不能选择刚计分进入弃牌堆的基地|时间旅行者：时间流逝真实计分后应使用选择的弃牌堆基地替换已计分基地|时间旅行者：时间流逝真实计分后若只剩一个合法基地弃牌堆候选则应自动替换而不弹第二层 prompt|时间旅行者：时间流逝真实计分后若基地牌库已空且只剩一个合法基地弃牌堆候选，仍应使用该候选替换而不是退回旧 reshuffle 池"` -> `1 file passed, 10 passed`
+- 当前结论：
+  - 这格是新的 shared interaction-footprint 真缝，不是旧 green gate 回扫。
+  - 当前修复只闭合 `baseDefId-only discard-base choice` 的 footprint 推导，不外推其它 top-level afterScoring multi-special 暴露。
+  - 同轮顺手定位到一条独立 residual：focused `时间流逝在同一计分响应窗先结算后，仍应继续保留虫洞 special 入口` 当前首个 `smashup_reaction_choose` 只剩 `Jumper optional trigger + pass`，连 `time-fleeting-a / wormhole-a` 两个 `play_action` 都没进候选集合；这属于 top-level special 候选暴露 seam，不能混记为本格回归。
+
+## 2026-05-23 11:47 +08
+
+- 已把本轮 `Vampires` 的 owner/controller provenance 真红灯闭环，不再只是代码改了没落档。
+- 命中对象：
+  - `vampire_the_count`
+  - `vampire_opportunist`
+- 根因：
+  - destroy 链里的 `ctx.playerId` 仍是被消灭随从 `ownerId`，但这两张卡的“another player's minion”语义应按 `controller` 判定。
+  - stolen minion（`controller != owner`）时，旧实现会把 owner 误当成敌我归属，导致漏触发。
+- 已做修复：
+  - [`src/games/smashup/abilities/vampires.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vampires.ts>) 两处统一改成 `destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId`
+- 已补 focused 红灯：
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>)
+  - `投机主义：被我方控制但归对手拥有的随从被消灭时，仍应按控制权判定为其他玩家随从并触发`
+  - `吸血鬼伯爵：被他人控制但归己方拥有的随从被消灭时，不应按拥有权误判为己方随从`
+- 已验证：
+  - focused + 邻近 vampire destroy 子集：`1 file passed, 8 passed`
+  - `git diff --check -- src/games/smashup/abilities/vampires.ts src/games/smashup/__tests__/newFactionAbilities.test.ts`：无 diff --check 错误，仅 LF/CRLF warning
+- 边界：
+  - 只闭合 `vampire_the_count` / `vampire_opportunist` 在 stolen minion owner/controller 分离场景下的 destroy provenance。
+  - 不外推整个 `Vampires`、整个 `onMinionDestroyed` family，或其它 destroy/discard consumer 已完成。
+- 下一步：
+  - 不再回扫这两张卡，继续沿 `external action play / effect-contract queued interaction / extended-base / post-process side branch` 找新的 still-open seam。
+
+## 2026-05-23 12:02 +08
+
+- 已继续收掉一条 `Sakura Garden` 的 runtime 结构缝，不是回扫旧 vampire 结论。
+- 命中对象：
+  - `base_sakura_garden`
+  - 支撑结构 `turnDestroyedMinions`
+- 根因：
+  - `base_sakura_garden` 的“你的随从第一次被消灭”语义按 `controller` 判定。
+  - 但旧实现一边按 `ctx.triggerMinion.controller` 给抽牌玩家，一边又只拿 `turnDestroyedMinions[].owner` 做“本回合是否已触发”去重。
+  - 如果同一玩家本回合先失去一个 stolen minion（`controller=0, owner=1`），再失去一个自有 minion（`controller=0, owner=0`），旧逻辑会把第二次也当成首次，再多抽 1。
+- 已做修复：
+  - [`src/games/smashup/domain/types.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/types.ts>) 给 `turnDestroyedMinions` 增量补 `controller?: string`
+  - [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 在 `MINION_DESTROYED` 记录里同步写入 `controller: minion.controller`
+  - [`src/games/smashup/abilities/samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 让 `samuraiSakuraGardenTrigger` 优先按 `record.controller ?? record.owner` 去重
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/newBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newBaseAbilities.test.ts>)
+  - `base_sakura_garden 在同一玩家先失去 stolen minion 再失去自有随从时，不应因 owner 不同而重复抽牌`
+- 已验证：
+  - focused + ledger 子集：`3 files passed, 5 passed`
+  - `Sakura Garden` 同族子集：`2 files passed, 8 passed`
+  - `git diff --check -- src/games/smashup/domain/types.ts src/games/smashup/domain/reduce.ts src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/newBaseAbilities.test.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts src/games/smashup/__tests__/feedback-high-ground-destroyer.test.ts`：无 diff --check 错误，仅 LF/CRLF warning
+- 边界：
+  - 当前只闭合 `base_sakura_garden` 在 stolen-minion controller/owner 分离下的 once-per-turn 去重语义。
+  - 不外推所有依赖 `turnDestroyedMinions` 的基地/能力、整个 Samurai family，或全部 destroy ledger consumer 已完成。
+
+## 2026-05-23 12:08 +08
+
+- 已继续沿 `turnDestroyedMinions` family 收掉一条同型红灯：`cthulhu_furthering_the_cause`。
+- 根因：
+  - 卡文是 `if another player's minion was destroyed here`，这里的 `another player` 应按 destroyed minion `controller` 判定。
+  - 旧实现只看 `turnDestroyedMinions.owner !== ongoing.ownerId`；stolen minion（`controller=1, owner=0`）被消灭时，会把“对手控制、自己拥有”的随从误判成不是 another player。
+- 已做修复：
+  - [`src/games/smashup/abilities/cthulhu.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cthulhu.ts>) 改为按 `d.controller ?? d.owner` 判定
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>)
+  - `被他人控制但归自己拥有的随从本回合在此被消灭时，仍应按控制权判定为 another player 并获得 1 VP`
+  - 邻近 queued gate：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onTurnEnd trigger 遇到被他人控制但归自己拥有的 destroyed minion 时，Furthering the Cause 仍应按控制权给拥有者 1 VP`
+- 已验证：
+  - direct + queued 子集：`2 files passed, 8 passed`
+  - `git diff --check -- src/games/smashup/abilities/cthulhu.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`：无 diff --check 错误，仅 LF/CRLF warning
+- 边界：
+  - 当前只闭合 `cthulhu_furthering_the_cause` 在 stolen-minion controller/owner 分离下的 `another player's minion` 判定。
+  - 不外推整个 `Cthulhu`、全部 `onTurnEnd` ongoing，或整个 `turnDestroyedMinions` family 已完成。
+
+## 2026-05-23 14:32 +08
+
+- 已继续沿 `owner/controller provenance` 主线命中一条新的 shared producer 真红灯：`PLAY_MINION -> MINION_PLAYED -> reduce(MINION_PLAYED)` 会把 borrowed minion 的 owner 洗成当前打牌玩家。
+- 命中对象：
+  - `shared MINION_PLAYED owner provenance`
+  - `elder_thing_elder_thing_pod`
+- 根因：
+  - 旧 `domain/reducer.ts` 构造 `MINION_PLAYED` 时不带原卡 `owner`
+  - 旧 `domain/reduce.ts` 落地 `MinionOnBase` 时把 `owner` 硬写成 `playerId`
+  - 所以 `elder_thing_elder_thing_pod(owner='1')` 被 P0 打到基地后，live minion 已变成 `controller='0', owner='0'`；后续沉底分支即使按 live source minion 取 owner，也只能继续发错 `ownerId`
+- 已做修复：
+  - [`src/games/smashup/domain/types.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/types.ts>)：`MinionPlayedEvent.payload` 增量补 `ownerId?: PlayerId`
+  - [`src/games/smashup/domain/reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>)：真实 `PLAY_MINION` 发 `MINION_PLAYED` 时写 `ownerId: card.owner`
+  - [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>)：落地 `MinionOnBase` 时改为 `owner: ownerId ?? playerId`
+  - [`src/games/smashup/abilities/elder_things.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/elder_things.ts>)：`elder_thing_elder_thing_pod` 的 `bottom / forced / fallback` 三个沉底分支统一按 live source minion `owner` 写 `CARD_TO_DECK_BOTTOM`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/elderThingsPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/elderThingsPod.test.ts>)
+  - `被他人控制时选择沉底，仍应进入自己拥有者的牌库底`
+  - gate 先锁 live pod `controller='0', owner='1'`，再锁 `CARD_TO_DECK_BOTTOM.payload.ownerId === '1'`，以及最终只进入 P1 牌库底
+- 已验证：
+  - focused：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/elderThingsPod.test.ts -t "被他人控制时选择沉底，仍应进入自己拥有者的牌库底"` -> `1 file passed, 1 passed`
+  - 整文件：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/elderThingsPod.test.ts` -> `1 file passed, 15 passed`
+  - 邻近回归：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/talentAbilities.test.ts -t "被他人控制时自毁仍应进入自己拥有者的弃牌堆|cthulhu_servitor（仆人 talent）"` -> `1 file passed, 5 passed`
+- 当前结论：
+  - 这格不是 Elder Things 单卡特例，而是共享 `MINION_PLAYED` owner provenance 真缝。
+  - 当前只闭合 borrowed minion 真打出后的 owner 保真，以及 `elder_thing_elder_thing_pod` 借来后沉底分支。
+  - 下一步优先筛 `ACTION_PLAYED / ONGOING_ATTACHED` 是否存在同型 borrowed-action owner provenance，而不是回扫已收口的 `elder_thing_elder_thing_pod / cthulhu_servitor`。
+
+## 2026-05-23 14:41 +08
+
+- 已继续沿同一味道命中一条对称 shared seam：`PLAY_ACTION(ongoing) -> ONGOING_ATTACHED -> reduce(ONGOING_ATTACHED)` 也会把 borrowed ongoing 的 provenance 写坏。
+- 命中对象：
+  - `shared ONGOING_ATTACHED owner/source provenance`
+  - `zombie_overrun` 作为最小 borrowed ongoing 夹具
+- 根因：
+  - 旧 `domain/reducer.ts` 在真实打出 ongoing 行动时，把 `ONGOING_ATTACHED.payload.ownerId` 直接写成 `command.playerId`
+  - 旧 `domain/reduce.ts` 又把 `ownerId` 同时拿来表示“附着后真正归谁”和“从谁的牌区移除这张卡”
+  - 因此 borrowed ongoing 无法同时满足两件事：附着后 `ownerId` 保真，以及这张牌从当前控制者手牌真实消失
+- 已做修复：
+  - [`src/games/smashup/domain/types.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/types.ts>)：`OngoingAttachedEvent.payload` 增量补 `sourcePlayerId?: PlayerId`
+  - [`src/games/smashup/domain/reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>)：真实 ongoing `PLAY_ACTION` 写 `ownerId: card.owner`、`sourcePlayerId: command.playerId`
+  - [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>)：处理 `ONGOING_ATTACHED` 时按 `sourcePlayerId ?? ownerId` 从源牌区移除，但附着对象继续保留真实 `ownerId`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts>)
+  - `直接打出被他人拥有的 ongoing 行动时，附着后仍应保留 owner 且从当前玩家手牌移除`
+  - 夹具让 P0 手牌直接持有 `makeCard('overrun','zombie_overrun','action','1')`，真实 `PLAY_ACTION` 到基地
+- 已验证：
+  - focused：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts -t "直接打出被他人拥有的 ongoing 行动时，附着后仍应保留 owner 且从当前玩家手牌移除"` -> `1 file passed, 1 passed`
+  - 整文件：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts` -> `1 file passed, 3 passed`
+  - 邻近 dedupe：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/architecture-duplicate-processing.test.ts -t "D42: ONGOING_ATTACHED 重新附着同一 uid 时应先清理旧挂载位置"` -> `1 file passed, 1 passed`
+  - 邻近 buried/uncover：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "翻开埋葬的远古诅咒在跨基地存在唯一合法目标时应保持目标上下文|翻开埋葬的远古诅咒在存在多个合法目标时，选择目标后应继续进入确认交互"` -> `1 file passed, 1 passed`
+- 当前结论：
+  - 这格是共享 `ONGOING_ATTACHED` 双 provenance 真缝，不是 `zombie_overrun` 单卡特例。
+  - 当前只闭合真实 ongoing 打出路径上的 `ownerId/sourcePlayerId` 合同；下一步继续优先筛 `ACTION_PLAYED` 是否还存在同型 borrowed-action provenance 缺口。
+
+## 2026-05-23 15:07 +08
+
+- 已继续沿同一主线命中第三条对称 shared seam：标准 `PLAY_ACTION -> ACTION_PLAYED -> reduce(ACTION_PLAYED)` 会把 borrowed standard action 错放到当前打牌玩家的 discard。
+- 命中对象：
+  - `shared ACTION_PLAYED discard-owner provenance`
+  - `wizard_summon` 作为最小 borrowed standard action 夹具
+- 根因：
+  - 旧 `domain/reducer.ts` 构造 `ACTION_PLAYED` 时不带 action card 的真 owner
+  - 旧 `domain/reduce.ts` 在 standard/special action 结算后，总是把 `movedCard` 追加进 `state.players[playerId].discard`
+  - 因此 borrowed standard action 虽然会从当前玩家手牌移走，但会错误进入当前玩家弃牌堆，而不是其拥有者弃牌堆
+- 已做修复：
+  - [`src/games/smashup/domain/types.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/types.ts>)：`ActionPlayedEvent.payload` 增量补 `ownerId?: PlayerId`
+  - [`src/games/smashup/domain/actionPlayEvent.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/actionPlayEvent.ts>)：`buildActionPlayedEvent(...)` 透传 `ownerId`
+  - [`src/games/smashup/domain/reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>)：真实 `PLAY_ACTION` 构造 `ACTION_PLAYED` 时写 `ownerId: card.owner`
+  - [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>)：继续按 `playerId` 做源手牌/源弃牌移除，但 standard/special action 的 discard 落点改为 `ownerId ?? movedCard.owner ?? playerId`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/actionAndTalent.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/actionAndTalent.test.ts>)
+  - `直接打出被他人拥有的标准行动时，应从当前玩家手牌移除并进入其拥有者弃牌堆`
+  - 夹具让 P0 手牌直接持有 `makeCard('summon','wizard_summon','action','1')`，真实 `PLAY_ACTION`
+- 已验证：
+  - focused：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/actionAndTalent.test.ts -t "直接打出被他人拥有的标准行动时，应从当前玩家手牌移除并进入其拥有者弃牌堆"` -> `1 file passed, 1 passed`
+  - 整文件：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/actionAndTalent.test.ts` -> `1 file passed, 6 passed`
+  - ongoing 邻近回归：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts` -> `1 file passed, 3 passed`
+- 当前结论：
+  - 这格是共享 `ACTION_PLAYED` discard-owner provenance 真缝，不是 `wizard_summon` 单卡特例。
+  - 到这里，`MINION_PLAYED / ONGOING_ATTACHED / ACTION_PLAYED` 三条 play-event owner/source provenance 对称红口都已收口；下一步应切到别的 still-open family，而不是继续回扫这三条。
+
+## 2026-05-23 15:24 +08
+
+- 已继续沿 `ACTION_PLAYED` 真链向 consumer 侧推进，命中一条被上一格 producer 修复新暴露出来的对象级真红灯：`princesses_woodland_helpers` 默认“刚打出的行动仍在当前行动玩家自己的 discard”。
+- 命中对象：
+  - `princesses_woodland_helpers`
+  - `borrowed ACTION_PLAYED owner provenance -> sourceController consumer lookup`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/princesses.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/princesses.ts:208>) 中 `princessesWoodlandHelpers()` 先按 `helperControllerId` 去 `state.players[helperControllerId].discard` 里找 `sourceEventId` 对应行动
+  - 同时把 prompt context 的 `ownerId` 也直接写成 `helperControllerId`
+  - 在当前树里，borrowed standard action 打出后已会进入其真实 owner discard；因此 P0 打出 `owner='1'` 的 borrowed action 时，Woodland Helpers 会直接找不到这张牌，连 prompt 都起不来
+- 已做修复：
+  - [`src/games/smashup/abilities/princesses.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/princesses.ts:215>)：按 `cardUid` 在全体玩家 discard 中定位真实 discard owner，不再假定这张行动仍在 `helperControllerId` 的 discard
+  - 同文件 [`princesses.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/princesses.ts:228>)：把真实 `discardOwnerId` 透传给 `princessesWoodlandHelpersPromptProgram` 的 `ownerId`
+  - 这样 prompt 仍交给 Woodland Helpers 控制者本人决定，但真正 `buildValidatedCardToDeckBottomEvents(...)` 走的是这张行动当前所在的 owner discard / owner deck
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts:10296>)
+  - `princesses_woodland_helpers 在你打出被他人拥有的行动后，仍应给你创建回收选择并把该行动放回其拥有者牌库底`
+  - 夹具让 P0 场上有 `Woodland Helpers`，P1 的 discard 中有 `borrowed-spell-1(owner='1')`，然后用 `fireTriggers(... onActionPlayed playerId='0', sourceControllerId='0', sourceEventId='action-played:borrowed-spell-1:0')` 直击 callback
+- 已验证：
+  - focused + 同组既有正负例：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "princesses_woodland_helpers"` -> `1 file passed, 3 passed`
+  - 邻近 queue 负向回归：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Woodland Helpers"` -> `1 file passed, 1 passed`
+  - `git diff --check -- src/games/smashup/abilities/princesses.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` -> 通过，仅 LF/CRLF warning
+- 当前结论：
+  - 这格不是 2026-05-22 那条“别人打行动时不应误触发 Woodland Helpers” 负向 gate 的复读，而是 `ACTION_PLAYED` owner 归位后新增暴露出来的 borrowed-action consumer seam
+  - 当前只闭合 `princesses_woodland_helpers` 在 borrowed action 真进入 owner discard 后的 source lookup / owner propagation
+  - 不外推整个 `Princesses`、所有 action-to-deck effect，或全部 `ACTION_PLAYED` consumer 已完成；下一步优先继续筛其它仍默认“刚打出的行动留在当前玩家 discard/hand/deck”的 consumer
+
+## 2026-05-23 15:40 +08
+
+- 已继续沿同一 `ACTION_PLAYED` consumer family 命中另一条新的对象级真红灯：`mythic_greeks_favor_of_dionysus` 的“是否将此卡放到牌库顶”仍把 borrowed action 写回当前玩家牌库。
+- 命中对象：
+  - `mythic_greeks_favor_of_dionysus`
+  - `borrowed action self-to-deck-top owner provenance`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/mythic_greeks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/mythic_greeks.ts>) 里 `dionysusTopPromptProgram` resolve 时把 `CARD_TO_DECK_TOP.payload.ownerId` 直接写成 `context.playerId`
+  - 因此当 `P0` 打出一张 `owner='1'` 的 borrowed `Favor of Dionysus` 并选择“放到牌库顶”时，旧实现会把 `borrowed-dionysus` 错送进 `P0.deck`
+  - 首轮 focused 红灯已坐实：`P0.deck === ['borrowed-dionysus', 'p0-deck-1']`，而不是预期只保留 `['p0-deck-1']`
+- 已做修复：
+  - 同文件新增 `findCardOwnerAcrossPlayerZones(...)`，按 `cardUid/defId` 在全体玩家 `hand/discard/deck` 中定位 source card 并读取其真实 `card.owner`
+  - `favorOfDionysus()` 创建 prompt 时把该 `ownerId` 透传给 `DionysusMinionContext/DionysusTopContext`
+  - `dionysusTopPromptProgram` resolve 时改为按 `context.ownerId` 写 `CARD_TO_DECK_TOP`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/shayuFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/shayuFactionAbilities.test.ts>)
+  - `神话希腊：被他人拥有的狄俄尼索斯恩惠选择回顶时，仍应进入其拥有者牌库而不是当前玩家牌库`
+- 已验证：
+  - focused：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/shayuFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "被他人拥有的狄俄尼索斯恩惠选择回顶时"` -> `1 file passed, 1 passed`
+  - 整文件：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/shayuFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 18 passed`
+  - `git diff --check -- src/games/smashup/abilities/mythic_greeks.ts src/games/smashup/__tests__/shayuFactionAbilities.test.ts` -> 通过，仅 LF/CRLF warning
+- 当前结论：
+  - 这格不是整份 `mythic_greeks` 重审，只是 `borrowed action -> self-to-deck-top` 这类 consumer 真缝。
+  - 当前只闭合 `mythic_greeks_favor_of_dionysus` 在 borrowed action 场景下的 owner provenance。
+  - 不外推整个 `mythic_greeks`、所有 self-top/bottom action，或全部 `ACTION_PLAYED` consumer 已完成；下一步继续筛其它仍把 borrowed action 的 lookup / self-top/bottom 绑在当前玩家区位的 sibling。
+
+## 2026-05-23 19:46 +08
+
+- 已继续沿 `borrowed discard -> owner deck top/shuffle` family 收掉 Cthulhu 两条 sibling 真红灯，不是前面 `Time Raider / Favor of Dionysus / Emperor Penguin` 的复读。
+- 命中对象：
+  - `cthulhu_recruit_by_force`
+  - `cthulhu_it_begins_again`
+  - shared `DECK_REORDERED` 在 `sourcePlayerId !== playerId` 时的 source/owner provenance
+- 根因：
+  - 旧 [`src/games/smashup/abilities/cthulhu.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cthulhu.ts>) 里，`cthulhu_recruit_by_force` 直接把所选弃牌随从拼进当前玩家 `DECK_REORDERED.playerId=ctx.playerId` 的顶端；因此 `owner='1'` 的 borrowed minion 会错误进入 `P0.deck`
+  - 同文件里的 `cthulhu_it_begins_again` 也默认“选中的弃牌行动仍属于当前玩家自己的 deck/discard”，把 `random.shuffle([...player.deck, ...actionsFromDiscard])` 直接写回 `DECK_REORDERED.playerId=ctx.playerId`
+  - 更深一层的 shared 问题是 [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 旧 `DECK_REORDERED` 只能从 `payload.playerId` 自己的 deck/discard 找牌并回写同一个玩家的 deck，无法表达“来源在当前玩家 discard，但最终 deck 属于真实 owner”这条 borrowed-discard 合同
+- 已做修复：
+  - `cthulhu_recruit_by_force` 改为逐张发 `CARD_TO_DECK_TOP`，并按 `ownerId=card.owner`、`sourcePlayerId=playerId` 传 provenance；为保持原先多选“前选的牌在更顶端”的语义，resolve 时按所选数组逆序发事件
+  - [`src/games/smashup/domain/types.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/types.ts>)：给 `DeckReorderedEvent.payload` 增量补 `sourcePlayerId?: PlayerId`
+  - [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>)：`DECK_REORDERED` 在 `sourcePlayerId !== playerId` 时，允许从 source player 的 hand/deck/discard 读取被引用牌 UID，并把最终 `deckUids` 写回真实 owner 的 deck，同时从 source/owner 两侧移除同 uid 防重影
+  - `cthulhu_it_begins_again` 改为按 `card.owner` 分组；若全是当前玩家自己的牌，继续保留原来的单条 `DECK_REORDERED`，若存在 borrowed action，则按 owner 分别生成 `DECK_REORDERED { playerId: ownerId, sourcePlayerId: currentPlayer }`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts>)
+  - `选择被他人拥有的弃牌随从时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶`
+  - `选择被他人拥有的弃牌行动时，仍应洗回其拥有者牌库而不是当前玩家牌库`
+- 已验证：
+  - focused recruit 红灯转绿：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "选择被他人拥有的弃牌随从时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶"` -> `1 file passed, 1 passed`
+  - focused it-begins 红灯转绿：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "选择被他人拥有的弃牌行动时，仍应洗回其拥有者牌库而不是当前玩家牌库"` -> `1 file passed, 1 passed`
+  - 整文件：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 34 passed`
+  - `git diff --check -- src/games/smashup/abilities/cthulhu.ts src/games/smashup/domain/reduce.ts src/games/smashup/domain/types.ts src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts` -> 通过，仅 LF/CRLF warning
+- 当前结论：
+  - 这轮既闭合了 `cthulhu_recruit_by_force` 的 borrowed discard minion -> owner deck top，也闭合了 `cthulhu_it_begins_again` 的 borrowed discard action -> owner deck shuffle
+  - 同时把 shared `DECK_REORDERED` 扩到一条更窄但真实需要的合同：`sourcePlayerId !== playerId` 时允许“source 在当前玩家牌区、deck 落到真实 owner”
+  - 不外推所有 `DECK_REORDERED` producer、所有 shuffle caller，或整个 `Cthulhu` family 已完成；下一步优先离开 `cthulhu.ts`，继续筛 `vikings.ts / princesses.ts` 等仍可能默认“source zone 与 owner zone 必然同人”的 deck-top/shuffle caller
+
+## 2026-05-23 21:40 +08
+
+- 已继续沿 `ownerId=ctx.playerId` 的 topdeck caller family 命中一条新的 Wizards 对象级真红灯：`wizard_portal` 在 borrowed action 被揭示后放回牌库顶时，仍把 `ownerId` 写成当前玩家，且没补 `sourcePlayerId`
+- 命中对象：
+  - `wizard_portal`
+  - `borrowed deck-top owner/source provenance`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/wizards.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/wizards.ts>) 的 3 个“剩余牌放回牌库顶”分支都直接发 `CARD_TO_DECK_TOP(ownerId=context.playerId, reason:'wizard_portal')`
+  - 因此 `P0.deck` 顶部若含 `owner='1'` 的 borrowed action，被 `wizard_portal` 揭示并排序后，会错误留在 `P0.deck`
+  - 这条 seam 还要求事件补 `sourcePlayerId:'0'`；否则 reducer 无法从当前玩家牌库移走 source card
+- 已做修复：
+  - 同文件新增 `buildWizardPortalReturnToDeckTopEvent(...)`
+  - helper 按 `cardUid/defId` 从 `state.players[sourcePlayerId].deck` 读取 live source card 的真实 `owner`
+  - `ownerId !== sourcePlayerId` 时补 `sourcePlayerId`
+  - 已接到 `wizardPortalProgram`、`wizardPortalPickPromptProgram`、`wizardPortalOrderPromptProgram` 三个回顶出口
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/query6Abilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/query6Abilities.test.ts>)
+  - `wizard_portal_order: borrowed action 放回牌库顶时应回到拥有者牌库并带 sourcePlayerId`
+  - 夹具让 `P0.deck=['borrowed-a(owner=1)','own-a1','own-a2']`，真实走 `wizard_portal_order` 排序链
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/query6Abilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "wizard_portal: 顶部5张全是行动卡时不抽牌但创建排序 Prompt|wizard_portal_order: 牌库顶被插入新牌后不应继续保留旧揭示排序候选|wizard_portal_order: borrowed action 放回牌库顶时应回到拥有者牌库并带 sourcePlayerId"` -> `1 file passed, 3 passed`
+- 当前结论：
+  - 这格只闭合 `wizard_portal` 在 borrowed deck-top 场景下的 `ownerId/sourcePlayerId` provenance
+  - 不外推整个 `Wizards` 或所有 topdeck caller 已完成；下一步继续筛其它仍默认 `ownerId=ctx.playerId`、或仍把 borrowed card 回写到当前玩家 deck/discard 的 sibling family
+
+## 2026-05-23 22:05 +08
+
+- 已继续沿 `ownerId=playerId` 的对象级旁路推进，命中一条新的 replay attach 真红灯：`steampunk_mechanic / steampunk_change_of_venue` 手工拼的 `ONGOING_ATTACHED` 没有继承前面 shared 修复
+- 命中对象：
+  - `steampunk_mechanic`
+  - `steampunk_change_of_venue`
+  - `borrowed replay ongoing attach owner/source provenance`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/steampunks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/steampunks.ts>) 在 3 个 replay attach 出口都手工发 `ONGOING_ATTACHED(ownerId: playerId)`
+  - 这几条路径不是标准 `PLAY_ACTION`，所以不会自动吃到此前 shared `ONGOING_ATTACHED` 的 owner/source 修复
+  - 当 borrowed ongoing 先被 `recoverCardsFromDiscard(playerId, ...)` 拉回当前玩家手牌，再附着到基地/随从时，旧实现会把 attached action 错记成当前玩家拥有，且缺少 `sourcePlayerId` 导致 source-hand provenance 不完整
+- 已做修复：
+  - 同文件新增 `buildReplayOngoingAttachedEvent(...)`
+  - `SteampunkPromptContext` 已有的 `replayOwnerId` 字段开始实际使用
+  - `steampunkMechanicPromptProgram` 从 discard 选中 replay card 时写入 `replayOwnerId: liveCard.owner`
+  - `steampunkChangeOfVenuePromptProgram` 从场上取回 ongoing 时写入 `replayOwnerId: selected.ownerId`
+  - `steampunk_mechanic_target / steampunk_change_of_venue_choose_minion / steampunk_change_of_venue_choose_base` 统一改走 helper：保留真实 `ownerId`，且在 borrowed 场景补 `sourcePlayerId`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>)
+  - `steampunk_mechanic_target: 重打被他人拥有的 ongoing 时仍应保留 owner 并带 sourcePlayerId`
+  - 夹具让 `P0.discard=['dis-borrowed(owner=1):steampunk_escape_hatch']`，真实走 `mechanic -> recover -> choose base`
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "steampunk_mechanic_target: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文|steampunk_mechanic_target: 重打被他人拥有的 ongoing 时仍应保留 owner 并带 sourcePlayerId|steampunk_change_of_venue_choose_minion: 重打无 onPlay 的随从附着 ongoing 时仍应保留 ACTION_PLAYED 目标随从上下文|steampunk_change_of_venue_choose_base: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文"` -> `1 file passed, 4 passed`
+- 当前结论：
+  - 这格只闭合 `steampunk_mechanic / steampunk_change_of_venue` replay attach 旁路的 `ownerId/sourcePlayerId` provenance
+  - 不外推整个 `Steampunks` 或所有手工 `ONGOING_ATTACHED` caller 已完成；下一步继续筛其它仍手工拼 owner/source 的对象级 caller
+
+## 2026-05-23 23:15 +08
+
+- 已继续沿 `ownerId=ctx.playerId` 的对象级 top/bottom caller 推进，命中一条新的 Princesses 真红灯：`princesses_marie_degraw` 看到 borrowed deck-top action 后，会把它错误放到当前玩家牌库底
+- 命中对象：
+  - `princesses_marie_degraw`
+  - `borrowed deck-top -> owner deck bottom provenance`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/princesses.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/princesses.ts>) 在 `peeked.card.type !== 'minion'` 分支里，直接调用 `buildValidatedCardToDeckBottomEvents(... ownerId: ctx.playerId, expectedLocation:'deck')`
+  - 因此当 `P0.deck` 顶部是 `owner='1'` 的 borrowed action 时，talent 结算后 `borrowed-top` 会错误留在 `P0.deck` 底，而不是进入 `P1.deck` 底
+  - 这条 seam 也需要 `sourcePlayerId: ctx.playerId`，否则 reducer 无法表达“source 在当前玩家 deck、落点在真实 owner deck bottom”
+- 已做修复：
+  - 只改 `princesses_marie_degraw` 这一处 direct talent
+  - `ownerId` 改为 `peeked.card.owner`
+  - borrowed 场景补 `sourcePlayerId: ctx.playerId`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>)
+  - `princesses_marie_degraw 看到被他人拥有的牌库顶行动时，仍应放到其拥有者牌库底而不是当前玩家牌库底`
+  - 夹具让 `P0` 场上有 `marie-1`，且 `P0.deck` 顶部是 `borrowed-top(owner=1)`
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "princesses_marie_degraw 看到被他人拥有的牌库顶行动时，仍应放到其拥有者牌库底而不是当前玩家牌库底|princesses_direct_to_dvd_sequel 会把弃牌堆随从洗回牌库并抽 1|princesses_direct_to_dvd_sequel 选择被他人拥有的弃牌随从时，仍应洗回其拥有者牌库而不是当前玩家牌库|princesses_snow_white 会把另一个基地上的仆从移动到这里"` -> `1 file passed, 4 passed`
+- 当前结论：
+  - 这格只闭合 `princesses_marie_degraw` 的 borrowed deck-top -> owner deck bottom provenance
+  - 不外推整个 `Princesses` 或所有 peek/top/bottom caller 已完成；下一步继续筛其它仍手工写 `ownerId=ctx.playerId`、或默认 source-zone 与 owner-zone 同人的对象级 caller
+
+## 2026-05-24 07:42 +08
+
+- 已继续沿 `revealed/order -> CARD_TO_DECK_TOP owner provenance` family 命中一条新的 Mythic Greeks 对象级真红灯：`mythic_greeks_favor_of_athena` 在排序剩余揭示牌回牌库顶时，仍把 borrowed revealed card 写回当前玩家牌库。
+- 命中对象：
+  - `mythic_greeks_favor_of_athena`
+  - `revealed borrowed deck card -> owner deck top`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/mythic_greeks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/mythic_greeks.ts>) 中 `AthenaRevealedCard` 只保存 `uid/defId/type`，`AthenaOrderContext.remaining/ordered` 也只保存 `uid/defId`
+  - `athenaOrderPromptProgram` 在把玩家排序后的剩余牌放回牌库顶时，直接写 `CARD_TO_DECK_TOP.ownerId = context.playerId`
+  - 因此 P0 牌库顶部若揭示出 `owner='1'` 的 `borrowed-revealed`，选走一张行动后再排序剩余牌，旧链会把这张 borrowed card 错误留在 P0.deck，而不是进入 P1.deck 顶
+- 已做修复：
+  - `AthenaRevealedCard` 增加 `owner`
+  - `AthenaOrderContext.remaining/ordered` 全程携带 `owner`
+  - `buildAthenaRevealEvents(...)` 从 live deck card 保留 `card.owner`
+  - `athenaPickPromptProgram` 与 `favorOfAthena(...)` 传递剩余揭示牌 owner
+  - `athenaOrderPromptProgram` 回顶时按 `allCards[index].owner` 写 `ownerId`，并在 borrowed 场景补 `sourcePlayerId: context.playerId`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/shayuFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/shayuFactionAbilities.test.ts>)
+  - `神话希腊：雅典娜的恩惠回顶剩余揭示牌时，被他人拥有的牌仍应进入其拥有者牌库顶`
+  - 夹具让 `P0.deck` 顶部包含 `borrowed-revealed(owner=1)`、`top-action-pick(owner=0)` 和其它 P0 牌；P0 打出 `Favor of Athena`，选走 `top-action-pick` 后把 `borrowed-revealed` 排在剩余牌序中
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/shayuFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "雅典娜的恩惠"` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/shayuFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 19 passed`
+- 当前结论：
+  - 这格不是 `mythic_greeks_favor_of_dionysus` borrowed self-to-deck-top 的复读，而是 Athena reveal/order context 丢 owner 的 sibling 真缝
+  - 当前只闭合 `mythic_greeks_favor_of_athena` 在 revealed borrowed deck card 场景下的 owner/source provenance
+  - 不外推整个 `mythic_greeks`、所有 reveal/order caller，或全部 `CARD_TO_DECK_TOP` producer 已完成；下一步继续筛其它仍手工写 `ownerId=ctx.playerId/context.playerId`、或默认 source-zone 与 owner-zone 同人的对象级 caller
+
+## 2026-05-24 07:54 +08
+
+- 已继续沿 `discard -> DECK_REORDERED owner provenance` family 命中一条新的 Mythic Greeks 对象级真缝：`mythic_greeks_favor_of_poseidon` 在从当前玩家弃牌堆选择 borrowed card 洗回牌库时，仍会写回当前玩家牌库。
+- 命中对象：
+  - `mythic_greeks_favor_of_poseidon`
+  - `borrowed discard card -> owner deck shuffle`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/mythic_greeks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/mythic_greeks.ts>) 的 `favorOfPoseidon()` 从 `state.players[ctx.playerId].discard` 生成候选，但候选没有保留 `owner`
+  - `poseidonPromptProgram` resolve 时直接从 `player.discard` 取所选牌，再发一条 `DECK_REORDERED.playerId=context.playerId`
+  - 因此 `P0.discard` 中如果有 `owner='1'` 的 `borrowed-discard`，会被错误洗进 `P0.deck`，而不是进入真实拥有者 `P1.deck`
+- 已做修复：
+  - `PoseidonContext.cards` 增加 `ownerId`
+  - `favorOfPoseidon()` 生成候选时保留 `card.owner`
+  - `poseidonPromptProgram` resolve 时按 live `selectedCards` 的 `card.owner` 分组
+  - 每个 owner 分组单独生成 `DECK_REORDERED { playerId: ownerId }`
+  - borrowed 场景补 `sourcePlayerId: context.playerId`，保证 reducer 从当前玩家 discard 移除 source card，并写入真实 owner deck
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/shayuFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/shayuFactionAbilities.test.ts>)
+  - `神话希腊：波塞冬的恩惠选择被他人拥有的弃牌时，仍应洗回其拥有者牌库`
+  - 夹具让 `P0.discard=['borrowed-discard(owner=1)','own-discard(owner=0)']`，`P1.deck=['p1-deck-a']`；P0 打出 Poseidon 后只选择 `borrowed-discard`
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/shayuFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "波塞冬的恩惠"` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/shayuFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 20 passed`
+- 当前结论：
+  - 这格不是 `Favor of Athena` reveal/order owner 复读，而是 Poseidon discard shuffle 的 owner-scoped `DECK_REORDERED` sibling
+  - 当前只闭合 `mythic_greeks_favor_of_poseidon` 在 borrowed discard card 场景下的 owner/source provenance
+  - 不外推整个 `mythic_greeks`、所有 discard-shuffle caller，或全部 `DECK_REORDERED` producer 已完成；下一步继续筛其它仍手工写 `playerId=context.playerId`、或默认 source-zone 与 owner-zone 同人的对象级 caller
+
+## 2026-05-24 08:06 +08
+
+- 已继续沿 `discard -> DECK_REORDERED owner provenance` family 命中一条新的 Zombies 对象级真缝：`zombie_lend_a_hand` 在从当前玩家弃牌堆多选 borrowed card 洗回牌库时，仍会写回当前玩家牌库。
+- 命中对象：
+  - `zombie_lend_a_hand`
+  - `borrowed discard card -> owner deck shuffle`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/zombies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/zombies.ts>) 的 `zombieLendAHandPromptProgram` 从 `state.core.players[playerId].discard` 多选任意卡
+  - resolve 时直接把 `selectedCards` 与 `player.deck` 合并后发 `DECK_REORDERED.playerId=playerId`
+  - 因此 `P0.discard` 中如果有 `owner='1'` 的 `borrowed-discard`，会被错误洗进 `P0.deck`，而不是进入真实拥有者 `P1.deck`
+- 已做修复：
+  - `zombieLendAHandPromptProgram` resolve 仍从当前玩家 live discard 复核所选 uid
+  - 按 `selectedCards` 的 `card.owner` 分组
+  - 每个 owner 分组单独生成 `DECK_REORDERED { playerId: ownerId }`
+  - borrowed 场景补 `sourcePlayerId: playerId`，保证 reducer 从当前玩家 discard 移除 source card，并写入真实 owner deck
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/zombieWizardAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/zombieWizardAbilities.test.ts>)
+  - `zombie_lend_a_hand: 选择被他人拥有的弃牌时，仍应洗回其拥有者牌库`
+  - 夹具让 `P0.discard=['borrowed-discard(owner=1)','own-discard(owner=0)']`，`P1.deck=['p1-deck-a']`；P0 真实打出 `Lend a Hand` 后只选择 `borrowed-discard`
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "zombie_lend_a_hand"` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 24 passed`
+- 当前结论：
+  - 这格不是 `Favor of Poseidon` 的复读，而是同一 shared `DECK_REORDERED(sourcePlayerId)` 合同在 Zombies discard-multiselect caller 上的 sibling 真缝
+  - 当前只闭合 `zombie_lend_a_hand` 在 borrowed discard card 场景下的 owner/source provenance
+  - 不外推整个 `Zombies`、所有 discard-shuffle caller，或全部 `DECK_REORDERED` producer 已完成；下一步继续筛其它仍手工写 `playerId=context.playerId/playerId`、或默认 source-zone 与 owner-zone 同人的对象级 caller
+
+## 2026-05-24 08:18 +08
+
+- 已继续沿 `deck -> discard owner provenance` family 命中一条新的 shared reducer 真缝：`CARDS_MILLED` 旧实现把从 source deck 磨掉的 borrowed card 直接放回 source player discard。
+- 命中对象：
+  - `zombie_mall_crawl`
+  - `CARDS_MILLED`
+  - `borrowed deck card -> owner discard`
+- 根因：
+  - 旧 [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `CARDS_MILLED` 只按 `event.payload.playerId` 从该玩家 deck 移除 `cardUids`，然后把 `milledFromDeck` 全部追加到同一玩家 discard
+  - [`src/games/smashup/abilities/zombies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/zombies.ts>) 的 `zombie_mall_crawl` 会用 `CARDS_MILLED` 把牌库中所选卡名的同名牌全部磨掉
+  - 因此 `P0.deck` 中如果有 `owner='1'` 的 `borrowed-walker`，Mall Crawl 磨掉它时会错误进入 `P0.discard`，而不是进入真实拥有者 `P1.discard`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/zombieWizardAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/zombieWizardAbilities.test.ts>)
+  - `zombie_mall_crawl: 磨掉被他人拥有的牌库牌时，仍应进入其拥有者弃牌堆`
+  - 首轮红灯：`P0.discard=['p0-discard-a','a1','borrowed-walker','own-walker']`
+- 已做修复：
+  - `CARDS_MILLED` 仍只从 `payload.playerId` 的 source deck 移除 `cardUids`
+  - 对实际从 source deck 移出的每张 card，按 `card.owner` 追加到真实 owner discard
+  - 若 `card.owner` 不存在于当前玩家表，才回退追加到 source player discard
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "zombie_mall_crawl: 磨掉被他人拥有的牌库牌"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "zombie_mall_crawl"` -> `1 file passed, 3 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 25 passed`
+- 当前结论：
+  - 这格不是 `zombie_lend_a_hand` discard shuffle 的复读，而是 shared `CARDS_MILLED` 在 borrowed deck card 场景下的 target discard owner seam
+  - 当前只闭合 `zombie_mall_crawl` 触发的 borrowed deck card -> owner discard 与 shared `CARDS_MILLED` owner landing
+  - 不外推所有 milling caller、所有 deck-search caller 或整个 `Zombies` 已完成；下一步继续筛其它从 deck/discard/hand 移卡时仍默认 source player 就是 target owner 的 producer/reducer
+
+## 2026-05-24 07:55 +08
+
+- 已继续沿 `hand/deck -> deck owner provenance` family 命中一条新的 shared reducer 真缝：`HAND_SHUFFLED_INTO_DECK` 旧实现会把 borrowed hand card 洗进 source player deck。
+- 命中对象：
+  - `HAND_SHUFFLED_INTO_DECK`
+  - `borrowed hand card -> owner deck`
+- 根因：
+  - 旧 [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `HAND_SHUFFLED_INTO_DECK` 会把 `player.hand + player.deck` 按 `newDeckUids` 排序后整体写回 `payload.playerId` 的 deck
+  - 因此 `P0.hand` 中如果有 `owner='1'` 的 `borrowed-hand`，Winds of Change/同类“手牌洗入牌库”效果会把它错误洗进 `P0.deck`，而不是进入真实拥有者 `P1.deck`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/zombieWizardAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/zombieWizardAbilities.test.ts>)
+  - `被他人拥有的手牌洗入牌库时，仍应进入其拥有者牌库`
+  - 首轮红灯：`P0.deck=['p0-deck-a','borrowed-hand','own-hand']`
+- 已做修复：
+  - source player 仍按 `newDeckUids` 移除被洗入牌库的手牌，保留未选中的手牌
+  - `newDeckUids` 映射出的 ordered cards 中，真实 owner 为 source player 的卡继续写回 source player deck
+  - 真实 owner 不同的 card 从 owner 当前 zones 去重后追加到真实 owner deck
+  - 若 `card.owner` 不存在于当前玩家表，才回退 source player
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "被他人拥有的手牌洗入牌库"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "HAND_SHUFFLED_INTO_DECK|wizard_winds_of_change"` -> `1 file passed, 5 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 26 passed`
+- 当前结论：
+  - 这格不是 `CARDS_MILLED` 的复读，而是 shared `HAND_SHUFFLED_INTO_DECK` 在 borrowed hand/deck card 场景下的 owner deck landing
+  - 当前只闭合 `HAND_SHUFFLED_INTO_DECK` 的 borrowed hand/deck card -> owner deck landing
+  - 不外推所有 hand-shuffle producer、所有 draw-after-shuffle caller 或整个 `Wizards/Miskatonic` family 已完成；下一步继续筛其它移卡 reducer/caller 是否仍默认 source player 就是 target owner
+
+## 2026-05-24 08:01 +08
+
+- 已继续沿 `discard -> hand owner provenance` family 命中一条新的 shared reducer 真缝：`CARD_RECOVERED_FROM_DISCARD` 旧实现会把 borrowed discard card 取回 source player hand。
+- 命中对象：
+  - `CARD_RECOVERED_FROM_DISCARD`
+  - `borrowed discard card -> owner hand`
+- 根因：
+  - 旧 [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `CARD_RECOVERED_FROM_DISCARD` 只按 `event.payload.playerId` 从该玩家 discard 取 `cardUids`，然后把 `recovered` 全部追加到同一玩家 hand
+  - 因此 `P0.discard` 中如果有 `owner='1'` 的 `borrowed-discard`，Grave Digger/Grave Robbing/同类 recover 效果会把它错误回到 `P0.hand`，而不是进入真实拥有者 `P1.hand`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/zombieWizardAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/zombieWizardAbilities.test.ts>)
+  - `取回被他人拥有的弃牌时，仍应进入其拥有者手牌`
+  - 首轮红灯：`P0.hand=['h0','borrowed-discard','own-discard']`
+- 已做修复：
+  - source discard 仍按 `payload.playerId` 移除被 recover 的 card uid
+  - 对实际从 source discard 取出的每张 card，按 `card.owner` 追加到真实 owner hand
+  - 若 `card.owner` 不存在于当前玩家表，才回退 source player
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "取回被他人拥有的弃牌"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "CARD_RECOVERED_FROM_DISCARD|zombie_grave_digger|zombie_grave_robbing|zombie_not_enough_bullets"` -> `1 file passed, 9 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 27 passed`
+- 当前结论：
+  - 这格不是 `HAND_SHUFFLED_INTO_DECK` 的复读，而是 shared `CARD_RECOVERED_FROM_DISCARD` 在 borrowed discard card 场景下的 owner hand landing
+  - 当前只闭合 `CARD_RECOVERED_FROM_DISCARD` 的 borrowed discard card -> owner hand landing
+  - 不外推所有 discard-recover producer、所有 returned-to-hand trigger consumer 或整个 `Zombies/Mythic/Steampunks` family 已完成；下一步继续筛其它移卡 reducer/caller 是否仍默认 source player 就是 target owner
+
+## 2026-05-24 08:05 +08
+
+- 已继续沿 `hand -> discard owner provenance` family 命中一条新的 shared reducer 真缝：`CARDS_DISCARDED` 旧实现会把 borrowed hand card 弃到 source player discard。
+- 命中对象：
+  - `CARDS_DISCARDED`
+  - `borrowed hand card -> owner discard`
+- 根因：
+  - 旧 [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `CARDS_DISCARDED` 只按 `event.payload.playerId` 从该玩家 hand 取 `cardUids`，然后把 `discardedFromHand` 全部追加到同一玩家 discard
+  - 因此 `P0.hand` 中如果有 `owner='1'` 的 `borrowed-hand`，任意弃牌效果会把它错误放进 `P0.discard`，而不是进入真实拥有者 `P1.discard`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/zombieWizardAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/zombieWizardAbilities.test.ts>)
+  - `弃掉被他人拥有的手牌时，仍应进入其拥有者弃牌堆`
+  - 首轮红灯：`P0.discard=['p0-discard-a','borrowed-hand','own-hand']`
+- 已做修复：
+  - source hand 仍按 `payload.playerId` 移除被 discard 的 card uid
+  - 对实际从 source hand 取出的每张 card，按 `card.owner` 追加到真实 owner discard
+  - 若 `card.owner` 不存在于当前玩家表，才回退 source player
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "弃掉被他人拥有的手牌"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "CARDS_DISCARDED|CARD_RECOVERED_FROM_DISCARD|HAND_SHUFFLED_INTO_DECK|wizard_winds_of_change|zombie_grave_digger|zombie_grave_robbing|zombie_not_enough_bullets"` -> `1 file passed, 15 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 28 passed`
+- 当前结论：
+  - 这格不是 `CARD_RECOVERED_FROM_DISCARD` 的复读，而是 shared `CARDS_DISCARDED` 在 borrowed hand card 场景下的 owner discard landing
+  - 当前只闭合 `CARDS_DISCARDED` 的 borrowed hand card -> owner discard landing
+  - 不外推所有 discard producer、所有 hand-discard prompt 或整个 discard/recover family 已完成；下一步继续筛其它移卡 reducer/caller 是否仍默认 source player 就是 target owner
+
+## 2026-05-24 08:13 +08
+
+- 已继续沿 `discard -> deck top owner provenance` family 命中一条新的对象级真缝：普通版 `elder_thing_begin_the_summoning` 仍会把 borrowed discard minion 回顶到 source player deck。
+- 命中对象：
+  - `elder_thing_begin_the_summoning`
+  - `borrowed discard minion -> owner deck top`
+- 根因：
+  - [`src/games/smashup/abilities/elder_things.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/elder_things.ts>) 的普通版 prompt resolver 仍旧用 `DECK_REORDERED.playerId=context.playerId`
+  - 因此 `P0.discard` 中如果有 `owner='1'` 的 `borrowed-minion`，选择后会错误进入 `P0.deck`，而不是进入真实拥有者 `P1.deck`
+  - 这不是 `elder_thing_begin_the_summoning_pod` 的复读；POD 版此前已按 `CARD_TO_DECK_TOP.ownerId=inDiscard.owner` 收口，普通版仍保留旧路径
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/elderThingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/elderThingAbilities.test.ts>)
+  - `elder_thing_begin_the_summoning 选择被他人拥有的弃牌随从时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶`
+  - 首轮红灯：`P0.deck=['borrowed-minion','p0-deck-a']`
+- 已做修复：
+  - resolver 改用 `state.core.players[context.playerId].discard` 的 live source discard 复核所选随从
+  - 发 `CARD_TO_DECK_TOP`，`ownerId` 改为 `inDiscard.owner`
+  - 显式补 `sourcePlayerId: context.playerId`，确保 borrowed source 从当前玩家 discard 移除后进入真实 owner deck top
+  - 额外行动授予继续保留在当前行动玩家 `context.playerId`
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/elderThingAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "elder_thing_begin_the_summoning 选择被他人拥有的弃牌随从"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/elderThingAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "elder_thing_begin_the_summoning"` -> `1 file passed, 6 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/elderThingAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 27 passed`
+- 当前结论：
+  - 当前只闭合普通 `elder_thing_begin_the_summoning` 的 borrowed discard minion -> owner deck top landing
+  - 不外推 `Elder Things` 全量、POD 版以外其它 sibling、或所有 `CARD_TO_DECK_TOP/DECK_REORDERED` producer 已完成；下一步继续筛其它仍把 borrowed discard/hand/deck/self-return 落点写成当前玩家的 producer/consumer
+
+## 2026-05-24 08:20 +08
+
+- 已继续沿 `discard -> deck shuffle owner provenance` family 命中一条新的对象级真缝：`robot_microbot_reclaimer` 旧实现会把 borrowed discard Microbot 洗回 source player deck。
+- 命中对象：
+  - `robot_microbot_reclaimer`
+  - `borrowed discard microbot -> owner deck shuffle`
+- 根因：
+  - [`src/games/smashup/abilities/robots.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/robots.ts>) 的 Reclaimer resolver 从当前玩家 discard 多选 Microbot 后，直接把 `player.deck + microbotsFromDiscard` 洗成 `DECK_REORDERED.playerId=playerId`
+  - 因此 `P0.discard` 中如果有 `owner='1'` 的 `borrowed-microbot`，选择后会错误进入 `P0.deck`，而不是进入真实拥有者 `P1.deck`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/robotAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/robotAbilities.test.ts>)
+  - `选择被他人拥有的弃牌堆微型机时，仍应洗回其拥有者牌库而不是当前玩家牌库`
+  - 首轮红灯：`P0.deck=['p0-deck-a','borrowed-microbot']`
+- 已做修复：
+  - resolver 仍只从当前玩家 live discard 中取本次选中的 Microbot
+  - 按 `card.owner` 分组；若 owner 不存在于当前 state，才回退当前玩家
+  - 每个真实 owner 生成一条 owner-scoped `DECK_REORDERED`
+  - borrowed 组补 `sourcePlayerId: playerId`，让 reducer 从 source discard 移除后写入真实 owner deck
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/robotAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "选择被他人拥有的弃牌堆微型机"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/robotAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "robot_microbot_reclaimer"` -> `1 file passed, 10 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/robotAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 12 passed`
+- 当前结论：
+  - 当前只闭合 `robot_microbot_reclaimer` 的 single-source borrowed discard Microbot -> owner deck shuffle landing
+  - 不外推 Robots 全量、所有 discard-shuffle caller、或多 source 同 owner 的批量洗牌效果已完成；下一步继续筛其它仍把 borrowed discard/hand/deck/self-return 落点写成当前玩家的 producer/consumer
+
+## 2026-05-24 08:26 +08
+
+- 已继续沿 `revealed/order -> deck top owner provenance` family 命中一条新的对象级真缝：`cowboys_gold_in_them_thar_hills` 旧实现会把未选中的 borrowed 揭示牌留在当前玩家牌库。
+- 命中对象：
+  - `cowboys_gold_in_them_thar_hills`
+  - `borrowed revealed remaining card -> owner deck top`
+- 根因：
+  - [`src/games/smashup/abilities/cowboys.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cowboys.ts>) 的 `buildGoldDrawAndDeckEvents()` 把 `remainingCards + restOfDeck` 全部写成 `DECK_REORDERED.playerId=playerId`
+  - 因此 `P0.deck` 顶部三张中未被选中的 `owner='1'` borrowed revealed card，会在排序后错误留在 `P0.deck`，而不是回到真实拥有者 `P1.deck`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>)
+  - `cowboys_gold_in_them_thar_hills 未选中的 borrowed 揭示牌应回到拥有者牌库而不是当前玩家牌库`
+  - 首轮红灯：`P0.deck=['top-c','borrowed-top-a','rest-1']`
+- 已做修复：
+  - 所选牌仍走 `CARDS_DRAWN`，进入行动玩家手牌
+  - 未选中的 remaining cards 按真实 owner 分流
+  - borrowed remaining card 先生成 owner-scoped `DECK_REORDERED`，并补 `sourcePlayerId: playerId`
+  - 最后再为当前玩家生成只包含 source-owned remaining cards + restOfDeck 的 `DECK_REORDERED`
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "未选中的 borrowed 揭示牌"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "cowboys_gold_in_them_thar_hills"` -> `1 file passed, 6 passed`
+- 当前结论：
+  - 当前只闭合 `cowboys_gold_in_them_thar_hills` 的未选 borrowed revealed card -> owner deck top landing
+  - 不外推 Cowboys 全量、所有 reveal/order caller、或所有 `DECK_REORDERED` producer 已完成；下一步继续筛其它仍把 borrowed discard/hand/deck/self-return 落点写成当前玩家的 producer/consumer
+
+## 2026-05-24 09:10 +08
+
+- 已继续沿 `discard -> DECK_REORDERED owner provenance` family 命中一条新的 Innsmouth 对象级真缝：`innsmouth_new_acolytes` 会把 borrowed discard minion 洗回 source player deck。
+- 命中对象：
+  - `innsmouth_new_acolytes`
+  - `borrowed discard minion -> owner deck shuffle`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/innsmouth.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/innsmouth.ts>) 的 `innsmouthNewAcolytes()` 按每位玩家扫描 discard 中所有 minion
+  - 旧实现把 `player.deck + minionsInDiscard` 直接洗成 `DECK_REORDERED.playerId=pid`
+  - 因此 `P0.discard` 中如果有 `owner='1'` 的 `borrowed-minion`，会被错误洗进 `P0.deck`，而不是进入真实拥有者 `P1.deck`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts>)
+  - `被他人拥有的弃牌随从仍应洗回其拥有者牌库`
+  - 首轮红灯：`P0.deck=['p0-deck-a','borrowed-minion','own-minion']`
+- 已做修复：
+  - source player 的 discard 扫描语义不变，仍只处理该玩家 discard 中的 minion
+  - 本次洗回的 discard minions 按真实 `card.owner` 分组
+  - 每个 owner 生成 owner-scoped `DECK_REORDERED`
+  - borrowed 组补 `sourcePlayerId: pid`，让 reducer 从 source discard 移除后写入真实 owner deck
+  - 增加本地 `workingDecks`，避免同一 owner 接收多位 source player 的卡时后续事件用旧 deck 覆盖前一批
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "被他人拥有的弃牌随从"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "innsmouth_new_acolytes|被他人拥有的弃牌随从"` -> `1 file passed, 5 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 35 passed`
+- 当前结论：
+  - 这格不是 `cthulhu_it_begins_again` 或 `zombie_lend_a_hand` 的复读，而是同一 shared `DECK_REORDERED(sourcePlayerId)` 合同在 Innsmouth 全玩家 discard-minion shuffle caller 上的 sibling 真缝
+  - 当前只闭合 `innsmouth_new_acolytes` 的 borrowed discard minion -> owner deck shuffle landing
+  - 不外推 Innsmouth 全量、所有 discard-shuffle caller、所有 `DECK_REORDERED` producer，或多源同 owner 洗牌 family 已全量完成；下一步继续筛其它仍把 borrowed discard/hand/deck/self-return 落点写成当前玩家的 producer/consumer
+
+## 2026-05-24 09:18 +08
+
+- 已继续沿 `revealed/order -> DECK_REORDERED owner provenance` family 命中一条新的 Vikings 对象级真缝：`vikings_cast_the_runes` 排序 borrowed revealed card 时会留在 target player deck。
+- 命中对象：
+  - `vikings_cast_the_runes`
+  - `borrowed revealed card -> owner deck top`
+- 根因：
+  - 旧 [`src/games/smashup/abilities/vikings.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vikings.ts>) 的 `VikingCastRunesOrderPromptContext.revealedCards` 只保存 `uid/defId`
+  - `vikingsCastTheRunesOrderPromptProgram.onResolve` 用这些 tracked cards 生成 `[topCard,...rest,...liveRemainingDeck]` 后，统一发 `DECK_REORDERED.playerId=context.targetPlayerId`
+  - 因此 P1 deck 顶被揭示出的 `owner='0'` borrowed card 会错误留在 `P1.deck`，而不是进入真实拥有者 `P0.deck`
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>)
+  - `vikings_cast_the_runes_order 排序 borrowed 揭示牌时应回到其拥有者牌库`
+  - 首轮红灯：`P1.deck=['own-top','borrowed-top','rest-1']`
+- 已做修复：
+  - Cast the Runes 的 revealed snapshot 全程携带 `owner`
+  - 排序 resolve 时按 ordered revealed card 的真实 `owner` 分组
+  - 非 target owner 的 revealed cards 生成 owner-scoped `DECK_REORDERED`，并补 `sourcePlayerId: targetPlayerId`
+  - target deck 只保留 target-owned 或无有效 owner 的 revealed cards 与 live remaining deck
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "vikings_cast_the_runes_order 排序 borrowed"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "vikings_cast_the_runes"` -> `1 file passed, 2 passed`
+- 额外观察：
+  - 扩大到 `vikings_cast_the_runes|vikings_raiding_party|vikings_huscarl` 时，`vikings_raiding_party 的候选应随当前牌库顶快照刷新` 仍红：旧断言期望 P1-owned `top-action` 被 P0 额外打出后进入 `P0.discard`
+  - 该红点与当前 owner provenance 口径冲突，应另立 `vikings_raiding_party` residual，而不能混写成 Cast the Runes 本格失败
+- 当前结论：
+  - 当前只闭合 `vikings_cast_the_runes` 的 borrowed revealed card -> owner deck top landing
+  - 不外推 Vikings 全量、`vikings_raiding_party`、所有 reveal/order caller 或所有 `DECK_REORDERED` producer 已完成；下一步继续筛其它仍把 borrowed discard/hand/deck/self-return 落点写成当前玩家的 producer/consumer
+
+## 2026-05-24 09:26 +08
+
+- 已继续处理 `vikings_cast_the_runes` 扩大验证时暴露的 `vikings_raiding_party` residual；这次不是生产逻辑红灯，而是旧测试断言仍停留在“额外打出的 P1-owned action 进 P0 discard”的旧口径。
+- 命中对象：
+  - `vikings_raiding_party`
+  - refreshed revealed action -> owner discard
+- 根因：
+  - 当前 `CARD_TRANSFERRED -> PLAY_ACTION -> ACTION_PLAYED` 链已经保留被转移牌的真实 `owner`，标准行动结算后会进入 `ownerId` 对应玩家 discard。
+  - 旧测试 `vikings_raiding_party 的候选应随当前牌库顶快照刷新，避免继续引用已离开的旧揭示牌` 一边使用 `P1.deck` 中 `owner='1'` 的 `top-action`，一边断言该牌被 P0 额外打出后进入 `P0.discard`，与当前 owner provenance 合同冲突。
+- 已做修正：
+  - 将该测试改名为 `vikings_raiding_party 的候选应随当前牌库顶快照刷新，并让额外打出的行动进入其拥有者弃牌堆`。
+  - 保留原有刷新语义断言：候选只包含当前 deck top snapshot 中的 `top-action/top-extra`，不再引用已离开的 `top-minion`。
+  - 将落点断言改为 `top-action` 不在 P0 discard，且进入 P1 discard。
+  - 额外补 dedicated green gate `vikings_raiding_party 从目标牌库额外打出 borrowed 行动时，仍应进入真实拥有者弃牌堆`，覆盖 targetPlayerId=P1 但 `borrowed-action.owner='0'` 的分离场景。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "vikings_raiding_party"` -> `1 file passed, 4 passed`
+- 当前结论：
+  - 当前只闭合 `vikings_raiding_party` 旧断言漂移、refreshed revealed action -> owner discard 期望，以及 borrowed owner != targetPlayerId 的相邻 green gate。
+  - 不外推 Vikings 全量、所有外部打出 caller、或所有 `CARD_TRANSFERRED -> PLAY_ACTION -> ACTION_PLAYED` 链已全量审完；下一步继续筛其它仍把 borrowed discard/hand/deck/self-return 落点写成当前玩家的 producer/consumer。
+
+## 2026-05-24 09:46 +08
+
+- 已继续沿 `ONGOING_ATTACHED owner/source provenance` 的手工旁路筛选，命中新的 buried uncover 真缝：埋葬 ongoing 翻开附着时仍把真实 owner 洗成当前玩家。
+- 命中对象：
+  - `bury_uncover_start_turn / bury_uncover_ongoing_target`
+  - borrowed buried ongoing action -> attached action true owner
+- 根因：
+  - [`src/games/smashup/domain/bury.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/bury.ts>) 的 `executeUncoveredAction()` 与 `handleUncoverOngoingPickTargetMinion()` 旧实现手工发 `ONGOING_ATTACHED` 时写 `ownerId: playerId`。
+  - 埋葬卡本身已经保存 `trueOwnerId`；当 `controllerId='0' / trueOwnerId='1'` 的 borrowed buried ongoing 被 P0 翻开时，旧链会把附着后的 ongoing 错挂成 P0 拥有。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/buryEngine.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/buryEngine.test.ts>)
+  - `uncovering a borrowed buried ongoing action should preserve true owner when attaching`
+  - 首轮红灯：`ONGOING_ATTACHED.payload.ownerId === '0'`，预期为 `'1'`
+- 已做修复：
+  - 翻开 ongoing 自动附着基地/随从两条分支的 `ONGOING_ATTACHED.ownerId` 改为 `buried.trueOwnerId`
+  - 二段 `bury_uncover_ongoing_target` 目标选择 handler 同样按 live buried card 的 `trueOwnerId` 写 attached owner
+  - `buildActionPlayedEvent(... fromBuried)` 同步传入 `ownerId: buried.trueOwnerId`，让 action-play event payload 与埋葬卡真实 owner 一致
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/buryEngine.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed buried ongoing"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/buryEngine.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 12 passed`
+- 当前结论：
+  - 当前只闭合 `bury_uncover_start_turn / bury_uncover_ongoing_target` 在 borrowed buried ongoing 场景下的 attached owner provenance。
+  - 不外推所有 buried action、所有 bury uncover 二段 prompt、所有 `ONGOING_ATTACHED` 手工旁路或整个 buried engine 已全量审完；下一步继续筛其它仍把 borrowed ongoing/action/minion 的 attach/self-return/detach 落点写成当前玩家的 producer/consumer。
+
+## 2026-05-24 10:04 +08
+
+- 已继续沿 `ONGOING_ATTACHED owner/source provenance` 的手工旁路筛选，命中新的 `Its Astounding` 弃牌堆额外行动真缝：从弃牌堆额外打出 borrowed ongoing action 时仍把附着 owner 写成行动玩家。
+- 命中对象：
+  - `time_travelers_its_astounding`
+  - `borrowed discard ongoing action -> attached action true owner`
+  - 相邻 shared reducer：`ACTION_PLAYED(fromDiscard)` same-owner standard action duplicate discard base
+- 根因：
+  - [`src/games/smashup/abilities/yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>) 的 `buildDiscardActionPlayEvents(...)` 在 ongoing 分支手工发 `ONGOING_ATTACHED` 时仍写 `ownerId: playerId`。
+  - 该函数同时没有给 `buildActionPlayedEvent(...)` 传入 `ownerId: card.owner`，导致 discard extra play 的 action-play 事件缺真实 owner provenance。
+  - 修复后扩大跑 `令人震惊` 子集时又暴露 [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `ACTION_PLAYED(fromDiscard)` same-owner 分支用旧 `targetOwner.discard` 追加 moved card，导致标准行动从 discard 打出后重复留在 discard。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>)
+  - `时间旅行者：令人震惊从弃牌堆打出 borrowed 持续行动时，附着后仍应保留真实 owner`
+  - 首轮红灯：`host.attachedActions[0].ownerId === '0'`，预期为 `'1'`
+- 已做修复：
+  - `buildDiscardActionPlayEvents(...)` 调用 `buildActionPlayedEvent(...)` 时传入 `ownerId: card.owner`
+  - ongoing 分支 `ONGOING_ATTACHED.ownerId` 改为 `card.owner`
+  - borrowed 场景补 `sourcePlayerId: playerId`，使 source zone 移除和 attached owner 分离
+  - `reduce(ACTION_PLAYED)` 在 `resolvedOwnerId === playerId` 时用 `discardWithoutSource` 作为 target discard 基底，避免 same-owner `fromDiscard` 标准行动重复
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed 持续行动"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "令人震惊"` -> `1 file passed, 7 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/actionAndTalent.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 6 passed`
+- 当前结论：
+  - 当前只闭合 `time_travelers_its_astounding` 从弃牌堆额外打出 borrowed ongoing action 的 attached owner/source provenance，并顺手锁住 `ACTION_PLAYED(fromDiscard)` same-owner discard duplicate base。
+  - 不外推所有 discard-action extra play、所有 `Its Astounding` 分支、所有手工 `ONGOING_ATTACHED` 旁路或整个 Time Travelers / yuanhou 全量完成；下一步继续筛其它仍把 borrowed ongoing/action/minion 的 attach/self-return/detach 落点写成当前玩家的 producer/consumer。
+
+## 2026-05-24 10:28 +08
+
+- 已继续沿 `ACTION_PLAYED / ONGOING_ATTACHED owner/source provenance` 的 side-branch 筛选，命中新的 `duel` 决斗行动旁路真缝：决斗中从手牌打出 borrowed ongoing action 时仍把 attached owner 写成行动玩家。
+- 命中对象：
+  - `domain/duel.ts`
+  - `borrowed ongoing action in duel -> ACTION_PLAYED true owner + ONGOING_ATTACHED true owner/source`
+- 根因：
+  - [`src/games/smashup/domain/duel.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/duel.ts>) 的 `playOngoingActionAsDuelCard()` 旧实现手工发 `ACTION_PLAYED` 与 `ONGOING_ATTACHED`，但没有读取 source hand card 的真实 `owner`。
+  - 因此 P0 在决斗中打出 `owner='1'` 的 `borrowed-duel-action` 时，事件 payload 和最终附着行动都会错误落成 P0 owner。
+  - 同文件 `playActionAsDuelCard()` 也需要把 `ACTION_PLAYED.ownerId` 补成 source card owner，避免标准决斗行动继续丢失 owner provenance。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueActionPlayedDuel.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueActionPlayedDuel.test.ts>)
+  - `决斗中打出被他人拥有的 ongoing 行动时，应保留真实 owner 并附着到目标上`
+  - 夹具：P0 手牌持有 `borrowed-duel-action(owner='1'):cyborg_apes_juiced_up`，决斗中选择该行动并附着到 `challenger-1`
+- 已做修复：
+  - `playActionAsDuelCard()` 改用 `buildActionPlayedEvent(...)`，并传入 `ownerId: card.owner` 与 `targetBaseIndex: duel.baseIndex`
+  - `playOngoingActionAsDuelCard()` 从当前玩家手牌读取 source card，`ACTION_PLAYED.ownerId` 与 `ONGOING_ATTACHED.ownerId` 都写真实 owner
+  - borrowed 场景给 `ONGOING_ATTACHED` 补 `sourcePlayerId: playerId`，使 source card 从当前玩家手牌移除，但附着后仍保留真实 owner
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueActionPlayedDuel.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "被他人拥有的 ongoing"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueActionPlayedDuel.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "附着到随从"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueActionPlayedDuel.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 2 passed`
+- 当前结论：
+  - 当前只闭合 `duel` 中从手牌打出 borrowed ongoing action 并附着目标的 `ACTION_PLAYED ownerId` 与 `ONGOING_ATTACHED owner/source` 旁路。
+  - 不外推所有 duel、所有 `ACTION_PLAYED` caller、所有 `ONGOING_ATTACHED` caller、所有 extra action/replay caller 或整个 action-play family 已完成；下一步继续筛其它仍手工拼 play/attach/detach/move 事件且可能丢失 borrowed owner/source 的 side branch。
+
+## 2026-05-24 10:47 +08
+
+- 已继续沿 `ACTION_PLAYED owner provenance` 的 external action side-branch 筛选，命中 `wizard_mass_enchantment` 的 action-play event 真缝：从对手牌库顶打出 borrowed ongoing action 时，最终 attach owner 已修，但 `ACTION_PLAYED` 仍缺真实 owner。
+- 命中对象：
+  - `wizard_mass_enchantment`
+  - `external action play -> ACTION_PLAYED.ownerId`
+- 根因：
+  - [`src/games/smashup/abilities/wizards.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/wizards.ts>) 的 `resolveWizardExternalActionPlay()` 会先从 `findWizardExternalActionSourceCard(...)` 找到 source card，并已在 ongoing attach 分支使用 `sourceCard.owner`。
+  - 但同批 `buildActionPlayedEvent(...)` 没有传 `ownerId`，导致 `ACTION_PLAYED.payload` 只有行动玩家和目标上下文，没有被打出行动的真实 owner provenance。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/query6Abilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/query6Abilities.test.ts>)
+  - 两条 `wizard_mass_enchantment` 真实链都追加 `ACTION_PLAYED.payload.ownerId === '1'` 断言：
+  - 附着到随从的 `ninja_smoke_bomb(owner='1')`
+  - 附着到基地的 `steampunk_escape_hatch(owner='1')`
+  - 首轮红灯：两条 `ACTION_PLAYED.payload` 都缺 `ownerId`
+- 已做修复：
+  - `resolveWizardExternalActionPlay()` 调用 `buildActionPlayedEvent(...)` 时传入 `ownerId: sourceCard.owner`
+  - 不改变 `CARD_TRANSFERRED`、目标 prompt、ongoing attach 或 `appendResolvedActionAbility(...)`
+- 已验证：
+  - focused `query6Abilities.test.ts --testNamePattern "wizard_mass_enchantment: 打出附着到随从的行动时应保留目标上下文并触发 base_enchanted_glade|wizard_mass_enchantment: 打出无 onPlay 的基地 ongoing 时应保留目标上下文"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - 整文件 `query6Abilities.test.ts` -> `1 file passed, 33 passed`
+- 当前结论：
+  - 当前只闭合 `wizard_mass_enchantment` external action play 的 `ACTION_PLAYED.ownerId` provenance。
+  - 不外推整个 Wizards、所有 external action caller、所有 `ACTION_PLAYED` consumer，或所有 topdeck / replay / discard play side branch 已完成；下一步继续筛其它 still-open handbuilt event producer。
+
+## 2026-05-24 12:53 +08
+
+- 已继续沿 `sourceController/eventPlayer` queued trigger metadata family 筛选，命中新的 Bear Cavalry seam：`bear_cavalry_high_ground_pod` 的 onMinionMoved queued trigger 会把 trigger owner 错归给移入随从玩家。
+- 命中对象：
+  - `bear_cavalry_high_ground_pod`
+  - queued `onMinionMoved` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/bear_cavalry.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/bear_cavalry.ts>) 的 `registerTrigger('bear_cavalry_high_ground_pod', 'onMinionMoved', ...)` 旧实现没有显式写 `playerContext:'sourceController'`。
+  - `collectTriggers(...)` 因此按默认 `eventPlayer` 创建 trigger：`sourceControllerId` 已是制高点拥有者 P0，但 `ownerPlayerId` 被写成事件玩家 P1，`playerContext` 也保留为 `eventPlayer`。
+  - 这次不是 `ONGOING_DETACHED.ownerId` 本体红灯：prompt 创建阶段已经用 `ongoing.ownerId`，自动无 `matchState` 分支也已经用 `ongoing.ownerId`；真正红点是 queued trigger metadata 会先把这条 mandatory trigger 归属到错误玩家。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionMoved trigger 应把 High Ground POD 归给制高点拥有者而不是移入随从玩家`
+  - 夹具：P1 的 `enemy-moved` 移入有 P0 `bear_cavalry_high_ground_pod` 与 P0 随从的基地。
+  - 首轮红灯：`ownerPlayerId === '1'` 且 `playerContext === 'eventPlayer'`，预期为 P0 / `sourceController`。
+- 已做修复：
+  - 只给 `bear_cavalry_high_ground_pod.onMinionMoved` 注册补 `playerContext:'sourceController'`。
+  - 不改 `bearCavalryHighGroundPodTrigger()` 的 prompt resolver、自动 destroy 分支或 destroyerId 语义。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "High Ground POD|sourceController queued onMinionMoved trigger 不应把 eventPlayer 误当成泰坦控制者"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 103 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/feedback-high-ground-destroyer.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newOngoingAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "bear_cavalry_high_ground"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/bear_cavalry.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors, 65 existing warnings`
+- 当前结论：
+  - 当前只闭合 `bear_cavalry_high_ground_pod` 在 queued `onMinionMoved` 路径下的 trigger owner metadata。
+  - 不外推所有 Bear Cavalry、所有 `onMinionMoved` trigger、所有 mandatory reaction ordering，或整个 `sourceController/eventPlayer` family 已完成；下一步继续筛其它 handbuilt event producer / queued trigger registration 是否仍默认事件玩家。
+
+## 2026-05-24 13:20 +08
+
+- 已继续沿 handbuilt replay action producer 筛选，命中新的 `steampunk_mechanic` seam：从弃牌堆重打 borrowed ongoing 时，旧链会在目标步骤前把事件收成空。
+- 命中对象：
+  - `steampunk_mechanic`
+  - borrowed discard ongoing replay -> action-player hand + `ACTION_PLAYED.ownerId`
+- 根因：
+  - [`src/games/smashup/abilities/steampunks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/steampunks.ts>) 的 `steampunkMechanicPromptProgram` 旧实现使用 `CARD_RECOVERED_FROM_DISCARD` 把所选弃牌堆行动取回。
+  - shared `CARD_RECOVERED_FROM_DISCARD` reducer 当前按真实 `card.owner` 回手；因此 `P0.discard` 中 `owner='1'` 的 borrowed `steampunk_escape_hatch` 会进入 P1 hand。
+  - 下一步 `steampunk_mechanic_target` 会检查 source card 是否在 P0 hand，结果直接返回 `events=[]`。
+  - 同一目标分支的 `buildActionPlayedEvent(...)` 也没有传 `ownerId`，即使绕过空事件也缺 action-play owner provenance。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>)
+  - `steampunk_mechanic_target: 重打被他人拥有的 ongoing 时仍应保留 owner 并带 sourcePlayerId`
+  - 首轮红灯：`resolved.events=[]`，`ACTION_PLAYED` 不存在。
+- 已做修复：
+  - Mechanic 这条“从你的弃牌堆打出”改用同玩家 `CARD_TRANSFERRED(fromPlayerId=toPlayerId=playerId)`，保留卡实例真实 owner，但让 source card 进入行动玩家手牌供下一步 replay。
+  - `steampunk_mechanic_target` 的 `buildActionPlayedEvent(...)` 增加 `ownerId: context.replayOwnerId`。
+  - 保留既有 `ONGOING_ATTACHED.ownerId/sourcePlayerId` 语义。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "steampunk_mechanic_target: 重打被他人拥有的 ongoing 时仍应保留 owner 并带 sourcePlayerId"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "steampunk_mechanic_target: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文|steampunk_mechanic_target: 重打被他人拥有的 ongoing 时仍应保留 owner 并带 sourcePlayerId|steampunk_change_of_venue_choose_minion: 重打无 onPlay 的随从附着 ongoing 时仍应保留 ACTION_PLAYED 目标随从上下文|steampunk_change_of_venue_choose_base: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文"` -> `1 file passed, 4 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 74 passed`
+  - `npx eslint src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors
+- 当前结论：
+  - 当前只闭合 `steampunk_mechanic` 从弃牌堆重打 borrowed ongoing 的 action-play owner/source hand seam。
+  - 不外推 `steampunk_change_of_venue`、所有 `CARD_RECOVERED_FROM_DISCARD` caller、所有 `CARD_TRANSFERRED` caller 或 Steampunks 全量；下一步继续筛其它 handbuilt event producer / queued trigger registration 是否仍默认事件玩家或丢失 borrowed owner/source。
+
+## 2026-05-24 14:05 +08
+
+- 已继续沿 handbuilt action-play producer / borrowed owner provenance 筛选，命中新的 `miskatonic_librarian_pod_play_madness` seam：额外打出 borrowed Madness 时，实际弃牌落点已按 owner 归属，但 `ACTION_PLAYED.ownerId` 缺失。
+- 命中对象：
+  - `miskatonic_librarian_pod_play_madness`
+  - borrowed Madness extra play -> `ACTION_PLAYED.ownerId`
+- 根因：
+  - [`src/games/smashup/abilities/miskatonic.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/miskatonic.ts>) 的 Librarian POD 额外打出 Madness 分支从当前玩家手牌找到 `card` 后，调用 `buildActionPlayedEvent(...)` 时没有传 `ownerId: card.owner`。
+  - 这导致 P0 打出 `owner='1'` 的 borrowed `special_madness` 时，卡最终进入 P1 discard，但同批 `ACTION_PLAYED.payload.ownerId` 是 `undefined`。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts>)
+  - `额外打出被他人拥有的疯狂卡时，应保留 ACTION_PLAYED owner 并进入拥有者弃牌堆`
+  - 首轮红灯：`actionPlayed.payload.ownerId === undefined`，预期 `'1'`。
+- 已做修复：
+  - 只在 `miskatonicLibrarianPodPlayMadnessPromptProgram.onResolve` 的 `buildActionPlayedEvent(...)` 参数中增加 `ownerId: card.owner`。
+  - 不改 Madness onPlay、候选生成、Librarian POD mode prompt 或其它 Miskatonic 分支。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "miskatonic_librarian_pod.*被他人拥有"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "miskatonic_librarian_pod|miskatonic_those_meddling_kids|cthulhu_it_begins_again"` -> `1 file passed, 13 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 36 passed`
+- 当前结论：
+  - 当前只闭合 `miskatonic_librarian_pod_play_madness` 从手牌额外打出 borrowed Madness 的 `ACTION_PLAYED.ownerId` provenance。
+  - 不外推 Miskatonic 全量、Madness 全量、所有 extra action caller、所有 `ACTION_PLAYED` producer 或所有 borrowed owner/source seam 已完成；下一步继续筛其它 handbuilt event producer / queued trigger registration 是否仍默认事件玩家或丢失 borrowed owner/source。
+
+## 2026-05-24 14:12 +08
+
+- 已继续沿 handbuilt action-play producer / borrowed owner provenance 筛选，命中新的 `ghosts_creampuff_man` seam：Cream Puff Man 从弃牌堆额外打出 borrowed standard action 时，沉回牌库底的 owner 已正确，但 `ACTION_PLAYED.ownerId` 缺失。
+- 命中对象：
+  - `ghosts_creampuff_man`
+  - external discard borrowed standard action -> `ACTION_PLAYED.ownerId`
+- 根因：
+  - [`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `resolveCreampuffActionPlay()` 已经从 `player.discard` 找到 `actionCard` 并读取 `const ownerId = actionCard.owner`。
+  - 该 owner 已用于后续 `CARD_TO_DECK_BOTTOM(ownerId/sourcePlayerId)`，所以 borrowed action 最终会回到真实 owner 牌库底。
+  - 但同批 `buildActionPlayedEvent(...)` 没有传 `ownerId`，导致 `ACTION_PLAYED.payload.ownerId` 是 `undefined`。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueActionPlayedExternalDiscard.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueActionPlayedExternalDiscard.test.ts>)
+  - 在既有 `Cream Puff Man 从弃牌堆额外打出被他人拥有的标准行动后，仍应沉回其拥有者牌库底` 用例里追加 `ACTION_PLAYED.ownerId === '1'`。
+  - 首轮红灯：`actionPlayed.payload.ownerId === undefined`，预期 `'1'`。
+- 已做修复：
+  - `resolveCreampuffActionPlay()` 调用 `buildActionPlayedEvent(...)` 时传入已有的 `ownerId`。
+  - 不改 Cream Puff target prompt、discard cost、`CARD_TO_DECK_BOTTOM` 或 `appendResolvedActionAbility(...)`。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueActionPlayedExternalDiscard.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Cream Puff Man 从弃牌堆额外打出被他人拥有的标准行动"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueActionPlayedExternalDiscard.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 3 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Cream Puff|奶油泡芙|creampuff|ghosts_creampuff_man"` -> `1 file passed, 3 passed`
+  - `commandsValidation.test.ts` 同 pattern 全跳过，不作为本格证据。
+- 当前结论：
+  - 当前只闭合 `ghosts_creampuff_man` 从弃牌堆额外打出 borrowed standard action 的 `ACTION_PLAYED.ownerId` provenance。
+  - 不外推所有 Titans/Ghosts、所有 external discard replay、所有 Cream Puff target 分支、所有 `ACTION_PLAYED` producer 或所有 borrowed owner/source seam 已完成；下一步继续筛其它 handbuilt event producer / queued trigger registration 是否仍默认事件玩家或丢失 borrowed owner/source。
+
+## 2026-05-24 14:31 +08
+
+- 已继续沿 handbuilt action-play producer / borrowed owner provenance 筛选，命中新的 `vampire_mad_monster_party_pod` / `vampire_buffet_pod` seam：两个 triggered play prompt 都能正确保留原有 target 语义，但 `ACTION_PLAYED.ownerId` 缺失。
+- 命中对象：
+  - `vampire_mad_monster_party_pod`
+  - `vampire_buffet_pod`
+  - triggered extra play -> `ACTION_PLAYED.ownerId`
+- 根因：
+  - [`src/games/smashup/abilities/vampires.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vampires.ts>) 的两个 `onMinionDestroyed` trigger 都从 destroyer 手牌找到对应 action。
+  - prompt context 旧结构只保存 `cardUid/defId`，没有快照 `card.owner`。
+  - `vampire_mad_monster_party_pod_play` 与 `vampire_buffet_pod_play` 最终调用 `buildActionPlayedEvent(...)` 时只能写行动玩家与卡牌 id，导致 P0 额外打出 `owner='1'` 的 borrowed POD action 时 `ACTION_PLAYED.payload.ownerId === undefined`。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts>)
+  - `vampire_mad_monster_party_pod triggered play preserves the destroyed minion base on ACTION_PLAYED` 改成 borrowed owner 夹具，并追加 `ownerId='1'`。
+  - `vampire_buffet_pod triggered play remains untargeted on ACTION_PLAYED` 改成 borrowed owner 夹具，并追加 `ownerId='1'`，同时继续断言 `targetBaseIndex/targetType` 不应被伪造。
+  - 首轮红灯：两条 `ACTION_PLAYED.payload.ownerId` 都是 `undefined`。
+- 已做修复：
+  - `VampireBuffetPodPlayPromptContext` 与 `VampireMadMonsterPartyPodPlayPromptContext` 增加 `ownerId`。
+  - 两个 trigger 创建 prompt context 时写入 `ownerId: card.owner` / `ownerId: buffet.owner`。
+  - 两个 prompt resolve 调用 `buildActionPlayedEvent(...)` 时传 `ownerId: context.ownerId`。
+  - 不改 destroyer eligibility、prompt target、抽牌、加指示物或 reaction queue 顺序。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "vampire_mad_monster_party_pod triggered play preserves|vampire_buffet_pod triggered play remains"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 4 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/vampiresPod.test.ts src/games/smashup/__tests__/vampireBuffetE2E.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "vampire_buffet_pod|vampire_mad_monster_party_pod|Buffet|Mad Monster|自助餐|疯狂怪物"` -> `1 file passed, 1 passed, 1 file skipped`
+  - `npx eslint src/games/smashup/abilities/vampires.ts src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts` -> `0 errors, 43 existing any warnings`
+- 当前结论：
+  - 当前只闭合 `vampire_mad_monster_party_pod` 与 `vampire_buffet_pod` triggered extra play 的 `ACTION_PLAYED.ownerId` provenance。
+  - 不外推 Vampires 全量、所有 POD、所有 `onMinionDestroyed` trigger、所有 `ACTION_PLAYED` producer 或所有 borrowed owner/source seam 已完成；下一步继续筛其它 handbuilt event producer / queued trigger registration 是否仍默认事件玩家或丢失 borrowed owner/source。
+
+## 2026-05-24 14:45 +08
+
+- 已继续沿 handbuilt action-play producer provenance 筛选，命中 `steampunk_change_of_venue` 的 same-owner 字段缺失：二段重打目标上下文已正确，但 `ACTION_PLAYED.ownerId` 仍缺失。
+- 命中对象：
+  - `steampunk_change_of_venue_choose_minion`
+  - `steampunk_change_of_venue_choose_base`
+  - replay ongoing -> `ACTION_PLAYED.ownerId`
+- 根因：
+  - [`src/games/smashup/abilities/steampunks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/steampunks.ts>) 的 Change of Venue 首段已经把 `selected.ownerId` 写进 `replayOwnerId`。
+  - 但二段 `buildActionPlayedEvent(...)` 只传 `playerId/cardUid/defId/target...`，没有传 `ownerId: context.replayOwnerId`。
+  - 当前候选生成仍限制 `ongoing.ownerId === playerId`，所以这格不是 borrowed owner 分离证据；它锁的是 replay action event 的 owner provenance 字段完整性。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>)
+  - `steampunk_change_of_venue_choose_minion: 重打无 onPlay 的随从附着 ongoing 时仍应保留 ACTION_PLAYED 目标随从上下文` 追加 `ownerId='0'`。
+  - `steampunk_change_of_venue_choose_base: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文` 追加 `ownerId='0'`。
+  - 首轮红灯：两条 `ACTION_PLAYED.payload.ownerId` 都是 `undefined`。
+- 已做修复：
+  - `steampunk_change_of_venue_choose_minion` 与 `steampunk_change_of_venue_choose_base` 的 `buildActionPlayedEvent(...)` 增加 `ownerId: context.replayOwnerId`。
+  - Change of Venue 非 ongoing replay fallback 的 `buildActionPlayedEvent(...)` 增加 `ownerId: selected.ownerId`。
+  - 不改取回、附着、目标选择、`appendResolvedActionAbility(...)` 或额外行动返还逻辑。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "steampunk_change_of_venue_choose_minion: 重打无 onPlay 的随从附着 ongoing 时仍应保留 ACTION_PLAYED 目标随从上下文|steampunk_change_of_venue_choose_base: 重打无 onPlay 的 ongoing 时仍应保留 ACTION_PLAYED 目标基地上下文"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "steampunk_change_of_venue_choose_minion|steampunk_change_of_venue_choose_base|steampunk_change_of_venue: 取回 ongoing|steampunk_change_of_venue: 应允许取回附着在随从上的 ongoing|steampunk_mechanic_target: 重打无 onPlay|steampunk_mechanic_target: 重打被他人拥有"` -> `1 file passed, 7 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 74 passed`
+  - `npx eslint src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合 `steampunk_change_of_venue` replay action event 的 same-owner `ACTION_PLAYED.ownerId` 字段完整性。
+  - 不证明 Change of Venue 可形成 borrowed owner 分离；不外推 Steampunks 全量、所有 replay caller、所有 Change of Venue 分支或所有 `ACTION_PLAYED` producer 已完成。
+
+## 2026-05-24 15:05 +08
+
+- 已继续沿 queued trigger registration 默认 `eventPlayer` family 筛选，命中新的 `vikings_viking_funeral` owner metadata seam。
+- 命中对象：
+  - `vikings_viking_funeral`
+  - queued `onMinionDestroyed/onMinionDiscardedFromBase` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/vikings.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vikings.ts>) 的 `Viking Funeral` 两个 per-instance trigger 注册未显式写 `playerContext:'sourceController'`。
+  - attached source 的 `sourceControllerId` 已能定位到附着行动拥有者 P0，但 `createTriggerInstance()` 默认按事件玩家 P1 写 `ownerPlayerId` 与 `playerContext`。
+  - 这会让 queue metadata 与回调实际语义不一致：`vikingsVikingFuneralTrigger()` 用 `ctx.sourceControllerId` 奖励 VP。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Viking Funeral 归给附着行动拥有者而不是宿主控制者`
+  - 夹具：P1 宿主 `host-a` 附着 P0 拥有的 `funeral-a`；触发 `onMinionDiscardedFromBase` 时事件玩家为 P1。
+  - 首轮红灯：`ownerPlayerId === '1'`、`playerContext === 'eventPlayer'`，预期 `ownerPlayerId === '0'`、`playerContext === 'sourceController'`。
+- 已做修复：
+  - 只给 `registerTrigger('vikings_viking_funeral', 'onMinionDestroyed'|'onMinionDiscardedFromBase', ...)` 补 `playerContext:'sourceController'`。
+  - 不改 VP 奖励、移出游戏、LKI、计分弃置或 trigger callback。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Viking Funeral"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 104 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "vikings_viking_funeral"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Viking Funeral"` -> `1 file passed, 1 passed`
+  - `npx eslint src/games/smashup/abilities/vikings.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors, 22 existing any warnings`
+- 当前结论：
+  - 当前只闭合 `vikings_viking_funeral` 在 queued `onMinionDestroyed/onMinionDiscardedFromBase` 路径下的 trigger owner metadata。
+  - 不外推 Vikings 全量、所有附着行动 trigger、所有离场 trigger、所有 sourceController/eventPlayer family 或计分离场路径已完成；下一步继续筛其它 queued trigger registration 是否仍默认事件玩家。
+
+## 2026-05-24 15:12 +08
+
+- 已继续沿 queued trigger registration 默认 `eventPlayer` family 筛选，命中新的 `world_champs_samurai_chan` owner metadata seam。
+- 命中对象：
+  - `world_champs_samurai_chan`
+  - queued `onMinionDestroyed/onMinionDiscardedFromBase` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/world_champs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/world_champs.ts>) 的 `World Champs Samurai Chan` 两个 per-instance trigger 注册未显式写 `playerContext:'sourceController'`。
+  - callback `worldChampsSamuraiChanTrigger()` 使用 `ctx.sourceControllerId` 抽牌；但 queue metadata 默认按事件玩家写 `ownerPlayerId/playerContext`。
+  - 当 P1 控制 `World Champs Samurai Chan`，但触发事件玩家为 P0 时，旧 queue 中 `sourceControllerId === '1'`，`ownerPlayerId === '0'`，语义不一致。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 World Champs Samurai Chan 归给自身控制者而不是事件玩家`
+  - 首轮红灯：`ownerPlayerId === '0'`、`playerContext === 'eventPlayer'`，预期 `ownerPlayerId === '1'`、`playerContext === 'sourceController'`。
+- 已做修复：
+  - 只给 `registerTrigger('world_champs_samurai_chan', 'onMinionDestroyed'|'onMinionDiscardedFromBase', ...)` 补 `playerContext:'sourceController'`。
+  - 不改抽牌回调、onPlay、计分、LKI 或 World Champs 其它 trigger。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "World Champs Samurai Chan"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 105 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "world_champs_samurai_chan"` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "World Champs Samurai Chan"` -> `1 file passed, 1 passed`
+  - `npx eslint src/games/smashup/abilities/world_champs.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合 `world_champs_samurai_chan` 在 queued `onMinionDestroyed/onMinionDiscardedFromBase` 路径下的 trigger owner metadata。
+  - 不外推 World Champs 全量、所有自身离场抽牌 trigger、所有 Samurai/Samurai Chan sibling、所有 sourceController/eventPlayer family 或计分离场路径已完成；下一步继续筛其它 queued trigger registration 是否仍默认事件玩家。
+
+## 2026-05-24 15:18 +08
+
+- 已继续沿 queued trigger registration 默认 `eventPlayer` family 筛选，命中新的 `world_champs_smart_set_up` owner metadata seam。
+- 命中对象：
+  - `world_champs_smart_set_up`
+  - queued `onMinionPlayed` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/world_champs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/world_champs.ts>) 的 `Smart Set-Up` trigger 注册已有 `sourceScope:'triggerBase'` 与 `canTriggerWorldChampsSmartSetUp`，能正确筛掉非首次打到基地等负向分支。
+  - 但注册未显式写 `playerContext:'sourceController'`，所以 P0 拥有的 attached action 在 P1 打出随从触发时，queue metadata 会把 trigger owner 写成事件玩家 P1。
+  - callback `worldChampsSmartSetUpOnMinionPlayed()` 实际按 `ctx.sourceControllerId` 抽牌，metadata 与执行语义不一致。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionPlayed trigger 应把 Smart Set-Up 归给附着行动拥有者而不是打出随从玩家`
+  - 保留既有负向 gate：`collectTriggers onMinionPlayed 不应在非本回合首次打到基地时为 Smart Set-Up 排出空 trigger`
+  - 首轮红灯：`ownerPlayerId === '1'`、`playerContext === 'eventPlayer'`，预期 `ownerPlayerId === '0'`、`playerContext === 'sourceController'`。
+- 已做修复：
+  - 只给 `registerTrigger('world_champs_smart_set_up', 'onMinionPlayed', ...)` 补 `playerContext:'sourceController'`。
+  - 不改 `sourceScope:'triggerBase'`、`canTriggerWorldChampsSmartSetUp`、抽牌回调或 attached host 判断。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Smart Set-Up"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 106 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "world_champs_smart_set_up|world_champs_samurai_chan"` -> `1 file passed, 3 passed`
+  - `npx eslint src/games/smashup/abilities/world_champs.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合 `world_champs_smart_set_up` 在 queued `onMinionPlayed` 路径下的 trigger owner metadata。
+  - 不外推 World Champs 全量、所有 attached action onMinionPlayed trigger、所有 `sourceScope:'triggerBase'` trigger、所有 canTrigger 分支或整个 sourceController/eventPlayer family 已完成；下一步继续筛其它 queued trigger registration 是否仍默认事件玩家。
+
+## 2026-05-24 15:35 +08
+
+- 已继续沿 queued trigger registration 默认 `eventPlayer` family 筛选，命中新的 `samurai_samurai_chan` owner metadata seam。
+- 命中对象：
+  - `samurai_samurai_chan`
+  - queued `onMinionDestroyed/onMinionDiscardedFromBase` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 的 `Samurai Chan` 两个 per-instance trigger 注册未显式写 `playerContext:'sourceController'`。
+  - callback `samuraiChanTrigger()` 用 `ctx.sourceControllerId` 抽牌，但 queue metadata 默认按事件玩家写 `ownerPlayerId/playerContext`。
+  - 当 P1 控制 `Samurai Chan`，但触发事件玩家为 P0 时，旧 queue 中 `sourceControllerId === '1'`，`ownerPlayerId === '0'`，语义不一致。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Samurai Chan 归给自身控制者而不是事件玩家`
+  - 首轮红灯：`ownerPlayerId === '0'`、`playerContext === 'eventPlayer'`，预期 `ownerPlayerId === '1'`、`playerContext === 'sourceController'`。
+- 已做修复：
+  - 只给 `registerTrigger('samurai_samurai_chan', 'onMinionDestroyed'|'onMinionDiscardedFromBase', ...)` 补 `playerContext:'sourceController'`。
+  - 不改抽牌回调、POD 版、Bushi/Shogun/Final Haiku、计分、LKI 或 Samurai 其它 trigger。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Samurai Chan 归给自身控制者"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 107 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_samurai_chan"` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Samurai Chan|samurai_samurai_chan"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors, 12 existing any warnings`
+- 当前结论：
+  - 当前只闭合 `samurai_samurai_chan` 在 queued `onMinionDestroyed/onMinionDiscardedFromBase` 路径下的 trigger owner metadata。
+  - 不外推 Samurai 全量、`samurai_samurai_chan_pod`、Bushi/Shogun/Final Haiku sibling、所有 self-source 离场 trigger、所有计分离场路径或整个 sourceController/eventPlayer family；下一步继续筛 Samurai sibling，但必须逐条证明。
+
+## 2026-05-24 15:42 +08
+
+- 已继续沿 queued trigger registration 默认 `eventPlayer` family 筛选，命中新的 `samurai_samurai_chan_pod` owner metadata seam。
+- 命中对象：
+  - `samurai_samurai_chan_pod`
+  - queued `onMinionDestroyed/onMinionDiscardedFromBase` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 的 `Samurai Chan POD` 两个 per-instance trigger 注册未显式写 `playerContext:'sourceController'`。
+  - callback 复用 `samuraiChanTrigger()`，仍使用 `ctx.sourceControllerId` 抽牌；但 POD 版 registration 是独立 defId，不能由普通版外推。
+  - 当 P1 控制 `Samurai Chan POD`，但触发事件玩家为 P0 时，旧 queue 中 `sourceControllerId === '1'`，`ownerPlayerId === '0'`，语义不一致。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Samurai Chan POD 归给自身控制者而不是事件玩家`
+  - 首轮红灯：`ownerPlayerId === '0'`、`playerContext === 'eventPlayer'`，预期 `ownerPlayerId === '1'`、`playerContext === 'sourceController'`。
+- 已做修复：
+  - 只给 `registerTrigger('samurai_samurai_chan_pod', 'onMinionDestroyed'|'onMinionDiscardedFromBase', ...)` 补 `playerContext:'sourceController'`。
+  - 不改普通版、Bushi/Shogun/Final Haiku、抽牌回调、计分、LKI 或 Samurai 其它 trigger。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Samurai Chan POD 归给自身控制者"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 108 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_samurai_chan|samurai_samurai_chan_pod"` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Samurai Chan|samurai_samurai_chan|samurai_samurai_chan_pod"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors, 12 existing any warnings`
+- 当前结论：
+  - 当前只闭合 `samurai_samurai_chan_pod` 在 queued `onMinionDestroyed/onMinionDiscardedFromBase` 路径下的 trigger owner metadata。
+  - 不外推 Samurai 全量、Bushi/Shogun/Final Haiku sibling、所有 self-source 离场 trigger、所有计分离场路径或整个 sourceController/eventPlayer family；下一步继续筛 Samurai sibling，但必须逐条证明。
+
+## 2026-05-24 15:53 +08
+
+- 已继续沿 queued trigger registration 默认 `eventPlayer` family 筛选，命中新的 `samurai_bushi` 与 `samurai_bushi_pod` owner metadata seam。
+- 命中对象：
+  - `samurai_bushi`
+  - `samurai_bushi_pod`
+  - queued `onMinionDestroyed/onMinionDiscardedFromBase` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 的 Bushi 与 Bushi POD 两组 per-instance trigger 注册未显式写 `playerContext:'sourceController'`。
+  - callback `samuraiBushiTrigger()` 使用 `ctx.sourceControllerId` 作为 VP 获得者，并依赖 `triggerMinionPower` / LKI 力量快照判断 5+ 力量。
+  - 当 P1 控制 Bushi/Bushi POD，但触发事件玩家为 P0 时，旧 queue 中 `sourceControllerId === '1'`，`triggerMinionPower === 5` 已正确，但 `ownerPlayerId === '0'`，语义不一致。
+- 已补 focused gates：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Bushi 归给自身控制者而不是事件玩家`
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Bushi POD 归给自身控制者而不是事件玩家`
+  - 两条首轮红灯均为 `ownerPlayerId === '0'`、`playerContext === 'eventPlayer'`，预期 `ownerPlayerId === '1'`、`playerContext === 'sourceController'`。
+- 已做修复：
+  - 只给 `samurai_bushi` 与 `samurai_bushi_pod` 的 `onMinionDestroyed/onMinionDiscardedFromBase` trigger 注册补 `playerContext:'sourceController'`。
+  - 不改力量阈值、VP 奖励、LKI、计分或 Shogun/Final Haiku 等其它 Samurai trigger。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Bushi 归给自身控制者"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Bushi POD 归给自身控制者"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 110 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_bushi|samurai_bushi_pod"` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Bushi|samurai_bushi|samurai_bushi_pod"` -> `1 file passed, 1 passed`
+  - `npx eslint src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors, 12 existing any warnings`
+- 当前结论：
+  - 当前只闭合 `samurai_bushi` 与 `samurai_bushi_pod` 在 queued `onMinionDestroyed/onMinionDiscardedFromBase` 路径下的 trigger owner metadata。
+  - 不外推 Samurai 全量、Shogun/Final Haiku sibling、所有 self-source 离场 trigger、所有计分离场路径或整个 sourceController/eventPlayer family；下一步继续筛 Shogun / Final Haiku sibling。
+
+## 2026-05-24 16:08 +08
+
+- 已继续沿 queued trigger registration 默认 `eventPlayer` family 筛选，命中新的 `samurai_shogun` 与 `samurai_shogun_pod` owner metadata seam。
+- 命中对象：
+  - `samurai_shogun`
+  - `samurai_shogun_pod`
+  - queued `onMinionDestroyed/onMinionDiscardedFromBase` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 的 Shogun 与 Shogun POD 两组 per-instance trigger 注册未显式写 `playerContext:'sourceController'`。
+  - callback `samuraiShogunTrigger()` 使用 `ctx.sourceControllerId` 判断离场随从是否为己方，并给仍在场的 source Shogun 自身加 1 个力量指示物。
+  - 当 P1 控制 Shogun/Shogun POD 与另一名 P1 随从，但以 P0 作为事件玩家触发另一名随从离场时，旧 queue 中 `sourceControllerId === '1'`，但 `ownerPlayerId === '0'` 且 `playerContext === 'eventPlayer'`。
+- 已补 focused gates：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Shogun 归给自身控制者而不是事件玩家`
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Shogun POD 归给自身控制者而不是事件玩家`
+  - Shogun 首轮红灯为 `ownerPlayerId === '0'`、`playerContext === 'eventPlayer'`，预期 `ownerPlayerId === '1'`、`playerContext === 'sourceController'`。
+- 已做修复：
+  - 只给 `samurai_shogun` 与 `samurai_shogun_pod` 的 `onMinionDestroyed/onMinionDiscardedFromBase` trigger 注册补 `playerContext:'sourceController'`。
+  - 不改同阵营判定、力量指示物、计分、LKI、Final Haiku 或 Samurai 其它 trigger。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Shogun 归给自身控制者"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Shogun POD 归给自身控制者"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 112 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_shogun|samurai_shogun_pod"` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Shogun|samurai_shogun|samurai_shogun_pod"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors, 12 existing any warnings`
+  - `git diff --check -- src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> passed，仅 LF/CRLF warning
+- 当前结论：
+  - 当前只闭合 `samurai_shogun` 与 `samurai_shogun_pod` 在 queued `onMinionDestroyed/onMinionDiscardedFromBase` 路径下的 trigger owner metadata。
+  - 不外推 Samurai 全量、Final Haiku sibling、所有 other-friendly 离场 trigger、所有计分离场路径或整个 sourceController/eventPlayer family；下一步继续筛 Final Haiku / Honor the Fallen / Way of the Warrior 等 Samurai sibling，但必须逐条裁决。
+
+## 2026-05-24 16:14 +08
+
+- 已继续沿 queued trigger registration 默认 `eventPlayer` family 筛选，命中新的 `samurai_final_haiku` 与 `samurai_final_haiku_pod` owner metadata seam。
+- 命中对象：
+  - `samurai_final_haiku`
+  - `samurai_final_haiku_pod`
+  - queued `onMinionDestroyed/onMinionDiscardedFromBase` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 的 Final Haiku 与 Final Haiku POD 两组 per-instance trigger 注册未显式写 `playerContext:'sourceController'`。
+  - callback `samuraiFinalHaikuTrigger()` 使用 `ctx.sourceControllerId` 给该玩家其他随从 +2 临时力量。
+  - 当 P1 拥有的 Final Haiku 附着在 P1 宿主上，但以 P0 作为事件玩家触发宿主离场时，旧 queue 中 `sourceControllerId === '1'`，但 `ownerPlayerId === '0'` 且 `playerContext === 'eventPlayer'`。
+- 已补 focused gates：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Final Haiku 归给附着行动拥有者而不是事件玩家`
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Final Haiku POD 归给附着行动拥有者而不是事件玩家`
+  - Final Haiku 首轮红灯为 `ownerPlayerId === '0'`、`playerContext === 'eventPlayer'`，预期 `ownerPlayerId === '1'`、`playerContext === 'sourceController'`。
+- 已做修复：
+  - 只给 `samurai_final_haiku` 与 `samurai_final_haiku_pod` 的 `onMinionDestroyed/onMinionDiscardedFromBase` trigger 注册补 `playerContext:'sourceController'`。
+  - 不改 attached host/LKI fallback、临时力量、计分、Honor the Fallen / Way of the Warrior 或 Samurai 其它 trigger。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Final Haiku 归给附着行动拥有者"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Final Haiku POD 归给附着行动拥有者"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 114 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_final_haiku|samurai_final_haiku_pod"` -> `1 file passed, 3 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Final Haiku|samurai_final_haiku|samurai_final_haiku_pod"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors, 12 existing any warnings`
+  - `git diff --check -- src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> passed，仅 LF/CRLF warning
+- 当前结论：
+  - 当前只闭合 `samurai_final_haiku` 与 `samurai_final_haiku_pod` 在 queued `onMinionDestroyed/onMinionDiscardedFromBase` 路径下的 trigger owner metadata。
+  - 不外推 Samurai 全量、Honor the Fallen / Way of the Warrior sibling、所有 attached-action 离场 trigger、所有计分离场路径或整个 sourceController/eventPlayer family；下一步继续筛 `samurai_honor_the_fallen` / POD 与 `samurai_way_of_the_warrior` / POD，但必须逐条裁决。
+
+## 2026-05-24 16:25 +08
+
+- 已继续沿 queued trigger registration 默认 `eventPlayer` family 筛选，命中新的 `samurai_honor_the_fallen` 与 `samurai_honor_the_fallen_pod` owner metadata seam。
+- 命中对象：
+  - `samurai_honor_the_fallen`
+  - `samurai_honor_the_fallen_pod`
+  - queued `onMinionDestroyed/onMinionDiscardedFromBase` trigger `ownerPlayerId/playerContext`
+- 根因：
+  - [`src/games/smashup/abilities/samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 的 Honor the Fallen 与 Honor the Fallen POD 两组 per-instance trigger 虽已有 `sourceScope:'triggerBase'`，但未显式写 `playerContext:'sourceController'`。
+  - callback `samuraiHonorTheFallenTrigger()` 使用 `ctx.sourceControllerId` 抽牌，并要求离场随从 controller 等于该 source controller。
+  - 当 P1 拥有的 Honor the Fallen 在基地上，P1 随从离场但以 P0 作为事件玩家触发时，旧 queue 中 `sourceControllerId === '1'`，但 `ownerPlayerId === '0'` 且 `playerContext === 'eventPlayer'`。
+- 已补 focused gates：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Honor the Fallen 归给基地行动拥有者而不是事件玩家`
+  - `sourceController queued onMinionDiscardedFromBase trigger 应把 Honor the Fallen POD 归给基地行动拥有者而不是事件玩家`
+  - Honor the Fallen 首轮红灯为 `ownerPlayerId === '0'`、`playerContext === 'eventPlayer'`，预期 `ownerPlayerId === '1'`、`playerContext === 'sourceController'`。
+- 已做修复：
+  - 只给 `samurai_honor_the_fallen` 与 `samurai_honor_the_fallen_pod` 的 `onMinionDestroyed/onMinionDiscardedFromBase` trigger 注册补 `playerContext:'sourceController'`。
+  - 不改 `sourceScope:'triggerBase'`、抽牌回调、计分、Way of the Warrior 或 Samurai 其它 trigger。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Honor the Fallen 归给基地行动拥有者"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Honor the Fallen POD 归给基地行动拥有者"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 116 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_honor_the_fallen|Honor the Fallen"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Honor the Fallen|samurai_honor_the_fallen|samurai_honor_the_fallen_pod"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors, 12 existing any warnings`
+  - `git diff --check -- src/games/smashup/abilities/samurai.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> passed，仅 LF/CRLF warning
+- 当前结论：
+  - 当前只闭合 `samurai_honor_the_fallen` 与 `samurai_honor_the_fallen_pod` 在 queued `onMinionDestroyed/onMinionDiscardedFromBase` 路径下的 trigger owner metadata。
+  - 不外推 Samurai 全量、Way of the Warrior sibling、所有 base ongoing 离场 trigger、所有计分离场路径或整个 sourceController/eventPlayer family；下一步裁决 `samurai_way_of_the_warrior` / POD，注意它是 global trigger 且抽牌玩家来自 metadata。
+
+## 2026-05-24 16:43 +08
+
+- 已裁决 `samurai_way_of_the_warrior` 与 `samurai_way_of_the_warrior_pod`，本轮没有改 runtime。
+- 裁决对象：
+  - `samurai_way_of_the_warrior`
+  - `samurai_way_of_the_warrior_pod`
+  - global queued `onMinionDiscardedFromBase` trigger 与 metadata-driven draw player
+- 关键判断：
+  - [`src/games/smashup/abilities/samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 里这两条 trigger 是 `global:true`，不是 per-instance / attached / base ongoing source。
+  - `samuraiWayOfTheWarriorTrigger()` 不用 `ctx.sourceControllerId` 或 `ctx.playerId` 决定谁抽牌，而是读取离场随从 LKI metadata：`samuraiWayOfTheWarriorDrawPlayerId` 与 `samuraiWayOfTheWarriorDrawUntilTurnNumber`。
+  - 因此不能把它机械套进前面 Samurai Chan / Bushi / Shogun / Final Haiku / Honor the Fallen 的 `playerContext:'sourceController'` 修复族。
+- 已补 focused green gates：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `global Way of the Warrior queued trigger 应按标记元数据给施放者抽牌而不是按事件玩家或行动拥有者`
+  - `global Way of the Warrior POD queued trigger 应按标记元数据给施放者抽牌而不是按事件玩家或行动拥有者`
+  - 两条夹具都把 `drawPlayerId=P0`、`eventPlayer=P1`、`source card owner=P2` 拆开；断言 queue 保持 `playerContext='eventPlayer'`，但 resolve 只给 P0 抽两张，不给 P1/P2 抽。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Way of the Warrior"` -> `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 118 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_way_of_the_warrior|Way of the Warrior"` -> `1 file passed, 7 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Way of the Warrior|samurai_way_of_the_warrior|samurai_way_of_the_warrior_pod"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只把 `samurai_way_of_the_warrior / samurai_way_of_the_warrior_pod` 从 Samurai queued owner metadata sibling 候选降级为 dedicated green evidence。
+  - 不外推 Samurai 全量、所有 global trigger、所有 metadata-driven trigger 或所有 borrowed-action 场景已完成；下一步继续沿 queued trigger registration / sourceController-eventPlayer family 筛相邻非 Samurai 仍缺 dedicated gate 的 source-context seam。
+
+## 2026-05-24 16:54 +08
+
+- 已继续沿 queued trigger registration / sourceController-eventPlayer family 筛非 Samurai sibling，裁决 `tricksters_big_funny_giant.onMinionPlayed` 为 dedicated green evidence；本格没有改 runtime。
+- 裁决对象：
+  - `tricksters_big_funny_giant`
+  - queued `onMinionPlayed` trigger
+  - eventPlayer discard prompt 归属
+- 关键判断：
+  - [`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `trickstersBigFunnyGiantOnMinionPlayed()` 使用 `ctx.playerId` 找“打出随从的对手”的可弃手牌，并把 discard prompt 交给该玩家。
+  - 因此它不是 sourceController 修复族；如果机械改成 `playerContext:'sourceController'`，会把弃牌 prompt 错交给泰坦控制者。
+- 已补 focused green gate：
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+  - `默认 eventPlayer queued onMinionPlayed trigger 应把 Big Funny Giant 弃牌 prompt 交给打出随从的对手`
+  - 夹具拆开 `sourceControllerId=P0` 与 `eventPlayer=P1`；P1 有两张可弃手牌，P0 也有一张手牌用于防止候选误混。
+  - 断言 queue 保持 `playerContext='eventPlayer'`，resolve 后 `titan_tricksters_big_funny_giant_discard_to_play` prompt 的 `playerId='1'`，候选只含 P1 手牌。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Big Funny Giant"` -> `1 file passed, 3 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 119 passed`
+  - `npx eslint src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> `0 errors`
+  - `smashup.smoke.test.ts --testNamePattern "Big Funny Giant|tricksters_big_funny_giant"` 当前整文件 skipped，不作为证据。
+- 当前结论：
+  - 当前只把 `tricksters_big_funny_giant.onMinionPlayed` 的 queued eventPlayer prompt 归属降级为 dedicated green evidence。
+  - 不外推 Tricksters 全量、所有 Titan、所有 onMinionPlayed trigger 或所有 eventPlayer 分支已完成；下一步继续筛同一 family 中仍缺 dedicated gate 的注册/handbuilt producer，优先找能产出红灯的最小 seam。
+
+## 2026-05-24 17:53 +08
+
+- 已继续沿 borrowed discard/deck reshuffle producer family 筛选，命中 `ninjas_invisible_ninja` 的 peek 前 discard reshuffle 真红灯，并完成最小修复。
+- 命中对象：
+  - `ninjas_invisible_ninja`
+  - `buildInvisibleNinjaPeekResult()`
+  - deck 不足两张时的 discard reshuffle / peek snapshot / `DECK_REORDERED(sourcePlayerId)` owner provenance
+- 根因：
+  - [`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 旧实现直接把当前玩家 `discard` 全量 `random.shuffle(...)` 后写成 `DECK_REORDERED.playerId=当前玩家`。
+  - 当 `P0.discard` 里有 `owner='1'` 的 borrowed card 时，该牌会错误进入 P0 deck，并且出现在 Invisible Ninja 的“选择要抽的牌”候选中。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>)
+  - `ninjas_invisible_ninja 抽牌前重洗弃牌堆时，应把 borrowed 牌分流回真实拥有者牌库`
+  - 首轮红灯坐实只有一个 `DECK_REORDERED.playerId='0'`，且 `deckUids=['own-peek','borrowed-peek']`；预期是 P0 deck 只含 `own-peek`，P1 deck 追加 `borrowed-peek`。
+- 已做修复：
+  - 只在 `buildInvisibleNinjaPeekResult()` 内把 shuffled discard 按 `card.owner` 分流。
+  - 当前玩家 peek snapshot 只包含当前玩家自己的 discard card；可识别 borrowed card 生成 owner-scoped `DECK_REORDERED(playerId=ownerId, sourcePlayerId=sourcePlayerId)`，并追加到真实 owner deck。
+  - 不改通用 reducer、prompt handler、Invisible Ninja 触发条件或其它 Titan 分支。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed 牌分流回真实拥有者牌库"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "ninjas_invisible_ninja|Invisible Ninja"` -> `1 file passed, 6 passed`
+  - `npx eslint src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` -> `0 errors, 9 existing warnings`
+  - `git diff --check -- src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/newFactionAbilities.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` -> passed，仅 LF/CRLF warning
+- 当前结论：
+  - 当前只闭合 `ninjas_invisible_ninja` 在 peek 前 discard reshuffle 场景下的 borrowed owner 分流。
+  - 不外推 Titans/Ninjas 全量、所有 peek/reveal caller、所有 discard-shuffle caller 或所有 `DECK_REORDERED` producer；下一步继续筛其它仍把 borrowed discard/hand/deck/self-return 落点写成当前玩家的 producer/consumer。
+
+## 2026-05-24 18:03 +08
+
+- 已继续沿同一 `ninjas_invisible_ninja` 的 remaining revealed card 分支深挖，命中第二条 sibling 真红灯并完成最小修复。
+- 命中对象：
+  - `titan_ninjas_invisible_ninja_ongoing` interaction handler
+  - 选择抽走一张牌后，未选中的 revealed card 重新洗回 deck 的 `DECK_REORDERED` owner provenance
+- 根因：
+  - 旧 handler 用 `remainingShown` 全量拼入当前玩家 deck：`random.shuffle([...player.deck.filter(!shown), ...remainingShown])`。
+  - 当 `remainingShown` 里有 `owner!='currentPlayer'` 的 borrowed card 时，该牌会被错误留在当前玩家 deck。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>)
+  - `ninjas_invisible_ninja 选择抽走一张牌后，应把未选中的 borrowed 揭示牌分流回真实拥有者牌库`
+  - 首轮红灯：P0 抽走 `own-peek` 后，`P0.deck=['p0-tail','borrowed-peek']`，预期 borrowed card 应追加到 P1 deck。
+- 已做修复：
+  - handler 对 `remainingShown` 按 owner 分流。
+  - borrowed remaining 先生成 owner-scoped `DECK_REORDERED(playerId=ownerId, sourcePlayerId=playerId)`。
+  - 当前玩家的后续 `DECK_REORDERED` 只包含未揭示剩余 deck 与 source-owned remaining card，避免 borrowed revealed card 继续留在 source deck。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "未选中的 borrowed 揭示牌"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed 牌分流回真实拥有者牌库"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "ninjas_invisible_ninja|Invisible Ninja"` -> `1 file passed, 7 passed`
+  - `npx eslint src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` -> `0 errors, 9 existing warnings`
+- 当前结论：
+  - 当前只闭合 `ninjas_invisible_ninja` 在 remaining revealed borrowed card 场景下的 owner deck split。
+  - 不外推 Titans/Ninjas 全量、所有 reveal/order caller、所有 draw-one-then-shuffle caller 或所有 `DECK_REORDERED` producer；下一步离开已闭合的 Invisible Ninja，继续筛其它 producer/consumer。
+
+## 2026-05-24 18:36 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromDiscard)` producer family 筛选，命中 `ghost_the_dead_rise` 的 borrowed discard minion owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `ghost_the_dead_rise`
+  - `GhostDeadRiseCandidate` / `ghost_the_dead_rise_play` / `ghost_the_dead_rise_base`
+  - 弃三张后从 discard 额外打出低力量随从的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/abilities/ghosts.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ghosts.ts>) 旧候选只保留 `cardUid/defId/power`，没有把 discard source card 的真实 `owner` 写进候选快照和二段 base context。
+  - P0 从自己 discard 打出 `owner='1'` 的 borrowed 低力量随从时，手工 `MINION_PLAYED(fromDiscard:true)` 没传 `ownerId`，最终落地 minion owner 被 reducer 默认成 P0。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/ghostsAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ghostsAbilities.test.ts>)
+  - `从弃牌堆打出 borrowed 低力量随从时，应保留真实 owner`
+  - 夹具：P0 先为 `The Dead Rise` 弃掉三张手牌，P0 discard 同时含 `borrowed-ghost(owner='1')` 与 `own-ghost(owner='0')`，随后选择打出 borrowed 低力量随从。
+  - 首轮红灯坐实落地 minion `controller='0'` 正确，但 `owner` 被洗成当前玩家；预期 `owner='1'`。
+- 已做修复：
+  - `GhostDeadRiseCandidate` 增加 `ownerId`，由 `buildGhostDeadRiseCandidatesFromCards(...)` 从 live discard card 的 `card.owner` 取值。
+  - `GhostDeadRisePlayChoiceValue` 与 `GhostTheDeadRiseBaseContext` 携带 `ownerId`。
+  - 单基地直落与二段 base resolve 两条 `MINION_PLAYED` 分支都写入 `payload.ownerId`。
+  - 不改弃牌数量、力量阈值、skip、base targeting 或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/ghostsAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "从弃牌堆打出 borrowed"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/ghostsAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 10 passed`
+  - `npx eslint src/games/smashup/abilities/ghosts.ts src/games/smashup/__tests__/ghostsAbilities.test.ts` -> `0 errors, 1 existing warning`（`SU_EVENTS` unused import）
+- 当前结论：
+  - 当前只闭合 `ghost_the_dead_rise` 从弃牌堆额外打出 borrowed 低力量随从的 owner provenance。
+  - 不外推 Ghosts 全量、所有 fromDiscard minion replay caller、所有 `MINION_PLAYED` producer 或所有 borrowed minion 出牌路径；下一步继续筛 handbuilt `MINION_PLAYED(fromDiscard/fromDeck/fromBuried)`、`ACTION_PLAYED`、`ONGOING_ATTACHED/DETACHED`、`CARD_TO_DECK_*` 是否仍丢真实 owner/source。
+
+## 2026-05-24 18:45 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromDiscard)` producer family 筛选，命中 Zombies 两条 discard minion replay 真红灯，并完成最小修复。
+- 命中对象：
+  - `zombie_they_keep_coming`
+  - `zombie_lord`
+  - 从当前玩家 discard 额外打出随从时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/abilities/zombies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/zombies.ts>) 两条分支都能从 live discard 找到 `discardCard`，但手工事件只写 `playerId/cardUid/defId/fromDiscard`，没有把 `discardCard.owner` 传给 `MINION_PLAYED.payload.ownerId`。
+  - 因此 P0 discard 中真实 owner 为 P1 的 borrowed minion 被额外打出后，会落地成 `controller='0', owner='0'`。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/zombieWizardAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/zombieWizardAbilities.test.ts>)
+  - `zombie_they_keep_coming: 从弃牌堆打出 borrowed 随从时，应保留真实 owner`
+  - `zombie_lord: 从弃牌堆打出 borrowed 低力量随从时，应保留真实 owner`
+  - 首轮红灯：两条都落地 `owner='0'`，预期 `owner='1'`。
+- 已做修复：
+  - `zombie_they_keep_coming` 的 `MINION_PLAYED` payload 增加 `ownerId: discardCard.owner`。
+  - `zombie_lord` 的 `MINION_PLAYED` payload 增加 `ownerId: discardCard.owner`。
+  - 不改 discard legality validation、base targeting、Zombie Lord 空基地限制、额度消费或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "zombie_they_keep_coming: 从弃牌堆打出 borrowed|zombie_lord: 从弃牌堆打出 borrowed"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/zombieWizardAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 30 passed`
+  - `npx eslint src/games/smashup/abilities/zombies.ts src/games/smashup/__tests__/zombieWizardAbilities.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合 `zombie_they_keep_coming` 与 `zombie_lord` 从弃牌堆额外打出 borrowed minion 的 owner provenance。
+  - 不外推 Zombies 全量、所有 fromDiscard minion replay caller、所有 `MINION_PLAYED` producer 或所有 borrowed minion 出牌路径；下一步继续筛 handbuilt `MINION_PLAYED(fromDeck/fromBuried)`、`ACTION_PLAYED`、`ONGOING_ATTACHED/DETACHED`、`CARD_TO_DECK_*` 是否仍丢真实 owner/source。
+
+## 2026-05-24 18:56 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromDeck/fromHand)` producer family 筛选，命中 `robot_hoverbot` 与 `bear_cavalry_commission` 两条 borrowed minion owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `robot_hoverbot`
+  - `bear_cavalry_commission`
+  - 从当前玩家 deck 顶或 hand 额外打出 borrowed minion 时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/abilities/robots.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/robots.ts>) 的 Hoverbot prompt 只把 `cardUid/defId/power` 写进选择值和二段 base context，没有把 deck 顶 source card 的 `owner` 透传给 `MINION_PLAYED`。
+  - [`src/games/smashup/abilities/bear_cavalry.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/bear_cavalry.ts>) 的 Commission hand-minion prompt 同样只带 `cardUid/defId/power`，导致 borrowed hand minion 落地时 owner 被 reducer 默认成行动玩家。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/robot-hoverbot-chain.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/robot-hoverbot-chain.test.ts>)
+  - `从牌库顶打出 borrowed 随从时，应保留真实 owner`
+  - [`src/games/smashup/__tests__/expansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionAbilities.test.ts>)
+  - `选择手牌 borrowed 随从打出时，应保留真实 owner`
+  - 首轮红灯：两条落地随从 `controller='0'` 正确，但 `owner='0'`，预期保留 `owner='1'`。
+- 已做修复：
+  - `RobotHoverbotChoice` 与 `RobotHoverbotBaseContext` 增加 `ownerId`，play option、live option、单基地直落与二段 base resolve 都透传真实 `topCard.owner`。
+  - `bear_cavalry_commission_choose_minion` 的手牌候选值增加 `ownerId: c.owner`，单基地直落和二段 `choose_base` resolve 都把该值写入 `MINION_PLAYED.payload.ownerId`。
+  - 不改 Hoverbot reveal/skip、base targeting、Commission 额外额度、移动后续链或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/robot-hoverbot-chain.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed 随从"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed 随从"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/robot-hoverbot-chain.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 4 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 32 passed`
+  - `npx eslint src/games/smashup/abilities/robots.ts src/games/smashup/__tests__/robot-hoverbot-chain.test.ts src/games/smashup/abilities/bear_cavalry.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> `0 errors, existing warnings`
+- 当前结论：
+  - 当前只闭合 `robot_hoverbot` 从 deck 顶额外打出 borrowed minion，以及 `bear_cavalry_commission` 从 hand 额外打出 borrowed minion 的 owner provenance。
+  - 不外推 Robots 全量、Bear Cavalry 全量、所有 fromDeck/fromHand minion extra play、所有 `MINION_PLAYED` producer 或所有 borrowed minion 出牌路径；下一步继续筛 `giant_ant_worker_pod`、其它 handbuilt `MINION_PLAYED(fromDeck/fromBuried/fromDiscard)`、`ACTION_PLAYED`、`ONGOING_ATTACHED/DETACHED`、`CARD_TO_DECK_*` 是否仍丢真实 owner/source。
+
+## 2026-05-24 19:12 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromHand)` producer family 筛选，命中 `alien_terraform` 第三步额外打出 borrowed hand minion 的 owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `alien_terraform`
+  - 适居化替换基地后，从当前玩家 hand 额外打出 borrowed minion 时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/abilities/aliens.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/aliens.ts>) 的 `alien_terraform_play_minion` resolve 已经从 live hand 定位 `selectedCard`，但手工 `MINION_PLAYED` 只写 `playerId/cardUid/defId/baseIndex/baseDefId/power`，没有把 `selectedCard.owner` 写入 payload。
+  - 因此 P0 通过 Terraform 从手牌打出 `owner='1'` 的 borrowed minion 时，落地随从 controller 正确为 P0，但 owner 被 reducer 默认成 P0。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/alienAuditFixes.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/alienAuditFixes.test.ts>)
+  - `alien_terraform: 第三步额外打出借来的手牌随从时应保留真实 owner`
+  - 首轮红灯：`MINION_PLAYED.payload` 缺 `ownerId:'1'` 与 `reason:'alien_terraform'`，最终落地随从 owner 被洗成当前玩家。
+- 已做修复：
+  - `alien_terraform_play_minion` 的 `MINION_PLAYED.payload` 增加 `ownerId: selectedCard.owner` 与 `reason:'alien_terraform'`。
+  - 不改基地替换、baseDeck shuffle、skip、Titan as minion 分支、额外随从额度或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/alienAuditFixes.test.ts --config vitest.config.audit.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "alien_terraform: 第三步额外打出借来的手牌随从时应保留真实 owner"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/alienAuditFixes.test.ts --config vitest.config.audit.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 15 passed`
+  - `npx eslint src/games/smashup/abilities/aliens.ts src/games/smashup/__tests__/alienAuditFixes.test.ts` -> `0 errors, 2 existing warnings`
+- 当前结论：
+  - 当前只闭合 `alien_terraform` 第三步从 hand 额外打出 borrowed minion 的 owner provenance。
+  - 不外推 Aliens 全量、所有 Terraform sibling、Titan 分支、所有 fromHand minion extra play 或整个 `MINION_PLAYED` producer family；下一步继续筛 `killer_plants` / `mermaids_ultimate_song_hand` / replacement-base immediate minion 等 handbuilt `MINION_PLAYED` producer 是否仍丢真实 owner/source。
+
+## 2026-05-24 19:19 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromHand)` producer family 筛选，命中 `mermaids_ultimate_song_hand` 强制对手打出 borrowed hand minion 的 owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `mermaids_ultimate_song`
+  - `mermaids_ultimate_song_hand`
+  - Ultimate Song 强制其他玩家从其 hand 额外打出小随从时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/abilities/mermaids.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/mermaids.ts>) 的 `buildHandMinionOptions(...)` 只把 `cardUid/defId/power` 写入 prompt value。
+  - `mermaidsUltimateSongHandPromptProgram` resolve 直接按 prompt value 构造 `MINION_PLAYED`，没有用 forced player live hand 的 source card owner，导致 P1 被迫打出 `owner='0'` 的 borrowed 小随从时，落地 owner 被洗成 P1。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>)
+  - `mermaids_ultimate_song 强制对手打出 borrowed 小随从时应保留真实 owner`
+  - 首轮红灯：事件 payload 缺 `ownerId:'0'`，最终落地随从 controller 为 forced player P1，但 owner 被默认成 P1。
+- 已做修复：
+  - `HandMinionChoice` / `buildHandMinionOptions(...)` 增加 `ownerId` 快照。
+  - Ultimate Song hand resolve 额外用 live hand 复核 `selectedCard`，并写入 `MINION_PLAYED.payload.ownerId = selectedCard.owner` 与 `reason:'mermaids_ultimate_song'`。
+  - 不改 base prompt、forced player 顺序、power≤3 过滤、skip-on-play、施放者额外随从/行动额度或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "mermaids_ultimate_song 强制对手打出 borrowed 小随从时应保留真实 owner"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "mermaids_ultimate_song"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/mermaids.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` -> `0 errors, 19 existing warnings`
+  - 整文件 `newFactionAbilities.test.ts` 当前仍有 7 个 unrelated failures（Cowboys Dynamite Surprise、Giant Ant Drone/Igor、World Champs Bewitched、Fairies Glymmer），同一输出中两条 `mermaids_ultimate_song` 均已通过；该整文件失败不作为本格 Mermaids 语义失败证据。
+- 当前结论：
+  - 当前只闭合 `mermaids_ultimate_song_hand` 强制对手从 hand 额外打出 borrowed minion 的 owner provenance。
+  - 不外推 Mermaids 全量、所有 Ultimate Song 多玩家/无候选分支、所有 forced extra play、所有 fromHand minion extra play 或整个 `MINION_PLAYED` producer family；下一步继续筛 `killer_plants` deck-search minion play 与 replacement-base immediate minion 等 handbuilt producer。
+
+## 2026-05-24 19:27 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromDeck)` producer family 筛选，命中 Killer Plants deck-search minion play 共用 resolver 的 owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `killer_plant_venus_man_trap`
+  - `killer_plant_sprout` / `killer_plant_sprout_pod` 共享 `buildKillerPlantDeckSearchResolutionEvents(...)`
+  - 从当前玩家 deck 检索并额外打出 borrowed minion 时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/abilities/killer_plants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/killer_plants.ts>) 的 `buildKillerPlantDeckSearchResolutionEvents(...)` 只检查所选 UID 是否仍在 deck 中，然后发 `MINION_PLAYED(playerId/cardUid/defId/baseIndex/baseDefId/power)`。
+  - 它没有取 live deck 中 selected card 的真实 `owner`，也没有标记 `fromDeck/reason`，导致 P0 deck 中 `owner='1'` 的 borrowed minion 被 Venus/Sprout 打出后 owner 会默认成 P0。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>)
+  - `牌库检索打出 borrowed 随从时应保留真实 owner`
+  - 首轮红灯：`MINION_PLAYED.payload` 缺 `ownerId:'1'`、`fromDeck:true`、`reason:'killer_plant_venus_man_trap'`。
+- 已做修复：
+  - `buildKillerPlantDeckSearchResolutionEvents(...)` 改为从 deck live snapshot 中按 `uid/defId/type` 定位 `selectedCard`。
+  - `MINION_PLAYED.payload` 增加 `ownerId:selectedCard.owner`、`fromDeck:true`、`reason:abilitySourceId`。
+  - 不改 candidate power 过滤、skip、deck reshuffle、Sprout 自毁、Venus talent 入口或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "牌库检索打出 borrowed 随从时应保留真实 owner"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "killer_plant_venus_man_trap"` -> `1 file passed, 5 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 75 passed`
+  - `npx eslint src/games/smashup/abilities/killer_plants.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合 Killer Plants deck-search minion play 的 borrowed deck minion owner provenance。
+  - 不外推 Killer Plants 全量、Budding/Blossom、所有 deck-search caller、所有 fromDeck minion extra play 或整个 `MINION_PLAYED` producer family；下一步继续筛 replacement-base immediate minion、base ability pending event 等 producer 是否仍丢真实 owner/source。
+
+## 2026-05-24 19:39 +08
+
+- 已继续沿 replacement-base / pending `MINION_PLAYED(fromDeck)` producer family 筛选，命中 `base_greenhouse` 直接打出与 deferred replacement 补发两条 owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `base_greenhouse`
+  - `PendingPostScoringAction.kind === 'playMinionOnReplacementBase'`
+  - Greenhouse 从当前玩家 deck 搜索并打出 borrowed minion 到替换后基地时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/domain/baseAbilities_expansion.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities_expansion.ts>) 的 `base_greenhouse` handler 旧实现只用 `some(...)` 检查所选卡仍在 deck，未读取 live deck card 的真实 `owner`。
+  - 非 scoring session 直接返回的 `MINION_PLAYED` 未写 `ownerId`；scoring session 下缓存的 `playMinionOnReplacementBase` pending action 也未写 `ownerId`，随后 [`scoringSession.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/scoringSession.ts>) 补发事件仍按 `playerId` 默认 owner。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/expansionBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionBaseAbilities.test.ts>)
+  - `base_greenhouse: 直接打出 borrowed 牌库随从时应保留真实 owner`
+  - `base_greenhouse: replacement deferred 打出 borrowed 牌库随从时应保留真实 owner`
+  - 首轮红灯：直接分支 `MINION_PLAYED.payload` 缺 `ownerId:'1'`；deferred 分支 `playMinionOnReplacementBase` 缺 `ownerId:'1'`，补发事件也无法保留 borrowed owner。
+- 已做修复：
+  - `base_greenhouse` resolve 改为从 live deck 按 `uid/defId/type` 找 `selectedCard`，并写入直接 `MINION_PLAYED.payload.ownerId`。
+  - `PendingPostScoringAction.playMinionOnReplacementBase` 增量支持 `ownerId?: PlayerId`，handler 缓存 pending action 时写入 `selectedCard.owner`。
+  - `buildPendingPostScoringActionEvents(...)` 补发前改用 `find(...)` 定位 live deck card，并以 `action.ownerId ?? cardStillInDeck.owner` 写入补发 `MINION_PLAYED.payload.ownerId`。
+  - 不改 replacement target sync、skip、deck search 候选、normal limit、base clear/replaced deferred flow 或 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "base_greenhouse: .*borrowed"` -> 首轮红灯后 `1 file passed, 2 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "base_greenhouse|queued reaction 选择温室"` -> `1 file passed, 7 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 53 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "base_greenhouse|playMinionOnReplacementBase|deferred replacement"` -> `1 file passed, 5 passed`
+  - `npx eslint src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/domain/scoringSession.ts src/games/smashup/domain/types.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> `0 errors, 2 existing warnings`
+- 当前结论：
+  - 当前只闭合 `base_greenhouse` direct/deferred replacement-base deck minion play 的 owner provenance。
+  - 不外推所有基地能力、所有 afterScoring deferred action、所有 replacement-base sibling、所有 fromDeck minion extra play 或整个 `MINION_PLAYED` producer family；下一步继续筛其它 handbuilt `MINION_PLAYED(fromDeck/fromDiscard/fromHand/fromBuried)`、`ACTION_PLAYED`、`ONGOING_ATTACHED/DETACHED`、`CARD_TO_DECK_*` 是否仍丢真实 owner/source。
+
+## 2026-05-24 19:57 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromDiscard)` producer family 筛选，命中 `giant_ant_worker_pod` 从弃牌堆重打自身的 owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `giant_ant_worker_pod`
+  - `giant_ant_worker_pod_replay`
+  - Worker POD 离场后从当前玩家 discard 额外打到另一个基地时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/abilities/giant_ants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/giant_ants.ts>) 的 replay prompt resolve 已经从 `state.core.players[context.playerId].discard` 找到 `cardInDiscard`，但只把 `playerId/cardUid/defId/baseIndex/fromDiscard` 写进 `MINION_PLAYED`。
+  - P0 控制但 P1 拥有的 borrowed Worker POD 被计分/离场放入 P0 discard 后，选择重打会落地成 `controller='0', owner='0'`，而不是保留 `owner='1'`。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/giantAntsPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/giantAntsPod.test.ts>)
+  - `从弃牌堆重打 borrowed Worker POD 时应保留真实 owner`
+  - 首轮红灯：`MINION_PLAYED.payload` 缺 `ownerId:'1'`。
+- 已做修复：
+  - `giant_ant_worker_pod_replay` 的 `MINION_PLAYED.payload` 增加 `ownerId: cardInDiscard.owner`。
+  - 不改 trigger 入队条件、无指示物检查、目标基地选择、`discardPlaySourceId`、额度或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/giantAntsPod.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed Worker POD"` -> 首轮红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "giant_ant_worker_pod"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Worker POD"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/giantAntsPod.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 9 passed`
+  - `npx eslint src/games/smashup/abilities/giant_ants.ts src/games/smashup/__tests__/giantAntsPod.test.ts` -> `0 errors, 7 existing any warnings`
+- 当前结论：
+  - 当前只闭合 `giant_ant_worker_pod` discard replay 的 owner provenance。
+  - 不外推 Giant Ants 全量、所有 Worker POD scoring/destroy sibling、所有 fromDiscard replay、所有 onMinionDiscardedFromBase trigger 或整个 `MINION_PLAYED` producer family；下一步继续筛其它 handbuilt `MINION_PLAYED` producer 和 `ACTION_PLAYED / ONGOING / CARD_TO_DECK` owner/source seam。
+
+## 2026-05-24 20:16 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromDiscard)` producer family 筛选，命中 `elder_thing_spreading_horror_pod` 从当前玩家 discard 打出 borrowed 小随从的 owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `elder_thing_spreading_horror_pod`
+  - `elder_thing_spreading_horror_pod_choose_minion`
+  - Spreading Horror POD 在对手拒绝弃两张非疯狂卡后，从当前玩家 discard 额外打出力量 3 或以下 borrowed minion 时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/abilities/elder_things.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/elder_things.ts>) 的 `buildDiscardSmallMinionOptions(...)` / choose-minion resolve 只把 `cardUid/defId` 带入 prompt value。
+  - `elderThingSpreadingHorrorPodChooseMinionPromptProgram` 构造 `MINION_PLAYED(fromDiscard:true)` 时没有从 live discard 读取 source card 的真实 `owner`。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/elderThingsPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/elderThingsPod.test.ts>)
+  - `从弃牌堆打出 borrowed 小随从时应保留真实 owner`
+  - 首轮夹具红灯：`robot_microbot` 没有在该候选链中提供稳定小随从定义，被 `power` 过滤；已改用同文件现有候选链证明过的 `elder_thing_byakhee_pod`。
+  - 真红灯：`MINION_PLAYED.payload.ownerId` 为 `undefined`，落地随从会由 reducer 默认成当前玩家 owner。
+- 已做修复：
+  - choose-minion resolve 从 `state.core.players[context.casterPlayerId].discard` 按 `uid/defId/type` 定位 `selectedCard`。
+  - `MINION_PLAYED.payload` 改用 `selectedCard.uid/defId`，并增加 `ownerId: selectedCard.owner`。
+  - 不改对手拒绝流程、may-play 次数、base 选择、discardPlaySourceId、额度或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/elderThingsPod.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "从弃牌堆打出 borrowed 小随从时应保留真实 owner"` -> 真红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/elderThingsPod.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Spreading Horror POD|spreading_horror_pod|散播恐怖"` -> `1 file passed, 3 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/elderThingsPod.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 18 passed`
+  - `npx eslint src/games/smashup/abilities/elder_things.ts src/games/smashup/__tests__/elderThingsPod.test.ts` -> `0 errors, 4 existing warnings`
+- 当前结论：
+  - 当前只闭合 `elder_thing_spreading_horror_pod` discard small-minion replay 的 borrowed owner provenance。
+  - 不外推 Elder Things 全量、普通 Spreading Horror、所有 POD discard replay、所有 fromDiscard minion replay caller 或整个 `MINION_PLAYED` producer family；下一步继续筛 `ninja_disguise_choose_play`、`bury.ts uncoverBuriedCard` 或其它 handbuilt `MINION_PLAYED / ACTION_PLAYED / ONGOING / CARD_TO_DECK` owner/source seam。
+
+## 2026-05-24 20:22 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromHand)` producer family 筛选，命中 `ninja_disguise` 从手牌打出 borrowed minion 的 owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `ninja_disguise`
+  - `ninja_disguise_choose_play1 / ninja_disguise_choose_play2`
+  - Disguise 返回己方随从后，从当前玩家 hand 打出 borrowed minion 到同一基地时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/abilities/ninjas.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ninjas.ts>) 的 `buildNinjaDisguiseHandOptions(...)` 只把 `cardUid/defId/power` 写入 hand option。
+  - `ninjaDisguisePlayPromptProgram` resolve 直接用该 option 构造 `MINION_PLAYED`，没有从 live hand 读取 source card 的真实 `owner`。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/query6Abilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/query6Abilities.test.ts>)
+  - `ninja_disguise: 打出 borrowed 手牌随从时应保留真实 owner`
+  - 首轮红灯：`MINION_PLAYED.payload.ownerId` 为 `undefined`，落地随从会默认成行动玩家 owner。
+- 已做修复：
+  - play resolve 从 `state.core.players[playerId].hand` 按 `uid/defId/type` 定位 `selectedCard`。
+  - `MINION_PLAYED.payload` 改用 `selectedCard.uid/defId`，并增加 `ownerId: selectedCard.owner`。
+  - 不改可返回随从筛选、返回事件、最多打出数量、第二张手牌选择、额外额度或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/query6Abilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "ninja_disguise: 打出 borrowed 手牌随从时应保留真实 owner"` -> 真红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/query6Abilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "ninja_disguise"` -> `1 file passed, 4 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/query6Abilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 35 passed`
+  - `npx eslint src/games/smashup/abilities/ninjas.ts src/games/smashup/__tests__/query6Abilities.test.ts` -> `0 errors, 21 existing warnings`
+- 当前结论：
+  - 当前只闭合 `ninja_disguise` hand borrowed minion play 的 owner provenance。
+  - 不外推 Ninjas 全量、Disguise 两张回手/二段打出所有分支、所有 fromHand minion play caller 或整个 `MINION_PLAYED` producer family；下一步继续筛 `bury.ts uncoverBuriedCard` 或其它 `ACTION_PLAYED / ONGOING / CARD_TO_DECK` owner/source seam。
+
+## 2026-05-24 20:33 +08
+
+- 已继续沿 handbuilt `MINION_PLAYED(fromBuried)` producer family 筛选，命中 `bury.ts uncoverBuriedCard` 普通 buried minion 翻开分支的 owner 真红灯，并完成最小修复。
+- 命中对象：
+  - `uncoverBuriedCard`
+  - `bury_uncover_start_turn`
+  - P0 翻开 `controllerId='0' / trueOwnerId='1'` 的 borrowed buried minion 并打到基地时的 `MINION_PLAYED.ownerId` provenance
+- 根因：
+  - [`src/games/smashup/domain/bury.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/bury.ts>) 的 `def.type === 'minion'` 分支只把 `playerId/cardUid/defId/baseIndex/baseDefId/power/fromBuried` 写进 `MINION_PLAYED`。
+  - buried card 已有 `trueOwnerId`，但未传入事件 payload，导致 reducer 按 `playerId` 默认 owner。
+- 已补 focused red-green gate：
+  - [`src/games/smashup/__tests__/buryEngine.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/buryEngine.test.ts>)
+  - `uncovering a borrowed buried minion should preserve true owner when played`
+  - 首轮红灯：`MINION_PLAYED.payload.ownerId` 为 `undefined`，落地随从会默认成翻开玩家 owner。
+- 已做修复：
+  - `uncoverBuriedCard` 的普通 minion 分支增加 `ownerId: buried.trueOwnerId`。
+  - 不改 buried prompt、action 分支、ongoing target、base trigger queue 或通用 reducer。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/buryEngine.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "uncovering a borrowed buried minion should preserve true owner when played"` -> 真红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/buryEngine.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 13 passed`
+  - `npx eslint src/games/smashup/domain/bury.ts src/games/smashup/__tests__/buryEngine.test.ts` -> `0 errors, 16 existing warnings`
+- 当前结论：
+  - 当前只闭合 `uncoverBuriedCard` 普通 buried minion 翻开的 borrowed owner provenance。
+  - 不外推 Ancient Egyptians/Bury 全量、buried action/ongoing 全分支、所有 fromBuried producer 或整个 `MINION_PLAYED` family；下一步继续筛其它 `ACTION_PLAYED / ONGOING / CARD_TO_DECK` owner/source seam。
+
+## 2026-05-25 00:25 +08
+
+- 已停止继续硬猜新红灯，先把一个仍未记账的 `deck -> hand` caller 降级为 dedicated green evidence：
+  - `world_champs_stoneford`
+  - borrowed source-deck action -> current hand，同时保留真实 `owner`
+- 结论：
+  - Stoneford 的 source zone 与 destination 都是当前玩家，不应机械套成 owner deck split。
+  - 新增 focused gate 证明：P0 从自己牌库选择 `deck-borrowed-action(owner='1')` 后，该牌进入 P0 hand，但卡实例 `owner` 仍为 `1`；P1 deck 不受影响；不产生 `DECK_REORDERED`。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "world_champs_stoneford"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/__tests__/newFactionAbilities.test.ts` -> `0 errors, 6 existing warnings`
+- 当前结论：
+  - 这不是新的 shared/runtime 修复，只是把 `world_champs_stoneford` 从 owner/source 候选面里排除。
+  - 不外推 World Champs 全量、所有 deck-search caller、所有 `CARDS_DRAWN` source-deck 语义或整个主线已完成；下一步继续回到 `processAffectTriggers / ACTION_PLAYED side branch / effect-contract queued interaction` 找最小真红灯。
+
+## 2026-05-25 01:17 +08
+
+- 已继续沿 `effect-contract queued interaction` 筛选 structured footprint sibling，命中 `button-only interaction + continuationContext.targetPlayerId` 这条新的 shared 真红灯，并完成最小修复。
+- 命中对象：
+  - `titan_super_spies_moon_zero_three_resolve`
+  - `deriveFootprintFromInteraction`
+  - `continuationContext.targetPlayerId` / `runtimePrompt.continuation.context.targetPlayerId` -> `playerControl` structured footprint
+- 根因：
+  - 旧 [`src/games/smashup/domain/reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 已会把 `continuationContext` 喂给 generic write 资源推导，所以 `cardUid/baseIndex` 这类键还能落到 footprint。
+  - 但 structured player write 只认 option value 里的 `playerId/targetPlayerId/pid`，不会消费 `continuationContext` 或 `runtimePrompt.continuation.context` 里的目标玩家键。
+  - 结果是 `titan_super_spies_moon_zero_three_resolve` 这种 option 只有 `{ placement }`、真实目标玩家藏在 continuation context 的 button prompt，会只记 `cardInstance:peeked-card-1`，漏掉 `playerControl:1`。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>)
+  - `button-only 交互应从 continuationContext.targetPlayerId 推导 playerControl footprint，而不是只记 cardUid`
+  - 夹具：`sourceId='titan_super_spies_moon_zero_three_resolve'`，`targetType='button'`，`continuationContext={ targetPlayerId:'1', cardUid:'peeked-card-1', defId:'wizard_summon', ownerId:'1' }`
+  - 断言：`fallbackReason === undefined`，writes 至少包含 `playerControl:1` 与 `cardInstance:peeked-card-1`
+- 已做修复：
+  - 在 `reactionResources.ts` 新增 `addStructuredPlayerWritesFromValue(...)`
+  - 继续保留 option value 的 `playerId/targetPlayerId/pid -> playerControl`
+  - 额外把 `continuationContext` 与 `runtimePrompt.continuation.context` 里的 `playerId/targetPlayerId/pid` 也映射到 structured `playerControl`
+  - 不扩大到 `sourcePlayerId/controllerId/ownerPlayerId`，也不顺手补其它 generic key
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "moon_zero_three_resolve_footprint|continuationContext\\.targetPlayerId|runtimePrompt\\.continuation\\.context|pid-only|Star Spawn|Cellular Bonding|Mark of Sleep"` -> `1 file passed, 6 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 46 passed`
+  - `npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合 `button-only interaction` 在 `continuationContext.targetPlayerId` / `runtimePrompt.continuation.context.targetPlayerId` 上的 structured `playerControl` footprint。
+  - 不外推所有 player-target prompt、所有 structured player key、所有 queued interaction family 或 yuanhou 四派系整体完成；下一步继续回到 `ACTION_PLAYED side branch / processAffectTriggers / effect-contract queued interaction` 找新的最小真红灯。
+
+## 2026-05-25 01:30 +08
+
+- 已继续沿 `effect-contract queued interaction` 筛选 continuation sibling，命中 `continuationContext.cardUids` 这条新的 shared 真红灯，并完成最小修复。
+- 命中对象：
+  - `titan_ninjas_invisible_ninja_ongoing`
+  - `addGenericResourcesFromValue`
+  - `continuationContext.cardUids: string[]` -> 多张 `cardInstance` footprint
+- 根因：
+  - 旧 [`src/games/smashup/domain/reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 处理数组时只会递归数组项。
+  - 但 `cardUids` 的数组项是 primitive string，递归进去后不会再被识别成资源。
+  - 结果是 `titan_ninjas_invisible_ninja_ongoing` 这种 `continuationContext={ titanUid, cardUids:['peek-a','peek-b'] }` 的 prompt，只会靠当前 option 写入单张 `cardInstance:peek-a/peek-b`，不会把同一批已揭示候选牌整体写进 footprint。
+- 已补 focused gate：
+  - [`src/games/smashup/__tests__/reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>)
+  - `continuationContext.cardUids 数组应映射到多张 cardInstance footprint，而不是只保留当前选项卡`
+  - 夹具：`sourceId='titan_ninjas_invisible_ninja_ongoing'`，option 两张 `peek-a/peek-b`，`continuationContext={ titanUid:'invisible-titan-1', cardUids:['peek-a','peek-b'] }`
+  - 断言：`fallbackReason === undefined`，writes 至少包含 `titan:invisible-titan-1`、`cardInstance:peek-a`、`cardInstance:peek-b`
+- 已做修复：
+  - 只在 `addGenericResourcesFromValue(...)` 为 `cardUids` 数组补 `cardInstance` 推导
+  - 不扩大到其它 plural key、generic string array、player key 或 continuationContext 以外的 surface
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "moon_zero_three_resolve_footprint|continuationContext\\.targetPlayerId|continuationContext\\.cardUids|runtimePrompt\\.continuation\\.context|pid-only|Star Spawn|Cellular Bonding|Mark of Sleep|Invisible Ninja"` -> `1 file passed, 7 passed`
+  - `node --max-old-space-size=8192 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 47 passed`
+  - 同一条整文件命令在 `4096` 堆下曾触发 worker OOM；现已确认是环境噪音，不是语义回归
+  - `npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合 `continuationContext.cardUids` 这类 primitive UID 数组的 multi-card `cardInstance` footprint。
+  - 不外推所有 plural UID key、所有 reveal/peek prompt、所有 queued interaction family 或 yuanhou 四派系整体完成；下一步继续回到 `ACTION_PLAYED side branch / processAffectTriggers / effect-contract queued interaction` 找新的最小真红灯。
+
+## 2026-05-25 01:40 +08
+
+- 已停止回扫刚闭合的 queued interaction sibling，转去打一条新的 post-process 对称缺口：
+  - `processDeckInspectionTriggers`
+  - mandatory ongoing `onDeckInspected`
+  - mandatory extended base `onDeckInspected`
+- 结果：
+  - 先在 [`reactionQueueBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts>) 补 focused gate，首轮红灯坐实 `test_inspection_watcher` 已入队但 `base_b` 漏排。
+  - 随后只在 [`reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>) 的 `processDeckInspectionTriggers()` 追加 `collectExtendedBaseAbilityTriggers(...)` 扫描所有 `advancedCore.bases`，并透传 `inspectionCausePlayerId / reason / frameId / sourceEventId`。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "processDeckInspectionTriggers 命中 mandatory ongoing 与 mandatory extended base onDeckInspected 时，应统一进入 reaction ordering"` -> 真红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 27 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueInspectionRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> `0 errors, 23 warnings`（均为既有 warning）
+- 当前结论：
+  - 当前只闭合 `processDeckInspectionTriggers` 的 extended-base queued ordering sibling，不是 inspection family 全量完成。
+  - 下一步离开 inspection 对象级链，继续回到 `ACTION_PLAYED side branch / processAffectTriggers / effect-contract queued interaction` 找新的最小真红灯。
+
+## 2026-05-25 01:46 +08
+
+- 已继续沿 `effect-contract queued interaction` 盘点排序 prompt 的 UID 数组键，命中一条新的 shared 真红灯：
+  - `topUids[]`
+  - `bottomUids[]`
+  - 代表 prompt：`super_spies_for_my_eyes_only_reorder`
+- 结果：
+  - 在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 补 focused gate 后，首轮红灯坐实 reorder prompt footprint 只记到 `playerControl:0`，完全没记被重排的三张牌。
+  - 随后只在 [`reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 把多卡数组白名单从 `cardUids` 扩到 `cardUids|topUids|bottomUids`。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "deck reorder 交互应从 topUids/bottomUids 推导多张 cardInstance footprint，而不是只记 targetPlayerId"` -> 真红灯后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=8192 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 48 passed`
+  - `npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合 reorder prompt 的 `topUids/bottomUids` multi-card footprint，不代表所有排序 prompt、所有 UID 数组键或整个 queued interaction family 已完成。
+  - 下一步继续离开当前已闭合的 interaction sibling，回到 `ACTION_PLAYED side branch / processAffectTriggers` 找新的最小真红灯。
+
+## 2026-05-25 01:54 +08
+
+- 已继续沿 `effect-contract queued interaction` 清点 continuation context 的数组键，命中一条新的 shared 真红灯：
+  - `movedUids[]`
+  - 代表 prompt：`pirate_full_sail_choose_minion`
+- 结果：
+  - 在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 补 focused gate 后，首轮红灯坐实 `Full Sail` continuation prompt 的 footprint 只记当前选中的 `minion:moved-candidate` 与 `base:1`，完全没记前面已移动过的 `moved-a/moved-b`。
+  - 随后只在 [`reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 为 `continuationContext.movedUids` 增加 `minion` 数组映射，不泛化到其它 `*Uids`。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "continuationContext\\.movedUids 数组应映射到多张 minion footprint，而不是只记当前选中的随从"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=8192 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 49 passed`
+  - `npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> `0 errors`
+  - `git diff --check -- src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> 通过（仅 LF/CRLF warning）
+- 当前结论：
+  - 当前只闭合 `continuationContext.movedUids` 的 multi-minion footprint，不代表所有 minion UID 数组键、所有 move continuation prompt 或整个 queued interaction family 已完成。
+  - 下一步继续离开当前已闭合的 interaction sibling，回到 `ACTION_PLAYED side branch / processAffectTriggers` 找新的最小真红灯。
+
+## 2026-05-25 02:54 +08
+
+- 已继续回到 `ACTION_PLAYED side branch`，命中一条新的 post-process 对称缺口：
+  - `postProcessSystemEvents`
+  - mandatory ongoing `onActionPlayed`
+  - mandatory extended base `onActionPlayed`
+- 结果：
+  - 先在 [`reactionQueueBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts>) 补 focused gate，首轮红灯坐实 `test_action_watcher` 已入队但 `base_b` 漏排。
+  - 随后只在 [`index.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/index.ts>) 的 `ACTION_PLAYED` 分支追加 `collectExtendedBaseAbilityTriggers(...)`，透传 `ownerPlayerId / baseIndex / reason / frameId / sourceEventId`，并沿用现有 `tempCore/tempMatchState` reduce 顺序。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "ACTION_PLAYED 命中 mandatory ongoing 与 mandatory extended base onActionPlayed 时，应统一进入 reaction ordering"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 28 passed`
+  - `npx eslint src/games/smashup/domain/index.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> `0 errors, 25 existing warnings`
+  - `git diff --check -- src/games/smashup/domain/index.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> 通过（仅 LF/CRLF warning）
+- 当前结论：
+  - 当前只闭合 `ACTION_PLAYED` post-process 的 extended-base queued ordering sibling，不是所有 `onActionPlayed` consumer、所有 extended base timing 或整个 post-process family 全量完成。
+  - 下一步继续离开这条已闭合的 `ACTION_PLAYED` 对称缺口，回到 `processAffectTriggers / 其它 still-open shared seam` 找新的最小真红灯。
+
+## 2026-05-25 03:00 +08
+
+- 已继续沿刚闭合的 `ACTION_PLAYED side branch` 向下钻，命中一条新的 queued runtime context 缺口：
+  - `collectExtendedBaseAbilityTriggers`
+  - extended base `onActionPlayed`
+  - `actionTargetBaseIndex / actionTargetType / actionTargetMinionUid`
+- 结果：
+  - 先在 [`reactionQueueBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts>) 补 focused gate，首轮红灯坐实 `collectExtendedBaseAbilityTriggers(...)` 直接返回 `undefined`，说明 extended base 的 `onActionPlayed canTrigger/deriveFootprint` 看不到 `actionTarget*`。
+  - 随后只在 [`baseAbilityQueue.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilityQueue.ts>) 给 `collectExtendedBaseAbilityTriggers(...)` 增加 `actionTargetBaseIndex/actionTargetType/actionTargetMinionUid` 参数透传，并在 [`index.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/index.ts>) 的 `ACTION_PLAYED` extended-base collector 调用点把这三项真实传入。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "extended queued onActionPlayed base ability 的 canTrigger/deriveFootprint 应看到 action target 上下文"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 29 passed`
+  - `npx eslint src/games/smashup/domain/baseAbilityQueue.ts src/games/smashup/domain/index.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> `0 errors, 25 existing warnings`
+  - `git diff --check -- src/games/smashup/domain/baseAbilityQueue.ts src/games/smashup/domain/index.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> 通过（仅 LF/CRLF warning）
+- 当前结论：
+  - 当前只闭合 extended-base `onActionPlayed` 的 queued runtime action-target context，不是所有 extended base timing、所有 `onActionPlayed` consumer 或整个 post-process family 全量完成。
+  - 下一步继续离开这条已闭合的 `ACTION_PLAYED` 相邻 seam，回到 `processAffectTriggers / 其它 still-open shared seam` 找新的最小真红灯。
+
+## 2026-05-25 03:41 +08
+
+- 已停止继续硬猜新的 queued runtime 红灯，先把 Titans 里两个仍未 dedicated 记账的怀疑点降成 green evidence：
+  - `pirates_the_kraken.afterScoring -> triggerBaseControllersAtTrigger`
+  - `explorers_very_large_boulder.onMinionMoved -> moveFromBaseIndex / moveToBaseIndex`
+- 做法：
+  - 在 [`src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts>) 新增 2 条 dedicated queue-runtime gate。
+  - `Kraken` 那条故意把 live base 留成只剩 P0 控制者，但 queued trigger 写死 `triggerBaseControllersAtTrigger=['1']`；如果 runtime executor 丢这份快照，就不会再给 P1 弹 replacement prompt。
+  - `Very Large Boulder` 那条直接走 queued `onMinionMoved` 真链，要求 runtime prompt 继续带 `fromBaseIndex=0 / toBaseIndex=1 / destroyThreshold=2`。
+- 已验证：
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "queued afterScoring trigger 真链仍应把 triggerBaseControllersAtTrigger 传到 Kraken executor"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "queued onMinionMoved 真链仍应把 moveFromBaseIndex/moveToBaseIndex 传到 Very Large Boulder executor"` -> `1 file passed, 1 passed`
+  - `node --max-old-space-size=4096 scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 7 passed`
+  - `npx eslint src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts` -> `0 errors`
+  - `git diff --check -- src/games/smashup/__tests__/reactionQueueControllerRuntimeContext.test.ts` -> passed
+- 当前结论：
+  - 这轮没有新增 shared/runtime 修复；它把 `Kraken.triggerBaseControllersAtTrigger` 与 `Very Large Boulder.moveFrom/moveTo` 正式降成 dedicated green evidence。
+  - 不外推 Titans 全量、所有 `afterScoring` / `onMinionMoved` consumer、所有 queued runtime 字段或整个 yuanhou 四派系整体完成。
+  - 下一步继续离开这两格已转绿的 Titans runtime gate，回到其它 still-open `TriggerContext -> TriggerInstance -> queued executor` 非对称找新的最小真红灯。
+
+## 2026-05-25 05:14 +08
+
+- 已继续沿 `reactionResources` family 从交互侧切到事件侧，命中两条新的 shared 真红灯：
+  - `DECK_REORDERED.payload.deckUids[] -> multi-card footprint`
+  - `HAND_SHUFFLED_INTO_DECK.payload.newDeckUids[] -> multi-card footprint`
+- 结果：
+  - 在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增 2 条 focused gate 后，首轮红灯坐实 `deriveFootprintFromEvent(...)` 对这两类事件都只记 `playerHand/playerDeck/playerDiscard`，完全没把 `deckUids/newDeckUids` 中的具体 `cardInstance` 写进 footprint。
+  - 随后只在 [`reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 的 card-array 白名单从 `cardUids|topUids|bottomUids|removedActionUids|pickedToHandUids|playedHandUids|extraDeckUidsForShuffle` 扩到 `cardUids|topUids|bottomUids|deckUids|newDeckUids|removedActionUids|pickedToHandUids|playedHandUids|extraDeckUidsForShuffle`，不扩大到 generic `*Uids`。
+- 已验证：
+  - focused `reactionQueueOrdering.test.ts -t "DECK_REORDERED 事件应从 deckUids 映射到多张 cardInstance footprint，而不是只记玩家牌区|HAND_SHUFFLED_INTO_DECK 事件应从 newDeckUids 映射到多张 cardInstance footprint，而不是只记玩家牌区"` -> 首轮 failed，修复后 `1 file passed, 2 passed`
+  - 整文件 `reactionQueueOrdering.test.ts` -> `1 file passed, 58 passed`
+  - `npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合事件侧 `deckUids/newDeckUids` 的 multi-card footprint，不代表所有 event payload 数组键、所有 shuffle/reorder producer 或整个 `reactionResources` family 已完成。
+  - 下一步优先继续沿事件/交互 footprint 找下一条真实生产 key；如果没有新的纯 UID 真红灯，再切回 `ACTION_PLAYED side branch / processAffectTriggers / TriggerContext -> TriggerInstance -> queued executor` 的 still-open shared seam。
+
+## 2026-05-25 05:25 +08
+
+- 已继续沿 `reactionResources` family 从事件侧回到交互 root/continuation 结构，再命中两条新的 shared 真红灯：
+  - `interaction.data.inspectedUids[] -> inspected batch multi-card footprint`
+  - `continuationContext.remainingPlayers[].candidateUids[] -> hidden follow-up minion footprint`
+- 结果：
+  - 在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增 `Monkey See, Monkey Do` focused gate 后，首轮红灯坐实 footprint 只记 option 里的 `inspect-action-a/b`，完全没记同批 inspected 但未出现在 option 中的 `inspect-minion-c`。
+  - 紧接着又新增 `Temple of Goju` focused gate，首轮红灯坐实 `continuationContext.remainingPlayers[].candidateUids` 里的后续候选随从被误记成 `cardInstance:remaining-minion-a/b`，而不是 `minion:*`。
+  - 随后只在 [`reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>) 做两处最小收口：
+    - card-array 白名单增加 `inspectedUids`
+    - `deriveFootprintFromInteraction(...)` 补 inspection root 数据 `inspectedUids/inspectedCards`
+    - `addGenericResourcesFromValue(...)` 为 `candidateUids` 这种随从对象数组单独映射到 `minion`，并阻止其再被 generic `uid` 误记成 `cardInstance`
+- 已验证：
+  - focused `reactionQueueOrdering.test.ts -t "interaction.data.inspectedUids 应映射到整批 inspected cardInstance footprint，而不是只记 option 中出现的行动牌"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - focused `reactionQueueOrdering.test.ts -t "continuationContext.remainingPlayers\\[\\]\\.candidateUids 应映射到后续候选随从的 minion footprint，而不是误记成 cardInstance"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - 整文件 `reactionQueueOrdering.test.ts` -> `1 file passed, 60 passed`
+  - `npx eslint src/games/smashup/domain/reactionResources.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只闭合 `inspectedUids` 的 inspected batch footprint，以及 `candidateUids` 的 hidden follow-up minion footprint，不代表所有 interaction.data root 字段、所有 continuation 对象数组、所有 hidden snapshot 结构或整个 `reactionResources` family 已完成。
+  - 下一步继续优先榨这条 family 的下一条真实生产 key；如果交互/事件侧暂时没有新的纯真红灯，再切回 `ACTION_PLAYED side branch / processAffectTriggers / TriggerContext -> TriggerInstance -> queued executor` 主线。
+
+## 2026-05-25 05:33 +08
+
+- 已按长期 JSON 计划从 `reactionResources` family 切回 `processReturnToHandTriggers`，但这轮没有新增 runtime/shared 修复，而是补齐两条缺失的 dedicated ordering gate：
+  - `processReturnToHandTriggers stamps queued onCardReturnedToHand reactions with explicit frame ids`
+  - `processReturnToHandTriggers also advances prior non-return events before collecting later onCardReturnedToHand`
+- 结果：
+  - 在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>) 新增两条 focused gate 后，首轮都直接转绿，说明当前 [`processReturnToHandTriggers()`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts>) 已经具备稳定 `frameId/sourceEventId`，也会在同批次里先推进前置 non-return sibling 再收集后续 `onCardReturnedToHand`。
+  - 这次真实进展是把 `return-to-hand ordering` 从“代码看起来像对”降成了 dedicated green evidence，不是又补了一条不存在的业务修复。
+- 已验证：
+  - focused `reactionQueueOrdering.test.ts -t "processReturnToHandTriggers"` -> `1 file passed, 2 passed`
+  - 邻近 `reactionQueueBaseAbilities.test.ts -t "processReturnToHandTriggers"` -> `1 file passed, 1 passed`
+  - 整文件 `reactionQueueOrdering.test.ts` -> `1 file passed, 62 passed`
+  - `npx eslint src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> `0 errors`
+- 当前结论：
+  - 当前只说明 `processReturnToHandTriggers` 的 ordering/frame sibling 现在已有 dedicated gate，不代表整个 `onCardReturnedToHand` family、所有 return carrier、所有 post-process sibling 或整个 yuanhou 审计已完成。
+  - 下一步应离开这条已转绿的 return-to-hand ordering 证据，继续回到 `ACTION_PLAYED side branch / processAffectTriggers / TriggerContext -> TriggerInstance -> queued executor` 的 still-open shared seam，而不是在 `reactionResources` 或 `return-to-hand` family 里继续硬磨弱证据。
+
+## 2026-05-25 05:40 +08
+
+- 已继续离开 `return-to-hand`，并在 ordering 侧坐实一条新的 shared 真红灯：`processDestroyTriggers` 不会先推进前置 non-destroy sibling，再收集后续 `onMinionDestroyed`。
+- 结果：
+  - 在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts:1460>) 新增 `processDestroyTriggers stamps queued onMinionDestroyed reactions with explicit frame ids` 后首轮直接转绿，证明 `minion-destroyed:*` 的 `sourceEventId/frameId` 当前没有裂缝。
+  - 随后在 [`reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueOrdering.test.ts:1494>) 新增 `processDestroyTriggers also advances prior non-destroy events before collecting later onMinionDestroyed`，夹具先发 `TITAN_PLAYED(destroy-titan-a -> base 1)` 再发 `MINION_DESTROYED(victim1 @ base 1)`；首轮红灯直接坐实 titan watcher 没有入队。
+  - 根因在 [`reducer.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reducer.ts:1276>)：旧实现虽然接收整批 `filteredEvents`，但内部只抽 `MINION_DESTROYED` 循环处理，前置 non-destroy sibling 完全没推进到 `ms.core`。现已最小修复为：按原 `filteredEvents` 顺序遍历，先 `reduce` 所有非 `MINION_DESTROYED` 事件进现场，只对 dedup 后那批 destroy key 继续走原本的 destroy/post-process 路径；不改 pending-save、suppressed destroy 清理、onDestroy 本体语义或 queue 收口协议。
+- 已验证：
+  - focused `reactionQueueOrdering.test.ts -t "processDestroyTriggers"` -> 首轮 `1 failed, 1 passed`，修复后 `1 file passed, 2 passed`
+  - 邻近 `reactionQueueBaseAbilities.test.ts -t "processDestroyTriggers"` -> `1 file passed, 1 passed`
+  - 整文件 `reactionQueueOrdering.test.ts` -> `1 file passed, 64 passed`
+  - `npx eslint src/games/smashup/domain/reducer.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> `0 errors, 23 existing warnings`
+- 当前结论：
+  - 当前只闭合 `processDestroyTriggers` 的 non-destroy sibling advance 这条 shared seam，不代表所有 `onMinionDestroyed` consumer、所有 destroy post-process sibling、所有 replacement/save 分支或整个 yuanhou 审计已完成。
+  - 下一步应继续沿 `processDestroyTriggers / onMinionDiscardedFromBase / ACTION_PLAYED side branch / processAffectTriggers / TriggerContext -> TriggerInstance -> queued executor` 找下一条 still-open shared seam，不回扫刚转绿的 destroy ordering/frame gate。
+
+## 2026-05-25 05:50 +08
+
+- 已顺着 `onDestroy stale-core` 怀疑线做最小复现，但这轮没有命中新 runtime/shared 红灯，而是清掉了一条误导性旧断言：
+  - [`onDestroyAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/onDestroyAbilities.test.ts>) 里 `trickster_gremlin` 组原有注释与断言一直写着“`processDestroyTriggers` 使用原始 core 状态，因此当前玩家打出唯一手牌 `c1` 后仍会被强制弃掉 1 张牌”；实际 focused 复跑后，真正失败的是这条旧断言本身，运行时已经不会再把已打出的 `c1` 当成 live hand 候选。
+- 已把旧世界观翻成 dedicated green evidence，而不是继续空猜 shared seam：
+  - 把用例改成 `当前玩家打出唯一手牌消灭小妖精后，不会再把已打出的行动当成可弃手牌`，并把断言改成 `CARDS_DISCARDED(playerId='0') === 0`
+  - 同时把 `被消灭后抽1张牌 + 每个对手随机弃1张牌` 补强为更硬的剩余手牌 gate：当前玩家只会弃掉 `c2`，不会把已打出的 `c1` 回流成弃牌候选
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/onDestroyAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "当前玩家打出唯一手牌消灭小妖精后，不会再把已打出的行动当成可弃手牌|被消灭后抽1张牌 \+ 每个对手随机弃1张牌|三人游戏中手牌为空的对手不产生弃牌事件"` -> `1 file passed, 3 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/onDestroyAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 14 passed`
+  - `npx eslint src/games/smashup/__tests__/onDestroyAbilities.test.ts` -> `0 errors, 4 existing warnings`
+- 当前结论：
+  - `onDestroy stale-core` 这格当前不是 still-open runtime/shared seam，而是历史测试注释漂移；本轮真实进展是把它从误导性旧断言降成 dedicated green evidence。
+  - 不外推所有 `onDestroy` consumer、所有 destroy family、或整个 `processDestroyTriggers` 已完成；下一步继续离开这条已转绿的 `trickster_gremlin` 证据，回到 `ACTION_PLAYED side branch / processAffectTriggers / TriggerContext -> TriggerInstance -> queued executor / onMinionDiscardedFromBase` 的 still-open shared seam。
+
+## 2026-05-25 05:59 +08
+
+- 已沿 handbuilt `ONGOING_ATTACHED` provenance 主线命中一条新的 shared 真红灯：`bury.ts` 在翻开被埋的 borrowed ongoing 时，会保留真实 `ownerId`，但不会把真实行动玩家写进 `sourcePlayerId`。
+- 结果：
+  - 在 [`buryEngine.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/buryEngine.test.ts>) 新增 focused gate `uncovering a borrowed buried ongoing action onto Brownie should preserve sourcePlayerId for onMinionAffected triggers`，真实链为：
+    - P0 回合开始翻开 `trueOwnerId='1'` 的 `borrowed-buried-brownie-curse`
+    - 自动附着到 P1 控制的 `trickster_brownie`
+    - 期待 `ONGOING_ATTACHED.payload.sourcePlayerId === '0'`
+    - 并继续为 `trickster_brownie` 排出 `TRIGGER_QUEUED(eventPlayerId='0')`
+  - 首轮红灯直接坐实 [`bury.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/bury.ts>) 现有三个 attach 出口都只写了 `ownerId: buried.trueOwnerId`，没有写 `sourcePlayerId`；因此 `affect.ts` 会退回 `payload.ownerId`，把 `Brownie` 的影响来源误判成 true owner，而不是实际 uncover/打出该牌的玩家。
+  - 现已最小修复为：只在 `bury.ts` 的三个 `ONGOING_ATTACHED` 生产口补 `...(buried.trueOwnerId !== playerId ? { sourcePlayerId: playerId } : {})`，不改 uncover 流程、bury timing、`ACTION_PLAYED` 构造、`affect.ts` 推导规则或任何对象级 `onMinionAffected` handler。
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/buryEngine.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "uncovering a borrowed buried ongoing action onto Brownie should preserve sourcePlayerId for onMinionAffected triggers|uncovering a borrowed buried ongoing action should preserve true owner when attaching"` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/buryEngine.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 14 passed`
+  - `npx eslint src/games/smashup/domain/bury.ts src/games/smashup/__tests__/buryEngine.test.ts` -> `0 errors, 16 existing warnings`
+- 当前结论：
+  - 这格只闭合 `bury.ts` 的 borrowed ongoing uncover -> `ONGOING_ATTACHED.sourcePlayerId` provenance，不外推所有 bury producer、所有 `ONGOING_ATTACHED` caller、所有 `onMinionAffected` consumer，或整个 owner/source 主线已完成。
+  - 下一步继续离开这条已闭合的 bury sibling，回到 `ACTION_PLAYED side branch / processAffectTriggers / TriggerContext -> TriggerInstance -> queued executor / onMinionDiscardedFromBase` 的 still-open shared seam。
+
+## 2026-05-25 06:07 +08
+
+- 已继续沿 `ACTION_PLAYED / ONGOING_ATTACHED` provenance 主线命中一条新的 shared 真红灯：[`wizards.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/wizards.ts>) 的 `resolveWizardExternalActionPlay()` 在 `wizard_mass_enchantment` 借打他人拥有的 ongoing action 时，`ACTION_PLAYED.ownerId` 已保留真实 owner，但两个 `ONGOING_ATTACHED` 出口都没写 `sourcePlayerId`。
+- 红灯证据：
+  - [`query6Abilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/query6Abilities.test.ts>) 现有两条 `wizard_mass_enchantment` borrowed ongoing gate 补上 `sourcePlayerId: '0'` 断言后首轮直接失败，收到的 `su:ongoing_attached` payload 只有 `ownerId: '1'`，没有 `sourcePlayerId`
+  - 同时补了一条 `借打他人拥有的 minion ongoing 到 Brownie 身上时也应保留 sourcePlayerId`，锁住 minion-target 分支也走同一 provenance 合同
+- 已做最小修复：
+  - 只在 `resolveWizardExternalActionPlay()` 的 `ongoing-base` / `ongoing-minion` 两个 `SU_EVENTS.ONGOING_ATTACHED` payload 上补 `...(sourceCard.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {})`
+  - 不改 `buildWizardExternalActionSetupEvents`、`appendResolvedActionAbility`、`affect.ts`、`processAffectTriggers`、`TriggerInstance` 或任何 Wizards 其它 sibling
+- 已验证：
+  - `pnpm vitest run src/games/smashup/__tests__/query6Abilities.test.ts -t "wizard_mass_enchantment"` -> 首轮 `3 failed`，修复与收窄后 `1 file passed, 6 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/query6Abilities.test.ts` -> `1 file passed, 36 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts -t "processAffectTriggers 处理 borrowed ONGOING_ATTACHED 时，Brownie 应继续把真正打牌玩家视为事件玩家"` -> `1 file passed, 1 passed`
+- 当前结论：
+  - 这格真修掉的是 `wizard_mass_enchantment / resolveWizardExternalActionPlay / borrowed ongoing attach -> ONGOING_ATTACHED.sourcePlayerId` 这条 shared provenance seam，不是空转补测试
+  - 不外推整个 Wizards、所有 external action caller、所有 `ACTION_PLAYED/ONGOING_ATTACHED` producer、所有 `processAffectTriggers` consumer，或整个 yuanhou 四派系审计已完成
+- 下一步：
+  - 离开 `wizards.ts / bury.ts / onDestroy` 这三条刚转绿的格，继续回到 still-open 的 `ACTION_PLAYED side branch / processAffectTriggers / onMinionDiscardedFromBase / TriggerContext -> TriggerInstance -> queued executor`
+
+## 2026-05-25 06:37 +08
+
+- 已继续沿 handbuilt `ONGOING_ATTACHED` provenance 主线命中一条新的 shared 真红灯：[`tornados.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tornados.ts>) 的 `rippedOffTargetPromptProgram.onResolve()` 在 `tornados_ripped_off` 搬运 borrowed 附着行动时，detach 会保留真实 owner，但两个 re-attach 出口都只写 `ownerId`，没有把真实行动玩家补进 `sourcePlayerId`。
+- 红灯证据：
+  - 在 [`shayuFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/shayuFactionAbilities.test.ts>) 新增 focused gate `龙卷风：扯走把 borrowed 附着行动移到 Brownie 身上时，应保留 sourcePlayerId 并把 queued 事件玩家留给真正行动玩家`
+  - 真实链为：P0 打出 `tornados_ripped_off`，选择 P1 宿主上的 borrowed `trickster_mark_of_sleep`，再把它移到 P1 的 `trickster_brownie`
+  - 首轮红灯直接坐实 `su:ongoing_attached.payload` 只有 `ownerId='1'`，没有 `sourcePlayerId='0'`
+- 已做最小修复：
+  - 只在 `rippedOffTargetPromptProgram.onResolve()` 的 `targetType==='base'` / `targetType==='minion'` 两个 `SU_EVENTS.ONGOING_ATTACHED` payload 上补 `...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {})`
+  - 不改 `collectTransferableActions()`、target prompt、detach reason、`affect.ts`、`processAffectTriggers`、`TriggerInstance` 或其它 Tornados sibling
+- 已验证：
+  - `pnpm vitest run src/games/smashup/__tests__/shayuFactionAbilities.test.ts -t "龙卷风：扯走把 borrowed 附着行动移到 Brownie 身上时，应保留 sourcePlayerId 并把 queued 事件玩家留给真正行动玩家"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/shayuFactionAbilities.test.ts -t "龙卷风：扯走把 borrowed 附着行动移到 Brownie 身上时，应保留 sourcePlayerId 并把 queued 事件玩家留给真正行动玩家|龙卷风：信风从真实出牌进入两个随从选择，且第二候选必须在另一基地"` -> `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts -t "processAffectTriggers 处理 borrowed ONGOING_ATTACHED 时，Brownie 应继续把真正打牌玩家视为事件玩家"` -> `1 file passed, 1 passed`
+- 当前结论：
+  - 这格只闭合 `tornados_ripped_off / borrowed re-attach -> ONGOING_ATTACHED.sourcePlayerId` 这条 shared provenance seam
+  - 不外推整个 Tornados、所有 attached-action transfer/move caller、所有 `ONGOING_ATTACHED` producer、所有 `processAffectTriggers` consumer，或整个 owner/source 主线已完成
+  - 下一步继续离开 `tornados.ts / world_champs.ts / wizards.ts / bury.ts` 这四条刚转绿的 borrowed attach sibling，回到 still-open 的 `ACTION_PLAYED side branch / processAffectTriggers / onMinionDiscardedFromBase / TriggerContext -> TriggerInstance -> queued executor`
+
+## 2026-05-25 09:12 +08
+
+- 已继续沿 borrowed ongoing controller seam 命中一条新的 modifier consumer 真红灯：[`ongoing_modifiers.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ongoing_modifiers.ts>) 的 `steampunk_steam_man` 仍只按 `ownerId` 判“本基地是否有你的行动卡”。
+- 红灯证据：
+  - [`ongoingModifiers.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ongoingModifiers.test.ts>) 新增 focused gates：
+    - `borrowed 基地 ongoing 应按控制者而不是真实 owner 给 steampunk_steam_man +1 力量`
+    - `borrowed 附着行动应按控制者而不是真实 owner 给 steampunk_steam_man +1 力量`
+  - 首轮 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed 基地 ongoing 与 borrowed attached action 都只算出 `3`，没有变成应有的 `4`。
+- 已做最小修复：
+  - `registerPowerModifier('steampunk_steam_man', ...)` 的 base ongoing 与 attached action 两个分支，都统一改按 `(metadata.sourceControllerId ?? ownerId) === ctx.minion.controller` 判控制者。
+  - 不扩到 `steampunk_steam_queen`、`rotary_slug_thrower`、`fairies_daisy_chain` 或其它 modifier sibling。
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/ongoingModifiers.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "steampunk_steam_man borrowed action controller seam|borrowed 基地 ongoing|borrowed 附着行动|steampunk_steam_man"` -> `1 file passed, 2 passed`
+- 当前结论：
+  - 这格只闭合 borrowed `steampunk_steam_man` 的 modifier controller seam，不外推所有 Steampunks、所有 modifier consumer、所有 attached/base ongoing owner-source 语义，或整个 owner/source 主线已完成。
+  - 下一步继续留在 `ongoing_modifiers.ts` 这条活跃 family，筛下一个 live state 已有 `metadata.sourceControllerId`、但 modifier/runtime consumer 仍只读 `ownerId` 的真红灯；优先检查同文件里仍显式写 `action.ownerId === ctx.minion.controller` 的 sibling，而不是回扫已收口的 Bear Cavalry / Secret Agent / overlay。
+
+## 2026-05-25 09:16 +08
+
+- 已顺着同一个 modifier family 再命中一条新的 focused 真红灯：[`ongoing_modifiers.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ongoing_modifiers.ts>) 的 `fairies_daisy_chain` 仍只按 `ownerId` 判“你控制则 +2，否则 -2”。
+- 红灯证据：
+  - [`ongoingModifiers.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/ongoingModifiers.test.ts>) 新增 focused gates：
+    - `borrowed 雏菊花环应按控制者而不是真实 owner 给宿主 +2 力量`
+    - `控制权不在宿主玩家手里的 borrowed 雏菊花环应给宿主 -2 力量`
+  - 首轮两条都反了：第一条实得 `1` 而不是 `5`，第二条实得 `5` 而不是 `1`。
+- 已做最小修复：
+  - `fairies_daisy_chain` 的 attached action 判断改按 `(metadata.sourceControllerId ?? ownerId) === ctx.minion.controller`。
+  - 不扩到 `fairies_leaf_armor`、`fairies_enchantment` 或其它非同型 modifier。
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/ongoingModifiers.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "fairies_daisy_chain borrowed action controller seam|borrowed 雏菊花环|steampunk_steam_man borrowed action controller seam"` -> 首轮 `2 failed`，修复后 `1 file passed, 4 passed`
+- 当前结论：
+  - 这格只闭合 borrowed `fairies_daisy_chain` 的 modifier controller seam，不外推所有 Fairies、所有 attached-action modifier、所有 owner-source 语义，或整个 owner/source 主线已完成。
+  - `ongoing_modifiers.ts` 里显式的同型 `ownerId-only` 表达式当前已扫空；下一步切回更广的 modifier/runtime consumer 搜索面，找下一个最窄真红灯，而不是回扫已绿的 `steam_man / daisy_chain`。
+
+## 2026-05-25 09:21 +08
+
+- 已继续沿同类 protection consumer 搜到 [`dinosaurs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/dinosaurs.ts>) 的 `dinoWildlifePreserveChecker()`，并坐实一条新的 borrowed controller seam。
+- 红灯证据：
+  - [`wildlifePreserveProtection.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/wildlifePreserveProtection.test.ts>) 新增 focused gates：
+    - `borrowed wildlife_preserve 应按控制者而不是真实 owner 保护控制者的随从`
+    - `borrowed wildlife_preserve 不应反向保护真实 owner 的随从`
+  - 首轮双向都反了：控制者的随从没被保护，真实 owner 的随从反而被保护。
+- 已做最小修复：
+  - `dinoWildlifePreserveChecker()` 改按 `(metadata.sourceControllerId ?? ownerId) === ctx.targetMinion.controller` 判保护归属。
+  - 不扩到 `tooth_and_claw`、`upgrade`、`kaiju` 或其它恐龙 sibling。
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/wildlifePreserveProtection.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed wildlife_preserve|wildlife_preserve: action 保护检查"` -> 首轮 `2 failed`，修复后 `1 file passed, 7 passed`
+- 当前结论：
+  - 这格只闭合 borrowed `wildlife_preserve` 的 protection controller seam，不外推所有 Dinosaurs、所有 protection checker、所有 owner-source 语义，或整个 owner/source 主线已完成。
+
+## 2026-05-25 09:23 +08
+
+- 已沿同一批 protection consumer 再坐实 [`killer_plants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/killer_plants.ts>) 的 `killerPlantDeepRootsChecker()` 也有同型 borrowed controller seam。
+- 红灯证据：
+  - [`expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>) 在现有 `killer_plant_deep_roots: 深根保护` 段新增 focused gates：
+    - `borrowed deep_roots 应按控制者而不是真实 owner 保护控制者的随从`
+    - `borrowed deep_roots 不应反向保护真实 owner 的随从`
+  - 首轮同样双向都反了：控制者的随从没被保护，真实 owner 的随从被错误保护。
+- 已做最小修复：
+  - `killerPlantDeepRootsChecker()` 增加 `controllerId = metadata.sourceControllerId ?? ownerId`，后续保护归属全部改按 `controllerId` 判断。
+  - 不扩到 `water_lily`、`entangled`、`overgrowth` 或其它 killer plants sibling。
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "killer_plant_deep_roots: 深根保护|borrowed deep_roots"` -> 首轮 `2 failed`，修复后 `1 file passed, 4 passed`
+- 当前结论：
+  - 这格只闭合 borrowed `killer_plant_deep_roots` 的 protection controller seam，不外推所有 Killer Plants、所有 protection checker、所有 owner-source 语义，或整个 owner/source 主线已完成。
+  - 下一步优先打同型候选 `giant_ant_the_show_must_go_on`，它在源码里仍是同级 `ownerId === ctx.targetMinion.controller` 判断，最像下一条单格红灯。
+
+## 2026-05-25 09:28 +08
+
+- 已沿同型 protection consumer 再收掉 [`giant_ant_the_show_must_go_on`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/giant_ants.ts>) 的 borrowed controller seam。
+- 红灯证据：
+  - [`newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 在 `巨蚁派系能力` 段新增 focused gates：
+    - `borrowed giant_ant_the_show_must_go_on 应按控制者而不是真实 owner 保护控制者有指示物的随从`
+    - `borrowed giant_ant_the_show_must_go_on 不应反向保护真实 owner 的有指示物随从`
+  - 首轮两条都直接反了：控制者的有指示物随从没被保护，真实 owner 的有指示物随从被错误保护。
+- 已做最小修复：
+  - `registerGiantAntProtections()` 的 checker 改按 `(metadata.sourceControllerId ?? ownerId) === ctx.targetMinion.controller` 判保护归属。
+  - 不扩到 `who_wants_to_live_forever`、`drone`、`worker_pod` 或其它 giant ants sibling。
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed giant_ant_the_show_must_go_on"` -> `1 file passed, 2 passed`
+- 当前结论：
+  - 这格只闭合 borrowed `giant_ant_the_show_must_go_on` 的 protection controller seam，不外推所有 Giant Ants、所有 protection checker、所有 owner-source 语义，或整个 owner/source 主线已完成。
+  - 同文件在更宽 pattern 下暴露的 `drone_skip / 防止失败` 两条巨蚁旧红灯属于既有残项，不是这轮新引入；下一步会单独把它们与当前 borrowed seam 分开处理。
+
+## 2026-05-25 10:06 +08
+
+- 已把 `giant_ant_drone / frankenstein_igor` 这簇旧红灯拆清并收口，不是继续在借打控制权 seam 上原地打转。
+- 红灯证据：
+  - `newFactionAbilities.test.ts --testNamePattern "reason=drone_skip|防止失败（指示物耗尽）"` 首轮 2 failed：
+    - `reason=drone_skip` 期望只有 1 个 `POWER_COUNTER_ADDED`，实际出现 2 个完全相同的 `reason='frankenstein_igor'`
+    - `防止失败（指示物耗尽）` 期望第 2 个 `giant_ant_drone_prevent_destroy` prompt 自动弹出，实际 `r1.finalState.sys.interaction.current === undefined`
+  - 邻近现成红灯 `igor-big-gulp-two-igors.test.ts` 也同步失败：`Howler powerCounters` 从预期 `2` 变成 `3`，坐实 `Igor` 双触发不是局部断言漂移。
+- 已做最小修复：
+  - `src/games/smashup/abilities/giant_ants.ts`
+    - `giant_ant_drone_prevent_destroy` 的 `interactionId` 从 `giant_ant_drone_prevent_destroy_${now}` 改成 `giant_ant_drone_prevent_destroy_${targetMinionUid}_${fromBaseIndex}_${now}`
+    - 目标是避免同帧多个待保护随从共享同一 id，被 `systems.ts` 的“当前交互已处理则 resolve”逻辑误清两次
+  - `src/games/smashup/abilities/frankenstein.ts`
+    - `frankenstein_igor` 的 `onMinionDiscardedFromBase` 新增 destroy-pipeline 去重：若 `sourceEventId` 以 `minion-discarded-from-base:` 开头，则说明这是 `processDestroyTriggers()` 内的 destroy->discard 落地，交给 `onDestroy` 处理，不再重复结算 discard 分支
+    - 保留计分弃牌/直接弃牌入口的既有 discard trigger，不把 `Igor` 的“直接弃掉后触发”能力删掉
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "reason=drone_skip|防止失败（指示物耗尽）"` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/igor-big-gulp-two-igors.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/igor-two-igors-one-destroyed.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/igor-ondestroy-idempotency.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 4 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/architecture-duplicate-processing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Igor|onDestroy"` -> `1 file passed, 2 passed`
+- 当前结论：
+  - 这轮真实收掉了两个不同层级的旧残项：`Drone` 的并发 prompt id 冲突，以及 `Igor` 的 destroy/discard 双重结算。
+  - 任务还没完；下一步应优先筛其它同型“self-source `onDestroy` + `onMinionDiscardedFromBase`”自身牌，确认是否还有 destroy->discard 重复结算的 sibling，而不是再回扫刚转绿的 `Drone / Igor / Big Gulp`。
+
+## 2026-05-25 10:31 +08
+
+- 已继续沿 destroy/discard sibling 主线命中并收口 `Samurai` 家族 4 条同型真红灯：
+  - `samurai_samurai_chan`
+  - `samurai_bushi`
+  - `samurai_shogun`
+  - `samurai_honor_the_fallen`
+- 这次不是测试漂移：
+  - 新补 focused tests 直接打穿 `processDestroyTriggers()` 真链，首轮分别出现双抽、双给 VP、双加指示物、双抽
+  - 说明 `Drone / Igor` 修完后，同一类 “destroy + discard 双时机” sibling 里确实还有 live 红灯
+- 已做最小修复：
+  - `samurai.ts` 新增 `isDestroyPipelineDiscardTrigger(ctx)`
+  - 只让上述 4 个 trigger 在 `onMinionDiscardedFromBase + sourceEventId=minion-discarded-from-base:*` 时跳过 discard 分支，保留直接 discard / 计分 discard 语义
+- 已验证：
+  - 4 条 focused 红灯一起转绿：`newFactionAbilities.test.ts ...` => `1 file passed, 4 passed`
+  - 相邻回归：
+    - `baseScoring.test.ts --testNamePattern "Samurai Chan|Bushi"` => `1 file passed, 3 passed`
+    - `newBaseAbilities.test.ts --testNamePattern "samurai_samurai_chan|samurai_bushi|Sakura Garden"` => `1 file passed, 2 passed`
+    - `reactionQueueEventPlayerContext.test.ts --testNamePattern "Samurai Chan|Bushi"` => `1 file passed, 5 passed`
+    - `reactionQueueControllerRuntimeContext.test.ts --testNamePattern "Bushi"` => `1 file passed, 1 passed`
+- 当前状态：
+  - 这轮有真实新增进展，不是死循环
+  - 任务仍未完成；`samurai_final_haiku` / `samurai_way_of_the_warrior` 现有测试只证明“会触发”，还没证明“不会双触发”，是下一格最像的 residual
+
+## 2026-05-25 10:52 +08
+
+- 已继续沿同一条 destroy/discard sibling 主线把 `Samurai` 这格从“普通版 4 张”扩收到了 `Way of the Warrior / Final Haiku`，并补齐了 4 条 POD focused gate，不是停在上一轮原地打转。
+- 命中对象：
+  - `samurai_way_of_the_warrior`
+  - `samurai_way_of_the_warrior_pod`
+  - `samurai_final_haiku`
+  - `samurai_final_haiku_pod`
+  - 以及 `samurai_samurai_chan_pod / samurai_bushi_pod / samurai_shogun_pod / samurai_honor_the_fallen_pod` 的 focused destroy 真链锁定
+- 根因判断：
+  - `Way of the Warrior` / `Final Haiku` 起初看上去像比前一格更深一层的新 bug，但临时 runtime 采样已证实并不是第三层问题。
+  - 真正重复来源仍是同一条 seam：同一张牌同时响应
+    - `onMinionDestroyed`
+    - `onMinionDiscardedFromBase`
+  - destroy 落地进入 owner discard 时，两条分支都吃到同一事件语义，旧实现会双结算。
+- 已做修复：
+  - 继续复用 [`src/games/smashup/abilities/samurai.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/samurai.ts>) 的 `isDestroyPipelineDiscardTrigger(ctx)`。
+  - 在前一格 `Chan/Bushi/Shogun/Honor` 基础上，再把同一守卫扩到：
+    - `samuraiFinalHaikuTrigger`
+    - `samuraiWayOfTheWarriorTrigger`
+  - 语义不变：`timing==='onMinionDiscardedFromBase'` 且 `sourceEventId` 形如 `minion-discarded-from-base:*` 时，discard 分支直接跳过，交给 destroy 分支结算。
+  - 这轮最终 runtime 改动只留在 `samurai.ts`；中途为了定位加过的 `console.log` 已删除，没有把 debug 留在工作树里。
+- 已补 focused/neighbor 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_way_of_the_warrior 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽|samurai_final_haiku 在 destroy -> processDestroyTriggers 真链里不应给同一批己方随从重复 \\+2 力量"` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_way_of_the_warrior_pod 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽|samurai_final_haiku_pod 在 destroy -> processDestroyTriggers 真链里不应给同一批己方随从重复 \\+2 力量"` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_samurai_chan_pod 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽|samurai_bushi_pod 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双给 VP|samurai_shogun_pod 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双加指示物|samurai_honor_the_fallen_pod 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双抽"` -> `1 file passed, 4 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_way_of_the_warrior|samurai_final_haiku"` -> `1 file passed, 14 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "samurai_final_haiku|samurai_way_of_the_warrior|Final Haiku|Way of the Warrior"` -> `1 file passed, 4 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "Final Haiku|Way of the Warrior"` -> `1 file passed, 4 passed`
+- 当前结论：
+  - 现在已把 `Samurai` 这条 destroy/discard duplicate seam 从普通版 4 张，扩收到了 `Way of the Warrior / Final Haiku` 及其 POD focused gate。
+  - 这是真实进展，不是重复试同一件事；但它仍然只覆盖 `Samurai` 这一个 family 的 destroy/discard duplicate seam。
+  - 下一步必须离开 `Samurai`，回到“同时声明 self-source `onDestroy + onMinionDiscardedFromBase` 但还没 focused destroy 真链 gate”的 sibling 搜索面，优先看 `giant_ant_worker_pod / princesses_sleeping_beauty / giant_ants_death_on_six_legs / vikings_viking_funeral / world_champs_bewitched / world_champs_samurai_chan / trickster_gremlin_pod`。
+
+## 2026-05-25 11:40 +08
+
+- 已继续沿 destroy/discard sibling 主线把 `trickster_gremlin_pod` 打成 focused 红灯后收绿，不是继续围着 `World Champs / Samurai` 原地转。
+- 红灯证据：
+  - 在 [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 新增 focused gate `trickster_gremlin_pod 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽`。
+  - 首轮直接坐实：`processDestroyTriggers([MINION_DESTROYED])` 后 `CARDS_DRAWN` 实际长度为 `2`，不是 `1`。
+- 最小根因：
+  - [`src/games/smashup/abilities/tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 里 `trickster_gremlin_pod` 同时注册 `onMinionDestroyed` 与 `onMinionDiscardedFromBase`。
+  - destroy 落地进入 owner discard 真链时，第二拍派生的 discard trigger 又执行了一次 owner draw，和 `Samurai Chan / World Champs Samurai Chan` 是同型 seam。
+- 已做最小修复：
+  - 在 `tricksters.ts` 新增 `isDestroyPipelineDiscardTrigger(ctx)`。
+  - 只让 `trickster_gremlin_pod` 的 `onMinionDiscardedFromBase` 在 `sourceEventId` 形如 `minion-discarded-from-base:*` 时直接 return `[]`，保留正常计分清场弃牌抽牌语义，不改 `onMinionDestroyed` 本体和其它 Tricksters sibling。
+- 已验证：
+  - `newFactionAbilities.test.ts --testNamePattern "trickster_gremlin_pod 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽|princesses_sleeping_beauty 被消灭时会洗回牌库而不是进弃牌堆"` -> `1 file passed, 2 passed`
+  - `baseScoring.test.ts --testNamePattern "Gremlin POD"` -> `1 file passed, 1 passed`
+  - `onDestroyAbilities.test.ts --testNamePattern "trickster_gremlin_pod"` -> `1 file passed, 1 passed`
+- 当前边界：
+  - 这格只闭合 `trickster_gremlin_pod` 的 destroy/discard duplicate draw seam，不外推整个 Tricksters、所有 dual-timing self-trigger、或整个 destroy/discard family 已完成。
+  - 下一步应优先给 `princesses_sleeping_beauty` 补 dedicated destroy 真链 duplicate gate，再决定它只是已有绿证据，还是还藏着新的 live 红灯。
+
+## 2026-05-25 11:52 +08
+
+- 已继续把 `princesses_sleeping_beauty / base_sakura_garden` 两个剩余 dual-timing 候选补成 dedicated destroy 真链 gate，结果都转成 green evidence，不是新的 live runtime 红灯。
+- `Sleeping Beauty`：
+  - 新增 focused gate `princesses_sleeping_beauty 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重洗回牌库`。
+  - 首轮失败后已定位为“测试抓错事件锚点”，不是玩法重复结算：临时事件采样表明 `processDestroyTriggers([MINION_DESTROYED])` 只吐出 1 条 `su:card_to_deck_bottom`。
+  - 已把 gate 收紧到正确锚点，并复跑：
+    - `newFactionAbilities.test.ts` focused 3 条（含 `trickster_gremlin_pod`）-> `1 file passed, 3 passed`
+    - `baseScoring.test.ts --testNamePattern "Sleeping Beauty"` -> `1 file passed, 1 passed`
+    - `reactionQueueEventPlayerContext.test.ts --testNamePattern "Sleeping Beauty"` -> `1 file passed, 2 passed`
+- `Sakura Garden`：
+  - 新增 focused gate `base_sakura_garden 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重抽牌`。
+  - 这条直接转绿，说明当前实现依靠 `turnDestroyedMinions` 去重，能挡住 destroy 后派生 discard 第二拍的重复 draw。
+  - 复跑 `newBaseAbilities.test.ts` 相关子集 -> `1 file passed, 3 passed`。
+- 当前边界：
+  - 这格只把 `Sleeping Beauty / Sakura Garden` 从“未显式锁 destroy 真链”降成 dedicated green evidence，不外推整个 Princesses、整个 Samurai bases、或整个 destroy/discard family 已完成。
+  - 当前这轮 `onMinionDestroyed + onMinionDiscardedFromBase` sibling inventory 已无新的未核对象；下一步应离开这条 family，转去找新的 shared seam 或新的 open family，而不是继续围着这份 dual-timing 清单复扫。
+
+## 2026-05-25 12:35 +08
+
+- 已继续沿 `Frankenstein borrowed controller seam` 主线把 `frankenstein_grave_situation` 打成 focused 红灯后收绿，不是回扫已封账的 `Spy / Portal Room / Time Box`，也不是继续围着 `German Engineering / Uberserum` 原地转。
+- 红灯证据：
+  - 在 [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 新增 focused gate `borrowed grave_situation 应按控制者而不是真实 owner 让控制者的被消灭随从回到拥有者手牌`。
+  - 首轮直接坐实：`processDestroyTriggers([MINION_DESTROYED])` 后没有任何 `MINION_RETURNED(reason='frankenstein_grave_situation')`。
+- 最小根因：
+  - [`src/games/smashup/abilities/frankenstein.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/frankenstein.ts>) 的 `frankenstein_grave_situation` replacement callback 同时把两处语义绑错到 `owner/playerId`：
+  - `hasGraveSituation` 只认 `action.ownerId === playerId`
+  - “你的随从被消灭”又要求 `minion.controller === playerId`
+  - 对 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Grave Situation` 来说，这两处都把控制者洗回了真实 owner。
+- 已做最小修复：
+  - callback 改为先取 `ctx.triggerMinion ?? live base lookup` 的宿主 `controllerId`
+  - `hasGraveSituation` 改按 `action.metadata?.sourceControllerId ?? action.ownerId` 与该 `controllerId` 对齐
+  - `toPlayerId` 继续保持 `minion.owner`，不改“回拥有者手牌”的既有语义
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "borrowed grave_situation|borrowed german_engineering|德国工程学：在该基地打出随从后应给该随从\+1指示物"` -> `1 file passed, 3 passed`
+  - `git diff --check -- src/games/smashup/abilities/frankenstein.ts src/games/smashup/__tests__/newFactionAbilities.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` -> 通过，仅 LF/CRLF warning
+- 当前边界：
+  - 这格只闭合 borrowed `frankenstein_grave_situation` 的 destroy replacement controller seam，不外推整个 Frankenstein、所有 replacement trigger、或整条长期任务已完成。
+  - 下一步应继续筛其它仍已持久化 `metadata.sourceControllerId`、但 runtime consumer / restriction / modifier 还在混用 `ownerId` 的 still-open seam，而不是回扫已转绿的 `German Engineering / Uberserum / Grave Situation`。
+
+## 2026-05-25 12:43 +08
+
+- 已继续离开 `Frankenstein` 本体，命中一条新的 Titans borrowed controller seam：`kaiju_gorgodzolla_special` 的“你在这里有至少两个行动牌”统计仍只按真实 owner，不按控制者。
+- 红灯证据：
+  - 在 [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/smashup.smoke.test.ts>) 新增 focused gate `borrowed 哥佐拉 special 应按控制者而不是真实 owner 统计本基地的基地与附着战术`。
+  - 首轮直接坐实：`SmashUpDomain.validate(ACTIVATE_SPECIAL)` 返回 `valid=false`，P0 无法把 `Gorgodzolla` 从牌库旁打到基地。
+- 最小根因：
+  - [`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `getOwnActionCountOnBase()` 仍纯按 `action.ownerId === playerId` 统计“你的基地/附着行动”。
+  - 因此 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed 基地 ongoing 与 borrowed attached action 都不会给 P0 的 `Gorgodzolla` special 计数。
+- 已做最小修复：
+  - `getOwnActionCountOnBase()` 的 base ongoing 与 attached action 两条统计分支都统一改按 `metadata.sourceControllerId ?? ownerId` 判控制者。
+  - 不扩到其它 Kaiju/Titans special，也不重构通用 action-count helper。
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "哥佐拉满足本基地有你至少两个战术后可通过 special 从牌库旁进场，并统计附着战术|borrowed 哥佐拉 special 应按控制者而不是真实 owner 统计本基地的基地与附着战术"` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "哥佐拉"` -> `1 file passed, 5 passed`
+- 当前边界：
+  - 这格只闭合 borrowed `kaiju_gorgodzolla_special` 的 action-count controller seam，不外推所有 Titans、所有“你有几个行动牌”统计器、或整条长期任务已完成。
+  - 下一步应继续筛其它 still-open 的 runtime consumer / restriction / modifier，不回扫已转绿的 `Gorgodzolla / Grave Situation / German Engineering / Uberserum`。
+
+## 2026-05-25 12:48 +08
+
+- 已继续沿 turn-transition / extra quota 主线命中并收口 `trickster_enshrouding_mist` 的 borrowed controller seam，不是继续围着 `Frankenstein` 或 `Gorgodzolla` 原地转。
+- 红灯证据：
+  - 在 [`src/games/smashup/__tests__/archmageE2E.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/archmageE2E.test.ts>) 新增 focused gate `borrowed 隐蔽迷雾应按控制者而不是真实 owner 在进入 playCards 时给控制者基地限定额外随从`。
+  - 首轮直接坐实：P1 结束回合后进入 P0 的 `playCards`，`result.finalState.core.players['0'].baseLimitedMinionQuota?.[0]` 实际是 `undefined`，不是预期的 `1`。
+- 最小根因：
+  - [`src/games/smashup/domain/index.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/index.ts>) 在回合切到 `playCards` 时，`trickster_enshrouding_mist` 的 turn-transition grant 仍写着 `ongoing.ownerId === playerId`。
+  - 因此 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `隐蔽迷雾` 不会给控制者 P0 发基地限定额外随从额度。
+- 已做最小修复：
+  - 只改 `domain/index.ts` 这一个 turn-transition 分支，统一按 `ongoing.metadata?.sourceControllerId ?? ongoing.ownerId` 判控制者。
+  - 不扩到 `trickster_enshrouding_mist_pod`、其它 startTurn/playCards extra quota 逻辑或通用 phase-transition helper。
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/archmageE2E.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "隐蔽迷雾 E2E|borrowed 隐蔽迷雾"` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseFactionOngoing.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "trickster_enshrouding_mist|迷雾笼罩"` -> `1 file passed, 3 passed`
+- 当前边界：
+  - 这格只闭合 borrowed `trickster_enshrouding_mist` 在 turn transition -> playCards 的 extra-minion controller seam，不外推所有 Tricksters、所有 banked extra quota、或整条长期任务已完成。
+  - 下一步仍应继续筛其它 still-open 的 runtime consumer / restriction / modifier，不回扫已转绿的 `隐蔽迷雾 / Gorgodzolla / Grave Situation / German Engineering / Uberserum`。
+
+## 2026-05-25 12:59 +08
+
+- 已继续收掉两条新的真红灯，不是只在维护状态文件：
+  - `cowboys_stagecoach` 的 borrowed ongoing source collection seam 已转绿。
+  - `borrowed vampire_summon_wolves` 的 onTurnStart callback controller seam 已转绿。
+- `cowboys_stagecoach`
+  - focused gate `cowboys_stagecoach 应按控制者而不是真实 owner 搬运基地上的 borrowed 持续行动` 首轮直接红灯：`PLAY_ACTION(stagecoach-1)` 后没有进入 `cowboys_stagecoach_source` prompt。
+  - 根因：`src/games/smashup/abilities/cowboys.ts` 的 `collectStagecoachCardsOnBase()` 仍按 `action.ownerId === playerId` 过滤 base ongoing。
+  - 修复：只把 Stagecoach 的 ongoing 控制者判定改成 `metadata.sourceControllerId ?? ownerId`。
+  - 验证：
+    - `newFactionAbilities.test.ts --testNamePattern "cowboys_stagecoach 可把同一基地上至多两个己方随从移动到另一个基地|cowboys_stagecoach 也可搬运基地上的持续行动和埋葬牌|cowboys_stagecoach 应按控制者而不是真实 owner 搬运基地上的 borrowed 持续行动"` -> `1 file passed, 3 passed`
+    - `newFactionAbilities.test.ts --testNamePattern "cowboys_stagecoach"` -> `1 file passed, 4 passed`
+- `borrowed vampire_summon_wolves`
+  - focused gate `borrowed Vampire Summon Wolves 应按控制者而不是真实 owner 在控制者回合开始增加 ongoing card counter` 首轮直接红灯：queued owner 已正确归给 P0，但 executor 只吐 `TRIGGER_CONSUMED`。
+  - 根因：`src/games/smashup/abilities/vampires.ts` 的 `vampire_summon_wolves` callback 仍只认 `oa.ownerId === playerId`。
+  - 修复：只把 callback 的 ongoing 控制者判定改成 `metadata.sourceControllerId ?? ownerId`。
+  - 验证：
+    - `reactionQueueEventPlayerContext.test.ts -t "Vampire Summon Wolves|borrowed Vampire Summon Wolves"` -> `1 file passed, 2 passed`
+    - `vampiresPod.test.ts -t "Summon Wolves|召唤狼群|Dinner Date"` -> `1 file passed, 2 passed`
+- 当前边界：
+  - 这两格只闭合 `Stagecoach` 的 borrowed ongoing source collection 与 `borrowed Vampire Summon Wolves` 的 onTurnStart callback controller seam。
+  - 下一步优先探 `werewolf_marking_territory` callback 与 `domain/ongoingModifiers.ts:getOngoingCardPowerContribution()` 的 owner-only consumer，判断它们是 green evidence 还是新的 borrowed controller 红灯。
+
+## 2026-05-25 13:08 +08
+
+- 已继续把上一轮锁定的两个怀疑点都打成 focused 红灯后收绿，不是停在“下一步待查”。
+- `borrowed werewolf_marking_territory`
+  - 红灯：`reactionQueueEventPlayerContext.test.ts` 新增 focused gate `borrowed Werewolf Marking Territory 应按控制者而不是真实 owner 在控制者回合开始写入 breakpoint modifier`，首轮 queued owner 已正确归给 P0，但 executor 只吐 `TRIGGER_CONSUMED`。
+  - 根因：`src/games/smashup/abilities/werewolves.ts` 的 callback 本体仍用 `a.ownerId === playerId` 判断“你在这里有制造恐慌”。
+  - 修复：只把该 callback 的 ongoing 控制者判定改成 `metadata.sourceControllerId ?? ownerId`。
+  - 验证：`reactionQueueEventPlayerContext.test.ts -t "Werewolf Marking Territory|borrowed Werewolf Marking Territory"` -> `1 file passed, 2 passed`
+- `borrowed ongoing counter scoring`
+  - 红灯：`zero-power-scoring.test.ts` 新增 focused gate `只有 borrowed ongoing 卡力量贡献（无随从）的控制者也应该参与计分`，首轮 `finalCore.players['0'].vp` 实际仍是 `0`。
+  - 根因：`src/games/smashup/domain/ongoingModifiers.ts` 的 `getOngoingCardPowerContribution()` 仍只按 `oa.ownerId !== playerId` 过滤。
+  - 修复：只把该 shared consumer 的控制者判定改成 `metadata.sourceControllerId ?? ownerId`。
+  - 验证：`zero-power-scoring.test.ts` 整文件 -> `1 file passed, 4 passed`
+- 当前边界：
+  - 这两格只闭合 `borrowed Marking Territory` 的 onTurnStart callback controller seam 与 borrowed ongoing counter 对计分资格/排名的 shared consumer seam。
+  - 下一步优先继续筛仍显式写 `ownerId === playerId`、但 live state 已持久化 `metadata.sourceControllerId` 的 ongoing counter / start-turn / scoring sibling，不回扫刚转绿的四格 `Stagecoach / Summon Wolves / Marking Territory / ongoing counter scoring`。
+
+## 2026-05-25 13:12 +08
+
+- 已继续把 `zombie_theyre_coming_to_get_you` 的 borrowed ongoing provider 红灯打成 focused gate 后收绿，不是停在上一条计划描述。
+- 红灯：
+  - `zombieInteractionChain.test.ts` 新增 focused gate `borrowed ongoing 附着基地时，控制者也应能通过 PLAY_MINION fromDiscard 打到该基地`。
+  - 首轮直接在命令校验阶段失败，错误是“该卡牌不能从弃牌堆打出到此基地”。
+- 根因：
+  - `src/games/smashup/abilities/zombies.ts` 里的 discard play provider `zombie_theyre_coming_to_get_you` 仍只按 `o.ownerId === playerId` 收集 allowedBases。
+- 修复：
+  - 只把该 provider 的 ongoing 控制者判定改成 `metadata.sourceControllerId ?? ownerId`。
+- 验证：
+  - `zombieInteractionChain.test.ts -t "theyre_coming|borrowed ongoing 附着基地时"` -> `1 file passed, 5 passed`
+  - `zombieInteractionChain.test.ts -t "zombie_theyre_coming_to_get_you"` -> `1 file passed, 5 passed`
+- 当前边界：
+  - 这格只闭合 `borrowed zombie_theyre_coming_to_get_you` 的 discard play provider / allowedBases controller seam。
+  - 下一步优先继续扫仍显式写 `ownerId === playerId`、且 live state 已持久化 `metadata.sourceControllerId` 的 provider / handler / candidate builder sibling，不回扫刚转绿的五格 `Stagecoach / Summon Wolves / Marking Territory / ongoing counter scoring / They’re Coming to Get You`。
+
+## 2026-05-25 13:20 +08
+
+- 已继续把 `skeletons_gravestones` 的 borrowed afterScoring handler seam 打成 focused 红灯后收绿，不是只补状态。
+- 红灯：
+  - `newFactionAbilities.test.ts` 新增 focused gate `borrowed skeletons_gravestones 应按控制者而不是真实 owner 在计分后把自己埋到另一基地，并保留 true owner`。
+  - 首轮直接坐实：控制者 P0 能看到 `skeletons_gravestones_after_scoring` prompt，但 resolve 后目标基地没有埋入 `gravestones-1`。
+- 根因：
+  - `src/games/smashup/abilities/skeletons.ts` 的 `handleSkeletonsGravestonesAfterScoring()` 仍按 `action.ownerId === playerId` 回捞 source 卡。
+  - 同时把 `buildBuryCardEvents(...).trueOwnerId` 误写成 `playerId`，会把 borrowed provenance 洗成控制者。
+- 修复：
+  - `skeletonsGravestonesAfterScoring()` continuationContext 新增 `sourceCardUid`。
+  - handler 改按 `sourceCardUid + (metadata.sourceControllerId ?? ownerId)` 精确回捞 source 卡，并把 `trueOwnerId` 改回 `actionCard.ownerId`。
+- 验证：
+  - `newFactionAbilities.test.ts --testNamePattern "borrowed skeletons_gravestones|skeletons_gravestones 计分后可把自己埋葬到另一个基地"` -> `1 file passed, 2 passed`
+  - `reactionQueueSourceRuntimeContext.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts -t "skeletons_gravestones|Gravestones|borrowed skeletons_gravestones"` -> `2 files passed, 4 passed`
+- 当前边界：
+  - 这格只闭合 `borrowed skeletons_gravestones` 的 afterScoring handler / bury true-owner seam，不外推整个 Skeletons、所有 bury handler 或所有 afterScoring ongoing interaction。
+
+## 2026-05-25 13:26 +08
+
+- 已继续把 `Infiltrate` 在 `Tsar's Palace / Antarctic Base` FAQ 例外上的 borrowed controller seam 打成 focused 红灯后收绿。
+- 红灯：
+  - `baseRestrictions.test.ts` 新增两条 focused gate，分别覆盖 borrowed `Infiltrate` 对 `Tsar’s Palace` 与 `Antarctic Base` 的 FAQ 例外。
+  - 首轮两条都直接坐实：`isOperationRestricted(...)` 返回 `true`，控制者仍被基地限制挡住。
+- 根因：
+  - `src/games/smashup/domain/ongoingEffects.ts` 在这两个 FAQ 例外里仍按 `o.ownerId === playerId` 识别 `ninja_infiltrate`。
+- 修复：
+  - 只把 `base_tsars_palace` 与 `base_antarctic_base` 两个例外分支改成按 `o.metadata?.sourceControllerId ?? o.ownerId` 判控制者。
+- 验证：
+  - `baseRestrictions.test.ts --testNamePattern "borrowed Infiltrate|Tsar’s Palace|Antarctic Base"` -> 首轮 failed，修复后 `1 file passed, 3 passed`
+- 当前边界：
+  - 这格只闭合 borrowed `Infiltrate` 在两个 FAQ 例外上的 base restriction seam，不外推所有基地限制、所有 FAQ 例外或所有 Ninja 行动。
+
+## 2026-05-25 13:34 +08
+
+- 已继续把 borrowed `Infiltrate` 在 `Castle Blood / The Hill` 两条基地能力上的 owner/controller seam 打成 focused 红灯后收绿。
+- 红灯：
+  - `baseAbilityIntegration.test.ts` 新增 borrowed `Infiltrate` 对 `Castle Blood` 的 gate，首轮仍吐 `POWER_COUNTER_ADDED`。
+  - `baseAbilitiesPrompt.test.ts` 新增 borrowed `Infiltrate` 对 `The Hill` 的 gate，首轮仍生成移动 prompt。
+- 根因：
+  - `src/games/smashup/domain/baseAbilities.ts` 的 `base_castle_blood` 与 `base_the_hill` 都仍按 `o.ownerId === ctx.playerId` 识别 `ninja_infiltrate`。
+- 修复：
+  - 只把这两条基地能力的 `ignored` 判定改成按 `o.metadata?.sourceControllerId ?? o.ownerId` 识别控制者。
+- 验证：
+  - `baseAbilityIntegration.test.ts + baseAbilitiesPrompt.test.ts -t "borrowed Infiltrate|Castle Blood|The Hill"` -> 首轮 failed，修复后 `2 files passed, 2 passed`
+- 当前边界：
+  - 这格只闭合 borrowed `Infiltrate` 在 `Castle Blood / The Hill` 两条基地能力上的 base-ability seam，不外推所有基地能力、所有 `ignored by Infiltrate` 分支或所有 Ninja 行动。
+
+## 2026-05-25 17:10 +08
+
+- 已确认这轮不是死循环，有 4 项真实新增进展已经落地：
+  - `reactionSession.ts` 的 queued trigger runtime player 恢复已补齐 `eventPlayerId` 语义；`playerContext:'sourceController'` 的 queued `onActionPlayed` 不再把 `ctx.playerId` 洗回 source owner。
+  - `Secret Agent` 的共享真红灯已收口：新增 `reactionQueueEventPlayerContext.test.ts` 回归后，`yuanhouFactionAbilities.test.ts` 里 `秘密特工` 两条 focused gate 复跑 `2 passed`。
+  - 两个此前仍有怀疑的 caller 已被证伪为 dedicated green evidence，而不是开放红灯：
+    - `miskatonic.ts::appendResolvedActionAbility(...)` 没有吞掉 `special_madness` 后续交互链。
+    - `yuanhou.ts::buildDiscardActionPlayEvents(...) / resolveItsAstoundingAction(...)` 没有吞掉 `令人震惊` 打出后继续创建 runtime prompt 的分支。
+  - 浏览器 scoped L3 新增 2 条：
+    - `时间旅行者-Time Walk-真实入口会抽两张、把本牌沉到底并授予本回合额外随从与额外行动额度`：passed。
+    - `超级间谍-Secret Agent-真实入口会让行动玩家自己选择弃掉剩余手牌`：passed。
+- 本轮聚焦验证结果：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "额外打出疯狂卡后，仍应继续进入 special_madness prompt 并按所选效果结算"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "时间旅行者：令人震惊从弃牌堆打出会继续创建 runtime prompt 的行动时，不应丢失后续交互链"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "sourceController queued trigger 仍应把原事件玩家传给 onActionPlayed 回调"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "超级间谍：秘密特工在真实 PLAY_ACTION 链上应让行动玩家弃一张剩余手牌|超级间谍：秘密特工在真实 PLAY_ACTION 链上若只剩一张手牌应自动弃掉且不弹 prompt"` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "onActionPlayed trigger 仍应把 Fort Titanosaurus|onActionPlayed trigger 仍应把 Gorgodzolla|onActionPlayed trigger 仍应保留 Woodland Helpers|onActionPlayed trigger 仍应保留 Odysseus|onActionPlayed trigger 仍应保留 Heracles|onActionPlayed trigger 仍应保留 Spartan|onActionPlayed trigger 仍应保留 Jason"` -> `1 file passed, 7 passed`
+  - `PW_WORKERS=1 ... npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Time Walk-真实入口会抽两张、把本牌沉到底并授予本回合额外随从与额外行动额度"` -> `1 passed`
+  - `PW_WORKERS=1 ... npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Secret Agent-真实入口会让行动玩家自己选择弃掉剩余手牌"` -> `1 passed`
+- 当前整文件状态：
+  - `yuanhouFactionAbilities.test.ts` 红灯已从 `8` 降到 `6`。
+  - 这证明本轮有真实收敛，但总任务仍未完成。
+- 当前剩余 6 条红灯：
+  - `变形者：细胞结合复制未显式适配的 Stasis Field 时不应隐式代理基地压制或回合开始自毁`
+  - `变形者基地：生体培养缸在 Me First 随从响应窗口也禁止同名随从打到这里`
+  - `超级间谍：鼹鼠在真实计分窗口应把同基地的 Going Bananas 暴露为额外行动并继续基地目标链`
+  - `超级间谍：鼹鼠在真实计分窗口放弃额外行动后必须正常收口，且 Primate Park 只会正常清场不会把随从回手`
+  - `时间旅行者：虫洞后全员让过会消费未选择的传送门室触发并收口`
+  - `时间旅行者：虫洞空选时应让所有己方随从按正常计分清场进入弃牌堆`
+- 下一步：
+  - 先处理 `Mole/Wormhole` 这 4 条同根失败，优先判定是否只是 nested `smashup_reaction_choose` / `resolutionFrameId` 断言漂移。
+  - 若坐实是测试漂移，只改测试口径，不碰业务逻辑。
+  - 若坐实是真运行时缺陷，再收口 scoring/response-window frame 消费或 prompt 清理。
+
+## 2026-05-25 20:13 +08
+
+- 已继续把 `killer_plant_entangled` 的同基地双实例 queued runtime seam 打成 focused 红灯后收绿，不是停在“继续筛候选”。
+- 红灯：
+  - `reactionQueueSourceRuntimeContext.test.ts` 新增 focused gate `queued onTurnStart trigger 处理同基地两张 borrowed killer_plant_entangled 时，应逐实例入队并各自自毁回真实 owner discard`。
+  - 首轮直接坐实：`collectTriggers(...)` 只排出 `1` 条 trigger，而不是 `2` 条。
+- 根因：
+  - `src/games/smashup/abilities/killer_plants.ts` 的 `registerTrigger('killer_plant_entangled'|'killer_plant_entangled_pod', 'onTurnStart', ...)` 旧实现没写 `perInstance:true`。
+  - 同文件 `killerPlantEntangledDestroyTrigger()` 旧实现即使进入 resolve，也只会 `find()` 每个基地第一张同名 `Entangled`，没有按 `sourceCardUid` 精确定位当前实例。
+- 修复：
+  - 只给 `killer_plant_entangled / killer_plant_entangled_pod` 的 `onTurnStart` trigger 补 `perInstance:true`。
+  - `killerPlantEntangledDestroyTrigger()` 改成优先按 `ctx.sourceCardUid` 从 live `ongoingActions` 精确回捞当前实例后再自毁，`ONGOING_DETACHED.ownerId` 继续保留真实 owner。
+- 验证：
+  - `reactionQueueSourceRuntimeContext.test.ts -t "queued onTurnStart trigger 处理同基地两张 borrowed killer_plant_entangled 时，应逐实例入队并各自自毁回真实 owner discard"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `reactionQueueSourceRuntimeContext.test.ts + reactionQueueEventPlayerContext.test.ts + newOngoingAbilities.test.ts -t "entangled|Entangled|killer_plant_entangled"` -> `3 files passed, 9 passed`
+- 当前边界：
+  - 这格只闭合 `killer_plant_entangled` 在 `queued onTurnStart -> per-instance source selection -> runtime self-destruct` 真链上的 same-def multi-instance source/runtime seam。
+  - 下一步继续沿 `turn-boundary + sourceController + callback 全场同名扫描` 主线找 sibling，优先看仍未标 `perInstance:true`、且 runtime 仍 `find()` 第一张同名 source 的 `onTurnStart / onTurnEnd` family，不回扫已转绿的 `Entangled / Zombie Overrun / Mermaid Desert Island / Invisible Ninja / Bewitched / Stasis Field`。
+
+## 2026-05-25 20:26 +08
+
+- 已继续把 `steampunk_difference_engine` 的同基地双实例 queued runtime seam 打成 focused 红灯后收绿，不是停在上一格 `Entangled`。
+- 红灯：
+  - `reactionQueueSourceRuntimeContext.test.ts` 新增 focused gate `queued onTurnEnd trigger 处理同基地两张 borrowed steampunk_difference_engine 时，应逐实例入队并各自给控制者抽牌`。
+  - 首轮直接坐实：`collectTriggers(...)` 只排出 `1` 条 trigger，而不是 `2` 条。
+- 根因：
+  - `src/games/smashup/abilities/steampunks.ts` 的 `registerTrigger('steampunk_difference_engine', 'onTurnEnd', ...)` 旧实现没写 `perInstance:true`。
+  - 同文件 `steampunkDifferenceEngineTrigger()` 旧实现即使进入 resolve，也只会扫到第一张同名 ongoing 就 `return`，没有按 `sourceCardUid` 精确定位当前实例。
+- 修复：
+  - 只给 `steampunk_difference_engine` 的 `onTurnEnd` trigger 补 `perInstance:true`。
+  - `steampunkDifferenceEngineTrigger()` 改成优先按 `ctx.sourceCardUid` 从 live `ongoingActions` 精确回捞当前实例后各抽 1 张；fallback 分支仍保留原先的全场扫描，兼容非 queued 入口。
+- 验证：
+  - `reactionQueueSourceRuntimeContext.test.ts -t "queued onTurnEnd trigger 处理同基地两张 borrowed steampunk_difference_engine 时，应逐实例入队并各自给控制者抽牌"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `reactionQueueSourceRuntimeContext.test.ts + reactionQueueEventPlayerContext.test.ts + expansionOngoing.test.ts + specialInteractionChain.test.ts -t "difference_engine|Difference Engine|steampunk_difference_engine|差分机"` -> `4 files passed, 7 passed`
+- 当前边界：
+  - 这格只闭合 `steampunk_difference_engine` 在 `queued onTurnEnd -> per-instance source selection -> runtime draw` 真链上的 same-def multi-instance source/runtime seam。
+  - 下一步继续沿 `turn-boundary + sourceController + callback 全场同名扫描` 主线找 sibling，优先看仍未标 `perInstance:true`、且 runtime 仍 `find()/return 第一张同名 source` 的 `onTurnStart / onTurnEnd` family，不回扫已转绿的 `Difference Engine / Entangled / Zombie Overrun / Mermaid Desert Island / Invisible Ninja / Bewitched / Stasis Field`。
+
+## 2026-05-25 20:43 +08
+
+- 已继续把 `cthulhu_complete_the_ritual` 的双实例 turn-start queue seam 打成 focused 红灯后收绿，不是停在 `Difference Engine`。
+- 红灯：
+  - `reactionQueueSourceRuntimeContext.test.ts` 新增 focused gate `queued onTurnStart trigger 处理两张 borrowed cthulhu_complete_the_ritual 时，应逐实例入队并各自清场换基地`。
+  - 首轮直接坐实：`collectTriggers(...)` 只排出 `1` 条 trigger，而不是 `2` 条。
+- 根因：
+  - `src/games/smashup/abilities/cthulhu.ts` 的 `registerTrigger('cthulhu_complete_the_ritual', 'onTurnStart', ...)` 旧实现没写 `perInstance:true`。
+  - runtime callback 已能按 `ctx.sourceCardUid` 精确回捞当前实例；这轮红灯点不在 callback，而在 queue 注册层把双实例压成了单条 trigger。
+- 修复：
+  - 只给 `cthulhu_complete_the_ritual` 的 `onTurnStart` trigger 补 `perInstance:true`。
+  - 不扩到 `cthulhu_furthering_the_cause / cthulhu_chosen / cthulhu_altar` 或 shared reaction queue。
+- 验证：
+  - `reactionQueueSourceRuntimeContext.test.ts -t "queued onTurnStart trigger 处理两张 borrowed cthulhu_complete_the_ritual 时，应逐实例入队并各自清场换基地"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `reactionQueueSourceRuntimeContext.test.ts + reactionQueueEventPlayerContext.test.ts + newOngoingAbilities.test.ts + expansionOngoing.test.ts -t "complete_the_ritual|Complete the Ritual|cthulhu_complete_the_ritual|完成仪式"` -> `3 files passed, 5 passed, 1 file skipped`
+- 当前边界：
+  - 这格只闭合 `cthulhu_complete_the_ritual` 在 `queued onTurnStart -> per-instance source selection -> multi-instance base-reset` 真链上的注册层 seam，不外推整个 Cthulhu、所有 turn-boundary ongoing 或整个 queued runtime 主线。
+  - 下一步继续沿 `turn-boundary + sourceController + callback 全场同名扫描/单实例假设` 主线找 sibling，不回扫已转绿的 `Complete the Ritual / Difference Engine / Entangled / Zombie Overrun / Mermaid Desert Island / Invisible Ninja / Bewitched / Stasis Field`。
+
+## 2026-05-25 23:04 +08
+
+- 已继续把 Skeletons 的两条 `trueOwnerId: playerId` sibling 打成 focused 红灯后收绿，不是停在等待或重复跑同一条。
+- 红灯：
+  - `newFactionAbilities.test.ts` 新增 `skeletons_returned_one 自埋 borrowed 随从时应保留真实 trueOwnerId`。先修掉测试夹具 `makeBase is not defined` 后，首轮坐实 buried card `trueOwnerId` 从真实 owner `1` 被洗成控制者 `0`。
+  - 同文件新增 `skeletons_place_em_down 埋葬 borrowed 弃牌堆随从时应保留真实 trueOwnerId`，首轮坐实 `buildDiscardBuryEvents()` 同样把 borrowed discard card 的 `trueOwnerId` 写成当前玩家 `0`。
+- 修复：
+  - `skeletons.ts` 新增按来源回查 owner 的最小 helper，`Returned One` 的 `buriedFrom:'play'` 分支从 live base minion / ongoing / attached action 回查真实 owner。
+  - `buildDiscardBuryEvents()` 改为从当前玩家弃牌堆 live card 回查真实 owner；不改 shared `buildBuryCardEvents()` / bury reducer。
+- 验证：
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "skeletons_returned_one 自埋 borrowed"`：首轮 failed，修复后 `1 file passed, 1 passed`。
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "skeletons_place_em_down 埋葬 borrowed|skeletons_returned_one 自埋 borrowed"`：修复后 `1 file passed, 2 passed`。
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "skeletons_returned_one 可把自己埋葬|skeletons_returned_one 自埋 borrowed|skeletons_returned_one 被挖掘|skeletons_place_em_down 从弃牌堆|skeletons_place_em_down 埋葬 borrowed|skeletons_spooky_scary|skeletons_revenant"`：`1 file passed, 8 passed`。
+  - `npx eslint src/games/smashup/abilities/skeletons.ts src/games/smashup/__tests__/newFactionAbilities.test.ts`：0 errors，40 warnings，warnings 为该大文件既有 unused / any 类噪音。
+- 当前边界：
+  - 这格只闭合 Skeletons `Returned One` 自埋 borrowed play-source 与 Skeletons discard-bury helper 的 true owner provenance，不外推 Titans Sphinx、所有 bury caller、所有 discard/deck 来源或整个长期任务完成。

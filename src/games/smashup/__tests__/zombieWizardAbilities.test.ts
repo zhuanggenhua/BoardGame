@@ -19,6 +19,7 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { applyEvents } from './helpers';
 import { makeMatchState as makeMatchStateFromHelpers } from './helpers';
 import { runCommand } from './testRunner';
@@ -152,6 +153,69 @@ describe('CARD_RECOVERED_FROM_DISCARD reducer', () => {
         expect(newState.players['0'].hand.length).toBe(2);
         expect(newState.players['0'].discard.length).toBe(1);
     });
+
+    it('取回被他人拥有的弃牌时，仍应进入其拥有者手牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('h0', 'own_hand', 'action', '0')],
+                    discard: [
+                        makeCard('borrowed-discard', 'pirate_first_mate', 'minion', '1'),
+                        makeCard('own-discard', 'zombie_walker', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('h1', 'pirate_cannon', 'action', '1')],
+                }),
+            },
+        });
+
+        const event: SmashUpEvent = {
+            type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+            payload: { playerId: '0', cardUids: ['borrowed-discard', 'own-discard'], reason: 'test' },
+            timestamp: 0,
+        } as any;
+
+        const newState = reduce(state, event);
+        expect(newState.players['0'].hand.map(c => c.uid)).toEqual(['h0', 'own-discard']);
+        expect(newState.players['0'].discard).toEqual([]);
+        expect(newState.players['1'].hand.map(c => c.uid)).toEqual(['h1', 'borrowed-discard']);
+    });
+});
+
+// ============================================================================
+// CARDS_DISCARDED 事件 reducer 测试
+// ============================================================================
+
+describe('CARDS_DISCARDED reducer', () => {
+    it('弃掉被他人拥有的手牌时，仍应进入其拥有者弃牌堆', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('borrowed-hand', 'pirate_first_mate', 'minion', '1'),
+                        makeCard('own-hand', 'zombie_walker', 'minion', '0'),
+                        makeCard('kept-hand', 'zombie_grave_digger', 'minion', '0'),
+                    ],
+                    discard: [makeCard('p0-discard-a', 'old_discard', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    discard: [makeCard('p1-discard-a', 'pirate_cannon', 'action', '1')],
+                }),
+            },
+        });
+
+        const event: SmashUpEvent = {
+            type: SU_EVENTS.CARDS_DISCARDED,
+            payload: { playerId: '0', cardUids: ['borrowed-hand', 'own-hand'] },
+            timestamp: 0,
+        } as any;
+
+        const newState = reduce(state, event);
+        expect(newState.players['0'].hand.map(c => c.uid)).toEqual(['kept-hand']);
+        expect(newState.players['0'].discard.map(c => c.uid)).toEqual(['p0-discard-a', 'own-hand']);
+        expect(newState.players['1'].discard.map(c => c.uid)).toEqual(['p1-discard-a', 'borrowed-hand']);
+    });
 });
 
 // ============================================================================
@@ -207,6 +271,35 @@ describe('HAND_SHUFFLED_INTO_DECK reducer', () => {
         // 牌库为 d1, h1
         expect(newState.players['0'].deck.length).toBe(2);
         expect(newState.players['0'].deck.map(c => c.uid)).toEqual(['d1', 'h1']);
+    });
+
+    it('被他人拥有的手牌洗入牌库时，仍应进入其拥有者牌库', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('borrowed-hand', 'pirate_first_mate', 'minion', '1'),
+                        makeCard('own-hand', 'zombie_walker', 'minion', '0'),
+                        makeCard('kept-hand', 'zombie_grave_digger', 'minion', '0'),
+                    ],
+                    deck: [makeCard('p0-deck-a', 'test_card', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'pirate_cannon', 'action', '1')],
+                }),
+            },
+        });
+
+        const event: SmashUpEvent = {
+            type: SU_EVENTS.HAND_SHUFFLED_INTO_DECK,
+            payload: { playerId: '0', newDeckUids: ['p0-deck-a', 'borrowed-hand', 'own-hand'], reason: 'test' },
+            timestamp: 0,
+        } as any;
+
+        const newState = reduce(state, event);
+        expect(newState.players['0'].hand.map(c => c.uid)).toEqual(['kept-hand']);
+        expect(newState.players['0'].deck.map(c => c.uid)).toEqual(['p0-deck-a', 'own-hand']);
+        expect(newState.players['1'].deck.map(c => c.uid)).toEqual(['p1-deck-a', 'borrowed-hand']);
     });
 });
 
@@ -381,6 +474,126 @@ describe('僵尸派系能力', () => {
         expect(current?.data?.sourceId).toBe('zombie_lend_a_hand');
     });
 
+    it('zombie_lend_a_hand: 选择被他人拥有的弃牌时，仍应洗回其拥有者牌库', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'zombie_lend_a_hand', 'action', '0')],
+                    deck: [makeCard('p0-deck-a', 'zombie_walker', 'minion', '0')],
+                    discard: [
+                        makeCard('borrowed-discard', 'pirate_first_mate', 'minion', '1'),
+                        makeCard('own-discard', 'zombie_grave_digger', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'pirate_cannon', 'action', '1')],
+                }),
+            },
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const current = (matchState.sys as any).interaction?.current;
+        expect(current?.data?.sourceId).toBe('zombie_lend_a_hand');
+        const option = current.data.options.find((candidate: any) => candidate.value?.cardUid === 'borrowed-discard');
+        const resolved = runCommand(matchState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionIds: [option.id] },
+        } as any, defaultRandom);
+
+        expect(resolved.success).toBe(true);
+        const p0 = resolved.finalState.core.players['0'];
+        const p1 = resolved.finalState.core.players['1'];
+        expect(p0.deck.map(card => card.uid)).toEqual(['p0-deck-a']);
+        expect(p0.discard.map(card => card.uid)).toEqual(['own-discard', 'a1']);
+        expect(p1.deck.map(card => card.uid)).toEqual(['p1-deck-a', 'borrowed-discard']);
+    });
+
+    it('zombie_they_keep_coming: 从弃牌堆打出 borrowed 随从时，应保留真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'zombie_they_keep_coming', 'action', '0')],
+                    discard: [
+                        makeCard('borrowed-discard', 'pirate_first_mate', 'minion', '1'),
+                        makeCard('own-discard', 'zombie_walker', 'minion', '0'),
+                    ],
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const current = (matchState.sys as any).interaction?.current;
+        expect(current?.data?.sourceId).toBe('zombie_they_keep_coming');
+
+        const handler = getAbilityRuntimePromptHandler('zombie_they_keep_coming');
+        expect(handler).toBeDefined();
+        const result = handler!(
+            matchState,
+            '0',
+            { cardUid: 'borrowed-discard', defId: 'pirate_first_mate', baseIndex: 0 },
+            current?.data,
+            defaultRandom,
+            1,
+        );
+        expect(result).toBeDefined();
+
+        const finalState = applyEvents(matchState.core, result!.events);
+        const minion = finalState.bases[0].minions.find(card => card.uid === 'borrowed-discard');
+        expect(minion?.controller).toBe('0');
+        expect(minion?.owner).toBe('1');
+        expect(finalState.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(finalState.players['1'].discard.map(card => card.uid)).not.toContain('borrowed-discard');
+    });
+
+    it('zombie_lord: 从弃牌堆打出 borrowed 低力量随从时，应保留真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'zombie_lord', 'minion', '0')],
+                    discard: [
+                        makeCard('borrowed-low', 'pirate_first_mate', 'minion', '1'),
+                        makeCard('own-low', 'zombie_walker', 'minion', '0'),
+                    ],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'b1', minions: [], ongoingActions: [] },
+                { defId: 'b2', minions: [makeMinion('blocker', 'test_minion', '1', 2)], ongoingActions: [] },
+            ],
+        });
+
+        const { matchState } = execPlayMinion(state, '0', 'm1', 1);
+        const current = (matchState.sys as any).interaction?.current;
+        expect(current?.data?.sourceId).toBe('zombie_lord_pick');
+
+        const handler = getAbilityRuntimePromptHandler('zombie_lord_pick');
+        expect(handler).toBeDefined();
+        const result = handler!(
+            matchState,
+            '0',
+            { cardUid: 'borrowed-low', defId: 'pirate_first_mate', baseIndex: 0 },
+            current?.data,
+            defaultRandom,
+            1,
+        );
+        expect(result).toBeDefined();
+
+        const finalState = applyEvents(matchState.core, result!.events);
+        const minion = finalState.bases[0].minions.find(card => card.uid === 'borrowed-low');
+        expect(minion?.controller).toBe('0');
+        expect(minion?.owner).toBe('1');
+        expect(finalState.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-low');
+        expect(finalState.players['1'].discard.map(card => card.uid)).not.toContain('borrowed-low');
+    });
+
     it('zombie_outbreak: 多个空基地时选择基地后直接授予额度', () => {
         const state = makeState({
             players: {
@@ -540,6 +753,39 @@ describe('僵尸派系能力', () => {
         // 验证：总卡牌数守恒（4 张原牌库 + 2 张原弃牌 + 打出的 a1 = 7）
         const totalCards = finalState.players['0'].deck.length + finalState.players['0'].discard.length + finalState.players['0'].hand.length;
         expect(totalCards).toBe(7);
+    });
+
+    it('zombie_mall_crawl: 磨掉被他人拥有的牌库牌时，仍应进入其拥有者弃牌堆', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'zombie_mall_crawl', 'action', '0')],
+                    deck: [
+                        makeCard('borrowed-walker', 'zombie_walker', 'minion', '1'),
+                        makeCard('own-walker', 'zombie_walker', 'minion', '0'),
+                        makeCard('own-other', 'test_card', 'action', '0'),
+                    ],
+                    discard: [makeCard('p0-discard-a', 'old_discard', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    discard: [makeCard('p1-discard-a', 'pirate_cannon', 'action', '1')],
+                }),
+            },
+        });
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const current = (matchState.sys as any).interaction?.current;
+        expect(current?.data?.sourceId).toBe('zombie_mall_crawl');
+
+        const handler = getAbilityRuntimePromptHandler('zombie_mall_crawl');
+        expect(handler).toBeDefined();
+        const result = handler!(matchState, '0', { defId: 'zombie_walker' }, current?.data, defaultRandom, 1);
+        expect(result).toBeDefined();
+
+        const finalState = applyEvents(matchState.core, result!.events);
+
+        expect(finalState.players['0'].deck.map(card => card.uid)).toEqual(['own-other']);
+        expect(finalState.players['0'].discard.map(card => card.uid)).toEqual(['p0-discard-a', 'a1', 'own-walker']);
+        expect(finalState.players['1'].discard.map(card => card.uid)).toEqual(['p1-discard-a', 'borrowed-walker']);
     });
 });
 

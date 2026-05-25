@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { reduce } from '../domain/reducer';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import type {
     SmashUpCore,
     SmashUpEvent,
@@ -23,6 +23,7 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { applyEvents, makeMatchState as makeMatchStateFromHelpers } from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
@@ -268,6 +269,34 @@ describe('印斯茅斯派系能力', () => {
             expect(newState.players['1'].deck.length).toBe(1);
             expect(newState.players['1'].deck[0].uid).toBe('dis3');
         });
+
+        it('被他人拥有的弃牌随从仍应洗回其拥有者牌库', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('a1', 'innsmouth_new_acolytes', 'action', '0')],
+                        deck: [makeCard('p0-deck-a', 'test_a', 'action', '0')],
+                        discard: [
+                            makeCard('borrowed-minion', 'test_m', 'minion', '1'),
+                            makeCard('own-minion', 'test_m2', 'minion', '0'),
+                            makeCard('own-action', 'test_a', 'action', '0'),
+                        ],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('p1-deck-a', 'test_a', 'action', '1')],
+                        discard: [],
+                    }),
+                },
+            });
+
+            const { events } = execPlayAction(state, '0', 'a1');
+            const newState = applyEvents(state, events);
+
+            expect(newState.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a', 'own-minion']);
+            expect(newState.players['0'].discard.map(card => card.uid)).toEqual(['own-action', 'a1']);
+            expect(newState.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-a', 'borrowed-minion']);
+            expect(newState.players['1'].discard).toEqual([]);
+        });
     });
 
     describe('innsmouth_mysteries_of_the_deep（深潜者的秘密：3+同名随从抽3张）', () => {
@@ -309,6 +338,114 @@ describe('印斯茅斯派系能力', () => {
 // ============================================================================
 
 describe('米斯卡塔尼克大学派系能力', () => {
+    describe('miskatonic_librarian_pod（图书管理员 POD：额外打出疯狂卡）', () => {
+        it('额外打出被他人拥有的疯狂卡时，应保留 ACTION_PLAYED owner 并进入拥有者弃牌堆', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('borrowed-madness', MADNESS_CARD_DEF_ID, 'action', '1')],
+                    }),
+                    '1': makePlayer('1', {
+                        discard: [makeCard('owner-discard-a', 'test_action', 'action', '1')],
+                    }),
+                },
+                bases: [{
+                    defId: 'b1',
+                    minions: [makeMinion('librarian-pod', 'miskatonic_librarian_pod', '0', 4)],
+                    ongoingActions: [],
+                }],
+            });
+
+            const talent = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'librarian-pod', baseIndex: 0 },
+            } as any, defaultRandom);
+            const modePrompt = (talent.finalState.sys as any).interaction.current?.data;
+            expect(modePrompt?.sourceId).toBe('miskatonic_librarian_pod');
+
+            const chooseExtra = runCommand(talent.finalState, {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { optionId: 'extra' },
+            } as any, defaultRandom);
+            const madnessPrompt = (chooseExtra.finalState.sys as any).interaction.current?.data;
+            expect(madnessPrompt?.sourceId).toBe('miskatonic_librarian_pod_play_madness');
+            const madnessOption = madnessPrompt.options.find((option: any) => option.value?.cardUid === 'borrowed-madness');
+            expect(madnessOption).toBeTruthy();
+
+            const played = runCommand(chooseExtra.finalState, {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { optionId: madnessOption.id },
+            } as any, defaultRandom);
+
+            const actionPlayed = played.events.find(event => event.type === SU_EVENTS.ACTION_PLAYED) as any;
+            expect(actionPlayed?.payload?.ownerId).toBe('1');
+            expect(played.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('borrowed-madness');
+            expect(played.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-madness');
+            expect(played.finalState.core.players['1'].discard.map(card => card.uid)).toEqual(['owner-discard-a', 'borrowed-madness']);
+        });
+
+        it('额外打出疯狂卡后，仍应继续进入 special_madness prompt 并按所选效果结算', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('borrowed-madness', MADNESS_CARD_DEF_ID, 'action', '1')],
+                        deck: [
+                            makeCard('draw-a', 'test_minion_a', 'minion', '0'),
+                            makeCard('draw-b', 'test_minion_b', 'minion', '0'),
+                            makeCard('draw-c', 'test_minion_c', 'minion', '0'),
+                        ],
+                    }),
+                    '1': makePlayer('1', {
+                        discard: [makeCard('owner-discard-a', 'test_action', 'action', '1')],
+                    }),
+                },
+                bases: [{
+                    defId: 'b1',
+                    minions: [makeMinion('librarian-pod', 'miskatonic_librarian_pod', '0', 4)],
+                    ongoingActions: [],
+                }],
+            });
+
+            const talent = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'librarian-pod', baseIndex: 0 },
+            } as any, defaultRandom);
+            const chooseExtra = runCommand(talent.finalState, {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { optionId: 'extra' },
+            } as any, defaultRandom);
+            const madnessPrompt = (chooseExtra.finalState.sys as any).interaction.current?.data;
+            const madnessOption = madnessPrompt.options.find((option: any) => option.value?.cardUid === 'borrowed-madness');
+
+            const played = runCommand(chooseExtra.finalState, {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { optionId: madnessOption.id },
+            } as any, defaultRandom);
+
+            const specialPrompt = (played.finalState.sys as any).interaction.current?.data;
+            expect(specialPrompt?.sourceId).toBe('special_madness');
+            const drawOption = specialPrompt.options.find((option: any) => option.value?.action === 'draw');
+            expect(drawOption).toBeTruthy();
+            expect(played.finalState.core.players['1'].discard.map(card => card.uid)).toEqual(['owner-discard-a', 'borrowed-madness']);
+
+            const resolved = runCommand(played.finalState, {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { optionId: drawOption.id },
+            } as any, defaultRandom);
+
+            expect(resolved.finalState.sys.interaction.current).toBeUndefined();
+            expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
+            expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toEqual(['owner-discard-a', 'borrowed-madness']);
+        });
+    });
+
     describe('miskatonic_those_meddling_kids（多管闲事的小鬼：消灭基地上行动卡）', () => {
         it('单基地有行动卡时也创建 Prompt 选择', () => {
             const state = makeState({
@@ -596,14 +733,11 @@ describe('克苏鲁之仆派系能力', () => {
             expect(handler).toBeDefined();
             // 选择两张随从
             const result = handler!(matchState, '0', [{ cardUid: 'dis1' }, { cardUid: 'dis3' }], prompt?.data, defaultRandom, 1000);
-            const reorderEvents = result.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED);
-            expect(reorderEvents.length).toBe(1);
-            const deckUids = (reorderEvents[0] as any).payload.deckUids;
-            expect(deckUids).toContain('dis1');
-            expect(deckUids).toContain('dis3');
-            expect(deckUids).toContain('d1');
-            // dis1, dis3 应在 d1 前面（放牌库顶）
-            expect(deckUids.indexOf('dis1')).toBeLessThan(deckUids.indexOf('d1'));
+            const moveEvents = result.events.filter((e: any) => e.type === SU_EVENTS.CARD_TO_DECK_TOP);
+            expect(moveEvents).toHaveLength(2);
+            expect(moveEvents.map((event: any) => event.payload.cardUid)).toEqual(['dis3', 'dis1']);
+            expect(moveEvents.every((event: any) => event.payload.ownerId === '0')).toBe(true);
+            expect(moveEvents.every((event: any) => event.payload.sourcePlayerId === '0')).toBe(true);
         });
 
         it('弃牌堆无符合条件随从时不产生事件也不创建 Interaction', () => {
@@ -696,6 +830,34 @@ describe('克苏鲁之仆派系能力', () => {
             expect(result.events.length).toBe(0);
             // 弃牌堆中的随从仍在弃牌堆
             expect(matchState.core.players['0'].discard.some((c: any) => c.uid === 'dis1')).toBe(true);
+        });
+
+        it('选择被他人拥有的弃牌随从时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('a1', 'cthulhu_recruit_by_force', 'action', '0')],
+                        deck: [makeCard('p0-deck-1', 'test', 'action', '0')],
+                        discard: [makeCard('borrowed-discard', 'cthulhu_servitor', 'minion', '1')],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('p1-deck-1', 'test', 'action', '1')],
+                    }),
+                },
+            });
+
+            const { events: playEvents, matchState } = execPlayAction(state, '0', 'a1');
+            const prompt = (matchState.sys as any)?.interaction?.current;
+            const handler = getInteractionHandler('cthulhu_recruit_by_force');
+            expect(handler).toBeDefined();
+
+            const result = handler!(matchState, '0', [{ cardUid: 'borrowed-discard' }], prompt?.data, defaultRandom, 1000);
+            const newState = applyEvents(state, [...playEvents, ...result.events]);
+
+            expect(newState.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
+            expect(newState.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-discard', 'p1-deck-1']);
+            expect(newState.players['0'].discard.map(card => card.uid)).toEqual(['a1']);
+            expect(newState.players['1'].discard).toEqual([]);
         });
     });
 
@@ -825,6 +987,34 @@ describe('克苏鲁之仆派系能力', () => {
             expect(result.events.length).toBe(0);
             // 牌库不变
             expect(matchState.core.players['0'].deck.some((c: any) => c.uid === 'd1')).toBe(true);
+        });
+
+        it('选择被他人拥有的弃牌行动时，仍应洗回其拥有者牌库而不是当前玩家牌库', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('a1', 'cthulhu_it_begins_again', 'action', '0')],
+                        deck: [makeCard('p0-deck-1', 'test', 'action', '0')],
+                        discard: [makeCard('borrowed-action', 'cthulhu_fhtagn', 'action', '1')],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('p1-deck-1', 'test', 'action', '1')],
+                    }),
+                },
+            });
+
+            const { events: playEvents, matchState } = execPlayAction(state, '0', 'a1');
+            const prompt = (matchState.sys as any)?.interaction?.current;
+            const handler = getInteractionHandler('cthulhu_it_begins_again');
+            expect(handler).toBeDefined();
+
+            const result = handler!(matchState, '0', [{ cardUid: 'borrowed-action' }], prompt?.data, defaultRandom, 0);
+            const newState = applyEvents(state, [...playEvents, ...result.events]);
+
+            expect(newState.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
+            expect(newState.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-1', 'borrowed-action']);
+            expect(newState.players['0'].discard.map(card => card.uid)).toEqual(['a1']);
+            expect(newState.players['1'].discard).toEqual([]);
         });
     });
 

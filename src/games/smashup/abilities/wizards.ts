@@ -159,6 +159,28 @@ function buildWizardPortalOrderCardOptions(cards: { uid: string; defId: string }
     });
 }
 
+function buildWizardPortalReturnToDeckTopEvent(
+    state: SmashUpCore,
+    sourcePlayerId: PlayerId,
+    cardUid: string,
+    defId: string,
+    timestamp: number,
+): CardToDeckTopEvent {
+    const sourceDeckCard = state.players[sourcePlayerId]?.deck.find((card) => card.uid === cardUid && card.defId === defId);
+    const ownerId = sourceDeckCard?.owner ?? sourcePlayerId;
+    return {
+        type: SU_EVENTS.CARD_TO_DECK_TOP,
+        payload: {
+            cardUid,
+            defId,
+            ownerId,
+            ...(ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
+            reason: 'wizard_portal',
+        },
+        timestamp,
+    } as CardToDeckTopEvent;
+}
+
 /** 时间法师 onPlay：额外打出一个行动*/
 function wizardChronomage(ctx: AbilityContext): AbilityResult {
     return { events: [grantContextualExtraAction(ctx, 'wizard_chronomage')] };
@@ -629,6 +651,7 @@ function resolveWizardExternalActionPlay(params: {
         playerId: context.playerId,
         cardUid: context.cardUid,
         defId: context.defId,
+        ownerId: sourceCard.owner,
         isExtraAction: true,
         ...(typeof targetBaseIndex === 'number' ? { targetBaseIndex } : {}),
         ...(targetMinionUid ? { targetMinionUid } : {}),
@@ -644,7 +667,8 @@ function resolveWizardExternalActionPlay(params: {
             payload: {
                 cardUid: context.cardUid,
                 defId: context.defId,
-                ownerId: context.playerId,
+                ownerId: sourceCard.owner,
+                ...(sourceCard.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                 targetType: 'base',
                 targetBaseIndex,
             },
@@ -660,7 +684,8 @@ function resolveWizardExternalActionPlay(params: {
             payload: {
                 cardUid: context.cardUid,
                 defId: context.defId,
-                ownerId: context.playerId,
+                ownerId: sourceCard.owner,
+                ...(sourceCard.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                 targetType: 'minion',
                 targetBaseIndex,
                 targetMinionUid,
@@ -1028,11 +1053,7 @@ const wizardPortalPickPromptProgram = createPromptProgram<WizardPortalContext, S
             return {
                 events: [
                     ...events,
-                    {
-                        type: SU_EVENTS.CARD_TO_DECK_TOP,
-                        payload: { cardUid: remaining[0].uid, defId: remaining[0].defId, ownerId: context.playerId, reason: 'wizard_portal' },
-                        timestamp,
-                    } as CardToDeckTopEvent,
+                    buildWizardPortalReturnToDeckTopEvent(state.core, context.playerId, remaining[0].uid, remaining[0].defId, timestamp),
                 ],
                 matchState: state,
             };
@@ -1093,16 +1114,13 @@ const wizardPortalOrderPromptProgram = createPromptProgram<WizardPortalOrderProm
             const allCards = remaining.length === 1 ? [...ordered, remaining[0]] : ordered;
             const events: SmashUpEvent[] = [];
             for (let index = allCards.length - 1; index >= 0; index -= 1) {
-                events.push({
-                    type: SU_EVENTS.CARD_TO_DECK_TOP,
-                    payload: {
-                        cardUid: allCards[index].uid,
-                        defId: allCards[index].defId,
-                        ownerId: context.playerId,
-                        reason: 'wizard_portal',
-                    },
+                events.push(buildWizardPortalReturnToDeckTopEvent(
+                    state.core,
+                    context.playerId,
+                    allCards[index].uid,
+                    allCards[index].defId,
                     timestamp,
-                } as CardToDeckTopEvent);
+                ));
             }
             return { events, matchState: state };
         }
@@ -1309,11 +1327,13 @@ const wizardPortalProgram = createEffectProgram<WizardPortalContext, SmashUpCore
         return {
             events: [
                 revealEvent,
-                {
-                    type: SU_EVENTS.CARD_TO_DECK_TOP,
-                    payload: { cardUid: remaining[0].uid, defId: remaining[0].defId, ownerId: context.playerId, reason: 'wizard_portal' },
-                    timestamp: context.now,
-                } as CardToDeckTopEvent,
+                buildWizardPortalReturnToDeckTopEvent(
+                    context.matchState.core,
+                    context.playerId,
+                    remaining[0].uid,
+                    remaining[0].defId,
+                    context.now,
+                ),
             ],
         };
     }
@@ -1460,5 +1480,6 @@ function registerWizardOngoingEffects(): void {
             timestamp: trigCtx.now,
         }];
     }, {
+        canTrigger: (ctx) => ctx.triggerMinionDefId === 'wizard_archmage',
     });
 }

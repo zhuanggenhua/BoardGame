@@ -11,6 +11,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { makeState, makeBase, makeMinion, makeMatchState, makePlayer } from './helpers';
 import { initAllAbilities } from '../abilities';
 import { processDestroyTriggers } from '../domain/reducer';
+import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { defaultTestRandom } from './testRunner';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent } from '../domain/types';
@@ -185,53 +186,89 @@ describe('Igor onDestroy 幂等性与重入测试', () => {
         expect(igorInteractions.length).toBe(1);
     });
 
-    // 跳过此测试 - 九命之屋的防止消灭逻辑需要完整的基地能力系统支持
-    it.skip('D8: 验证 Igor onDestroy 只在 Phase 2（确认消灭）时触发', () => {
-        // 场景：Igor 被消灭，但有防止消灭的能力（如九命之屋）
-        // Igor 的 onDestroy 不应该触发，因为消灭被防止了
-        
+    it('D8: Igor 在九命之屋 pendingSave 阶段不触发，只有确认不拯救后才在 Phase 2 触发一次', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', { hand: [], deck: [], discard: [] }),
                 '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
             },
             bases: [
-                makeBase('base_nine_lives', [ // 九命之屋：防止消灭
+                makeBase('base_house_of_nine_lives'),
+                makeBase('base_rlyeh', [
                     makeMinion('igor1', 'frankenstein_igor', '0', 2),
                     makeMinion('monster1', 'frankenstein_the_monster', '0', 4),
+                    makeMinion('wolf1', 'werewolf_loup_garou', '0', 4),
                 ]),
             ],
         });
-        
+
         const ms = makeMatchState(core);
-        
         const destroyEvent: SmashUpEvent = {
             type: SU_EVENTS.MINION_DESTROYED,
             payload: {
                 minionUid: 'igor1',
                 minionDefId: 'frankenstein_igor',
-                fromBaseIndex: 0,
+                fromBaseIndex: 1,
                 ownerId: '0',
                 destroyerId: '1', // 对手消灭
                 reason: 'action',
             },
             timestamp: 1000,
         };
-        
-        // 调用 processDestroyTriggers
-        const result = processDestroyTriggers([destroyEvent], ms, '0', defaultTestRandom, 1000);
-        
-        // 检查：应该有九命之屋的交互，但没有 Igor 的 onDestroy 交互
-        const allInteractions = [];
-        if (result.matchState?.sys.interaction.current) {
-            allInteractions.push(result.matchState.sys.interaction.current);
+
+        const phase1 = processDestroyTriggers([destroyEvent], ms, '0', defaultTestRandom, 1000);
+
+        const phase1Interactions = [];
+        if (phase1.matchState?.sys.interaction.current) {
+            phase1Interactions.push(phase1.matchState.sys.interaction.current);
         }
-        allInteractions.push(...(result.matchState?.sys.interaction.queue ?? []));
-        
-        const nineLivesInteractions = allInteractions.filter(i => i.data.sourceId === 'base_nine_lives_intercept');
-        const igorInteractions = allInteractions.filter(i => i.data.sourceId === 'frankenstein_igor');
-        
-        expect(nineLivesInteractions.length).toBeGreaterThan(0); // 九命之屋应该触发
-        expect(igorInteractions.length).toBe(0); // Igor onDestroy 不应该触发（消灭被防止）
+        phase1Interactions.push(...(phase1.matchState?.sys.interaction.queue ?? []));
+
+        const nineLivesPrompt = phase1Interactions.find((interaction: any) => interaction?.data?.sourceId === 'base_nine_lives_intercept');
+        const phase1IgorPrompts = phase1Interactions.filter((interaction: any) => interaction?.data?.sourceId === 'frankenstein_igor');
+
+        expect(nineLivesPrompt).toBeDefined();
+        expect(phase1IgorPrompts).toHaveLength(0);
+        expect(phase1.events.filter((event: any) => event.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
+
+        const interceptHandler = getInteractionHandler('base_nine_lives_intercept');
+        expect(interceptHandler).toBeDefined();
+
+        const declineSave = interceptHandler!(
+            phase1.matchState ?? ms,
+            '0',
+            { move: false },
+            (nineLivesPrompt?.data as any)?.continuationContext
+                ? { continuationContext: (nineLivesPrompt!.data as any).continuationContext }
+                : undefined,
+            defaultTestRandom,
+            1001,
+        );
+
+        expect(declineSave.events).toHaveLength(1);
+        expect(declineSave.events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+        expect((declineSave.events[0] as any).payload?.reason).toBe('九命之屋：玩家选择不拯救');
+
+        const phase2 = processDestroyTriggers(
+            declineSave.events as SmashUpEvent[],
+            makeMatchState(core),
+            '0',
+            defaultTestRandom,
+            1001,
+        );
+
+        const phase2Interactions = [];
+        if (phase2.matchState?.sys.interaction.current) {
+            phase2Interactions.push(phase2.matchState.sys.interaction.current);
+        }
+        phase2Interactions.push(...(phase2.matchState?.sys.interaction.queue ?? []));
+
+        const phase2IgorPrompts = phase2Interactions.filter((interaction: any) => interaction?.data?.sourceId === 'frankenstein_igor');
+        const phase2NineLivesPrompts = phase2Interactions.filter((interaction: any) => interaction?.data?.sourceId === 'base_nine_lives_intercept');
+
+        expect(phase2.events.filter((event: any) => event.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(1);
+        expect(phase2NineLivesPrompts).toHaveLength(0);
+        expect(phase2IgorPrompts).toHaveLength(1);
+        expect(phase2IgorPrompts[0].playerId).toBe('0');
     });
 });

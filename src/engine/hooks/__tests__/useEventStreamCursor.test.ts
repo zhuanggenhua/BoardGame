@@ -311,4 +311,73 @@ describe('useEventStreamCursor', () => {
 
         expect(consumedTypes).toEqual(['SUMMON_C']);
     });
+
+    it('watermark=null 的 optimistic rollback 会跳过当前已存在 entries，并只消费后续新事件', () => {
+        let rollbackValue: EventStreamRollbackValue = {
+            watermark: null,
+            seq: 0,
+            reconcileSeq: 0,
+        };
+
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                EventStreamRollbackContext.Provider,
+                { value: rollbackValue },
+                children,
+            );
+
+        const initialEntries = [
+            createEntry(1, 'PREVIEW_A'),
+            createEntry(2, 'PREVIEW_B'),
+        ];
+
+        const { result, rerender } = renderHook(
+            ({ entries }: { entries: EventStreamEntry[] }) =>
+                useEventStreamCursor({ entries }),
+            {
+                initialProps: { entries: initialEntries },
+                wrapper,
+            },
+        );
+
+        act(() => {
+            expect(result.current.consumeNew().entries).toEqual([]);
+        });
+
+        rollbackValue = {
+            watermark: null,
+            seq: 1,
+            reconcileSeq: 0,
+        };
+
+        rerender({
+            entries: [
+                createEntry(1, 'PREVIEW_A'),
+                createEntry(2, 'PREVIEW_B'),
+                createEntry(3, 'SERVER_SYNCED'),
+            ],
+        });
+
+        act(() => {
+            const consumed = result.current.consumeNew();
+            expect(consumed.entries).toEqual([]);
+            expect(consumed.didOptimisticRollback).toBe(true);
+        });
+
+        rerender({
+            entries: [
+                createEntry(1, 'PREVIEW_A'),
+                createEntry(2, 'PREVIEW_B'),
+                createEntry(3, 'SERVER_SYNCED'),
+                createEntry(4, 'POST_RESYNC_EVENT'),
+            ],
+        });
+
+        let consumedTypes: string[] = [];
+        act(() => {
+            consumedTypes = result.current.consumeNew().entries.map((entry) => entry.event.type);
+        });
+
+        expect(consumedTypes).toEqual(['POST_RESYNC_EVENT']);
+    });
 });

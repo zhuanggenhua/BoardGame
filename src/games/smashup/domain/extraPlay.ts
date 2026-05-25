@@ -22,11 +22,13 @@ import {
     type SmashUpCore,
     type SmashUpEvent,
 } from './types';
+import { isOperationRestricted } from './ongoingEffects';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
     isCardActionLike,
     isCardMinionLike,
+    isSameNameDefId,
 } from './utils';
 
 type ImmediateExtraLimitPayload = LimitModifiedEvent['payload'] & { playTiming: 'immediate' };
@@ -42,10 +44,30 @@ type ImmediateMinionTargetChoice = { baseIndex: number; minionUid: string };
 
 let immediateExtraPromptCounter = 0;
 
+function buildImmediateExtraEventKey(event: LimitModifiedEvent): string {
+    const payload = event.payload as ImmediateExtraLimitPayload;
+    return [
+        payload.playerId,
+        payload.limitType,
+        payload.reason,
+        payload.playTiming,
+        payload.delta,
+        payload.restrictToBase ?? '__any_base__',
+        payload.restrictToMinionUid ?? '__any_minion__',
+        payload.specificCardUid ?? '__any_card__',
+        payload.sameNameDefId ?? '__any_name__',
+        payload.sameNameOnly ? 'same_name' : 'not_same_name',
+        payload.powerMax ?? '__any_power__',
+        payload.specialActionWindow ?? '__any_window__',
+        event.timestamp ?? 0,
+    ].join('|');
+}
+
 function buildValidationState(
     state: MatchState<SmashUpCore>,
     extra: ImmediateExtraLimitPayload,
 ): MatchState<SmashUpCore> {
+    const actingPlayerIndex = state.core.turnOrder.indexOf(extra.playerId);
     const bankedExtra = extra.limitType === 'minion'
         ? grantExtraMinion(
             extra.playerId,
@@ -56,17 +78,23 @@ function buildValidationState(
                 powerMax: extra.powerMax,
                 sameNameOnly: extra.sameNameOnly,
                 sameNameDefId: extra.sameNameDefId,
+                specificCardUid: extra.specificCardUid,
             },
         )
         : grantExtraAction(extra.playerId, extra.reason, 0);
 
     return {
         ...state,
-        core: reduce(state.core, bankedExtra),
+        core: {
+            ...reduce(state.core, bankedExtra),
+            currentPlayerIndex: actingPlayerIndex >= 0 ? actingPlayerIndex : state.core.currentPlayerIndex,
+        },
         sys: {
             ...state.sys,
             phase: 'playCards',
             responseWindow: undefined,
+            // 额外行动只应按正常出牌阶段校验，不应继承当前结算链里残留的 reaction session。
+            resolution: undefined,
         },
     };
 }
@@ -81,6 +109,8 @@ function buildImmediateExtraMinionCardOptions(
 
     const handOptions = player.hand
         .filter(card => isCardMinionLike(card))
+        .filter(card => !extra.specificCardUid || card.uid === extra.specificCardUid)
+        .filter(card => !extra.sameNameDefId || isSameNameDefId(card.defId, extra.sameNameDefId))
         .flatMap((card, index) => {
             const validBaseIndices = state.core.bases
                 .map((_, baseIndex) => baseIndex)
@@ -103,7 +133,8 @@ function buildImmediateExtraMinionCardOptions(
             }];
         });
 
-    const titanOptions = getSetAsideTitansPlayableAs(state.core, extra.playerId, 'minion')
+    const titanOptions = extra.specificCardUid ? [] : getSetAsideTitansPlayableAs(state.core, extra.playerId, 'minion')
+        .filter(titan => !extra.sameNameDefId || isSameNameDefId(titan.defId, extra.sameNameDefId))
         .flatMap((titan, index) => {
             const validBaseIndices = state.core.bases
                 .map((_, baseIndex) => baseIndex)
@@ -137,6 +168,12 @@ function buildImmediateExtraMinionBaseOptions(
     extra: ImmediateExtraMinionPayload,
     choice: ImmediateMinionCardChoice,
 ) {
+    if (extra.sameNameDefId && !isSameNameDefId(choice.defId, extra.sameNameDefId)) {
+        return [];
+    }
+    if (extra.specificCardUid) {
+        if ('titanUid' in choice || choice.cardUid !== extra.specificCardUid) return [];
+    }
     const validationState = buildValidationState(state, extra);
     if ('titanUid' in choice) {
         const candidates = state.core.bases
@@ -176,23 +213,54 @@ function buildImmediateExtraActionCardOptions(
             if (!def) return [];
 
             const targetMode = getImmediateActionTargetMode(def);
-            const playable = targetMode === 'none'
-                ? validate(validationState, {
-                    type: SU_COMMANDS.PLAY_ACTION,
-                    playerId: extra.playerId,
-                    payload: { cardUid: card.uid },
-                }).valid
-                : targetMode === 'base'
-                    ? state.core.bases.some((_, baseIndex) => validate(validationState, {
+            if (extra.restrictToMinionUid && targetMode !== 'minion') return [];
+            const playable = (() => {
+                if (targetMode === 'none') {
+                    return validate(validationState, {
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
-                        payload: { cardUid: card.uid, targetBaseIndex: baseIndex },
-                    }).valid)
-                    : state.core.bases.some((base, baseIndex) => base.minions.some(minion => validate(validationState, {
+                        payload: { cardUid: card.uid },
+                    }).valid;
+                }
+                if (targetMode === 'base') {
+                    const baseChecks = state.core.bases.map((_base, baseIndex) => {
+                        const blockedByBaseRestriction = extra.restrictToBase !== undefined && extra.restrictToBase !== baseIndex;
+                        const blockedByWindowRestriction = !blockedByBaseRestriction
+                            && Boolean(
+                                extra.specialActionWindow
+                                && isOperationRestricted(validationState.core, baseIndex, extra.playerId, 'play_action', {
+                                    activationWindow: extra.specialActionWindow,
+                                }),
+                            );
+                        const validation = !blockedByBaseRestriction && !blockedByWindowRestriction
+                            ? validate(validationState, {
+                                type: SU_COMMANDS.PLAY_ACTION,
+                                playerId: extra.playerId,
+                                payload: { cardUid: card.uid, targetBaseIndex: baseIndex },
+                            })
+                            : { valid: false, error: blockedByBaseRestriction ? 'restricted_to_other_base' : 'restricted_by_window' };
+                        return {
+                            baseIndex,
+                            blockedByBaseRestriction,
+                            blockedByWindowRestriction,
+                            valid: validation.valid,
+                            error: validation.valid ? null : validation.error ?? null,
+                        };
+                    });
+                    return baseChecks.some(check => check.valid);
+                }
+                return state.core.bases.some((base, baseIndex) => {
+                    if (extra.restrictToBase !== undefined && extra.restrictToBase !== baseIndex) return false;
+                    if (extra.specialActionWindow && isOperationRestricted(validationState.core, baseIndex, extra.playerId, 'play_action', {
+                        activationWindow: extra.specialActionWindow,
+                    })) return false;
+                    return base.minions.some(minion => validate(validationState, {
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
                         payload: { cardUid: card.uid, targetBaseIndex: baseIndex, targetMinionUid: minion.uid },
-                    }).valid));
+                    }).valid);
+                });
+            })();
 
             if (!playable) return [];
 
@@ -233,6 +301,10 @@ function buildImmediateExtraActionBaseOptions(
     const validationState = buildValidationState(state, extra);
     const candidates = state.core.bases
         .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
+        .filter(candidate => extra.restrictToBase === undefined || candidate.baseIndex === extra.restrictToBase)
+        .filter(candidate => !extra.specialActionWindow || !isOperationRestricted(validationState.core, candidate.baseIndex, extra.playerId, 'play_action', {
+            activationWindow: extra.specialActionWindow,
+        }))
         .filter(candidate => validate(validationState, {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: extra.playerId,
@@ -251,9 +323,14 @@ function buildImmediateExtraActionMinionOptions(
     const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
 
     for (let baseIndex = 0; baseIndex < state.core.bases.length; baseIndex += 1) {
+        if (extra.restrictToBase !== undefined && extra.restrictToBase !== baseIndex) continue;
+        if (extra.specialActionWindow && isOperationRestricted(state.core, baseIndex, extra.playerId, 'play_action', {
+            activationWindow: extra.specialActionWindow,
+        })) continue;
         const base = state.core.bases[baseIndex];
         const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
         for (const minion of base.minions) {
+            if (extra.restrictToMinionUid && minion.uid !== extra.restrictToMinionUid) continue;
             if (!validate(validationState, {
                 type: SU_COMMANDS.PLAY_ACTION,
                 playerId: extra.playerId,
@@ -284,6 +361,11 @@ function executeImmediateExtraMinionPlay(
     random: Parameters<typeof execute>[2],
 ) {
     const validationState = buildValidationState(state, extra);
+    if (extra.specificCardUid) {
+        if ('titanUid' in choice || choice.cardUid !== extra.specificCardUid) {
+            return { state, events: [] };
+        }
+    }
     const validation = 'titanUid' in choice
         ? validate(validationState, {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
@@ -326,6 +408,7 @@ function executeImmediateExtraMinionPlay(
                     powerMax: extra.powerMax,
                     sameNameOnly: extra.sameNameOnly,
                     sameNameDefId: extra.sameNameDefId,
+                    specificCardUid: extra.specificCardUid,
                 },
             ),
             ...events,
@@ -342,6 +425,12 @@ function executeImmediateExtraActionPlay(
     targetBaseIndex?: number,
     targetMinionUid?: string,
 ) {
+    if (extra.restrictToMinionUid && targetMinionUid !== extra.restrictToMinionUid) {
+        return { state, events: [] };
+    }
+    if (extra.restrictToBase !== undefined && targetBaseIndex !== extra.restrictToBase) {
+        return { state, events: [] };
+    }
     const validationState = buildValidationState(state, extra);
     const validation = validate(validationState, {
         type: SU_COMMANDS.PLAY_ACTION,
@@ -359,7 +448,6 @@ function executeImmediateExtraActionPlay(
         payload: { cardUid: choice.cardUid, targetBaseIndex, targetMinionUid },
         timestamp,
     }, random);
-
     return {
         state: execState,
         events: [grantExtraAction(extra.playerId, extra.reason, timestamp), ...events],
@@ -723,9 +811,17 @@ export function queueImmediateExtraPlayInteractions(
     events: LimitModifiedEvent[],
 ): MatchState<SmashUpCore> {
     let nextState = state;
+    const sysAny = nextState.sys as Record<string, unknown>;
+    if (!(sysAny._processedImmediateExtraEvents instanceof Set)) {
+        sysAny._processedImmediateExtraEvents = new Set<string>();
+    }
+    const processedImmediateExtraEvents = sysAny._processedImmediateExtraEvents as Set<string>;
 
     for (const event of events) {
         if (event.payload.playTiming !== 'immediate' || event.payload.delta <= 0) continue;
+        const eventKey = buildImmediateExtraEventKey(event);
+        if (processedImmediateExtraEvents.has(eventKey)) continue;
+        processedImmediateExtraEvents.add(eventKey);
         const payload = event.payload as ImmediateExtraLimitPayload;
         const result = executeAbilityProgram(
             payload.limitType === 'minion'

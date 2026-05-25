@@ -14,7 +14,7 @@ import {
 } from '../domain/abilityRuntime';
 import { addTempPower, grantContextualExtraMinion, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback, buildValidatedReturnEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, DeckReorderedEvent, CardsDrawnEvent, SmashUpCore } from '../domain/types';
+import type { SmashUpEvent, DeckReorderedEvent, CardsDrawnEvent, SmashUpCore, CardInstance } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
@@ -79,6 +79,7 @@ export function registerInnsmouthAbilities(): void {
     registerAbilityProgram('innsmouth_return_to_the_sea', 'special', { program: innsmouthReturnToTheSeaProgram });
     registerTrigger('innsmouth_return_to_the_sea', 'afterScoring', innsmouthReturnToTheSeaAfterScoring, {
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     // 深潜者的秘密（行动卡）：3+同名随从时抽牌，可选额外抽牌并获得疯狂卡牌
@@ -131,22 +132,33 @@ function innsmouthTheDeepOnes(ctx: AbilityContext): AbilityResult {
 /** 新人 onPlay：所有玩家将弃牌堆中的所有随从洗回牌堆 */
 function innsmouthNewAcolytes(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
+    const workingDecks = new Map<PlayerId, CardInstance[]>(
+        Object.entries(ctx.state.players).map(([pid, player]) => [pid, [...player.deck]]),
+    );
     for (const pid of ctx.state.turnOrder) {
         const player = ctx.state.players[pid];
         const minionsInDiscard = player.discard.filter(c => c.type === 'minion');
         if (minionsInDiscard.length === 0) continue;
-        // 合并牌库 + 弃牌堆随从，洗牌
-        const newDeckCards = [...player.deck, ...minionsInDiscard];
-        const shuffled = ctx.random.shuffle([...newDeckCards]);
-        const evt: DeckReorderedEvent = {
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: {
-                playerId: pid,
-                deckUids: shuffled.map(c => c.uid),
-            },
-            timestamp: ctx.now,
-        };
-        events.push(evt);
+        const cardsByOwner = new Map<PlayerId, CardInstance[]>();
+        for (const card of minionsInDiscard) {
+            const ownerId = ctx.state.players[card.owner] ? card.owner : pid;
+            cardsByOwner.set(ownerId, [...(cardsByOwner.get(ownerId) ?? []), card]);
+        }
+        for (const [ownerId, cards] of cardsByOwner.entries()) {
+            const currentDeck = workingDecks.get(ownerId) ?? ctx.state.players[ownerId]?.deck ?? [];
+            const shuffled = ctx.random.shuffle([...currentDeck, ...cards]);
+            workingDecks.set(ownerId, shuffled);
+            const evt: DeckReorderedEvent = {
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ownerId,
+                    deckUids: shuffled.map(c => c.uid),
+                    ...(ownerId !== pid ? { sourcePlayerId: pid } : {}),
+                },
+                timestamp: ctx.now,
+            };
+            events.push(evt);
+        }
     }
     return { events };
 }
@@ -209,15 +221,16 @@ function innsmouthInPlainSightChecker(ctx: ProtectionCheckContext): boolean {
     // 检查基地上是否?in_plain_sight ongoing 行动?
     const sight = base.ongoingActions.find(o => matchesDefId(o.defId, 'innsmouth_in_plain_sight'));
     if (!sight) return false;
+    const controllerId = (sight.metadata?.sourceControllerId as PlayerId | undefined) ?? sight.ownerId;
     // 只保护?sight 拥有者的随从
-    if (ctx.targetMinion.controller !== sight.ownerId) return false;
+    if (ctx.targetMinion.controller !== controllerId) return false;
     // POD 版按印刷力量（basePower）判断；原版按当前有效力量判断
     const isPodVersion = sight.defId.endsWith('_pod');
     const protectedByPower =
         isPodVersion
             ? ctx.targetMinion.basePower <= 2
             : getMinionPower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex) <= 2;
-    return protectedByPower && ctx.sourcePlayerId !== sight.ownerId;
+    return protectedByPower && ctx.sourcePlayerId !== controllerId;
 }
 
 function buildReturnToSeaMinionOptions(

@@ -398,20 +398,20 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
     buildInteraction: (context) => {
         if (context.targetType === 'base') {
             return createAbilityRuntimeSimpleChoice(
-                `tornados_ripped_off_target_${context.now}`,
+                `tornados_ripped_off_target_base_${context.now}`,
                 context.playerId,
                 '扯走：选择新的基地',
                 buildBaseTargetOptions(collectBaseTargets(context.matchState.core, baseIndex => baseIndex !== context.fromBaseIndex), context.matchState.core),
-                { sourceId: 'tornados_ripped_off_target', targetType: 'base' },
+                { sourceId: 'tornados_ripped_off_target_base', targetType: 'base' },
             );
         }
         const targets = collectMinionTargets(context.matchState.core, (minion) => minion.uid !== context.fromMinionUid);
         return createAbilityRuntimeSimpleChoice(
-            `tornados_ripped_off_target_${context.now}`,
+            `tornados_ripped_off_target_minion_${context.now}`,
             context.playerId,
             '扯走：选择新的随从',
             buildMinionTargetOptions(targets, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'affect' }),
-            { sourceId: 'tornados_ripped_off_target', targetType: 'minion' },
+            { sourceId: 'tornados_ripped_off_target_minion', targetType: 'minion' },
         );
     },
     onResolve: ({ context, value, timestamp }) => {

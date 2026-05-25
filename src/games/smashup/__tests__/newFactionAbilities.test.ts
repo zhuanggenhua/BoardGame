@@ -25,12 +25,12 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { getDiscardSpecialOptions } from '../domain/discardSpecialAbilities';
 import { startDuel } from '../domain/duel';
-import { clearOngoingEffectRegistry, collectTriggers, fireTriggers, interceptEvent, isMinionProtected } from '../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers, interceptEvent, isMinionProtected, isOperationRestricted } from '../domain/ongoingEffects';
 import { getEffectivePower, getPlayerEffectivePowerOnBase, getTotalEffectivePowerOnBase } from '../domain/ongoingModifiers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { reduce } from '../domain/reduce';
-import { execute, processDestroyTriggers } from '../domain/reducer';
+import { execute, processAffectTriggers, processDestroyTriggers, processReturnToHandTriggers } from '../domain/reducer';
 import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { validate } from '../domain/commands';
 import { resumePendingBranchingChoiceFrames } from '../domain/branchingChoice';
@@ -362,6 +362,45 @@ describe('Vikings abilities', () => {
         expect(resolved.finalState.core.bases[0].minions[0].tempPowerModifier).toBe(2);
     });
 
+    it('vikings_huscarl 选择被他人拥有的手牌时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-1', 'robot_microbot_alpha', 'minion', '1')],
+                    deck: [makeCard('p0-deck-1', 'robot_microbot_beta', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-1', 'wizard_summon', 'action', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('h1', 'vikings_huscarl', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'h1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('vikings_huscarl');
+
+        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-1');
+        const resolved = runCommand(
+            talent.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['0'].hand).toHaveLength(0);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-1', 'p1-deck-1']);
+        expect(resolved.finalState.core.bases[0].minions[0].tempPowerModifier).toBe(2);
+    });
+
     it('vikings_shield_maiden 会揭示对手牌库顶并把合格牌拿到自己手里', () => {
         const core = makeState({
             players: {
@@ -609,7 +648,52 @@ describe('Vikings abilities', () => {
         expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['intrude', 'top-a', 'top-b', 'rest-1']);
     });
 
-    it('vikings_raiding_party 的候选应随当前牌库顶快照刷新，避免继续引用已离开的旧揭示牌', () => {
+    it('vikings_cast_the_runes_order 排序 borrowed 揭示牌时应回到其拥有者牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('runes-1', 'vikings_cast_the_runes', 'action', '0')],
+                    deck: [makeCard('p0-deck-a', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('victim-hand', 'robot_microbot_alpha', 'minion', '1')],
+                    deck: [
+                        makeCard('borrowed-top', 'robot_microbot_beta', 'minion', '0'),
+                        makeCard('own-top', 'wizard_summon', 'action', '1'),
+                        makeCard('rest-1', 'robot_microbot_gamma', 'minion', '1'),
+                    ],
+                }),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'runes-1' } },
+            defaultTestRandom,
+        );
+        const playerPrompt = getInteractionsFromMS(play.finalState)[0] as any;
+        const choosePlayer = playerPrompt.data.options.find((entry: any) => entry.value?.targetPlayerId === '1');
+        const afterPlayer = runCommand(
+            play.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: choosePlayer.id } } as any,
+            defaultTestRandom,
+        );
+
+        const orderPrompt = getInteractionsFromMS(afterPlayer.finalState)[0] as any;
+        expect(orderPrompt?.data?.sourceId).toBe('vikings_cast_the_runes_order');
+        const ownTopOption = orderPrompt.data.options.find((entry: any) => entry.value?.topCardUid === 'own-top');
+        const resolved = runCommand(
+            afterPlayer.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: ownTopOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['own-top', 'rest-1']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['borrowed-top', 'p0-deck-a']);
+    });
+
+    it('vikings_raiding_party 的候选应随当前牌库顶快照刷新，并让额外打出的行动进入其拥有者弃牌堆', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -673,8 +757,51 @@ describe('Vikings abilities', () => {
         );
 
         expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['top-extra', 'rest-1']);
-        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'top-action')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'top-action')).toBe(false);
+        expect(resolved.finalState.core.players['1'].discard.some(card => card.uid === 'top-action')).toBe(true);
         expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'top-minion')).toBe(false);
+    });
+
+    it('vikings_raiding_party 从目标牌库额外打出 borrowed 行动时，仍应进入真实拥有者弃牌堆', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('rp-1', 'vikings_raiding_party', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('borrowed-action', 'wizard_summon', 'action', '0'),
+                        makeCard('rest-1', 'robot_microbot_gamma', 'minion', '1'),
+                    ],
+                }),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'rp-1' } },
+            defaultTestRandom,
+        );
+        const playerPrompt = getInteractionsFromMS(play.finalState)[0] as any;
+        const choosePlayer = playerPrompt.data.options.find((entry: any) => entry.value?.targetPlayerId === '1');
+        const afterPlayer = runCommand(
+            play.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: choosePlayer.id } } as any,
+            defaultTestRandom,
+        );
+
+        const choicePrompt = getInteractionsFromMS(afterPlayer.finalState)[0] as any;
+        const chooseAction = choicePrompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-action');
+        const resolved = runCommand(
+            afterPlayer.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: chooseAction.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['rest-1']);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-action')).toBe(true);
+        expect(resolved.finalState.core.players['1'].discard.some(card => card.uid === 'borrowed-action')).toBe(false);
     });
 
     it('vikings_raiding_party 选择需要基地的行动时会先选基地再作为额外行动打出', () => {
@@ -773,6 +900,74 @@ describe('Vikings abilities', () => {
 
         expect(resolved.finalState.core.players['0'].deck[0]?.uid).toBe('topdeck-1');
         expect(resolved.finalState.core.bases[0].minions[0].tempPowerModifier).toBe(4);
+    });
+
+    it('vikings_viking_funeral 在宿主进入弃牌堆后仍会基于 queued LKI 奖励 1 VP 并移出己方随从', () => {
+        const beforeDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'vikings_huscarl', '0', 2, {
+                    attachedActions: [{ uid: 'funeral-1', defId: 'vikings_viking_funeral', ownerId: '0' }],
+                })],
+                ongoingActions: [],
+            }],
+        });
+
+        const queued = collectTriggers(beforeDiscardCore, 'onMinionDiscardedFromBase', {
+            state: beforeDiscardCore,
+            matchState: makeMatchState(beforeDiscardCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'ally-1',
+            triggerMinionDefId: 'vikings_huscarl',
+            triggerMinion: beforeDiscardCore.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 1003,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.some((trigger: any) => trigger.sourceDefId === 'vikings_viking_funeral')).toBe(true);
+
+        const afterDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('ally-1', 'vikings_huscarl', 'minion', '0'),
+                        makeCard('funeral-1', 'vikings_viking_funeral', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [],
+            }],
+            triggerQueue: queued.payload.triggers,
+        });
+
+        const resolved = maybeResolveReactionQueue(makeMatchState(afterDiscardCore), defaultTestRandom, 1003);
+
+        expect(resolved).toBeDefined();
+        expect(resolved!.events.some((event: any) => (
+            event.type === SU_EVENTS.VP_AWARDED
+            && event.payload?.playerId === '0'
+            && event.payload?.amount === 1
+            && event.payload?.reason === 'vikings_viking_funeral'
+        ))).toBe(true);
+        expect(resolved!.events.some((event: any) => (
+            event.type === SU_EVENTS.CARD_REMOVED_FROM_GAME
+            && event.payload?.playerId === '0'
+            && event.payload?.cardUid === 'ally-1'
+            && event.payload?.defId === 'vikings_huscarl'
+        ))).toBe(true);
     });
 });
 
@@ -1557,6 +1752,63 @@ describe('Cowboys abilities', () => {
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['top-c', 'top-a', 'rest-1']);
     });
 
+    it('cowboys_gold_in_them_thar_hills 未选中的 borrowed 揭示牌应回到拥有者牌库而不是当前玩家牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('gold-1', 'cowboys_gold_in_them_thar_hills', 'action', '0')],
+                    deck: [
+                        makeCard('borrowed-top-a', 'robot_microbot_alpha', 'minion', '1'),
+                        makeCard('top-b', 'wizard_summon', 'action', '0'),
+                        makeCard('top-c', 'robot_microbot_beta', 'minion', '0'),
+                        makeCard('rest-1', 'robot_microbot_gamma', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'robot_microbot_gamma', 'minion', '1')],
+                }),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'gold-1' } },
+            defaultTestRandom,
+        );
+        const choicePrompt = getInteractionsFromMS(play.finalState)[0] as any;
+        expect(choicePrompt?.data?.sourceId).toBe('cowboys_gold_in_them_thar_hills');
+
+        const chooseTopB = choicePrompt.data.options.find((entry: any) => entry.value?.cardUid === 'top-b');
+        const afterChoice = runCommand(
+            play.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: chooseTopB.id } } as any,
+            defaultTestRandom,
+        );
+
+        const orderPrompt = getInteractionsFromMS(afterChoice.finalState)[0] as any;
+        expect(orderPrompt?.data?.sourceId).toBe('cowboys_gold_in_them_thar_hills_order');
+        const chooseTopC = orderPrompt.data.options.find((entry: any) => entry.value?.topCardUid === 'top-c');
+        const afterOrder = runCommand(
+            afterChoice.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: chooseTopC.id } } as any,
+            defaultTestRandom,
+        );
+
+        const modePrompt = getInteractionsFromMS(afterOrder.finalState)[0] as any;
+        expect(modePrompt?.data?.sourceId).toBe('cowboys_gold_in_them_thar_hills_mode');
+        const keepOption = modePrompt.data.options.find((entry: any) => entry.value?.mode === 'hand');
+        const resolved = runCommand(
+            afterOrder.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: keepOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'top-b')).toBe(true);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['top-c', 'rest-1']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-top-a', 'p1-deck-a']);
+    });
+
     it('cowboys_gold_in_them_thar_hills 的排序候选缩小后仍应按当前快照继续正常选择', () => {
         const core = makeState({
             players: {
@@ -1970,6 +2222,136 @@ describe('Cowboys abilities', () => {
         expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === 'gold-1')).toBe(true);
         expect((resolved.finalState.core.bases[0].buriedCards ?? []).some(card => card.uid === 'bury-1')).toBe(false);
         expect((resolved.finalState.core.bases[1].buriedCards ?? []).some(card => card.uid === 'bury-1')).toBe(true);
+    });
+
+    it('cowboys_stagecoach 同时搬运随从与基地持续行动时，不应因随从移动事件而丢失持续行动的真实迁移', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('stagecoach-1', 'cowboys_stagecoach', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('ally-1', 'cowboys_gunfighter', '0', 3)],
+                    ongoingActions: [{ uid: 'gold-1', defId: 'cowboys_gold_strike', ownerId: '0' } as any],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'stagecoach-1' } },
+            defaultTestRandom,
+        );
+        const sourcePrompt = getInteractionsFromMS(play.finalState)[0] as any;
+        const sourceOption = sourcePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 0);
+        const afterSource = runCommand(
+            play.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: sourceOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const cardsPrompt = getInteractionsFromMS(afterSource.finalState)[0] as any;
+        const ally = cardsPrompt.data.options.find((entry: any) => entry.value?.uid === 'ally-1');
+        const ongoing = cardsPrompt.data.options.find((entry: any) => entry.value?.uid === 'gold-1');
+        expect(ally).toBeDefined();
+        expect(ongoing).toBeDefined();
+
+        const afterCards = runCommand(
+            afterSource.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionIds: [ally.id, ongoing.id] } } as any,
+            defaultTestRandom,
+        );
+
+        const destPrompt = getInteractionsFromMS(afterCards.finalState)[0] as any;
+        const destOption = destPrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        const resolved = runCommand(
+            afterCards.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: destOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.MINION_MOVED)).toHaveLength(1);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'ally-1')).toBe(false);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'ally-1')).toBe(true);
+        expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === 'gold-1')).toBe(false);
+        expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === 'gold-1')).toBe(true);
+    });
+
+    it('cowboys_stagecoach 应按控制者而不是真实 owner 搬运基地上的 borrowed 持续行动', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('stagecoach-1', 'cowboys_stagecoach', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [{
+                        uid: 'borrowed-gold-1',
+                        defId: 'cowboys_gold_strike',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'stagecoach-1' } },
+            defaultTestRandom,
+        );
+        const sourcePrompt = getInteractionsFromMS(play.finalState)[0] as any;
+        expect(sourcePrompt?.data?.sourceId).toBe('cowboys_stagecoach_source');
+
+        const sourceOption = sourcePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 0);
+        expect(sourceOption).toBeDefined();
+        const afterSource = runCommand(
+            play.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: sourceOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const cardsPrompt = getInteractionsFromMS(afterSource.finalState)[0] as any;
+        expect(cardsPrompt?.data?.sourceId).toBe('cowboys_stagecoach_cards');
+        const borrowedOngoing = cardsPrompt.data.options.find((entry: any) => entry.value?.uid === 'borrowed-gold-1');
+        expect(borrowedOngoing).toBeDefined();
+
+        const afterCards = runCommand(
+            afterSource.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionIds: [borrowedOngoing.id] } } as any,
+            defaultTestRandom,
+        );
+
+        const destPrompt = getInteractionsFromMS(afterCards.finalState)[0] as any;
+        const destOption = destPrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        const resolved = runCommand(
+            afterCards.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: destOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === 'borrowed-gold-1')).toBe(false);
+        const moved = resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'borrowed-gold-1');
+        expect(moved).toBeDefined();
+        expect((moved as any).ownerId).toBe('1');
     });
 
     it('cowboys_stagecoach 也可搬运你控制的泰坦', () => {
@@ -2715,6 +3097,38 @@ describe('Samurai abilities', () => {
         expect(play.finalState.core.players['0'].discard.some(card => card.uid === 'discard-1')).toBe(false);
     });
 
+    it('samurai_honor_the_ancestors 洗回被他人拥有的弃牌随从时，应进入其拥有者牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('ancestors-1', 'samurai_honor_the_ancestors', 'action', '0')],
+                    deck: [makeCard('p0-deck-a', 'robot_microbot_alpha', 'minion', '0')],
+                    discard: [makeCard('borrowed-ronin', 'samurai_ronin', 'minion', '1')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'robot_microbot_alpha', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'samurai_bushi', '0', 4)],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'ancestors-1' } },
+            defaultTestRandom,
+        );
+
+        expect(play.success).toBe(true);
+        expect(play.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1')?.powerCounters).toBe(1);
+        expect(play.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-ronin')).toBe(false);
+        expect(play.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a']);
+        expect(play.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-a', 'borrowed-ronin']);
+    });
+
     it('samurai_way_of_the_warrior 会让目标本回合进入弃牌堆时抽一张牌', () => {
         const core = makeState({
             players: {
@@ -2803,6 +3217,186 @@ describe('Samurai abilities', () => {
         expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
     });
 
+    it('samurai_samurai_chan_pod 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('chan-pod-draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('chan-pod-draw-b', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('chan-pod-dup-1', 'samurai_samurai_chan_pod', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+
+        const state = makeMatchState(core);
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'chan-pod-dup-1',
+                minionDefId: 'samurai_samurai_chan_pod',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1019,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1019);
+        const drawEvents = processed.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        expect(drawEvents).toHaveLength(1);
+        expect(drawEvents[0]?.payload?.playerId).toBe('0');
+        expect(drawEvents[0]?.payload?.count).toBe(1);
+    });
+
+    it('samurai_samurai_chan 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('chan-draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('chan-draw-b', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('chan-1', 'samurai_samurai_chan', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+
+        const state = makeMatchState(core);
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'chan-1',
+                minionDefId: 'samurai_samurai_chan',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1011,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1011);
+        const drawEvents = processed.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        expect(drawEvents).toHaveLength(1);
+        expect(drawEvents[0]?.payload?.playerId).toBe('0');
+        expect(drawEvents[0]?.payload?.count).toBe(1);
+    });
+
+    it('samurai_way_of_the_warrior 在 destroy -> processDestroyTriggers 真链进入弃牌堆时也会通过 queued onMinionDiscardedFromBase 抽牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('warrior-1', 'samurai_way_of_the_warrior', 'action', '0')],
+                    deck: [makeCard('draw-1', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'samurai_ronin', '0', 3)],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'warrior-1', targetBaseIndex: 0, targetMinionUid: 'ally-1' },
+            },
+            defaultTestRandom,
+        );
+
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'ally-1',
+                minionDefId: 'samurai_ronin',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1011,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], play.finalState, '1', defaultTestRandom, 1011);
+        const queuedEvent = processed.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        expect(queuedEvent).toBeDefined();
+        expect((queuedEvent.payload?.triggers ?? []).some((trigger: any) => trigger.sourceDefId === 'samurai_way_of_the_warrior')).toBe(true);
+
+        const queuedState = makeMatchState({
+            ...play.finalState.core,
+            triggerQueue: queuedEvent.payload.triggers,
+        });
+        const resolved = maybeResolveReactionQueue(queuedState, defaultTestRandom, 1011);
+        expect(resolved).toBeDefined();
+        expect(resolved!.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+    });
+
+    it('samurai_way_of_the_warrior 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('warrior-dup-1', 'samurai_way_of_the_warrior', 'action', '0')],
+                    deck: [
+                        makeCard('warrior-draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('warrior-draw-b', 'robot_microbot_beta', 'minion', '0'),
+                        makeCard('warrior-draw-c', 'robot_microbot_gamma', 'minion', '0'),
+                        makeCard('warrior-draw-d', 'robot_microbot_alpha', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('warrior-host-1', 'samurai_ronin', '0', 3)],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'warrior-dup-1', targetBaseIndex: 0, targetMinionUid: 'warrior-host-1' },
+            },
+            defaultTestRandom,
+        );
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'warrior-host-1',
+                minionDefId: 'samurai_ronin',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1015,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], play.finalState, '1', defaultTestRandom, 1015);
+        const immediateDraws = processed.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        const totalDrawCount = immediateDraws.reduce((sum, event) => sum + (event.payload?.count ?? 0), 0);
+        expect(totalDrawCount).toBe(2);
+    });
+
     it('samurai_way_of_the_warrior_pod 在目标因基地结算进入弃牌堆时也会抽一张牌', () => {
         const core = makeState({
             players: {
@@ -2845,6 +3439,56 @@ describe('Samurai abilities', () => {
         });
 
         expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+    });
+
+    it('samurai_way_of_the_warrior_pod 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('warrior-pod-dup-1', 'samurai_way_of_the_warrior_pod', 'action', '0')],
+                    deck: [
+                        makeCard('warrior-pod-draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('warrior-pod-draw-b', 'robot_microbot_beta', 'minion', '0'),
+                        makeCard('warrior-pod-draw-c', 'robot_microbot_gamma', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('warrior-pod-host-1', 'samurai_ronin_pod', '0', 3)],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'warrior-pod-dup-1', targetBaseIndex: 0, targetMinionUid: 'warrior-pod-host-1' },
+            },
+            defaultTestRandom,
+        );
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'warrior-pod-host-1',
+                minionDefId: 'samurai_ronin_pod',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1017,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], play.finalState, '1', defaultTestRandom, 1017);
+        const totalDrawCount = processed.events
+            .filter(event => event.type === SU_EVENTS.CARDS_DRAWN)
+            .reduce((sum, event: any) => sum + (event.payload?.count ?? 0), 0);
+
+        expect(totalDrawCount).toBe(2);
     });
 
     it('samurai_way_of_the_warrior 在焦油坑把目标改放牌库底时不会抽牌', () => {
@@ -2926,6 +3570,86 @@ describe('Samurai abilities', () => {
         expect(counterEvent.payload.amount).toBe(1);
     });
 
+    it('samurai_shogun 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双加指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('shogun-dup-1', 'samurai_shogun', '0', 5),
+                    makeMinion('ally-dup-1', 'samurai_ronin', '0', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const state = makeMatchState(core);
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'ally-dup-1',
+                minionDefId: 'samurai_ronin',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1013,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1013);
+        const counterEvents = processed.events.filter(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'shogun-dup-1'
+            && (event as any).payload?.reason === 'samurai_shogun',
+        ) as any[];
+        expect(counterEvents).toHaveLength(1);
+        expect(counterEvents[0]?.payload?.amount).toBe(1);
+    });
+
+    it('samurai_shogun_pod 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双加指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('shogun-pod-dup-1', 'samurai_shogun_pod', '0', 5),
+                    makeMinion('ally-pod-dup-1', 'samurai_ronin_pod', '0', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const state = makeMatchState(core);
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'ally-pod-dup-1',
+                minionDefId: 'samurai_ronin_pod',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1022,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1022);
+        const counterEvents = processed.events.filter(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'shogun-pod-dup-1'
+            && (event as any).payload?.reason === 'samurai_shogun',
+        ) as any[];
+        expect(counterEvents).toHaveLength(1);
+        expect(counterEvents[0]?.payload?.amount).toBe(1);
+    });
+
     it('samurai_bushi_pod 在以 5 力量因基地结算进入弃牌堆时会给你 1VP，且 samurai_shogun_pod 仍会获得指示物', () => {
         const state = makeState({
             players: {
@@ -2968,6 +3692,78 @@ describe('Samurai abilities', () => {
             event.type === SU_EVENTS.POWER_COUNTER_ADDED
             && (event as any).payload.minionUid === 'shogun-pod-1',
         )).toBe(true);
+    });
+
+    it('samurai_bushi_pod 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双给 VP', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('bushi-pod-dup-1', 'samurai_bushi_pod', '0', 4, { powerCounters: 1 })],
+                ongoingActions: [],
+            }],
+        });
+        const state = makeMatchState(core);
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'bushi-pod-dup-1',
+                minionDefId: 'samurai_bushi_pod',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1020,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1020);
+        const vpEvents = processed.events.filter(event =>
+            event.type === SU_EVENTS.VP_AWARDED
+            && (event as any).payload?.playerId === '0'
+            && (event as any).payload?.reason === 'samurai_bushi',
+        ) as any[];
+        expect(vpEvents).toHaveLength(1);
+        expect(vpEvents[0]?.payload?.amount).toBe(1);
+    });
+
+    it('samurai_bushi 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双给 VP', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('bushi-dup-1', 'samurai_bushi', '0', 4, { powerCounters: 1 })],
+                ongoingActions: [],
+            }],
+        });
+        const state = makeMatchState(core);
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'bushi-dup-1',
+                minionDefId: 'samurai_bushi',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1012,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1012);
+        const vpEvents = processed.events.filter(event =>
+            event.type === SU_EVENTS.VP_AWARDED
+            && (event as any).payload?.playerId === '0'
+            && (event as any).payload?.reason === 'samurai_bushi',
+        ) as any[];
+        expect(vpEvents).toHaveLength(1);
+        expect(vpEvents[0]?.payload?.amount).toBe(1);
     });
 
     it('samurai_bushi 在被消灭时应使用离场前有效力量判定 5 力量奖励 VP', () => {
@@ -3051,6 +3847,134 @@ describe('Samurai abilities', () => {
         expect(tempPowerTargets).toContain('ally-2');
     });
 
+    it('samurai_final_haiku 在宿主进入弃牌堆后仍会通过 queued discard trigger 给其他己方随从 +2 力量', () => {
+        const beforeDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('host-1', 'samurai_bushi', '0', 4, {
+                            attachedActions: [{ uid: 'haiku-1', defId: 'samurai_final_haiku', ownerId: '0' }] as any,
+                        }),
+                        makeMinion('ally-1', 'samurai_ronin', '0', 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ally-2', 'robot_microbot_alpha', '0', 2)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(beforeDiscardCore, 'onMinionDiscardedFromBase', {
+            state: beforeDiscardCore,
+            matchState: makeMatchState(beforeDiscardCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinion: beforeDiscardCore.bases[0].minions[0],
+            triggerMinionUid: 'host-1',
+            triggerMinionDefId: 'samurai_bushi',
+            random: defaultTestRandom,
+            now: 1004,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.some((trigger: any) => trigger.sourceDefId === 'samurai_final_haiku')).toBe(true);
+
+        const afterDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('host-1', 'samurai_bushi', 'minion', '0'),
+                        makeCard('haiku-1', 'samurai_final_haiku', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('ally-1', 'samurai_ronin', '0', 3)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ally-2', 'robot_microbot_alpha', '0', 2)],
+                    ongoingActions: [],
+                },
+            ],
+            triggerQueue: queued.payload.triggers,
+        });
+
+        const resolved = maybeResolveReactionQueue(makeMatchState(afterDiscardCore), defaultTestRandom, 1004);
+        expect(resolved).toBeDefined();
+
+        const tempPowerTargets = resolved!.events
+            .filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)
+            .map((event: any) => event.payload.minionUid);
+        expect(tempPowerTargets).toContain('ally-1');
+        expect(tempPowerTargets).toContain('ally-2');
+        expect(tempPowerTargets).not.toContain('host-1');
+    });
+
+    it('samurai_final_haiku 在 destroy -> processDestroyTriggers 真链里不应给同一批己方随从重复 +2 力量', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('haiku-host-dup-1', 'samurai_bushi', '0', 4, {
+                            attachedActions: [{ uid: 'haiku-dup-1', defId: 'samurai_final_haiku', ownerId: '0' }] as any,
+                        }),
+                        makeMinion('haiku-ally-a', 'samurai_ronin', '0', 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('haiku-ally-b', 'robot_microbot_alpha', '0', 2)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'haiku-host-dup-1',
+                minionDefId: 'samurai_bushi',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1016,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], makeMatchState(core), '1', defaultTestRandom, 1016);
+        const immediateTempPowerTargets = processed.events
+            .filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)
+            .map((event: any) => event.payload.minionUid);
+        expect(immediateTempPowerTargets.filter(uid => uid === 'haiku-ally-a')).toHaveLength(1);
+        expect(immediateTempPowerTargets.filter(uid => uid === 'haiku-ally-b')).toHaveLength(1);
+        expect(immediateTempPowerTargets).not.toContain('haiku-host-dup-1');
+    });
+
     it('samurai_final_haiku_pod 在附着随从离场后给你的随从直到回合结束 +2 力量', () => {
         const state = makeState({
             players: {
@@ -3097,6 +4021,56 @@ describe('Samurai abilities', () => {
         expect(tempPowerTargets).toContain('ally-pod-2');
     });
 
+    it('samurai_final_haiku_pod 在 destroy -> processDestroyTriggers 真链里不应给同一批己方随从重复 +2 力量', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('haiku-pod-host-dup-1', 'samurai_bushi_pod', '0', 4, {
+                            attachedActions: [{ uid: 'haiku-pod-dup-1', defId: 'samurai_final_haiku_pod', ownerId: '0' }] as any,
+                        }),
+                        makeMinion('haiku-pod-ally-a', 'samurai_ronin_pod', '0', 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('haiku-pod-ally-b', 'robot_microbot_alpha', '0', 2)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'haiku-pod-host-dup-1',
+                minionDefId: 'samurai_bushi_pod',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1018,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], makeMatchState(core), '1', defaultTestRandom, 1018);
+        const tempPowerTargets = processed.events
+            .filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)
+            .map((event: any) => event.payload.minionUid);
+
+        expect(tempPowerTargets.filter(uid => uid === 'haiku-pod-ally-a')).toHaveLength(1);
+        expect(tempPowerTargets.filter(uid => uid === 'haiku-pod-ally-b')).toHaveLength(1);
+        expect(tempPowerTargets).not.toContain('haiku-pod-host-dup-1');
+    });
+
     it('samurai_honor_the_fallen 在你此处的随从进入弃牌堆后让你抓一张牌', () => {
         const state = makeState({
             players: {
@@ -3126,6 +4100,84 @@ describe('Samurai abilities', () => {
         });
 
         expect(result.events.some(e => e.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+    });
+
+    it('samurai_honor_the_fallen_pod 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双抽', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('hof-pod-draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('hof-pod-draw-b', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('hof-pod-target-1', 'samurai_ronin_pod', '0', 3)],
+                ongoingActions: [{ uid: 'hof-pod-dup-1', defId: 'samurai_honor_the_fallen_pod', ownerId: '0' } as any],
+            }],
+        });
+
+        const state = makeMatchState(core);
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'hof-pod-target-1',
+                minionDefId: 'samurai_ronin_pod',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1021,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1021);
+        const drawEvents = processed.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        expect(drawEvents).toHaveLength(1);
+        expect(drawEvents[0]?.payload?.playerId).toBe('0');
+        expect(drawEvents[0]?.payload?.count).toBe(1);
+    });
+
+    it('samurai_honor_the_fallen 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双抽', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('hof-draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('hof-draw-b', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('hof-target-1', 'samurai_ronin', '0', 3)],
+                ongoingActions: [{ uid: 'hof-dup-1', defId: 'samurai_honor_the_fallen', ownerId: '0' } as any],
+            }],
+        });
+
+        const state = makeMatchState(core);
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'hof-target-1',
+                minionDefId: 'samurai_ronin',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1014,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1014);
+        const drawEvents = processed.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        expect(drawEvents).toHaveLength(1);
+        expect(drawEvents[0]?.payload?.playerId).toBe('0');
+        expect(drawEvents[0]?.payload?.count).toBe(1);
     });
 });
 
@@ -3649,6 +4701,53 @@ describe('黑熊骑兵派系能力', () => {
 // ============================================================================
 
 describe('巨蚁派系能力', () => {
+    it('borrowed giant_ant_the_show_must_go_on 应按控制者而不是真实 owner 保护控制者有指示物的随从', () => {
+        const protectedMinion = makeMinion('ant-1', 'giant_ant_worker', '0', 3, {
+            powerModifier: 0,
+            powerCounters: 1,
+        });
+        const core = makeState({
+            bases: [{
+                defId: 'base_a',
+                minions: [protectedMinion],
+                ongoingActions: [{
+                    uid: 'show-borrowed',
+                    defId: 'giant_ant_the_show_must_go_on',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            }],
+        });
+
+        expect(isMinionProtected(core, protectedMinion, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(core, protectedMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(core, protectedMinion, 0, '1', 'affect')).toBe(true);
+        expect(isMinionProtected(core, protectedMinion, 0, '0', 'destroy')).toBe(false);
+    });
+
+    it('borrowed giant_ant_the_show_must_go_on 不应反向保护真实 owner 的有指示物随从', () => {
+        const ownerMinion = makeMinion('ant-2', 'giant_ant_worker', '1', 3, {
+            powerModifier: 0,
+            powerCounters: 1,
+        });
+        const core = makeState({
+            bases: [{
+                defId: 'base_a',
+                minions: [ownerMinion],
+                ongoingActions: [{
+                    uid: 'show-borrowed',
+                    defId: 'giant_ant_the_show_must_go_on',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            }],
+        });
+
+        expect(isMinionProtected(core, ownerMinion, 0, '0', 'destroy')).toBe(false);
+        expect(isMinionProtected(core, ownerMinion, 0, '0', 'move')).toBe(false);
+        expect(isMinionProtected(core, ownerMinion, 0, '0', 'affect')).toBe(false);
+    });
+
     it('无人想要永生：可逐次移除并在确认后抽牌', () => {
         const core = makeState({
             players: {
@@ -4023,6 +5122,233 @@ describe('巨蚁派系能力', () => {
         expect((added as any).payload.amount).toBe(1);
     });
 
+    it('giant_ant_worker_pod 在宿主进入弃牌堆后仍会通过 queued discard trigger 提示从弃牌堆打到另一基地', () => {
+        const beforeDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('worker-pod-1', 'giant_ant_worker_pod', '0', 2, { powerCounters: 0 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ally-1', 'test_other', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(beforeDiscardCore, 'onMinionDiscardedFromBase', {
+            state: beforeDiscardCore,
+            matchState: makeMatchState(beforeDiscardCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'worker-pod-1',
+            triggerMinionDefId: 'giant_ant_worker_pod',
+            triggerMinion: beforeDiscardCore.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 1010,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.some((trigger: any) => trigger.sourceDefId === 'giant_ant_worker_pod')).toBe(true);
+
+        const afterDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('worker-pod-1', 'giant_ant_worker_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ally-1', 'test_other', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+            triggerQueue: queued.payload.triggers,
+        });
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState(afterDiscardCore),
+            defaultTestRandom,
+            1010,
+        );
+        expect(resolved).toBeDefined();
+
+        const current = resolved!.state.sys.interaction.current as any;
+        expect(current?.data?.sourceId).toBe('giant_ant_worker_pod_replay');
+        expect(current?.playerId).toBe('0');
+        const optionBaseIndices = (current?.data?.options ?? [])
+            .map((option: any) => option?.value?.baseIndex)
+            .filter((value: any) => typeof value === 'number' && value >= 0);
+        expect(optionBaseIndices).toContain(1);
+        expect(optionBaseIndices).not.toContain(0);
+    });
+
+    it('giant_ant_worker_pod 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重 replay', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('worker-pod-dup-1', 'giant_ant_worker_pod', '0', 2, { powerCounters: 0 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('worker-pod-ally-1', 'test_other', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'worker-pod-dup-1',
+                minionDefId: 'giant_ant_worker_pod',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1011,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], makeMatchState(core), '1', defaultTestRandom, 1011);
+        const workerReplayTriggers = processed.events
+            .filter(event => event.type === SU_EVENTS.TRIGGER_QUEUED)
+            .flatMap((event: any) => event.payload?.triggers ?? [])
+            .filter((trigger: any) => trigger?.sourceDefId === 'giant_ant_worker_pod');
+
+        expect(workerReplayTriggers.length).toBeGreaterThan(0);
+
+        const afterDestroyCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('worker-pod-dup-1', 'giant_ant_worker_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('worker-pod-ally-1', 'test_other', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queuedState = makeMatchState({
+            ...afterDestroyCore,
+            triggerQueue: workerReplayTriggers,
+        });
+        const resolved = maybeResolveReactionQueue(queuedState, defaultTestRandom, 1011);
+        expect(resolved).toBeDefined();
+        expect((resolved!.state.sys.interaction.current?.data as any)?.sourceId).toBe('giant_ant_worker_pod_replay');
+        expect(
+            resolved!.state.sys.interaction.queue.filter(
+                (interaction: any) => interaction?.data?.sourceId === 'giant_ant_worker_pod_replay',
+            ),
+        ).toHaveLength(0);
+
+        const replayOption = ((resolved!.state.sys.interaction.current?.data as any)?.options ?? [])
+            .find((option: any) => option?.value?.baseIndex === 1);
+        expect(replayOption).toBeDefined();
+
+        const responded = runCommand(
+            resolved!.state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: replayOption.id } } as any,
+            defaultTestRandom,
+        );
+        expect(responded.finalState.core.bases[1].minions.filter(minion => minion.uid === 'worker-pod-dup-1')).toHaveLength(1);
+
+        const followUp = maybeResolveReactionQueue(responded.finalState, defaultTestRandom, 1012);
+        expect((followUp?.state.sys.interaction.current?.data as any)?.sourceId).not.toBe('giant_ant_worker_pod_replay');
+    });
+
+    it('giant_ants_death_on_six_legs 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双加指示物', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('six-legs-victim-1', 'giant_ant_worker', '0', 2, { powerCounters: 2 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'six-legs-titan-1',
+                defId: 'giant_ants_death_on_six_legs',
+                faction: 'giant_ants',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+            } as any],
+        });
+
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'six-legs-victim-1',
+                minionDefId: 'giant_ant_worker',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1013,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], makeMatchState(core), '1', defaultTestRandom, 1013);
+        const titanCounterEvents = processed.events.filter((event: any) =>
+            event.type === SU_EVENTS.TITAN_POWER_COUNTER_ADDED
+            && event.payload?.titanUid === 'six-legs-titan-1'
+            && event.payload?.reason === 'giant_ants_death_on_six_legs',
+        );
+
+        expect(titanCounterEvents).toHaveLength(1);
+        expect((titanCounterEvents[0] as any).payload?.amount).toBe(1);
+    });
+
     it('兵蚁：onPlay 放2指示物；talent 移除1并转移1个指示物给另一个随从', () => {
         const core = makeState({
             players: {
@@ -4267,6 +5593,70 @@ describe('巨蚁派系能力', () => {
         expect(skip.finalState.core.bases[0].minions.some(m => m.uid === 'dok')).toBe(false);
     });
 
+    it('尸体商店：第一次分配指示物后不应双加，并应继续停留在下一轮分配 prompt', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('body-shop', 'frankenstein_body_shop_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('dok', 'frankenstein_herr_doktor_pod', '0', 2, { powerCounters: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('monster', 'frankenstein_the_monster_pod', '0', 4, { powerCounters: 0 }),
+                        makeMinion('drone', 'giant_ant_drone_pod', '0', 3, { powerCounters: 1 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'body-shop' } },
+            defaultTestRandom,
+        );
+        const choosePrompt = getInteractionsFromMS(play.finalState)[0] as any;
+        const chooseDok = choosePrompt.data.options.find((entry: any) => entry.value?.minionUid === 'dok');
+
+        const afterChoose = runCommand(
+            play.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: chooseDok.id } } as any,
+            defaultTestRandom,
+        );
+        expect((getInteractionsFromMS(afterChoose.finalState)[0] as any)?.data?.sourceId).toBe('giant_ant_drone_prevent_destroy');
+
+        const allowDestroy = runCommand(
+            afterChoose.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: 'skip' } } as any,
+            defaultTestRandom,
+        );
+        const distributePrompt = getInteractionsFromMS(allowDestroy.finalState)[0] as any;
+        expect(distributePrompt?.data?.sourceId).toBe('frankenstein_body_shop_distribute');
+        const chooseMonster = distributePrompt.data.options.find((entry: any) => entry.value?.minionUid === 'monster');
+        expect(chooseMonster).toBeDefined();
+
+        const firstDistribution = runCommand(
+            allowDestroy.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: chooseMonster.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(firstDistribution.finalState.core.bases[1].minions.find(m => m.uid === 'monster')?.powerCounters).toBe(1);
+        const followUpPrompt = getInteractionsFromMS(firstDistribution.finalState)[0] as any;
+        expect(followUpPrompt?.data?.sourceId).toBe('frankenstein_body_shop_distribute');
+        expect(followUpPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'monster')).toBeDefined();
+    });
+
     it('雄蜂：选择跳过时恢复消灭，且不会再次弹出同一拦截交互', () => {
         const core = makeState({
             players: {
@@ -4431,6 +5821,87 @@ describe('巨蚁派系能力', () => {
                 || interaction.queue.some((i: any) => i?.data?.sourceId === 'giant_ant_drone_prevent_destroy');
             expect(hasPrevent).toBe(false);
         }
+    });
+
+    it('frankenstein_igor 在宿主进入弃牌堆后仍会通过 queued discard trigger 给控制者创建目标选择交互', () => {
+        const beforeDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('igor-1', 'frankenstein_igor', '0', 2, { powerModifier: 0 }),
+                        makeMinion('ally-same', 'werewolf_howler', '0', 3, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('ally-other', 'werewolf_alpha', '0', 4, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(beforeDiscardCore, 'onMinionDiscardedFromBase', {
+            state: beforeDiscardCore,
+            matchState: makeMatchState(beforeDiscardCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'igor-1',
+            triggerMinionDefId: 'frankenstein_igor',
+            triggerMinion: beforeDiscardCore.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 1005,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.some((trigger: any) => trigger.sourceDefId === 'frankenstein_igor')).toBe(true);
+
+        const afterDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('igor-1', 'frankenstein_igor', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('ally-same', 'werewolf_howler', '0', 3, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ally-other', 'werewolf_alpha', '0', 4, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+            triggerQueue: queued.payload.triggers,
+        });
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState(afterDiscardCore),
+            defaultTestRandom,
+            1005,
+        );
+        expect(resolved).toBeDefined();
+
+        const current = resolved!.state.sys.interaction.current as any;
+        expect(current?.data?.sourceId).toBe('frankenstein_igor');
+        expect(current?.playerId).toBe('0');
+        const optionUids = (current?.data?.options ?? []).map((option: any) => option?.value?.minionUid);
+        expect(optionUids).toContain('ally-same');
+        expect(optionUids).toContain('ally-other');
+        expect(optionUids).not.toContain('igor-1');
     });
 
     it('雄蜂：跨玩家场景 — 对手回合消灭己方随从时，交互属于随从所有者', () => {
@@ -4835,6 +6306,97 @@ describe('科学怪人派系能力', () => {
         expect(finalMinion!.powerCounters).toBe(1);
     });
 
+    it('borrowed german_engineering 应按控制者而不是真实 owner 在该基地给控制者打出的随从+1指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('m1', 'test_minion', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [{
+                        uid: 'borrowed-ge',
+                        defId: 'frankenstein_german_engineering',
+                        ownerId: '1',
+                        metadata: {
+                            sourcePlayerId: '0',
+                            sourceControllerId: '0',
+                        },
+                    } as any],
+                },
+            ],
+        });
+
+        const afterMinion = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'm1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const geEvt = afterMinion.events.find(
+            e => e.type === SU_EVENTS.POWER_COUNTER_ADDED && (e as any).payload.reason === 'frankenstein_german_engineering',
+        );
+        expect(geEvt).toBeDefined();
+        expect((geEvt as any).payload.minionUid).toBe('m1');
+
+        const finalMinion = afterMinion.finalState.core.bases[0].minions.find(m => m.uid === 'm1');
+        expect(finalMinion).toBeDefined();
+        expect(finalMinion!.powerCounters).toBe(1);
+    });
+
+    it('borrowed grave_situation 应按控制者而不是真实 owner 让控制者的被消灭随从回到拥有者手牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('grave-host', 'frankenstein_the_monster', '0', 4),
+                    ],
+                    ongoingActions: [{
+                        uid: 'borrowed-grave',
+                        defId: 'frankenstein_grave_situation',
+                        ownerId: '1',
+                        metadata: {
+                            sourcePlayerId: '0',
+                            sourceControllerId: '0',
+                        },
+                    } as any],
+                },
+            ],
+        });
+        const ms = makeMatchState(core);
+        const destroyEvt = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'grave-host',
+                minionDefId: 'frankenstein_the_monster',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'opponent_action',
+            },
+            timestamp: 100,
+        };
+
+        const result = processDestroyTriggers([destroyEvt] as any, ms, '1' as any, defaultTestRandom, 100);
+        const returned = result.events.find((event: any) =>
+            event.type === SU_EVENTS.MINION_RETURNED
+            && event.payload?.reason === 'frankenstein_grave_situation'
+        );
+        expect(returned).toBeDefined();
+        expect((returned as any).payload.toPlayerId).toBe('0');
+    });
+
     it('怪物：天赋移除指示物并额外打出随从', () => {
         const core = makeState({
             players: {
@@ -5005,6 +6567,81 @@ describe('科学怪人派系能力', () => {
         );
         expect(staleResult?.events ?? []).toHaveLength(0);
     });
+
+    it('愤怒的民众：选择被他人拥有的手牌时，仍应进入其拥有者牌库底而不是当前玩家牌库底', () => {
+        const playState = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('angry-mob', 'frankenstein_angry_mob', 'action', '0'),
+                        makeCard('borrowed-hand', 'test_action_a', 'action', '1'),
+                        makeCard('own-hand', 'test_action_b', 'action', '0'),
+                    ],
+                    deck: [makeCard('p0-deck-a', 'test_action_c', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'test_action_d', 'action', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('monster1', 'frankenstein_the_monster', '0', 5, { powerCounters: 0 })],
+                ongoingActions: [],
+            }],
+        }));
+
+        const played = runCommand(
+            playState,
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'angry-mob' } },
+            defaultTestRandom,
+        );
+        expect(played.success).toBe(true);
+
+        const chooseMinionPrompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(chooseMinionPrompt?.data?.sourceId).toBe('frankenstein_angry_mob');
+        const monsterOption = findInteractionOption(
+            chooseMinionPrompt,
+            option => option?.value?.minionUid === 'monster1',
+        );
+        expect(monsterOption).toBeTruthy();
+
+        const afterChooseMinion = runCommand(
+            played.finalState,
+            {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: '0',
+                payload: { optionId: monsterOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+        expect(afterChooseMinion.success).toBe(true);
+
+        const chooseCardPrompt = getInteractionsFromMS(afterChooseMinion.finalState)[0] as any;
+        expect(chooseCardPrompt?.data?.sourceId).toBe('frankenstein_angry_mob_choose_card');
+        const borrowedCardOption = findInteractionOption(
+            chooseCardPrompt,
+            option => option?.value?.cardUid === 'borrowed-hand',
+        );
+        expect(borrowedCardOption).toBeTruthy();
+
+        const resolved = runCommand(
+            afterChooseMinion.finalState,
+            {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: '0',
+                payload: { optionId: borrowedCardOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+        expect(resolved.success).toBe(true);
+
+        const finalCore = resolved.finalState.core;
+        expect(finalCore.players['0'].hand.map(card => card.uid)).toEqual(['own-hand']);
+        expect(finalCore.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a']);
+        expect(finalCore.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-a', 'borrowed-hand']);
+        expect(finalCore.players['1'].discard.map(card => card.uid)).toEqual([]);
+        expect(finalCore.bases[0].minions.find(minion => minion.uid === 'monster1')?.powerCounters).toBe(1);
+    });
 });
 
 // ============================================================================
@@ -5095,8 +6732,7 @@ describe('吸血鬼派系能力', () => {
         expect(nextPrompt).toBeUndefined();
     });
 
-    // 跳过此测试 - Opportunist 触发器的复杂时序需要完整的系统支持
-    it.skip('投机主义：对手随从被消灭后才给附着随从+1', () => {
+    it('投机主义：对手随从在 Big Gulp 真实 destroy 链中被消灭后才给附着随从+1', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -5118,9 +6754,20 @@ describe('吸血鬼派系能力', () => {
             ],
         });
 
-        const result = runCommand(
+        const played = runCommand(
             makeMatchState(core),
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(played.finalState)[0];
+        expect(prompt?.data?.sourceId).toBe('vampire_big_gulp');
+        const targetOption = prompt?.data?.options?.find((option: any) => option?.value?.minionUid === 'e1');
+        expect(targetOption).toBeDefined();
+
+        const result = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
             defaultTestRandom,
         );
 
@@ -5129,6 +6776,8 @@ describe('吸血鬼派系能力', () => {
         );
         expect(opportunistEvt).toBeDefined();
         expect((opportunistEvt as any).payload.minionUid).toBe('m0');
+        expect(result.finalState.core.bases[0].minions.find(m => m.uid === 'm0')?.powerCounters).toBe(1);
+        expect(result.finalState.core.bases[0].minions.some(m => m.uid === 'e1')).toBe(false);
     });
 
     it('投机主义：己方随从被消灭时不应触发', () => {
@@ -5166,6 +6815,47 @@ describe('吸血鬼派系能力', () => {
         expect(opportunistEvt).toBeUndefined();
     });
 
+    it('投机主义：被我方控制但归对手拥有的随从被消灭时，仍应按控制权判定为其他玩家随从并触发', () => {
+        const stolenVictim = makeMinion('stolen-victim', 'test_fodder', '0', 2, {
+            owner: '1',
+            powerModifier: 0,
+        });
+        const host = makeMinion('m0', 'test_host', '1', 4, {
+            attachedActions: [{ uid: 'oa1', defId: 'vampire_opportunist', ownerId: '1' }],
+        });
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [host, stolenVictim],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const { events } = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            playerId: '1',
+            controllerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'stolen-victim',
+            triggerMinionDefId: 'test_fodder',
+            triggerMinion: stolenVictim,
+            random: defaultTestRandom,
+            now: 1000,
+        } as any);
+
+        const opportunistEvt = events.find(
+            e => e.type === SU_EVENTS.POWER_COUNTER_ADDED && (e as any).payload.reason === 'vampire_opportunist',
+        );
+        expect(opportunistEvt).toBeDefined();
+        expect((opportunistEvt as any).payload.minionUid).toBe('m0');
+    });
+
     it('吸血鬼伯爵：己方随从被消灭时不应触发', () => {
         const core = makeState({
             players: {
@@ -5197,6 +6887,45 @@ describe('吸血鬼派系能力', () => {
             e => e.type === SU_EVENTS.POWER_COUNTER_ADDED && (e as any).payload.reason === 'vampire_the_count',
         );
         expect(countEvt).toBeUndefined();
+    });
+
+    it('吸血鬼伯爵：被他人控制但归己方拥有的随从被消灭时，不应按拥有权误判为己方随从', () => {
+        const stolenVictim = makeMinion('stolen-victim', 'test_fodder', '0', 2, {
+            owner: '1',
+            powerModifier: 0,
+        });
+        const count = makeMinion('c1', 'vampire_the_count', '1', 5, { powerModifier: 1 });
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [count, stolenVictim],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const { events } = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            playerId: '1',
+            controllerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'stolen-victim',
+            triggerMinionDefId: 'test_fodder',
+            triggerMinion: stolenVictim,
+            random: defaultTestRandom,
+            now: 1000,
+        } as any);
+
+        const countEvt = events.find(
+            e => e.type === SU_EVENTS.POWER_COUNTER_ADDED && (e as any).payload.reason === 'vampire_the_count',
+        );
+        expect(countEvt).toBeDefined();
+        expect((countEvt as any).payload.minionUid).toBe('c1');
     });
 
     it('渴血鬼：多同名来源时应给触发来源加指示物', () => {
@@ -5857,6 +7586,50 @@ describe('World Champs abilities', () => {
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-m1', 'deck-a1']);
     });
 
+    it('world_champs_stoneford 选择被他人拥有的牌库行动时，仍应进入当前玩家手牌并保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('stoneford-1', 'world_champs_stoneford', 'minion', '0')],
+                    deck: [
+                        makeCard('deck-own-minion', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('deck-borrowed-action', 'wizard_summon', 'action', '1'),
+                        makeCard('deck-own-action', 'vikings_pillage', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'robot_microbot_beta', 'minion', '1')],
+                }),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'stoneford-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('world_champs_stoneford');
+        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'deck-borrowed-action');
+        expect(option).toBeDefined();
+
+        const resolved = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        const p0Hand = resolved.finalState.core.players['0'].hand;
+        const borrowedInHand = p0Hand.find(card => card.uid === 'deck-borrowed-action');
+        expect(borrowedInHand).toBeDefined();
+        expect(borrowedInHand?.owner).toBe('1');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-own-minion', 'deck-own-action']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail']);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(false);
+    });
+
     it('world_champs_shield_maiden 揭示对手牌库顶并拿走符合条件的牌', () => {
         const core = makeState({
             players: {
@@ -5940,6 +7713,53 @@ describe('World Champs abilities', () => {
         expect(duelResolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy-1')).toBe(false);
     });
 
+    it('world_champs_sheriff 在其他玩家的计分前触发时，决斗选择权仍应交给 Sheriff 控制者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 9,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('sheriff-1', 'world_champs_sheriff', '0', 5, { powerModifier: 0 }),
+                    makeMinion('enemy-1', 'robot_microbot_alpha', '1', 2, { powerModifier: 0 }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const queued = collectTriggers(core, 'beforeScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            sourceCardUid: 'sheriff-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            random: defaultTestRandom,
+            now: 1001,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('world_champs_sheriff');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            1001,
+        );
+        const prompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(prompt?.playerId).toBe('0');
+    });
+
     it('world_champs_mummy 在计分后可埋葬到其他基地', () => {
         const core = makeState({
             players: {
@@ -5988,6 +7808,58 @@ describe('World Champs abilities', () => {
         expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'mummy-1')).toBe(false);
         expect((resolved.finalState.core.bases[1].buriedCards ?? []).some(card => card.uid === 'mummy-1')).toBe(true);
+    });
+
+    it('world_champs_mummy 在其他玩家的计分后触发时，埋葬选择权仍应交给 Mummy 控制者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 9,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('mummy-1', 'world_champs_mummy', '0', 2)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            rankings: [{ playerId: '1', power: 4, vp: 3 }],
+            sourceCardUid: 'mummy-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            random: defaultTestRandom,
+            now: 1002,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('world_champs_mummy');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            1002,
+        );
+        const prompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(prompt?.playerId).toBe('0');
     });
 
     it('world_champs_kaiju_conflict 提供两次额外行动额度', () => {
@@ -6118,6 +7990,45 @@ describe('World Champs abilities', () => {
         ))).toBe(true);
     });
 
+    it('world_champs_samurai_chan 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('chan-draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('chan-draw-b', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('chan-1', 'world_champs_samurai_chan', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+
+        const state = makeMatchState(core);
+        const destroyEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'chan-1',
+                minionDefId: 'world_champs_samurai_chan',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1017,
+        } as any;
+
+        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1017);
+        const drawEvents = processed.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        expect(drawEvents).toHaveLength(1);
+        expect(drawEvents[0]?.payload?.playerId).toBe('0');
+        expect(drawEvents[0]?.payload?.count).toBe(1);
+    });
+
     it('world_champs_high_speed_chase 天赋可转移行动并移动随从且+3', () => {
         const core = makeState({
             players: {
@@ -6174,6 +8085,71 @@ describe('World Champs abilities', () => {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { ongoingCardUid: 'hsc-1', baseIndex: 1 },
+        });
+        expect(reused.valid).toBe(false);
+        expect(reused.error).toBe('本回合天赋已使用');
+    });
+
+    it('borrowed world_champs_high_speed_chase 应按控制者而不是真实 owner 转移行动并移动随从且+3', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('runner-borrowed-1', 'robot_microbot_alpha', '0', 1, { powerModifier: 0 })],
+                    ongoingActions: [{ uid: 'hsc-borrowed-1', defId: 'world_champs_high_speed_chase', ownerId: '1', talentUsed: false, metadata: { sourceControllerId: '0' } } as any],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { ongoingCardUid: 'hsc-borrowed-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const chooseMinionPrompt = getInteractionsFromMS(used.finalState)[0] as any;
+        expect(chooseMinionPrompt?.data?.sourceId).toBe('world_champs_high_speed_chase_minion');
+        const minionOption = chooseMinionPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'runner-borrowed-1');
+        expect(minionOption).toBeDefined();
+
+        const afterMinion = runCommand(
+            used.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minionOption.id } } as any,
+            defaultTestRandom,
+        );
+        const chooseBasePrompt = getInteractionsFromMS(afterMinion.finalState)[0] as any;
+        expect(chooseBasePrompt?.data?.sourceId).toBe('world_champs_high_speed_chase_base');
+        const baseOption = chooseBasePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const resolved = runCommand(
+            afterMinion.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'runner-borrowed-1')).toBe(true);
+        expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === 'hsc-borrowed-1')).toBe(false);
+        expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === 'hsc-borrowed-1')).toBe(true);
+        expect(resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'hsc-borrowed-1')?.ownerId).toBe('1');
+        expect(
+            resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'hsc-borrowed-1')?.metadata?.sourceControllerId,
+        ).toBe('0');
+        expect(resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'hsc-borrowed-1')?.talentUsed).toBe(true);
+        const movedMinion = resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'runner-borrowed-1');
+        expect(movedMinion?.tempPowerModifier).toBe(3);
+
+        const reused = validate(resolved.finalState, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'hsc-borrowed-1', baseIndex: 1 },
         });
         expect(reused.valid).toBe(false);
         expect(reused.error).toBe('本回合天赋已使用');
@@ -6331,6 +8307,170 @@ describe('World Champs abilities', () => {
             && event.payload?.reason === 'world_champs_diva_once_per_turn',
         )).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'diva-1')?.tempPowerModifier ?? 0).toBe(2);
+    });
+
+    it('world_champs_diva 在被他人控制时复制 destroy 效果后，仍应进入自己拥有者的弃牌堆', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 5,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('diva-1', 'world_champs_diva', '0', 3, '1'),
+                    makeMinion('ally-1', 'robot_microbot_alpha', '0', 1, { powerModifier: 0 }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const originalEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'ally-1',
+                minionDefId: 'robot_microbot_alpha',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'vampire_big_gulp',
+            },
+            timestamp: 3200,
+        };
+        const afterOriginal = reduce(core, originalEvent as any);
+        const queued = collectTriggers(afterOriginal, 'onMinionAffected', {
+            state: afterOriginal,
+            matchState: makeMatchState(afterOriginal),
+            playerId: '1',
+            baseIndex: 0,
+            sourceCardUid: 'enemy-big-gulp-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '1',
+            triggerMinionUid: 'ally-1',
+            triggerMinionDefId: 'robot_microbot_alpha',
+            triggerMinion: core.bases[0].minions.find(minion => minion.uid === 'ally-1'),
+            affectType: 'destroy',
+            affectEvent: originalEvent as any,
+            affectBatchTargets: [{ minionUid: 'ally-1', baseIndex: 0, controllerId: '0' }],
+            reason: 'vampire_big_gulp',
+            random: defaultTestRandom,
+            now: 3200,
+        });
+
+        expect(queued).toBeDefined();
+        const queuedCore = {
+            ...afterOriginal,
+            triggerQueue: (queued as any).payload.triggers,
+        };
+        const prompt = maybeResolveReactionQueue(makeMatchState(queuedCore), defaultTestRandom, 3200);
+        expect(prompt?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+
+        const queueById = new Map(prompt!.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
+        const divaOption = (prompt!.state.sys.interaction.current as any).data.options.find((option: any) => {
+            const trigger = queueById.get(option.value?.triggerId) as any;
+            return trigger?.sourceDefId === 'world_champs_diva';
+        });
+        expect(divaOption).toBeDefined();
+
+        const resolved = runCommand(
+            prompt!.state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: divaOption.id } } as any,
+            defaultTestRandom,
+        );
+        const divaDestroyEvent = resolved.events.find((event: any) =>
+            event.type === SU_EVENTS.MINION_DESTROYED
+            && event.payload?.minionUid === 'diva-1'
+            && event.payload?.reason === 'world_champs_diva_copy_destroyed',
+        );
+        expect(divaDestroyEvent?.payload?.ownerId).toBe('1');
+        expect(resolved.finalState.core.players['1'].discard.some((card: any) => card.uid === 'diva-1')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some((card: any) => card.uid === 'diva-1')).toBe(false);
+    });
+
+    it('world_champs_aramis 在对手于你回合中用行动影响阿拉密斯后，仍应把额外行动给到阿拉密斯控制者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 9,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('aramis-1', 'world_champs_aramis', '0', 4, { powerModifier: 0, tempPowerModifier: 0 }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const originalEvent = {
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: {
+                minionUid: 'aramis-1',
+                baseIndex: 0,
+                amount: 2,
+                reason: 'world_champs_fast_as_lightning',
+                sourcePlayerId: '1',
+                sourceDefId: 'world_champs_fast_as_lightning',
+                sourceCardUid: 'enemy-fast-1',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 3201,
+        };
+        const afterOriginal = reduce(core, originalEvent as any);
+        const queued = collectTriggers(afterOriginal, 'onMinionAffected', {
+            state: afterOriginal,
+            matchState: makeMatchState(afterOriginal),
+            playerId: '1',
+            baseIndex: 0,
+            sourceCardUid: 'enemy-fast-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '1',
+            triggerMinionUid: 'aramis-1',
+            triggerMinionDefId: 'world_champs_aramis',
+            triggerMinion: afterOriginal.bases[0].minions.find(minion => minion.uid === 'aramis-1'),
+            affectType: 'power_change',
+            affectEvent: originalEvent as any,
+            affectBatchTargets: [{ minionUid: 'aramis-1', baseIndex: 0, controllerId: '0' }],
+            reason: 'world_champs_fast_as_lightning',
+            random: defaultTestRandom,
+            now: 3201,
+        });
+
+        expect(queued).toBeDefined();
+        const queuedCore = {
+            ...afterOriginal,
+            triggerQueue: (queued as any).payload.triggers,
+        };
+        const prompt = maybeResolveReactionQueue(makeMatchState(queuedCore), defaultTestRandom, 3201);
+        expect(prompt?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+
+        const queueById = new Map(prompt!.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
+        const aramisOption = (prompt!.state.sys.interaction.current as any).data.options.find((option: any) => {
+            const trigger = queueById.get(option.value?.triggerId) as any;
+            return trigger?.sourceDefId === 'world_champs_aramis';
+        });
+        expect(aramisOption).toBeDefined();
+
+        const resolved = runCommand(
+            prompt!.state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: aramisOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.some((event: any) =>
+            event.type === SU_EVENTS.LIMIT_MODIFIED
+            && event.payload?.playerId === '0'
+            && event.payload?.limitType === 'action'
+            && (event.payload?.delta ?? 0) > 0,
+        )).toBe(true);
+        expect(resolved.finalState.core.players['0'].actionLimit).toBeGreaterThanOrEqual(2);
     });
 
     it('world_champs_fast_as_lightning 打到阿拉密斯后应进入包含女主角与阿拉密斯的反应窗', () => {
@@ -6546,6 +8686,270 @@ describe('World Champs abilities', () => {
         const reduced = handled.events.reduce((acc, event) => reduce(acc, event as any), core);
         expect(reduced.players['0'].discard.some(card => card.uid === 'bewitched-card')).toBe(false);
         expect(reduced.bases[0].minions[0].attachedActions.some(action => action.uid === 'bewitched-card')).toBe(true);
+    });
+
+    it('world_champs_bewitched 离场转移 borrowed 持续行动到 Brownie 身上时也应保留 sourcePlayerId', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('p0-hand-a', 'ghosts_haunting', 'action', '0')],
+                    discard: [makeCard('bewitched-card', 'world_champs_bewitched', 'action', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('brownie-a', 'trickster_brownie', '1', 2, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+        });
+        const handler = getInteractionHandler('world_champs_bewitched_transfer');
+        expect(handler).toBeDefined();
+
+        const handled = handler!(
+            makeMatchState(core),
+            '0',
+            { minionUid: 'brownie-a', baseIndex: 0 } as any,
+            {
+                runtimePrompt: {
+                    owner: 'smashup-ability-runtime',
+                    sourceId: 'world_champs_bewitched_transfer',
+                    continuationId: 'test-bewitched-transfer-borrowed',
+                    continuation: {
+                        context: {
+                            playerId: '0',
+                            now: 3401,
+                            sourceCardUid: 'bewitched-card',
+                            sourceDefId: 'world_champs_bewitched',
+                            ownerId: '1',
+                            triggerMinionUid: 'host-1',
+                        },
+                        contextHasMatchState: true,
+                    },
+                },
+            } as any,
+            defaultTestRandom,
+            3401,
+        );
+
+        expect(handled.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'bewitched-card',
+                defId: 'world_champs_bewitched',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'minion',
+                targetBaseIndex: 0,
+                targetMinionUid: 'brownie-a',
+                removeFromDiscard: true,
+            }),
+        }));
+
+        const processed = processAffectTriggers(
+            handled.events as any,
+            makeMatchState(core),
+            '0',
+            defaultTestRandom as any,
+            3401,
+        );
+        const queued = (processed.events as any[]).find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        const brownieTrigger = queued?.payload?.triggers?.find((trigger: any) => trigger.sourceDefId === 'trickster_brownie');
+        expect(brownieTrigger).toEqual(expect.objectContaining({
+            sourceDefId: 'trickster_brownie',
+            sourceCardUid: 'brownie-a',
+            sourceControllerId: '1',
+            ownerPlayerId: '1',
+            eventPlayerId: '0',
+        }));
+    });
+
+    it('world_champs_bewitched 在 destroy -> processDestroyTriggers 真链里不应因同一宿主同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双起转移交互', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('host-1', 'robot_microbot_alpha', '1', 2, {
+                        attachedActions: [{ uid: 'bewitched-card', defId: 'world_champs_bewitched', ownerId: '0' }],
+                    }),
+                    makeMinion('target-1', 'robot_microbot_beta', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const processed = processDestroyTriggers([{
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'host-1',
+                minionDefId: 'robot_microbot_alpha',
+                fromBaseIndex: 0,
+                ownerId: '1',
+                destroyerId: '0',
+                reason: 'test_destroy_host_with_bewitched',
+            },
+            timestamp: 3400,
+        } as any], makeMatchState(core), '0', defaultTestRandom, 3400);
+
+        const bewitchedTriggers = (processed.events as any[])
+            .filter((event: any) => event.type === SU_EVENTS.TRIGGER_QUEUED)
+            .flatMap((event: any) => event.payload?.triggers ?? [])
+            .filter((trigger: any) => trigger?.sourceDefId === 'world_champs_bewitched');
+
+        expect(bewitchedTriggers).toHaveLength(1);
+        expect(bewitchedTriggers[0]).toEqual(expect.objectContaining({
+            sourceDefId: 'world_champs_bewitched',
+            sourceCardUid: 'bewitched-card',
+            triggerMinionUid: 'host-1',
+        }));
+    });
+
+    it('world_champs_bewitched 宿主回手时应给行动控制者创建 per-instance 转移交互', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('host-1', 'robot_microbot_alpha', '1', 2, {
+                        attachedActions: [{ uid: 'bewitched-card', defId: 'world_champs_bewitched', ownerId: '0' }],
+                    }),
+                    makeMinion('target-1', 'robot_microbot_beta', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const hostLki = makeMinion('host-1', 'robot_microbot_alpha', '1', 2, {
+            attachedActions: [{ uid: 'bewitched-card', defId: 'world_champs_bewitched', ownerId: '0' }],
+        });
+        const triggered = fireTriggers(core, 'onCardReturnedToHand', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'host-1',
+            triggerMinionDefId: 'robot_microbot_alpha',
+            triggerMinion: hostLki,
+            reason: 'test_return_to_hand',
+            random: defaultTestRandom,
+            now: 3401,
+        });
+
+        const prompt = getInteractionsFromMS(triggered.matchState ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).toBe('world_champs_bewitched_transfer');
+        expect(prompt?.playerId).toBe('0');
+        expect(prompt?.data?.runtimePrompt?.continuation?.context).toEqual(expect.objectContaining({
+            sourceCardUid: 'bewitched-card',
+            sourceDefId: 'world_champs_bewitched',
+            ownerId: '0',
+            triggerMinionUid: 'host-1',
+        }));
+    });
+
+    it('world_champs_bewitched 宿主经 CARD_TRANSFERRED 从场上回手时也应通过 reducer 真链创建转移交互', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('host-1', 'robot_microbot_alpha', '1', 2, {
+                        attachedActions: [{ uid: 'bewitched-card', defId: 'world_champs_bewitched', ownerId: '0' }],
+                    }),
+                    makeMinion('target-1', 'robot_microbot_beta', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const processed = processReturnToHandTriggers([{
+            type: SU_EVENTS.CARD_TRANSFERRED,
+            payload: {
+                cardUid: 'host-1',
+                defId: 'robot_microbot_alpha',
+                fromPlayerId: '1',
+                toPlayerId: '1',
+                reason: 'test_return_host_via_transfer',
+            },
+            timestamp: 3402,
+        } as any], makeMatchState(core), '1', defaultTestRandom, 3402);
+
+        const queued = (processed.events as any[]).find((event: any) =>
+            event.type === SU_EVENTS.TRIGGER_QUEUED
+            && event.payload?.triggers?.some((trigger: any) => trigger.triggerMinionUid === 'host-1'),
+        );
+        expect(queued).toBeDefined();
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            3402,
+        );
+        const prompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).toBe('world_champs_bewitched_transfer');
+        expect(prompt?.playerId).toBe('0');
+        expect(prompt?.data?.runtimePrompt?.continuation?.context).toEqual(expect.objectContaining({
+            sourceCardUid: 'bewitched-card',
+            sourceDefId: 'world_champs_bewitched',
+            ownerId: '0',
+            triggerMinionUid: 'host-1',
+        }));
+    });
+
+    it('world_champs_bewitched 宿主与行动都已在弃牌堆时，宿主 recover 回手不应误起 per-instance 转移交互', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('host-1', 'world_champs_sheriff', 'minion', '0'),
+                        makeCard('bewitched-card', 'world_champs_bewitched', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'world_champs_stoneford', '0', 3)],
+                ongoingActions: [],
+            }],
+        });
+
+        const processed = processReturnToHandTriggers([{
+            type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+            payload: {
+                playerId: '0',
+                cardUids: ['host-1'],
+                reason: 'test_recover_host_without_active_bewitched',
+            },
+            timestamp: 3403,
+        } as any], makeMatchState(core), '0', defaultTestRandom, 3403);
+
+        expect((processed.events as any[]).some(event =>
+            event.type === SU_EVENTS.TRIGGER_QUEUED
+            && event.payload?.triggers?.some((trigger: any) => trigger?.sourceDefId === 'world_champs_bewitched'),
+        )).toBe(false);
     });
 
     it('world_champs_calicoin 可选择其他随从放置 +1 指示物', () => {
@@ -7111,6 +9515,65 @@ describe('Mermaids abilities', () => {
         expect(resolved.finalState.core.players['0'].actionLimit).toBeGreaterThanOrEqual(2);
     });
 
+    it('mermaids_ultimate_song 强制对手打出 borrowed 小随从时应保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('song-1', 'mermaids_ultimate_song', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('borrowed-forced', 'cowboys_gunfighter', 'minion', '0')],
+                }),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 1, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'song-1' } },
+            defaultTestRandom,
+        );
+        const basePrompt = getInteractionsFromMS(played.finalState)[0] as any;
+        const baseOption = basePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 0);
+        expect(baseOption).toBeDefined();
+
+        const afterBase = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+        const handPrompt = getInteractionsFromMS(afterBase.finalState)[0] as any;
+        expect(handPrompt?.data?.sourceId).toBe('mermaids_ultimate_song_hand');
+        const handOption = handPrompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-forced');
+        expect(handOption).toBeDefined();
+
+        const resolved = runCommand(
+            afterBase.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '1', payload: { optionId: handOption.id } } as any,
+            defaultTestRandom,
+        );
+        const minionPlayed = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED);
+        expect((minionPlayed as any)?.payload).toMatchObject({
+            playerId: '1',
+            cardUid: 'borrowed-forced',
+            defId: 'cowboys_gunfighter',
+            ownerId: '0',
+            baseIndex: 0,
+            consumesNormalLimit: false,
+            skipOnPlayAbility: true,
+        });
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'borrowed-forced')).toMatchObject({
+            controller: '1',
+            owner: '0',
+        });
+    });
+
     it('mermaids_mermaid_queen 可选择直到回合结束获得这里一个小随从的控制权，并在回合结束恢复', () => {
         const core = makeState({
             players: {
@@ -7518,6 +9981,52 @@ describe('Mermaids abilities', () => {
     });
 });
 describe('Titans abilities', () => {
+    it('titan_sphinx_talent 埋葬 borrowed 手牌时应保留真实 trueOwnerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-sphinx-hand', 'robot_warbot', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+            titans: [{
+                uid: 'sphinx-1',
+                defId: 'sphinx',
+                faction: 'ancient_egyptians',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'sphinx-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('titan_sphinx_talent');
+        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-sphinx-hand');
+        expect(option).toBeDefined();
+
+        const resolved = runCommand(
+            talent.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        const buried = resolved.finalState.core.bases[0].buriedCards?.find(card => card.uid === 'borrowed-sphinx-hand');
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-sphinx-hand',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'hand',
+        }));
+    });
+
     it('ninjas_invisible_ninja 在自己消灭对手随从时应给泰坦控制者创建抽牌交互', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
@@ -7579,6 +10088,375 @@ describe('Titans abilities', () => {
         );
         expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
     });
+
+    it('ninjas_invisible_ninja 抽牌前重洗弃牌堆时，应把 borrowed 牌分流回真实拥有者牌库', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 7,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [],
+                    discard: [
+                        makeCard('own-peek', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('borrowed-peek', 'robot_microbot_beta', 'minion', '1'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'test_minion', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 2, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'ninja-titan-1',
+                defId: 'ninjas_invisible_ninja',
+                faction: 'ninjas',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+            } as any],
+        });
+
+        const destroyedEnemyLki = makeMinion('enemy-destroyed', 'robot_microbot_beta', '1', 2, { powerModifier: 0 });
+        const triggered = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            sourceBaseIndex: 0,
+            triggerMinionUid: 'enemy-destroyed',
+            triggerMinionDefId: 'robot_microbot_beta',
+            triggerMinion: destroyedEnemyLki,
+            destroyerId: '0',
+            reason: 'test_destroy_empty_deck',
+            random: defaultTestRandom,
+            now: 3902,
+        });
+
+        const reorderEvents = triggered.events.filter(event => event.type === SU_EVENTS.DECK_REORDERED) as any[];
+        expect(reorderEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    deckUids: ['own-peek'],
+                }),
+            }),
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    playerId: '1',
+                    sourcePlayerId: '0',
+                    deckUids: ['p1-tail', 'borrowed-peek'],
+                }),
+            }),
+        ]));
+
+        const prompt = getInteractionsFromMS(triggered.matchState ?? makeMatchState(core))[0] as any;
+        const optionCardUids = (prompt?.data?.options ?? [])
+            .map((option: any) => option?.value?.cardUid)
+            .filter(Boolean);
+        expect(optionCardUids).toContain('own-peek');
+        expect(optionCardUids).not.toContain('borrowed-peek');
+
+        const reducedCore = triggered.events.reduce((nextCore, event) => reduce(nextCore, event as any), core);
+        expect(reducedCore.players['0'].deck.map(card => card.uid)).toEqual(['own-peek']);
+        expect(reducedCore.players['0'].discard.map(card => card.uid)).toEqual([]);
+        expect(reducedCore.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail', 'borrowed-peek']);
+    });
+
+    it('ninjas_invisible_ninja 选择抽走一张牌后，应把未选中的 borrowed 揭示牌分流回真实拥有者牌库', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 7,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('own-peek', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('borrowed-peek', 'robot_microbot_beta', 'minion', '1'),
+                        makeCard('p0-tail', 'robot_microbot_gamma', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'test_minion', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 2, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'ninja-titan-1',
+                defId: 'ninjas_invisible_ninja',
+                faction: 'ninjas',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+            } as any],
+        });
+
+        const destroyedEnemyLki = makeMinion('enemy-destroyed', 'robot_microbot_beta', '1', 2, { powerModifier: 0 });
+        const triggered = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            sourceBaseIndex: 0,
+            triggerMinionUid: 'enemy-destroyed',
+            triggerMinionDefId: 'robot_microbot_beta',
+            triggerMinion: destroyedEnemyLki,
+            destroyerId: '0',
+            reason: 'test_destroy_borrowed_remaining',
+            random: defaultTestRandom,
+            now: 3903,
+        });
+
+        const prompt = getInteractionsFromMS(triggered.matchState ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).toBe('titan_ninjas_invisible_ninja_ongoing');
+        const drawOwn = prompt.data.options.find((option: any) => option.value?.cardUid === 'own-peek');
+
+        const resolved = runCommand(
+            triggered.matchState ?? makeMatchState(core),
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: drawOwn.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('own-peek');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-tail']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail', 'borrowed-peek']);
+    });
+
+    it('ninjas_invisible_ninja 在自己消灭被对手控制但归己方拥有的随从时，也应按控制权给泰坦控制者创建抽牌交互', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 7,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('peek-1', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('peek-2', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 2, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'ninja-titan-1',
+                defId: 'ninjas_invisible_ninja',
+                faction: 'ninjas',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+            } as any],
+        });
+
+        const destroyedBorrowedEnemyLki = makeMinion('enemy-borrowed', 'robot_microbot_beta', '1', 2, { owner: '0', powerModifier: 0 });
+        const triggered = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            sourceBaseIndex: 0,
+            triggerMinionUid: 'enemy-borrowed',
+            triggerMinionDefId: 'robot_microbot_beta',
+            triggerMinion: destroyedBorrowedEnemyLki,
+            destroyerId: '0',
+            reason: 'test_destroy_borrowed_enemy',
+            random: defaultTestRandom,
+            now: 3901,
+        });
+
+        const prompt = getInteractionsFromMS(triggered.matchState ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).toBe('titan_ninjas_invisible_ninja_ongoing');
+        expect(prompt?.playerId).toBe('0');
+    });
+
+    it('ninjas_invisible_ninja 在自己消灭己方随从时不应误把 destroy 事件当成回手事件并创建抽牌交互', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 7,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('peek-1', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('peek-2', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 2, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'ninja-titan-1',
+                defId: 'ninjas_invisible_ninja',
+                faction: 'ninjas',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+            } as any],
+        });
+
+        const destroyedOwnMinionLki = makeMinion('ally-destroyed', 'robot_microbot_beta', '0', 2, { powerModifier: 0 });
+        const triggered = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            sourceBaseIndex: 0,
+            triggerMinionUid: 'ally-destroyed',
+            triggerMinionDefId: 'robot_microbot_beta',
+            triggerMinion: destroyedOwnMinionLki,
+            destroyerId: '0',
+            reason: 'test_destroy_own_minion',
+            random: defaultTestRandom,
+            now: 3902,
+        });
+
+        const prompt = getInteractionsFromMS(triggered.matchState ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).not.toBe('titan_ninjas_invisible_ninja_ongoing');
+    });
+
+    it('ninjas_invisible_ninja 在弃牌堆随从回到自己手牌时也应给泰坦控制者创建抽牌交互', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 7,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('peek-1', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('peek-2', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                    discard: [
+                        makeCard('discard-action', 'robot_microbot_gamma', 'action', '0'),
+                        makeCard('returned-own', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 2, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'ninja-titan-1',
+                defId: 'ninjas_invisible_ninja',
+                faction: 'ninjas',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+            } as any],
+        });
+
+        const processed = processReturnToHandTriggers([{
+            type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+            payload: {
+                playerId: '0',
+                cardUids: ['discard-action', 'returned-own'],
+                reason: 'test_recover_own_minion',
+            },
+            timestamp: 3900,
+        } as any], makeMatchState(core), '0', defaultTestRandom, 3900);
+
+        const queued = (processed.events as any[]).find((event: any) =>
+            event.type === SU_EVENTS.TRIGGER_QUEUED
+            && event.payload?.triggers?.some((trigger: any) => trigger.triggerMinionUid === 'returned-own'),
+        );
+        expect(queued).toBeDefined();
+
+        expect(queued.payload.triggers).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceDefId: 'ninjas_invisible_ninja',
+                triggerMinionUid: 'returned-own',
+                triggerMinionDefId: 'robot_microbot_beta',
+            }),
+        ]));
+    });
+
+    it('ninjas_invisible_ninja 在弃牌堆同时回两张随从时，不应依赖 recovered cardUids 的顺序才触发抽牌交互', () => {
+        const buildCore = () => makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 7,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('peek-1', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('peek-2', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                    discard: [
+                        makeCard('returned-one', 'robot_microbot_beta', 'minion', '0'),
+                        makeCard('returned-two', 'robot_microbot_alpha', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 2, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'ninja-titan-1',
+                defId: 'ninjas_invisible_ninja',
+                faction: 'ninjas',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+            } as any],
+        });
+
+        for (const cardUids of [
+            ['returned-one', 'returned-two'],
+            ['returned-two', 'returned-one'],
+        ]) {
+            const processed = processReturnToHandTriggers([{
+                type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+                payload: {
+                    playerId: '0',
+                    cardUids,
+                    reason: 'test_recover_two_minions',
+                },
+                timestamp: 3910,
+            } as any], makeMatchState(buildCore()), '0', defaultTestRandom, 3910);
+
+            const queued = (processed.events as any[]).find(event => event.type === SU_EVENTS.TRIGGER_QUEUED);
+            expect(queued).toBeDefined();
+            expect(queued.payload.triggers).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    sourceDefId: 'ninjas_invisible_ninja',
+                    triggerMinionUid: expect.stringMatching(/returned-(one|two)/),
+                }),
+            ]));
+        }
+    });
 });
 
 describe('Skeletons abilities', () => {
@@ -7612,6 +10490,43 @@ describe('Skeletons abilities', () => {
 
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'returned-one')).toBe(false);
         expect((resolved.finalState.core.bases[0].buriedCards ?? []).some(card => card.uid === 'returned-one')).toBe(true);
+    });
+
+    it('skeletons_returned_one 自埋 borrowed 随从时应保留真实 trueOwnerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-returned-one', 'skeletons_returned_one', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'borrowed-returned-one', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('skeletons_returned_one');
+
+        const buryOption = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-returned-one');
+        expect(buryOption).toBeDefined();
+
+        const resolved = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: buryOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const buried = resolved.finalState.core.bases[0].buriedCards?.find(card => card.uid === 'borrowed-returned-one');
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-returned-one',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'play',
+        }));
     });
 
     it('skeletons_returned_one 被挖掘后可再挖同基地另一张埋葬牌', () => {
@@ -7738,6 +10653,49 @@ describe('Skeletons abilities', () => {
         const buried = resolved.finalState.core.bases[1].buriedCards ?? [];
         expect(buried.some(card => card.uid === 'discard-a')).toBe(true);
         expect(buried.some(card => card.uid === 'discard-b')).toBe(true);
+    });
+
+    it('skeletons_place_em_down 埋葬 borrowed 弃牌堆随从时应保留真实 trueOwnerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('place-1', 'skeletons_place_em_down', 'action', '0')],
+                    discard: [makeCard('borrowed-discard', 'robot_microbot_alpha', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'place-1' } },
+            defaultTestRandom,
+        );
+        const basePrompt = getInteractionsFromMS(played.finalState)[0] as any;
+        const baseOption = basePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 0);
+        const afterBase = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+        const cardsPrompt = getInteractionsFromMS(afterBase.finalState)[0] as any;
+        const cardOption = cardsPrompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-discard');
+        expect(cardOption).toBeDefined();
+
+        const resolved = runCommand(
+            afterBase.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionIds: [cardOption.id] } } as any,
+            defaultTestRandom,
+        );
+
+        const buried = resolved.finalState.core.bases[0].buriedCards?.find(card => card.uid === 'borrowed-discard');
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-discard',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'discard',
+        }));
     });
 
     it('skeletons_dig_em_up 可选择基地后挖掘最多三张', () => {
@@ -7897,6 +10855,46 @@ describe('Skeletons abilities', () => {
         expect((resolved.finalState.core.bases[0].buriedCards ?? []).some(card => card.uid === 'hand-a')).toBe(true);
     });
 
+    it('borrowed skeletons_lord_of_bones 从当前玩家手牌埋葬 borrowed 牌时，仍应保留真实 trueOwnerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-hand-a', 'robot_microbot_alpha', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('lob-1', 'skeletons_lord_of_bones', '0', 5, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'lob-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const buryPrompt = getInteractionsFromMS(used.finalState)[0] as any;
+        expect(buryPrompt?.data?.sourceId).toBe('skeletons_lord_of_bones_bury');
+        const option = buryPrompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-hand-a');
+        expect(option).toBeDefined();
+
+        const resolved = runCommand(
+            used.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        const buried = (resolved.finalState.core.bases[0].buriedCards ?? []).find((card: any) => card.uid === 'borrowed-hand-a');
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-hand-a',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'hand',
+        }));
+    });
+
     it('skeletons_lord_of_bones 天赋可挖掘这里任意埋葬牌而不只限自己', () => {
         const core = makeState({
             players: {
@@ -8007,6 +11005,56 @@ describe('Skeletons abilities', () => {
         expect((afterBury.finalState.core.bases[0].buriedCards ?? []).some((card: any) => card.uid === 'hand-a')).toBe(true);
         const uncoverPrompt = getInteractionsFromMS(afterBury.finalState)[0] as any;
         expect(uncoverPrompt?.data?.sourceId).toBe('skeletons_grave_goods_uncover');
+    });
+
+    it('borrowed skeletons_grave_goods 首次埋葬 borrowed 手牌时应保留真实 trueOwnerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('grave-goods-1', 'skeletons_grave_goods', 'action', '0'),
+                        makeCard('borrowed-hand-a', 'robot_microbot_alpha', 'minion', '1'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'base_a', minions: [], ongoingActions: [] },
+                { defId: 'base_b', minions: [], ongoingActions: [] },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'grave-goods-1' } },
+            defaultTestRandom,
+        );
+        const basePrompt = getInteractionsFromMS(played.finalState)[0] as any;
+        const baseOption = basePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 0);
+        const afterBase = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const buryPrompt = getInteractionsFromMS(afterBase.finalState)[0] as any;
+        expect(buryPrompt?.data?.sourceId).toBe('skeletons_grave_goods_bury');
+        const buryOption = buryPrompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-hand-a');
+        expect(buryOption).toBeDefined();
+
+        const afterBury = runCommand(
+            afterBase.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: buryOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const buried = (afterBury.finalState.core.bases[0].buriedCards ?? []).find((card: any) => card.uid === 'borrowed-hand-a');
+        expect(buried).toEqual(expect.objectContaining({
+            uid: 'borrowed-hand-a',
+            trueOwnerId: '1',
+            controllerId: '0',
+            buriedFrom: 'hand',
+        }));
     });
 
     it('skeletons_grave_goods 首次埋葬后若只剩一张手牌不能额外埋葬另一张', () => {
@@ -8434,6 +11482,61 @@ describe('Skeletons abilities', () => {
         expect((resolved.finalState.core.bases[1].buriedCards ?? []).some(card => card.uid === 'gravestones-1')).toBe(true);
     });
 
+    it('borrowed skeletons_gravestones 应按控制者而不是真实 owner 在计分后把自己埋到另一基地，并保留 true owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [{
+                        uid: 'gravestones-1',
+                        defId: 'skeletons_gravestones',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    }],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const triggered = fireTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 0, vp: 0 }],
+            sourceCardUid: 'gravestones-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            random: defaultTestRandom,
+            now: 3902,
+        });
+        const prompt = getInteractionsFromMS(triggered.matchState ?? makeMatchState(core))[0] as any;
+        expect(prompt?.playerId).toBe('0');
+        expect(prompt?.data?.sourceId).toBe('skeletons_gravestones_after_scoring');
+        const baseOption = prompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const resolved = runCommand(
+            triggered.matchState ?? makeMatchState(core),
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const buried = (resolved.finalState.core.bases[1].buriedCards ?? []).find(card => card.uid === 'gravestones-1');
+        expect(buried).toBeDefined();
+        expect(buried?.trueOwnerId).toBe('1');
+        expect((resolved.finalState.core.bases[0].ongoingActions ?? []).some(card => card.uid === 'gravestones-1')).toBe(false);
+    });
+
     it('skeletons_gravetender 每回合仅首次埋葬/挖掘触发抽牌', () => {
         const core = makeState({
             turnNumber: 3,
@@ -8736,6 +11839,56 @@ describe('Fairies abilities', () => {
         expect(getEffectivePower(afterTurnStart, restored!, 0)).toBe(3);
     });
 
+    it('fairies_glymmer 对自己的 +1 力量也会在你的下回合开始时结束', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('glymmer-1', 'fairies_glymmer', '0', 4, { powerModifier: 0 }),
+                    makeMinion('enemy-1', 'robot_microbot_alpha', '1', 3, { powerModifier: 0 }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'glymmer-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(used.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('fairies_glymmer');
+        const selfBranch = prompt.data.options.find((entry: any) => entry.value?.choice === 'self_bonus');
+        expect(selfBranch).toBeDefined();
+
+        const resolved = runCommand(
+            used.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: selfBranch.id } } as any,
+            defaultTestRandom,
+        );
+
+        const boosted = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'glymmer-1');
+        expect(boosted).toBeDefined();
+        expect(getEffectivePower(resolved.finalState.core, boosted!, 0)).toBe(5);
+
+        const afterTurnStart = reduce(resolved.finalState.core, {
+            type: SU_EVENTS.TURN_STARTED,
+            payload: { playerId: '0', turnNumber: 3 },
+            timestamp: 4101,
+        } as any);
+        const restored = afterTurnStart.bases[0].minions.find(minion => minion.uid === 'glymmer-1');
+        expect(restored).toBeDefined();
+        expect(getEffectivePower(afterTurnStart, restored!, 0)).toBe(4);
+    });
+
     it('fairies_ladybug 会让附着随从不能被消灭', () => {
         const protectedMinion = makeMinion('ally-1', 'robot_microbot_alpha', '0', 3, {
             powerModifier: 0,
@@ -8751,6 +11904,82 @@ describe('Fairies abilities', () => {
 
         expect(isMinionProtected(core, protectedMinion, 0, '1', 'destroy')).toBe(true);
         expect(isMinionProtected(core, protectedMinion, 0, '0', 'destroy')).toBe(true);
+    });
+
+    it('borrowed fairies_magic_ward 应按控制者而不是真实 owner 限制其他玩家在此基地打行动', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{
+                    uid: 'ward-1',
+                    defId: 'fairies_magic_ward',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            }],
+        });
+
+        expect(isOperationRestricted(core, 0, '1', 'play_action')).toBe(true);
+        expect(isOperationRestricted(core, 0, '0', 'play_action')).toBe(false);
+    });
+
+    it('fairies_tinx 把 borrowed 附着行动移到自己身上时，仍应保留 sourcePlayerId', () => {
+        const sourceHost = makeMinion('host-a', 'robot_microbot_alpha', '0', 3, {
+            powerModifier: 0,
+            attachedActions: [{ uid: 'ladybug-1', defId: 'fairies_ladybug', ownerId: '1', talentUsed: false } as any],
+        });
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('tinx-1', 'fairies_tinx', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [sourceHost],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'tinx-1', baseIndex: 1 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('fairies_tinx');
+        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'ladybug-1');
+        expect(option).toBeDefined();
+
+        const resolved = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'ladybug-1',
+                defId: 'fairies_ladybug',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'minion',
+                targetBaseIndex: 1,
+                targetMinionUid: 'tinx-1',
+            }),
+        }));
     });
 
     it('fairies_enchantment 选择 -1 模式后会写入 metadata 并降低基地上随从力量', () => {
@@ -8786,6 +12015,59 @@ describe('Fairies abilities', () => {
         );
 
         const enchantment = resolved.finalState.core.bases[0].ongoingActions.find(action => action.uid === 'enchantment-1');
+        const targetMinion = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1');
+        expect(enchantment?.metadata?.fairiesEnchantmentMode).toBe('minus');
+        expect(targetMinion).toBeDefined();
+        expect(getEffectivePower(resolved.finalState.core, targetMinion!, 0)).toBe(2);
+    });
+
+    it('borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-enchantment-1', 'fairies_enchantment', 'action', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 3, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'borrowed-enchantment-1', targetBaseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('fairies_enchantment');
+        const minusOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'minus');
+        expect(minusOption).toBeDefined();
+
+        const resolved = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minusOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'borrowed-enchantment-1',
+                defId: 'fairies_enchantment',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 0,
+                metadata: expect.objectContaining({
+                    fairiesEnchantmentMode: 'minus',
+                }),
+            }),
+        }));
+        const enchantment = resolved.finalState.core.bases[0].ongoingActions.find(action => action.uid === 'borrowed-enchantment-1');
         const targetMinion = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1');
         expect(enchantment?.metadata?.fairiesEnchantmentMode).toBe('minus');
         expect(targetMinion).toBeDefined();
@@ -9176,6 +12458,43 @@ describe('Princesses abilities', () => {
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('dvd-1');
     });
 
+    it('princesses_direct_to_dvd_sequel 选择被他人拥有的弃牌随从时，仍应洗回其拥有者牌库而不是当前玩家牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('dvd-1', 'princesses_direct_to_dvd_sequel', 'action', '0')],
+                    discard: [makeCard('borrowed-discard', 'robot_microbot_alpha', 'minion', '1')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-1', 'wizard_summon', 'action', '1')],
+                }),
+            },
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'dvd-1' } },
+            defaultTestRandom,
+        );
+        expect(played.success).toBe(true);
+
+        const prompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('princesses_direct_to_dvd_sequel');
+        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-discard');
+        expect(option).toBeDefined();
+
+        const resolved = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid).sort()).toEqual(['borrowed-discard', 'p1-deck-1']);
+    });
+
     it('princesses_woodland_helpers 会把刚打出的行动放到牌库底', () => {
         const core = makeState({
             players: {
@@ -9215,6 +12534,89 @@ describe('Princesses abilities', () => {
 
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('spell-1');
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-1', 'spell-1']);
+    });
+
+    it('princesses_woodland_helpers 在你打出被他人拥有的行动后，仍应给你创建回收选择并把该行动放回其拥有者牌库底', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-0', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('deck-1', 'robot_microbot_beta', 'minion', '1')],
+                    discard: [makeCard('borrowed-spell-1', 'wizard_summon', 'action', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{ uid: 'woodland-1', defId: 'princesses_woodland_helpers', ownerId: '0' }],
+            }],
+        });
+
+        const triggerResult = fireTriggers(core, 'onActionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            sourceControllerId: '0',
+            sourceEventId: 'action-played:borrowed-spell-1:0',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        const prompt = getInteractionsFromMS(triggerResult.matchState!)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('princesses_woodland_helpers');
+        expect(prompt?.playerId).toBe('0');
+        expect(prompt?.data?.displayCard).toEqual({ defId: 'wizard_summon', cardUid: 'borrowed-spell-1' });
+
+        const option = prompt.data.options.find((entry: any) => entry.value?.choice === 'move_to_bottom');
+        expect(option).toBeDefined();
+
+        const resolved = runCommand(
+            triggerResult.matchState!,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).not.toContain('borrowed-spell-1');
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['deck-1', 'borrowed-spell-1']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-0']);
+    });
+
+    it('princesses_woodland_helpers 不应在其他玩家打出行动时让对手回收该行动', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-0', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('deck-1', 'robot_microbot_beta', 'minion', '1')],
+                    discard: [makeCard('opp-spell-1', 'wizard_summon', 'action', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{ uid: 'woodland-1', defId: 'princesses_woodland_helpers', ownerId: '0' }],
+            }],
+        });
+
+        const triggerResult = fireTriggers(core, 'onActionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            sourceEventId: 'action-played:opp-spell-1:1',
+            sourceControllerId: '0',
+            random: defaultTestRandom,
+            now: 1001,
+        });
+
+        expect(getInteractionsFromMS(triggerResult.matchState ?? makeMatchState(core))).toHaveLength(0);
+        expect(triggerResult.events.some(event =>
+            event.type === SU_EVENTS.CARD_MOVED_TO_DECK_BOTTOM
+            && (event as any).payload?.cardUid === 'opp-spell-1',
+        )).toBe(false);
+        expect(triggerResult.matchState?.core.players['1'].discard.map(card => card.uid) ?? core.players['1'].discard.map(card => card.uid)).toContain('opp-spell-1');
     });
 
     it('princesses_fairy_godmother 选择 buff 时会进入第二段目标选择并给目标 +2 力量', () => {
@@ -9465,6 +12867,36 @@ describe('Princesses abilities', () => {
         expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('enemy-1');
     });
 
+    it('princesses_marie_degraw 看到被他人拥有的牌库顶行动时，仍应放到其拥有者牌库底而不是当前玩家牌库底', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('borrowed-top', 'wizard_summon', 'action', '1'),
+                        makeCard('p0-deck-1', 'robot_microbot_alpha', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-1', 'robot_microbot_beta', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('marie-1', 'princesses_marie_degraw', '0', 3)],
+                ongoingActions: [],
+            }],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'marie-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        expect(talent.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
+        expect(talent.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-1', 'borrowed-top']);
+    });
+
     it('princesses_tale_as_old_as_time 会把你的所有仆从移动到选定基地', () => {
         const core = makeState({
             players: {
@@ -9543,6 +12975,68 @@ describe('Princesses abilities', () => {
         expect(resolved.finalState.core.players['0'].discard).toHaveLength(0);
     });
 
+    it('princesses_heirloom 每张都会给宿主 +1 力量', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('host-1', 'princesses_griselda', '0', 3, {
+                    attachedActions: [
+                        { uid: 'heirloom-1', defId: 'princesses_heirloom', ownerId: '0' },
+                        { uid: 'heirloom-2', defId: 'princesses_heirloom', ownerId: '0' },
+                    ],
+                })],
+                ongoingActions: [],
+            }],
+        });
+
+        const host = core.bases[0].minions[0];
+        expect(getEffectivePower(core, host, 0)).toBe(5);
+    });
+
+    it('princesses_heirloom 只会拦截 destroy 原因的离场', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('host-1', 'princesses_griselda', '0', 3, {
+                    attachedActions: [{ uid: 'heirloom-1', defId: 'princesses_heirloom', ownerId: '0' }],
+                })],
+                ongoingActions: [],
+            }],
+        });
+
+        const destroyDetach = {
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: {
+                cardUid: 'heirloom-1',
+                defId: 'princesses_heirloom',
+                ownerId: '0',
+                reason: 'ninja_poison_destroy',
+            },
+            timestamp: 0,
+        };
+        expect(interceptEvent(state, destroyDetach as any)).toBeNull();
+
+        const nonDestroyDetach = {
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: {
+                cardUid: 'heirloom-1',
+                defId: 'princesses_heirloom',
+                ownerId: '0',
+                reason: 'time_travelers_into_the_time_slip',
+            },
+            timestamp: 0,
+        };
+        expect(interceptEvent(state, nonDestroyDetach as any)).toBeUndefined();
+    });
+
     it('princesses_happily_ever_after 会在你于该基地得分时额外给 1 VP', () => {
         const core = makeState({
             players: {
@@ -9603,6 +13097,79 @@ describe('Princesses abilities', () => {
         const finalCore = triggerResult.events.reduce((current, event) => reduce(current, event as any), core);
         expect(finalCore.players['0'].discard.map(card => card.uid)).not.toContain('sleep-1');
         expect(finalCore.players['0'].deck.map(card => card.uid)).toContain('sleep-1');
+    });
+
+    it('princesses_sleeping_beauty 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重洗回牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('sleep-deck-a', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('sleep-dup-1', 'princesses_sleeping_beauty', '0', 5)],
+                ongoingActions: [],
+            }],
+        });
+        const ms = makeMatchState(core);
+
+        const triggerResult = processDestroyTriggers([{
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'sleep-dup-1',
+                minionDefId: 'princesses_sleeping_beauty',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1001,
+        } as any], ms, '1' as any, defaultTestRandom, 1001);
+
+        const shuffleEvents = triggerResult.events.filter(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM) as any[];
+        expect(shuffleEvents).toHaveLength(1);
+        expect(shuffleEvents[0]?.payload?.cardUid).toBe('sleep-dup-1');
+        expect(shuffleEvents[0]?.payload?.ownerId).toBe('0');
+    });
+
+    it('trickster_gremlin_pod 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('gremlin-draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('gremlin-draw-b', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('gremlin-pod-1', 'trickster_gremlin_pod', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+        const state = makeMatchState(core);
+
+        const processed = processDestroyTriggers([{
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'gremlin-pod-1',
+                minionDefId: 'trickster_gremlin_pod',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                destroyerId: '1',
+                reason: 'test_destroy',
+            },
+            timestamp: 1001,
+        } as any], state, '1', defaultTestRandom, 1001);
+
+        const drawEvents = processed.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        expect(drawEvents).toHaveLength(1);
+        expect(drawEvents[0]?.payload?.playerId).toBe('0');
+        expect(drawEvents[0]?.payload?.count).toBe(1);
     });
 
     it('princesses_eliza 会阻止对手在同回合打出第二张额外牌', () => {

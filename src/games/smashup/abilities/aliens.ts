@@ -511,6 +511,7 @@ export function registerAlienAbilities(): void {
     // 若处理函数再“扫描全基地侦察兵”会导致重复创建交互/重复回手。
     registerTrigger('alien_scout', 'afterScoring', alienScoutAfterScoringPerInstance, {
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     // POD 版本会通过 registerPodOngoingAliases() 自动映射，无需手动注册
@@ -995,9 +996,11 @@ const alienTerraformPlayMinionPromptProgram = createPromptProgram<
                         playerId,
                         cardUid: selectedCard.uid,
                         defId: selectedCard.defId,
+                        ownerId: selectedCard.owner,
                         baseIndex: context.selectedBaseIndex,
                         baseDefId: context.newBaseDefId,
                         power: def?.power ?? 0,
+                        reason: 'alien_terraform',
                     },
                     timestamp,
                 } as MinionPlayedEvent,

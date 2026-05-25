@@ -17,11 +17,13 @@ import type {
 } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
+import { resolveOnPlay } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { makeMatchState as makeMatchStateFromHelpers } from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
     clearRegistry();
@@ -299,5 +301,104 @@ describe('ghost_make_contact_pod（交朋友 POD）', () => {
         const minion = newState.bases[0].minions.find(m => m.uid === 'm2')!;
         expect(minion.controller).toBe('1');
         expect(minion.attachedActions.some(action => action.defId === 'ghost_make_contact_pod')).toBe(false);
+    });
+
+    it('被他人拥有时自毁仍应进入其拥有者弃牌堆，而不是当前玩家弃牌堆', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('a1', 'ghost_make_contact_pod', 'action', '1'),
+                        makeCard('m1', 'test_minion', 'minion', '0'),
+                    ],
+                    discard: [makeCard('p0-discard-a', 'test_action', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    discard: [makeCard('p1-discard-a', 'test_action', 'action', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'b1',
+                minions: [makeMinion('m2', 'test', '1', 2, '1')],
+                ongoingActions: [],
+            }],
+        });
+
+        const { events } = execPlayAction(state, '0', 'a1', 0, 'm2');
+        const newState = applyEvents(state, events);
+        const minion = newState.bases[0].minions.find(m => m.uid === 'm2')!;
+
+        expect(minion.controller).toBe('1');
+        expect(minion.attachedActions.some(action => action.uid === 'a1')).toBe(false);
+        expect(newState.players['0'].discard.map(card => card.uid)).toEqual(['p0-discard-a']);
+        expect(newState.players['1'].discard.map(card => card.uid)).toEqual(['p1-discard-a', 'a1']);
+    });
+});
+
+describe('ghost_the_dead_rise（亡者崛起）', () => {
+    it('从弃牌堆打出 borrowed 低力量随从时，应保留真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('rise', 'ghost_the_dead_rise', 'action', '0'),
+                        makeCard('discard-a', 'ghost_spectre', 'minion', '0'),
+                        makeCard('discard-b', 'ghost_spectre', 'minion', '0'),
+                        makeCard('discard-c', 'ghost_spectre', 'minion', '0'),
+                    ],
+                    discard: [
+                        makeCard('borrowed-ghost', 'vampire_fledgling_vampire', 'minion', '1'),
+                        makeCard('own-ghost', 'ghost_spectre', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
+        });
+
+        const onPlay = resolveOnPlay('ghost_the_dead_rise');
+        expect(onPlay).toBeTruthy();
+        const result = onPlay!({
+            state,
+            matchState: makeMatchState(state),
+            playerId: '0',
+            cardUid: 'rise',
+            defId: 'ghost_the_dead_rise',
+            baseIndex: 0,
+            random: defaultRandom,
+            now: 0,
+        } as any);
+
+        const discardPrompt = result.matchState?.sys.interaction?.current as any;
+        expect(discardPrompt?.data?.sourceId).toBe('ghost_the_dead_rise_discard');
+        const discardOptionIds = discardPrompt.data.options
+            .filter((option: any) => ['discard-a', 'discard-b', 'discard-c'].includes(option.value?.cardUid))
+            .map((option: any) => option.id);
+        expect(discardOptionIds).toHaveLength(3);
+
+        const afterDiscard = runCommand(
+            result.matchState!,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionIds: discardOptionIds } } as any,
+            defaultRandom,
+        );
+        expect(afterDiscard.success).toBe(true);
+
+        const playPrompt = afterDiscard.finalState.sys.interaction?.current as any;
+        expect(playPrompt?.data?.sourceId).toBe('ghost_the_dead_rise_play');
+        const borrowedOption = playPrompt.data.options.find((option: any) => option.value?.cardUid === 'borrowed-ghost');
+        expect(borrowedOption).toBeTruthy();
+
+        const resolved = runCommand(
+            afterDiscard.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: borrowedOption.id } } as any,
+            defaultRandom,
+        );
+        expect(resolved.success).toBe(true);
+
+        const minion = resolved.finalState.core.bases[0].minions.find(card => card.uid === 'borrowed-ghost');
+        expect(minion?.controller).toBe('0');
+        expect(minion?.owner).toBe('1');
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-ghost');
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).not.toContain('borrowed-ghost');
     });
 });

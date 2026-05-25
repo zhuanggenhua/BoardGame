@@ -9,6 +9,8 @@ import { makeCard, makeMatchState, makeMinion, makePlayer, makeState, getInterac
 import { runCommand, defaultTestRandom } from './testRunner';
 import { getEffectivePower } from '../domain/ongoingModifiers';
 import { executeTriggerProgramExecutor } from '../domain/triggerExecutors';
+import { maybeResolveReactionQueue } from '../domain/reactionQueue';
+import { collectTriggers } from '../domain/ongoingEffects';
 
 beforeAll(() => {
     clearRegistry();
@@ -36,6 +38,41 @@ describe('elder_things_pod: Elder Thing POD', () => {
         expect(prompt?.displayCard).toEqual({ defId: 'elder_thing_elder_thing_pod', cardUid: 'c1' });
         const destroyOpt = prompt.options.find((o: any) => o.id === 'destroy');
         expect(destroyOpt?.disabled).toBe(true);
+    });
+
+    it('被他人控制时选择沉底，仍应进入自己拥有者的牌库底', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('c1', 'elder_thing_elder_thing_pod', 'minion', '1')] }),
+                '1': makePlayer('1', { deck: [] }),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'c1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const livePod = played.finalState.core.bases[0].minions.find(minion => minion.uid === 'c1');
+        expect(livePod?.controller).toBe('0');
+        expect(livePod?.owner).toBe('1');
+        const prompt: any = getInteractionsFromMS(played.finalState)[0]?.data;
+        expect(prompt?.sourceId).toBe('elder_thing_elder_thing_pod_mode');
+
+        const bottomOpt = prompt.options.find((o: any) => o.id === 'bottom');
+        expect(bottomOpt).toBeTruthy();
+
+        const afterChoice = runCommand(
+            played.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: bottomOpt.id } },
+            defaultTestRandom,
+        );
+
+        const bottomEvent = afterChoice.events.find((event: any) => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM) as any;
+        expect(bottomEvent?.payload?.ownerId).toBe('1');
+        expect(afterChoice.finalState.core.players['0'].deck.some(c => c.uid === 'c1')).toBe(false);
+        expect(afterChoice.finalState.core.players['1'].deck.some(c => c.uid === 'c1')).toBe(true);
     });
 });
 describe('elder_things_pod: Unfathomable Goals POD', () => {
@@ -242,6 +279,56 @@ describe('elder_things_pod: Dunwich Horror POD', () => {
         } as any).events;
         expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
     });
+
+    it('在其他玩家的计分前触发时，抉择仍应交给附着宿主控制者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 9,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    {
+                        ...makeMinion('host-1', 'robot_microbot', '0', 3),
+                        attachedActions: [{ uid: 'dh-1', defId: 'elder_thing_dunwich_horror_pod', ownerId: '1' }],
+                    },
+                    makeMinion('enemy-1', 'ninja_shinobi', '1', 6),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const queued = collectTriggers(core, 'beforeScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            sourceCardUid: 'dh-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            random: defaultTestRandom,
+            now: 1001,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('elder_thing_dunwich_horror_pod');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            1001,
+        );
+        const prompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
+        expect(prompt?.playerId).toBe('0');
+        expect(prompt?.data?.sourceId).toBe('elder_thing_dunwich_horror_pod_choice');
+    });
 });
 
 describe('elder_things_pod: The Price of Power POD', () => {
@@ -408,6 +495,166 @@ describe('elder_things_pod: Spreading Horror POD', () => {
         expect(getInteractionsFromMS(afterSkip.finalState).length).toBe(0);
         expect(afterSkip.finalState.core.players['0'].discard.some(c => c.uid === 'd1')).toBe(true);
     });
+
+    it('playing one discard minion and continuing should not double-play it before the next may-play decision', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'elder_thing_spreading_horror_pod', 'action', '0')],
+                    discard: [
+                        makeCard('d1', 'elder_thing_byakhee_pod', 'minion', '0'),
+                        makeCard('d2', 'elder_thing_mi_go_pod', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    hand: [
+                        makeCard('h1', 'robot_microbot', 'minion', '1'),
+                        makeCard('h2', 'robot_microbot_alpha', 'minion', '1'),
+                    ],
+                }),
+                '2': makePlayer('2', {
+                    hand: [
+                        makeCard('h3', 'robot_microbot_beta', 'minion', '2'),
+                        makeCard('h4', 'robot_microbot_gamma', 'minion', '2'),
+                    ],
+                }),
+            },
+            turnOrder: ['0', '1', '2'],
+            bases: [
+                { defId: 'base_a', minions: [], ongoingActions: [] },
+                { defId: 'base_b', minions: [], ongoingActions: [] },
+                { defId: 'base_c', minions: [], ongoingActions: [] },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+        const firstPrompt: any = getInteractionsFromMS(play.finalState)[0]?.data;
+        expect(firstPrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_opponent');
+
+        const p1Decline = runCommand(
+            play.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'no' } },
+            defaultTestRandom,
+        );
+        const p2Prompt: any = getInteractionsFromMS(p1Decline.finalState)[0]?.data;
+        expect(p2Prompt?.sourceId).toBe('elder_thing_spreading_horror_pod_opponent');
+
+        const p2Decline = runCommand(
+            p1Decline.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '2', payload: { optionId: 'no' } },
+            defaultTestRandom,
+        );
+        const mayPlayPrompt: any = getInteractionsFromMS(p2Decline.finalState)[0]?.data;
+        expect(mayPlayPrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_may_play');
+
+        const afterYes = runCommand(
+            p2Decline.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'yes' } },
+            defaultTestRandom,
+        );
+        const chooseBasePrompt: any = getInteractionsFromMS(afterYes.finalState)[0]?.data;
+        expect(chooseBasePrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_choose_base');
+        const base0Option = chooseBasePrompt.options.find((entry: any) => entry.value?.baseIndex === 0);
+        expect(base0Option).toBeDefined();
+
+        const afterBase = runCommand(
+            afterYes.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: base0Option.id } },
+            defaultTestRandom,
+        );
+        const chooseMinionPrompt: any = getInteractionsFromMS(afterBase.finalState)[0]?.data;
+        expect(chooseMinionPrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_choose_minion');
+        const discardMinionOption = chooseMinionPrompt.options.find((entry: any) => entry.value?.cardUid === 'd1');
+        expect(discardMinionOption).toBeDefined();
+
+        const afterMinion = runCommand(
+            afterBase.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: discardMinionOption.id } },
+            defaultTestRandom,
+        );
+
+        expect(afterMinion.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['d1']);
+        expect(afterMinion.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['d2', 'a1']);
+        const followUpPrompt: any = getInteractionsFromMS(afterMinion.finalState)[0]?.data;
+        expect(followUpPrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_may_play');
+    });
+
+    it('从弃牌堆打出 borrowed 小随从时应保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'elder_thing_spreading_horror_pod', 'action', '0')],
+                    discard: [
+                        makeCard('borrowed-minion', 'elder_thing_byakhee_pod', 'minion', '1'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    hand: [
+                        makeCard('h1', 'robot_microbot', 'minion', '1'),
+                        makeCard('h2', 'robot_microbot_alpha', 'minion', '1'),
+                    ],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            bases: [
+                { defId: 'base_a', minions: [], ongoingActions: [] },
+                { defId: 'base_b', minions: [], ongoingActions: [] },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+        const firstPrompt: any = getInteractionsFromMS(play.finalState)[0]?.data;
+        expect(firstPrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_opponent');
+
+        const afterDecline = runCommand(
+            play.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'no' } },
+            defaultTestRandom,
+        );
+        const mayPlayPrompt: any = getInteractionsFromMS(afterDecline.finalState)[0]?.data;
+        expect(mayPlayPrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_may_play');
+
+        const afterYes = runCommand(
+            afterDecline.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'yes' } },
+            defaultTestRandom,
+        );
+        const chooseBasePrompt: any = getInteractionsFromMS(afterYes.finalState)[0]?.data;
+        expect(chooseBasePrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_choose_base');
+
+        const base0Option = chooseBasePrompt.options.find((entry: any) => entry.value?.baseIndex === 0);
+        expect(base0Option).toBeDefined();
+        const afterBase = runCommand(
+            afterYes.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: base0Option.id } },
+            defaultTestRandom,
+        );
+        const chooseMinionPrompt: any = getInteractionsFromMS(afterBase.finalState)[0]?.data;
+        expect(chooseMinionPrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_choose_minion');
+
+        const borrowedOption = chooseMinionPrompt.options.find((entry: any) => entry.value?.cardUid === 'borrowed-minion');
+        expect(borrowedOption).toBeDefined();
+        const afterMinion = runCommand(
+            afterBase.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: borrowedOption.id } },
+            defaultTestRandom,
+        );
+
+        const playedEvent: any = afterMinion.events.find(e => e.type === SU_EVENTS.MINION_PLAYED);
+        expect(playedEvent?.payload?.ownerId).toBe('1');
+        const playedMinion = afterMinion.finalState.core.bases[0].minions.find(minion => minion.uid === 'borrowed-minion');
+        expect(playedMinion?.controller).toBe('0');
+        expect(playedMinion?.owner).toBe('1');
+        expect(afterMinion.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);
+    });
 });
 
 describe('elder_things (base): Elder Thing', () => {
@@ -415,7 +662,7 @@ describe('elder_things (base): Elder Thing', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
-                    hand: [makeCard('et1', 'elder_thing_elder_thing', 'minion', '0')],
+                    hand: [makeCard('et1', 'elder_thing_elder_thing', 'minion', '1')],
                 }),
                 '1': makePlayer('1'),
             },
@@ -460,6 +707,71 @@ describe('elder_things (base): Elder Thing', () => {
         expect(base0.minions.some(m => m.defId === 'elder_thing_elder_thing')).toBe(false);
         // and not in discard
         expect(afterChoice.finalState.core.players['0'].discard.some(c => c.uid === 'et1')).toBe(false);
+        expect(afterChoice.finalState.core.players['0'].deck.some(c => c.uid === 'et1')).toBe(false);
+        expect(afterChoice.finalState.core.players['1'].deck.some(c => c.uid === 'et1')).toBe(true);
+    });
+
+    it('first destroy target chosen后若第二个候选已离场，failed_destroy 仍应把 borrowed 远古之物放回其拥有者牌库底', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('et1', 'elder_thing_elder_thing', 'minion', '1')],
+                }),
+                '1': makePlayer('1', { deck: [] }),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('m1', 'robot_microbot', '0', 1),
+                        makeMinion('m2', 'robot_microbot_alpha', '0', 2),
+                        makeMinion('m3', 'robot_microbot_beta', '0', 3),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'et1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const choicePrompt: any = getInteractionsFromMS(played.finalState)[0]?.data;
+        expect(choicePrompt?.sourceId).toBe('elder_thing_elder_thing_choice');
+
+        const afterDestroyChoice = runCommand(
+            played.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'destroy' } },
+            defaultTestRandom,
+        );
+        const firstDestroyPrompt: any = getInteractionsFromMS(afterDestroyChoice.finalState)[0]?.data;
+        expect(firstDestroyPrompt?.sourceId).toBe('elder_thing_elder_thing_destroy_first');
+
+        const liveBase = afterDestroyChoice.finalState.core.bases[0];
+        const staleAfterFirstChoice = {
+            ...afterDestroyChoice.finalState,
+            core: {
+                ...afterDestroyChoice.finalState.core,
+                bases: [{
+                    ...liveBase,
+                    minions: liveBase.minions.filter(minion => minion.uid === 'et1' || minion.uid === 'm1'),
+                }],
+            },
+        };
+        const firstTargetOption = firstDestroyPrompt.options.find((option: any) => option.value?.minionUid === 'm1');
+        expect(firstTargetOption).toBeTruthy();
+
+        const afterFirstTarget = runCommand(
+            staleAfterFirstChoice,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: firstTargetOption.id } },
+            defaultTestRandom,
+        );
+
+        const deckBottomEvent = afterFirstTarget.events.find((event: any) => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM) as any;
+        expect(deckBottomEvent?.payload?.ownerId).toBe('1');
+        expect(afterFirstTarget.finalState.core.players['0'].deck.some(c => c.uid === 'et1')).toBe(false);
+        expect(afterFirstTarget.finalState.core.players['1'].deck.some(c => c.uid === 'et1')).toBe(true);
     });
 });
 

@@ -100,6 +100,38 @@ function runAction(core: SmashUpCore, command: { type: string; playerId: string;
 // ============================================================================
 
 describe('onDestroy 基础设施', () => {
+    it('bear_cavalry_bear_necessities 不应把自己控制但真实 owner 不同的 borrowed ongoing 当成对手行动目标', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('c1', 'bear_cavalry_bear_necessities', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{
+                    uid: 'borrowed-ongoing',
+                    defId: 'steampunk_escape_hatch',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                    talentUsed: false,
+                } as any],
+            }],
+        });
+
+        const events = runAction(core, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'c1' },
+        });
+
+        expect(events.some(
+            e => e.type === SU_EVENTS.ONGOING_DETACHED && (e as any).payload.cardUid === 'borrowed-ongoing',
+        )).toBe(false);
+    });
+
     it('消灭无 onDestroy 能力的随从不产生额外事件（单目标自动执行）', () => {
         // 用 bear_necessities 行动卡消灭一个无 onDestroy 的随从
         // 基地上只有1个对手随从 → 单目标自动执行
@@ -375,13 +407,13 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
         expect(drawEvents.length).toBe(1);
         expect((drawEvents[0] as any).payload.count).toBe(1);
 
-        // 小妖精 onDestroy：玩家0弃1张牌
-        // processDestroyTriggers 使用原始 core 状态，玩家0有2张手牌
+        // 小妖精 onDestroy：玩家0只会弃掉剩余手牌，已打出的 c1 不应回流成弃牌候选
         const discardEvents = events.filter(
             e => e.type === SU_EVENTS.CARDS_DISCARDED && (e as any).payload.playerId === '0'
         );
         expect(discardEvents.length).toBe(1);
         expect((discardEvents[0] as any).payload.cardUids.length).toBe(1);
+        expect((discardEvents[0] as any).payload.cardUids).toEqual(['c2']);
     });
 
     it('牌库为空时不抽牌，但仍强制对手弃牌', () => {
@@ -425,7 +457,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
         expect(discardEvents.length).toBe(1);
     });
 
-    it('对手手牌为空时不产生弃牌事件', () => {
+    it('当前玩家打出唯一手牌消灭小妖精后，不会再把已打出的行动当成可弃手牌', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -455,19 +487,11 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
         );
         expect(drawEvents.length).toBe(1);
 
-        // 对手（玩家0）在消灭前有1张手牌（c1），但 processDestroyTriggers 用的是原始 core
-        // 所以玩家0手牌有 c1 → 会弃1张
-        // 等等...玩家0打出 c1 后手牌为空，但 processDestroyTriggers 用的是打出前的 core
-        // 所以玩家0手牌还有 c1 → 会产生弃牌事件
-        // 这个测试需要调整：让玩家0在打出前就没有其他手牌
-        // 但 processDestroyTriggers 用的是原始 core，所以玩家0手牌有 c1
-        // 要测试"对手手牌为空"，需要对手不是当前玩家
-        // 换：三人游戏，玩家2手牌为空
+        // c1 已作为本次行动打出，不应再被 onDestroy 的弃牌逻辑当成 live hand 候选。
         const discardP0 = events.filter(
             e => e.type === SU_EVENTS.CARDS_DISCARDED && (e as any).payload.playerId === '0'
         );
-        // 玩家0在原始 core 中有1张手牌，所以会弃
-        expect(discardP0.length).toBe(1);
+        expect(discardP0.length).toBe(0);
     });
 
     it('三人游戏中手牌为空的对手不产生弃牌事件', () => {

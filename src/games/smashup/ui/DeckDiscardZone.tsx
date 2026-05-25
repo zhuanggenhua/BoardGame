@@ -41,6 +41,7 @@ type Props = {
     dispatch: (type: string, payload?: unknown) => void;
     playerID: string | null;
     playerNames?: Record<string, string>;
+    focusedTitanPrompt?: boolean;
 };
 
 export const DeckDiscardZone: React.FC<Props> = ({
@@ -66,6 +67,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
     dispatch,
     playerID,
     playerNames,
+    focusedTitanPrompt = false,
 }) => {
     const { t } = useTranslation('game-smashup');
     const [showDiscard, setShowDiscard] = useState(false);
@@ -178,6 +180,103 @@ export const DeckDiscardZone: React.FC<Props> = ({
         },
     });
 
+    const titanRailContent = setAsideTitans.length > 0 ? (
+        <div className="flex flex-col items-start pointer-events-auto" data-testid="su-titan-rail">
+            <div className="flex items-end gap-2">
+                {setAsideTitans.map((titan) => {
+                    const titanDef = getTitanDef(titan.defId);
+                    const titanName = titanDef ? resolveCardName(titanDef, t) || titan.defId : titan.defId;
+                    const isSelected = selectedTitanUid === titan.uid;
+                    const isReactionTitan = !!reactionTitanUids?.has(titan.uid);
+                    const isActivatable = !!activatableTitanUids?.has(titan.uid) && (isMyTurn || isReactionTitan);
+                    const showTitanInspectButton = showDesktopTitanInspectButton || isCoarseTitanPointer;
+                    return (
+                        <div key={titan.uid} className="group relative" style={{ width: titanWidth }}>
+                            <button
+                                type="button"
+                                data-testid={`su-rail-titan-${titan.uid}`}
+                                {...getTitanTouchInspectProps(`rail-titan-${titan.uid}`, { defId: titan.defId })}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    if (shouldBlockTitanClick(`rail-titan-${titan.uid}`)) return;
+                                    handleTitanClick(titan);
+                                }}
+                                className={`relative aspect-[0.714] w-full rounded-sm overflow-hidden shadow-lg border transition-all cursor-pointer ${
+                                    isSelected
+                                        ? 'border-purple-400 ring-2 ring-purple-400 -translate-y-1 shadow-[0_0_18px_rgba(168,85,247,0.65)]'
+                                        : isActivatable
+                                        ? 'border-green-400 ring-1 ring-green-300/90 hover:-translate-y-1 shadow-[0_0_12px_rgba(74,222,128,0.28)]'
+                                        : 'border-slate-300 hover:-translate-y-1'
+                                }`}
+                                title={titanName}
+                            >
+                                <CardPreview
+                                    previewRef={titanDef?.previewRef
+                                        ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: titan.defId, cardUid: titan.uid } }
+                                        : undefined}
+                                    className="h-full w-full"
+                                    title={titanName}
+                                />
+                                {isActivatable && (
+                                    <div className="absolute bottom-1 inset-x-0 z-20 flex justify-center px-1 pointer-events-none">
+                                        <div
+                                            data-testid={`su-rail-titan-badge-${titan.uid}`}
+                                            className="whitespace-nowrap rounded-sm border border-white bg-amber-300/95 px-1.5 py-[1px] font-black leading-none text-slate-900 shadow-md"
+                                            style={{ fontSize: titanAbilityBadgeFontSize }}
+                                        >
+                                            {isReactionTitan
+                                                ? t('ui.titan_reaction_available', { defaultValue: '可触发' })
+                                                : t('ui.titan_play_available', { defaultValue: '可打出' })}
+                                        </div>
+                                    </div>
+                                )}
+                                {isSelected && (
+                                    <div className="absolute inset-0 border-2 border-purple-400 pointer-events-none" />
+                                )}
+                            </button>
+                            {showTitanInspectButton && (
+                                <span
+                                    data-testid={`su-rail-titan-magnify-${titan.uid}`}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onViewTitan?.(titan.defId);
+                                    }}
+                                    className={isCoarseTitanPointer
+                                        ? 'absolute top-1 right-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-100 pointer-events-auto shadow-lg hover:bg-amber-500/80 cursor-zoom-in'
+                                        : 'absolute top-1 right-1 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-black/65 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in'}
+                                >
+                                    <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                    </svg>
+                                </span>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+            {!focusedTitanPrompt && (
+                <div
+                    className="mt-2 bg-black/60 px-2 py-0.5 rounded text-white font-bold uppercase tracking-wider"
+                    style={{ minHeight: labelMinHeight, fontSize: labelFontSize }}
+                >
+                    {t('ui.titan', { defaultValue: '泰坦' })}
+                </div>
+            )}
+        </div>
+    ) : null;
+
+    if (focusedTitanPrompt) {
+        return (
+            <div
+                data-tutorial-id="su-deck-discard"
+                className="absolute inset-x-0 bottom-24 flex justify-center pointer-events-none"
+                style={{ zIndex: UI_Z_INDEX.hud }}
+            >
+                {titanRailContent}
+            </div>
+        );
+    }
+
     return (
         <div
             data-tutorial-id="su-deck-discard"
@@ -228,88 +327,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                     </div>
                 </div>
 
-                {setAsideTitans.length > 0 && (
-                    <div className="flex flex-col items-start pointer-events-auto" data-testid="su-titan-rail">
-                        <div className="flex items-end gap-2">
-                            {setAsideTitans.map((titan) => {
-                                const titanDef = getTitanDef(titan.defId);
-                                const titanName = titanDef ? resolveCardName(titanDef, t) || titan.defId : titan.defId;
-                                const isSelected = selectedTitanUid === titan.uid;
-                                const isReactionTitan = !!reactionTitanUids?.has(titan.uid);
-                                const isActivatable = !!activatableTitanUids?.has(titan.uid) && (isMyTurn || isReactionTitan);
-                                const showTitanInspectButton = showDesktopTitanInspectButton || isCoarseTitanPointer;
-                                return (
-                                    <div key={titan.uid} className="group relative" style={{ width: titanWidth }}>
-                                        <button
-                                            type="button"
-                                            data-testid={`su-rail-titan-${titan.uid}`}
-                                            {...getTitanTouchInspectProps(`rail-titan-${titan.uid}`, { defId: titan.defId })}
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                if (shouldBlockTitanClick(`rail-titan-${titan.uid}`)) return;
-                                                handleTitanClick(titan);
-                                            }}
-                                            className={`relative aspect-[0.714] w-full rounded-sm overflow-hidden shadow-lg border transition-all cursor-pointer ${
-                                                isSelected
-                                                    ? 'border-purple-400 ring-2 ring-purple-400 -translate-y-1 shadow-[0_0_18px_rgba(168,85,247,0.65)]'
-                                                    : isActivatable
-                                                    ? 'border-green-400 ring-1 ring-green-300/90 hover:-translate-y-1 shadow-[0_0_12px_rgba(74,222,128,0.28)]'
-                                                    : 'border-slate-300 hover:-translate-y-1'
-                                            }`}
-                                            title={titanName}
-                                        >
-                                            <CardPreview
-                                                previewRef={titanDef?.previewRef
-                                                    ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: titan.defId, cardUid: titan.uid } }
-                                                    : undefined}
-                                                className="h-full w-full"
-                                                title={titanName}
-                                            />
-                                            {isActivatable && (
-                                                <div className="absolute bottom-1 inset-x-0 z-20 flex justify-center px-1 pointer-events-none">
-                                                    <div
-                                                        data-testid={`su-rail-titan-badge-${titan.uid}`}
-                                                        className="whitespace-nowrap rounded-sm border border-white bg-amber-300/95 px-1.5 py-[1px] font-black leading-none text-slate-900 shadow-md"
-                                                        style={{ fontSize: titanAbilityBadgeFontSize }}
-                                                    >
-                                                        {isReactionTitan
-                                                            ? t('ui.titan_reaction_available', { defaultValue: '可触发' })
-                                                            : t('ui.titan_play_available', { defaultValue: '可打出' })}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {isSelected && (
-                                                <div className="absolute inset-0 border-2 border-purple-400 pointer-events-none" />
-                                            )}
-                                        </button>
-                                        {showTitanInspectButton && (
-                                            <span
-                                                data-testid={`su-rail-titan-magnify-${titan.uid}`}
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    onViewTitan?.(titan.defId);
-                                                }}
-                                                className={isCoarseTitanPointer
-                                                    ? 'absolute top-1 right-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-100 pointer-events-auto shadow-lg hover:bg-amber-500/80 cursor-zoom-in'
-                                                    : 'absolute top-1 right-1 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-black/65 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in'}
-                                            >
-                                                <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                                                </svg>
-                                            </span>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        <div
-                            className="mt-2 bg-black/60 px-2 py-0.5 rounded text-white font-bold uppercase tracking-wider"
-                            style={{ minHeight: labelMinHeight, fontSize: labelFontSize }}
-                        >
-                            {t('ui.titan', { defaultValue: '泰坦' })}
-                        </div>
-                    </div>
-                )}
+                {titanRailContent}
             </div>
 
             {/* 弃牌堆 - 右侧 */}

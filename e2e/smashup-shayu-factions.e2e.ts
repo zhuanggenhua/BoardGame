@@ -551,7 +551,7 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
       },
       '选择基地持续行动“野生保护区”',
     );
-    await game.waitForInteraction('tornados_ripped_off_target', 10000);
+    await game.waitForInteraction('tornados_ripped_off_target_base', 10000);
     await game.selectInteractionOptionBy((option: unknown) => optionHasBaseIndex(option, 1), '转移到第二个基地');
     await game.waitForNoInteraction(10000);
 
@@ -576,7 +576,7 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
       },
       '选择随从附着行动“升级”',
     );
-    await game.waitForInteraction('tornados_ripped_off_target', 10000);
+    await game.waitForInteraction('tornados_ripped_off_target_minion', 10000);
     await game.selectInteractionOptionBy((option: unknown) => optionHasMinionUid(option, 'attached-target-minion'), '转移到第二个随从');
     await game.waitForNoInteraction(10000);
 

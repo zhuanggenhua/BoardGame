@@ -517,7 +517,7 @@ const giantAntDronePreventDestroyPromptProgram = createPromptProgram<
     sourceId: 'giant_ant_drone_prevent_destroy',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
-            `giant_ant_drone_prevent_destroy_${context.now}`,
+            `giant_ant_drone_prevent_destroy_${context.targetMinionUid}_${context.fromBaseIndex}_${context.now}`,
             context.playerId,
             '雄蜂：是否移除1个力量指示物来防止该随从被消灭？',
             buildDronePreventDestroyOptions(context.matchState.core, context.playerId),
@@ -1634,15 +1634,17 @@ const giantAntWhoWantsToLiveForeverPodSearchPromptProgram = createPromptProgram<
         if (!player) return { events: [] };
 
         const card = player.deck.find((entry) => entry.uid === selected.cardUid);
-        if (!card || card.owner !== context.playerId) return { events: [] };
+        if (!card) return { events: [] };
+        const ownerId = card.owner;
 
         return {
             events: [{
                 type: SU_EVENTS.CARD_TO_DECK_TOP,
                 payload: {
                     cardUid: selected.cardUid,
-                    defId: selected.defId,
-                    ownerId: context.playerId,
+                    defId: card.defId,
+                    ownerId,
+                    ...(ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                     reason: 'giant_ant_who_wants_to_live_forever_pod',
                 },
                 timestamp,
@@ -1687,7 +1689,7 @@ const giantAntWhoWantsToLiveForeverPodDestroyPromptProgram = createPromptProgram
                 selected.minionUid,
                 selected.defId ?? minion.defId,
                 selected.baseIndex,
-                context.playerId,
+                minion.owner,
                 context.playerId,
                 'giant_ant_who_wants_to_live_forever_pod',
                 timestamp,
@@ -1771,6 +1773,7 @@ const giantAntWorkerPodReplayPromptProgram = createPromptProgram<
                     baseIndex: chosenBaseIndex,
                     power,
                     fromDiscard: true,
+                    ownerId: cardInDiscard.owner,
                     consumesNormalLimit: false,
                     discardPlaySourceId: 'giant_ant_worker_pod',
                 },
@@ -2161,13 +2164,14 @@ function giantAntWorkerPodReplayTrigger(
 ): SmashUpEvent[] | { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
     const { state, playerId, triggerMinionUid, triggerMinionDefId, baseIndex, now } = ctx;
 
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return [];
     if (triggerMinionDefId !== 'giant_ant_worker_pod') return [];
     if (!triggerMinionUid || baseIndex === undefined) return [];
     if (!ctx.matchState) return [];
     if (state.bases.length < 2) return [];
 
-    // destroy / scoring discard 两种时机都发生在 reducer 移除随从前，此时仍可从基地读取到真实 counters
-    const minion = state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
+    const minion = ctx.triggerMinion
+        ?? state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
     if (!minion) return [];
     if (minion.controller !== playerId) return [];
     if (minion.powerCounters > 0) return [];
@@ -2185,6 +2189,10 @@ function giantAntWorkerPodReplayTrigger(
     ), ctx.matchState);
 }
 
+function isDestroyPipelineDiscardTrigger(ctx: TriggerContext): boolean {
+    return typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('minion-discarded-from-base:');
+}
+
 function registerGiantAntProtections(): void {
     const checker: ProtectionChecker = ctx => {
         if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
@@ -2194,7 +2202,8 @@ function registerGiantAntProtections(): void {
         if (!base) return false;
 
         return base.ongoingActions.some(
-            (o) => (o.defId === 'giant_ant_the_show_must_go_on' || o.defId === 'giant_ant_the_show_must_go_on_pod') && o.ownerId === ctx.targetMinion.controller,
+            (o) => (o.defId === 'giant_ant_the_show_must_go_on' || o.defId === 'giant_ant_the_show_must_go_on_pod')
+                && (((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === ctx.targetMinion.controller),
         );
     };
 
@@ -2212,10 +2221,12 @@ function registerGiantAntProtections(): void {
     registerTrigger('giant_ant_we_are_the_champions', 'afterScoring', giantAntWeAreTheChampionsAfterScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
     registerTrigger('giant_ant_we_are_the_champions_pod', 'afterScoring', giantAntWeAreTheChampionsAfterScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
     registerTrigger('giant_ant_drone', 'onMinionDestroyed', giantAntDronePreventTrigger, {
         phase: 'replacement',

@@ -72,6 +72,10 @@ import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { resolveGameDisplayName } from '../components/lobby/gameDetailsContent';
 import { resolveOnlineHudPresence } from './matchHudPresence';
 import {
+    useMissingMatchConfirmation,
+    type MissingMatchConfirmationSignal,
+} from './matchMissingConfirmation';
+import {
     haveAiSeatCredentialsChanged,
     loadOnlineAiSeatState,
     resolveMissingOnlineAiSeatCredentialIds,
@@ -120,20 +124,35 @@ export function shouldShowOnlineGameErrorToast(error: string): boolean {
     return true;
 }
 
-export type MissingMatchConfirmationSignal = 'transport_not_found' | null;
+export function resolveSeatValidationPlayers(args: {
+    fallbackPlayers: Array<{ id: number; name?: string | null; isConnected?: boolean }>;
+    transportPlayers: Array<{ id: number; name?: string | null; isConnected?: boolean }>;
+    transportReady: boolean;
+}): Array<{ id: number; name?: string | null; isConnected?: boolean }> {
+    if (!args.transportReady) {
+        return args.fallbackPlayers;
+    }
 
-export function resolveMissingMatchConfirmationSignal(args: {
-    isTutorialRoute: boolean;
-    matchId?: string | null;
-    shouldAutoJoin: boolean;
-    isAutoJoining: boolean;
-    autoJoinGraceActive: boolean;
-    onlineTransportError?: string | null;
-}): MissingMatchConfirmationSignal {
-    if (args.isTutorialRoute || !args.matchId) return null;
-    if (args.shouldAutoJoin || args.isAutoJoining || args.autoJoinGraceActive) return null;
-    if (args.onlineTransportError === 'match_not_found') return 'transport_not_found';
-    return null;
+    const fallbackById = new Map(
+        args.fallbackPlayers.map((player) => [String(player.id), player] as const),
+    );
+    const transportById = new Map(
+        args.transportPlayers.map((player) => [String(player.id), player] as const),
+    );
+    const playerIds = [...new Set([
+        ...fallbackById.keys(),
+        ...transportById.keys(),
+    ])].sort((left, right) => Number(left) - Number(right));
+
+    return playerIds.map((playerId) => {
+        const fallback = fallbackById.get(playerId);
+        const transport = transportById.get(playerId);
+        return {
+            id: Number(playerId),
+            name: transport?.name ?? fallback?.name,
+            isConnected: transport?.isConnected ?? fallback?.isConnected,
+        };
+    });
 }
 
 export async function resolveManualOnlineAiRecovery(args: {
@@ -278,6 +297,30 @@ const TutorialDispatchBridge = ({ children }: { children: ReactNode }) => {
     }, [isTutorialMode, state]);
 
     return <>{children}</>;
+};
+
+const OnlineSeatValidationBridge = ({
+    onSnapshotChange,
+}: {
+    onSnapshotChange: (snapshot: {
+        players: Array<{ id: number; name?: string | null; isConnected?: boolean }>;
+        transportReady: boolean;
+    }) => void;
+}) => {
+    const { matchPlayers, isConnected } = useGameClient();
+
+    useEffect(() => {
+        onSnapshotChange({
+            players: matchPlayers.map((player) => ({
+                id: player.id,
+                name: player.name,
+                isConnected: player.isConnected,
+            })),
+            transportReady: isConnected && matchPlayers.length > 0,
+        });
+    }, [isConnected, matchPlayers, onSnapshotChange]);
+
+    return null;
 };
 
 const MAX_FORCE_END_TURN_FOLLOW_UP_STEPS = 16;
@@ -2450,13 +2493,7 @@ export const MatchRoom = () => {
         void localStorageTick;
         // 教程模式不需要房间凭据
         if (isTutorialRoute || !matchId) return null;
-        const raw = localStorage.getItem(`match_creds_${matchId}`);
-        if (!raw) return null;
-        try {
-            return JSON.parse(raw) as { playerID?: string; credentials?: string };
-        } catch {
-            return null;
-        }
+        return readStoredMatchCredentials(matchId);
     }, [matchId, isTutorialRoute, localStorageTick]);
     const storedPlayerID = storedMatchCreds?.playerID;
     const hasStoredSeat = Boolean(storedPlayerID);
@@ -2585,59 +2622,43 @@ export const MatchRoom = () => {
 
     // 获取凭据
     const credentials = useMemo(() => {
-        if (!matchId) return undefined;
-        const resolvedPlayerID = urlPlayerID ?? storedPlayerID;
+        const resolvedPlayerID = effectivePlayerID ?? undefined;
         if (!resolvedPlayerID) return undefined;
-        const stored = localStorage.getItem(`match_creds_${matchId}`);
-        if (stored) {
-            try {
-                const data = JSON.parse(stored) as { playerID?: string; credentials?: string };
-                if (data.playerID === resolvedPlayerID) {
-                    return data.credentials;
-                }
-            } catch {
-                return undefined;
-            }
+        if (storedMatchCreds?.playerID === resolvedPlayerID) {
+            return storedMatchCreds.credentials;
         }
         return undefined;
-    }, [matchId, urlPlayerID, storedPlayerID]);
+    }, [effectivePlayerID, storedMatchCreds]);
 
     useEffect(() => {
         if (!matchId || !gameId) return;
-        const stored = localStorage.getItem(`match_creds_${matchId}`);
-        if (!stored) return;
-        try {
-            const data = JSON.parse(stored);
-            if (data.gameName !== gameId) {
-                persistMatchCredentials(matchId, {
-                    ...data,
-                    matchID: data.matchID || matchId,
-                    gameName: gameId,
-                });
-            }
-        } catch {
-            return;
-        }
+        const stored = readStoredMatchCredentials(matchId);
+        if (!stored || stored.gameName === gameId) return;
+        persistMatchCredentials(matchId, {
+            ...stored,
+            matchID: stored.matchID || matchId,
+            gameName: gameId,
+        });
     }, [gameId, matchId]);
 
     const tutorialPlayerID = debugPlayerID ?? urlPlayerID ?? '0';
 
-    // 进入联机对局时，调试面板自动切换到自己对应的玩家视角
-    useEffect(() => {
-        if (isTutorialRoute) return;
-        if (!urlPlayerID) return;
-        if (debugPlayerID === urlPlayerID) return;
-        setPlayerID(urlPlayerID);
-    }, [debugPlayerID, isTutorialRoute, setPlayerID, urlPlayerID]);
-
-    // 联机对局始终使用地址中的玩家编号，缺失时回退到本地凭据
+    // 联机对局始终优先使用本地已持有 seat；URL 只作为无本地 seat 时的回退。
     const effectivePlayerID = isTutorialRoute
         ? tutorialPlayerID
-        : (urlPlayerID ?? storedPlayerID ?? undefined);
+        : (storedPlayerID ?? urlPlayerID ?? undefined);
 
     const statusPlayerID = isTutorialRoute
         ? (urlPlayerID ?? debugPlayerID ?? null)
-        : (urlPlayerID ?? storedPlayerID ?? null);
+        : (storedPlayerID ?? urlPlayerID ?? null);
+
+    // 进入联机对局时，调试面板自动切换到自己对应的玩家视角
+    useEffect(() => {
+        if (isTutorialRoute) return;
+        if (!effectivePlayerID) return;
+        if (debugPlayerID === effectivePlayerID) return;
+        setPlayerID(effectivePlayerID);
+    }, [debugPlayerID, effectivePlayerID, isTutorialRoute, setPlayerID]);
 
     useEffect(() => {
         const seatControllerTypes = summarizeSeatControllerTypes(onlineAiSeatControllers);
@@ -2713,9 +2734,10 @@ export const MatchRoom = () => {
 
     useEffect(() => {
         if (isTutorialRoute) return;
-        if (urlPlayerID || !storedPlayerID) return;
         if (spectateParam === '1' || spectateParam === 'true') return;
         if (!gameId || !matchId) return;
+        if (!storedPlayerID) return;
+        if (urlPlayerID === storedPlayerID) return;
         navigate(`/play/${gameId}/match/${matchId}?playerID=${storedPlayerID}`, { replace: true });
     }, [gameId, matchId, navigate, spectateParam, storedPlayerID, urlPlayerID, isTutorialRoute]);
 
@@ -2726,22 +2748,57 @@ export const MatchRoom = () => {
         isTutorialRoute ? undefined : matchId,
         isTutorialRoute ? null : statusPlayerID
     );
+    const [transportSeatValidationSnapshot, setTransportSeatValidationSnapshot] = useState<{
+        players: Array<{ id: number; name?: string | null; isConnected?: boolean }>;
+        transportReady: boolean;
+    }>({
+        players: [],
+        transportReady: false,
+    });
+    const handleTransportSeatValidationSnapshotChange = useCallback((nextSnapshot: {
+        players: Array<{ id: number; name?: string | null; isConnected?: boolean }>;
+        transportReady: boolean;
+    }) => {
+        setTransportSeatValidationSnapshot((prevSnapshot) => {
+            const samePlayers = prevSnapshot.players.length === nextSnapshot.players.length
+                && prevSnapshot.players.every((player, index) => {
+                    const nextPlayer = nextSnapshot.players[index];
+                    return player?.id === nextPlayer?.id
+                        && player?.name === nextPlayer?.name
+                        && player?.isConnected === nextPlayer?.isConnected;
+                });
+            if (prevSnapshot.transportReady === nextSnapshot.transportReady && samePlayers) {
+                return prevSnapshot;
+            }
+            return nextSnapshot;
+        });
+    }, []);
+    const shouldUseTransportSeatValidation = shouldUseTransportSeatValidationSnapshot({
+        transportPlayers: transportSeatValidationSnapshot.players,
+        transportReady: transportSeatValidationSnapshot.transportReady,
+        lastConfirmedAt: transportSeatValidationSnapshot.lastConfirmedAt,
+    });
+    const seatValidationPlayers = useMemo(() => resolveSeatValidationPlayers({
+        fallbackPlayers: matchStatus.players,
+        transportPlayers: transportSeatValidationSnapshot.players,
+        transportReady: shouldUseTransportSeatValidation,
+    }), [matchStatus.players, transportSeatValidationSnapshot.players, shouldUseTransportSeatValidation]);
     useEffect(() => {
         if (isTutorialRoute) return;
         if (!matchId || !statusPlayerID) return;
-        if (matchStatus.isLoading || matchStatus.players.length === 0) return;
+        if (!shouldUseTransportSeatValidation && (matchStatus.isLoading || seatValidationPlayers.length === 0)) return;
         // 自动加入过程中或刚完成自动加入时跳过验证（matchStatus 可能还未反映新加入的玩家）
         if (shouldAutoJoin || isAutoJoining || autoJoinGraceRef.current) return;
 
         const stored = readStoredMatchCredentials(matchId);
-        const validation = validateStoredMatchSeat(stored, matchStatus.players, statusPlayerID);
+        const validation = validateStoredMatchSeat(stored, seatValidationPlayers, statusPlayerID);
         if (!validation.shouldClear) return;
 
         clearMatchCredentials(matchId);
         clearOwnerActiveMatch(matchId);
         setLocalStorageTick((t) => t + 1);
         toast.warning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
-    }, [isTutorialRoute, matchId, statusPlayerID, matchStatus.isLoading, matchStatus.players, toast, shouldAutoJoin, isAutoJoining]);
+    }, [isTutorialRoute, matchId, statusPlayerID, matchStatus.isLoading, seatValidationPlayers, shouldUseTransportSeatValidation, toast, shouldAutoJoin, isAutoJoining]);
 
     const canClaimMissingAiSeatCredentials = !isTutorialRoute
         && (matchStatus.isHost || statusPlayerID === '0');
@@ -3088,17 +3145,7 @@ export const MatchRoom = () => {
         suppressOwnerActiveMatch(matchId);
     }, [matchId]);
 
-    const missingMatchConfirmationSignal = resolveMissingMatchConfirmationSignal({
-        isTutorialRoute,
-        matchId,
-        shouldAutoJoin,
-        isAutoJoining,
-        autoJoinGraceActive: autoJoinGraceRef.current,
-        onlineTransportError,
-    });
-
-    useEffect(() => {
-        if (!missingMatchConfirmationSignal || !gameId || !matchId) return;
+    const handleConfirmedMissingMatch = useCallback((_signal: Exclude<MissingMatchConfirmationSignal, null>) => {
         clearMatchLocalState();
         toast.warning(
             { kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' },
@@ -3106,7 +3153,19 @@ export const MatchRoom = () => {
             { dedupeKey: `matchRoom.missing.${matchId}` }
         );
         navigateBackToLobby();
-    }, [clearMatchLocalState, gameId, matchId, missingMatchConfirmationSignal, navigateBackToLobby, toast]);
+    }, [clearMatchLocalState, matchId, navigateBackToLobby, toast]);
+
+    useMissingMatchConfirmation({
+        gameId,
+        isTutorialRoute,
+        matchId,
+        shouldAutoJoin,
+        isAutoJoining,
+        autoJoinGraceActive: autoJoinGraceRef.current,
+        onlineTransportError,
+        matchStatusErrorKind: matchStatus.errorKind,
+        onConfirmedMissingMatch: handleConfirmedMissingMatch,
+    });
 
     const handleForceExitLocal = () => {
         clearMatchLocalState();
@@ -3412,6 +3471,9 @@ export const MatchRoom = () => {
                                                     }
                                                 }}
                                             >
+                                                <OnlineSeatValidationBridge
+                                                    onSnapshotChange={handleTransportSeatValidationSnapshotChange}
+                                                />
                                                 <OnlineGameHudBridge
                                                     matchId={matchId}
                                                     gameId={gameId}

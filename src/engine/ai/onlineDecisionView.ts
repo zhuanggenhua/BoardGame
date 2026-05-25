@@ -24,6 +24,26 @@ export interface ResolvedOnlineAiDecisionView {
         privateCurrentPlayerId: string | null;
         sharedEventStreamNextId: number | null;
         privateEventStreamNextId: number | null;
+        sharedInteractionId: string | null;
+        privateInteractionId: string | null;
+        sharedInteractionKind: string | null;
+        privateInteractionKind: string | null;
+        sharedInteractionSourceId: string | null;
+        privateInteractionSourceId: string | null;
+        sharedInteractionTitle: string | null;
+        privateInteractionTitle: string | null;
+        sharedInteractionOptionSignature: string | null;
+        privateInteractionOptionSignature: string | null;
+        sharedResponseWindowId: string | null;
+        privateResponseWindowId: string | null;
+        sharedResponseWindowType: string | null;
+        privateResponseWindowType: string | null;
+        sharedResponseWindowSourceId: string | null;
+        privateResponseWindowSourceId: string | null;
+        sharedResponseWindowResponderId: string | null;
+        privateResponseWindowResponderId: string | null;
+        sharedResponseWindowQueueSignature: string | null;
+        privateResponseWindowQueueSignature: string | null;
     };
 }
 
@@ -80,6 +100,31 @@ function resolveVisibilityByDefault(args: {
     privateOverlay: MatchState<unknown> | null;
     playerId: string;
 }): OnlineAiDecisionVisibility {
+    const sharedInteraction = args.sharedState.sys?.interaction as {
+        current?: {
+            kind?: unknown;
+            playerId?: unknown;
+            data?: {
+                contestants?: unknown;
+            };
+        } | null;
+        isBlocked?: unknown;
+    } | undefined;
+    const compareRollContestants = Array.isArray(sharedInteraction?.current?.data?.contestants)
+        ? sharedInteraction.current.data.contestants
+        : [];
+    const isSharedCompareRollVisible = sharedInteraction?.current?.kind === 'compare-roll-choice'
+        && (
+            typeof sharedInteraction.current?.playerId === 'string' && sharedInteraction.current.playerId === args.playerId
+            || compareRollContestants.some((contestant) => (
+                typeof (contestant as { playerId?: unknown } | null | undefined)?.playerId === 'string'
+                && (contestant as { playerId?: string }).playerId === args.playerId
+            ))
+        );
+    if (isSharedCompareRollVisible) {
+        return 'shared';
+    }
+
     const sharedPhase = resolveStatePhase(args.sharedState);
     const sharedCurrentPlayerId = resolveCurrentPlayerIdFromState(args.sharedState);
     const setupLikePhases = new Set(['setup', 'characterSelection', 'characterSelect', 'factionSelect']);
@@ -90,12 +135,6 @@ function resolveVisibilityByDefault(args: {
         return 'private-required';
     }
 
-    const sharedInteraction = args.sharedState.sys?.interaction as {
-        current?: {
-            playerId?: unknown;
-        } | null;
-        isBlocked?: unknown;
-    } | undefined;
     const sharedInteractionPlayerId = typeof sharedInteraction?.current?.playerId === 'string'
         ? sharedInteraction.current.playerId
         : null;
@@ -166,6 +205,86 @@ function resolveInteractionId(state: MatchState<unknown> | null | undefined): st
         : null;
 }
 
+function resolveInteractionKind(state: MatchState<unknown> | null | undefined): string | null {
+    const interaction = state?.sys?.interaction as {
+        current?: {
+            kind?: unknown;
+        } | null;
+    } | undefined;
+    return typeof interaction?.current?.kind === 'string'
+        ? interaction.current.kind
+        : null;
+}
+
+function resolveInteractionSourceId(state: MatchState<unknown> | null | undefined): string | null {
+    const interaction = state?.sys?.interaction as {
+        current?: {
+            data?: {
+                sourceId?: unknown;
+            };
+        } | null;
+    } | undefined;
+    return typeof interaction?.current?.data?.sourceId === 'string'
+        ? interaction.current.data.sourceId
+        : null;
+}
+
+function resolveInteractionTitle(state: MatchState<unknown> | null | undefined): string | null {
+    const interaction = state?.sys?.interaction as {
+        current?: {
+            data?: {
+                title?: unknown;
+            };
+        } | null;
+    } | undefined;
+    return typeof interaction?.current?.data?.title === 'string'
+        ? interaction.current.data.title
+        : null;
+}
+
+function resolveInteractionOptionSignature(state: MatchState<unknown> | null | undefined): string | null {
+    const options = (state?.sys?.interaction as {
+        current?: {
+            data?: {
+                options?: unknown;
+            };
+        } | null;
+    } | undefined)?.current?.data?.options;
+    if (!Array.isArray(options)) {
+        return null;
+    }
+
+    return options
+        .map((option) => {
+            const item = option as {
+                id?: unknown;
+                disabled?: unknown;
+                value?: unknown;
+            };
+            const optionId = typeof item.id === 'string' ? item.id : '';
+            const disabledFlag = item.disabled === true ? '1' : '0';
+            const valueSignature = JSON.stringify(item.value ?? null);
+            return `${optionId}:${disabledFlag}:${valueSignature}`;
+        })
+        .join(',');
+}
+
+function resolveCompareRollConfirmSignature(state: MatchState<unknown> | null | undefined): string | null {
+    if (resolveInteractionKind(state) !== 'compare-roll-choice') {
+        return null;
+    }
+
+    const confirmValue = (state?.sys?.interaction as {
+        current?: {
+            data?: {
+                confirmValue?: unknown;
+            };
+        } | null;
+    } | undefined)?.current?.data?.confirmValue;
+
+    return JSON.stringify(confirmValue ?? null);
+}
+
 function hasSharedHiddenInteractionBlocker(state: MatchState<unknown> | null | undefined, playerId: string): boolean {
     const interaction = state?.sys?.interaction as {
         current?: {
@@ -186,6 +305,7 @@ function resolveResponseWindowCurrent(state: MatchState<unknown> | null | undefi
     windowType: string | null;
     sourceId: string | null;
     currentResponderId: string | null;
+    queueSignature: string | null;
 } | null {
     const current = (state?.sys?.responseWindow as {
         current?: {
@@ -213,6 +333,10 @@ function resolveResponseWindowCurrent(state: MatchState<unknown> | null | undefi
         windowType: typeof current.windowType === 'string' ? current.windowType : null,
         sourceId: typeof current.sourceId === 'string' ? current.sourceId : null,
         currentResponderId,
+        queueSignature: responderQueue
+            .map((value) => typeof value === 'string' ? value : '')
+            .filter((value) => value.length > 0)
+            .join('|') || null,
     };
 }
 
@@ -244,6 +368,9 @@ function isPrivateOverlayFreshEnough(args: {
         if (sharedResponseWindow.currentResponderId !== privateResponseWindow.currentResponderId) {
             return false;
         }
+        if (sharedResponseWindow.queueSignature !== privateResponseWindow.queueSignature) {
+            return false;
+        }
         if (sharedResponseWindow.id !== privateResponseWindow.id) {
             return false;
         }
@@ -263,6 +390,14 @@ function isPrivateOverlayFreshEnough(args: {
     if (isInteractionDecision) {
         const sharedInteractionId = resolveInteractionId(args.sharedState);
         const privateInteractionId = resolveInteractionId(args.privateOverlay);
+        const sharedInteractionKind = resolveInteractionKind(args.sharedState);
+        const privateInteractionKind = resolveInteractionKind(args.privateOverlay);
+        const sharedInteractionSourceId = resolveInteractionSourceId(args.sharedState);
+        const privateInteractionSourceId = resolveInteractionSourceId(args.privateOverlay);
+        const sharedInteractionTitle = resolveInteractionTitle(args.sharedState);
+        const privateInteractionTitle = resolveInteractionTitle(args.privateOverlay);
+        const sharedInteractionOptionSignature = resolveInteractionOptionSignature(args.sharedState);
+        const privateInteractionOptionSignature = resolveInteractionOptionSignature(args.privateOverlay);
         if (sharedHasHiddenInteractionBlocker) {
             if (privateInteractionPlayerId !== args.playerId || !privateInteractionId) {
                 return false;
@@ -272,6 +407,18 @@ function isPrivateOverlayFreshEnough(args: {
                 return false;
             }
             if (sharedInteractionId !== privateInteractionId) {
+                return false;
+            }
+            if (sharedInteractionKind !== privateInteractionKind) {
+                return false;
+            }
+            if (sharedInteractionSourceId !== privateInteractionSourceId) {
+                return false;
+            }
+            if (sharedInteractionTitle !== privateInteractionTitle) {
+                return false;
+            }
+            if (sharedInteractionOptionSignature !== privateInteractionOptionSignature) {
                 return false;
             }
         }
@@ -299,6 +446,60 @@ function isPrivateOverlayFreshEnough(args: {
     return true;
 }
 
+function shouldPreferSeatSnapshotForSharedVisibility(args: {
+    sharedState: MatchState<unknown>;
+    privateOverlay: MatchState<unknown> | null;
+    playerId: string;
+}): boolean {
+    if (!args.privateOverlay) {
+        return false;
+    }
+
+    const sharedInteractionId = resolveInteractionId(args.sharedState);
+    const seatInteractionId = resolveInteractionId(args.privateOverlay);
+    if (!sharedInteractionId || !seatInteractionId || sharedInteractionId !== seatInteractionId) {
+        return false;
+    }
+
+    const sharedInteractionKind = resolveInteractionKind(args.sharedState);
+    const seatInteractionKind = resolveInteractionKind(args.privateOverlay);
+    if (!sharedInteractionKind || !seatInteractionKind || sharedInteractionKind !== seatInteractionKind) {
+        return false;
+    }
+
+    const sharedInteractionSourceId = resolveInteractionSourceId(args.sharedState);
+    const seatInteractionSourceId = resolveInteractionSourceId(args.privateOverlay);
+    if (sharedInteractionSourceId !== seatInteractionSourceId) {
+        return false;
+    }
+
+    const sharedInteractionTitle = resolveInteractionTitle(args.sharedState);
+    const seatInteractionTitle = resolveInteractionTitle(args.privateOverlay);
+    if (sharedInteractionTitle !== seatInteractionTitle) {
+        return false;
+    }
+
+    const sharedInteractionOptionSignature = resolveInteractionOptionSignature(args.sharedState);
+    const seatInteractionOptionSignature = resolveInteractionOptionSignature(args.privateOverlay);
+    if (sharedInteractionOptionSignature !== seatInteractionOptionSignature) {
+        return false;
+    }
+
+    if (sharedInteractionKind === 'compare-roll-choice') {
+        const sharedConfirmSignature = resolveCompareRollConfirmSignature(args.sharedState);
+        const seatConfirmSignature = resolveCompareRollConfirmSignature(args.privateOverlay);
+        if (sharedConfirmSignature !== seatConfirmSignature) {
+            return false;
+        }
+    }
+
+    return isPrivateOverlayFreshEnough({
+        sharedState: args.sharedState,
+        privateOverlay: args.privateOverlay,
+        playerId: args.playerId,
+    });
+}
+
 export function resolveOnlineAiDecisionView(
     args: ResolveOnlineAiDecisionViewArgs,
 ): ResolvedOnlineAiDecisionView {
@@ -319,6 +520,8 @@ export function resolveOnlineAiDecisionView(
             playerId: args.playerId,
         });
 
+    const sharedResponseWindow = resolveResponseWindowCurrent(args.sharedState);
+    const privateResponseWindow = resolveResponseWindowCurrent(privateOverlay);
     const diagnostics = {
         sharedPhase: resolveStatePhase(args.sharedState),
         privatePhase: resolveStatePhase(privateOverlay),
@@ -328,15 +531,42 @@ export function resolveOnlineAiDecisionView(
         privateCurrentPlayerId: resolveCurrentPlayerIdFromState(privateOverlay),
         sharedEventStreamNextId: resolveEventStreamNextIdFromState(args.sharedState),
         privateEventStreamNextId: resolveEventStreamNextIdFromState(privateOverlay),
+        sharedInteractionId: resolveInteractionId(args.sharedState),
+        privateInteractionId: resolveInteractionId(privateOverlay),
+        sharedInteractionKind: resolveInteractionKind(args.sharedState),
+        privateInteractionKind: resolveInteractionKind(privateOverlay),
+        sharedInteractionSourceId: resolveInteractionSourceId(args.sharedState),
+        privateInteractionSourceId: resolveInteractionSourceId(privateOverlay),
+        sharedInteractionTitle: resolveInteractionTitle(args.sharedState),
+        privateInteractionTitle: resolveInteractionTitle(privateOverlay),
+        sharedInteractionOptionSignature: resolveInteractionOptionSignature(args.sharedState),
+        privateInteractionOptionSignature: resolveInteractionOptionSignature(privateOverlay),
+        sharedResponseWindowId: sharedResponseWindow?.id ?? null,
+        privateResponseWindowId: privateResponseWindow?.id ?? null,
+        sharedResponseWindowType: sharedResponseWindow?.windowType ?? null,
+        privateResponseWindowType: privateResponseWindow?.windowType ?? null,
+        sharedResponseWindowSourceId: sharedResponseWindow?.sourceId ?? null,
+        privateResponseWindowSourceId: privateResponseWindow?.sourceId ?? null,
+        sharedResponseWindowResponderId: sharedResponseWindow?.currentResponderId ?? null,
+        privateResponseWindowResponderId: privateResponseWindow?.currentResponderId ?? null,
+        sharedResponseWindowQueueSignature: sharedResponseWindow?.queueSignature ?? null,
+        privateResponseWindowQueueSignature: privateResponseWindow?.queueSignature ?? null,
     };
 
     if (visibility === 'shared') {
+        const visibleState = shouldPreferSeatSnapshotForSharedVisibility({
+            sharedState: args.sharedState,
+            privateOverlay,
+            playerId: args.playerId,
+        })
+            ? privateOverlay as MatchState<unknown>
+            : args.sharedState;
         return {
             kind: 'online-ai-decision-view',
             visibility,
             sharedState: args.sharedState,
             privateOverlay,
-            visibleState: args.sharedState,
+            visibleState,
             canDecide: true,
             blockedReason: null,
             diagnostics,

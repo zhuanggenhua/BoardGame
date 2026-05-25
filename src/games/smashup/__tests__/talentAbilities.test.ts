@@ -21,6 +21,7 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { makeMinion, makeCard, makePlayer, makeState, makeMatchState, getInteractionsFromMS } from './helpers';
+import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 
@@ -431,6 +432,35 @@ describe('cthulhu_servitor（仆人 talent）', () => {
         expect((destroyEvt as any).payload.minionDefId).toBe('cthulhu_servitor');
     });
 
+    it('被他人控制时自毁仍应进入自己拥有者的弃牌堆', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('dis1', 'cthulhu_fhtagn', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    discard: [],
+                }),
+            },
+            bases: [
+                { defId: 'base_a', minions: [makeMinion('borrowed-servitor', 'cthulhu_servitor', '0', 2, { owner: '1', powerModifier: 0 })], ongoingActions: [] },
+            ],
+        });
+
+        const events = execute(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'borrowed-servitor', baseIndex: 0 },
+        }, defaultRandom);
+
+        const destroyEvt = events.find(e => e.type === SU_EVENTS.MINION_DESTROYED)!;
+        expect((destroyEvt as any).payload.ownerId).toBe('1');
+
+        const finalCore = events.reduce((acc, event) => reduce(acc, event as any), core);
+        expect(finalCore.players['0'].discard.some(card => card.uid === 'borrowed-servitor')).toBe(false);
+        expect(finalCore.players['1'].discard.some(card => card.uid === 'borrowed-servitor')).toBe(true);
+    });
+
     it('弃牌堆无行动卡时仅消灭自身', () => {
         const core = makeState({
             players: {
@@ -511,6 +541,53 @@ describe('cthulhu_servitor（仆人 talent）', () => {
         const interactions4 = getInteractionsFromMS(ms4);
         expect(interactions4.length).toBe(1);
         expect(interactions4[0].data.sourceId).toBe('cthulhu_servitor');
+    });
+
+    it('选择被他人拥有的弃牌行动时，仍应放回其拥有者牌库顶而不是当前玩家牌库顶', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('p0-deck-a', 'test_minion', 'minion', '0')],
+                    discard: [
+                        makeCard('borrowed-action', 'cthulhu_fhtagn', 'action', '1'),
+                        makeCard('own-action', 'cthulhu_it_begins_again', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'test_minion', 'minion', '1')],
+                }),
+            },
+            bases: [
+                { defId: 'base_a', minions: [makeMinion('m1', 'cthulhu_servitor', '0', 2, { powerModifier: 0 })], ongoingActions: [] },
+            ],
+        });
+
+        const talentResult = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'm1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const interactions = getInteractionsFromMS(talentResult.finalState);
+        expect(interactions.length).toBe(1);
+        const prompt = asSimpleChoice(interactions[0]);
+        const borrowedOption = prompt?.options.find(option => {
+            const value = option.value as any;
+            return value?.cardUid === 'borrowed-action';
+        });
+        expect(borrowedOption).toBeDefined();
+
+        const responseResult = runCommand(talentResult.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: { optionId: borrowedOption!.id },
+        } as any, defaultRandom);
+
+        const finalCore = responseResult.finalState.core;
+        expect(finalCore.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a']);
+        expect(finalCore.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-action', 'p1-deck-a']);
+        expect(finalCore.players['0'].discard.some(card => card.uid === 'borrowed-action')).toBe(false);
+        expect(finalCore.players['1'].discard).toEqual([]);
     });
 });
 

@@ -497,7 +497,9 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        mandatory: false,
+        // 整条 revealed-base 效果必须执行；“可选”应由每位玩家自己的 skip 选项承接，
+        // 不能让当前反应玩家一次跳过所有玩家的移动资格。
+        mandatory: true,
     });
 
     // ── 神秘花园（Secret Garden）──────────────────────────────
@@ -875,18 +877,21 @@ export function registerExpansionBaseAbilities(): void {
 
         return { events: [], matchState: ms };
     }, {
-        mandatory: false,
+        // 整条 revealed-base 效果必须执行；“可选”应由每位玩家自己的 skip 选项承接，
+        // 不能让当前反应玩家一次跳过所有玩家的移动资格。
+        mandatory: true,
     });
 
     // ── 牧场（The Pasture）──────────────────────────────────
     // "每回合玩家第一次移动一个随从到这里后，移动另一基地的一个随从到这。"
     // 通过 onMinionMoved 扩展时机触发，在 processMoveTriggers 中调用
     registerExtendedBase('base_the_pasture', 'onMinionMoved', (ctx) => {
-        // 检查是否为本回合该玩家首次移动到此基地
-        // processMoveTriggers 在 execute 返回前调用，reducer 尚未处理 MINION_MOVED 事件
-        // 所以 moveCount === 0 表示这是首次移动
+        // 检查是否为本回合该玩家首次移动到此基地。
+        // 直接调用时仍是移动前现场；queued onMinionMoved 消费时已经 reduce 了本次 MINION_MOVED。
         const moveCount = ctx.state.minionsMovedToBaseThisTurn?.[ctx.playerId]?.[ctx.baseIndex] ?? 0;
-        if (moveCount > 0) return { events: [] };
+        const isQueuedMoveFrame = ctx.sourceEventId?.startsWith('minion-moved:') === true;
+        const alreadyMovedBeforeThisFrame = isQueuedMoveFrame ? moveCount > 1 : moveCount > 0;
+        if (alreadyMovedBeforeThisFrame) return { events: [] };
 
         if (!ctx.matchState) return { events: [] };
 
@@ -972,6 +977,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (selected.skip) return { state, events: [] };
         const ctx = getContinuationContext<{ targetBaseIndex: number }>(iData);
         if (!ctx || !selected.cardUid || !selected.defId) return { state, events: [] };
+        const trueOwnerId = state.core.players[playerId]?.discard.find(card => card.uid === selected.cardUid)?.owner ?? playerId;
         return {
             state,
             events: buildBuryCardEvents({
@@ -981,7 +987,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 cardUid: selected.cardUid,
                 defId: selected.defId,
                 baseIndex: ctx.targetBaseIndex,
-                trueOwnerId: playerId,
+                trueOwnerId,
                 buriedFrom: 'discard',
                 reason: 'base_ossuary',
                 random,
@@ -1126,7 +1132,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
             return {
                 id: `card-${i}`,
                 label: def?.name ?? c.defId,
-                value: { cardUid: c.uid, defId: c.defId, ownerId: targetPlayerId },
+                value: { cardUid: c.uid, defId: c.defId, ownerId: c.owner, sourcePlayerId: targetPlayerId },
                 _source: 'discard' as const,
                 displayMode: 'card' as const,
             };
@@ -1149,7 +1155,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
 
     // 印斯茅斯基地第二步：选择卡牌后，放入牌库底
     registerInteractionHandler('base_innsmouth_base_choose_card', (state, _playerId, value, _iData, _random, timestamp) => {
-        const selected = value as { skip?: boolean; cardUid?: string; defId?: string; ownerId?: string };
+        const selected = value as { skip?: boolean; cardUid?: string; defId?: string; ownerId?: string; sourcePlayerId?: string };
         if (selected.skip) return { state, events: [] };
         return {
             state,
@@ -1157,6 +1163,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 cardUid: selected.cardUid!,
                 defId: selected.defId!,
                 ownerId: selected.ownerId!,
+                sourcePlayerId: selected.sourcePlayerId,
                 reason: '印斯茅斯基地：弃牌堆卡放入牌库底',
                 now: timestamp,
                 expectedLocation: 'discard',
@@ -1204,12 +1211,12 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         const player = state.core.players[playerId];
         if (!player || !selected.cardUid || !selected.defId) return { state, events: [] };
-        const cardInDeck = player.deck.some(card =>
+        const selectedCard = player.deck.find(card =>
             card.uid === selected.cardUid
             && card.defId === selected.defId
             && card.type === 'minion',
         );
-        if (!cardInDeck) return { state, events: [] };
+        if (!selectedCard) return { state, events: [] };
         const power = selected.power ?? (getMinionDef(selected.defId!)?.power ?? 0);
         if (isScoringSessionAwaitingDeferredResolution(state)) {
             const replacementBaseDefId = getDeferredReplacementBaseDefId(state, iData);
@@ -1219,6 +1226,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 playerId,
                 cardUid: selected.cardUid,
                 defId: selected.defId,
+                ownerId: selectedCard.owner,
                 baseIndex: ctx.baseIndex,
                 targetBaseDefId: replacementBaseDefId,
                 power,
@@ -1240,6 +1248,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 baseDefId: replacementBaseDefId,
                 power,
                 fromDeck: true,
+                ownerId: selectedCard.owner,
                 consumesNormalLimit: false,
             },
             timestamp,

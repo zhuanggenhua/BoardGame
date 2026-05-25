@@ -37,12 +37,12 @@ import {
 import {
     isTutorialRoutePath,
     resolveManualOnlineAiRecovery,
-    resolveMissingMatchConfirmationSignal,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
     shouldShowOnlineGameErrorToast,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../MatchRoom';
+import { resolveMissingMatchConfirmationSignal } from '../matchMissingConfirmation';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
 import { resolveMatchSeatSwapContext } from '../../components/game/framework/matchSeatSwap';
 import { findMatchPlayerInfo, resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';

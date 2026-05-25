@@ -12,6 +12,7 @@ import {
     requireOnPlay,
     requireSpecial,
     registerAbility,
+    registerPodAbilityAliases,
     registerAbilityProgram,
     registerSimpleAbility,
     resolveAbility,
@@ -23,10 +24,12 @@ import {
     hasAbility,
     clearRegistry,
     getRegistrySize,
+    getRegisteredAbilityKeys,
 } from '../domain/abilityRegistry';
 import type { AbilityExecutor } from '../domain/abilityRegistry';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { appendResolvedActionAbility } from '../domain/externalActionPlay';
+import { recoverCardsFromDiscard } from '../domain/abilityHelpers';
 import { makeMatchState, makeState } from './helpers';
 import { SU_EVENTS } from '../domain/types';
 import { createEffectProgram } from '../domain/abilityRuntime';
@@ -92,6 +95,70 @@ describe('能力注册表', () => {
             expect(resolveOnPlay('shortcut_test')).toBe(resolveAbility('shortcut_test', 'onPlay'));
             expect(resolveTalent('shortcut_test')).toBe(resolveAbility('shortcut_test', 'talent'));
             expect(resolveSpecial('shortcut_test')).toBe(resolveAbility('shortcut_test', 'special'));
+        });
+
+        it('POD alias 在已自定义一个 tag 时，仍应继承基础版其余 tag', () => {
+            const baseOnPlay: AbilityExecutor = () => ({ events: [{ type: 'base_onplay', payload: {}, timestamp: 1 }] as any });
+            const baseTalent: AbilityExecutor = () => ({ events: [{ type: 'base_talent', payload: {}, timestamp: 2 }] as any });
+            const podTalent: AbilityExecutor = () => ({ events: [{ type: 'pod_talent', payload: {}, timestamp: 3 }] as any });
+
+            registerAbility('alias_source_card', 'onPlay', baseOnPlay);
+            registerAbility('alias_source_card', 'talent', baseTalent);
+            registerAbility('alias_source_card_pod', 'talent', podTalent);
+
+            registerPodAbilityAliases();
+
+            expect(resolveOnPlay('alias_source_card_pod')).toBeDefined();
+            expect(resolveTalent('alias_source_card_pod')).toBe(resolveAbility('alias_source_card_pod', 'talent'));
+
+            const onPlayResult = resolveOnPlay('alias_source_card_pod')!({
+                state: {} as any,
+                matchState: {} as any,
+                playerId: '0',
+                cardUid: 'pod-card-1',
+                defId: 'alias_source_card_pod',
+                baseIndex: 0,
+                random: { random: () => 0.5, d: (_n: number) => 1, range: (a: number, _b: number) => a, shuffle: <T>(arr: T[]) => [...arr] },
+                now: 10,
+            });
+            const talentResult = resolveTalent('alias_source_card_pod')!({
+                state: {} as any,
+                matchState: {} as any,
+                playerId: '0',
+                cardUid: 'pod-card-1',
+                defId: 'alias_source_card_pod',
+                baseIndex: 0,
+                random: { random: () => 0.5, d: (_n: number) => 1, range: (a: number, _b: number) => a, shuffle: <T>(arr: T[]) => [...arr] },
+                now: 10,
+            });
+
+            expect((onPlayResult.events[0] as any).type).toBe('base_onplay');
+            expect((talentResult.events[0] as any).type).toBe('pod_talent');
+        });
+
+        it('POD alias 不应给已是 POD 专用的子 defId 再追加一层 _pod', () => {
+            const podActionOnPlay: AbilityExecutor = () => ({ events: [{ type: 'pod_action', payload: {}, timestamp: 1 }] as any });
+
+            registerAbility('vampire_wolf_pact_pod_action', 'onPlay', podActionOnPlay);
+            registerPodAbilityAliases();
+
+            const keys = getRegisteredAbilityKeys();
+            expect(keys.has('vampire_wolf_pact_pod_action::onPlay')).toBe(true);
+            expect(keys.has('vampire_wolf_pact_pod_action_pod::onPlay')).toBe(false);
+            expect(resolveOnPlay('vampire_wolf_pact_pod_action')).toBeDefined();
+            expect(resolveOnPlay('vampire_wolf_pact_pod_action_pod')).toBeUndefined();
+        });
+
+        it('getRegisteredAbilityKeys 不应暴露无实体的自动 _pod ability key', () => {
+            const baseOnPlay: AbilityExecutor = () => ({ events: [] });
+
+            registerAbility('dino_laser_triceratops', 'onPlay', baseOnPlay);
+            registerAbility('time_travelers_time_walk', 'onPlay', baseOnPlay);
+            registerPodAbilityAliases();
+
+            const keys = getRegisteredAbilityKeys();
+            expect(keys.has('dino_laser_triceratops_pod::onPlay')).toBe(true);
+            expect(keys.has('time_travelers_time_walk_pod::onPlay')).toBe(false);
         });
 
         it('program 注册成为唯一真相源，并可经统一解释器执行', () => {
@@ -179,6 +246,57 @@ describe('能力注册表', () => {
                 timestamp: 100,
                 baseIndex: 0,
             })).toThrowError(/SmashUp ability 缺少声明: missing_action_def::onPlay \(externalActionPlay\.appendResolvedActionAbility\)/);
+        });
+
+        it('显式追加外部行动能力时，未提供 handSizeAfterPlay 也应默认使用模拟后的出牌后手牌数', () => {
+            initAllAbilities();
+            const state = makeMatchState(makeState({
+                players: {
+                    '0': {
+                        ...makeState().players['0'],
+                        hand: [
+                            { uid: 'keep-1', defId: 'wizard_enchantress', type: 'minion', owner: '0' },
+                            { uid: 'keep-2', defId: 'wizard_apprentice', type: 'minion', owner: '0' },
+                            { uid: 'keep-3', defId: 'ghost_ghost', type: 'minion', owner: '0' },
+                        ],
+                        deck: [
+                            { uid: 'draw-1', defId: 'robot_microbot', type: 'minion', owner: '0' },
+                            { uid: 'draw-2', defId: 'robot_zapbot', type: 'minion', owner: '0' },
+                            { uid: 'draw-3', defId: 'robot_hoverbot', type: 'minion', owner: '0' },
+                        ],
+                        discard: [
+                            { uid: 'ghost-seance-discard', defId: 'ghost_seance', type: 'action', owner: '0' },
+                        ],
+                    },
+                    '1': makeState().players['1'],
+                },
+            }));
+
+            const result = appendResolvedActionAbility({
+                state,
+                events: [
+                    recoverCardsFromDiscard('0', ['ghost-seance-discard'], 'test_external_action_replay', 100),
+                    {
+                        type: SU_EVENTS.ACTION_PLAYED,
+                        payload: {
+                            playerId: '0',
+                            cardUid: 'ghost-seance-discard',
+                            defId: 'ghost_seance',
+                            ownerId: '0',
+                            isExtraAction: true,
+                        },
+                        timestamp: 100,
+                    } as any,
+                ],
+                playerId: '0',
+                cardUid: 'ghost-seance-discard',
+                defId: 'ghost_seance',
+                random: { random: () => 0.5, d: () => 1, range: (min: number) => min, shuffle: <T>(items: T[]) => [...items] },
+                timestamp: 100,
+                baseIndex: 0,
+            });
+
+            expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
         });
     });
 

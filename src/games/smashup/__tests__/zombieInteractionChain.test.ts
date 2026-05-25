@@ -786,6 +786,40 @@ describe('zombie_theyre_coming_to_get_you（它们为你而来）弃牌堆出牌
         expect(base.minions.some((m: MinionOnBase) => m.uid === 'disc-m1')).toBe(true);
     });
 
+    it('borrowed ongoing 附着基地时，控制者也应能通过 PLAY_MINION fromDiscard 打到该基地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    discard: [makeCard('disc-borrowed-m1', 'pirate_first_mate', '0', 'minion')],
+                    factions: ['zombies', 'pirates'] as [string, string],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    {
+                        uid: 'borrowed-ongoing1',
+                        defId: 'zombie_theyre_coming_to_get_you',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    } as any,
+                ]),
+                makeBase('test_base_2'),
+            ],
+        });
+        const state = makeFullMatchState(core);
+
+        const r1 = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'disc-borrowed-m1', baseIndex: 0, fromDiscard: true },
+        }, 'theyre_coming: borrowed ongoing 控制者从弃牌堆打出');
+        expect(r1.steps[0]?.success).toBe(true);
+        expect(r1.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'disc-borrowed-m1')).toBe(false);
+        expect(r1.finalState.core.bases[0].minions.some((m: MinionOnBase) => m.uid === 'disc-borrowed-m1')).toBe(true);
+    });
+
     it('打出到非 ongoing 基地 → 被拒绝', () => {
         const core = makeState({
             players: {
@@ -934,6 +968,51 @@ describe('zombie_overrun（泛滥横行）ongoing 效果', () => {
             payload: { cardUid: 'm1', baseIndex: 1 },
         }, 'overrun: P1 打随从到非限制基地');
         expect(r2.steps[0]?.success).toBe(true);
+    });
+
+    it('borrowed zombie_overrun 应按控制者而不是真实 owner 限制其他玩家打随从到此基地', () => {
+        const baseCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m0', 'zombie_tenacious_z', '0', 'minion')],
+                    factions: ['zombies', 'pirates'] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('m1', 'pirate_first_mate', '1', 'minion')],
+                }),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    {
+                        uid: 'borrowed-overrun-1',
+                        defId: 'zombie_overrun',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    } as any,
+                ]),
+                makeBase('test_base_2'),
+            ],
+        });
+
+        const blocked = runCommand(makeFullMatchState({
+            ...baseCore,
+            currentPlayerIndex: 1,
+        }), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        }, 'borrowed overrun: P1 打随从到被 P0 控制的限制基地');
+        expect(blocked.steps[0]?.success).toBe(false);
+
+        const allowed = runCommand(makeFullMatchState({
+            ...baseCore,
+            currentPlayerIndex: 0,
+        }), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm0', baseIndex: 0 },
+        }, 'borrowed overrun: P0 打随从到自己控制的限制基地');
+        expect(allowed.steps[0]?.success).toBe(true);
     });
 
     it('与其他 source instance 自收口 trigger 同时出现时，应自动收口且不弹排序选择', () => {

@@ -24,6 +24,7 @@ import {
     createEffectProgram,
     createPromptProgram,
 } from '../domain/abilityRuntime';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerMadnessAbilities } from './cthulhu';
 
 
@@ -949,11 +950,14 @@ const miskatonicLibrarianPodPlayMadnessPromptProgram = createPromptProgram<Miska
         if (!card) {
             return { events: [], matchState: state };
         }
-        const events: SmashUpEvent[] = [{
-            type: SU_EVENTS.ACTION_PLAYED,
-            payload: { playerId, cardUid: card.uid, defId: card.defId, isExtraAction: true },
+        const events: SmashUpEvent[] = [buildActionPlayedEvent({
+            playerId,
+            cardUid: card.uid,
+            defId: card.defId,
+            ownerId: card.owner,
+            isExtraAction: true,
             timestamp,
-        } as SmashUpEvent];
+        }) as SmashUpEvent];
         const appended = appendResolvedActionAbility(
             state,
             events,

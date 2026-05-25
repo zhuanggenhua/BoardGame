@@ -2111,8 +2111,7 @@ describe('P3: pirate_full_sail（全速前进）循环链', () => {
 });
 
 describe('P3: alien_probe（探测）2步链（多对手时）', () => {
-    // 跳过此测试 - sourceId 传递问题需要深入调试
-    it.skip('选对手 → 选放顶/底 → 牌库顶放到底', () => {
+    it('选对手 → 选其手牌中的随从 → 该对手弃掉该随从', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -2120,18 +2119,23 @@ describe('P3: alien_probe（探测）2步链（多对手时）', () => {
                     factions: ['aliens', 'pirates'] as [string, string],
                 }),
                 '1': makePlayer('1', {
-                    deck: [
-                        makeCard('deck-c1', 'test_card', '1', 'action'),
-                        makeCard('deck-c2', 'test_card2', '1', 'action'),
+                    hand: [
+                        makeCard('p1-m1', 'pirate_first_mate', '1', 'minion'),
+                        makeCard('p1-a1', 'pirate_broadside', '1', 'action'),
+                    ],
+                }),
+                '2': makePlayer('2', {
+                    hand: [
+                        makeCard('p2-m1', 'ninja_tiger_assassin', '2', 'minion'),
                     ],
                 }),
             },
+            turnOrder: ['0', '1', '2'],
         });
 
         const state = makeFullMatchState(core);
 
-        // Step 1: 打出 probe → 单对手自动选择 → 直接到选放置位置
-        // resolveOrPrompt 在单对手时自动执行，所以可能直接跳到 alien_probe
+        // Step 1: 打出 probe → 多对手时先选目标玩家
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_ACTION, playerId: '0',
             payload: { cardUid: 'probe1' },
@@ -2139,20 +2143,30 @@ describe('P3: alien_probe（探测）2步链（多对手时）', () => {
 
         expect(r1.steps[0]?.success).toBe(true);
         const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        // 单对手时 resolveOrPrompt 自动执行，直接到 alien_probe
-        expect(choice1.sourceId).toBe('alien_probe');
+        expect(choice1.sourceId).toBe('alien_probe_choose_target');
+        expect(choice1.targetType).toBe('player');
 
-        // Step 2: 选放到底
-        const bottomOpt = findOption(choice1, (o: any) => o.value?.placement === 'bottom');
-        const r2 = respond(r1.finalState, '0', bottomOpt, 'probe step2: 放底');
+        const p1Opt = findOption(choice1, (o: any) => o.value?.targetPlayerId === '1');
+        const r2 = respond(r1.finalState, '0', p1Opt, 'probe step2: 选目标玩家 P1');
 
         expect(r2.steps[0]?.success).toBe(true);
-        expect(r2.finalState.sys.interaction.current).toBeUndefined();
+        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        expect(choice2.sourceId).toBe('alien_probe');
+        expect(choice2.options.length).toBe(2);
+        expect(choice2.options.find((o: any) => o.id === 'p1-m1')?.disabled).toBeFalsy();
+        expect(choice2.options.find((o: any) => o.id === 'p1-a1')?.disabled).toBe(true);
 
-        // 验证：deck-c1 应该在牌库底（最后一张）
-        const fc = r2.finalState.core;
-        const p1Deck = fc.players['1'].deck;
-        expect(p1Deck[p1Deck.length - 1].uid).toBe('deck-c1');
+        const minionOpt = findOption(choice2, (o: any) => o.value?.cardUid === 'p1-m1');
+        const r3 = respond(r2.finalState, '0', minionOpt, 'probe step3: 选 P1 手牌中的随从');
+
+        expect(r3.steps[0]?.success).toBe(true);
+        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+
+        const fc = r3.finalState.core;
+        expect(fc.players['1'].hand.some(card => card.uid === 'p1-m1')).toBe(false);
+        expect(fc.players['1'].discard.some(card => card.uid === 'p1-m1')).toBe(true);
+        expect(fc.players['1'].hand.some(card => card.uid === 'p1-a1')).toBe(true);
+        expect(fc.players['2'].hand.some(card => card.uid === 'p2-m1')).toBe(true);
     });
 });
 

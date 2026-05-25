@@ -59,6 +59,48 @@ describe('frankenstein (base) FAQ alignment', () => {
         expect(step3.events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
     });
 
+    it('Blitzed: removing one counter should not double-apply before the follow-up remove prompt', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('b1', 'frankenstein_blitzed', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('ally-1', 'giant_ant_worker', '0', 2, { powerCounters: 2 }),
+                    makeMinion('enemy-1', 'robot_microbot', '1', 1),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'b1' } },
+            defaultTestRandom,
+        );
+        expect(play.success).toBe(true);
+        expect(play.finalState.sys.interaction.current?.data?.sourceId).toBe('frankenstein_blitzed_remove');
+
+        const removeOpt = (play.finalState.sys.interaction.current as any).data.options.find((o: any) => o.value?.minionUid === 'ally-1');
+        expect(removeOpt).toBeTruthy();
+
+        const step2 = runCommand(
+            play.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: removeOpt.id } } as any,
+            defaultTestRandom,
+        );
+
+        const ally = step2.finalState.core.bases[0].minions.find((minion) => minion.uid === 'ally-1');
+        expect(ally?.powerCounters).toBe(1);
+        expect(step2.finalState.sys.interaction.current?.data?.sourceId).toBe('frankenstein_blitzed_remove');
+
+        const nextOptions = (step2.finalState.sys.interaction.current as any).data.options;
+        expect(nextOptions.find((o: any) => o.value?.minionUid === 'ally-1')).toBeTruthy();
+        expect(nextOptions.find((o: any) => o.id === 'done')).toBeTruthy();
+    });
+
     it('Überserum: places counters at start of the action controller’s turns (even on opponent minion)', () => {
         const core = makeState({
             turnOrder: ['0', '1'],

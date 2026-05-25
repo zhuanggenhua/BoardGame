@@ -1087,6 +1087,100 @@ describe('smashup', () => {
         expect(finalCore.bases[0].buriedCards?.some(card => card.uid === 'sphinx-score-buried') ?? false).toBe(false);
     });
 
+    it('木乃伊在其他玩家的计分后触发时，埋葬选择权仍应交给木乃伊控制者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_pyramids',
+                minions: [makeMinion('mummy-1', 'ancient_egyptians_mummy', '0', 2)],
+                ongoingActions: [],
+            })],
+        });
+
+        const queued = collectTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            sourceCardUid: 'mummy-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            rankings: [{ playerId: '1', power: 5, vp: 4 }],
+            random: FIXED_RANDOM,
+            now: 83,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('ancient_egyptians_mummy');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            FIXED_RANDOM,
+            83,
+        );
+        const prompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(prompt?.playerId).toBe('0');
+    });
+
+    it('法老在其他玩家的计分前触发时，翻牌选择权仍应交给法老控制者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_pyramids',
+                minions: [makeMinion('pharaoh-1', 'ancient_egyptians_pharaoh', '0', 5)],
+                buriedCards: [{
+                    uid: 'buried-1',
+                    defId: 'robot_zapbot',
+                    trueOwnerId: '0',
+                    controllerId: '0',
+                    buriedFrom: 'hand',
+                }],
+            })],
+        });
+
+        const queued = collectTriggers(core, 'beforeScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            sourceCardUid: 'pharaoh-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            rankings: [{ playerId: '1', power: 8, vp: 4 }],
+            random: FIXED_RANDOM,
+            now: 84,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('ancient_egyptians_pharaoh');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            FIXED_RANDOM,
+            84,
+        );
+        const prompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(prompt?.playerId).toBe('0');
+    });
+
     it('狮身人面像天赋会把一张手牌埋葬到它所在的基地', () => {
         const core = makeState({
             players: {
@@ -2473,6 +2567,180 @@ describe('smashup', () => {
                 .flatMap((item) => item.contributions ?? [])
                 .some((contribution) => contribution.scorerId === 'relative-utility-smashup-limited'),
         ).toBe(false);
+    });
+
+    it('Smash Up AI legal actions 在 legacy responderQueue 被 ghost 污染时，仍应按 live current player 生成响应动作', () => {
+        const pressuredMinion = makeMinion('minion-1', 'giant_ant_soldier', '0', 3, {
+            owner: '0',
+            powerCounters: 2,
+            tempPowerModifier: 0,
+        });
+        const enemyMinions = Array.from({ length: 4 }, (_, index) => makeMinion(
+            `enemy-${index}`,
+            'test_minion',
+            '1',
+            5,
+            {
+                owner: '1',
+                tempPowerModifier: 0,
+            },
+        ));
+
+        const core = makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('card-1', 'giant_ant_under_pressure', 'action', '0')],
+                    factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.PIRATES],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_mothership',
+                    minions: [pressuredMinion, ...enemyMinions],
+                }),
+            ],
+        });
+        const stateForAi = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-before:0:ghost-legacy-ai-response',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'meFirst',
+        });
+
+        stateForAi.sys.responseWindow = {
+            ...(stateForAi.sys.responseWindow ?? {}),
+            current: {
+                ...(stateForAi.sys.responseWindow?.current ?? {}),
+                id: 'legacy-window-ghost-ai',
+                windowType: 'meFirst',
+                sourceId: 'legacy_me_first',
+                responderQueue: ['ghost', '1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        } as any;
+
+        const currentPlayerActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: stateForAi,
+        });
+        const otherPlayerActions = buildSmashUpAiLegalActions({
+            playerId: '1',
+            state: stateForAi,
+        });
+
+        expect(currentPlayerActions.some((action) => action.kind === 'response-pass')).toBe(true);
+        expect(currentPlayerActions.some((action) => action.kind === 'response-play-action')).toBe(true);
+        expect(otherPlayerActions.some((action) => action.kind === 'response-pass')).toBe(false);
+        expect(otherPlayerActions.some((action) => action.kind === 'response-play-action')).toBe(false);
+    });
+
+    it('Smash Up AI legal actions 在 legacy responseWindow 只剩空壳时，仍应给当前玩家 advance-phase', () => {
+        const stateForAi = makeMatchState(makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    actionsPlayed: 1,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.PIRATES],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_mothership')],
+        }));
+
+        stateForAi.sys.phase = 'playCards';
+        stateForAi.sys.responseWindow = {
+            current: {
+                id: 'legacy-window-empty-shell',
+                windowType: 'meFirst',
+                sourceId: 'legacy_me_first',
+                responderQueue: [],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+            history: [],
+        } as any;
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: stateForAi,
+        });
+
+        expect(legalActions.map((action) => action.kind)).toContain('advance-phase');
+    });
+
+    it('Smash Up baseline AI 在 legacy responseWindow 只剩空壳时，仍应启用 relative utility scorer', async () => {
+        const stateForAi = makeMatchState(makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('wizard-summon-1', 'wizard_summon', 'action', '0'),
+                        makeCard('wizard-summon-2', 'wizard_summon', 'action', '0'),
+                        makeCard('robot-warbot-1', 'robot_warbot', 'minion', '0'),
+                        makeCard('robot-warbot-2', 'robot_warbot', 'minion', '0'),
+                    ],
+                    factions: [SMASHUP_FACTION_IDS.WIZARDS, SMASHUP_FACTION_IDS.ROBOTS],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_jungle'),
+                makeBase('base_the_mothership'),
+            ],
+        }));
+
+        stateForAi.sys.responseWindow = {
+            current: {
+                id: 'legacy-window-empty-shell-relative-utility',
+                windowType: 'meFirst',
+                sourceId: 'legacy_me_first',
+                responderQueue: [],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+            history: [],
+        } as any;
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: stateForAi,
+        });
+        const decision = await smashUpAiRuntime.localPolicies!.baseline.decide({
+            gameId: 'smashup',
+            matchId: 'test-smashup-ai-stale-legacy-window-relative-utility',
+            playerId: '0',
+            visibleState: stateForAi,
+            interaction: null,
+            responseWindow: null,
+            legalActions,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            difficulty: resolveAiDifficultyProfile('expert'),
+            source: 'local',
+        });
+        const evaluations = (decision?.providerMetadata?.evaluations ?? []) as Array<{
+            searched?: boolean;
+            contributions: Array<{ scorerId: string }>;
+        }>;
+
+        expect(
+            evaluations.some((item) => item.contributions.some((contribution) => contribution.scorerId === 'relative-utility-smashup-limited')),
+        ).toBe(true);
     });
 
     it('Smash Up baseline AI 在同一局面下重复决策应保持稳定，不应表现为完全随机', async () => {
@@ -3865,6 +4133,74 @@ describe('smashup', () => {
         });
     });
 
+    it('彩虹鸟天赋选择被他人拥有的弃牌随从时，仍应洗回其拥有者牌库而不是当前玩家牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('rain-borrowed-minion', 'pirate_first_mate', 'minion', '1')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('owner-deck-a', 'robot_microbot_alpha', 'minion', '1')],
+                }),
+            },
+            bases: [makeBase(), makeBase()],
+            titans: [{
+                uid: 't-rainboroc-borrowed',
+                defId: 'itty_critters_rainboroc',
+                faction: SMASHUP_FACTION_IDS.ITTY_CRITTERS,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } satisfies TitanState],
+        });
+
+        const state = makeMatchState(core);
+        const command: SmashUpCommand = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { titanUid: 't-rainboroc-borrowed', baseIndex: 0 },
+            timestamp: 98,
+        };
+
+        expect(SmashUpDomain.validate(state, command).valid).toBe(true);
+        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
+        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_itty_critters_rainboroc_choose_discard');
+
+        const chooseDiscardHandler = getInteractionHandler('titan_itty_critters_rainboroc_choose_discard');
+        expect(chooseDiscardHandler).toBeDefined();
+
+        const chooseDiscardResult = chooseDiscardHandler!(
+            state,
+            '0',
+            { cardUid: 'rain-borrowed-minion', defId: 'pirate_first_mate' },
+            state.sys.interaction?.current?.data as any,
+            FIXED_RANDOM,
+            99,
+        );
+
+        expect(chooseDiscardResult.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '1',
+                sourcePlayerId: '0',
+            }),
+        }));
+        expect(chooseDiscardResult.state.sys.interaction?.queue?.[0]?.data?.sourceId).toBe(
+            'titan_itty_critters_rainboroc_choose_base',
+        );
+
+        const afterShuffle = chooseDiscardResult.events.reduce(
+            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
+            core,
+        );
+        expect(afterShuffle.players['1'].deck.map(card => card.uid)).toEqual(['owner-deck-a', 'rain-borrowed-minion']);
+        expect(afterShuffle.players['0'].deck.map(card => card.uid)).not.toContain('rain-borrowed-minion');
+        expect(afterShuffle.players['0'].discard.map(card => card.uid)).not.toContain('rain-borrowed-minion');
+    });
+
     it('哥佐拉满足本基地有你至少两个战术后可通过 special 从牌库旁进场，并统计附着战术', () => {
         const core = makeState({
             bases: [
@@ -3925,6 +4261,60 @@ describe('smashup', () => {
             zone: 'base',
             baseIndex: 0,
         });
+    });
+
+    it('borrowed 哥佐拉 special 应按控制者而不是真实 owner 统计本基地的基地与附着战术', () => {
+        const core = makeState({
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                    ongoingActions: [
+                        {
+                            uid: 'borrowed-gorg-base-action',
+                            defId: 'trickster_hideout',
+                            ownerId: '1',
+                            talentUsed: false,
+                            metadata: { sourceControllerId: '0' },
+                        },
+                    ],
+                    minions: [
+                        makeMinion('borrowed-gorg-host-minion', 'ghosts_spectre', '0', 2, {
+                            attachedActions: [
+                                {
+                                    uid: 'borrowed-gorg-attached-action',
+                                    defId: 'trickster_hideout',
+                                    ownerId: '1',
+                                    metadata: { sourceControllerId: '0' },
+                                },
+                            ],
+                        }),
+                    ],
+                }),
+            ],
+            titans: [{
+                uid: 't-borrowed-gorgodzolla',
+                defId: 'kaiju_gorgodzolla',
+                faction: SMASHUP_FACTION_IDS.KAIJU,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } satisfies TitanState],
+        });
+
+        const state = makeMatchState(core);
+        const command: SmashUpCommand = {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 't-borrowed-gorgodzolla', baseIndex: 0 },
+            timestamp: 93,
+        };
+
+        expect(SmashUpDomain.validate(state, command).valid).toBe(true);
+
+        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
     });
 
     it('哥佐拉在你于本基地打出随从后会获得 1 枚力量指示物', () => {
@@ -4020,6 +4410,67 @@ describe('smashup', () => {
             result.finalState.core,
         );
         expect(resolved.players['0'].hand.map(card => card.uid)).toContain('gorg-draw-card');
+    });
+
+    it('哥佐拉在其他玩家于本基地打出战术后，抽牌交互仍应归泰坦控制者', () => {
+        const core = makeState({
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('gorg-draw-card', 'ghosts_spectre', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('gorg-action', 'trickster_hideout', 'action', '1')],
+                }),
+            },
+            bases: [makeBase({ defId: 'test_base' })],
+            titans: [{
+                uid: 't-gorgodzolla',
+                defId: 'kaiju_gorgodzolla',
+                faction: SMASHUP_FACTION_IDS.KAIJU,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } satisfies TitanState],
+        });
+
+        const result = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '1',
+                payload: { cardUid: 'gorg-action', targetBaseIndex: 0 },
+                timestamp: 96,
+            },
+            FIXED_RANDOM,
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.finalState.sys.interaction?.current?.data?.sourceId).toBe('titan_kaiju_gorgodzolla_draw');
+        expect(result.finalState.sys.interaction?.current?.playerId).toBe('0');
+        expect(result.finalState.core.titans?.find(candidate => candidate.uid === 't-gorgodzolla')?.powerCounters).toBe(1);
+
+        const drawHandler = getInteractionHandler('titan_kaiju_gorgodzolla_draw');
+        expect(drawHandler).toBeDefined();
+
+        const drawResult = drawHandler!(
+            result.finalState,
+            '0',
+            { draw: true },
+            result.finalState.sys.interaction?.current?.data as any,
+            FIXED_RANDOM,
+            97,
+        );
+
+        expect(drawResult.events.map(event => event.type)).toEqual([SU_EVENTS.CARDS_DRAWN]);
+        const resolved = drawResult.events.reduce(
+            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
+            result.finalState.core,
+        );
+        expect(resolved.players['0'].hand.map(card => card.uid)).toContain('gorg-draw-card');
+        expect(resolved.players['1'].hand.map(card => card.uid)).not.toContain('gorg-draw-card');
     });
 
     it('移动城堡满足本基地有你至少 2 个随从后可通过 special 从牌库旁进场', () => {
@@ -5172,6 +5623,81 @@ describe('smashup', () => {
         expect(afterResolve.players['1'].deck.map(card => card.uid)).toEqual(['moon-target-next', 'moon-target-top']);
     });
 
+    it('三号空间站天赋查看 borrowed 牌库顶并放到底部时，应进入其拥有者牌库底', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('p0-deck-a', 'ghosts_spectre', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('borrowed-moon-top', 'robot_microbot_guard', 'minion', '0'),
+                        makeCard('moon-target-next', 'ghosts_spectre', 'minion', '1'),
+                    ],
+                }),
+            },
+            titans: [{
+                uid: 't-moon-talent',
+                defId: 'super_spies_moon_zero_three',
+                faction: SMASHUP_FACTION_IDS.SUPER_SPIES,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } satisfies TitanState],
+        });
+
+        const state = makeMatchState(core, 'playCards', '0');
+        const command: SmashUpCommand = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { titanUid: 't-moon-talent', baseIndex: 0 },
+            timestamp: 122,
+        };
+
+        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const choosePlayerHandler = getInteractionHandler('titan_super_spies_moon_zero_three_choose_player');
+        const resolveHandler = getInteractionHandler('titan_super_spies_moon_zero_three_resolve');
+        expect(choosePlayerHandler).toBeDefined();
+        expect(resolveHandler).toBeDefined();
+
+        const chooseResult = choosePlayerHandler!(
+            state,
+            '0',
+            { targetPlayerId: '1' },
+            state.sys.interaction?.current?.data as any,
+            FIXED_RANDOM,
+            123,
+        );
+        const queuedResolveInteraction = chooseResult.state.sys.interaction?.queue?.at(-1);
+        const afterCommand = commandEvents.reduce(
+            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
+            core,
+        );
+        const choosePost = postProcessSystemEvents(afterCommand, chooseResult.events, FIXED_RANDOM, chooseResult.state);
+        const afterChoose = choosePost.events.reduce(
+            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
+            afterCommand,
+        );
+
+        const resolveResult = resolveHandler!(
+            { ...(choosePost.matchState ?? chooseResult.state), core: afterChoose },
+            '0',
+            { placement: 'bottom' },
+            queuedResolveInteraction?.data as any,
+            FIXED_RANDOM,
+            124,
+        );
+        const afterResolve = resolveResult.events.reduce(
+            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
+            afterChoose,
+        );
+
+        expect(afterResolve.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a', 'borrowed-moon-top']);
+        expect(afterResolve.players['1'].deck.map(card => card.uid)).toEqual(['moon-target-next']);
+    });
+
     it('超级佐德满足本基地有你至少 3 个随从后可通过 special 从牌库旁进场', () => {
         const core = makeState({
             bases: [
@@ -5318,6 +5844,55 @@ describe('smashup', () => {
             zone: 'base',
             baseIndex: 1,
         });
+    });
+
+    it('cowboys_sheriff 在其他玩家的计分前触发时，决斗选择权仍应交给 Sheriff 控制者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_saloon',
+                minions: [
+                    makeMinion('sheriff-1', 'cowboys_sheriff', '0', 5),
+                    makeMinion('enemy-1', 'robot_microbot_alpha', '1', 2),
+                ],
+            })],
+        });
+
+        const queued = collectTriggers(core, 'beforeScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            sourceCardUid: 'sheriff-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            rankings: [
+                { playerId: '1', power: 7, vp: 3 },
+                { playerId: '0', power: 5, vp: 2 },
+            ],
+            random: FIXED_RANDOM,
+            now: 100,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('cowboys_sheriff');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            FIXED_RANDOM,
+            100,
+        );
+        const prompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
+        expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(prompt?.playerId).toBe('0');
     });
 
     it('企鹅帝皇会在你的回合开始时创建 special 进场交互，并在选择后打到目标基地', () => {
@@ -5507,6 +6082,82 @@ describe('smashup', () => {
             powerCounters: 1,
             talentUsed: true,
         });
+    });
+
+    it('企鹅帝皇天赋选择被他人拥有的 borrowed 手牌随从时，仍应洗回其拥有者牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('penguin-borrowed-minion', 'pirate_first_mate', 'minion', '1')],
+                    deck: [makeCard('penguin-existing-deck-0', 'robot_microbot_guard', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('penguin-existing-deck-1', 'ghosts_spectre', 'minion', '1')],
+                }),
+            },
+            bases: [makeBase(), makeBase()],
+            titans: [{
+                uid: 't-emperor-borrowed',
+                defId: 'penguins_emperor_penguin',
+                faction: SMASHUP_FACTION_IDS.PENGUINS,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } satisfies TitanState],
+        });
+
+        const state = makeMatchState(core);
+        const command: SmashUpCommand = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { titanUid: 't-emperor-borrowed', baseIndex: 0 },
+            timestamp: 107,
+        };
+
+        expect(SmashUpDomain.validate(state, command).valid).toBe(true);
+
+        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const handler = getInteractionHandler('titan_penguins_emperor_penguin_talent');
+        expect(handler).toBeDefined();
+
+        const resolved = handler!(
+            state,
+            '0',
+            { cardUid: 'penguin-borrowed-minion', defId: 'pirate_first_mate', zone: 'hand' },
+            state.sys.interaction?.current?.data as any,
+            FIXED_RANDOM,
+            108,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_TO_DECK_TOP,
+            payload: expect.objectContaining({
+                cardUid: 'penguin-borrowed-minion',
+                ownerId: '1',
+            }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '1',
+            }),
+        }));
+
+        const afterCommand = commandEvents.reduce(
+            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
+            core,
+        );
+        const finalCore = resolved.events.reduce(
+            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
+            afterCommand,
+        );
+        expect(finalCore.players['0'].hand.map(card => card.uid)).not.toContain('penguin-borrowed-minion');
+        expect(finalCore.players['0'].deck.map(card => card.uid)).toEqual(['penguin-existing-deck-0']);
+        expect(finalCore.players['1'].deck.map(card => card.uid)).toEqual(
+            expect.arrayContaining(['penguin-existing-deck-1', 'penguin-borrowed-minion']),
+        );
     });
 
     it('滑稽巨人 special 只能进空基地', () => {

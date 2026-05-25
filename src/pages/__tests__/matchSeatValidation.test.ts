@@ -33,16 +33,23 @@ import {
     resolveForceSkippableHiddenAiInteraction,
     shouldSilentlyRetryOnlineAiBatchRejection,
     submitOnlineAiResolution,
+    submitOnlineAiResolutionSequence,
 } from '../onlineAiForceSkip';
 import {
+    buildOnlineAiForceEndTurnTrackerKey,
+    buildOnlineAiForceSkipTrackerKey,
+    buildOnlineAiIdleSeatRecoveryKey,
+    buildOnlineAiSubmitBlockedRecoveryKey,
     isTutorialRoutePath,
+    resolveManualBlockedOnlineAiSeatResync,
+    resolveOnlineAiSeatRecoveryAttempt,
     resolveManualOnlineAiRecovery,
-    resolveMissingMatchConfirmationSignal,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
     shouldShowOnlineGameErrorToast,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../MatchRoom';
+import { resolveMissingMatchConfirmationSignal } from '../matchMissingConfirmation';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
 import { resolveMatchSeatSwapContext } from '../../components/game/framework/matchSeatSwap';
 import { findMatchPlayerInfo, resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
@@ -180,7 +187,7 @@ describe('isTutorialRoutePath', () => {
 });
 
 describe('resolveMissingMatchConfirmationSignal', () => {
-    it('只有联机同步通道明确的 match_not_found 信号才会确认缺房', () => {
+    it('只有 transport match_not_found 且 REST 也确认 not_found 时才会确认缺房', () => {
         expect(resolveMissingMatchConfirmationSignal({
             isTutorialRoute: false,
             matchId: 'match-1',
@@ -188,6 +195,7 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             isAutoJoining: false,
             autoJoinGraceActive: false,
             onlineTransportError: 'match_not_found',
+            matchStatusErrorKind: 'not_found',
         })).toBe('transport_not_found');
 
         expect(resolveMissingMatchConfirmationSignal({
@@ -196,11 +204,12 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             shouldAutoJoin: false,
             isAutoJoining: false,
             autoJoinGraceActive: false,
+            matchStatusErrorKind: 'not_found',
             onlineTransportError: null,
         })).toBeNull();
     });
 
-    it('网络态、REST 404 或自动加入阶段不会把房间误判成不存在', () => {
+    it('网络态、REST 未确认、或自动加入阶段不会把房间误判成不存在', () => {
         expect(resolveMissingMatchConfirmationSignal({
             isTutorialRoute: false,
             matchId: 'match-1',
@@ -208,6 +217,7 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             isAutoJoining: false,
             autoJoinGraceActive: false,
             onlineTransportError: 'sync_timeout',
+            matchStatusErrorKind: 'not_found',
         })).toBeNull();
 
         expect(resolveMissingMatchConfirmationSignal({
@@ -216,6 +226,27 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             shouldAutoJoin: false,
             isAutoJoining: false,
             autoJoinGraceActive: false,
+            matchStatusErrorKind: null,
+            onlineTransportError: 'match_not_found',
+        })).toBeNull();
+
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            matchStatusErrorKind: 'transient_unreachable',
+            onlineTransportError: 'match_not_found',
+        })).toBeNull();
+
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            matchStatusErrorKind: null,
             onlineTransportError: null,
         })).toBeNull();
 
@@ -226,6 +257,7 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             isAutoJoining: false,
             autoJoinGraceActive: false,
             onlineTransportError: 'match_not_found',
+            matchStatusErrorKind: 'not_found',
         })).toBeNull();
 
         expect(resolveMissingMatchConfirmationSignal({
@@ -235,6 +267,7 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             isAutoJoining: true,
             autoJoinGraceActive: false,
             onlineTransportError: 'match_not_found',
+            matchStatusErrorKind: 'not_found',
         })).toBeNull();
 
         expect(resolveMissingMatchConfirmationSignal({
@@ -244,6 +277,7 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             isAutoJoining: false,
             autoJoinGraceActive: false,
             onlineTransportError: 'match_not_found',
+            matchStatusErrorKind: 'not_found',
         })).toBeNull();
     });
 });
@@ -1004,10 +1038,226 @@ describe('onlineAiSeats', () => {
         expect(resolveDispatchImpl).toHaveBeenCalledTimes(1);
     });
 
+    it('手动强制结束在无 manual candidate 且 AI 决策被 blocked 时，应原样保留 blockedKey 与 blockedReason', async () => {
+        const resolveDispatchImpl = vi.fn().mockResolvedValue({
+            kind: 'blocked',
+            playerId: '1',
+            blockedKey: '1:private-required:stale-private-overlay:ix:prompt-1:simple-choice:secret-agent:rw:',
+            blockedReason: 'stale-private-overlay',
+        });
+
+        const result = await resolveManualOnlineAiRecovery({
+            engineConfig: { gameId: 'smashup' },
+            matchId: 'match-manual-force-end-blocked',
+            sharedState: {
+                core: {
+                    activePlayerId: '0',
+                    currentPlayerId: '0',
+                },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                    turnNumber: 3,
+                    phase: 'playCards',
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {
+                '1': buildOnlineAiSeatState({
+                    nextId: 7,
+                    phase: 'playCards',
+                    currentPlayerId: '0',
+                }),
+            },
+            resolveDispatchImpl,
+        });
+
+        expect(result).toEqual({
+            kind: 'blocked',
+            playerId: '1',
+            blockedKey: '1:private-required:stale-private-overlay:ix:prompt-1:simple-choice:secret-agent:rw:',
+            blockedReason: 'stale-private-overlay',
+        });
+        expect(resolveDispatchImpl).toHaveBeenCalledTimes(1);
+    });
+
+    it('手动强制结束被 blocked 时，应把 blockedKey 与 blockedReason 原样带进 seat resync 请求', () => {
+        expect(resolveManualBlockedOnlineAiSeatResync({
+            playerId: '1',
+            blockedKey: '1:private-required:stale-private-overlay:ix:prompt-1:simple-choice:secret-agent:rw:',
+            blockedReason: 'stale-private-overlay',
+        })).toEqual({
+            playerId: '1',
+            reason: 'manual-force-end-blocked',
+            meta: {
+                blockedKey: '1:private-required:stale-private-overlay:ix:prompt-1:simple-choice:secret-agent:rw:',
+                blockedReason: 'stale-private-overlay',
+            },
+        });
+
+        expect(resolveManualBlockedOnlineAiSeatResync({
+            playerId: '1',
+            blockedKey: null,
+            blockedReason: 'stale-private-overlay',
+        })).toBeNull();
+    });
+
     it('仅凭据有变化时才触发持久化', () => {
         expect(haveAiSeatCredentialsChanged({}, {})).toBe(false);
         expect(haveAiSeatCredentialsChanged({ '1': 'same' }, { '1': 'same' })).toBe(false);
         expect(haveAiSeatCredentialsChanged({ '1': 'old' }, { '1': 'new' })).toBe(true);
+    });
+
+    it('首次出现 recoveryKey 时，应立即放行 seat recovery 并写入 nextRecovery', () => {
+        expect(resolveOnlineAiSeatRecoveryAttempt({
+            recoveryKey: 'blocked-stale-decision:seat-1',
+            now: 1000,
+            lastRecovery: null,
+            minIntervalMs: 1200,
+        })).toEqual({
+            shouldRecover: true,
+            nextRecovery: {
+                key: 'blocked-stale-decision:seat-1',
+                lastRecoveryAt: 1000,
+            },
+        });
+    });
+
+    it('同一个 recoveryKey 在冷却期内不应重复触发 seat recovery', () => {
+        expect(resolveOnlineAiSeatRecoveryAttempt({
+            recoveryKey: 'blocked-stale-decision:seat-1',
+            now: 1800,
+            lastRecovery: {
+                key: 'blocked-stale-decision:seat-1',
+                lastRecoveryAt: 1000,
+            },
+            minIntervalMs: 1200,
+        })).toEqual({
+            shouldRecover: false,
+            nextRecovery: {
+                key: 'blocked-stale-decision:seat-1',
+                lastRecoveryAt: 1000,
+            },
+        });
+    });
+
+    it('recoveryKey 漂移或超过冷却期后，应重新放行 seat recovery', () => {
+        expect(resolveOnlineAiSeatRecoveryAttempt({
+            recoveryKey: 'blocked-stale-decision:seat-2',
+            now: 1800,
+            lastRecovery: {
+                key: 'blocked-stale-decision:seat-1',
+                lastRecoveryAt: 1000,
+            },
+            minIntervalMs: 1200,
+        }).shouldRecover).toBe(true);
+
+        expect(resolveOnlineAiSeatRecoveryAttempt({
+            recoveryKey: 'blocked-stale-decision:seat-1',
+            now: 2301,
+            lastRecovery: {
+                key: 'blocked-stale-decision:seat-1',
+                lastRecoveryAt: 1000,
+            },
+            minIntervalMs: 1200,
+        }).shouldRecover).toBe(true);
+    });
+
+    it('持续 blocked 且 recoveryKey 未变化时，冷却拒绝不应把下一次重试窗口继续往后推', () => {
+        const firstSuppressedAttempt = resolveOnlineAiSeatRecoveryAttempt({
+            recoveryKey: 'blocked-stale-decision:seat-1',
+            now: 1800,
+            lastRecovery: {
+                key: 'blocked-stale-decision:seat-1',
+                lastRecoveryAt: 1000,
+            },
+            minIntervalMs: 1200,
+        });
+        expect(firstSuppressedAttempt).toEqual({
+            shouldRecover: false,
+            nextRecovery: {
+                key: 'blocked-stale-decision:seat-1',
+                lastRecoveryAt: 1000,
+            },
+        });
+
+        expect(resolveOnlineAiSeatRecoveryAttempt({
+            recoveryKey: 'blocked-stale-decision:seat-1',
+            now: 2201,
+            lastRecovery: firstSuppressedAttempt.nextRecovery,
+            minIntervalMs: 1200,
+        }).shouldRecover).toBe(true);
+    });
+
+    it('idle-active-ai recoveryKey 即使同一玩家与阶段，也应随 progressMarker 漂移而变化', () => {
+        const firstState = buildOnlineAiSeatState({
+            nextId: 10,
+            phase: 'playCards',
+            currentPlayerId: '1',
+        });
+        const secondState = buildOnlineAiSeatState({
+            nextId: 11,
+            phase: 'playCards',
+            currentPlayerId: '1',
+        });
+
+        const firstKey = buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: firstState,
+        });
+        const secondKey = buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: secondState,
+        });
+
+        expect(firstKey).toContain('idle-active-ai:1:');
+        expect(firstKey).not.toBe(secondKey);
+        expect(firstKey).toContain(buildAiProgressMarker(firstState));
+        expect(secondKey).toContain(buildAiProgressMarker(secondState));
+    });
+
+    it('submit-blocked-ai recoveryKey 即使同一玩家与 action kind，也应随 attemptKey 漂移而变化', () => {
+        const sharedState = buildOnlineAiSeatState({
+            nextId: 22,
+            phase: 'playCards',
+            currentPlayerId: '1',
+        });
+
+        const firstKey = buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'force-end-turn:1:response-window:rw-a',
+                action: {
+                    kind: 'force-end-turn',
+                },
+            },
+            authoritativeState: sharedState,
+        });
+        const secondKey = buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'force-end-turn:1:response-window:rw-b',
+                action: {
+                    kind: 'force-end-turn',
+                },
+            },
+            authoritativeState: sharedState,
+        });
+
+        expect(firstKey).toContain('submit-blocked-ai:1:force-end-turn:');
+        expect(firstKey).not.toBe(secondKey);
+        expect(firstKey).toContain('force-end-turn:1:response-window:rw-a');
+        expect(secondKey).toContain('force-end-turn:1:response-window:rw-b');
+        expect(firstKey).toContain(buildAiProgressMarker(sharedState));
     });
 });
 
@@ -2197,6 +2447,33 @@ describe('submitOnlineAiResolution', () => {
         })).toBe(true);
     });
 
+    it('staged override 只应作为 confirmed 到 state update 之间的一拍桥接，latestState 追平后应退回最新 seat state', () => {
+        const staleSeatState = buildOnlineAiSeatState({
+            nextId: 8,
+            interactionId: 'stale-hidden',
+            interactionSourceId: 'wizard_sacrifice',
+        });
+        const confirmedSeatState = buildOnlineAiSeatState({ nextId: 9 });
+        const freshLatestSeatState = buildOnlineAiSeatState({ nextId: 10 });
+
+        expect(shouldStageOnlineAiSeatOverrideFromConfirmedState({
+            authoritativeState: confirmedSeatState,
+            latestSeatState: staleSeatState,
+        })).toBe(true);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': staleSeatState },
+        })).toBe(confirmedSeatState);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: {},
+            seatLatestStates: { '1': freshLatestSeatState },
+        })).toBe(freshLatestSeatState);
+    });
+
     it('batch confirmed 只透传权威态，不直接回写 seat latestState', () => {
         const updateLatestState = vi.fn();
         const resync = vi.fn();
@@ -2462,6 +2739,229 @@ describe('submitOnlineAiResolution', () => {
     });
 });
 
+describe('submitOnlineAiResolutionSequence', () => {
+    const buildResolution = (args?: {
+        attemptKey?: string;
+        commands?: Array<{ type: string; payload: unknown }>;
+    }) => ({
+        playerId: '1',
+        attemptKey: args?.attemptKey ?? 'attempt-sequence-default',
+        source: 'local-ai' as const,
+        action: {
+            actionId: 'sequence-respond-choice',
+            kind: 'interaction-choice' as const,
+            label: '响应',
+            commands: args?.commands ?? [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-1' } }],
+        },
+    });
+
+    it('首步 confirmed 后应继续提交 follow-up，并把 stepIndex 传给 onStepConfirmed/onCompleted', () => {
+        const retry = vi.fn();
+        const resync = vi.fn();
+        const sendCommand = vi.fn();
+        const subscribeStateUpdate = vi.fn(() => vi.fn());
+        const onStepConfirmed = vi.fn();
+        const onCompleted = vi.fn();
+        const sendBatchCalls: Array<{
+            onConfirmed?: (state?: unknown) => void;
+            onRejected?: (reason: string) => void;
+        }> = [];
+        const sendBatch = vi.fn((_batchId, _commands, onConfirmed, onRejected) => {
+            sendBatchCalls.push({ onConfirmed, onRejected });
+        });
+
+        submitOnlineAiResolutionSequence({
+            client: {
+                sendBatch,
+                sendCommand,
+                subscribeStateUpdate,
+                latestState: buildOnlineAiSeatState({ nextId: 20 }),
+                updateLatestState: vi.fn(),
+                resync,
+            },
+            initialResolution: buildResolution({
+                attemptKey: 'attempt-sequence-step-0',
+                commands: [
+                    { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } },
+                    { type: 'ADVANCE_PHASE', payload: { reason: 'step-0' } },
+                ],
+            }),
+            lastAiAttemptKeyRef: { current: null },
+            scheduleRetry: retry,
+            resolveNextResolution: ({ stepIndex }) => {
+                if (stepIndex !== 0) return null;
+                return buildResolution({
+                    attemptKey: 'attempt-sequence-step-1',
+                    commands: [
+                        { type: 'ADVANCE_PHASE', payload: { reason: 'step-1' } },
+                        { type: 'ADVANCE_PHASE', payload: { reason: 'step-1-follow-up' } },
+                    ],
+                });
+            },
+            onStepConfirmed,
+            onCompleted,
+        });
+
+        expect(sendBatch).toHaveBeenCalledTimes(1);
+        sendBatchCalls[0]?.onConfirmed?.({ sys: { phase: 'playCards', eventStream: { nextId: 21 } } });
+
+        expect(sendBatch).toHaveBeenCalledTimes(2);
+        expect(onStepConfirmed).toHaveBeenCalledTimes(1);
+        expect(onStepConfirmed).toHaveBeenCalledWith(expect.objectContaining({
+            stepIndex: 0,
+            confirmedResolution: expect.objectContaining({ attemptKey: 'attempt-sequence-step-0' }),
+        }));
+
+        sendBatchCalls[1]?.onConfirmed?.({ sys: { phase: 'drawCards', eventStream: { nextId: 22 } } });
+
+        expect(onCompleted).toHaveBeenCalledWith(expect.objectContaining({
+            sys: expect.objectContaining({
+                phase: 'drawCards',
+                eventStream: expect.objectContaining({ nextId: 22 }),
+            }),
+        }));
+        expect(resync).not.toHaveBeenCalled();
+        expect(retry).not.toHaveBeenCalled();
+    });
+
+    it('首步若是单命令交互收口，应在 state update 确认后继续提交 follow-up', () => {
+        const retry = vi.fn();
+        const resync = vi.fn();
+        let stateListener: ((state: unknown) => void) | null = null;
+        const unsubscribe = vi.fn();
+        const subscribeStateUpdate = vi.fn((listener: (state: unknown) => void) => {
+            stateListener = listener;
+            return unsubscribe;
+        });
+        const sendCommand = vi.fn();
+        const onStepConfirmed = vi.fn();
+        const onCompleted = vi.fn();
+        const sendBatchCalls: Array<{
+            onConfirmed?: (state?: unknown) => void;
+            onRejected?: (reason: string) => void;
+        }> = [];
+        const sendBatch = vi.fn((_batchId, _commands, onConfirmed, onRejected) => {
+            sendBatchCalls.push({ onConfirmed, onRejected });
+        });
+
+        submitOnlineAiResolutionSequence({
+            client: {
+                sendBatch,
+                sendCommand,
+                subscribeStateUpdate,
+                latestState: buildOnlineAiSeatState({ nextId: 40 }),
+                updateLatestState: vi.fn(),
+                resync,
+            },
+            initialResolution: buildResolution({
+                attemptKey: 'attempt-sequence-single-step-0',
+                commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } }],
+            }),
+            lastAiAttemptKeyRef: { current: null },
+            scheduleRetry: retry,
+            resolveNextResolution: ({ stepIndex }) => {
+                if (stepIndex !== 0) return null;
+                return buildResolution({
+                    attemptKey: 'attempt-sequence-single-step-1',
+                    commands: [
+                        { type: 'ADVANCE_PHASE', payload: { reason: 'step-1' } },
+                        { type: 'ADVANCE_PHASE', payload: { reason: 'step-1-follow-up' } },
+                    ],
+                });
+            },
+            onStepConfirmed,
+            onCompleted,
+        });
+
+        expect(sendCommand).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', { optionId: 'skip' });
+        expect(sendBatch).not.toHaveBeenCalled();
+
+        stateListener?.(buildOnlineAiSeatState({ nextId: 41 }));
+
+        expect(unsubscribe).toHaveBeenCalledTimes(1);
+        expect(onStepConfirmed).toHaveBeenCalledWith(expect.objectContaining({
+            stepIndex: 0,
+            confirmedResolution: expect.objectContaining({ attemptKey: 'attempt-sequence-single-step-0' }),
+            authoritativeState: expect.objectContaining({
+                sys: expect.objectContaining({
+                    eventStream: expect.objectContaining({ nextId: 41 }),
+                }),
+            }),
+        }));
+        expect(sendBatch).toHaveBeenCalledTimes(1);
+
+        sendBatchCalls[0]?.onConfirmed?.({ sys: { phase: 'drawCards', eventStream: { nextId: 42 } } });
+
+        expect(onCompleted).toHaveBeenCalledWith(expect.objectContaining({
+            sys: expect.objectContaining({
+                phase: 'drawCards',
+                eventStream: expect.objectContaining({ nextId: 42 }),
+            }),
+        }));
+        expect(resync).not.toHaveBeenCalled();
+        expect(retry).not.toHaveBeenCalled();
+    });
+
+    it('follow-up 失败时应把失败原因与第二步 resolution 上下文透传给 onRejected', () => {
+        const retry = vi.fn();
+        const resync = vi.fn();
+        const sendCommand = vi.fn();
+        const subscribeStateUpdate = vi.fn(() => vi.fn());
+        const onRejected = vi.fn();
+        const sendBatchCalls: Array<{
+            onConfirmed?: (state?: unknown) => void;
+            onRejected?: (reason: string) => void;
+        }> = [];
+        const sendBatch = vi.fn((_batchId, _commands, onConfirmed, rejected) => {
+            sendBatchCalls.push({ onConfirmed, onRejected: rejected });
+        });
+
+        submitOnlineAiResolutionSequence({
+            client: {
+                sendBatch,
+                sendCommand,
+                subscribeStateUpdate,
+                latestState: buildOnlineAiSeatState({ nextId: 30 }),
+                updateLatestState: vi.fn(),
+                resync,
+            },
+            initialResolution: buildResolution({
+                attemptKey: 'attempt-sequence-fail-step-0',
+                commands: [
+                    { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } },
+                    { type: 'ADVANCE_PHASE', payload: { reason: 'step-0' } },
+                ],
+            }),
+            lastAiAttemptKeyRef: { current: null },
+            scheduleRetry: retry,
+            resolveNextResolution: ({ stepIndex }) => {
+                if (stepIndex !== 0) return null;
+                return buildResolution({
+                    attemptKey: 'attempt-sequence-fail-step-1',
+                    commands: [
+                        { type: 'ADVANCE_PHASE', payload: { reason: 'step-1' } },
+                        { type: 'ADVANCE_PHASE', payload: { reason: 'step-1-follow-up' } },
+                    ],
+                });
+            },
+            onRejected,
+        });
+
+        expect(sendBatch).toHaveBeenCalledTimes(1);
+        sendBatchCalls[0]?.onConfirmed?.({ sys: { phase: 'playCards', eventStream: { nextId: 31 } } });
+        expect(sendBatch).toHaveBeenCalledTimes(2);
+
+        sendBatchCalls[1]?.onRejected?.('command_failed');
+
+        expect(resync).toHaveBeenCalledTimes(1);
+        expect(retry).toHaveBeenCalledTimes(1);
+        expect(onRejected).toHaveBeenCalledWith('command_failed', expect.objectContaining({
+            stepIndex: 1,
+            failedResolution: expect.objectContaining({ attemptKey: 'attempt-sequence-fail-step-1' }),
+        }));
+    });
+});
+
 describe('shouldSilentlyRetryOnlineAiBatchRejection', () => {
     it('仅对 stale_state 走静默重试分支', () => {
         expect(shouldSilentlyRetryOnlineAiBatchRejection('stale_state')).toBe(true);
@@ -2642,6 +3142,55 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
             type: 'SYS_INTERACTION_RESPOND',
             payload: { optionId: 'skip' },
         });
+    });
+
+    it('同一 hidden interaction id 下若 sourceId 漂移，force-skip fingerprint 与 MatchRoom trackerKey 也必须变化', () => {
+        const buildCandidate = (sourceId: string) => resolveForceSkippableHiddenAiInteraction({
+            sharedState: {
+                core: {},
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: true,
+                    },
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {
+                '1': {
+                    core: {},
+                    sys: {
+                        interaction: {
+                            current: {
+                                id: 'hoverbot-hidden',
+                                playerId: '1',
+                                kind: 'simple-choice',
+                                data: {
+                                    sourceId,
+                                    title: '盘旋机器人',
+                                    options: [
+                                        { id: 'skip', label: '跳过', value: { skip: true } },
+                                    ],
+                                },
+                            },
+                            queue: [],
+                        },
+                    },
+                } as MatchState<unknown>,
+            },
+        });
+
+        const first = buildCandidate('robot_hoverbot_a');
+        const second = buildCandidate('robot_hoverbot_b');
+
+        expect(first?.fingerprintHint).toContain('robot_hoverbot_a');
+        expect(second?.fingerprintHint).toContain('robot_hoverbot_b');
+        expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
+        expect(buildOnlineAiForceSkipTrackerKey({ candidate: first! }))
+            .not.toBe(buildOnlineAiForceSkipTrackerKey({ candidate: second! }));
     });
     it('隐藏交互只剩 __emergency_skip__ 或 done 时，也应返回自动收口 resolution', () => {
         const emergencyCandidate = resolveForceSkippableHiddenAiInteraction({
@@ -3008,6 +3557,65 @@ describe('resolveForceEndTurnForStalledAi', () => {
             { type: 'ADVANCE_PHASE', payload: {} },
         ]);
     });
+
+    it('交互确认后若权威态仍 blocked，则不应误补 follow-up ADVANCE_PHASE', () => {
+        expect(resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState: {
+                core: {
+                    activePlayerId: '1',
+                },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: true,
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                    turnNumber: 3,
+                    phase: 'playCards',
+                    eventStream: {
+                        nextId: 12,
+                    },
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+            playerId: '1',
+        })).toBeNull();
+    });
+
+    it('交互确认后若回合已交还给他人或 human，则不应误补 follow-up ADVANCE_PHASE', () => {
+        expect(resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState: {
+                core: {
+                    activePlayerId: '0',
+                },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                    turnNumber: 3,
+                    phase: 'playCards',
+                    eventStream: {
+                        nextId: 12,
+                    },
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            playerId: '1',
+        })).toBeNull();
+    });
 });
 
 describe('本地 AI 无进展重试判定', () => {
@@ -3076,6 +3684,99 @@ describe('本地 AI 无进展重试判定', () => {
             markerBeforeDispatch: buildAiProgressMarker(previousState),
             nextState: previousState,
         })).toBe(false);
+    });
+
+    it('response-window candidate 的 fingerprintHint 漂移时，MatchRoom trackerKey 也必须变化', () => {
+        const buildState = (windowId: string, sourceId: string): MatchState<unknown> => ({
+            core: {
+                currentPlayerId: '1',
+            },
+            sys: {
+                turnNumber: 7,
+                phase: 'offensiveRoll',
+                eventStream: { nextId: 42, entries: [] },
+                interaction: { current: null, queue: [], isBlocked: false },
+                responseWindow: {
+                    current: {
+                        id: windowId,
+                        sourceId,
+                        windowType: 'afterRollConfirmed',
+                        responderQueue: ['1'],
+                        currentResponderIndex: 0,
+                    },
+                },
+            },
+        } as MatchState<unknown>);
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai' },
+        };
+
+        const firstCandidate = resolveForceEndTurnForStalledAi({
+            sharedState: buildState('rw-after-roll-1', 'roll-signature-1'),
+            seatControllers,
+            seatStates: {},
+        });
+        const secondCandidate = resolveForceEndTurnForStalledAi({
+            sharedState: buildState('rw-after-roll-2', 'roll-signature-2'),
+            seatControllers,
+            seatStates: {},
+        });
+
+        expect(firstCandidate?.reason).toBe('response-window');
+        expect(secondCandidate?.reason).toBe('response-window');
+        expect(firstCandidate?.fingerprintHint).toContain('roll-signature-1');
+        expect(secondCandidate?.fingerprintHint).toContain('roll-signature-2');
+        expect(buildOnlineAiForceEndTurnTrackerKey({
+            candidate: firstCandidate!,
+            turnNumber: 7,
+            phase: 'offensiveRoll',
+        })).not.toBe(buildOnlineAiForceEndTurnTrackerKey({
+            candidate: secondCandidate!,
+            turnNumber: 7,
+            phase: 'offensiveRoll',
+        }));
+    });
+
+    it('response-window candidate 若语义指纹未变，只是 attemptKey 因窗口噪音漂移，MatchRoom trackerKey 不应变化', () => {
+        const firstCandidate = {
+            playerId: '1',
+            reason: 'response-window' as const,
+            fingerprintHint: 'response-window:1:offensiveRoll:afterRollConfirmed:damage-boost:1|0',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'force-end-turn:1:response-window:rw-after-roll-1',
+                source: 'local-ai' as const,
+                action: {
+                    actionId: 'force-end-turn:1:response-window:rw-after-roll-1',
+                    kind: 'force-end-turn' as const,
+                    label: '强制结束 AI 响应窗口',
+                    commands: [{ type: 'RESPONSE_PASS', payload: {} }],
+                },
+            },
+        };
+        const secondCandidate = {
+            ...firstCandidate,
+            resolution: {
+                ...firstCandidate.resolution,
+                attemptKey: 'force-end-turn:1:response-window:rw-after-roll-2',
+                action: {
+                    ...firstCandidate.resolution.action,
+                    actionId: 'force-end-turn:1:response-window:rw-after-roll-2',
+                },
+            },
+        };
+
+        expect(buildOnlineAiForceEndTurnTrackerKey({
+            candidate: firstCandidate,
+            turnNumber: 7,
+            phase: 'offensiveRoll',
+        })).toBe(buildOnlineAiForceEndTurnTrackerKey({
+            candidate: secondCandidate,
+            turnNumber: 7,
+            phase: 'offensiveRoll',
+        }));
     });
 
     it('同一 interaction id 下若 sourceId 或选项签名变化，应视为已推进而不是重试', () => {
@@ -3842,6 +4543,39 @@ describe('useMatchStatus 竞态保护', () => {
         });
         await act(async () => Promise.resolve());
         expect(getMatchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('瞬时网络错误在前两次失败时不应冒充 not_found，第三次后才升级为 transient_unreachable', async () => {
+        vi.useFakeTimers();
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.spyOn(Math, 'random').mockReturnValue(0.5);
+
+        const getMatchSpy = vi.spyOn(matchApi, 'getMatch').mockRejectedValue(new Error('network timeout'));
+        const { result } = renderHook(() => useMatchStatus('dicethrone', 'transient-match', '0'));
+
+        await act(async () => {
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+        expect(getMatchSpy).toHaveBeenCalledTimes(1);
+        expect(result.current.errorKind).toBeNull();
+        expect(result.current.error).toBeNull();
+
+        act(() => {
+            vi.advanceTimersByTime(6000);
+        });
+        await act(async () => Promise.resolve());
+        expect(getMatchSpy).toHaveBeenCalledTimes(2);
+        expect(result.current.errorKind).toBeNull();
+        expect(result.current.error).toBeNull();
+
+        act(() => {
+            vi.advanceTimersByTime(12000);
+        });
+        await act(async () => Promise.resolve());
+        expect(getMatchSpy).toHaveBeenCalledTimes(3);
+        expect(result.current.errorKind).toBe('transient_unreachable');
+        expect(result.current.error).toBe('房间暂时不可达，请稍后重试');
     });
 });
 
