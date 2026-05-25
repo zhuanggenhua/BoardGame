@@ -1236,6 +1236,96 @@ describe('smashup', () => {
         });
     });
 
+    it('从手牌打出远古诅咒会附着到目标随从，不会进入弃牌堆', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('curse-hand', 'ancient_egyptians_ancient_curse_pod', 'action', '0')],
+                    discard: [],
+                    factions: [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS, SMASHUP_FACTION_IDS.KILLER_PLANTS],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_ninja_dojo',
+                    minions: [makeMinion('target-minion', 'killer_plant_water_lily_pod', '1', 3, { powerCounters: 0, tempPowerModifier: 0 })],
+                }),
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'curse-hand', targetBaseIndex: 0, targetMinionUid: 'target-minion' },
+            },
+            FIXED_RANDOM,
+        );
+
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'curse-hand',
+                defId: 'ancient_egyptians_ancient_curse_pod',
+                targetType: 'minion',
+                targetBaseIndex: 0,
+                targetMinionUid: 'target-minion',
+            }),
+        }));
+        expect(result.finalState.core.players['0'].discard.some(card => card.uid === 'curse-hand')).toBe(false);
+        expect(result.finalState.core.bases[0].minions.find(minion => minion.uid === 'target-minion')?.attachedActions).toContainEqual(
+            expect.objectContaining({ uid: 'curse-hand', defId: 'ancient_egyptians_ancient_curse_pod', ownerId: '0' }),
+        );
+    });
+
+    it('远古诅咒允许打到受保护随从，但效果会被拦截并给出友好提示', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('curse-protected', 'ancient_egyptians_ancient_curse_pod', 'action', '0')],
+                    factions: [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS, SMASHUP_FACTION_IDS.KILLER_PLANTS],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_ninja_dojo',
+                    minions: [
+                        makeMinion('protected-minion', 'killer_plant_water_lily_pod', '1', 3, {
+                            attachedActions: [{ uid: 'smoke', defId: 'ninja_smoke_bomb', ownerId: '1' }],
+                        }),
+                    ],
+                }),
+            ],
+        });
+        const command = {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'curse-protected', targetBaseIndex: 0, targetMinionUid: 'protected-minion' },
+        } as const;
+
+        expect(SmashUpDomain.validate(makeMatchState(core), command)).toMatchObject({ valid: true });
+
+        const result = runCommand(makeMatchState(core), command, FIXED_RANDOM);
+
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: expect.objectContaining({
+                playerId: '0',
+                messageKey: 'feedback.target_protected',
+                tone: 'warning',
+            }),
+        }));
+        expect(result.finalState.core.bases[0].minions.find(minion => minion.uid === 'protected-minion')?.attachedActions).not.toContainEqual(
+            expect.objectContaining({ uid: 'curse-protected' }),
+        );
+        expect(result.finalState.core.players['0'].discard).toContainEqual(
+            expect.objectContaining({ uid: 'curse-protected', defId: 'ancient_egyptians_ancient_curse_pod' }),
+        );
+    });
+
     it('翻开埋葬的远古诅咒在仅有一个跨基地合法目标时会自动附着，并进入远古诅咒确认交互', () => {
         const core = makeState({
             players: {
