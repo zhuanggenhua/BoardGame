@@ -124,6 +124,84 @@ describe('Cardia AI - 动作生成', () => {
             // 有能力的卡牌应该有 value 标签
             expect(action2?.metadata?.strategyTags).toContain('value');
         });
+
+        it('线上反馈 6a14081b：已打牌玩家不应继续暴露打牌动作', () => {
+            const state: MatchState<CardiaCore> = {
+                core: {
+                    players: {
+                        '0': {
+                            id: '0',
+                            name: 'Player 1',
+                            hand: [
+                                {
+                                    uid: 'already-played-card',
+                                    defId: 'card-def-1',
+                                    ownerId: '0',
+                                    baseInfluence: 10,
+                                    faction: 'military',
+                                    abilityIds: [],
+                                    difficulty: 1,
+                                    modifiers: createModifierStack(),
+                                    tags: createTagContainer(),
+                                    signets: 0,
+                                    ongoingMarkers: [],
+                                },
+                            ],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: true,
+                            cardRevealed: false,
+                        },
+                        '1': {
+                            id: '1',
+                            name: 'Player 2',
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: false,
+                            cardRevealed: false,
+                        },
+                    },
+                    playerOrder: ['0', '1'],
+                    currentPlayerId: '0',
+                    turnNumber: 1,
+                    phase: 'play',
+                    encounterHistory: [],
+                    ongoingAbilities: [],
+                    modifierTokens: [],
+                    delayedEffects: [],
+                    revealFirstNextEncounter: null,
+                    forcedPlayOrderNextEncounter: null,
+                    mechanicalSpiritActive: null,
+                    deckVariant: 'deck1',
+                    targetSignets: 5,
+                },
+                sys: {
+                    flow: { phase: 'play' },
+                    interaction: null,
+                    actionLog: { entries: [] },
+                    undo: { snapshots: [], aiSeatIds: [] },
+                    rematch: { requests: {} },
+                    responseWindow: null,
+                    tutorial: null,
+                    eventStream: { entries: [] },
+                    gameover: null,
+                },
+            };
+
+            const actions = cardiaAiRuntime.buildLegalActions({
+                state,
+                playerId: '0',
+            });
+
+            expect(actions.filter(a => a.kind === 'play-card')).toHaveLength(0);
+        });
     });
 
     describe('策略标签附加', () => {

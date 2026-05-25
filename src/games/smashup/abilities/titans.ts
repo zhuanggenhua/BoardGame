@@ -2485,6 +2485,7 @@ function queueVampireAncientLordSpecialInteraction(
     state: AbilityContext['state'],
     playerId: string,
     minionUid: string,
+    minionDefId: string,
     baseIndex: number,
     now: number,
 ) {
@@ -2576,6 +2577,7 @@ function vampireAncientLordOnPowerCounterChanged(ctx: TriggerContext): TriggerRe
         ctx.state,
         controllerId,
         ctx.triggerMinion.uid,
+        ctx.triggerMinion.defId,
         ctx.baseIndex,
         ctx.now,
     );

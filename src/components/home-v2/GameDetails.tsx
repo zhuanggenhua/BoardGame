@@ -611,7 +611,7 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
     };
 
     return (
-        <div data-testid="home-v2-detail-left-page" className="pointer-events-auto flex h-full w-full min-h-0 flex-col text-[#3f2718]">
+        <div data-testid="home-v2-detail-left-page" className="pointer-events-auto relative flex h-full w-full min-h-0 flex-col text-[#3f2718]">
             <div className={`flex items-start justify-between ${isCompactLandscape ? 'pb-[3px]' : 'pb-[1.2%]'}`}>
                 <button
                     type="button"
@@ -864,6 +864,7 @@ export const Right = ({ game }: RightProps) => {
         }
         : packageInstallCardState;
     const [isMobilePackageCardExpanded, setIsMobilePackageCardExpanded] = React.useState(false);
+    const [mobilePackagePortalTarget, setMobilePackagePortalTarget] = React.useState<HTMLElement | null>(null);
     const shouldShowMobilePackageRegion = isPackageManagedMobileGame;
     const shouldAutoExpandMobilePackageCard = packageInstallCardState.status === 'queued'
         || packageInstallCardState.status === 'manifest'
@@ -942,8 +943,11 @@ export const Right = ({ game }: RightProps) => {
     React.useEffect(() => {
         if (!shouldShowMobilePackageRegion) {
             setIsMobilePackageCardExpanded(false);
+            setMobilePackagePortalTarget(null);
             return;
         }
+
+        setMobilePackagePortalTarget(document.querySelector<HTMLElement>('[data-testid="home-v2-detail-left-page"]'));
 
         if (shouldAutoExpandMobilePackageCard) {
             setIsMobilePackageCardExpanded(true);
@@ -1026,7 +1030,7 @@ export const Right = ({ game }: RightProps) => {
                 return {
                     icon: LoaderCircle,
                     iconClassName: 'animate-spin',
-                    buttonClassName: 'border-[#8b6643]/38 bg-[#f3dfbf]/94 text-[#3f2718] hover:bg-[#f7e8cf]',
+                    buttonClassName: 'border-[#a5743c]/78 bg-[#472916] text-[#f2dbb4] hover:text-[#fff0ce]',
                     label: t('packageManager.progress.label'),
                 };
             case 'manifest':
@@ -1034,7 +1038,7 @@ export const Right = ({ game }: RightProps) => {
                 return {
                     icon: Download,
                     iconClassName: '',
-                    buttonClassName: 'border-[#8b6643]/38 bg-[#f3dfbf]/94 text-[#3f2718] hover:bg-[#f7e8cf]',
+                    buttonClassName: 'border-[#a5743c]/78 bg-[#472916] text-[#f2dbb4] hover:text-[#fff0ce]',
                     label: t('packageManager.progress.label'),
                 };
             case 'failed':
@@ -1048,7 +1052,7 @@ export const Right = ({ game }: RightProps) => {
                 return {
                     icon: HardDriveDownload,
                     iconClassName: '',
-                    buttonClassName: 'border-[#315c27]/30 bg-[#e1efd8]/92 text-[#315c27] hover:bg-[#eaf5e2]',
+                    buttonClassName: 'border-[#a5743c]/78 bg-[#472916] text-[#e3f0d3] hover:text-[#f4ffe9]',
                     label: hasUsableInstalledGamePackageVersion(mobilePackageCardDisplayState.installedVersion)
                         ? t('packageManager.installedVersionBadge', { version: mobilePackageCardDisplayState.installedVersion?.trim() })
                         : t('packageManager.installedCompletedBadge'),
@@ -1070,6 +1074,33 @@ export const Right = ({ game }: RightProps) => {
         t,
     ]);
     const MobilePackageToggleIcon = mobilePackageToggleMeta.icon;
+    const mobilePackageToggleText = React.useMemo(() => {
+        if (isAppUpdateRequiredForMobileGame) {
+            return t('packageManager.homeV2UpdateAppShort', { defaultValue: '更新App' });
+        }
+
+        switch (mobilePackageCardDisplayState.status) {
+            case 'queued':
+            case 'manifest':
+            case 'downloading':
+            case 'verifying':
+                return t('packageManager.homeV2DownloadingShort', { defaultValue: '下载中' });
+            case 'failed':
+                return t('packageManager.homeV2RetryShort', { defaultValue: '重试' });
+            case 'installed':
+                return t('packageManager.homeV2InstalledShort', { defaultValue: '已就绪' });
+            case 'not-installed':
+            default:
+                return isCompactLandscape
+                    ? t('packageManager.homeV2InstallCompactShort', { defaultValue: '下载包' })
+                    : t('packageManager.homeV2InstallShort', { defaultValue: '下载资源' });
+        }
+    }, [
+        isAppUpdateRequiredForMobileGame,
+        isCompactLandscape,
+        mobilePackageCardDisplayState.status,
+        t,
+    ]);
 
     const handleMobilePackageToggleClick = React.useCallback(() => {
         const status = mobilePackageCardDisplayState.status;
@@ -1483,6 +1514,57 @@ export const Right = ({ game }: RightProps) => {
         ? 'grid-cols-[minmax(0,3.06fr)_44px_60px_56px]'
         : 'grid-cols-[minmax(0,2.2fr)_112px_132px_132px]';
     const showRoomThumbnail = !isCompactLandscape;
+    const mobilePackageRegion = shouldShowMobilePackageRegion ? (
+        <div
+            data-testid="home-v2-mobile-package-region"
+            className={`pointer-events-none absolute ${isCompactLandscape ? 'bottom-[34px] left-[4px]' : 'bottom-[46px] left-[10px]'} z-30`}
+        >
+            <button
+                type="button"
+                data-testid="home-v2-mobile-package-toggle"
+                onClick={handleMobilePackageToggleClick}
+                aria-expanded={isMobilePackageCardExpanded}
+                aria-label={mobilePackageToggleMeta.label}
+                title={mobilePackageToggleMeta.label}
+                disabled={isAppUpdateRequiredForMobileGame}
+                className={[
+                    'pointer-events-auto inline-flex items-center justify-center gap-[6px] rounded-[2px] border font-bold shadow-[0_1px_2px_rgba(63,38,20,0.12)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/24 disabled:cursor-not-allowed disabled:opacity-70',
+                    isCompactLandscape ? 'h-[31px] min-w-[74px] px-[8px] text-[10px] tracking-[0.04em]' : 'h-[48px] min-w-[126px] px-[18px] text-[clamp(15px,1vw,18px)] tracking-[0.05em]',
+                    mobilePackageToggleMeta.buttonClassName,
+                ].join(' ')}
+            >
+                <MobilePackageToggleIcon
+                    aria-hidden="true"
+                    className={`${isCompactLandscape ? 'h-[13px] w-[13px]' : 'h-[18px] w-[18px]'} shrink-0 ${mobilePackageToggleMeta.iconClassName}`}
+                    strokeWidth={2.2}
+                />
+                <span className="whitespace-nowrap leading-none">{mobilePackageToggleText}</span>
+                {mobilePackageCardDisplayState.status === 'installed' ? (
+                    <span data-testid="home-v2-mobile-package-version-badge" className="sr-only">
+                        {mobilePackageToggleMeta.label}
+                    </span>
+                ) : null}
+            </button>
+
+            {isMobilePackageCardExpanded ? (
+                <div className={`pointer-events-auto absolute left-0 origin-bottom-left ${isCompactLandscape ? 'bottom-[38px] w-[min(13.75rem,calc(100vw-3.5rem))]' : 'bottom-[60px] w-[19rem]'}`}>
+                    <GameDetailsMobilePackageCard
+                        gameName={gameDisplayName}
+                        state={mobilePackageCardDisplayState}
+                        onInstall={handleOpenMobilePackageInstall}
+                        onRetry={handleRetryPackageInstall}
+                        failedActionLabel={packageInstallFailedActionLabel}
+                        onCancel={handleCancelPackageInstall}
+                        onCollapse={() => setIsMobilePackageCardExpanded(false)}
+                        presentation={isAppUpdateRequiredForMobileGame ? 'update-required' : 'install'}
+                        requiredAppVersion={game?.mobileDelivery?.requiredAppVersion}
+                        visualStyle="home-v2"
+                        className=""
+                    />
+                </div>
+            ) : null}
+        </div>
+    ) : null;
 
     return (
         <div data-testid="home-v2-detail-right-page" className="pointer-events-auto relative flex h-full w-full min-h-0 flex-col text-[#3f2718]">
@@ -1685,56 +1767,9 @@ export const Right = ({ game }: RightProps) => {
                 </div>
             )}
 
-            {shouldShowMobilePackageRegion ? (
-                <div
-                    data-testid="home-v2-mobile-package-region"
-                    className={`pointer-events-none absolute ${isCompactLandscape ? 'bottom-[6px] left-[4px]' : 'bottom-[10px] left-[6px]'} z-30`}
-                >
-                    <button
-                        type="button"
-                        data-testid="home-v2-mobile-package-toggle"
-                        onClick={handleMobilePackageToggleClick}
-                        aria-expanded={isMobilePackageCardExpanded}
-                        aria-label={mobilePackageToggleMeta.label}
-                        title={mobilePackageToggleMeta.label}
-                        disabled={isAppUpdateRequiredForMobileGame}
-                        className={[
-                            'pointer-events-auto inline-flex items-center justify-center rounded-full border shadow-[0_10px_22px_rgba(63,38,20,0.16)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/24 disabled:cursor-not-allowed disabled:opacity-70',
-                            isCompactLandscape ? 'h-[30px] w-[30px]' : 'h-[42px] w-[42px]',
-                            mobilePackageToggleMeta.buttonClassName,
-                        ].join(' ')}
-                    >
-                        <MobilePackageToggleIcon
-                            aria-hidden="true"
-                            className={`${isCompactLandscape ? 'h-[13px] w-[13px]' : 'h-[18px] w-[18px]'} ${mobilePackageToggleMeta.iconClassName}`}
-                            strokeWidth={2.2}
-                        />
-                        {mobilePackageCardDisplayState.status === 'installed' ? (
-                            <span data-testid="home-v2-mobile-package-version-badge" className="sr-only">
-                                {mobilePackageToggleMeta.label}
-                            </span>
-                        ) : null}
-                    </button>
-
-                    {isMobilePackageCardExpanded ? (
-                        <div className={`pointer-events-auto absolute bottom-0 left-0 origin-bottom-left ${isCompactLandscape ? 'w-[min(19rem,calc(100vw-3.5rem))]' : 'w-[20rem]'}`}>
-                            <GameDetailsMobilePackageCard
-                                gameName={gameDisplayName}
-                                state={mobilePackageCardDisplayState}
-                                onInstall={handleOpenMobilePackageInstall}
-                                onRetry={handleRetryPackageInstall}
-                                failedActionLabel={packageInstallFailedActionLabel}
-                                onCancel={handleCancelPackageInstall}
-                                onCollapse={() => setIsMobilePackageCardExpanded(false)}
-                                presentation={isAppUpdateRequiredForMobileGame ? 'update-required' : 'install'}
-                                requiredAppVersion={game?.mobileDelivery?.requiredAppVersion}
-                                visualStyle="home-v2"
-                                className=""
-                            />
-                        </div>
-                    ) : null}
-                </div>
-            ) : null}
+            {mobilePackagePortalTarget
+                ? createPortal(mobilePackageRegion, mobilePackagePortalTarget)
+                : mobilePackageRegion}
 
             {passwordModal}
             <CreateRoomModal

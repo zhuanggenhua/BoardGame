@@ -239,6 +239,10 @@ function buildPlayCardActions(
     if (!player) {
         return actions;
     }
+
+    if (player.hasPlayed) {
+        return actions;
+    }
     
     // 枚举手牌中所有卡牌
     for (const card of player.hand) {

@@ -201,37 +201,39 @@ export const GameDetailsMobilePackageCard = ({
             data-status={state.status}
             className={[
                 isHomeV2Style
-                    ? 'pointer-events-auto w-full rounded-[8px] border border-[#8e6140]/45 bg-[linear-gradient(180deg,_rgba(246,224,190,0.97)_0%,_rgba(236,202,157,0.97)_100%)] p-3 font-serif text-[#3f2718] shadow-[0_18px_32px_rgba(55,34,18,0.22),inset_0_1px_0_rgba(255,246,225,0.55)]'
+                    ? 'pointer-events-auto w-full rounded-[4px] border border-[#a5743c]/58 bg-[linear-gradient(180deg,_rgba(246,224,190,0.99)_0%,_rgba(235,203,159,0.99)_100%)] px-3 py-2 font-serif text-[#3f2718] shadow-[0_7px_14px_rgba(55,34,18,0.14),inset_0_1px_0_rgba(255,246,225,0.56)]'
                     : 'pointer-events-auto w-full rounded-[8px] border border-parchment-card-border/45 bg-parchment-card-bg/96 p-3 shadow-[0_14px_28px_rgba(56,41,22,0.18)] backdrop-blur-sm',
                 className,
             ].filter(Boolean).join(' ')}
             aria-label={t('packageManager.cardLabel', { game: gameName })}
         >
-            <div className={showLeadingStatusIcon ? 'flex items-start gap-3' : 'flex items-start'}>
+            <div className={showLeadingStatusIcon ? (isHomeV2Style ? 'flex items-start gap-2' : 'flex items-start gap-3') : 'flex items-start'}>
                 {showLeadingStatusIcon && (
                     <div
                         className={[
-                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border',
+                            isHomeV2Style
+                                ? 'flex h-7 w-7 shrink-0 items-center justify-center rounded-[3px] border'
+                                : 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border',
                             isHomeV2Style && state.status === 'installed'
-                                ? 'border-[#526d3d]/24 bg-[#edf3dc]/70 text-[#315c27]'
+                                ? 'border-[#526d3d]/28 bg-[#edf3dc]/70 text-[#315c27]'
                                 : statusMeta.iconToneClassName,
                         ].join(' ')}
                     >
-                        <StatusIcon size={18} strokeWidth={2.2} className={statusMeta.iconClassName} />
+                        <StatusIcon size={isHomeV2Style ? 15 : 18} strokeWidth={2.2} className={statusMeta.iconClassName} />
                     </div>
                 )}
 
                 <div className="min-w-0 flex-1">
-                    <div className={isHomeV2Style ? 'flex min-w-0 flex-col gap-2' : 'flex items-start justify-between gap-3'}>
+                    <div className={isHomeV2Style ? 'flex min-w-0 flex-col gap-1.5' : 'flex items-start justify-between gap-3'}>
                         <div className="min-w-0">
                             <p className={[
-                                'text-[10px] font-semibold uppercase tracking-[0.16em]',
+                                isHomeV2Style ? 'text-[8px] font-semibold uppercase tracking-[0.14em]' : 'text-[10px] font-semibold uppercase tracking-[0.16em]',
                                 isHomeV2Style ? 'text-[#8d7354]' : 'text-parchment-light-text/80',
                             ].join(' ')}>
                                 {presentation === 'update-required' ? t('packageManager.updateRequiredEyebrow') : t('packageManager.eyebrow')}
                             </p>
                             <p className={[
-                                'mt-1 text-sm font-bold leading-tight',
+                                isHomeV2Style ? 'mt-0.5 text-[13px] font-bold leading-tight' : 'mt-1 text-sm font-bold leading-tight',
                                 isHomeV2Style ? 'text-[#3f2718]' : 'text-parchment-base-text',
                             ].join(' ')}>
                                 {statusMeta.title}
@@ -239,7 +241,7 @@ export const GameDetailsMobilePackageCard = ({
                         </div>
                         <div className={isHomeV2Style ? 'flex min-w-0 items-center justify-between gap-2' : 'flex shrink-0 items-start gap-2'}>
                             <span className={[
-                                'min-w-0 truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]',
+                                isHomeV2Style ? 'min-w-0 truncate rounded-[3px] border px-2 py-[3px] text-[9px] font-semibold uppercase tracking-[0.08em]' : 'min-w-0 truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]',
                                 isHomeV2Style
                                     ? 'border-[#9d773f]/22 bg-[#fff4da]/54 text-[#7a6248]'
                                     : 'border-parchment-card-border/35 bg-parchment-base-bg/55 text-parchment-light-text',
@@ -252,7 +254,9 @@ export const GameDetailsMobilePackageCard = ({
                                     data-testid="game-details-mobile-package-card-dismiss"
                                     onClick={onCollapse}
                                     className={[
-                                        'inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2',
+                                        isHomeV2Style
+                                            ? 'inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-[3px] border transition-colors focus-visible:outline-none focus-visible:ring-2'
+                                            : 'inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2',
                                         isHomeV2Style
                                             ? 'border-[#9d773f]/24 bg-[#fff4da]/54 text-[#7a6248] hover:bg-[#f4dfb8] hover:text-[#3f2718] focus-visible:ring-[#6b4328]/20'
                                             : 'border-parchment-card-border/35 bg-parchment-base-bg/60 text-parchment-light-text hover:bg-parchment-base-bg hover:text-parchment-base-text focus-visible:ring-parchment-base-text/20',
@@ -267,16 +271,16 @@ export const GameDetailsMobilePackageCard = ({
                     </div>
 
                     <p className={[
-                        'mt-1 text-[11px] leading-5',
+                        isHomeV2Style ? 'mt-1 line-clamp-2 text-[10px] leading-[1.45]' : 'mt-1 text-[11px] leading-5',
                         isHomeV2Style ? 'text-[#7a6248]' : 'text-parchment-light-text',
                     ].join(' ')}>
                         {statusMeta.description}
                     </p>
 
                     {isInProgress && (
-                        <div className="mt-3">
+                        <div className={isHomeV2Style ? 'mt-2' : 'mt-3'}>
                             <div className={[
-                                'flex items-center justify-between gap-3 text-[11px] font-medium',
+                                isHomeV2Style ? 'flex items-center justify-between gap-3 text-[10px] font-medium' : 'flex items-center justify-between gap-3 text-[11px] font-medium',
                                 isHomeV2Style ? 'text-[#7a6248]' : 'text-parchment-light-text',
                             ].join(' ')}>
                                 <span>{t('packageManager.progress.label')}</span>
@@ -289,14 +293,14 @@ export const GameDetailsMobilePackageCard = ({
                             <div
                                 data-testid="game-details-mobile-package-progress-track"
                                 className={[
-                                    'mt-2 h-2 overflow-hidden rounded-full',
+                                    isHomeV2Style ? 'mt-1.5 h-1.5 overflow-hidden rounded-[2px]' : 'mt-2 h-2 overflow-hidden rounded-full',
                                     isHomeV2Style ? 'bg-[#fff8e6]/80' : 'bg-parchment-base-bg/80',
                                 ].join(' ')}
                             >
                                 <div
                                     data-testid="game-details-mobile-package-progress-fill"
                                     className={[
-                                        'h-full rounded-full transition-[width] duration-300',
+                                        isHomeV2Style ? 'h-full rounded-[2px] transition-[width] duration-300' : 'h-full rounded-full transition-[width] duration-300',
                                         isHomeV2Style ? 'bg-[#5a371f]/85' : 'bg-parchment-base-text/85',
                                         progressMode === 'indeterminate' ? 'w-2/3 animate-pulse' : '',
                                     ].filter(Boolean).join(' ')}
@@ -307,12 +311,12 @@ export const GameDetailsMobilePackageCard = ({
                     )}
 
                     {actionLabel && (
-                        <div className="mt-3">
+                        <div className={isHomeV2Style ? 'mt-2' : 'mt-3'}>
                             <button
                                 type="button"
                                 onClick={actionHandler}
                                 className={[
-                                    'inline-flex cursor-pointer items-center gap-2 rounded-[4px] px-3 py-1.5 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2',
+                                    isHomeV2Style ? 'inline-flex cursor-pointer items-center gap-1.5 rounded-[2px] px-2.5 py-1.5 text-[10px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2' : 'inline-flex cursor-pointer items-center gap-2 rounded-[4px] px-3 py-1.5 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2',
                                     isHomeV2Style
                                         ? showCancelAction
                                             ? 'border border-[#9d773f]/30 bg-[#fff4da]/80 text-[#6b4219] hover:bg-[#f4dfb8] focus-visible:ring-[#6b4328]/20'

@@ -1773,6 +1773,22 @@ test.describe('Lobby E2E', () => {
             await waitForHomeV2FlipMode(page, 'detail');
 
             await expect(page.getByTestId('home-v2-mobile-package-region')).toBeVisible({ timeout: 10000 });
+            await expect.poll(async () => {
+                const leftPageBox = await page.getByTestId('home-v2-detail-left-page').boundingBox();
+                const packageRegionBox = await page.getByTestId('home-v2-mobile-package-region').boundingBox();
+                if (!leftPageBox || !packageRegionBox) {
+                    return 'missing';
+                }
+
+                const packageCenterX = packageRegionBox.x + packageRegionBox.width / 2;
+                const packageCenterY = packageRegionBox.y + packageRegionBox.height / 2;
+                const isInLeftBottomCorner = packageCenterX < leftPageBox.x + leftPageBox.width * 0.24
+                    && packageCenterY > leftPageBox.y + leftPageBox.height * 0.82;
+                return isInLeftBottomCorner ? 'left-bottom' : `x=${Math.round(packageCenterX)},y=${Math.round(packageCenterY)}`;
+            }, {
+                timeout: 10000,
+                message: 'HomeV2 下载入口应位于左页左下角',
+            }).toBe('left-bottom');
             const packageToggle = page.getByTestId('home-v2-mobile-package-toggle');
             await expect(packageToggle).toBeVisible({ timeout: 10000 });
             const entryScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-entry-visible');
@@ -1783,12 +1799,14 @@ test.describe('Lobby E2E', () => {
             await expect(confirmModal).toBeVisible({ timeout: 10000 });
             await expect(confirmModal).toContainText('下载');
             await expect(confirmModal).toContainText('tictactoe-assets-e2e', { timeout: 10000 });
+            await page.waitForTimeout(250);
             const confirmScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-confirm-modal');
             await page.screenshot({ path: confirmScreenshotPath, fullPage: true });
 
             await confirmModal.getByRole('button', { name: /确认下载|Confirm Download/ }).click();
             await expect(confirmModal.getByTestId('game-details-mobile-package-progress-track')).toBeVisible({ timeout: 10000 });
             await expect(confirmModal).toContainText(/准备中|正在下载|Preparing|Downloading/, { timeout: 10000 });
+            await page.waitForTimeout(250);
             const downloadingScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-downloading');
             await page.screenshot({ path: downloadingScreenshotPath, fullPage: true });
 
@@ -1796,6 +1814,7 @@ test.describe('Lobby E2E', () => {
             await expect(installedCard).toHaveAttribute('data-status', 'installed', { timeout: 10000 });
             await expect(installedCard).toContainText(/e2e-2026-05-25-assets|同步完成|Sync complete/, { timeout: 10000 });
             await expect(page.getByTestId('home-v2-mobile-package-version-badge')).toContainText('e2e-2026-05-25-assets');
+            await page.waitForTimeout(250);
             const installedScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-installed');
             await page.screenshot({ path: installedScreenshotPath, fullPage: true });
         } finally {

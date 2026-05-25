@@ -1624,6 +1624,88 @@ describe('smashup', () => {
         expect(targetMinion?.powerCounters).toBe(2);
     });
 
+    it('线上反馈 6a143f93：鲜血领主反应选项应携带目标 minionDefId 并可结算', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.VAMPIRES, SMASHUP_FACTION_IDS.WIZARDS],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_the_factory',
+                minions: [{
+                    ...makeMinion('ancient-lord-target', 'vampire_the_count', '0', 5),
+                    powerCounters: 1,
+                }],
+                ongoingActions: [],
+            })],
+            titans: [{
+                uid: 'ancient-lord-setaside',
+                defId: 'vampires_ancient_lord',
+                faction: SMASHUP_FACTION_IDS.VAMPIRES,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } satisfies TitanState],
+        });
+        const triggerMinion = core.bases[0].minions.find(minion => minion.uid === 'ancient-lord-target');
+        expect(triggerMinion).toBeDefined();
+
+        const triggered = fireTriggers(core, 'onMinionAffected', {
+            state: core,
+            matchState: makeMatchState(core, 'playCards', '0'),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'ancient-lord-target',
+            triggerMinionDefId: triggerMinion!.defId,
+            triggerMinion,
+            affectType: 'power_change',
+            counterChangeKind: 'added',
+            counterDelta: 1,
+            reason: 'vampire_the_count',
+            random: FIXED_RANDOM,
+            now: 6_143_093,
+        });
+        const prompt = getSimpleChoicePrompt(triggered.matchState!, 'titan_vampires_ancient_lord_special');
+        const storeOption = getPromptOption(prompt, option => option.id === 'store', 'Ancient Lord store option');
+        expect(storeOption.value).toMatchObject({
+            minionUid: 'ancient-lord-target',
+            minionDefId: 'vampire_the_count',
+            baseIndex: 0,
+            titanUid: 'ancient-lord-setaside',
+        });
+
+        const resolved = respondToPromptOption(
+            triggered.matchState!,
+            option => option.id === 'store',
+            'Ancient Lord store option',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(resolved.events.map(event => event.type)).toEqual(expect.arrayContaining([
+            SU_EVENTS.POWER_COUNTER_REMOVED,
+            SU_EVENTS.TITAN_POWER_COUNTER_ADDED,
+        ]));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.POWER_COUNTER_REMOVED,
+            payload: expect.objectContaining({
+                minionUid: 'ancient-lord-target',
+                baseIndex: 0,
+                amount: 1,
+            }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TITAN_POWER_COUNTER_ADDED,
+            payload: expect.objectContaining({
+                titanUid: 'ancient-lord-setaside',
+                amount: 1,
+            }),
+        }));
+    });
+
     it('鲜血领主天赋会创建目标选择，并为已有标记的己方随从再放 1 枚', () => {
         const titanDraft: SmashUpCommand[] = [
             { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.WIZARDS } },
