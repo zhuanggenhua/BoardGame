@@ -44,4 +44,11 @@ describe('SmashUp faction variant groups', () => {
         expect(getPreferredFactionVariant(SMASHUP_FACTION_IDS.ZOMBIES, 'zh-CN')?.id).toBe(SMASHUP_FACTION_IDS.ZOMBIES);
         expect(getPreferredFactionVariant(SMASHUP_FACTION_IDS.ZOMBIES, 'en')?.id).toBe(SMASHUP_FACTION_IDS.ZOMBIES_POD);
     });
+
+    it('hides DIY factions when the diy expansion is disabled', () => {
+        const groups = getVisibleFactionVariantGroups('zh-CN', ['titans']);
+
+        expect(groups.map((group) => group.groupId)).not.toContain(SMASHUP_FACTION_IDS.HULUWAWA);
+        expect(getPreferredFactionVariant(SMASHUP_FACTION_IDS.HULUWAWA, 'zh-CN', ['titans'])).toBeUndefined();
+    });
 });

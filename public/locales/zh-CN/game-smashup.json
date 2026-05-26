@@ -4087,7 +4087,8 @@
   "setup": {
     "expansions": {
       "label": "扩展规则",
-      "titans": "泰坦"
+      "titans": "泰坦",
+      "diy": "DIY"
     },
     "teamMode": {
       "label": "对局模式",

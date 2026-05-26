@@ -416,6 +416,7 @@ describe('i18n 静态检查工具', () => {
                         labelKey: 'games.smashup.setup.expansions.label',
                         options: [
                             { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
+                            { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
                         ],
                     },
                     teamMode: {
@@ -456,6 +457,10 @@ describe('i18n 静态检查工具', () => {
             }),
             expect.objectContaining({
                 key: 'setup.expansions.titans',
+                namespaces: ['game-smashup'],
+            }),
+            expect.objectContaining({
+                key: 'setup.expansions.diy',
                 namespaces: ['game-smashup'],
             }),
             expect.objectContaining({
