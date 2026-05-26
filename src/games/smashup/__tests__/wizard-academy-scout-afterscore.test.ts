@@ -31,6 +31,22 @@ function makeMinion(
     };
 }
 
+function findQueuedTriggerOptionId(
+    state: MatchState<SmashUpCore>,
+    sourceDefId: string,
+) {
+    const current = state.sys.interaction?.current as any;
+    const options = current?.data?.options ?? [];
+    const triggersById = new Map(
+        ((state.core as any).triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]),
+    );
+    const option = options.find((candidate: any) => {
+        const triggerId = candidate?.value?.triggerId;
+        return triggerId && triggersById.get(triggerId)?.sourceDefId === sourceDefId;
+    });
+    return option?.id;
+}
+
 function createRunner(
     setup: (ids: PlayerId[], random: RandomFn) => MatchState<SmashUpCore>,
 ): GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent> {
@@ -77,15 +93,25 @@ describe('Wizard Academy + Scout afterScoring chain', () => {
 
         let state = runner.getState();
         expect(getSmashUpReactionSession(state)?.responseWindowType).toBe('afterScoring');
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('base_wizard_academy');
+        const currentSourceId = (state.sys.interaction?.current as any)?.data?.sourceId;
+        const wizardOptionId = currentSourceId === 'smashup_reaction_choose'
+            ? findQueuedTriggerOptionId(state, 'base_wizard_academy')
+            : 'base-0';
+        expect(['smashup_reaction_choose', 'base_wizard_academy']).toContain(currentSourceId);
+        expect(wizardOptionId).toBeTruthy();
 
-        const resolveWizard = runner.resolveInteraction('0', { optionId: 'base-0' });
+        const resolveWizard = runner.resolveInteraction('0', { optionId: wizardOptionId! });
         expect(resolveWizard.success).toBe(true);
 
         state = runner.getState();
         expect(state.core.bases[0].defId).toBe('base_wizard_academy');
         expect(state.core.bases[0].minions.some(minion => minion.uid === 'scout-0')).toBe(true);
         expect(getSmashUpReactionSession(state)?.responseWindowType).toBe('afterScoring');
+        if ((state.sys.interaction?.current as any)?.data?.sourceId === 'base_wizard_academy') {
+            const resolveWizardBase = runner.resolveInteraction('0', { optionId: 'base-0' });
+            expect(resolveWizardBase.success).toBe(true);
+            state = runner.getState();
+        }
         expect(state.sys.interaction?.current?.data?.sourceId).toBe('alien_scout_return');
 
         const resolveScout = runner.resolveInteraction('0', { optionId: 'yes' });

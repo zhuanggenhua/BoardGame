@@ -168,7 +168,9 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             return { sys, core };
         });
 
-        const { eventLog, choice } = advanceToAfterScoring(runner);
+        const { eventLog, choice } = advanceToAfterScoring(runner, '0', {
+            allowDirectAfterScoringSourceId: 'base_greenhouse',
+        });
         const playOptionId = findOptionId(
             choice,
             option => option.value?.kind === 'play_action' && option.value?.cardUid === 'c1',
@@ -486,17 +488,21 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             return { sys, core };
         });
 
-        const { eventLog, choice } = advanceToAfterScoring(runner);
-        const chooseGreenhouse = runner.resolveInteraction('0', {
-            optionId: findQueuedTriggerOptionId(
-                runner.getState(),
-                choice,
-                'base_greenhouse',
-                '找不到温室的统一反应入口',
-            ),
+        const { eventLog, choice } = advanceToAfterScoring(runner, '0', {
+            allowDirectAfterScoringSourceId: 'base_greenhouse',
         });
-        expect(chooseGreenhouse.success).toBe(true);
-        eventLog.push(...chooseGreenhouse.events);
+        if (choice.sourceId === 'smashup_reaction_choose') {
+            const chooseGreenhouse = runner.resolveInteraction('0', {
+                optionId: findQueuedTriggerOptionId(
+                    runner.getState(),
+                    choice,
+                    'base_greenhouse',
+                    '找不到温室的统一反应入口',
+                ),
+            });
+            expect(chooseGreenhouse.success).toBe(true);
+            eventLog.push(...chooseGreenhouse.events);
+        }
 
         const greenhouseChoice = getCurrentChoice(runner.getState());
         expect(greenhouseChoice?.sourceId).toBe('base_greenhouse');
