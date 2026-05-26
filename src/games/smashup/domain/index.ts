@@ -51,6 +51,7 @@ import {
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
+import { isSmashUpDiyFaction } from './ids';
 import { drawCards } from './utils';
 import {
     countMadnessCards,
@@ -1017,7 +1018,7 @@ function processImmediateStartTurnMinionTriggers(
 // Setup
 // ============================================================================
 
-const DEFAULT_SMASHUP_EXPANSIONS = ['titans'];
+const DEFAULT_SMASHUP_EXPANSIONS = ['titans', 'diy'];
 
 function isAiSeatControllerType(type: unknown): boolean {
     return type === 'local-ai' || type === 'remote-ai';
@@ -1040,6 +1041,13 @@ function readEnabledExpansions(setupData?: Record<string, unknown>): string[] {
     }
 
     return [...DEFAULT_SMASHUP_EXPANSIONS];
+}
+
+function getSetupBaseDefIds(enabledExpansions: readonly string[]): string[] {
+    return getAllBaseDefIds().filter((defId) => {
+        const baseDef = getBaseDef(defId);
+        return !isSmashUpDiyFaction(baseDef?.faction) || enabledExpansions.includes('diy');
+    });
 }
 
 function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {
@@ -1066,7 +1074,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         playerSelections[pid] = [];
     }
 
-    let shuffledBaseIds = random.shuffle(getAllBaseDefIds());
+    let shuffledBaseIds = random.shuffle(getSetupBaseDefIds(enabledExpansions));
     const baseCount = playerIds.length + 1;
     const activeBases: BaseInPlay[] = [];
 

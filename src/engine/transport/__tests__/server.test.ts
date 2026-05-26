@@ -1401,6 +1401,34 @@ describe('resolveLocalAiActionVisibility（可见步骤分类）', () => {
             label: '放弃响应',
             commands: [{ type: 'RESPONSE_PASS', payload: {} }],
         })).toBe('hidden');
+
+        expect(resolveLocalAiActionVisibility({
+            actionId: 'select-faction-hidden',
+            kind: 'setup-select-faction',
+            label: '选择阵营',
+            commands: [{ type: 'SELECT_FACTION', payload: {} }],
+        })).toBe('hidden');
+
+        expect(resolveLocalAiActionVisibility({
+            actionId: 'smashup-select-faction-hidden',
+            kind: 'select-faction',
+            label: '选择派系',
+            commands: [{ type: 'SELECT_FACTION', payload: {} }],
+        })).toBe('hidden');
+
+        expect(resolveLocalAiActionVisibility({
+            actionId: 'setup-select-character-hidden',
+            kind: 'setup-select-character',
+            label: '选择角色',
+            commands: [{ type: 'SELECT_CHARACTER', payload: {} }],
+        })).toBe('hidden');
+
+        expect(resolveLocalAiActionVisibility({
+            actionId: 'setup-ready-hidden',
+            kind: 'setup-ready',
+            label: '准备完成',
+            commands: [{ type: 'PLAYER_READY', payload: {} }],
+        })).toBe('hidden');
     });
 
     it('无 runtime 配置时，普通可见业务动作默认视为可见步骤', () => {
@@ -1439,6 +1467,22 @@ describe('resolveLocalAiActionDelayPlan（单一延迟预算）', () => {
         expect(plan.lastVisibleActionAt).toBeNull();
         expect(plan.visibleStepElapsedMs).toBeNull();
         expect(plan.remainingDelayMs).toBe(1000);
+    });
+
+    it('游戏 runtime 可覆盖默认 AI 思考时长，座位自定义优先级最高', () => {
+        expect(resolveLocalAiActionDelayPlan({
+            controller: { type: 'local-ai' },
+            actionVisibility: 'visible',
+            now: 1_000,
+            defaultMinimumActionDelayMs: 3000,
+        }).remainingDelayMs).toBe(3000);
+
+        expect(resolveLocalAiActionDelayPlan({
+            controller: { type: 'local-ai', minimumActionDelayMs: 500 },
+            actionVisibility: 'visible',
+            now: 1_000,
+            defaultMinimumActionDelayMs: 3000,
+        }).remainingDelayMs).toBe(500);
     });
 
     it('在线链路已有状态年龄只做观测，不再抵扣可见步骤延迟', () => {
@@ -19952,7 +19996,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
             expect(executeSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
             expect(resolutionSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
-            expect(buildAiProgressMarker(match.state)).toBe('4|draw|1|0|||||||0');
+            expect(buildAiProgressMarker(match.state)).toBe('4|draw|1|0|||||||0|');
             expect(match.state.sys.interaction?.current).toBeUndefined();
             expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
                 matchId: 'match-watchdog-visible-interaction-chain',

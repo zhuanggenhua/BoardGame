@@ -530,6 +530,10 @@
         "name": "仙灵",
         "description": "通过持续行动转移、临时力量修正和战术封锁灵活掌控基地节奏。"
       },
+      "huluwawa": {
+        "name": "葫芦娃",
+        "description": "靠七兄弟的分工、持续保护、定向调度与泰坦联动在多个基地上滚起优势。"
+      },
       "princesses": {
         "name": "公主",
         "description": "用额外出牌、弃牌堆回收与持续增益拖长价值战，并靠 Eliza 压制对手爆发。"
@@ -3981,6 +3985,82 @@
         "name": "宙斯的恩惠",
         "effectText": "将一个基地的破坏点减少5，直到回合结束。"
       },
+      "huluwawa_da_wa": {
+        "name": "大娃",
+        "abilityText": "天赋：这个仆从获得 +2 力量直到回合结束。"
+      },
+      "huluwawa_er_wa": {
+        "name": "二娃",
+        "abilityText": "天赋：展示你牌库顶的 3 张牌。你可以将其中 1 张作为额外牌打出。将其余牌以任意顺序放回你的牌库顶和/或牌库底。每回合只能发动一次此能力。"
+      },
+      "huluwawa_san_wa": {
+        "name": "三娃",
+        "abilityText": "持续：其他玩家不能摧毁这个仆从。特殊：当这个仆从将从场上离开时，你可以将它洗回你的牌库，代替进入弃牌堆。"
+      },
+      "huluwawa_si_wa": {
+        "name": "四娃",
+        "abilityText": "你可以摧毁这里一个力量 3 或更小的仆从，在这个仆从上放置 1 枚 +1 力量指示物。"
+      },
+      "huluwawa_wu_wa": {
+        "name": "五娃",
+        "abilityText": "持续：其他玩家不能移动这个基地的仆从。天赋：移动一个力量 3 或更小的仆从从另一个基地到这里。"
+      },
+      "huluwawa_liu_wa": {
+        "name": "六娃",
+        "abilityText": "天赋：这个仆从的初始力量改为 0，直到你的下个回合开始。持续：这个仆从不受其他玩家的效果影响。特殊：在一个基地计分前，你可以取消你的天赋效果。"
+      },
+      "huluwawa_qi_wa": {
+        "name": "七娃",
+        "abilityText": "天赋：从你的牌库中搜索 1 张行动牌并置入手牌。若如此做，重洗牌库。持续：如果这个仆从身上有行动牌，你的回合结束时额外抽 1 张牌。"
+      },
+      "huluwawa_one_vine_seven_flowers": {
+        "name": "一根藤上七朵花",
+        "effectText": "选择你弃牌堆中不同名字的仆从各 1 张，将它们洗回你的牌库。"
+      },
+      "huluwawa_purple_gold_gourd": {
+        "name": "紫金宝葫芦",
+        "effectText": "打出到一个你的仆从上。\n天赋：选择一项：移动一个力量 3 或更小的仆从从另一个基地到这里；或选择你弃牌堆中的 1 张行动牌，将它放到你的牌库底。\n特殊：如果仆从七娃在场上，你可以从你的弃牌堆额外打出这张牌到它身上。"
+      },
+      "huluwawa_strength_in_numbers": {
+        "name": "人多力量大",
+        "effectText": "选择一个基地。你的每个仆从在那里各获得 +1 力量直到回合结束。"
+      },
+      "huluwawa_where_do_you_think_youre_going": {
+        "name": "妖精哪里逃",
+        "effectText": "选择一项：摧毁一个力量 3 或更小的仆从；或移动一个仆从。"
+      },
+      "huluwawa_jade_ruyi": {
+        "name": "玉如意",
+        "effectText": "从你的牌库和/或弃牌堆中搜索 1 张牌并置入手牌。若你搜索了牌库，重洗牌库。你可以额外打出一个行动。"
+      },
+      "huluwawa_no_presence": {
+        "name": "毫无存在感",
+        "effectText": "打出到一个你的仆从上。\n特殊：这个基地计分后，将这个仆从洗回你的牌库，代替进入弃牌堆。"
+      },
+      "huluwawa_pangolin": {
+        "name": "穿山甲",
+        "effectText": "打出到一个基地上。\n天赋：移动你的一个仆从从另一个基地到这里，或从这里到另一个基地。"
+      },
+      "huluwawa_one_at_a_time": {
+        "name": "一个一个来",
+        "effectText": "打出到一个基地上。\n天赋：选择这里的一个仆从，将它返回其拥有者手牌。他可以立即将一个不同名字的仆从打到这里。"
+      },
+      "huluwawa_pop": {
+        "name": "碰！（葫芦裂开）",
+        "effectText": "摸 2 张牌。"
+      },
+      "huluwawa_release_my_grandpa": {
+        "name": "快放了我爷爷！",
+        "effectText": "本回合你可以额外打出 2 个行动。将这张牌放到你的牌库底，代替进入弃牌堆。"
+      },
+      "huluwawa_butterfly_sisters_help": {
+        "name": "蝴蝶妹妹的帮助",
+        "effectText": "打出到一个仆从上。\n持续：当这个仆从将要被摧毁时，摧毁这张牌来代替。\n持续：这张牌从场上进入弃牌堆后，抽 1 张牌。"
+      },
+      "huluwawa_little_king_kong": {
+        "name": "葫芦小金刚",
+        "effectText": "特殊：你可以代替你通常的随从打出，将这个泰坦打到一个没有仆从的基地上。\n持续：当这个泰坦在泰坦对决中失败将要被移除时，改为将它移动到另一个基地。\n持续：每个玩家的回合一次，在你的一个仆从发动能力后，你可以令你的另一个仆从发动相同的主动能力。"
+      },
       "base_shark_reef": {
         "name": "鲨鱼领地",
         "abilityText": "摧毁本基地仆从的玩家，可以在他任意1个仆从上放置一个+1战力指示物。"
@@ -4284,8 +4364,16 @@
       "base_juice_bar": {
         "name": "果汁吧",
         "abilityText": "本基地计分前，每使用一个特殊能力这里约一个仆从就+2战力。"
-      }
       },
+      "base_huluwawa_mountain": {
+        "name": "葫芦山",
+        "abilityText": "这里印刷力量 4 或更高的仆从不受其他玩家的能力影响。"
+      },
+      "base_seven_colored_lotus": {
+        "name": "七彩莲蓬",
+        "abilityText": "每回合一次，在你打出一个仆从到这里后，你可以额外打出一个印刷力量相同的仆从到这里。"
+      }
+    },
   "endgame": {
     "victory": "胜利",
     "defeat": "落败",
@@ -4297,7 +4385,8 @@
   "setup": {
     "expansions": {
       "label": "扩展规则",
-      "titans": "泰坦"
+      "titans": "泰坦",
+      "diy": "DIY"
     },
     "teamMode": {
       "label": "对局模式",

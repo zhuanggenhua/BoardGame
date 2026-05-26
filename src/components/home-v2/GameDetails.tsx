@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Plus, Search } from 'lucide-react';
+import { AlertTriangle, BookOpen, Download, HardDriveDownload, LoaderCircle, Plus, RefreshCw, Search } from 'lucide-react';
 import { type GameConfig } from '../../config/games.config';
 import { UI_Z_INDEX } from '../../core';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,7 +26,16 @@ import { GAME_CHANGELOG_API_URL, GAME_SERVER_URL } from '../../config/server';
 import { getGuestName, getOrCreateGuestId, getOwnerKey, getOwnerType } from '../../hooks/match/ownerIdentity';
 import { useLobbyMatchPresence } from '../../hooks/useLobbyMatchPresence';
 import { useHomeV2CompactLandscape } from '../../hooks/ui/useHomeV2CompactLandscape';
+import { useGamePackageState } from '../../features/mobile-packages/useGamePackageState';
+import {
+    hasUsableInstalledGamePackageState,
+    hasUsableInstalledGamePackageVersion,
+} from '../../features/mobile-packages/types';
+import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
+import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
+import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageCard';
+import { GamePackageInstallConfirmModal } from '../lobby/GamePackageInstallConfirmModal';
 import { PasswordField } from '../common/PasswordField';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
 import {
@@ -602,7 +611,7 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
     };
 
     return (
-        <div data-testid="home-v2-detail-left-page" className="pointer-events-auto flex h-full w-full min-h-0 flex-col text-[#3f2718]">
+        <div data-testid="home-v2-detail-left-page" className="pointer-events-auto relative flex h-full w-full min-h-0 flex-col text-[#3f2718]">
             <div className={`flex items-start justify-between ${isCompactLandscape ? 'pb-[3px]' : 'pb-[1.2%]'}`}>
                 <button
                     type="button"
@@ -817,6 +826,51 @@ export const Right = ({ game }: RightProps) => {
     const toast = useToast();
     const isCompactLandscape = useHomeV2CompactLandscape();
     const gameId = game?.id ?? null;
+    const gameDisplayName = game ? getDisplayName(game, t) : '';
+    const isNativeAndroidCapacitorRuntime = isNativeAndroidRuntime();
+    const {
+        isPackageManaged: isPackageManagedMobileGame,
+        cardState: packageInstallCardState,
+        pendingInstall: pendingPackageInstall,
+        isConfirmingInstall: isConfirmingPackageInstall,
+        requestInstall: requestGamePackageInstall,
+        dismissInstall: dismissGamePackageInstall,
+        cancelInstall: cancelGamePackageInstall,
+        confirmInstall: confirmGamePackageInstall,
+        retryInstall: retryGamePackageInstall,
+        notificationPermissionAction: packageNotificationPermissionAction,
+        openNotificationSettings: openGamePackageNotificationSettings,
+    } = useGamePackageState({
+        gameId: gameId ?? '',
+        gameName: gameDisplayName || gameId || '',
+        delivery: game?.mobileDelivery,
+        enabled: Boolean(gameId) && isNativeAndroidCapacitorRuntime,
+    });
+    const isAppUpdateRequiredForMobileGame = isPackageManagedMobileGame && game?.mobileDelivery?.requiresAppUpdate === true;
+    const hasInstalledPackageForMobileGame = hasUsableInstalledGamePackageState(packageInstallCardState);
+    const hasMobilePackageUpdateAvailable = hasInstalledPackageForMobileGame
+        && packageInstallCardState.isUpdateAvailable === true;
+    const packageInstallFailedActionLabel = packageInstallCardState.errorCode === 'notification-permission-required'
+        && packageNotificationPermissionAction === 'settings'
+        ? t('packageManager.notificationSettingsAction')
+        : t('packageManager.retryAction');
+    const mobilePackageCardDisplayState = (
+        (!hasInstalledPackageForMobileGame || hasMobilePackageUpdateAvailable)
+        && packageInstallCardState.status === 'installed'
+    )
+        ? {
+            ...packageInstallCardState,
+            status: 'not-installed' as const,
+        }
+        : packageInstallCardState;
+    const [isMobilePackageCardExpanded, setIsMobilePackageCardExpanded] = React.useState(false);
+    const [mobilePackagePortalTarget, setMobilePackagePortalTarget] = React.useState<HTMLElement | null>(null);
+    const shouldShowMobilePackageRegion = isPackageManagedMobileGame;
+    const shouldAutoExpandMobilePackageCard = packageInstallCardState.status === 'queued'
+        || packageInstallCardState.status === 'manifest'
+        || packageInstallCardState.status === 'downloading'
+        || packageInstallCardState.status === 'verifying'
+        || packageInstallCardState.status === 'failed';
     const { matches, hasSnapshot } = useLobbyMatchPresence({
         gameId,
         enabled: Boolean(gameId),
@@ -883,7 +937,189 @@ export const Right = ({ game }: RightProps) => {
         setRoomSearch('');
         setPendingPasswordRoom(null);
         setRoomPasswordDraft('');
+        setIsMobilePackageCardExpanded(false);
     }, [gameId]);
+
+    React.useEffect(() => {
+        if (!shouldShowMobilePackageRegion) {
+            setIsMobilePackageCardExpanded(false);
+            setMobilePackagePortalTarget(null);
+            return;
+        }
+
+        setMobilePackagePortalTarget(document.querySelector<HTMLElement>('[data-testid="home-v2-detail-left-page"]'));
+
+        if (shouldAutoExpandMobilePackageCard) {
+            setIsMobilePackageCardExpanded(true);
+        }
+    }, [shouldAutoExpandMobilePackageCard, shouldShowMobilePackageRegion]);
+
+    const handleOpenMobilePackageInstall = React.useCallback(() => {
+        logMobileRuntimeCritical('HomeV2Detail', 'open-package-install-clicked', {
+            gameId,
+            gameName: gameDisplayName,
+            isPackageManagedMobileGame,
+            isAppUpdateRequiredForMobileGame,
+            status: packageInstallCardState.status,
+            hasPendingInstall: Boolean(pendingPackageInstall),
+        });
+        if (!gameId || !isPackageManagedMobileGame || isAppUpdateRequiredForMobileGame) {
+            return;
+        }
+
+        requestGamePackageInstall();
+    }, [
+        gameDisplayName,
+        gameId,
+        isAppUpdateRequiredForMobileGame,
+        isPackageManagedMobileGame,
+        packageInstallCardState.status,
+        pendingPackageInstall,
+        requestGamePackageInstall,
+    ]);
+
+    const handleDismissPackageInstall = React.useCallback(() => {
+        dismissGamePackageInstall();
+    }, [dismissGamePackageInstall]);
+
+    const handleCancelPackageInstall = React.useCallback(() => {
+        void Promise.resolve(cancelGamePackageInstall()).catch((error) => {
+            logMobileRuntimeCritical('HomeV2Detail', 'cancel-package-install-failed', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+    }, [cancelGamePackageInstall, gameId]);
+
+    const handleConfirmPackageInstall = React.useCallback(async () => {
+        if (isConfirmingPackageInstall) {
+            return;
+        }
+        await confirmGamePackageInstall();
+    }, [confirmGamePackageInstall, isConfirmingPackageInstall]);
+
+    const handleRetryPackageInstall = React.useCallback(() => {
+        if (
+            packageInstallCardState.errorCode === 'notification-permission-required'
+            && packageNotificationPermissionAction === 'settings'
+        ) {
+            void openGamePackageNotificationSettings();
+            return;
+        }
+        retryGamePackageInstall();
+    }, [
+        openGamePackageNotificationSettings,
+        packageInstallCardState.errorCode,
+        packageNotificationPermissionAction,
+        retryGamePackageInstall,
+    ]);
+
+    const mobilePackageToggleMeta = React.useMemo(() => {
+        if (isAppUpdateRequiredForMobileGame) {
+            return {
+                icon: AlertTriangle,
+                iconClassName: '',
+                buttonClassName: 'border-[#9d6a25]/36 bg-[#f6dfb8]/92 text-[#6b4219] hover:bg-[#f8e7c8]',
+                label: t('packageManager.updateRequiredTitle'),
+            };
+        }
+
+        switch (mobilePackageCardDisplayState.status) {
+            case 'queued':
+            case 'verifying':
+                return {
+                    icon: LoaderCircle,
+                    iconClassName: 'animate-spin',
+                    buttonClassName: 'border-[#a5743c]/78 bg-[#472916] text-[#f2dbb4] hover:text-[#fff0ce]',
+                    label: t('packageManager.progress.label'),
+                };
+            case 'manifest':
+            case 'downloading':
+                return {
+                    icon: Download,
+                    iconClassName: '',
+                    buttonClassName: 'border-[#a5743c]/78 bg-[#472916] text-[#f2dbb4] hover:text-[#fff0ce]',
+                    label: t('packageManager.progress.label'),
+                };
+            case 'failed':
+                return {
+                    icon: RefreshCw,
+                    iconClassName: '',
+                    buttonClassName: 'border-[#9d6a25]/36 bg-[#f6dfb8]/92 text-[#6b4219] hover:bg-[#f8e7c8]',
+                    label: packageInstallFailedActionLabel,
+                };
+            case 'installed':
+                return {
+                    icon: HardDriveDownload,
+                    iconClassName: '',
+                    buttonClassName: 'border-[#a5743c]/78 bg-[#472916] text-[#e3f0d3] hover:text-[#f4ffe9]',
+                    label: hasUsableInstalledGamePackageVersion(mobilePackageCardDisplayState.installedVersion)
+                        ? t('packageManager.installedVersionBadge', { version: mobilePackageCardDisplayState.installedVersion?.trim() })
+                        : t('packageManager.installedCompletedBadge'),
+                };
+            case 'not-installed':
+            default:
+                return {
+                    icon: Download,
+                    iconClassName: '',
+                    buttonClassName: 'border-[#a5743c]/78 bg-[#472916] text-[#f2dbb4] hover:text-[#fff0ce]',
+                    label: t('packageManager.installAction'),
+                };
+        }
+    }, [
+        isAppUpdateRequiredForMobileGame,
+        mobilePackageCardDisplayState.installedVersion,
+        mobilePackageCardDisplayState.status,
+        packageInstallFailedActionLabel,
+        t,
+    ]);
+    const MobilePackageToggleIcon = mobilePackageToggleMeta.icon;
+    const mobilePackageToggleText = React.useMemo(() => {
+        if (isAppUpdateRequiredForMobileGame) {
+            return t('packageManager.homeV2UpdateAppShort', { defaultValue: '更新App' });
+        }
+
+        switch (mobilePackageCardDisplayState.status) {
+            case 'queued':
+            case 'manifest':
+            case 'downloading':
+            case 'verifying':
+                return t('packageManager.homeV2DownloadingShort', { defaultValue: '下载中' });
+            case 'failed':
+                return t('packageManager.homeV2RetryShort', { defaultValue: '重试' });
+            case 'installed':
+                return t('packageManager.homeV2InstalledShort', { defaultValue: '已就绪' });
+            case 'not-installed':
+            default:
+                return isCompactLandscape
+                    ? t('packageManager.homeV2InstallCompactShort', { defaultValue: '下载包' })
+                    : t('packageManager.homeV2InstallShort', { defaultValue: '下载资源' });
+        }
+    }, [
+        isAppUpdateRequiredForMobileGame,
+        isCompactLandscape,
+        mobilePackageCardDisplayState.status,
+        t,
+    ]);
+
+    const handleMobilePackageToggleClick = React.useCallback(() => {
+        const status = mobilePackageCardDisplayState.status;
+        if (status === 'queued' || status === 'manifest' || status === 'downloading' || status === 'verifying' || status === 'installed') {
+            setIsMobilePackageCardExpanded((current) => !current);
+            return;
+        }
+
+        if (status === 'failed') {
+            handleRetryPackageInstall();
+            return;
+        }
+
+        handleOpenMobilePackageInstall();
+    }, [
+        handleOpenMobilePackageInstall,
+        handleRetryPackageInstall,
+        mobilePackageCardDisplayState.status,
+    ]);
 
     React.useEffect(() => {
         if (!gameId || activeTab !== 'leaderboard') {
@@ -1278,6 +1514,57 @@ export const Right = ({ game }: RightProps) => {
         ? 'grid-cols-[minmax(0,3.06fr)_44px_60px_56px]'
         : 'grid-cols-[minmax(0,2.2fr)_112px_132px_132px]';
     const showRoomThumbnail = !isCompactLandscape;
+    const mobilePackageRegion = shouldShowMobilePackageRegion ? (
+        <div
+            data-testid="home-v2-mobile-package-region"
+            className={`pointer-events-none absolute ${isCompactLandscape ? 'bottom-[34px] left-[4px]' : 'bottom-[46px] left-[10px]'} z-30`}
+        >
+            <button
+                type="button"
+                data-testid="home-v2-mobile-package-toggle"
+                onClick={handleMobilePackageToggleClick}
+                aria-expanded={isMobilePackageCardExpanded}
+                aria-label={mobilePackageToggleMeta.label}
+                title={mobilePackageToggleMeta.label}
+                disabled={isAppUpdateRequiredForMobileGame}
+                className={[
+                    'pointer-events-auto inline-flex items-center justify-center gap-[6px] rounded-[2px] border font-bold shadow-[0_1px_2px_rgba(63,38,20,0.12)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/24 disabled:cursor-not-allowed disabled:opacity-70',
+                    isCompactLandscape ? 'h-[31px] min-w-[74px] px-[8px] text-[10px] tracking-[0.04em]' : 'h-[48px] min-w-[126px] px-[18px] text-[clamp(15px,1vw,18px)] tracking-[0.05em]',
+                    mobilePackageToggleMeta.buttonClassName,
+                ].join(' ')}
+            >
+                <MobilePackageToggleIcon
+                    aria-hidden="true"
+                    className={`${isCompactLandscape ? 'h-[13px] w-[13px]' : 'h-[18px] w-[18px]'} shrink-0 ${mobilePackageToggleMeta.iconClassName}`}
+                    strokeWidth={2.2}
+                />
+                <span className="whitespace-nowrap leading-none">{mobilePackageToggleText}</span>
+                {mobilePackageCardDisplayState.status === 'installed' ? (
+                    <span data-testid="home-v2-mobile-package-version-badge" className="sr-only">
+                        {mobilePackageToggleMeta.label}
+                    </span>
+                ) : null}
+            </button>
+
+            {isMobilePackageCardExpanded ? (
+                <div className={`pointer-events-auto absolute left-0 origin-bottom-left ${isCompactLandscape ? 'bottom-[38px] w-[min(13.75rem,calc(100vw-3.5rem))]' : 'bottom-[60px] w-[19rem]'}`}>
+                    <GameDetailsMobilePackageCard
+                        gameName={gameDisplayName}
+                        state={mobilePackageCardDisplayState}
+                        onInstall={handleOpenMobilePackageInstall}
+                        onRetry={handleRetryPackageInstall}
+                        failedActionLabel={packageInstallFailedActionLabel}
+                        onCancel={handleCancelPackageInstall}
+                        onCollapse={() => setIsMobilePackageCardExpanded(false)}
+                        presentation={isAppUpdateRequiredForMobileGame ? 'update-required' : 'install'}
+                        requiredAppVersion={game?.mobileDelivery?.requiredAppVersion}
+                        visualStyle="home-v2"
+                        className=""
+                    />
+                </div>
+            ) : null}
+        </div>
+    ) : null;
 
     return (
         <div data-testid="home-v2-detail-right-page" className="pointer-events-auto relative flex h-full w-full min-h-0 flex-col text-[#3f2718]">
@@ -1480,6 +1767,10 @@ export const Right = ({ game }: RightProps) => {
                 </div>
             )}
 
+            {mobilePackagePortalTarget
+                ? createPortal(mobilePackageRegion, mobilePackagePortalTarget)
+                : mobilePackageRegion}
+
             {passwordModal}
             <CreateRoomModal
                 isOpen={showCreateRoomModal}
@@ -1490,6 +1781,24 @@ export const Right = ({ game }: RightProps) => {
                 isLoading={isLoading}
                 visualStyle="home-v2"
             />
+            {pendingPackageInstall ? (
+                <GamePackageInstallConfirmModal
+                    gameName={pendingPackageInstall.gameName}
+                    state={packageInstallCardState}
+                    modulePackId={pendingPackageInstall.modulePackId}
+                    assetPackId={pendingPackageInstall.assetPackId}
+                    modulePackBytes={pendingPackageInstall.modulePackBytes}
+                    assetPackBytes={pendingPackageInstall.assetPackBytes}
+                    isLoading={isConfirmingPackageInstall}
+                    closeOnBackdrop
+                    onConfirm={handleConfirmPackageInstall}
+                    onRetry={handleRetryPackageInstall}
+                    failedActionLabel={packageInstallFailedActionLabel}
+                    onClose={handleDismissPackageInstall}
+                    onCancel={handleCancelPackageInstall}
+                    visualStyle="home-v2"
+                />
+            ) : null}
         </div>
     );
 };

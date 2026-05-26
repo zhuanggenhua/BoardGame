@@ -42,6 +42,7 @@ import {
 } from './utils';
 import { isCardActionLike, isCardMinionLike } from './utils';
 import { getSmashUpReactionWindowContext, hasBlockingLegacyResponseWindow } from './reactionWindowState';
+import { isSmashUpDiyFaction } from './ids';
 
 type TitanAbilityKind = SmashUpActivationKind;
 const POD_FACTION_SUFFIX = '_pod';
@@ -703,6 +704,9 @@ export function validate(
             if (!selection) return { valid: false, error: '派系选择状态未初始化' };
 
             const factionId = command.payload.factionId;
+            if (isSmashUpDiyFaction(factionId) && !(core.enabledExpansions ?? ['titans', 'diy']).includes('diy')) {
+                return { valid: false, error: '该 DIY 派系未开启' };
+            }
             const factionIdentity = normalizeFactionSelectionId(factionId);
             const takenFactionIdentities = buildFactionSelectionIdentitySet(selection.takenFactions);
             if (takenFactionIdentities.has(factionIdentity)) {

@@ -281,7 +281,7 @@ const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext
         const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
         if (isMinionProtected(state.core, target, selected.baseIndex, playerId, 'destroy')) {
-            return { events: [] };
+            return { events: [buildAbilityFeedback(playerId, 'feedback.target_protected', timestamp, undefined, 'warning')] };
         }
         return {
             events: [

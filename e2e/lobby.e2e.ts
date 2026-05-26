@@ -142,7 +142,7 @@ async function confirmCreateRoomFromModal(page: Page): Promise<void> {
 
 const HOME_V2_QUERY_ENTRY_TEST_NAME = 'homeV2Draft 查询参数会切到 V2 首页并可进入详情页';
 const HOME_V2_LOCKED_ROOM_JOIN_TEST_NAME = 'homeV2Draft 详情页输入房间密码后可加入加密房间';
-const HOME_V2_PACKAGE_ENTRY_TEST_NAME = 'homeV2Draft package-managed 游戏详情暂不显示移动包管理入口';
+const HOME_V2_PACKAGE_ENTRY_TEST_NAME = 'homeV2Draft 原生运行时 package-managed 游戏详情显示移动包管理入口';
 const HOME_V2_MODAL_UNIFIED_TEST_NAME = 'homeV2Draft 登录与创建房间弹窗统一使用纸面 modal';
 const MOBILE_AUTHOR_ENTRY_TEST_NAME = '移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围框';
 const MOBILE_PACKAGE_ENTRY_TEST_NAME = '网页版 package-managed 游戏详情在移动端不应显示包管理入口，但详情头部仍应完整';
@@ -1719,6 +1719,49 @@ test.describe('Lobby E2E', () => {
         const context = await createHomeV2MobileLandscapeContext(browser, workerPorts);
         const page = await context.newPage();
         try {
+            await page.route('**/mobile-packages/android/stable/games/tictactoe.json', async (route) => {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({
+                        manifest: {
+                            gameId: 'tictactoe',
+                            runtimeChannel: 'stable',
+                            modulePack: {
+                                id: 'tictactoe-module-e2e',
+                                version: 'e2e-2026-05-25-module',
+                                url: 'https://example.test/mobile-packages/tictactoe-module.zip',
+                                bytes: 4096,
+                                fileCount: 2,
+                            },
+                            assetPack: {
+                                id: 'tictactoe-assets-e2e',
+                                version: 'e2e-2026-05-25-assets',
+                                url: 'https://example.test/mobile-packages/tictactoe-assets.zip',
+                                bytes: 8192,
+                                fileCount: 8,
+                            },
+                        },
+                    }),
+                });
+            });
+            await page.addInitScript(() => {
+                const runtimeWindow = window as typeof window & {
+                    __BG_E2E_NATIVE_ANDROID_RUNTIME__?: boolean;
+                    __BG_E2E_DISABLE_NATIVE_GAME_PACKAGE_PLUGIN__?: boolean;
+                    Capacitor?: {
+                        getPlatform?: () => string;
+                        isNativePlatform?: () => boolean;
+                    };
+                };
+                runtimeWindow.__BG_E2E_NATIVE_ANDROID_RUNTIME__ = true;
+                runtimeWindow.__BG_E2E_DISABLE_NATIVE_GAME_PACKAGE_PLUGIN__ = true;
+                runtimeWindow.Capacitor = {
+                    ...(runtimeWindow.Capacitor ?? {}),
+                    getPlatform: () => 'android',
+                    isNativePlatform: () => true,
+                };
+            });
             await useHomeV2MobileLandscapeViewport(page);
             await page.goto('/dev/home-v2-preview', { waitUntil: 'domcontentloaded' });
             await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
@@ -1729,12 +1772,51 @@ test.describe('Lobby E2E', () => {
             await tictactoeCard.click();
             await waitForHomeV2FlipMode(page, 'detail');
 
-            await expect(page.getByTestId('home-v2-mobile-package-region')).toHaveCount(0);
-            await expect(page.getByTestId('home-v2-mobile-package-version-badge')).toHaveCount(0);
-            await expect(page.getByTestId('game-details-mobile-package-install-confirm-modal')).toHaveCount(0);
+            await expect(page.getByTestId('home-v2-mobile-package-region')).toBeVisible({ timeout: 10000 });
+            await expect.poll(async () => {
+                const leftPageBox = await page.getByTestId('home-v2-detail-left-page').boundingBox();
+                const packageRegionBox = await page.getByTestId('home-v2-mobile-package-region').boundingBox();
+                if (!leftPageBox || !packageRegionBox) {
+                    return 'missing';
+                }
 
-            const detailScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-hidden');
-            await page.screenshot({ path: detailScreenshotPath, fullPage: true });
+                const packageCenterX = packageRegionBox.x + packageRegionBox.width / 2;
+                const packageCenterY = packageRegionBox.y + packageRegionBox.height / 2;
+                const isInLeftBottomCorner = packageCenterX < leftPageBox.x + leftPageBox.width * 0.24
+                    && packageCenterY > leftPageBox.y + leftPageBox.height * 0.82;
+                return isInLeftBottomCorner ? 'left-bottom' : `x=${Math.round(packageCenterX)},y=${Math.round(packageCenterY)}`;
+            }, {
+                timeout: 10000,
+                message: 'HomeV2 下载入口应位于左页左下角',
+            }).toBe('left-bottom');
+            const packageToggle = page.getByTestId('home-v2-mobile-package-toggle');
+            await expect(packageToggle).toBeVisible({ timeout: 10000 });
+            const entryScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-entry-visible');
+            await page.screenshot({ path: entryScreenshotPath, fullPage: true });
+
+            await packageToggle.click();
+            const confirmModal = page.getByTestId('game-details-mobile-package-install-confirm-modal');
+            await expect(confirmModal).toBeVisible({ timeout: 10000 });
+            await expect(confirmModal).toContainText('下载');
+            await expect(confirmModal).toContainText('tictactoe-assets-e2e', { timeout: 10000 });
+            await page.waitForTimeout(250);
+            const confirmScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-confirm-modal');
+            await page.screenshot({ path: confirmScreenshotPath, fullPage: true });
+
+            await confirmModal.getByRole('button', { name: /确认下载|Confirm Download/ }).click();
+            await expect(confirmModal.getByTestId('game-details-mobile-package-progress-track')).toBeVisible({ timeout: 10000 });
+            await expect(confirmModal).toContainText(/准备中|正在下载|Preparing|Downloading/, { timeout: 10000 });
+            await page.waitForTimeout(250);
+            const downloadingScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-downloading');
+            await page.screenshot({ path: downloadingScreenshotPath, fullPage: true });
+
+            const installedCard = page.getByTestId('game-details-mobile-package-card');
+            await expect(installedCard).toHaveAttribute('data-status', 'installed', { timeout: 10000 });
+            await expect(installedCard).toContainText(/e2e-2026-05-25-assets|同步完成|Sync complete/, { timeout: 10000 });
+            await expect(page.getByTestId('home-v2-mobile-package-version-badge')).toContainText('e2e-2026-05-25-assets');
+            await page.waitForTimeout(250);
+            const installedScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-installed');
+            await page.screenshot({ path: installedScreenshotPath, fullPage: true });
         } finally {
             await context.close();
         }

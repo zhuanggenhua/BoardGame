@@ -224,6 +224,35 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     expect(returnedUids).toContain('m2');
   });
 
+  it('alien_crop_circles: 目标基地只有受保护对手随从时给出友好提示', () => {
+    const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('a1', 'alien_crop_circles', 'action', '0')] }),
+        '1': makePlayer('1'),
+      },
+      bases: [makeBase('base_old', [
+        makeMinion('m1', 'robot_zapbot', '1', 2, {
+          attachedActions: [{ uid: 'incorporeal-1', defId: 'ghost_incorporeal', ownerId: '1' }],
+        }),
+      ])],
+    });
+    const played = execPlayAction(core, '0', 'a1');
+    const current = getFirstPrompt(played.matchState);
+    expect(getPromptSourceId(current)).toBe('alien_crop_circles');
+    const baseOption = getPromptOption(current, (entry: any) => entry.value?.baseIndex === 0, 'base 0 option');
+    const result = respondInteraction(played.matchState, '0', baseOption.id);
+
+    expect(result.events.some(e => e.type === SU_EVENTS.MINION_RETURNED)).toBe(false);
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: expect.objectContaining({
+        playerId: '0',
+        messageKey: 'feedback.all_protected',
+        tone: 'warning',
+      }),
+    }));
+  });
+
   it('alien_terraform: 三步交互替换基地并仅能在新基地额外打随从', () => {
     const core = makeState({
       players: {

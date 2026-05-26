@@ -1375,6 +1375,7 @@ export function LocalGameProvider({
                 controller,
                 actionVisibility,
                 now: decisionResolvedAt,
+                defaultMinimumActionDelayMs: runtime?.defaultMinimumActionDelayMs,
                 lastVisibleActionAt: lastVisibleAiActionAtRef.current,
             });
             const commandTypes = resolution.action.commands.map((command) => command.type);

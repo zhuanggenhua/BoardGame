@@ -18,6 +18,7 @@ import {
     getPromptOptions,
     getPromptSourceId,
     getSimpleChoicePrompt,
+    invokeRegisteredRuntimePromptHandlerContract,
     makeBase,
     makeCard,
     makeMatchState,
@@ -724,6 +725,57 @@ describe('pirate action play flows', () => {
 
         const { matchState } = execPlayAction(state, '0', 'a1');
         getSimpleChoicePrompt(matchState, 'pirate_sea_dogs_choose_faction');
+    });
+
+    it('pirate_sea_dogs: 目标派系随从全受保护时给出友好提示', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_sea_dogs', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m1', 'robot_zapbot', '1', 2, {
+                            attachedActions: [{ uid: 'incorporeal-1', defId: 'ghost_incorporeal', ownerId: '1' }],
+                        }),
+                    ],
+                }),
+                makeBase({ defId: 'b2', minions: [] }),
+            ],
+        });
+
+        const resolved = invokeRegisteredRuntimePromptHandlerContract(
+            'pirate_sea_dogs_choose_to',
+            makeMatchState(state),
+            '0',
+            { baseIndex: 1 },
+            {
+                runtimePrompt: {
+                    owner: 'smashup-ability-runtime',
+                    sourceId: 'pirate_sea_dogs_choose_to',
+                    continuation: {
+                        context: { playerId: '0', now: 0, factionId: 'robots', fromBase: 0 },
+                        contextHasMatchState: true,
+                    },
+                },
+            },
+            0,
+            dummyRandom,
+        );
+
+        expect(resolved?.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: expect.objectContaining({
+                playerId: '0',
+                messageKey: 'feedback.all_protected',
+                tone: 'warning',
+            }),
+        }));
     });
 
     it('pirate_powderkeg: 单个己方随从时创建 Prompt', () => {

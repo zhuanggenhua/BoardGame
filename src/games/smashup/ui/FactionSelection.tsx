@@ -40,6 +40,8 @@ interface Props {
     getPlayerOrderLabel: (playerId: string | null | undefined) => string;
 }
 
+const DEFAULT_ENABLED_EXPANSIONS = ['titans', 'diy'] as const;
+
 const SearchGlyph: React.FC<{ className?: string }> = ({ className }) => (
     <svg
         viewBox="0 0 20 20"
@@ -138,8 +140,12 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const isMyTurn = playerID === getCurrentPlayerId(core);
     const currentPlayerId = getCurrentPlayerId(core);
     const locale = i18n.language;
+    const enabledExpansions = core.enabledExpansions ?? DEFAULT_ENABLED_EXPANSIONS;
 
-    const visibleFactionGroups = useMemo(() => getVisibleFactionVariantGroups(locale), [locale]);
+    const visibleFactionGroups = useMemo(
+        () => getVisibleFactionVariantGroups(locale, enabledExpansions),
+        [enabledExpansions, locale],
+    );
     const focusedFactionGroup = useMemo(
         () => (focusedGroupId ? getFactionVariantGroupById(focusedGroupId) ?? null : null),
         [focusedGroupId],
@@ -151,9 +157,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             return activeFactionId;
         }
         const selectedVariantId = focusedFactionGroup.variants.find((variant) => mySelections.includes(variant.id))?.id;
-        const preferredVariantId = getPreferredFactionVariant(focusedFactionGroup.groupId, locale)?.id;
+        const preferredVariantId = getPreferredFactionVariant(focusedFactionGroup.groupId, locale, enabledExpansions)?.id;
         return selectedVariantId ?? preferredVariantId ?? focusedFactionGroup.variants[0]?.id ?? null;
-    }, [activeFactionId, focusedFactionGroup, locale, mySelections]);
+    }, [activeFactionId, enabledExpansions, focusedFactionGroup, locale, mySelections]);
 
     const isMobileLandscape = viewportSize.width < 1024 && viewportSize.width > viewportSize.height;
     const useLegacyWideDesktopDraftLayout = !isMobileLandscape

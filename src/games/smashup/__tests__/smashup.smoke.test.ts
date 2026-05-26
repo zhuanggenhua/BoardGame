@@ -272,6 +272,34 @@ describe('smashup', () => {
         expect(result.finalState.core.titans ?? []).toEqual([]);
     });
 
+    it('房间关闭 diy 扩展后不会初始化 DIY 基地，也不能选择 DIY 派系', () => {
+        const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
+            expansions: ['titans'],
+            setupSelections: {
+                expansions: ['titans'],
+            },
+        });
+
+        const setupBaseIds = [
+            ...state.bases.map((base) => base.defId),
+            ...state.baseDeck,
+        ];
+        expect(state.enabledExpansions).toEqual(['titans']);
+        expect(setupBaseIds).not.toContain('base_huluwawa_mountain');
+        expect(setupBaseIds).not.toContain('base_seven_colored_lotus');
+
+        const matchState = makeMatchState(state);
+        matchState.sys.phase = 'factionSelect';
+        expect(SmashUpDomain.validate!(matchState, {
+            type: SU_COMMANDS.SELECT_FACTION,
+            playerId: '0',
+            payload: { factionId: SMASHUP_FACTION_IDS.HULUWAWA },
+        })).toMatchObject({
+            valid: false,
+            error: '该 DIY 派系未开启',
+        });
+    });
+
     it('4 人房间开启 2v2 后按团队模式初始化座位与规则', () => {
         const runner = createRunner(['0', '1', '2', '3'], {
             teamMode: '2v2',
@@ -1622,6 +1650,88 @@ describe('smashup', () => {
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), withMinion);
         const targetMinion = resolved.bases[0].minions.find(candidate => candidate.uid === minion!.uid);
         expect(targetMinion?.powerCounters).toBe(2);
+    });
+
+    it('线上反馈 6a143f93：鲜血领主反应选项应携带目标 minionDefId 并可结算', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.VAMPIRES, SMASHUP_FACTION_IDS.WIZARDS],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_the_factory',
+                minions: [{
+                    ...makeMinion('ancient-lord-target', 'vampire_the_count', '0', 5),
+                    powerCounters: 1,
+                }],
+                ongoingActions: [],
+            })],
+            titans: [{
+                uid: 'ancient-lord-setaside',
+                defId: 'vampires_ancient_lord',
+                faction: SMASHUP_FACTION_IDS.VAMPIRES,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } satisfies TitanState],
+        });
+        const triggerMinion = core.bases[0].minions.find(minion => minion.uid === 'ancient-lord-target');
+        expect(triggerMinion).toBeDefined();
+
+        const triggered = fireTriggers(core, 'onMinionAffected', {
+            state: core,
+            matchState: makeMatchState(core, 'playCards', '0'),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'ancient-lord-target',
+            triggerMinionDefId: triggerMinion!.defId,
+            triggerMinion,
+            affectType: 'power_change',
+            counterChangeKind: 'added',
+            counterDelta: 1,
+            reason: 'vampire_the_count',
+            random: FIXED_RANDOM,
+            now: 6_143_093,
+        });
+        const prompt = getSimpleChoicePrompt(triggered.matchState!, 'titan_vampires_ancient_lord_special');
+        const storeOption = getPromptOption(prompt, option => option.id === 'store', 'Ancient Lord store option');
+        expect(storeOption.value).toMatchObject({
+            minionUid: 'ancient-lord-target',
+            minionDefId: 'vampire_the_count',
+            baseIndex: 0,
+            titanUid: 'ancient-lord-setaside',
+        });
+
+        const resolved = respondToPromptOption(
+            triggered.matchState!,
+            option => option.id === 'store',
+            'Ancient Lord store option',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(resolved.events.map(event => event.type)).toEqual(expect.arrayContaining([
+            SU_EVENTS.POWER_COUNTER_REMOVED,
+            SU_EVENTS.TITAN_POWER_COUNTER_ADDED,
+        ]));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.POWER_COUNTER_REMOVED,
+            payload: expect.objectContaining({
+                minionUid: 'ancient-lord-target',
+                baseIndex: 0,
+                amount: 1,
+            }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TITAN_POWER_COUNTER_ADDED,
+            payload: expect.objectContaining({
+                titanUid: 'ancient-lord-setaside',
+                amount: 1,
+            }),
+        }));
     });
 
     it('鲜血领主天赋会创建目标选择，并为已有标记的己方随从再放 1 枚', () => {
@@ -6420,6 +6530,7 @@ describe('smashup', () => {
     it('活动泰坦静态契约与当前已接入范围保持一致', () => {
         const currentTitanIds = TITAN_CARD_DEFS.map(def => def.id);
         expect(currentTitanIds).toEqual([
+            'huluwawa_little_king_kong',
             'dinosaurs_fort_titanosaurus',
             'ninjas_invisible_ninja',
             'bear_cavalry_major_ursa',
@@ -6448,7 +6559,7 @@ describe('smashup', () => {
             'sphinx',
             'pecos_bill',
         ]);
-        expect(TITAN_CARD_DEFS).toHaveLength(27);
+        expect(TITAN_CARD_DEFS).toHaveLength(28);
         expect(getTitanDef('fairies_spirit_of_the_forest')?.abilityTags).toEqual(['special', 'ongoing']);
         expect(getTitanDef('fairies_spirit_of_the_forest')?.previewRef).toEqual({
             type: 'atlas',

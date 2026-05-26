@@ -2611,6 +2611,7 @@ const baselineLocalPolicy: LocalAiPolicy = {
 export const splendorAiRuntime: GameAiRuntime = {
   gameId: "splendor",
   buildLegalActions: buildSplendorAiLegalActions,
+  defaultMinimumActionDelayMs: 1000,
   buildFeatureSnapshot(args) {
     return buildSplendorFeatureSnapshot(args) as Record<string, unknown> | null;
   },

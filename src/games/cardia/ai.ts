@@ -239,6 +239,10 @@ function buildPlayCardActions(
     if (!player) {
         return actions;
     }
+
+    if (player.hasPlayed) {
+        return actions;
+    }
     
     // 枚举手牌中所有卡牌
     for (const card of player.hand) {
@@ -962,6 +966,7 @@ const balancedLocalPolicy: LocalAiPolicy = createScoredLocalAiPolicy({
 export const cardiaAiRuntime: GameAiRuntime = {
     gameId: 'cardia',
     buildLegalActions: buildCardiaAiLegalActions,
+    defaultMinimumActionDelayMs: 1000,
     localPolicies: {
         baseline: baselineLocalPolicy,
         aggro: aggroLocalPolicy,

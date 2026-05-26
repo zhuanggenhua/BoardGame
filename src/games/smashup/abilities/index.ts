@@ -47,6 +47,7 @@ import { registerIttyCrittersAbilities } from './itty_critters';
 import { registerKaijuAbilities, registerKaijuInteractionHandlers } from './kaiju';
 import { registerMagicalGirlsAbilities, registerMagicalGirlsInteractionHandlers } from './magical_girls';
 import { registerMegaTroopersAbilities, registerMegaTroopersInteractionHandlers } from './mega_troopers';
+import { registerHuluwawaAbilities } from './huluwawa';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -157,6 +158,7 @@ export function initAllAbilities(): void {
     registerMagicalGirlsInteractionHandlers();
     registerMegaTroopersAbilities();
     registerMegaTroopersInteractionHandlers();
+    registerHuluwawaAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 

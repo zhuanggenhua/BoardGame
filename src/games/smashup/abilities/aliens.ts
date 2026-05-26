@@ -1614,21 +1614,20 @@ function buildCropCirclesReturnEvents(
     selectedMinionUids: string[],
     timestamp: number,
     sourcePlayerId?: string,
-): MinionReturnedEvent[] {
+): SmashUpEvent[] {
     if (selectedMinionUids.length === 0) return [];
     const base = core.bases[baseIndex];
     if (!base) return [];
     const selectedSet = new Set(selectedMinionUids);
-    return base.minions
-        .filter(m => selectedSet.has(m.uid))
-        .filter(m => {
-            // 跳过受保护的对手随从
-            if (sourcePlayerId && m.controller !== sourcePlayerId && isMinionProtected(core, m, baseIndex, sourcePlayerId, 'affect')) {
-                return false;
-            }
-            return true;
-        })
-        .map(m => ({
+    const events: SmashUpEvent[] = [];
+    let protectedSkipped = 0;
+    for (const m of base.minions.filter(minion => selectedSet.has(minion.uid))) {
+        // 跳过受保护的对手随从
+        if (sourcePlayerId && m.controller !== sourcePlayerId && isMinionProtected(core, m, baseIndex, sourcePlayerId, 'affect')) {
+            protectedSkipped += 1;
+            continue;
+        }
+        events.push({
             type: SU_EVENTS.MINION_RETURNED,
             payload: {
                 minionUid: m.uid,
@@ -1638,6 +1637,17 @@ function buildCropCirclesReturnEvents(
                 reason: 'alien_crop_circles',
             },
             timestamp,
-        } as MinionReturnedEvent));
+        } as MinionReturnedEvent);
+    }
+    if (sourcePlayerId && protectedSkipped > 0) {
+        events.push(buildAbilityFeedback(
+            sourcePlayerId,
+            events.length === 0 ? 'feedback.all_protected' : 'feedback.target_protected',
+            timestamp,
+            undefined,
+            'warning',
+        ));
+    }
+    return events;
 }
 

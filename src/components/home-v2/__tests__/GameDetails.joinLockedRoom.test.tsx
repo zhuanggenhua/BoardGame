@@ -3,7 +3,7 @@
 import { createElement } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Right as GameDetailsRight } from '../GameDetails';
 import * as matchApi from '../../../services/matchApi';
 import * as matchStatus from '../../../hooks/match/useMatchStatus';
@@ -11,6 +11,16 @@ import * as matchStatus from '../../../hooks/match/useMatchStatus';
 const navigateMock = vi.fn();
 const toastErrorMock = vi.fn();
 const toastWarningMock = vi.fn();
+const packageMocks = vi.hoisted(() => ({
+    nativeAndroidRuntime: false,
+    requestInstall: vi.fn(),
+    dismissInstall: vi.fn(),
+    cancelInstall: vi.fn(),
+    confirmInstall: vi.fn(),
+    retryInstall: vi.fn(),
+    openNotificationSettings: vi.fn(),
+    hookResult: null as null | Record<string, unknown>,
+}));
 const lockedMatches = [{
     matchID: 'match-locked-1',
     players: [
@@ -59,6 +69,29 @@ vi.mock('../../../hooks/useLobbyMatchPresence', () => ({
 
 vi.mock('../../../hooks/ui/useHomeV2CompactLandscape', () => ({
     useHomeV2CompactLandscape: () => false,
+}));
+
+vi.mock('../../../lib/mobile/androidRuntime', () => ({
+    isNativeAndroidRuntime: () => packageMocks.nativeAndroidRuntime,
+}));
+
+vi.mock('../../../features/mobile-packages/useGamePackageState', () => ({
+    useGamePackageState: () => ({
+        isPackageManaged: false,
+        cardState: {
+            status: 'not-installed',
+        },
+        pendingInstall: null,
+        isConfirmingInstall: false,
+        requestInstall: packageMocks.requestInstall,
+        dismissInstall: packageMocks.dismissInstall,
+        cancelInstall: packageMocks.cancelInstall,
+        confirmInstall: packageMocks.confirmInstall,
+        retryInstall: packageMocks.retryInstall,
+        notificationPermissionAction: null,
+        openNotificationSettings: packageMocks.openNotificationSettings,
+        ...(packageMocks.hookResult ?? {}),
+    }),
 }));
 
 vi.mock('../../../hooks/match/ownerIdentity', () => ({
@@ -126,6 +159,11 @@ vi.mock('../../lobby/gameDetailsContent', () => ({
     resolveGameDescription: () => 'desc',
 }));
 
+beforeEach(() => {
+    packageMocks.nativeAndroidRuntime = false;
+    packageMocks.hookResult = null;
+});
+
 afterEach(() => {
     vi.clearAllMocks();
 });
@@ -186,5 +224,42 @@ describe('HomeV2 GameDetails locked room join', () => {
         await waitFor(() => {
             expect(navigateMock).toHaveBeenCalledWith('/play/tictactoe/match/match-locked-1?playerID=1');
         });
+    });
+
+    it('Android 原生运行时 package-managed 游戏会显示资源下载入口并触发安装请求', async () => {
+        packageMocks.nativeAndroidRuntime = true;
+        packageMocks.hookResult = {
+            isPackageManaged: true,
+            cardState: {
+                status: 'not-installed',
+                previewResolved: true,
+                manifestSource: 'remote',
+                assetPackId: 'tictactoe-assets',
+                assetPackBytes: 1024,
+            },
+        };
+
+        render(createElement(GameDetailsRight, {
+            game: {
+                id: 'tictactoe',
+                type: 'game',
+                enabled: true,
+                titleKey: 'games.tictactoe.title',
+                descriptionKey: 'games.tictactoe.description',
+                category: 'abstract',
+                playersKey: 'games.tictactoe.players',
+                icon: 'XO',
+                playerOptions: [2],
+                mobileDelivery: {
+                    mode: 'package-managed',
+                    runtimeChannel: 'stable',
+                    assetPackId: 'tictactoe-assets',
+                },
+            },
+        }));
+
+        fireEvent.click(await screen.findByTestId('home-v2-mobile-package-toggle'));
+
+        expect(packageMocks.requestInstall).toHaveBeenCalledTimes(1);
     });
 });

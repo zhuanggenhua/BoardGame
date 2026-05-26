@@ -32,6 +32,7 @@ import {
 } from './domain/types';
 import {
     buildFactionSelectionIdentitySet,
+    isSmashUpDiyFaction,
     isSmashUpFactionImplementationInProgress,
     normalizeFactionSelectionId,
     SMASHUP_FACTION_IDS,
@@ -121,6 +122,12 @@ const SELECTABLE_FACTIONS = Object.values(SMASHUP_FACTION_IDS).filter((factionId
     && !isSmashUpFactionImplementationInProgress(factionId)
     && getFactionCards(factionId).length > 0
 ));
+
+function getSelectableFactions(enabledExpansions: readonly string[] = ['titans', 'diy']): string[] {
+    return SELECTABLE_FACTIONS.filter((factionId) =>
+        !isSmashUpDiyFaction(factionId) || enabledExpansions.includes('diy'),
+    );
+}
 
 const EMPTY_CARD_AI_METRICS: SmashUpCardAiMetrics = {
     extraMinion: 0,
@@ -1283,8 +1290,9 @@ const buildFactionSelectActions = (state: SmashUpState, playerId: PlayerId): AiL
     if (!selection) return [];
     const taken = buildFactionSelectionIdentitySet(selection.takenFactions);
     const actions: AiLegalAction[] = [];
-    const availableFactions = SELECTABLE_FACTIONS.filter((factionId) => !taken.has(normalizeFactionSelectionId(factionId)));
-    const candidates = availableFactions.length > 0 ? availableFactions : SELECTABLE_FACTIONS;
+    const selectableFactions = getSelectableFactions(state.core.enabledExpansions ?? ['titans', 'diy']);
+    const availableFactions = selectableFactions.filter((factionId) => !taken.has(normalizeFactionSelectionId(factionId)));
+    const candidates = availableFactions.length > 0 ? availableFactions : selectableFactions;
 
     for (const factionId of candidates) {
         appendAction(actions, state, playerId, {
@@ -2448,6 +2456,7 @@ const baselineLocalPolicy = createLookaheadLocalAiPolicy({
 export const smashUpAiRuntime: GameAiRuntime = {
     gameId: 'smashup',
     buildLegalActions: buildSmashUpAiLegalActions,
+    defaultMinimumActionDelayMs: 3000,
     resolveOnlineDecisionVisibility(args) {
         if (shouldUseSharedDecisionViewForReactionOrdering({
             playerId: args.playerId,

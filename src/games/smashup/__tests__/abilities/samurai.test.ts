@@ -500,6 +500,14 @@ describe('Samurai abilities', () => {
 
         expect(resolved.events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
         expect(resolved.events.some(e => e.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: expect.objectContaining({
+                playerId: '0',
+                messageKey: 'feedback.target_protected',
+                tone: 'warning',
+            }),
+        }));
         expect(resolved.finalState.core.bases[0].minions.some(m => m.uid === 'warbot-1')).toBe(true);
     });
 

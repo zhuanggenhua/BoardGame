@@ -3,6 +3,22 @@ import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 
 export const TITAN_CARD_DEFS: TitanCardDef[] = [
     {
+        id: 'huluwawa_little_king_kong',
+        type: 'titan',
+        name: '葫芦小金刚',
+        nameEn: 'Little King Kong',
+        faction: SMASHUP_FACTION_IDS.HULUWAWA,
+        abilityTags: ['special', 'ongoing', 'talent'],
+        activatableAbilities: [
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
+            { kind: 'ongoing', zone: 'board', window: 'playCards' },
+            { kind: 'talent', zone: 'board', window: 'playCards' },
+        ],
+        summonMode: 'insteadOfRegularMinion',
+        playAsKinds: ['minion'],
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, index: 0 },
+    },
+    {
         id: 'dinosaurs_fort_titanosaurus',
         type: 'titan',
         name: 'Fort Titanosaurus',
