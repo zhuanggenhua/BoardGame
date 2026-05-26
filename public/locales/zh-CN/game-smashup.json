@@ -550,6 +550,22 @@
       "mythic_greeks": {
         "name": "希腊神话",
         "description": "以行动触发英雄加成，并通过诸神恩惠连续获得额外行动与战力。"
+      },
+      "itty_critters": {
+        "name": "迷你萌宠",
+        "description": "以低战力萌宠的检索、临时上场与回收循环来适应不同基地。"
+      },
+      "kaiju": {
+        "name": "怪兽",
+        "description": "围绕泰坦、基地行动与破坏点压制，逐步把基地变成怪兽战场。"
+      },
+      "magical_girls": {
+        "name": "魔法少女",
+        "description": "依靠同基地仆从数量放大天赋、回收与移动效果。"
+      },
+      "mega_troopers": {
+        "name": "超级战队",
+        "description": "擅长在基地计分前后的特殊能力窗口爆发与救援。"
       }
     },
   "tutorial": {
@@ -4070,6 +4086,286 @@
         "name": "特洛伊木马",
         "abilityText": "在任意玩家打出一个行动后，他能使这里的一个仆从+2战力直到回合结束。"
       },
+      "itty_critters_i_select_you": {
+        "name": "我选择你！",
+        "effectText": "从你的牌库搜寻一个战力3或更低的仆从并将其作为额外仆从打出。如果你在回合结束时控制它，将它放入你的牌库底。"
+      },
+      "itty_critters_recall_critter": {
+        "name": "召回萌宠",
+        "effectText": "从你的弃牌堆中将一个战力2或更低的仆从作为额外仆从打出。如果你在回合结束时控制它，将它放入你的牌库底。"
+      },
+      "itty_critters_evolution": {
+        "name": "进化论",
+        "effectText": "选择一个你的仆从并消灭它。然后打出 Rainboroc 到那里，或从你的牌库搜寻一个战力最多高1点的仆从并将其作为额外仆从打到那里。"
+      },
+      "itty_critters_gotta_get_em_all": {
+        "name": "我要得到一切",
+        "effectText": "从你的弃牌堆中把不同名字的仆从各选一个洗入你的牌库。"
+      },
+      "itty_critters_critter_cube": {
+        "name": "生物立方",
+        "effectText": "选择任意玩家拥有的一个战力3或更低的在场仆从，将其洗入你的牌库。"
+      },
+      "itty_critters_super_effective": {
+        "name": "超级有效！",
+        "effectText": "摧毁一个在仆从或基地上的法术牌。"
+      },
+      "itty_critters_ittypedia": {
+        "name": "Ittypedia",
+        "effectText": "打出到一个基地上。持续：在你在这里打出一个仆从后，令该仆从+1战力直到回合结束。"
+      },
+      "itty_critters_coach_combat": {
+        "name": "战斗训练",
+        "effectText": "选择一个你的仆从。摧毁一个在其所在基地战力比它低的仆从。"
+      },
+      "itty_critters_leafaroo": {
+        "name": "Leafaroo",
+        "abilityText": "你可以把一张牌从你的弃牌堆洗入你的牌库。"
+      },
+      "itty_critters_flooffairy": {
+        "name": "Flooffairy",
+        "abilityText": "你可以抽一张牌。"
+      },
+      "itty_critters_calicoin": {
+        "name": "Calicoin",
+        "abilityText": "你可以放置一个+1力量指示物到你本基地的另一个仆从身上。"
+      },
+      "itty_critters_tadpour": {
+        "name": "Tadpour",
+        "abilityText": "你可以把另一个仆从从本基地移动到另一个基地。"
+      },
+      "itty_critters_krakatoad": {
+        "name": "Krakatoad",
+        "abilityText": "你可以选择另一个在这里的仆从获得+2战力，直到回合结束。"
+      },
+      "itty_critters_critter_coach": {
+        "name": "导师",
+        "abilityText": "你可以在你的牌库搜寻一个战力2或以下的仆从，并在这里打出它。如果你在回合结束还控制它，把它放入你的牌库底。"
+      },
+      "itty_critters_shellshock": {
+        "name": "Shellshock",
+        "abilityText": "你可以摧毁本基地另一个战力2或更低的仆从。"
+      },
+      "itty_critters_critter_champion": {
+        "name": "宠物冠军",
+        "abilityText": "天赋：在你的牌库搜寻一个战力2或更少的仆从，并在这里打出。如果你在回合结束还控制它，把它放入你的牌库底。"
+      },
+      "mega_troopers_lightning_rescue": {
+        "name": "闪电救援",
+        "effectText": "特殊：在基地计分前，将一个法术作为特殊法术打出。"
+      },
+      "mega_troopers_blitzing_sword_attack": {
+        "name": "一瞬千击",
+        "effectText": "特殊：在有你泰坦的基地计分之前，如果你不是第一名，消灭一个在那里的4或4以下的仆从。"
+      },
+      "mega_troopers_power_pose": {
+        "name": "胜利姿态",
+        "effectText": "特殊：在你是第一名的基地计分之后，抽两张牌。"
+      },
+      "mega_troopers_form_megabot": {
+        "name": "Form Megabot!",
+        "effectText": "打出或移动 Megabot 到至少有两个你的仆从的基地。"
+      },
+      "mega_troopers_lightning_crystal": {
+        "name": "光电晶体",
+        "effectText": "摧毁一个在基地或仆从上的法术。"
+      },
+      "mega_troopers_its_blitzin_time": {
+        "name": "闪电战",
+        "effectText": "你的一个仆从获得+3战力，直到回合结束。"
+      },
+      "mega_troopers_mega_attack": {
+        "name": "暴力攻击",
+        "effectText": "摧毁一个比你本基地全部仆从力量之和更低战力的一个仆从。"
+      },
+      "mega_troopers_plan_for_more": {
+        "name": "更多的计划",
+        "effectText": "展示你牌库顶的三张牌。拿走任意展示的仆从，你可以打出其中一个作为额外仆从。其余的按任意顺序放回。"
+      },
+      "mega_troopers_black_trooper": {
+        "name": "黑骑士",
+        "abilityText": "持续：在特殊能力使用后，本仆从获得+1战力，直到回合结束。"
+      },
+      "mega_troopers_beta_6": {
+        "name": "贝塔6号",
+        "abilityText": "异能：在本基地计分之前，本仆从获得+1战力，直到回合结束。"
+      },
+      "mega_troopers_blue_trooper": {
+        "name": "蓝骑士",
+        "abilityText": "异能：在此基地计分之前，本仆从+2战力，直到回合结束。"
+      },
+      "mega_troopers_green_trooper": {
+        "name": "绿骑士",
+        "abilityText": "异能：在本基地计分之前，你可以在这里打出一个额外的仆从。"
+      },
+      "mega_troopers_yellow_trooper": {
+        "name": "黄骑士",
+        "abilityText": "异能：在本基地计分之前，你可以把你的另一个仆从移到这里。"
+      },
+      "mega_troopers_pink_trooper": {
+        "name": "粉骑士",
+        "abilityText": "异能：在此基地计分之后，把你的一个3或3以下的仆从返回你的手牌，而不是进入弃牌堆。"
+      },
+      "mega_troopers_red_trooper": {
+        "name": "红骑士",
+        "abilityText": "天赋：打出或移动 Megabot（泰坦）到本基地。"
+      },
+      "magical_girls_coronet_attack": {
+        "name": "冠冕攻击",
+        "effectText": "摧毁一个不由你控制的仆从，其战力小于或等于你在同基地的仆从数量。"
+      },
+      "magical_girls_lunar_healing_love_spell": {
+        "name": "爱的咒语",
+        "effectText": "在每个玩家的弃牌堆中选择一个仆从，并将其置入拥有者手中。"
+      },
+      "magical_girls_magical_staff": {
+        "name": "魔法棒",
+        "effectText": "对一个仆从打出。持续：此仆从获得+1战力。当这个仆从进入弃牌堆时，把它放在你的牌库顶而不是弃之。"
+      },
+      "magical_girls_kiss_the_sky_spell": {
+        "name": "天吻咒",
+        "effectText": "将你弃牌堆中一个仆从加入手牌。并可额外打出一个法术。"
+      },
+      "magical_girls_purge_the_demon": {
+        "name": "净化恶魔",
+        "effectText": "选择一张卡牌，摧毁它上面一个法术 OR 移除上面所有的战力指示物。"
+      },
+      "magical_girls_celestial_teleport": {
+        "name": "传送",
+        "effectText": "移动你的一个仆从到另一个基地。"
+      },
+      "magical_girls_coordination": {
+        "name": "和谐",
+        "effectText": "打出一个额外的仆从或者打出移动城堡（泰坦）。"
+      },
+      "magical_girls_silver_shard": {
+        "name": "银色碎片",
+        "effectText": "所有玩家将他们弃牌堆中的仆从重洗进他们的牌库。"
+      },
+      "magical_girls_lunar_captain": {
+        "name": "月球骑长",
+        "abilityText": "天赋：在你的弃牌堆中选择一个战力小于或等于你在这里仆从数量的仆从，并将它加入手牌。"
+      },
+      "magical_girls_technomagical_lass": {
+        "name": "技术魔法少女",
+        "abilityText": "天赋：摧毁这里一个力量小于或等于你在这里仆从数量且不由你控制的仆从。"
+      },
+      "magical_girls_bewitching_gal": {
+        "name": "迷人的妹子",
+        "abilityText": "天赋：在回合结束之前，等一个你的仆从数量减少一点基地破坏点。"
+      },
+      "magical_girls_sakura_warrior": {
+        "name": "樱花战士",
+        "abilityText": "天赋：减少本基地一个仆从战力，减少值等同于你本基地仆从数量，直至你下回合开始。"
+      },
+      "magical_girls_rainbow_girl": {
+        "name": "彩虹女孩",
+        "abilityText": "本基地你的其他仆从获得+1战力，直至回合结束。"
+      },
+      "magical_girls_fancy_suit_lad": {
+        "name": "花礼服少年",
+        "abilityText": "持续：本基地你的其他仆从不会受到其他玩家的卡牌影响。"
+      },
+      "magical_girls_white_magicat": {
+        "name": "白魔法猫",
+        "abilityText": "搜索你的牌库及弃牌堆，寻找 Power Maid 并将其加入手牌。"
+      },
+      "magical_girls_power_maid": {
+        "name": "力量女仆",
+        "abilityText": "天赋：选择一个力量小于等于你仆从数量的仆从，并将其移动到这里或将其这里移走。"
+      },
+      "magical_girls_black_magicat": {
+        "name": "黑魔法猫",
+        "abilityText": "搜索你的牌库及弃牌堆找到 Lunar Captain，并把它加入你的手牌。"
+      },
+      "kaiju_there_goes_tokyo": {
+        "name": "东京毁灭",
+        "effectText": "如果 Gorgodzolla 在场上，毁灭它所在基地。把 Gorgodzolla 移至另一个基地，正常替换被摧毁的基地。"
+      },
+      "kaiju_kaiju_conflict": {
+        "name": "怪兽冲突",
+        "effectText": "额外打出两个法术。"
+      },
+      "kaiju_kaiju_alliance": {
+        "name": "怪兽联盟",
+        "effectText": "将所有基地的摧毁点减少4点，直至回合结束。"
+      },
+      "kaiju_pick_up_a_bus": {
+        "name": "拾起一辆巴士",
+        "effectText": "在你弃牌堆选择一个可以在基地上打出的法术，然后拿到手中。"
+      },
+      "kaiju_they_say_hes_got_to_go": {
+        "name": "他们说它该走了",
+        "effectText": "把一个泰坦移动到另一个基地。"
+      },
+      "kaiju_oh_no": {
+        "name": "哦，不！",
+        "effectText": "对一个基地打出。打出或者移动 Gorgodzolla 到特别这里。持续：你在这里获得+2战力。"
+      },
+      "kaiju_radioactive_breath": {
+        "name": "放射性吐息",
+        "effectText": "对一个基地打出。摧毁所有在这里不由你控制的2战力至更低的仆从。持续：你在这里获得+3战力。"
+      },
+      "kaiju_the_folly_of_men": {
+        "name": "人类的愚蠢",
+        "effectText": "对一个基地打出。持续：你的仆从和本基地其他玩家的卡牌摧毁。你在这里获得+2战力。"
+      },
+      "kaiju_tail_smash": {
+        "name": "尾击",
+        "effectText": "对一个基地打出。摧毁一个在这里不由你控制的3战力更低的仆从。持续：你在这里获得+4战力。"
+      },
+      "kaiju_stomp": {
+        "name": "践踏",
+        "effectText": "对一个基地打出。将其摧毁点减少3点，直至回合结束。持续：你在这里获得+2战力。"
+      },
+      "kaiju_wade_through_the_buildings": {
+        "name": "蹚过建筑",
+        "effectText": "对一个基地打出。摧毁所有其他玩家在这个基地的法术。持续：你在这里获得+4战力。"
+      },
+      "kaiju_johnny": {
+        "name": "约翰",
+        "abilityText": "你可以把你的一个在基地上的法术返回到手牌，并在本基地将其作为额外打出。"
+      },
+      "kaiju_tiny_priestesses": {
+        "name": "Tiny Priestesses",
+        "abilityText": "打出或移动 Gorgodzolla 到本基地。"
+      },
+      "kaiju_kaijookey": {
+        "name": "Kaijookey",
+        "abilityText": "持续：此仆从所在基地上每有一张你打出的法术，其+1战力。"
+      },
+      "base_akihabara_high": {
+        "name": "秋叶原",
+        "abilityText": "在你打出一个仆从在这里后，其他仆从获得+1战力直到回合结束。"
+      },
+      "base_q_point": {
+        "name": "Q Point",
+        "abilityText": "在这个基地计分前，每个玩家只能保留一张牌（不包括泰坦），然后摧毁剩下的仆从和法术。"
+      },
+      "base_tokyo": {
+        "name": "东京",
+        "abilityText": "在本基地打出一个法术，则+3战力直到回合结束。"
+      },
+      "base_kaiju_island": {
+        "name": "怪兽岛",
+        "abilityText": "泰坦在这里不会让其他泰坦离场。这里的每个泰坦都给他的控制者增加3战力。"
+      },
+      "base_critter_combat_club": {
+        "name": "宠物战斗俱乐部",
+        "abilityText": "你可以每回合额外在这里打出一个2战力或更低的仆从。如果回合结束时你控制它，把它放在你的牌库底。"
+      },
+      "base_itty_city": {
+        "name": "小城市",
+        "abilityText": "每回合你第一次打出随从到这里，你可以将你牌堆里随机一张随从洗入你的牌库里。"
+      },
+      "base_moon_dumpster": {
+        "name": "月亮垃圾站",
+        "abilityText": "当本基地进场时，展示每名玩家牌堆顶的牌，如果是仆从则额外打出在本基地。"
+      },
+      "base_juice_bar": {
+        "name": "果汁吧",
+        "abilityText": "本基地计分前，每使用一个特殊能力这里约一个仆从就+2战力。"
+      },
       "base_huluwawa_mountain": {
         "name": "葫芦山",
         "abilityText": "这里印刷力量 4 或更高的仆从不受其他玩家的能力影响。"
@@ -4078,7 +4374,7 @@
         "name": "七彩莲蓬",
         "abilityText": "每回合一次，在你打出一个仆从到这里后，你可以额外打出一个印刷力量相同的仆从到这里。"
       }
-      },
+    },
   "endgame": {
     "victory": "胜利",
     "defeat": "落败",

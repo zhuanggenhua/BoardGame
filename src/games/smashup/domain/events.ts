@@ -93,6 +93,7 @@ export const SU_EVENTS = defineEvents({
   'su:power_counter_removed': { audio: 'immediate', sound: POWER_LOSE_KEY },
   'su:permanent_power_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:temp_power_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
+  'su:temp_base_power_modified': { audio: 'immediate', sound: POWER_GAIN_KEY },
   
   'su:ongoing_attached': { audio: 'immediate', sound: ACTION_PLAY_KEY },
   'su:ongoing_detached': { audio: 'immediate', sound: CARD_DISCARD_KEY },
@@ -203,6 +204,7 @@ export const SU_EVENT_TYPES = {
   REVEAL_DECK_TOP: SU_EVENTS['su:reveal_deck_top'].type,
   DECK_INSPECTED: SU_EVENTS['su:deck_inspected'].type,
   TEMP_POWER_ADDED: SU_EVENTS['su:temp_power_added'].type,
+  TEMP_BASE_POWER_MODIFIED: SU_EVENTS['su:temp_base_power_modified'].type,
   BREAKPOINT_MODIFIED: SU_EVENTS['su:breakpoint_modified'].type,
   BASE_DECK_SHUFFLED: SU_EVENTS['su:base_deck_shuffled'].type,
   SPECIAL_LIMIT_USED: SU_EVENTS['su:special_limit_used'].type,

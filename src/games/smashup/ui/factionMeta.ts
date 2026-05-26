@@ -135,6 +135,10 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.SHARKS, nameKey: 'factions.sharks.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks.description', implementationStatus: 'in_progress' },
     { id: SMASHUP_FACTION_IDS.TORNADOS, nameKey: 'factions.tornados.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados.description', implementationStatus: 'in_progress' },
     { id: SMASHUP_FACTION_IDS.MYTHIC_GREEKS, nameKey: 'factions.mythic_greeks.name', icon: Sword, color: '#f59e0b', descriptionKey: 'factions.mythic_greeks.description', implementationStatus: 'in_progress' },
+    { id: SMASHUP_FACTION_IDS.ITTY_CRITTERS, nameKey: 'factions.itty_critters.name', icon: PawPrint, color: '#facc15', descriptionKey: 'factions.itty_critters.description', implementationStatus: 'in_progress' },
+    { id: SMASHUP_FACTION_IDS.KAIJU, nameKey: 'factions.kaiju.name', icon: Bone, color: '#be123c', descriptionKey: 'factions.kaiju.description', implementationStatus: 'in_progress' },
+    { id: SMASHUP_FACTION_IDS.MAGICAL_GIRLS, nameKey: 'factions.magical_girls.name', icon: Wand2, color: '#ec4899', descriptionKey: 'factions.magical_girls.description', implementationStatus: 'in_progress' },
+    { id: SMASHUP_FACTION_IDS.MEGA_TROOPERS, nameKey: 'factions.mega_troopers.name', icon: Bot, color: '#dc2626', descriptionKey: 'factions.mega_troopers.description', implementationStatus: 'in_progress' },
     { id: SMASHUP_FACTION_IDS.SKELETONS, nameKey: 'factions.skeletons.name', icon: Skull, color: '#6b7280', descriptionKey: 'factions.skeletons.description' },
     { id: SMASHUP_FACTION_IDS.WORLD_CHAMPS, nameKey: 'factions.world_champs.name', icon: Medal, color: '#eab308', descriptionKey: 'factions.world_champs.description' },
     // POD 版本阵营：英文和中文都显示（英文用户的主版本）

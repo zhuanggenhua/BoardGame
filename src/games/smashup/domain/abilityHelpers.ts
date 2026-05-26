@@ -1060,7 +1060,12 @@ export function grantExtraAction(
     playerId: PlayerId,
     reason: string,
     now: number,
-    options?: { playTiming?: 'banked' | 'immediate' },
+    options?: {
+        playTiming?: 'banked' | 'immediate';
+        restrictToBase?: number;
+        restrictToCardUid?: string;
+        restrictToCardDefId?: string;
+    },
 ): LimitModifiedEvent {
     return {
         type: SU_EVENTS.LIMIT_MODIFIED,
@@ -1070,6 +1075,9 @@ export function grantExtraAction(
             delta: 1,
             reason,
             ...(options?.playTiming ? { playTiming: options.playTiming } : {}),
+            ...(options?.restrictToBase !== undefined ? { restrictToBase: options.restrictToBase } : {}),
+            ...(options?.restrictToCardUid ? { restrictToCardUid: options.restrictToCardUid } : {}),
+            ...(options?.restrictToCardDefId ? { restrictToCardDefId: options.restrictToCardDefId } : {}),
         },
         timestamp: now,
     };
@@ -1152,9 +1160,18 @@ export function grantContextualExtraMinion(
 export function grantContextualExtraAction(
     ctx: { playerId: PlayerId; now: number; matchState?: Pick<MatchState<SmashUpCore>, 'sys'> },
     reason: string,
+    options?: {
+        playTiming?: 'banked' | 'immediate';
+        restrictToBase?: number;
+        restrictToCardUid?: string;
+        restrictToCardDefId?: string;
+    },
 ): LimitModifiedEvent {
     return grantExtraAction(ctx.playerId, reason, ctx.now, {
-        playTiming: resolveExtraPlayTiming(ctx.matchState),
+        playTiming: options?.playTiming ?? resolveExtraPlayTiming(ctx.matchState),
+        restrictToBase: options?.restrictToBase,
+        restrictToCardUid: options?.restrictToCardUid,
+        restrictToCardDefId: options?.restrictToCardDefId,
     });
 }
 

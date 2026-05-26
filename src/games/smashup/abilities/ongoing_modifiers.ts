@@ -5,7 +5,7 @@
  * （在 initAllAbilities() 中调用）
  */
 
-import { registerPowerModifier, registerOngoingPowerModifier, registerBasePowerModifier, registerBreakpointModifier } from '../domain/ongoingModifiers';
+import { registerPowerModifier, registerOngoingPowerModifier, registerBasePowerModifier, registerBreakpointModifier, registerTitanPowerModifier } from '../domain/ongoingModifiers';
 import type { PowerModifierContext } from '../domain/ongoingModifiers';
 import type { MinionOnBase, SmashUpCore } from '../domain/types';
 import { getBaseDef } from '../data/cards';
@@ -319,6 +319,44 @@ function registerFairiesModifiers(): void {
 function registerPrincessesModifiers(): void {
     registerOngoingPowerModifier('princesses_heirloom', 'minion', 'self', 1);
 }
+
+function countOwnedActionsOnBase(ctx: PowerModifierContext, ownerId: PlayerId): number {
+    let total = ctx.base.ongoingActions.filter(action => action.ownerId === ownerId).length;
+    for (const minion of ctx.base.minions) {
+        total += minion.attachedActions.filter(action => action.ownerId === ownerId).length;
+    }
+    return total;
+}
+
+function registerKaijuModifiers(): void {
+    for (const defId of [
+        'kaiju_oh_no',
+        'kaiju_the_folly_of_men',
+        'kaiju_stomp',
+    ]) {
+        registerBasePowerModifier(defId, (ctx) =>
+            ctx.ongoing?.ownerId === ctx.playerId ? 2 : 0);
+    }
+
+    for (const defId of [
+        'kaiju_tail_smash',
+        'kaiju_wade_through_the_buildings',
+    ]) {
+        registerBasePowerModifier(defId, (ctx) =>
+            ctx.ongoing?.ownerId === ctx.playerId ? 4 : 0);
+    }
+
+    registerPowerModifier('kaiju_kaijookey', (ctx: PowerModifierContext) => {
+        if (ctx.minion.defId.replace(/_pod$/, '') !== 'kaiju_kaijookey') return 0;
+        return countOwnedActionsOnBase(ctx, ctx.minion.controller);
+    }, { handlesPodInternally: true });
+
+    registerTitanPowerModifier('kaiju_gorgodzolla', (ctx) => {
+        const baseDef = getBaseDef(ctx.base.defId);
+        if (baseDef?.id !== 'base_kaiju_island') return 0;
+        return 3;
+    });
+}
 // ============================================================================
 // 基地持续力量修正
 // ============================================================================
@@ -361,5 +399,6 @@ export function registerAllOngoingModifiers(): void {
     registerWorldChampsModifiers();
     registerFairiesModifiers();
     registerPrincessesModifiers();
+    registerKaijuModifiers();
     registerWerewolfModifiers();
 }

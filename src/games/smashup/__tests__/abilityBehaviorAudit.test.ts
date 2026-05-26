@@ -126,8 +126,9 @@ function getDeclaredPlayEntrySubject(actionDef: ActionCardDef): EntrySubject | u
 function inferPlayTargetMinionController(effectText: string): 'self' | 'opponent' | undefined {
     const normalized = normalizeAuditText(effectText);
     const firstClause = normalized.split(/[。；;]/)[0] ?? normalized;
-    if (/(其他玩家|另一位玩家|对手|敌方|另一个玩家)[^。；;，,]*随从/.test(firstClause)) return 'opponent';
-    if (/(你的|你控制|己方)[^。；;，,]*随从/.test(firstClause)) return 'self';
+    if (/不由你控制[^。；;，,]*(随从|仆从)/.test(firstClause)) return 'opponent';
+    if (/(其他玩家|另一位玩家|对手|敌方|另一个玩家)[^。；;，,]*(随从|仆从)/.test(firstClause)) return 'opponent';
+    if (/(你的|你控制|己方)[^。；;，,]*(随从|仆从)/.test(firstClause)) return 'self';
     return undefined;
 }
 
@@ -234,6 +235,9 @@ describe('SmashUp 能力行为审计', () => {
                 'cowboys.ts',
                 'elder_things.ts',
                 'giant_ants.ts',
+                'kaiju.ts',
+                'magical_girls.ts',
+                'mega_troopers.ts',
                 'mermaids.ts',
                 'miskatonic.ts',
                 'ninjas.ts',
@@ -245,6 +249,7 @@ describe('SmashUp 能力行为审计', () => {
                 'vampires.ts',
                 'vikings.ts',
                 'world_champs.ts',
+                'zombies.ts',
             ];
             expect(collectAbilityFileUsage(/\bregisterAbility\(/g)).toEqual(allowedLegacyFiles);
         });
@@ -252,6 +257,9 @@ describe('SmashUp 能力行为审计', () => {
         it('遗留 registerInteractionHandler 仅允许存在于明确未迁完的旧能力文件', () => {
             const allowedLegacyHandlerFiles = [
                 'bear_cavalry.ts',
+                'kaiju.ts',
+                'magical_girls.ts',
+                'mega_troopers.ts',
                 'skeletons.ts',
                 'titans.ts',
             ];

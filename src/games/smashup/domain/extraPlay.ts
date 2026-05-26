@@ -191,6 +191,8 @@ function buildImmediateExtraActionCardOptions(
 
     const options = player.hand
         .filter(card => isCardActionLike(card))
+        .filter(card => extra.restrictToCardUid === undefined || card.uid === extra.restrictToCardUid)
+        .filter(card => extra.restrictToCardDefId === undefined || card.defId === extra.restrictToCardDefId)
         .flatMap((card, index) => {
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             if (!def) return [];
@@ -207,12 +209,12 @@ function buildImmediateExtraActionCardOptions(
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
                         payload: { cardUid: card.uid, targetBaseIndex: baseIndex },
-                    }).valid)
+                    }).valid && (extra.restrictToBase === undefined || baseIndex === extra.restrictToBase))
                     : state.core.bases.some((base, baseIndex) => base.minions.some(minion => validate(validationState, {
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
                         payload: { cardUid: card.uid, targetBaseIndex: baseIndex, targetMinionUid: minion.uid },
-                    }).valid));
+                    }).valid && (extra.restrictToBase === undefined || baseIndex === extra.restrictToBase)));
 
             if (!playable) return [];
 
@@ -253,6 +255,7 @@ function buildImmediateExtraActionBaseOptions(
     const validationState = buildValidationState(state, extra);
     const candidates = state.core.bases
         .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
+        .filter(candidate => extra.restrictToBase === undefined || candidate.baseIndex === extra.restrictToBase)
         .filter(candidate => validate(validationState, {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: extra.playerId,
@@ -271,6 +274,7 @@ function buildImmediateExtraActionMinionOptions(
     const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
 
     for (let baseIndex = 0; baseIndex < state.core.bases.length; baseIndex += 1) {
+        if (extra.restrictToBase !== undefined && baseIndex !== extra.restrictToBase) continue;
         const base = state.core.bases[baseIndex];
         const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
         for (const minion of base.minions) {

@@ -30,6 +30,7 @@ import type {
     PermanentPowerAddedEvent,
     CardSuppressedEvent,
     BreakpointModifiedEvent,
+    TempBasePowerModifiedEvent,
     BaseDeckShuffledEvent,
     SpecialLimitUsedEvent,
     SpecialAfterScoringArmedEvent,
@@ -1592,6 +1593,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 buccaneerPodUsedUids: undefined,
                 // 清空临时临界点修正
                 tempBreakpointModifiers: undefined,
+                // 清空本回合临时玩家-基地总力量修正
+                tempBasePowerModifiers: undefined,
                 // 清理“直到本回合开始”的基地压制（仅清除由当前回合玩家施加的条目）
                 suppressedBasesUntilTurnStart: (() => {
                     const remaining = (state.suppressedBasesUntilTurnStart ?? [])
@@ -1630,30 +1633,70 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         case SU_EVENTS.TURN_ENDED: {
             const { playerId, nextPlayerIndex } = event.payload;
             const remainingSleepMarked = state.sleepMarkedPlayers?.filter(pid => pid !== playerId);
+            let updatedPlayers = state.players;
             const restoredBases = state.bases.map((base) => ({
                 ...base,
-                minions: base.minions.map((minion) => {
+                minions: base.minions.flatMap((minion) => {
                     const metadata = minion.metadata as Record<string, unknown> | undefined;
-                    if (!metadata) return minion;
-                    if (metadata.mermaidsTemporaryControlPlayerId !== playerId) return minion;
-                    if (metadata.mermaidsTemporaryControlTurn !== state.turnNumber) return minion;
-                    const originalController = metadata.mermaidsTemporaryControlOriginalController;
-                    if (typeof originalController !== 'string') return minion;
-                    return {
-                        ...minion,
-                        controller: originalController as PlayerId,
-                        metadata: {
-                            ...metadata,
-                            mermaidsTemporaryControlPlayerId: undefined,
-                            mermaidsTemporaryControlTurn: undefined,
-                            mermaidsTemporaryControlOriginalController: undefined,
+                    let current = minion;
+                    if (metadata?.mermaidsTemporaryControlPlayerId === playerId && metadata.mermaidsTemporaryControlTurn === state.turnNumber) {
+                        const originalController = metadata.mermaidsTemporaryControlOriginalController;
+                        if (typeof originalController === 'string') {
+                            current = {
+                                ...current,
+                                controller: originalController as PlayerId,
+                                metadata: {
+                                    ...metadata,
+                                    mermaidsTemporaryControlPlayerId: undefined,
+                                    mermaidsTemporaryControlTurn: undefined,
+                                    mermaidsTemporaryControlOriginalController: undefined,
+                                },
+                            };
+                        }
+                    }
+
+                    const currentMetadata = current.metadata as Record<string, unknown> | undefined;
+                    const returnPlayerId = currentMetadata?.ittyCrittersReturnToDeckBottomPlayerId;
+                    if (returnPlayerId !== playerId || current.controller !== playerId) {
+                        return [current];
+                    }
+
+                    const owner = updatedPlayers[playerId];
+                    if (!owner) return [current];
+                    const returnedCard: CardInstance = {
+                        uid: current.uid,
+                        defId: current.defId,
+                        type: 'minion',
+                        owner: playerId,
+                    };
+                    updatedPlayers = {
+                        ...updatedPlayers,
+                        [playerId]: {
+                            ...owner,
+                            deck: [...owner.deck, returnedCard],
                         },
                     };
+                    for (const attached of current.attachedActions ?? []) {
+                        const attachedOwner = updatedPlayers[attached.ownerId];
+                        if (!attachedOwner) continue;
+                        updatedPlayers = {
+                            ...updatedPlayers,
+                            [attached.ownerId]: {
+                                ...attachedOwner,
+                                discard: [
+                                    ...attachedOwner.discard,
+                                    { uid: attached.uid, defId: attached.defId, type: 'action', owner: attached.ownerId },
+                                ],
+                            },
+                        };
+                    }
+                    return [];
                 }),
             }));
             return {
                 ...state,
                 currentPlayerIndex: nextPlayerIndex,
+                players: updatedPlayers,
                 bases: restoredBases,
                 sleepMarkedPlayers: remainingSleepMarked?.length ? remainingSleepMarked : undefined,
                 titanOngoingSuppressedUntilTurnEnd: undefined,
@@ -2423,7 +2466,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ONGOING_DETACHED: {
-            const { cardUid, defId, ownerId } = (event as OngoingDetachedEvent).payload;
+            const { cardUid, defId, ownerId, destination } = (event as OngoingDetachedEvent).payload;
             // 从基地的 ongoingActions 或随从的 attachedActions 中移除
             const newBases = state.bases.map(base => {
                 const filteredOngoing = base.ongoingActions.filter(o => o.uid !== cardUid);
@@ -2448,12 +2491,15 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const detachedOwner = state.players[ownerId];
             if (!detachedOwner) return { ...state, bases: newBases };
             const detachedCard: CardInstance = { uid: cardUid, defId, type: 'action', owner: ownerId };
+            const destinationZone = destination ?? 'discard';
             return {
                 ...state,
                 bases: newBases,
                 players: {
                     ...state.players,
-                    [ownerId]: { ...detachedOwner, discard: [...detachedOwner.discard, detachedCard] },
+                    [ownerId]: destinationZone === 'hand'
+                        ? { ...detachedOwner, hand: [...detachedOwner.hand, detachedCard] }
+                        : { ...detachedOwner, discard: [...detachedOwner.discard, detachedCard] },
                 },
             };
         }
@@ -2892,6 +2938,22 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 tempBreakpointModifiers: {
                     ...prev,
                     [baseIndex]: (prev[baseIndex] ?? 0) + delta,
+                },
+            };
+        }
+
+        case SU_EVENTS.TEMP_BASE_POWER_MODIFIED: {
+            const { baseIndex, playerId, amount } = (event as TempBasePowerModifiedEvent).payload;
+            const prev = state.tempBasePowerModifiers ?? {};
+            const basePrev = prev[baseIndex] ?? {};
+            return {
+                ...state,
+                tempBasePowerModifiers: {
+                    ...prev,
+                    [baseIndex]: {
+                        ...basePrev,
+                        [playerId]: (basePrev[playerId] ?? 0) + amount,
+                    },
                 },
             };
         }

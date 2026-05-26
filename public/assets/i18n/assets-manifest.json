@@ -6052,6 +6052,15 @@
         }
       }
     },
+    "zh-CN/smashup/base/baokemeng": {
+      "variants": {
+        "png": {
+          "sha256": "f7fc34a83ea20b2627c468eec16af61a01578bd58ff7b9349c6cb284cac4a6d1",
+          "bytes": 17275734,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/smashup/base/base3": {
       "variants": {
         "png": {
@@ -6066,6 +6075,15 @@
         "webp": {
           "sha256": "abf449a390d70e2fa80df773fbfae0dce6b588a4f9e9638edbb0b7e59206bf92",
           "bytes": 251770,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/baokemeng": {
+      "variants": {
+        "webp": {
+          "sha256": "0a6e96f8851b2b0139a2df2095b8aea54518fd9d33207b877bb25f84c39f4e87",
+          "bytes": 313540,
           "mime": "image/webp"
         }
       }
@@ -6151,11 +6169,29 @@
         }
       }
     },
+    "zh-CN/smashup/cards/baokemeng": {
+      "variants": {
+        "png": {
+          "sha256": "2cfeb319147c365d5a0c554f1a2d3f99979b026baf8d6d149591307530e2a36f",
+          "bytes": 40776506,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/smashup/cards/compressed/aiji": {
       "variants": {
         "webp": {
           "sha256": "a99c4731a714ac0a20489d10c6b04dba863e5044c5dd9000f263af41ff8db18e",
           "bytes": 827752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/baokemeng": {
+      "variants": {
+        "webp": {
+          "sha256": "2a9157d4f3d28633f6d3215411d5e0fd426b0163b9224151dc46cd7e5b93f631",
+          "bytes": 1126378,
           "mime": "image/webp"
         }
       }
