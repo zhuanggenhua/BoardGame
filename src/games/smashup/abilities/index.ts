@@ -43,6 +43,10 @@ import { registerPrincessesAbilities } from './princesses';
 import { registerSharksAbilities } from './sharks';
 import { registerTornadosAbilities } from './tornados';
 import { registerMythicGreeksAbilities } from './mythic_greeks';
+import { registerIttyCrittersAbilities } from './itty_critters';
+import { registerKaijuAbilities, registerKaijuInteractionHandlers } from './kaiju';
+import { registerMagicalGirlsAbilities, registerMagicalGirlsInteractionHandlers } from './magical_girls';
+import { registerMegaTroopersAbilities, registerMegaTroopersInteractionHandlers } from './mega_troopers';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -146,6 +150,13 @@ export function initAllAbilities(): void {
     registerSharksAbilities();
     registerTornadosAbilities();
     registerMythicGreeksAbilities();
+    registerIttyCrittersAbilities();
+    registerKaijuAbilities();
+    registerKaijuInteractionHandlers();
+    registerMagicalGirlsAbilities();
+    registerMagicalGirlsInteractionHandlers();
+    registerMegaTroopersAbilities();
+    registerMegaTroopersInteractionHandlers();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 

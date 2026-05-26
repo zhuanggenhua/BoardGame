@@ -59,6 +59,10 @@ import { PRINCESSES_CARDS } from './factions/princesses';
 import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
 import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
+import { ITTY_CRITTERS_CARDS } from './factions/itty_critters';
+import { KAIJU_CARDS } from './factions/kaiju';
+import { MAGICAL_GIRLS_CARDS } from './factions/magical_girls';
+import { MEGA_TROOPERS_CARDS } from './factions/mega_troopers';
 
 // ============================================================================
 // 注册表
@@ -188,6 +192,10 @@ registerCards(PRINCESSES_CARDS);
 registerCards(SHARKS_CARDS);
 registerCards(TORNADOS_CARDS);
 registerCards(MYTHIC_GREEKS_CARDS);
+registerCards(ITTY_CRITTERS_CARDS);
+registerCards(KAIJU_CARDS);
+registerCards(MAGICAL_GIRLS_CARDS);
+registerCards(MEGA_TROOPERS_CARDS);
 // POD 版本阵营（最新英文 POD 版本）
 registerCards(NINJA_POD_CARDS);
 registerCards(TITAN_CARD_DEFS);
@@ -906,6 +914,86 @@ export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_ITS_YOUR_FAULT);
+
+// ============================================================================
+// 扩展基地 (Big in Japan - baokemeng)
+// ============================================================================
+export const BASE_CARDS_BIG_IN_JAPAN: BaseCardDef[] = [
+    {
+        id: 'base_akihabara_high',
+        name: '秋叶原',
+        nameEn: 'Akihabara High',
+        breakpoint: 20,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.MAGICAL_GIRLS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 0 },
+    },
+    {
+        id: 'base_q_point',
+        name: 'Q Point',
+        nameEn: 'Q Point',
+        breakpoint: 25,
+        vpAwards: [5, 4, 3],
+        faction: SMASHUP_FACTION_IDS.MAGICAL_GIRLS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 1 },
+    },
+    {
+        id: 'base_tokyo',
+        name: '东京',
+        nameEn: 'Tokyo',
+        breakpoint: 25,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.KAIJU,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 2 },
+    },
+    {
+        id: 'base_kaiju_island',
+        name: '怪兽岛',
+        nameEn: 'Kaiju Island',
+        breakpoint: 22,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.KAIJU,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 3 },
+        allowMultipleTitans: true,
+    },
+    {
+        id: 'base_critter_combat_club',
+        name: '宠物战斗俱乐部',
+        nameEn: 'Critter Combat Club',
+        breakpoint: 23,
+        vpAwards: [4, 3, 1],
+        faction: SMASHUP_FACTION_IDS.ITTY_CRITTERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 4 },
+    },
+    {
+        id: 'base_itty_city',
+        name: '小城市',
+        nameEn: 'Itty City',
+        breakpoint: 20,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.ITTY_CRITTERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 5 },
+    },
+    {
+        id: 'base_moon_dumpster',
+        name: '月亮垃圾站',
+        nameEn: 'Moon Dumpster',
+        breakpoint: 24,
+        vpAwards: [4, 2, 2],
+        faction: SMASHUP_FACTION_IDS.MEGA_TROOPERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 6 },
+    },
+    {
+        id: 'base_juice_bar',
+        name: '果汁吧',
+        nameEn: 'Juice Bar',
+        breakpoint: 20,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.MEGA_TROOPERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 7 },
+    },
+];
+registerBases(BASE_CARDS_BIG_IN_JAPAN);
 
 registerPodBaseSkeletons();
 

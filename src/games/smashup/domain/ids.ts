@@ -10,6 +10,7 @@ export const SMASHUP_ATLAS_IDS = {
     BASE5: 'smashup:base5',
     BASE6: 'smashup:base6',
     BASE7: 'smashup:base7',
+    BASE8: 'smashup:base8',
     CARDS1: 'smashup:cards1',
     CARDS2: 'smashup:cards2',
     CARDS3: 'smashup:cards3',
@@ -19,6 +20,7 @@ export const SMASHUP_ATLAS_IDS = {
     CARDS7: 'smashup:cards7',
     CARDS8: 'smashup:cards8',
     CARDS9: 'smashup:cards9',
+    CARDS10: 'smashup:cards10',
     TITANS: 'smashup:titans',
 } as const;
 
@@ -124,6 +126,10 @@ export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>([
     SMASHUP_FACTION_IDS.SHARKS,
     SMASHUP_FACTION_IDS.TORNADOS,
     SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
+    SMASHUP_FACTION_IDS.ITTY_CRITTERS,
+    SMASHUP_FACTION_IDS.KAIJU,
+    SMASHUP_FACTION_IDS.MAGICAL_GIRLS,
+    SMASHUP_FACTION_IDS.MEGA_TROOPERS,
 ]);
 
 export function isSmashUpFactionImplementationInProgress(factionId: string): boolean {

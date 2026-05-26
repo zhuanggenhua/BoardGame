@@ -787,6 +787,8 @@ export interface SmashUpCore {
     buccaneerPodUsedUids?: string[];
     /** 临时临界点修正（回合结束自动清零，baseIndex → delta） */
     tempBreakpointModifiers?: Record<number, number>;
+    /** 临时玩家-基地总力量修正（回合开始自动清零，baseIndex → playerId → delta） */
+    tempBasePowerModifiers?: Record<number, Record<PlayerId, number>>;
     /**
      * 本回合各限制组在各基地的 special 能力使用记录
      * key = limitGroup（如 'ninja_special'），value = 已使用的 baseIndex 列表
@@ -1359,6 +1361,10 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         playTiming?: 'banked' | 'immediate';
         /** 限定额度只能用于指定基地（不设则为全局额度） */
         restrictToBase?: number;
+        /** 立即额外行动限定只能打出指定卡牌实例 */
+        restrictToCardUid?: string;
+        /** 立即额外行动限定只能打出指定卡牌定义 */
+        restrictToCardDefId?: string;
         /** 额外出牌的力量上限（如家园：力量≤2），不设则无限制 */
         powerMax?: number;
         /** 同名限制：这些额度只能用于打出同一 defId 的随从（第一个打出时锁定） */
@@ -1432,6 +1438,7 @@ export type SmashUpEvent =
     | RevealDeckTopEvent
     | DeckInspectedEvent
     | TempPowerAddedEvent
+    | TempBasePowerModifiedEvent
     | PermanentPowerAddedEvent
     | BreakpointModifiedEvent
     | BaseDeckShuffledEvent
@@ -1598,6 +1605,7 @@ export interface OngoingDetachedEvent extends GameEvent<typeof SU_EVENTS.ONGOING
         defId: string;
         ownerId: PlayerId;
         reason: string;
+        destination?: 'discard' | 'hand';
         sourcePlayerId?: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;
@@ -1826,6 +1834,16 @@ export interface TempPowerAddedEvent extends GameEvent<typeof SU_EVENTS.TEMP_POW
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+    };
+}
+
+/** 临时玩家-基地总力量修正事件（回合开始自动清零） */
+export interface TempBasePowerModifiedEvent extends GameEvent<typeof SU_EVENTS.TEMP_BASE_POWER_MODIFIED> {
+    payload: {
+        playerId: PlayerId;
+        baseIndex: number;
+        amount: number;
+        reason: string;
     };
 }
 

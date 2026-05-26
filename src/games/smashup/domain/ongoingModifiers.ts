@@ -214,6 +214,14 @@ export function getBasePowerModifiers(
     return total;
 }
 
+export function getTempBasePowerModifier(
+    state: SmashUpCore,
+    baseIndex: number,
+    playerId: PlayerId,
+): number {
+    return state.tempBasePowerModifiers?.[baseIndex]?.[playerId] ?? 0;
+}
+
 // ============================================================================
 // 声明式 ongoing 力量修正 API（通用，自动按实例数叠加）
 // ============================================================================
@@ -650,7 +658,8 @@ export function getPlayerEffectivePowerOnBase(
     const ongoingCardPower = getOngoingCardPowerContribution(base, playerId);
     const titanPower = getTitanPowerContribution(state, baseIndex, playerId);
     const basePowerBonus = getBasePowerModifiers(state, baseIndex, playerId);
-    return minionPower + ongoingCardPower + titanPower + basePowerBonus;
+    const tempBasePower = getTempBasePowerModifier(state, baseIndex, playerId);
+    return minionPower + ongoingCardPower + titanPower + basePowerBonus + tempBasePower;
 }
 
 /**
@@ -672,6 +681,7 @@ export function getTotalEffectivePowerOnBase(
         ongoingBonus += getOngoingCardPowerContribution(base, pid);
         titanBonus += getTitanPowerContribution(state, baseIndex, pid);
         basePowerBonus += getBasePowerModifiers(state, baseIndex, pid);
+        basePowerBonus += getTempBasePowerModifier(state, baseIndex, pid);
     }
     return minionPower + ongoingBonus + titanBonus + basePowerBonus;
 }
