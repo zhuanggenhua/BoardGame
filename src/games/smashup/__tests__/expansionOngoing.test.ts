@@ -340,6 +340,38 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(interceptEvent(state, detachEvt)).toBeNull();
         });
 
+        test('borrowed ongoing 行动也应按控制者受到 Steam Queen 保护', () => {
+            const queen = makeMinion({ defId: 'steampunk_steam_queen', uid: 'sq-borrowed', controller: '0' });
+            const base = makeBase({
+                minions: [queen],
+                ongoingActions: [{
+                    uid: 'oa-borrowed',
+                    defId: 'test_ongoing',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            });
+            const state = makeState([base]);
+
+            const detachEvt = {
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: {
+                    cardUid: 'oa-borrowed',
+                    defId: 'test_ongoing',
+                    ownerId: '1',
+                    reason: 'opponent_action',
+                    sourcePlayerId: '1',
+                    sourceCardUid: 'opp-action-1',
+                    sourceDefId: 'pirate_shanghai',
+                    sourceControllerId: '1',
+                    sourceBaseIndex: 0,
+                },
+                timestamp: 0,
+            };
+
+            expect(interceptEvent(state, detachEvt)).toBeNull();
+        });
+
         test('不会误拦截自毁导致的行动牌离场', () => {
             const queen = makeMinion({ defId: 'steampunk_steam_queen', uid: 'sq-1', controller: '0' });
             const base = makeBase({
@@ -545,6 +577,35 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(events).toHaveLength(1);
             expect(events[0].type).toBe(SU_EVENTS.MINION_RETURNED);
             expect((events[0] as any).payload.minionUid).toBe('sa-1');
+        });
+
+        test('borrowed Escape Hatch 应按控制者而不是真实 owner 保护控制者的随从', () => {
+            const minion = makeMinion({ defId: 'steampunk_a', uid: 'sa-borrowed', controller: '0', owner: '0' });
+            const base = makeBase({
+                minions: [minion],
+                ongoingActions: [{
+                    uid: 'eh-borrowed',
+                    defId: 'steampunk_escape_hatch',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionDestroyed', {
+                state, playerId: '1', baseIndex: 0,
+                triggerMinionUid: 'sa-borrowed', triggerMinionDefId: 'steampunk_a',
+                random: dummyRandom, now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_RETURNED);
+            expect((events[0] as any).payload).toMatchObject({
+                minionUid: 'sa-borrowed',
+                toPlayerId: '0',
+                sourcePlayerId: '0',
+                reason: 'steampunk_escape_hatch',
+            });
         });
 
         test('对手随从被消灭时不触发', () => {
@@ -1760,6 +1821,7 @@ describe('食人花 ongoing 能力', () => {
                     && (e as any).payload.reason === 'killer_plant_choking_vines'
             );
             expect(destroyEvts).toHaveLength(1);
+            expect((destroyEvts[0] as any).payload.destroyerId).toBe('0');
         });
     });
 

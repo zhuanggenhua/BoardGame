@@ -10,7 +10,7 @@ import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { getEffectivePower } from '../domain/ongoingModifiers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
-import { collectTriggers } from '../domain/ongoingEffects';
+import { collectTriggers, isOperationRestricted } from '../domain/ongoingEffects';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
@@ -560,6 +560,109 @@ describe('vampires_pod: The Count POD', () => {
         ]);
         const reverted = afterOwnerStart.bases[0].minions.find(m => m.uid === 'target');
         expect(reverted?.powerModifier).toBe(0);
+    });
+});
+
+describe('vampires_pod: Stakeout POD', () => {
+    it('借来的随从被消灭时，Stakeout POD talent 应按控制者记录谁在该基地力量减少', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('borrowed-minion', 'robot_microbot', '1', 3, '0')],
+                ongoingActions: [{
+                    uid: 'stakeout-a',
+                    defId: 'vampire_stakeout_pod',
+                    ownerId: '0',
+                    talentUsed: false,
+                } as any],
+            }],
+        });
+
+        const afterDestroy = applyEvents(core, [{
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'borrowed-minion',
+                minionDefId: 'robot_microbot',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                controllerId: '1',
+                destroyerId: '0',
+                reason: 'test_destroy_borrowed',
+            },
+            timestamp: 100,
+        } as any]);
+
+        expect(afterDestroy.basePowerDecreasedPlayersThisTurn?.[0]).toEqual(['1']);
+
+        const result = runCommand(
+            makeMatchState(afterDestroy),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'stakeout-a', baseIndex: 0 },
+            } as any,
+            defaultTestRandom,
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ type: SU_EVENTS.STAKEOUT_POD_BLOCK_ADDED }),
+            ]),
+        );
+    });
+
+    it('borrowed Stakeout POD talent 应按控制者建立封锁，并只豁免控制者', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            basePowerDecreasedPlayersThisTurn: { 0: ['1'] },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{
+                    uid: 'stakeout-borrowed',
+                    defId: 'vampire_stakeout_pod',
+                    ownerId: '1',
+                    talentUsed: false,
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            }],
+        });
+
+        const result = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'stakeout-borrowed', baseIndex: 0 },
+            } as any,
+            defaultTestRandom,
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.STAKEOUT_POD_BLOCK_ADDED,
+                    payload: expect.objectContaining({ baseIndex: 0, ownerId: '0' }),
+                }),
+            ]),
+        );
+        expect(isOperationRestricted(result.finalState.core, 0, '0', 'play_minion', { basePower: 3 })).toBe(false);
+        expect(isOperationRestricted(result.finalState.core, 0, '1', 'play_minion', { basePower: 3 })).toBe(true);
     });
 });
 

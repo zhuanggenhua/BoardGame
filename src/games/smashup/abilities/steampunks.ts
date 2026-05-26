@@ -319,12 +319,12 @@ export function steampunkSteamQueenInterceptor(state: SmashUpCore, event: SmashU
         if (!record.sourcePlayerId) continue;
         if (record.reason?.includes('self_destruct') || record.reason?.includes('expired')) continue;
 
-        const actionOwnerId = findInPlayActionOwner(state, record.targetUid);
-        if (!actionOwnerId) continue;
-        if (record.sourcePlayerId === actionOwnerId) continue;
+        const actionControllerId = findInPlayActionController(state, record.targetUid);
+        if (!actionControllerId) continue;
+        if (record.sourcePlayerId === actionControllerId) continue;
 
         const hasSteamQueen = state.bases.some(base =>
-            base.minions.some(minion => minion.defId.startsWith('steampunk_steam_queen') && minion.controller === actionOwnerId),
+            base.minions.some(minion => minion.defId.startsWith('steampunk_steam_queen') && minion.controller === actionControllerId),
         );
         if (hasSteamQueen) return null;
     }
@@ -332,14 +332,14 @@ export function steampunkSteamQueenInterceptor(state: SmashUpCore, event: SmashU
     return undefined;
 }
 
-function findInPlayActionOwner(state: SmashUpCore, cardUid: string): string | undefined {
+function findInPlayActionController(state: SmashUpCore, cardUid: string): string | undefined {
     for (const base of state.bases) {
         const ongoing = base.ongoingActions.find(action => action.uid === cardUid);
-        if (ongoing) return ongoing.ownerId;
+        if (ongoing) return (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
 
         for (const minion of base.minions) {
             const attached = minion.attachedActions.find(action => action.uid === cardUid);
-            if (attached) return attached.ownerId;
+            if (attached) return (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
         }
     }
     return undefined;
@@ -485,8 +485,9 @@ export function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[]
     // 找被消灭的随从
     const minion = base.minions.find(m => m.uid === ctx.triggerMinionUid);
     if (!minion) return [];
-    // 只保护?hatch 拥有者的随从
-    if (minion.controller !== hatch.ownerId) return [];
+    // borrowed ongoing 的保护归当前控制者，不归真实 owner。
+    const hatchControllerId = (hatch.metadata?.sourceControllerId as PlayerId | undefined) ?? hatch.ownerId;
+    if (minion.controller !== hatchControllerId) return [];
 
     const evt: MinionReturnedEvent = {
         type: SU_EVENTS.MINION_RETURNED,
@@ -495,6 +496,7 @@ export function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[]
             minionDefId: minion.defId,
             fromBaseIndex: ctx.baseIndex,
             toPlayerId: minion.owner,
+            sourcePlayerId: hatchControllerId,
             reason: 'steampunk_escape_hatch',
         },
         timestamp: ctx.now,

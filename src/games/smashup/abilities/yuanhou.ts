@@ -444,6 +444,7 @@ function shapeshiftersGelf(ctx: AbilityContext): AbilityResult {
                 cardUid: located.minion.uid,
                 defId: located.minion.defId,
                 ownerId: located.minion.owner,
+                sourcePlayerId: located.minion.owner !== ctx.playerId ? ctx.playerId : undefined,
                 reason: 'shapeshifters_gelf',
                 now: ctx.now,
                 expectedLocation: 'bases',
@@ -645,6 +646,7 @@ function buildMonkeyOnYourBackEvents(
             cardUid: action.uid,
             defId: action.defId,
             ownerId: action.ownerId,
+            sourcePlayerId: action.ownerId !== playerId ? playerId : undefined,
             reason: 'cyborg_apes_monkey_on_your_back',
             now,
             expectedLocation: 'bases',
@@ -1458,6 +1460,7 @@ function timeTravelersTimeWalk(ctx: AbilityContext): AbilityResult {
                     cardUid: ctx.cardUid,
                     defId: ctx.defId,
                     ownerId,
+                    ...(ownerId !== ctx.playerId ? { sourcePlayerId: ctx.playerId } : {}),
                     reason: 'time_travelers_time_walk',
                 },
                 timestamp: ctx.now,
@@ -1603,12 +1606,13 @@ function timeTravelersWormhole(ctx: AbilityContext): AbilityResult {
         interaction.data.baseDefId = base.defId;
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
-    return { events: buildTimeTravelersWormholeEvents(ctx.state, playerMinions, ctx.random, ctx.now) };
+    return { events: buildTimeTravelersWormholeEvents(ctx.state, playerMinions, ctx.playerId, ctx.random, ctx.now) };
 }
 
 function buildTimeTravelersWormholeEvents(
     state: SmashUpCore,
     selectedMinions: MinionOnBase[],
+    sourcePlayerId: PlayerId,
     random: RandomFn,
     now: number,
 ): SmashUpEvent[] {
@@ -1625,6 +1629,7 @@ function buildTimeTravelersWormholeEvents(
                 cardUid: minion.uid,
                 defId: minion.defId,
                 ownerId,
+                sourcePlayerId: ownerId !== sourcePlayerId ? sourcePlayerId : undefined,
                 reason: 'time_travelers_wormhole',
                 now,
                 expectedLocation: 'bases',
@@ -3330,7 +3335,7 @@ export function registerYuanhouAbilities(): void {
 
         return {
             state,
-            events: buildTimeTravelersWormholeEvents(state.core, selectedMinions, random, timestamp),
+            events: buildTimeTravelersWormholeEvents(state.core, selectedMinions, playerId, random, timestamp),
         };
     });
 

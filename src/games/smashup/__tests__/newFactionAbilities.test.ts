@@ -395,6 +395,10 @@ describe('Vikings abilities', () => {
             defaultTestRandom,
         );
 
+        const topEvent = resolved.events.find((event: any) =>
+            event.type === SU_EVENTS.CARD_TO_DECK_TOP && event.payload?.cardUid === 'borrowed-1'
+        );
+        expect(topEvent?.payload?.sourcePlayerId).toBe('0');
         expect(resolved.finalState.core.players['0'].hand).toHaveLength(0);
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
         expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-1', 'p1-deck-1']);
@@ -689,6 +693,10 @@ describe('Vikings abilities', () => {
             defaultTestRandom,
         );
 
+        const borrowedReorder = resolved.events.find((event: any) =>
+            event.type === SU_EVENTS.DECK_REORDERED && event.payload?.playerId === '0'
+        );
+        expect(borrowedReorder?.payload?.sourcePlayerId).toBe('1');
         expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['own-top', 'rest-1']);
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['borrowed-top', 'p0-deck-a']);
     });
@@ -968,6 +976,77 @@ describe('Vikings abilities', () => {
             && event.payload?.cardUid === 'ally-1'
             && event.payload?.defId === 'vikings_huscarl'
         ))).toBe(true);
+    });
+
+    it('vikings_viking_funeral 的 borrowed 宿主被自己控制时仍应移出其拥有者弃牌堆', () => {
+        const beforeDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('borrowed-host', 'vikings_huscarl', '0', 2, {
+                    owner: '1',
+                    attachedActions: [{ uid: 'funeral-borrowed', defId: 'vikings_viking_funeral', ownerId: '0' }],
+                })],
+                ongoingActions: [],
+            }],
+        });
+
+        const queued = collectTriggers(beforeDiscardCore, 'onMinionDiscardedFromBase', {
+            state: beforeDiscardCore,
+            matchState: makeMatchState(beforeDiscardCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'borrowed-host',
+            triggerMinionDefId: 'vikings_huscarl',
+            triggerMinion: beforeDiscardCore.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 1004,
+        }) as any;
+
+        const afterDiscardCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('funeral-borrowed', 'vikings_viking_funeral', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    discard: [makeCard('borrowed-host', 'vikings_huscarl', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [],
+            }],
+            triggerQueue: queued.payload.triggers,
+        });
+
+        const resolved = maybeResolveReactionQueue(makeMatchState(afterDiscardCore), defaultTestRandom, 1004);
+
+        expect(resolved).toBeDefined();
+        expect(resolved!.events.some((event: any) => (
+            event.type === SU_EVENTS.VP_AWARDED
+            && event.payload?.playerId === '0'
+            && event.payload?.amount === 1
+            && event.payload?.reason === 'vikings_viking_funeral'
+        ))).toBe(true);
+        expect(resolved!.events.some((event: any) => (
+            event.type === SU_EVENTS.CARD_REMOVED_FROM_GAME
+            && event.payload?.playerId === '1'
+            && event.payload?.cardUid === 'borrowed-host'
+            && event.payload?.defId === 'vikings_huscarl'
+        ))).toBe(true);
+
+        const reduced = resolved!.events.reduce((current, event) => reduce(current, event as any), afterDiscardCore);
+        expect(reduced.players['0'].discard.some(card => card.uid === 'funeral-borrowed')).toBe(true);
+        expect((reduced.players['0'].removedFromGame ?? []).some(card => card.uid === 'borrowed-host')).toBe(false);
+        expect((reduced.players['1'].removedFromGame ?? []).some(card => card.uid === 'borrowed-host')).toBe(true);
     });
 });
 
@@ -1804,6 +1883,10 @@ describe('Cowboys abilities', () => {
             defaultTestRandom,
         );
 
+        const borrowedReorder = resolved.events.find((event: any) =>
+            event.type === SU_EVENTS.DECK_REORDERED && event.payload?.playerId === '1'
+        );
+        expect(borrowedReorder?.payload?.sourcePlayerId).toBe('0');
         expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'top-b')).toBe(true);
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['top-c', 'rest-1']);
         expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-top-a', 'p1-deck-a']);
@@ -6395,6 +6478,7 @@ describe('科学怪人派系能力', () => {
         );
         expect(returned).toBeDefined();
         expect((returned as any).payload.toPlayerId).toBe('0');
+        expect((returned as any).payload.sourcePlayerId).toBe('0');
     });
 
     it('怪物：天赋移除指示物并额外打出随从', () => {
@@ -12463,6 +12547,7 @@ describe('Princesses abilities', () => {
             players: {
                 '0': makePlayer('0', {
                     hand: [makeCard('dvd-1', 'princesses_direct_to_dvd_sequel', 'action', '0')],
+                    deck: [makeCard('p0-draw-1', 'robot_microbot_beta', 'minion', '0')],
                     discard: [makeCard('borrowed-discard', 'robot_microbot_alpha', 'minion', '1')],
                 }),
                 '1': makePlayer('1', {
@@ -12489,6 +12574,18 @@ describe('Princesses abilities', () => {
             defaultTestRandom,
         );
 
+        expect(resolved.events.some((event: any) => (
+            event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM
+            && event.payload?.cardUid === 'borrowed-discard'
+            && event.payload?.ownerId === '1'
+            && event.payload?.sourcePlayerId === '0'
+        ))).toBe(true);
+        expect(resolved.events.some((event: any) => (
+            event.type === SU_EVENTS.CARDS_DRAWN
+            && event.payload?.playerId === '0'
+            && event.payload?.cardUids?.includes('p0-draw-1')
+        ))).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('p0-draw-1');
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('borrowed-discard');
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).not.toContain('borrowed-discard');
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-discard');

@@ -588,7 +588,7 @@ function robotNukebotOnDestroy(ctx: AbilityContext): AbilityResult {
 
     return {
         events: targets.map(t =>
-            destroyMinion(t.uid, t.defId, ctx.baseIndex, t.owner, undefined, 'robot_nukebot', ctx.now),
+            destroyMinion(t.uid, t.defId, ctx.baseIndex, t.owner, ctx.playerId, 'robot_nukebot', ctx.now),
         ),
     };
 }

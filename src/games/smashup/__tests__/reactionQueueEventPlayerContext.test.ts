@@ -5035,6 +5035,7 @@ describe('reaction queue: preserves event player context', () => {
                 minionDefId: 'killer_plant_sprout',
                 ownerId: '0',
                 reason: 'killer_plant_sprout',
+                destroyerId: '0',
             }),
         }));
     });
@@ -7023,6 +7024,7 @@ describe('reaction queue: preserves event player context', () => {
             payload: expect.objectContaining({
                 minionUid: 'dunwich-host',
                 reason: 'elder_thing_dunwich_horror',
+                destroyerId: '0',
             }),
         }));
         expect(resolved?.state.core.bases[0]?.minions ?? []).toEqual([]);

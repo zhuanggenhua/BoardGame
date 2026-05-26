@@ -854,6 +854,10 @@ describe('克苏鲁之仆派系能力', () => {
             const result = handler!(matchState, '0', [{ cardUid: 'borrowed-discard' }], prompt?.data, defaultRandom, 1000);
             const newState = applyEvents(state, [...playEvents, ...result.events]);
 
+            const topEvent = result.events.find((event: any) =>
+                event.type === SU_EVENTS.CARD_TO_DECK_TOP && event.payload?.cardUid === 'borrowed-discard'
+            );
+            expect(topEvent?.payload?.sourcePlayerId).toBe('0');
             expect(newState.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
             expect(newState.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-discard', 'p1-deck-1']);
             expect(newState.players['0'].discard.map(card => card.uid)).toEqual(['a1']);
@@ -1011,6 +1015,10 @@ describe('克苏鲁之仆派系能力', () => {
             const result = handler!(matchState, '0', [{ cardUid: 'borrowed-action' }], prompt?.data, defaultRandom, 0);
             const newState = applyEvents(state, [...playEvents, ...result.events]);
 
+            const borrowedReorder = result.events.find((event: any) =>
+                event.type === SU_EVENTS.DECK_REORDERED && event.payload?.playerId === '1'
+            );
+            expect(borrowedReorder?.payload?.sourcePlayerId).toBe('0');
             expect(newState.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
             expect(newState.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-1', 'borrowed-action']);
             expect(newState.players['0'].discard.map(card => card.uid)).toEqual(['a1']);

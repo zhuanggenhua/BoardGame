@@ -696,6 +696,7 @@ export function registerBaseAbilities(): void {
                         cardUid: strongest[0].uid,
                         defId: strongest[0].defId,
                         ownerId: strongest[0].owner,
+                        sourcePlayerId: strongest[0].controller,
                         reason: '刚柔流寺庙：最高力量随从放入牌库底' },
                     timestamp: ctx.now } as CardToDeckBottomEvent);
             } else {
@@ -1037,6 +1038,7 @@ export function registerBaseAbilities(): void {
                     cardUid: m.uid,
                     defId: m.defId,
                     ownerId: m.owner,
+                    sourcePlayerId: m.controller,
                     reason: '仪式场所：随从洗回牌库' },
                 timestamp: ctx.now } as CardToDeckBottomEvent);
         }
@@ -1603,7 +1605,8 @@ export function registerBaseInteractionHandlers(): void {
                 fromBaseIndex: ctx.baseIndex,
                 toPlayerId: playerId,
                 reason: '母舰：冠军收回随从',
-                now: timestamp });
+                now: timestamp,
+                sourcePlayerId: playerId });
             if (returnEvents.length > 0) {
                 events.push(...returnEvents);
             } else {
@@ -1624,6 +1627,7 @@ export function registerBaseInteractionHandlers(): void {
                             minionDefId,
                             fromBaseIndex: ctx.baseIndex,
                             toPlayerId: playerId,
+                            sourcePlayerId: playerId,
                             reason: '母舰：冠军收回随从' },
                         timestamp } as MinionReturnedEvent);
                 }
@@ -1954,6 +1958,7 @@ export function registerBaseInteractionHandlers(): void {
                 cardUid: target.uid,
                 defId: target.defId,
                 ownerId: target.owner,
+                sourcePlayerId: target.controller,
                 reason: '刚柔流寺庙：最高力量随从放入牌库底' },
             timestamp } as CardToDeckBottomEvent];
 

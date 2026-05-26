@@ -335,9 +335,10 @@ export function registerExpansionBaseAbilities(): void {
         const playedMinion = ctx.minionUid ? base?.minions.find(m => m.uid === ctx.minionUid) : undefined;
         const ownerId = playedMinion?.owner ?? ctx.playerId;
 
-        // Infiltrate：只让拥有者自己忽略（不影响其他玩家）
+        // Infiltrate：按行动控制者忽略基地能力，不能被 borrowed 牌的真实 owner 串线。
+        const playedControllerId = playedMinion?.controller ?? ctx.playerId;
         const ignoredByOwner = base?.ongoingActions?.some(o =>
-            o.ownerId === ownerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === playedControllerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignoredByOwner) return { events: [] };
 
@@ -372,9 +373,9 @@ export function registerExpansionBaseAbilities(): void {
         canTrigger: (ctx) => {
             const base = ctx.state.bases[ctx.baseIndex];
             const playedMinion = ctx.minionUid ? base?.minions.find(m => m.uid === ctx.minionUid) : undefined;
-            const ownerId = playedMinion?.owner ?? ctx.playerId;
+            const playedControllerId = playedMinion?.controller ?? ctx.playerId;
             const ignoredByOwner = base?.ongoingActions?.some(o =>
-                o.ownerId === ownerId && o.defId === 'ninja_infiltrate',
+                ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === playedControllerId && o.defId === 'ninja_infiltrate',
             ) ?? false;
             return !ignoredByOwner && Object.values(ctx.state.players).some(player => player.discard.length > 0);
         },
@@ -796,9 +797,9 @@ export function registerExpansionBaseAbilities(): void {
         if (eggIndex === -1) return false;
         if (ctx.targetBaseIndex !== eggIndex) return false;
         const eggBase = ctx.state.bases[eggIndex];
-        // Infiltrate：该随从控制者若选择忽略，则其随从不再受保护
+        // Infiltrate：该随从控制者若选择忽略，则其随从不再受保护。
         const ignored = eggBase.ongoingActions?.some(o =>
-            o.ownerId === ctx.targetMinion.controller && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === ctx.targetMinion.controller && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return false;
         // 仅“+1 power counters”（力量指示物）提供保护
@@ -1094,6 +1095,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     type: SU_EVENTS.CARD_BOXED,
                     payload: {
                         playerId,
+                        ownerId: boxedCard.owner,
                         cardUid: boxedCard.uid,
                         defId: boxedCard.defId,
                         from: 'hand',

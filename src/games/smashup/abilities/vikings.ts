@@ -362,11 +362,11 @@ function vikingsVikingFuneralTrigger(ctx: TriggerContext): SmashUpEvent[] {
         timestamp: ctx.now,
     } as VpAwardedEvent];
 
-    if (ctx.triggerMinion.owner === ctx.sourceControllerId) {
+    if (ctx.triggerMinion.controller === ctx.sourceControllerId) {
         events.push({
             type: SU_EVENTS.CARD_REMOVED_FROM_GAME,
             payload: {
-                playerId: ctx.sourceControllerId,
+                playerId: ctx.triggerMinion.owner,
                 cardUid: ctx.triggerMinion.uid,
                 defId: ctx.triggerMinion.defId,
                 reason: 'vikings_viking_funeral',

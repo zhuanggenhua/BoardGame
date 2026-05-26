@@ -414,6 +414,58 @@ describe('dino_tooth_and_claw 保护', () => {
         expect(isMinionProtected(state, minion, 0, '1', 'affect')).toBe(true);
         expect(isMinionProtected(state, minion, 0, '0', 'affect')).toBe(false);
     });
+
+    it('MINION_DESTROYED 应按 destroyerId 而不是被消灭随从 ownerId 判断 Tooth and Claw 来源', () => {
+        const minion = makeMinion('m1', 'test_minion', '0', 3, {
+            attachedActions: [{ uid: 'tc-1', defId: 'dino_tooth_and_claw', ownerId: '0' }],
+        });
+        const base = makeBase({ minions: [minion] });
+        const state = makeState({ bases: [base] });
+
+        const destroyEvt = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'm1',
+                minionDefId: 'test_minion',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                controllerId: '0',
+                destroyerId: '1',
+                reason: 'opponent_destroy',
+            },
+            timestamp: 0,
+        };
+
+        const result = interceptEvent(state, destroyEvt);
+        expect(Array.isArray(result) ? result : [result]).toEqual(
+            expect.arrayContaining([expect.objectContaining({ type: SU_EVENTS.ONGOING_DETACHED })]),
+        );
+    });
+
+    it('CARD_TO_DECK_BOTTOM 应按 sourcePlayerId 而不是目标 ownerId 判断 Tooth and Claw 来源', () => {
+        const minion = makeMinion('m1', 'test_minion', '0', 3, {
+            attachedActions: [{ uid: 'tc-1', defId: 'dino_tooth_and_claw', ownerId: '0' }],
+        });
+        const base = makeBase({ minions: [minion] });
+        const state = makeState({ bases: [base] });
+
+        const bottomEvt = {
+            type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+            payload: {
+                cardUid: 'm1',
+                defId: 'test_minion',
+                ownerId: '0',
+                sourcePlayerId: '1',
+                reason: 'opponent_bottom',
+            },
+            timestamp: 0,
+        };
+
+        const result = interceptEvent(state, bottomEvt);
+        expect(Array.isArray(result) ? result : [result]).toEqual(
+            expect.arrayContaining([expect.objectContaining({ type: SU_EVENTS.ONGOING_DETACHED })]),
+        );
+    });
 });
 
 // ============================================================================
@@ -2384,6 +2436,7 @@ describe('base_the_mothership 母舰 afterScoring', () => {
         const ret = result.events[0] as MinionReturnedEvent;
         expect(ret.payload.minionUid).toBe('m1');
         expect(ret.payload.toPlayerId).toBe('0');
+        expect(ret.payload.sourcePlayerId).toBe('0');
     });
 });
 

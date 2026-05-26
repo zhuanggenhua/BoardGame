@@ -424,6 +424,8 @@ describe('忍者派系能力（第6批）', () => {
 
         const playedEvent: any = afterPlay.events.find(event => event.type === SU_EVENTS.MINION_PLAYED);
         expect(playedEvent?.payload?.ownerId).toBe('1');
+        const returnedEvent: any = afterPlay.events.find(event => event.type === SU_EVENTS.MINION_RETURNED);
+        expect(returnedEvent?.payload?.sourcePlayerId).toBe('0');
         const playedMinion = afterPlay.finalState.core.bases[0].minions.find(minion => minion.uid === 'borrowed-hand-minion');
         expect(playedMinion?.controller).toBe('0');
         expect(playedMinion?.owner).toBe('1');

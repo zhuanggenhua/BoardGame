@@ -305,6 +305,100 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         expect(responded.finalState.core.players['1'].discard.some(card => card.uid === 'high-ground-pod-a')).toBe(true);
     });
 
+    it('queued onMinionMoved trigger 处理 borrowed High Ground POD 时，不应把同基地其他玩家的 POD 当成当前 source', () => {
+        const baseCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_isis_swingin_pad',
+                    minions: [
+                        makeMinion('bear-owner-minion', 'robot_microbot_alpha', '0', 3),
+                        makeMinion('enemy-moved', 'ghosts_spectre', '1', 3),
+                    ],
+                    ongoingActions: [
+                        { uid: 'opponent-high-ground', defId: 'bear_cavalry_high_ground_pod', ownerId: '1' } as any,
+                    ],
+                }),
+                makeBase('base_portal_room', []),
+            ],
+        });
+        const core = reduce(baseCore, {
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: {
+                cardUid: 'high-ground-pod-a',
+                defId: 'bear_cavalry_high_ground_pod',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 0,
+            },
+            timestamp: 11,
+        } as any);
+
+        const trigger: TriggerInstance = {
+            id: 'queued-high-ground-pod-a',
+            timing: 'onMinionMoved',
+            sourceDefId: 'bear_cavalry_high_ground_pod',
+            sourceCardUid: 'high-ground-pod-a',
+            sourceControllerId: '0',
+            sourceBaseIndex: 0,
+            mandatory: true,
+            resolutionClass: 'mandatory',
+            ownerPlayerId: '0',
+            eventPlayerId: '1',
+            witnessRequirement: 'inPlayAtTriggerTime',
+            witnessed: true,
+            baseIndex: 0,
+            triggerMinionUid: 'enemy-moved',
+            triggerMinionDefId: 'ghosts_spectre',
+        };
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: [trigger],
+            }),
+            defaultTestRandom,
+            12,
+        );
+        const prompt = getInteractionsFromMS(resolved!.state)[0] as any;
+        expect(prompt?.playerId).toBe('0');
+        expect(prompt?.data?.sourceId).toBe('bear_cavalry_high_ground_pod_trigger');
+        expect(prompt?.id).toContain('high-ground-pod-a');
+
+        const destroyOption = prompt?.data?.options?.find((entry: any) => entry.value?.action === 'destroy');
+        expect(destroyOption).toBeDefined();
+        const responded = runCommand(
+            resolved!.state,
+            {
+                type: 'SYS_INTERACTION_RESPOND' as any,
+                playerId: '0',
+                payload: { optionId: destroyOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        expect(responded.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({
+                cardUid: 'high-ground-pod-a',
+                defId: 'bear_cavalry_high_ground_pod',
+                ownerId: '1',
+            }),
+        }));
+        expect(responded.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({
+                cardUid: 'opponent-high-ground',
+            }),
+        }));
+    });
+
     it('queued onTurnEnd trigger 处理 borrowed steampunk_difference_engine 时，仍应按控制者判定并让控制者抽牌', () => {
         const baseCore = makeState({
             turnOrder: ['0', '1'],
@@ -548,6 +642,79 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         }));
         expect(resolved?.state.core.players['0']?.actionLimit).toBe(2);
         expect(resolved?.state.core.players['1']?.actionLimit ?? 1).toBe(1);
+    });
+
+    it('queued onMinionPlayed trigger 处理 borrowed cthulhu_altar 时，不应把同基地其他玩家的 Altar 也当成该 source 控制', () => {
+        const baseCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    actionsPlayed: 1,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1', {
+                    actionLimit: 1,
+                }),
+            },
+            bases: [makeBase({
+                defId: 'base_the_nexus',
+                minions: [makeMinion('altar-played-minion', 'robot_microbot_alpha', '0', 2)],
+                ongoingActions: [
+                    { uid: 'opponent-altar', defId: 'cthulhu_altar', ownerId: '1' } as any,
+                ],
+            })],
+            turnNumber: 30,
+        });
+        const core = reduce(baseCore, {
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: {
+                cardUid: 'borrowed-altar',
+                defId: 'cthulhu_altar',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 0,
+            },
+            timestamp: 29,
+        } as any);
+
+        const queued = collectTriggers(core, 'onMinionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'altar-played-minion',
+            triggerMinionDefId: 'robot_microbot_alpha',
+            random: defaultTestRandom,
+            now: 30,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.map((trigger: TriggerInstance) => trigger.sourceCardUid)).toEqual(['borrowed-altar']);
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            30,
+        );
+
+        const altarEvents = resolved?.events.filter(event =>
+            event.type === SU_EVENTS.LIMIT_MODIFIED
+            && (event as any).payload?.reason === 'cthulhu_altar',
+        ) ?? [];
+        expect(altarEvents).toHaveLength(1);
+        expect(altarEvents[0]).toEqual(expect.objectContaining({
+            payload: expect.objectContaining({
+                playerId: '0',
+                limitType: 'action',
+                delta: 1,
+            }),
+        }));
+        expect(resolved?.state.core.players['0']?.actionLimit).toBe(2);
+        expect(resolved?.state.core.players['1']?.actionLimit).toBe(1);
     });
 
     it('queued onTurnStart trigger 处理 borrowed zombie_overrun 时，仍应按控制者回合自毁并把 detached card 送回真实 owner discard', () => {
@@ -924,6 +1091,17 @@ describe('reaction queue: preserves source card/controller runtime context', () 
                 cardUid: 'ritual-borrowed-a',
                 defId: 'cthulhu_complete_the_ritual',
                 ownerId: '1',
+                sourcePlayerId: '0',
+                reason: 'cthulhu_complete_the_ritual',
+            }),
+        }));
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+            payload: expect.objectContaining({
+                cardUid: 'ritual-host-b',
+                defId: 'sharks_megalodon',
+                ownerId: '1',
+                sourcePlayerId: '0',
                 reason: 'cthulhu_complete_the_ritual',
             }),
         }));

@@ -480,7 +480,7 @@ function bearCavalryBearHug(ctx: AbilityContext): AbilityResult {
         if (weakest.length === 1) {
             // 唯一最弱，直接消灭
             events.push(destroyMinion(
-                weakest[0].minion.uid, weakest[0].minion.defId, weakest[0].baseIndex, weakest[0].minion.owner, undefined, 'bear_cavalry_bear_hug', ctx.now
+                weakest[0].minion.uid, weakest[0].minion.defId, weakest[0].baseIndex, weakest[0].minion.owner, ctx.playerId, 'bear_cavalry_bear_hug', ctx.now
             ));
         } else {
             // 平局：由拥有者选择
@@ -517,7 +517,7 @@ function bearHugProcessNext(
         const weakest = minions.filter(m => m.power === minPower);
         if (weakest.length <= 1) {
             if (weakest.length === 1) {
-                events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, undefined, 'bear_cavalry_bear_hug', ctx.now));
+                events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, ctx.playerId, 'bear_cavalry_bear_hug', ctx.now));
             }
             idx++;
             continue;
@@ -964,8 +964,9 @@ function bearCavalryHighGroundPodTrigger(ctx: TriggerContext): SmashUpEvent[] | 
     
     // 找到制高点 POD
     for (const ongoing of destBase.ongoingActions) {
+        if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) continue;
         if (ongoing.defId !== 'bear_cavalry_high_ground_pod') continue;
-        const ongoingControllerId = ctx.sourceControllerId ?? ongoing.ownerId;
+        const ongoingControllerId = (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
         if (ongoingControllerId === movedMinion.controller) continue;
 
         const ownerHasMinion = destBase.minions.some(m => m.controller === ongoingControllerId);

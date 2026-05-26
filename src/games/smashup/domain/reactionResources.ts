@@ -322,6 +322,9 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
         case SU_EVENTS.CARD_REMOVED_FROM_GAME:
             addGenericResourcesFromValue(fp, payload, 'write');
             addPlayerZoneWrites(fp, playerId(payload.playerId), ['hand', 'deck', 'discard', 'removed']);
+            if (payload.ownerId && payload.ownerId !== payload.playerId) {
+                addPlayerZoneWrites(fp, playerId(payload.ownerId), ['removed']);
+            }
             break;
         case SU_EVENTS.CARD_REMOVED_FROM_DECK:
             addGenericResourcesFromValue(fp, payload, 'write');

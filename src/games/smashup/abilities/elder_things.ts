@@ -1575,10 +1575,13 @@ function elderThingInsanityPod(ctx: AbilityContext): AbilityResult {
         const evt = drawMadnessCards(pid, 2, ctx.state, 'elder_thing_insanity_pod', ctx.now);
         if (evt) events.push(evt);
     }
+    const ownerId = ctx.state.players[ctx.playerId]?.hand.find(card => card.uid === ctx.cardUid)?.owner
+        ?? ctx.state.players[ctx.playerId]?.discard.find(card => card.uid === ctx.cardUid)?.owner
+        ?? ctx.playerId;
     // POD: Place this action in the box (remove from game) after resolving.
     events.push({
         type: SU_EVENTS.CARD_REMOVED_FROM_GAME,
-        payload: { playerId: ctx.playerId, cardUid: ctx.cardUid, defId: ctx.defId, reason: 'elder_thing_insanity_pod_box' },
+        payload: { playerId: ownerId, cardUid: ctx.cardUid, defId: ctx.defId, reason: 'elder_thing_insanity_pod_box' },
         timestamp: ctx.now,
     });
     return { events };
@@ -2652,8 +2655,10 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
-            if (!m.attachedActions.some(a => matchesDefId(a.defId, 'elder_thing_dunwich_horror'))) continue;
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, undefined, 'elder_thing_dunwich_horror', ctx.now, undefined, m.controller));
+            const horror = m.attachedActions.find(a => matchesDefId(a.defId, 'elder_thing_dunwich_horror'));
+            if (!horror) continue;
+            const destroyerId = horror.metadata?.sourceControllerId ?? horror.ownerId;
+            events.push(destroyMinion(m.uid, m.defId, i, m.owner, destroyerId, 'elder_thing_dunwich_horror', ctx.now, undefined, m.controller));
         }
     }
     return events;

@@ -915,6 +915,7 @@ function registerFrankensteinOngoingEffects(): void {
                 minionDefId: triggerMinionDefId,
                 fromBaseIndex: baseIndex,
                 toPlayerId: minion.owner,
+                sourcePlayerId: controllerId,
                 reason: 'frankenstein_grave_situation',
             },
             timestamp: now,

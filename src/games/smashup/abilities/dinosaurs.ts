@@ -780,7 +780,7 @@ const dinoSurvivalOfTheFittestProgram = createEffectProgram<AbilityContext, Smas
         if (!hasHigher) continue;
         const lowest = base.minions.filter((minion) => getMinionPower(ctx.state, minion, baseIndex) === minPower);
         if (lowest.length === 1) {
-            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, baseIndex, lowest[0].owner, undefined, 'dino_survival_of_the_fittest', ctx.now));
+            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, baseIndex, lowest[0].owner, ctx.playerId, 'dino_survival_of_the_fittest', ctx.now));
         }
     }
 
@@ -922,7 +922,7 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
         const payload = (event as MinionDestroyedEvent).payload;
         targetUid = payload.minionUid;
         fromBaseIndex = payload.fromBaseIndex;
-        sourcePlayerId = payload.ownerId;
+        sourcePlayerId = payload.destroyerId;
     } else if (event.type === SU_EVENTS.MINION_RETURNED) {
         const payload = (event as MinionReturnedEvent).payload;
         targetUid = payload.minionUid;
@@ -932,7 +932,7 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
         const payload = (event as CardToDeckBottomEvent).payload;
         // CARD_TO_DECK_BOTTOM 的 cardUid 可能是随从
         targetUid = payload.cardUid;
-        sourcePlayerId = payload.ownerId;
+        sourcePlayerId = payload.sourcePlayerId ?? payload.ownerId;
         // 需要在所有基地中查找该随从
         for (let i = 0; i < state.bases.length; i++) {
             if (state.bases[i].minions.some(m => m.uid === targetUid)) {

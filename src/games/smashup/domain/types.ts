@@ -1722,7 +1722,10 @@ export interface CardRemovedFromGameEvent extends GameEvent<typeof SU_EVENTS.CAR
 /** Stakeout POD：添加临时基地打随从限制 */
 export interface CardBoxedEvent extends GameEvent<typeof SU_EVENTS.CARD_BOXED> {
     payload: {
+        /** Source player whose zone currently contains the card. */
         playerId: PlayerId;
+        /** True owner whose removed-from-game zone receives the card. Defaults to playerId for old events. */
+        ownerId?: PlayerId;
         cardUid: string;
         defId: string;
         from: 'hand' | 'deck' | 'discard';

@@ -924,6 +924,15 @@ describe('shayu 三派系代表性玩法行为', () => {
             const top = prompt.data.options.find((option: any) => option.value?.choice === 'deck-top');
             return { optionId: top.id };
         });
+        const topEvent = resolved.events.find(event =>
+            event.type === SU_EVENTS.CARD_TO_DECK_TOP
+            && (event as any).payload?.cardUid === 'borrowed-dionysus'
+        ) as any;
+        expect(topEvent?.payload).toMatchObject({
+            ownerId: '1',
+            sourcePlayerId: '0',
+            reason: 'mythic_greeks_favor_of_dionysus',
+        });
         const p0 = resolved.finalState.core.players['0'];
         const p1 = resolved.finalState.core.players['1'];
         expect(p0.deck.map(card => card.uid)).toEqual(['p0-deck-1']);

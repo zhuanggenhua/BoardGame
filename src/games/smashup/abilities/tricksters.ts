@@ -1202,7 +1202,9 @@ function registerTricksterOngoingEffects(): void {
                         minionUid: trigCtx.triggerMinionUid,
                         minionDefId: trigCtx.triggerMinionDefId,
                         fromBaseIndex: i,
-                        ownerId: trigCtx.playerId,
+                        ownerId: triggerMinion.owner,
+                        controllerId: triggerMinion.controller,
+                        destroyerId: leprechaun.controller,
                         reason: 'trickster_leprechaun',
                     },
                     timestamp: trigCtx.now,
@@ -1271,6 +1273,7 @@ function registerTricksterOngoingEffects(): void {
             const controllerId = trap.metadata?.sourceControllerId ?? trap.ownerId;
             // 只对其他玩家触发
             if (controllerId === trigCtx.playerId) continue;
+            const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
             return [
                 // 消灭打出的随从
                 {
@@ -1279,7 +1282,9 @@ function registerTricksterOngoingEffects(): void {
                         minionUid: trigCtx.triggerMinionUid,
                         minionDefId: trigCtx.triggerMinionDefId,
                         fromBaseIndex: i,
-                        ownerId: trigCtx.playerId,
+                        ownerId: triggerMinion?.owner ?? trigCtx.playerId,
+                        controllerId: triggerMinion?.controller ?? trigCtx.playerId,
+                        destroyerId: controllerId,
                         reason: 'trickster_flame_trap',
                     },
                     timestamp: trigCtx.now,
@@ -1401,7 +1406,8 @@ function registerTricksterPodOngoingEffects(): void {
                     minionUid: playedMinion.uid,
                     minionDefId: playedMinion.defId,
                     fromBaseIndex: baseIndex,
-                    ownerId: trigCtx.playerId,
+                    ownerId: playedMinion.owner,
+                    controllerId: playedMinion.controller,
                     destroyerId: lep.controller,
                     reason: 'trickster_leprechaun_pod',
                 },
@@ -1508,6 +1514,7 @@ function registerTricksterPodOngoingEffects(): void {
         if (!trap) return [];
         const controllerId = trap.metadata?.sourceControllerId ?? trap.ownerId;
         if (controllerId === trigCtx.playerId) return [];
+        const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
         return [
             {
                 type: SU_EVENTS.ONGOING_DETACHED,
@@ -1520,7 +1527,8 @@ function registerTricksterPodOngoingEffects(): void {
                     minionUid: trigCtx.triggerMinionUid,
                     minionDefId: trigCtx.triggerMinionDefId,
                     fromBaseIndex: bi,
-                    ownerId: trigCtx.playerId,
+                    ownerId: triggerMinion?.owner ?? trigCtx.playerId,
+                    controllerId: triggerMinion?.controller ?? trigCtx.playerId,
                     destroyerId: controllerId,
                     reason: 'trickster_flame_trap_pod',
                 },

@@ -2892,6 +2892,50 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(resolved.finalState.sys.interaction.current?.data?.sourceId).not.toBe('smashup_immediate_extra_minion');
     });
 
+    it('变形者：borrowed G.E.L.F. 天赋将自身放到拥有者牌库底时应保留 sourcePlayerId', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('candidate-a', 'sharks_mako', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('p1-tail', 'sharks_hammerhead', 'minion', '1'),
+                    ],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_the_vats', [
+                makeMinion('gelf-borrowed', 'shapeshifters_gelf', '0', 4, '1'),
+            ])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'gelf-borrowed', baseIndex: 0 },
+        } as any);
+
+        expect(talent.success).toBe(true);
+        const bottom = talent.events.find(event =>
+            event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM
+            && (event as any).payload?.cardUid === 'gelf-borrowed'
+        ) as any;
+        expect(bottom?.payload).toMatchObject({
+            ownerId: '1',
+            sourcePlayerId: '0',
+            reason: 'shapeshifters_gelf',
+        });
+        expect(talent.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail', 'gelf-borrowed']);
+        expect(talent.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual([]);
+    });
+
     it('变形者：相似者从基地进弃牌堆后允许从牌库选择非第一张随从打到原基地', () => {
         const core = {
             players: {
@@ -3102,6 +3146,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(result.success).toBe(true);
+        const bottom = result.events.find(event =>
+            event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM
+            && (event as any).payload?.cardUid === 'monkey-back-borrowed'
+            && (event as any).payload?.reason === 'cyborg_apes_monkey_on_your_back'
+        ) as any;
+        expect(bottom?.payload).toMatchObject({
+            ownerId: '1',
+            sourcePlayerId: '0',
+        });
         expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['host']);
         expect(result.finalState.core.players['0'].deck.map(card => card.uid)).not.toContain('monkey-back-borrowed');
         expect(result.finalState.core.players['1'].deck.map(card => card.uid)).toContain('monkey-back-borrowed');
@@ -8574,6 +8627,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(result.success).toBe(true);
+        const bottomEvent = result.events.find(event =>
+            event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM
+            && (event as any).payload?.reason === 'time_travelers_time_walk'
+        ) as any;
+        expect(bottomEvent?.payload).toMatchObject({
+            cardUid: 'walk-a',
+            ownerId: '1',
+            sourcePlayerId: '0',
+        });
         expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
         expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-rest']);
         expect(result.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-rest', 'walk-a']);
@@ -11779,6 +11841,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             timestamp: 1002,
         } as any);
         expect(chooseBorrowed.success).toBe(true);
+        const wormholeBottom = chooseBorrowed.events.find(event =>
+            event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM
+            && (event as any).payload?.cardUid === 'borrowed-a'
+            && (event as any).payload?.reason === 'time_travelers_wormhole'
+        ) as any;
+        expect(wormholeBottom?.payload).toMatchObject({
+            ownerId: '1',
+            sourcePlayerId: '0',
+        });
 
         const portalPrompt = chooseBorrowed.finalState.sys.interaction.current!;
         const passOption = findInteractionOption(portalPrompt, candidate => candidate.value?.kind === 'pass');

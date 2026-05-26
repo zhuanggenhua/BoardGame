@@ -787,6 +787,7 @@ describe('黑熊骑兵派系能力', () => {
             // P1 最弱随从是 m3（力量1）
             expect(destroyEvents.length).toBe(1);
             expect((destroyEvents[0] as any).payload.minionUid).toBe('m3');
+            expect((destroyEvents[0] as any).payload.destroyerId).toBe('0');
         });
 
         it('多个对手各消灭一个', () => {
@@ -813,6 +814,7 @@ describe('黑熊骑兵派系能力', () => {
             const destroyedUids = destroyEvents.map(e => (e as any).payload.minionUid);
             expect(destroyedUids).toContain('m1');
             expect(destroyedUids).toContain('m2');
+            expect(destroyEvents.every(e => (e as any).payload.destroyerId === '0')).toBe(true);
         });
 
         it('对手无随从时不产生事件', () => {

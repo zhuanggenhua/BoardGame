@@ -874,7 +874,7 @@ const ancientEgyptiansMummyAfterScoringPromptProgram = createPromptProgram<
                 cardUid: context.cardUid,
                 defId: context.defId,
                 baseIndex: selectedBaseIndex,
-                trueOwnerId: playerId,
+                trueOwnerId: context.trueOwnerId ?? playerId,
                 buriedFrom: 'play',
                 reason: 'ancient_egyptians_mummy',
                 random,
@@ -891,7 +891,9 @@ const ancientEgyptiansMummyAfterScoringProgram = createEffectProgram<any, SmashU
     if (!ctx.matchState || !sourceCardUid || sourceControllerId === undefined || sourceBaseIndex === undefined) {
         return { events: [] };
     }
-    const sourceDefId = findMinionOnBases(ctx.state, sourceCardUid)?.minion.defId ?? 'ancient_egyptians_mummy';
+    const source = findMinionOnBases(ctx.state, sourceCardUid);
+    const sourceDefId = source?.minion.defId ?? 'ancient_egyptians_mummy';
+    const trueOwnerId = source?.minion.owner ?? sourceControllerId;
     const baseOptions = buildBaseTargetOptions(
         ctx.state.bases
             .map((base: any, baseIndex: number) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? base.defId }))
@@ -905,6 +907,7 @@ const ancientEgyptiansMummyAfterScoringProgram = createEffectProgram<any, SmashU
             cardUid: sourceCardUid,
             defId: sourceDefId,
             sourceBaseIndex,
+            trueOwnerId,
         }),
         nextProgram: ancientEgyptiansMummyAfterScoringPromptProgram,
     };

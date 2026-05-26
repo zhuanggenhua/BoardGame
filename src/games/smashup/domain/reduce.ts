@@ -1509,13 +1509,16 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.CARD_BOXED: {
-            const { playerId, cardUid, from } = (event as CardBoxedEvent).payload;
+            const { playerId, ownerId: payloadOwnerId, cardUid, from } = (event as CardBoxedEvent).payload;
+            const ownerId = payloadOwnerId ?? playerId;
             const player = state.players[playerId];
             if (!player) return state;
 
             const zone = player[from];
             const boxedCard = zone.find(card => card.uid === cardUid);
             if (!boxedCard) return state;
+            const owner = state.players[ownerId] ?? player;
+            const finalOwnerId = state.players[ownerId] ? ownerId : playerId;
 
             return {
                 ...state,
@@ -1524,8 +1527,18 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     [playerId]: {
                         ...player,
                         [from]: zone.filter(card => card.uid !== cardUid),
-                        removedFromGame: [...(player.removedFromGame ?? []), boxedCard],
+                        ...(finalOwnerId === playerId
+                            ? { removedFromGame: [...(player.removedFromGame ?? []), boxedCard] }
+                            : {}),
                     },
+                    ...(finalOwnerId === playerId
+                        ? {}
+                        : {
+                            [finalOwnerId]: {
+                                ...owner,
+                                removedFromGame: [...(owner.removedFromGame ?? []), boxedCard],
+                            },
+                        }),
                 },
             };
         }
@@ -2209,9 +2222,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const destroyedMinionByPlayersThisTurn = destroyerId
                 ? Array.from(new Set([...(state.destroyedMinionByPlayersThisTurn ?? []), destroyerId]))
                 : state.destroyedMinionByPlayersThisTurn;
+            const decreasedControllerId = destroyRecord.controller;
             const basePowerDecreasedPlayersThisTurn = {
                 ...(state.basePowerDecreasedPlayersThisTurn ?? {}),
-                [fromBaseIndex]: Array.from(new Set([...(state.basePowerDecreasedPlayersThisTurn?.[fromBaseIndex] ?? []), ownerId])),
+                [fromBaseIndex]: Array.from(new Set([...(state.basePowerDecreasedPlayersThisTurn?.[fromBaseIndex] ?? []), decreasedControllerId])),
             };
             return {
                 ...state,

@@ -631,12 +631,12 @@ function cthulhuCompleteTheRitualTrigger(ctx: TriggerContext): SmashUpEvent[] {
         );
         if (!ritual) {
             const fallbackRitual = base.ongoingActions.find(
-                a => matchesDefId(a.defId, 'cthulhu_complete_the_ritual') && (ctx.sourceControllerId ?? a.ownerId) === controllerId
+                a => matchesDefId(a.defId, 'cthulhu_complete_the_ritual') && getCthulhuOngoingControllerId(a) === controllerId
             );
             if (!fallbackRitual) continue;
         }
         const resolvedRitual = ritual ?? base.ongoingActions.find(
-            a => matchesDefId(a.defId, 'cthulhu_complete_the_ritual') && (ctx.sourceControllerId ?? a.ownerId) === controllerId
+            a => matchesDefId(a.defId, 'cthulhu_complete_the_ritual') && getCthulhuOngoingControllerId(a) === controllerId
         );
         if (!resolvedRitual) continue;
 
@@ -648,6 +648,7 @@ function cthulhuCompleteTheRitualTrigger(ctx: TriggerContext): SmashUpEvent[] {
                     cardUid: m.uid,
                     defId: m.defId,
                     ownerId: m.owner,
+                    ...(m.owner !== controllerId ? { sourcePlayerId: controllerId } : {}),
                     reason: 'cthulhu_complete_the_ritual',
                 },
                 timestamp: ctx.now,
@@ -661,6 +662,7 @@ function cthulhuCompleteTheRitualTrigger(ctx: TriggerContext): SmashUpEvent[] {
                         cardUid: a.uid,
                         defId: a.defId,
                         ownerId: a.ownerId,
+                        ...(a.ownerId !== controllerId ? { sourcePlayerId: controllerId } : {}),
                         reason: 'cthulhu_complete_the_ritual',
                     },
                     timestamp: ctx.now,
@@ -676,6 +678,7 @@ function cthulhuCompleteTheRitualTrigger(ctx: TriggerContext): SmashUpEvent[] {
                     cardUid: ongoing.uid,
                     defId: ongoing.defId,
                     ownerId: ongoing.ownerId,
+                    ...(ongoing.ownerId !== controllerId ? { sourcePlayerId: controllerId } : {}),
                     reason: 'cthulhu_complete_the_ritual',
                 },
                 timestamp: ctx.now,
@@ -834,6 +837,10 @@ function cthulhuChosenBeforeScoringPerInstance(ctx: TriggerContext): TriggerResu
 // ongoing 效果触发器?
 // ============================================================================
 
+function getCthulhuOngoingControllerId(ongoing: { ownerId: PlayerId; metadata?: { sourceControllerId?: PlayerId } }): PlayerId {
+    return ongoing.metadata?.sourceControllerId ?? ongoing.ownerId;
+}
+
 /** 克苏鲁祭坛触发：打出随从时额外打出一张战术?*/
 function isCthulhuAltarEligibleForMinionPlayed(ctx: TriggerContext): boolean {
     const baseIndex = ctx.baseIndex;
@@ -842,8 +849,9 @@ function isCthulhuAltarEligibleForMinionPlayed(ctx: TriggerContext): boolean {
     if (!base) return false;
     const usedUids = ctx.state.turnUsedOngoingUids ?? [];
     return base.ongoingActions.some(ongoing => {
+        if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) return false;
         if (!matchesDefId(ongoing.defId, 'cthulhu_altar')) return false;
-        const controllerId = ctx.sourceControllerId ?? ongoing.ownerId;
+        const controllerId = getCthulhuOngoingControllerId(ongoing);
         if (controllerId !== ctx.playerId) return false;
         return !ongoing.defId.endsWith('_pod') || !usedUids.includes(ongoing.uid);
     });
@@ -862,8 +870,9 @@ function cthulhuAltarTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const newUsedUids = [...usedUids];
 
     for (const ongoing of base.ongoingActions) {
+        if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) continue;
         if (!matchesDefId(ongoing.defId, 'cthulhu_altar')) continue;
-        const controllerId = ctx.sourceControllerId ?? ongoing.ownerId;
+        const controllerId = getCthulhuOngoingControllerId(ongoing);
         if (controllerId !== ctx.playerId) continue;
 
         const isPod = ongoing.defId.endsWith('_pod');
@@ -890,8 +899,9 @@ function cthulhuFurtheringTheCauseTrigger(ctx: TriggerContext): SmashUpEvent[] {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
         for (const ongoing of base.ongoingActions) {
+            if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) continue;
             if (!matchesDefId(ongoing.defId, 'cthulhu_furthering_the_cause')) continue;
-            const controllerId = ctx.sourceControllerId ?? ongoing.ownerId;
+            const controllerId = getCthulhuOngoingControllerId(ongoing);
             // 检查本回合是否有对手随从在此基地被消灭
             const hasDestroyedOpponent = destroyed.some(
                 d => d.baseIndex === i && (d.controller ?? d.owner) !== controllerId

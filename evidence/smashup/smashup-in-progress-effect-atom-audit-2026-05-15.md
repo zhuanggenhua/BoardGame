@@ -8,6 +8,181 @@
 
 当前状态：已建立 effect atom 审计口径、shared-contract 初稿，并完成 `yuanhou` 图集四派系对象级 effect atom 台账核销；本轮不再把其他实施中派系混入当前“全面”范围。当前尚未声明的是更广 shared-contract / L4 / transport 边界已全量完成，而不是继续把 yuanhou 对象级台账误记成未展开。
 
+## 2026-05-26 `base_temple_of_goju / base_ritual_site` CARD_TO_DECK_BOTTOM base-source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/domain/baseAbilities.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities.ts>) 的 `base_temple_of_goju` 唯一最强自动分支、`base_temple_of_goju_tiebreak` interaction handler、`base_ritual_site` afterScoring 洗回分支
+  - [`src/games/smashup/__tests__/newBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newBaseAbilities.test.ts>) 的两个 borrowed + Tooth and Claw focused gates
+- 权威来源：
+  - `CARD_TO_DECK_BOTTOM.payload.ownerId` 是牌进入谁的牌库，不等于这次 affect 的 source。
+  - 对基地 afterScoring 效果来说，`BaseAbilityContext.playerId` 在 afterScoring 下是当前回合玩家，不是可靠的 effect source；对单个被基地洗回的 borrowed minion，保护判断应避免把 true owner 当成“其他玩家发起者”。
+  - `dino_tooth_and_claw` 的 source check 会用 `sourcePlayerId ?? ownerId`；因此基地 producer 若只写 true owner，会在 `controller != owner` 的 borrowed minion 上制造错误拦截。
+- 逐效果原子结论：
+  - 新 focused gate `borrowed 最高力量随从被基地放入牌库底时，不应被 Tooth and Claw 误判为其他玩家影响` 首轮红灯：`base_temple_of_goju` 事件 `ownerId='1'` 正确，但 `sourcePlayerId === undefined`。
+  - 新 focused gate `borrowed 随从被基地洗回牌库时，不应被 Tooth and Claw 误判为其他玩家影响` 首轮同样红灯：`base_ritual_site` 事件 `ownerId='1'` 正确，但 `sourcePlayerId === undefined`。
+  - 当前最小修复为在这两个基地的 deck-bottom producer 上写入被影响随从的 `controller` 作为 `sourcePlayerId`：Temple 唯一最强、Temple 平局 handler、Ritual Site 全员洗回三处已补；不改其它基地、其它 deck-bottom producer 或 Tooth and Claw interceptor 本体。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newBaseAbilities.test.ts -t "borrowed .*基地|base_temple_of_goju|base_ritual_site"` -> 首轮 failed，修复后 `1 file passed, 6 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "CARD_TO_DECK_BOTTOM 应按 sourcePlayerId|dino_tooth_and_claw 保护"` -> `1 file passed, 3 passed`
+  - `npx eslint src/games/smashup/domain/baseAbilities.ts src/games/smashup/__tests__/newBaseAbilities.test.ts` -> 0 errors
+  - `git diff --check -- src/games/smashup/domain/baseAbilities.ts src/games/smashup/__tests__/newBaseAbilities.test.ts` -> 通过，仅 CRLF warning
+  - `choice-audit-fixes.test.ts` 当前被 Vitest `**/*audit*.test.*` exclude 规则排除，不能作为本格业务验证证据。
+- 未覆盖风险：
+  - 这格只闭合 `base_temple_of_goju / base_ritual_site` 两个基地 afterScoring `CARD_TO_DECK_BOTTOM` producer 对 borrowed minion + Tooth and Claw 的 source provenance。
+  - 不外推所有基地、所有 `CARD_TO_DECK_BOTTOM` producer、所有 Dinosaur protection、所有 affect source，或整个长期任务完成。
+
+## 2026-05-26 `trickster_flame_trap / leprechaun` onMinionPlayed destroy target owner provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/tricksters.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/tricksters.ts>) 的 `trickster_flame_trap`、`trickster_flame_trap_pod`、`trickster_leprechaun`、`trickster_leprechaun_pod` onMinionPlayed destroy 分支
+  - [`src/games/smashup/__tests__/baseFactionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/baseFactionOngoing.test.ts>) 的 Flame Trap focused gate 与 Tricksters 邻近子集
+- 权威来源：
+  - `MINION_DESTROYED.payload.ownerId` 必须是被消灭随从真实 owner；打出玩家/事件玩家只表示控制者或行动者。
+  - borrowed minion 被其他卡消灭时，应进入真实 owner 的弃牌堆，但 `controllerId` 与 `destroyerId` 仍要保留控制/来源语义。
+- 逐效果原子结论：
+  - 新 focused gate `Flame Trap 消灭 borrowed 随从时，MINION_DESTROYED 应保留被消灭随从真实 owner` 首轮直接红灯：P1 打出 owner=P0 的 borrowed minion 时，旧 `trickster_flame_trap` 产生 `MINION_DESTROYED.ownerId='1'`，且没有 `controllerId/destroyerId`。
+  - 同类代码阅读确认 `trickster_leprechaun`、`trickster_flame_trap_pod`、`trickster_leprechaun_pod` 都存在 `ownerId: trigCtx.playerId` sibling。
+  - 当前最小修复为从 live `triggerMinion/playedMinion` 读取真实 `owner/controller`，并给 Flame Trap / Leprechaun destroy 事件补 `destroyerId`；不改变这些 trigger 的触发条件、陷阱自毁、POD breakpoint prompt 或 Brownie/Hideout/Pay the Piper sibling。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/baseFactionOngoing.test.ts -t "Flame Trap 消灭 borrowed"` -> 首轮 failed，修复后与 borrowed/POD trap 邻近同组 `1 file passed, 5 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/baseFactionOngoing.test.ts -t "Leprechaun|leprechaun|小矮妖|低的随从"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/tricksters.ts src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> 0 errors，30 warnings（既有 unused/any warnings）
+  - `git diff --check -- src/games/smashup/abilities/tricksters.ts src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> 通过，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 Tricksters onMinionPlayed destroy 分支对被消灭 borrowed minion 的 `ownerId/controllerId/destroyerId` provenance。
+  - 不外推所有 Tricksters、所有 onMinionPlayed destroy producer、所有 destroy pipeline consumer，或整个长期任务已完成。
+
+## 2026-05-26 `MINION_DESTROYED -> basePowerDecreasedPlayersThisTurn` controller provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>) 的 `MINION_DESTROYED` reducer
+  - [`src/games/smashup/__tests__/vampiresPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/vampiresPod.test.ts>) 的 `Stakeout POD` focused gates
+- 权威来源：
+  - “某玩家在某基地力量减少”应按该玩家当前控制的随从/行动产生的基地力量变化记录；被消灭随从的真实 owner 不等于该基地力量归属。
+  - `MINION_DESTROYED.payload.ownerId` 是被消灭卡牌的真实 owner；当 borrowed/stolen minion controller 与 owner 分离时，base power decreased ledger 必须按 controller。
+- 逐效果原子结论：
+  - 新 focused gate 首轮直接红灯：借来的随从被消灭后，`basePowerDecreasedPlayersThisTurn[0]` 实际记录真实 owner，而不是 controller。
+  - 最小根因在 `reduce.ts` 的 `MINION_DESTROYED` 分支：同一段已经为 `turnDestroyedMinions` 计算了 `controller`，但 `basePowerDecreasedPlayersThisTurn` 仍追加 `ownerId`。
+  - 当前最小修复为复用 `destroyRecord.controller` 写入 `basePowerDecreasedPlayersThisTurn`；不改变被消灭卡牌进入真实 owner discard/deck 的区位归属。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/vampiresPod.test.ts -t "借来的随从被消灭时"` -> 首轮 failed，修复后与 `borrowed Stakeout POD` 同组 `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/vampiresPod.test.ts -t "Stakeout POD|Nightstalker POD|Fledgling Vampire POD"` -> `1 file passed, 7 passed`；其中 Nightstalker negative case 的 stderr 是用例预期的命令验证失败路径。
+  - `npx eslint src/games/smashup/domain/reduce.ts src/games/smashup/__tests__/vampiresPod.test.ts` -> 0 errors，16 warnings（`reduce.ts` 既有 `any` warnings）
+  - `git diff --check -- src/games/smashup/domain/reduce.ts src/games/smashup/__tests__/vampiresPod.test.ts` -> 通过，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 `MINION_DESTROYED` 写入 `basePowerDecreasedPlayersThisTurn` 时的 owner/controller provenance。
+  - 不外推所有 base-power-decreased producer、所有 Vampires POD、所有 destroy ledger consumer，或整个长期任务已完成。
+
+## 2026-05-26 `vampire_stakeout_pod` borrowed talent restriction green evidence
+
+- 审计范围：
+  - [`src/games/smashup/abilities/vampires.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vampires.ts>) 的 `vampireStakeoutPodTalent()` 与 `vampire_stakeout_pod` restriction
+  - [`src/games/smashup/__tests__/vampiresPod.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/vampiresPod.test.ts>) 的 borrowed Stakeout POD focused gate
+- 权威来源：
+  - `Stakeout POD` talent 建立的是临时基地封锁；`stakeoutPodBlocks.ownerId` 字段在当前实现里表示“封锁发起玩家/控制者”，不是卡牌真实 owner。
+  - borrowed ongoing talent 的可使用者由 `metadata.sourceControllerId ?? ownerId` 决定；restriction 侧只应豁免封锁发起玩家。
+- 逐效果原子结论：
+  - 本轮把 `rctx.playerId === block.ownerId` 作为可疑 owner/controller seam 复核，但该字段不是卡牌 owner，而是 talent 事件写入的控制者。
+  - 新 focused gate `borrowed Stakeout POD talent 应按控制者建立封锁，并只豁免控制者` 直接转绿：P0 控制、P1 拥有的 borrowed `vampire_stakeout_pod` 使用 talent 后，事件 `STAKEOUT_POD_BLOCK_ADDED.ownerId='0'`，P0 打 3 力随从不受限，P1 打 3 力随从受限。
+  - 本格不改 runtime，只把一个误报候选降成 dedicated green evidence。
+- 命中的审计维度：D1/D5/D8/D34。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/vampiresPod.test.ts -t "borrowed Stakeout POD"` -> `1 file passed, 1 passed`
+  - `npx eslint src/games/smashup/__tests__/vampiresPod.test.ts` -> 0 errors
+  - `git diff --check -- src/games/smashup/__tests__/vampiresPod.test.ts` -> 通过，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只证明 borrowed Stakeout POD talent -> `stakeoutPodBlocks` -> play_minion restriction 的控制者语义当前成立。
+  - 不外推所有 Vampires POD、所有 temporary restriction、所有 base-power-decreased trigger，或整个长期任务已完成。
+
+## 2026-05-26 `dino_tooth_and_claw` CARD_TO_DECK_BOTTOM source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/dinosaurs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/dinosaurs.ts>) 的 `dinoToothAndClawInterceptor()`
+  - [`src/games/smashup/__tests__/newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>) 的 `dino_tooth_and_claw` focused gate
+- 权威来源：
+  - `CARD_TO_DECK_BOTTOM.payload.ownerId` 是落点牌库 owner，不等于发起影响的玩家；borrowed/source split 下必须优先使用 `sourcePlayerId`。
+  - `Tooth and Claw` 的“其他玩家卡牌影响该随从”判断应按影响来源玩家对比目标随从 controller，不能把目标 owner 或落点 owner 当 source。
+- 逐效果原子结论：
+  - 新 focused gate `CARD_TO_DECK_BOTTOM 应按 sourcePlayerId 而不是目标 ownerId 判断 Tooth and Claw 来源` 首轮直接红灯：P1 发起把 P0 随从放到牌库底时，`interceptEvent(...)` 返回 `undefined`，没有产出 `ONGOING_DETACHED`。
+  - 最小根因在 `dinoToothAndClawInterceptor()` 的 `CARD_TO_DECK_BOTTOM` 分支：旧实现没有读取 `payload.sourcePlayerId`，会把 `ownerId` 误当来源玩家。
+  - 当前最小修复为 `sourcePlayerId = payload.sourcePlayerId ?? payload.ownerId`；不改变 `MINION_RETURNED` 分支，也不扩到所有 deck-bottom producer。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "CARD_TO_DECK_BOTTOM 应按 sourcePlayerId|dino_tooth_and_claw 保护"` -> 首轮 failed，修复后 `1 file passed, 3 passed`
+  - `npx eslint src/games/smashup/abilities/dinosaurs.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts` -> 0 errors
+  - `git diff --check -- src/games/smashup/abilities/dinosaurs.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts` -> 通过，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 `dino_tooth_and_claw` 在 `CARD_TO_DECK_BOTTOM -> interceptor source check` 链上的 source provenance seam。
+  - 不外推所有 Dinosaur protection、所有 `CARD_TO_DECK_BOTTOM` producer、所有 affect source、所有 interceptor，或整个长期任务已完成。
+
+## 2026-05-26 `dino_tooth_and_claw` MINION_DESTROYED destroyer provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/dinosaurs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/dinosaurs.ts>) 的 `dinoToothAndClawInterceptor()`
+  - [`src/games/smashup/__tests__/newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>) 的 `dino_tooth_and_claw` focused gate
+- 权威来源：
+  - `MINION_DESTROYED.payload.ownerId` 是被消灭随从的真实 owner；影响来源应来自 `destroyerId` 或事件专用 source 字段。
+  - `Tooth and Claw` 的原版 ongoing 是“其他玩家卡牌影响该随从时，消灭本卡并使该能力无效”。因此 source check 不能把被消灭随从 owner 当成发起者。
+- 逐效果原子结论：
+  - 新 focused gate `MINION_DESTROYED 应按 destroyerId 而不是被消灭随从 ownerId 判断 Tooth and Claw 来源` 首轮直接红灯：P1 消灭 P0 随从时，`interceptEvent(...)` 返回 `undefined`，没有产出 `ONGOING_DETACHED`。
+  - 最小根因在 `dinoToothAndClawInterceptor()` 的 `MINION_DESTROYED` 分支：旧实现 `sourcePlayerId = payload.ownerId`，把 target owner 洗成 source。
+  - 当前最小修复只把该分支改成 `sourcePlayerId = payload.destroyerId`；不改变 `MINION_RETURNED` / `CARD_TO_DECK_BOTTOM` 分支，也不扩到 shared affect reducer。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "MINION_DESTROYED 应按 destroyerId|dino_tooth_and_claw 保护"` -> 首轮 failed，修复后 `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/dinosaurs.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts` -> 0 errors
+  - `git diff --check -- src/games/smashup/abilities/dinosaurs.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts` -> 通过，仅 CRLF warning
+  - `pnpm vitest run src/games/smashup/__tests__/audit-d31-dino-tooth-and-claw.test.ts -t "拦截消灭事件|不拦截己方操作"` 当前被 Vitest exclude `**/*audit*.test.*` 排除，输出 `No test files found`，未作为本轮业务红灯。
+- 未覆盖风险：
+  - 这格只闭合 `dino_tooth_and_claw` 在 `MINION_DESTROYED -> interceptor source check` 链上的 destroyer provenance seam。
+  - 不外推所有 Dinosaur protection、所有 affect source、所有 interceptor，或整个长期任务已完成。
+
+## 2026-05-25 `steampunk_steam_queen` borrowed in-play action protection controller seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/steampunks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/steampunks.ts>) 的 `steampunkSteamQueenInterceptor()`
+  - [`src/games/smashup/__tests__/expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>) 的 `steampunk_steam_queen` focused gate
+- 权威来源：
+  - `Steam Queen` 保护的是“你的行动卡”不受其他玩家卡牌影响；in-play action 的“你的”在 borrowed ongoing/attached action 场景里必须跟随当前控制者 `metadata.sourceControllerId`，不能按真实 owner 判断。
+- 逐效果原子结论：
+  - 新 focused gate `borrowed ongoing 行动也应按控制者受到 Steam Queen 保护` 首轮直接红灯：P0 控制但 P1 拥有的 borrowed ongoing action 被 P1 的行动影响时，`interceptEvent(...)` 返回 `undefined`，没有被 Steam Queen 拦截。
+  - 最小根因只在 `steampunkSteamQueenInterceptor()` 的 helper：旧 `findInPlayActionOwner()` 返回 `ongoing.ownerId / attached.ownerId`，导致 source P1 被误判为“自己影响自己的行动”。
+  - 当前最小修复只把该 helper 改成 `findInPlayActionController()`，对 base ongoing 与 attached action 统一按 `metadata.sourceControllerId ?? ownerId` 取当前控制者；不改变 `ONGOING_DETACHED.ownerId` 等真实 owner payload。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/expansionOngoing.test.ts -t "borrowed ongoing 行动也应按控制者受到 Steam Queen 保护"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/expansionOngoing.test.ts -t "steampunk_steam_queen|borrowed ongoing 行动也应按控制者受到 Steam Queen 保护|蒸汽女王保护"` -> `1 file passed, 6 passed`
+  - `npx eslint src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors
+  - `git diff --check -- src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 通过，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 borrowed `steampunk_steam_queen` 在 `interceptEvent -> in-play action affect protection` 链上的 controller provenance seam。
+  - 不外推整个 Steampunks、所有 interceptor、所有 action protection，或整个长期任务已完成。
+
+## 2026-05-25 `steampunk_escape_hatch` borrowed replacement trigger controller seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/steampunks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/steampunks.ts>) 的 `steampunkEscapeHatchTrigger()`
+  - [`src/games/smashup/__tests__/expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>) 的 `steampunk_escape_hatch` focused gate
+- 权威来源：
+  - `Escape Hatch` 是打到基地上的 ongoing replacement trigger：当该基地上“你的”随从被消灭时，让该随从回手而不是进入弃牌堆。
+  - 在 borrowed ongoing 场景里，“你的”必须跟随当前控制者 `metadata.sourceControllerId`，真实 owner 只用于离场归属/卡牌拥有权。
+- 逐效果原子结论：
+  - 新 focused gate `borrowed Escape Hatch 应按控制者而不是真实 owner 保护控制者的随从` 首轮直接红灯：`ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `steampunk_escape_hatch` 在 P0 随从 `sa-borrowed` 被消灭时返回 `events=[]`，没有产生 `MINION_RETURNED`。
+  - 最小根因只在 `steampunkEscapeHatchTrigger()`：旧实现仍直接 `if (minion.controller !== hatch.ownerId) return []`，把 ongoing 控制者洗回真实 owner。
+  - 当前最小修复只收口该 replacement trigger：新增 `const hatchControllerId = hatch.metadata?.sourceControllerId ?? hatch.ownerId`，并用它判断被消灭随从的 controller；不扩到其它 Steampunks sibling、其它 replacement trigger 或 shared trigger framework。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/expansionOngoing.test.ts -t "borrowed Escape Hatch"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/expansionOngoing.test.ts -t "steampunk_escape_hatch|borrowed Escape Hatch|逃生舱"` -> `1 file passed, 3 passed`
+  - `npx eslint src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors
+  - `git diff --check -- src/games/smashup/abilities/steampunks.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 通过，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 borrowed `steampunk_escape_hatch` 在 `onMinionDestroyed replacement -> MINION_RETURNED` 链上的 controller provenance seam。
+  - 不外推整个 Steampunks、所有 replacement trigger、所有 `onMinionDestroyed` consumer，或整个长期任务已完成。
+
 ## 2026-05-25 `borrowed ninjas_invisible_ninja` queued onTurnStart source lookup seam 收口
 
 - 审计范围：[`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `invisibleNinjaOnTurnStart()`，以及 [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>) 新增的 borrowed focused gate。
@@ -1469,6 +1644,8 @@
 143. 2026-05-18 修订 finding：上面 finding 75 和 `shapeshifters_shell_game` 行里把 `Live and Let Chum` 的“防保护分支”继续挂成 residual 已经失效。这里真正要补的是 **beforeScoring 真实入口里，玩家能否选择受 `Shell Game` 保护的低力量宿主，以及选择后 destroy 是否被保护过滤、基地是否仍按原力量继续计分**。本轮先在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:4274>) 新增 L2：`超级间谍：让对手鱼饵选择受 Shell Game 保护的低力量宿主时不应摧毁该宿主`，定向复跑命令 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "让对手鱼饵选择受 Shell Game 保护的低力量宿主时不应摧毁该宿主"`，结果 `1 passed`；该用例锁定 prompt 同时列出 `shell-host/low-b` 两个 3 力候选、隐藏 5 力 `high-c`，并在选择 `shell-host` 后确认宿主仍留场且 `resolved.events` 中不存在 `MINION_DESTROYED(shell-host)`。随后补真实入口 E2E：`超级间谍-Live and Let Chum-真实计分前选择受Shell Game保护的低力量宿主时不应被摧毁且本次计分继续按原力量结算`，复跑命令 `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4296 PW_PORT=4296 PW_E2E_GAME_SERVER_PORT=20322 PW_GAME_SERVER_PORT=20322 GAME_SERVER_PORT=20322 PW_E2E_API_SERVER_PORT=21322 PW_API_SERVER_PORT=21322 API_SERVER_PORT=21322 PW_RUNTIME_SCOPE=smashup-yuanhou-live-chum-shell BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Live and Let Chum-真实计分前选择受Shell Game保护的低力量宿主时不应被摧毁且本次计分继续按原力量结算"`，结果 `1 passed`。已实际核对两张截图：`D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Live-and-Let-Chum-真实计分前选择受Shell-Game保护的低力量宿主时不应被摧毁且本次计分继续按原力量结算\yuanhou-live-and-let-chum-shell-game-choice-prompt.png` 里 `The Vats` 处于 `15/15`，中央 prompt 同时列出 `模仿者` 与 `时间掠夺者` 两个 3 力候选，而带 `Shell Game` 紫色附着角标的 `Copycat/模仿者` 本体仍清晰可见，说明真实入口允许选择受保护宿主；`...\\yuanhou-live-and-let-chum-shell-game-scoring-resolved.png` 里中央已无残留 prompt，左侧基地已翻新为 `The Nexus`，右上记分板为 `P1=1 / P2=3`，说明选择受保护宿主后并未把基地总力量从 `15` 拉低到断点以下，而是继续按原 `4 vs 11` 结算。由此，`super_spies_live_and_let_chum.destroy_selected_minion` 的 protected-no-op source-family 分支已提升到 scoped L3，`shapeshifters_shell_game.protect_attached_host_from_destroy` 也不再只停在 `Bacta-source L3`；当前只继续把更广 destroy family 的死亡触发连锁与共享 L4 时序保留在 shared contract 范围。
 76. 2026-05-17 追加 finding：`Permit to Kill` 不能只靠 L2 证明“展示/弃随从/回顶”三段语义，因为真实入口会同时经过行动打出、公开展示遮罩、排序 prompt 与 deck/discard reducer。新增真实入口 E2E：三人局中 P0 从手牌打出 `Permit to Kill`；P1 顶二为 `Going Bananas / Time is Fleeting` 两张行动，真实 prompt 显示两张展示牌并允许选择反向 `Time is Fleeting / Going Bananas` 回顶；P2 顶二为 `Time Raider / For My Eyes Only`，状态断言 `Time Raider` 自动进入 P2 discard，`For My Eyes Only` 留在 P2 deck 顶。最终 P1 deck=`p1-action-b,p1-action-a,p1-rest`、P2 deck=`p2-action,p2-rest`、P0 deck=`p0-untouched`，证明每位其他玩家各自处理，施放者自己牌库不被展示影响。后续追查过一次“4 人局只处理第一个其他玩家”的疑点，最终定位为测试样本把 `Secret Agent` / `Mole` 这类随从误当成行动，导致实现按真卡表正常把它们弃掉，而不是交互队列吞后续 prompt。现已把该回归样本改成真实行动并新增 4 人局 L2，确认 `targetPlayerId=1 -> 2 -> 3` 的串行排序 prompt 正常保留；随后补上 4 人局真实浏览器链，实际看到 `P1 -> P2 -> P3` 三段 prompt 连续出现并逐次收口。空牌库/单张展示也已由 L2 锁定，当前这条不再保留未解释 residual。
 204. 2026-05-18 追加 finding：`Permit to Kill` 的“空牌库 / 单张展示”也不能一直只停在 L2，因为它真正容易在浏览器里回退的不是 reducer 语义，而是 **展示遮罩与排序 prompt 的 UI 收口**。如果只看 L2，会漏掉两类真实入口假阳性：1) P1 空牌库应被完全跳过，不能凭空出现一个针对空展示的排序 prompt；2) P2/P3 只展示 1 张牌时，中央 reveal/spotlight 队列收口后应直接回到桌面，而不是继续残留 `顶：...` 排序按钮或多余分页。初版 E2E 确实先撞到了 shared UI helper 假阻塞：测试把 `interaction.queue` 写死成 `null`，而真实收口态给的是空数组 `[]`，同时 reveal overlay 队列也需要与 spotlight 一起清空。修正 helper 后，复跑 `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-yuanhou-permit-short BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Permit to Kill-短牌库时真实入口不应创建多余排序 prompt"`，结果 `1 passed`。本轮实际打开 `yuanhou-permit-to-kill-short-before-play.png` 与 `yuanhou-permit-to-kill-short-auto-resolved-without-order-prompt.png`：前者可见 P0 手牌区只有 `Permit to Kill`、P1/P2/P3 三位其他玩家与两座基地，证明链路从真实手牌行动入口开始；后者中央已无任何 reveal/排序 prompt，右下弃牌区计数为 1 且可见 `Permit to Kill` 本体，桌面回到稳定可继续推进的出牌态。结合同一 E2E 的权威状态断言 `interaction.current==null && interaction.queue.length===0 && P2 deck=['p2-only-action'] && P3 discard=['p3-only-minion']`，可以把 `reveal_top_two_each_other_player` 的短牌库/单张展示收口分支、以及 `discard_all_revealed_minions` 的单张随从自动弃分支都提升为 scoped L3；但这**不**外推 `return_non_minions_any_order` 的单张非随从，因为该分支本来就不会创建排序 prompt。
+205. 2026-05-26 追加 finding：`vikings_viking_funeral` 旧证据覆盖了 queued LKI 能在宿主离场后奖励 1VP，也覆盖了“贴在对手控制宿主上只给 VP 不移出”的 sourceController 队列归属，但漏掉了 borrowed 宿主的“your minion” controller 语义。旧实现用 `ctx.triggerMinion.owner === ctx.sourceControllerId` 判定是否移出游戏，导致 P0 控制、P1 拥有的宿主带着 P0 控制的 `Viking Funeral` 进入弃牌堆时，只给 P0 1VP，不会移出该 borrowed 宿主；而移出事件若用控制者区位，也会因为 reducer 只从 `payload.playerId` 对应玩家区域移除而找不到 P1 discard 中的真实卡。现已新增 focused gate `vikings_viking_funeral 的 borrowed 宿主被自己控制时仍应移出其拥有者弃牌堆`，首轮红灯后最小修复为：用 `triggerMinion.controller === sourceControllerId` 判断“你的随从”，但 `CARD_REMOVED_FROM_GAME.playerId` 写真实 `triggerMinion.owner`。验证：`newFactionAbilities.test.ts -t "vikings_viking_funeral"` 红转绿 `1 file passed, 2 passed`；`reactionQueueEventPlayerContext.test.ts -t "Viking Funeral"` => `1 file passed, 1 passed`；ESLint 0 errors、28 warnings（既有 unused/any warnings）；diff check 通过，仅 CRLF warning。该格只闭合 Viking Funeral queued discard LKI 中 borrowed 宿主的 controller 判定与移出真实 owner 区位，不外推所有 Vikings、所有 attached-action discard trigger 或整个 completion audit 完成。
+206. 2026-05-26 追加 finding：`elder_thing_insanity_pod` 打出后“Place this action in the box” 不能把 `ctx.playerId` 当成移出区位。标准行动结算会按卡牌真实 owner 把 borrowed 行动放进 owner discard；旧 `elderThingInsanityPod()` 随后发 `CARD_REMOVED_FROM_GAME.playerId = ctx.playerId`，因此 P0 打出 `owner='1'` 的 borrowed `Insanity POD` 时，移出事件去 P0 区域找卡，最终本牌仍停在 P1 discard。现已新增 focused gate `borrowed Insanity POD resolves into its true owner removed-from-game zone`，首轮红灯后最小修复为：按 `ctx.cardUid` 从当前手牌/弃牌堆 live card 回查真实 owner，并将 `CARD_REMOVED_FROM_GAME.playerId` 写成该 owner。验证：`elderThingsPod.test.ts -t "Insanity POD"` 红转绿 `1 file passed, 2 passed`；邻近 `elder_thing_elder_thing_pod|begin_the_summoning_pod|Insanity POD` => `1 file passed, 2 passed`；ESLint 0 errors、4 warnings（既有 unused/any/no-console-disable warnings）；diff check 通过，仅 CRLF warning。该格只闭合 `elder_thing_insanity_pod` 自身 self-box / removed-from-game 的 borrowed owner 区位，不外推 Elder Things 全量、所有 self-box action 或所有 `CARD_REMOVED_FROM_GAME` producer。
 77. 2026-05-17 追加 finding：`Missing Uplink` 的 L2 修复已经证明“每张实例各抽一张”，但如果不走真实结束回合入口，仍无法证明 trigger 时序、正常回合结束抽牌和 UI 收口没有互相覆盖。本轮新增真实入口 E2E：P0 在 `Monkey Lab` 上有两名己方随从，每名随从各附着一张 `Missing Uplink`，P0 牌库有 5 张；点击真实“结束回合”后，状态断言 P0 手牌依次获得 `uplink-draw-a/uplink-draw-b/uplink-draw-c/uplink-draw-d`，牌库剩 `uplink-draw-e`，两张 Missing Uplink 仍分别附着在原宿主上，且流程进入 P1 出牌阶段、`interaction.current==null`。初版 E2E 真值曾漏算正常回合结束抽 2 张，只断言额外两张；这属于测试真值错误，已改为同时证明两张实例额外抽 2 张 + 正常回合结束抽 2 张。该证据把 `cyborg_apes_missing_uplink.owner_turn_end_draw_one_per_instance` 提升到 L2 / scoped L3；牌库不足洗弃牌、多 owner、多客户端视角和不同回合边界仍保持 residual。
 107. 2026-05-17 追加 finding：`Missing Uplink` 之前虽然已有 scoped L3，但对象级 residual 里还挂着“牌库不足洗弃牌 / 多 owner”。这两条其实属于同一个 shared draw contract 的 L2 缺口，而不是必须再起浏览器的 UI 问题。本轮在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:2949>) 追加两条回归：`电子猿：丢失中继在牌库不足时应先抽旧牌库顶部再洗弃牌续抽` 以及 `电子猿：丢失中继在多 owner 混挂时只聚合当前拥有者的实例`。前者用 `deck=[deck-a] + discard=[discard-a,discard-b] + 2 张 Missing Uplink` 锁住事件序列必须是 `DECK_RESHUFFLED -> CARDS_DRAWN`，且抽牌顺序为先抽旧牌库顶 `deck-a`，再从 reshuffle 后牌库继续抽 `discard-b`；后者把 `ownerId=0/1` 的两张 Missing Uplink 混挂在同一名 `controller=1` 的宿主上，分别验证 P0/P1 结束回合时只给对应 owner 抽 1，不会把另一名 owner 的实例误并入本次聚合。定向复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "丢失中继|Missing Uplink"` 结果为 `5 passed / 167 skipped`。由此，`cyborg_apes_missing_uplink.owner_turn_end_draw_one_per_instance` 不再把牌库不足洗弃牌或多 owner 继续挂成 residual；当前只保留多客户端视角的 scoped L3 外层边界，而额外回合结束时也按 owner 聚合抽牌已由 L2 锁定。
 108. 2026-05-17 追加 finding：`Secret Volcano Headquarters` 之前虽然已经有 scoped L3，但对象级 residual 里还挂着“双方都翻随从 / 双方都翻行动”。这两条其实不需要再起浏览器，而是缺少最小 L2 把 base ability 的 reveal 过滤规则锁死。本轮在 [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:5190>) 追加两条回归：`超级间谍基地：秘密火山总部在双方都翻出随从时应把两张展示随从都打到这里` 与 `超级间谍基地：秘密火山总部在双方都翻出行动时不应把任何牌打到这里`。前者锁定两名玩家牌库顶都是随从时，事件序列仍是 2 次 `REVEAL_DECK_TOP` + 2 次 `MINION_PLAYED`，最终基地上同时出现 `p0-minion-a/p1-minion-a`，双方牌库各自去掉被展示并打出的顶牌；后者锁定双方牌库顶都是行动时，仍然会各自 reveal 1 张，但不会产生任何 `MINION_PLAYED`，基地保持空场，双方牌库顺序也完全不被消费。定向复跑 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "秘密火山总部|Secret Volcano Headquarters"` 结果为 `3 passed / 171 skipped`。由此，`base_secret_volcano_headquarters.reveal_one_each_player_then_play_revealed_minions_here` 不再把“双方都翻随从 / 双方都翻行动”继续挂成 residual；当前只保留多人局 turnOrder 扩展与真实 reveal 可见性边界。
@@ -9382,12 +9559,15 @@
   - `mythic_greeks.ts` 新增 `findCardOwnerAcrossPlayerZones(...)`，按 `cardUid/defId` 在全体玩家 `hand/discard/deck` 中定位 source card，并读取其真实 `card.owner`
   - `favorOfDionysus()` 创建 `DionysusMinionContext/DionysusTopContext` 时，把这张 source action 的 `ownerId` 透传给 prompt context
   - `dionysusTopPromptProgram` resolve 时改为按 `context.ownerId` 写 `CARD_TO_DECK_TOP`
+  - 2026-05-26 复审补强：在 owner 落点已正确后继续收紧 provenance gate，要求 borrowed self-top 事件在 `context.ownerId !== context.playerId` 时保留 `sourcePlayerId: context.playerId`
 - 验证记录：
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/shayuFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "被他人拥有的狄俄尼索斯恩惠选择回顶时"` -> `1 file passed, 1 passed`
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/shayuFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 18 passed`
+  - 2026-05-26：`pnpm vitest run src/games/smashup/__tests__/shayuFactionAbilities.test.ts -t "狄俄尼索斯恩惠选择回顶|狄俄尼索斯的恩惠"` -> 首轮 failed 后 `1 file passed, 2 passed`；红灯坐实 `ownerId:'1'` 正确但缺 `sourcePlayerId:'0'`
+  - 2026-05-26：`npx eslint src/games/smashup/abilities/mythic_greeks.ts src/games/smashup/__tests__/shayuFactionAbilities.test.ts` -> 0 errors
   - `git diff --check -- src/games/smashup/abilities/mythic_greeks.ts src/games/smashup/__tests__/shayuFactionAbilities.test.ts` -> 通过，仅 LF/CRLF warning
 - 结论：
-  - 这格只闭合 `mythic_greeks_favor_of_dionysus` 在 borrowed action 场景下的 self-to-deck-top owner provenance。
+  - 这格只闭合 `mythic_greeks_favor_of_dionysus` 在 borrowed action 场景下的 self-to-deck-top owner/source provenance。
   - 不外推整个 `mythic_greeks`、所有 self-top/bottom action，或全部 `ACTION_PLAYED` consumer 已完成。
 
 ## 2026-05-24 `mythic_greeks_favor_of_athena` revealed borrowed card owner seam
@@ -9834,6 +10014,12 @@
   - 这格只闭合 `time_travelers_time_walk` 在 borrowed self-to-deck-bottom 场景下的 owner provenance。
   - 不外推整个 `Time Travelers`、所有 self-to-deck-bottom action，或 shared `buildValidatedCardToDeckBottomEvents` 已全量适配 borrowed source。
 
+### 2026-05-26 source provenance 补记
+
+- 追加 finding：2026-05-23 的 `Time Walk` 修复只证明目标牌库 owner 已正确，没有证明 `CARD_TO_DECK_BOTTOM` 的 effect source provenance 已正确。2026-05-26 固定清单复扫时，把 borrowed gate 收紧为同时要求 `ownerId='1'` 与 `sourcePlayerId='0'`，首轮 failed，说明事件仍无法表达“P0 打出/从 P0 区位移除 owner=P1 的行动”。现已在 `timeTravelersTimeWalk()` 的 `ownerId !== ctx.playerId` 分支补 `sourcePlayerId: ctx.playerId`。验证：`pnpm vitest run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts -t "时间漫步"` => `1 file passed, 2 passed`。
+- 追加 finding：同一轮又命中 `alien_disintegrator` 的 `CARD_TO_DECK_BOTTOM` source provenance 红灯。旧直点分支与 runtime prompt 分支都只写目标随从 `ownerId`，不写 effect source；新增 `factionAbilities.test.ts` gate `alien_disintegrator: 影响对手 borrowed 随从时应保留 sourcePlayerId` 首轮 failed。现已两个入口都补 `sourcePlayerId: context.playerId`，并复跑 Tooth and Claw source consumer 邻近子集确认仍绿：`pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "CARD_TO_DECK_BOTTOM 应按 sourcePlayerId|dino_tooth_and_claw 保护"` => `1 file passed, 3 passed`。
+- 边界：该补记只闭合 `time_travelers_time_walk` 与 `alien_disintegrator` 两个 `CARD_TO_DECK_*` producer 的 source provenance；`cthulhu_complete_the_ritual`、base ability afterScoring、其它 deck top/bottom producer 仍需继续按固定清单筛查，不能外推成 `CARD_TO_DECK_*` family 完成。
+
 ## 2026-05-23 `penguins_emperor_penguin_talent` borrowed hand minion -> owner deck top seam
 
 - 审计对象：
@@ -9869,6 +10055,7 @@
 - 验证记录：
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "企鹅帝皇天赋选择被他人拥有的 borrowed 手牌随从时，仍应洗回其拥有者牌库"` -> `1 file passed, 1 passed`
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --testNamePattern "企鹅帝皇天赋会把手中的低战力随从洗回牌库，并为泰坦增加 1 枚力量指示物|企鹅帝皇天赋选择被他人拥有的 borrowed 手牌随从时，仍应洗回其拥有者牌库"` -> `1 file passed, 2 passed`
+  - 2026-05-26 补强：existing borrowed gate 现在直接断言 `CARD_TO_DECK_TOP.payload.sourcePlayerId === '0'`，不再只靠最终进 P1 deck 间接证明 source provenance。复跑 `pnpm vitest run src/games/smashup/__tests__/smashup.smoke.test.ts -t "企鹅帝皇天赋选择被他人拥有的 borrowed 手牌随从"` -> `1 file passed, 1 passed`；邻近 2 条同组 -> `1 file passed, 2 passed`；`npx eslint src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors；`git diff --check -- src/games/smashup/__tests__/smashup.smoke.test.ts` -> 通过，仅 CRLF warning。
 - 结论：
   - 这格只闭合 `penguins_emperor_penguin_talent` 的 borrowed hand/discard minion 回顶到拥有者牌库，以及 shared `CARD_TO_DECK_TOP` 对 `sourcePlayerId` 的对称支持。
   - 不外推所有 `CARD_TO_DECK_TOP` caller、所有 `DECK_REORDERED` producer，或整个 `Penguins` family 已完成。
@@ -13472,6 +13659,29 @@
   - 这格只闭合 borrowed `killer_plant_choking_vines` 的 turn-start destroy-host controller seam。
   - 不外推整个 Killer Plants、所有 attached-action turn-start callback、所有 destroy producer、或整条长期任务已完成。
 
+### 2026-05-26 01:46 +08：borrowed `killer_plant_choking_vines` 的 destroyerId provenance 补强
+
+- 审计范围：
+  - [`src/games/smashup/abilities/killer_plants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/killer_plants.ts>)
+  - [`src/games/smashup/__tests__/expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>)
+- 权威来源：
+  - 2026-05-25 只证明 borrowed `Choking Vines` 会按控制者回合开始触发并消灭宿主；但这没有证明 `MINION_DESTROYED` 的来源 provenance 完整。
+  - 现有 shared consumer `dino_tooth_and_claw` 已明确要求 `MINION_DESTROYED` 按 `destroyerId` 判断影响来源；如果 attached-action destroy producer 不写 `destroyerId`，后续 protection / reaction 仍会退化成无来源或 fallback。
+- 逐效果原子结论：
+  - `killer_plant_choking_vines.borrowed_turn_start_destroy_host_sets_destroyer`
+    - 在既有 borrowed Choking Vines gate 中追加 `expect(payload.destroyerId).toBe('0')`。
+    - 首轮直接坐实：`ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `Choking Vines` 真实产出 `MINION_DESTROYED(reason='killer_plant_choking_vines')`，但 `payload.destroyerId === undefined`。
+    - 最小修复只把已计算出的 `controllerId = attached.metadata?.sourceControllerId ?? attached.ownerId` 作为 `destroyMinion(... destroyerId)` 传入。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/expansionOngoing.test.ts -t "borrowed Choking Vines|killer_plant_choking_vines"` -> 首轮 failed 后 `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "MINION_DESTROYED 应按 destroyerId|killer_plant_choking_vines|dino_tooth_and_claw 保护"` -> `1 file passed, 5 passed`
+  - `npx eslint src/games/smashup/abilities/killer_plants.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors
+  - `git diff --check -- src/games/smashup/abilities/killer_plants.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 通过，仅 LF/CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 borrowed `killer_plant_choking_vines` 在 turn-start destroy-host 链上的 `destroyerId` provenance。
+  - 不外推整个 Killer Plants、所有 attached-action destroy producer、所有 `MINION_DESTROYED` producer 或长期任务完成。
+
 ### 2026-05-25 14:49 +08：borrowed `killer_plant_entangled` 的 protection-checker controller seam
 
 - 审计范围：
@@ -13971,6 +14181,58 @@
   - 不外推所有 discard-bury producer、Skeletons Returned One、Titans Sphinx、所有 base ability interaction handler，或整个长期任务已完成。
   - 下一格应继续筛 `Skeletons Returned One / discard-bury helper / Titans Sphinx` 等仍直接写 `trueOwnerId: playerId` 的 sibling。
 
+## 2026-05-25 `titan_sphinx_talent / ancient_egyptians_mummy` borrowed trueOwner provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>)
+  - [`src/games/smashup/abilities/ancient_egyptians.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ancient_egyptians.ts>)
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>)
+  - [`src/games/smashup/__tests__/expansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionAbilities.test.ts>)
+- 权威来源：
+  - `Sphinx talent` 从当前玩家手牌埋葬卡时，埋葬控制者是当前玩家，但 `BuriedCardOnBase.trueOwnerId` 必须保留被埋卡的真实 owner。
+  - `Ancient Egyptians Mummy` afterScoring 从原基地埋葬自身到另一基地时，控制者决定谁响应 prompt，但 buried source 的真实 owner 仍必须来自 source minion，而不是响应玩家。
+- 逐效果原子结论：
+  - 新 focused gate `titan_sphinx_talent 埋葬 borrowed 手牌时应保留真实 trueOwnerId` 首轮红灯：P0 手牌中的 borrowed 卡 `owner='1'` 被埋葬后实际 `trueOwnerId === '0'`。
+  - 新 focused gate `ancient_egyptians_mummy 计分后埋葬 borrowed 随从时应保留真实 owner` 首轮红灯：P0 控制但 P1 拥有的 borrowed Mummy 在 afterScoring 埋葬到另一基地后实际 `trueOwnerId === '0'`。
+  - `titan_sphinx_talent` 最小修复为：handler 从当前玩家 live hand 按 `cardUid` 回查真实 owner，再传入 `buildBuryCardEvents()`。
+  - `ancient_egyptians_mummy` 最小修复为：prompt 创建时从 live base source minion 取 `owner` 写入 continuation context；resolve 时使用 `context.trueOwnerId ?? playerId`，避免计分链状态变化后再查 live base 丢 source。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "titan_sphinx_talent 埋葬 borrowed"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/expansionAbilities.test.ts -t "ancient_egyptians_mummy 计分后埋葬 borrowed"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/expansionAbilities.test.ts -t "ancient_egyptians_pyramid_engineer talent|ancient_egyptians_lost_knowledge|ancient_egyptians_seal_the_tomb|ancient_egyptians_you_can_take_it_with_you 自埋 borrowed|ancient_egyptians_mummy 计分后埋葬 borrowed"` -> `1 file passed, 6 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/smashup.smoke.test.ts -t "狮身人面像天赋"` -> `1 file passed, 2 passed`
+  - `rg -n "trueOwnerId:\s*(playerId|ctx\.playerId)|trueOwnerId:\s*sourceControllerId" src/games/smashup/abilities src/games/smashup/domain -S` -> 无剩余命中
+  - `npx eslint src/games/smashup/abilities/titans.ts src/games/smashup/abilities/ancient_egyptians.ts src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 0 errors，47 warnings；warnings 为既有 unused / explicit-any 噪音。
+- 未覆盖风险：
+  - 只闭合 `titan_sphinx_talent` hand-bury 与 `ancient_egyptians_mummy` afterScoring play-bury 的 true owner provenance。
+  - 不外推所有 bury caller、所有 buried/uncover 回收路径、所有 Titans、所有 Ancient Egyptians，或整个长期任务已完成。
+  - 当前 `trueOwnerId: playerId / ctx.playerId / sourceControllerId` 裸 producer 静态搜索已无剩余命中；下一格应离开 trueOwner 裸写入 family，转向其它 still-open owner/controller seam。
+
+## 2026-05-25 `base_innsmouth_base / base_egg_chamber` borrowed Infiltrate controller seam
+
+- 审计范围：
+  - [`src/games/smashup/domain/baseAbilities_expansion.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities_expansion.ts>)
+  - [`src/games/smashup/__tests__/expansionBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionBaseAbilities.test.ts>)
+  - 邻近回归：[`src/games/smashup/__tests__/baseProtection.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/baseProtection.test.ts>)
+- 权威来源：
+  - `Infiltrate` 是持续行动的控制者让自己的随从忽略基地能力；borrowed ongoing 的真实 owner 不能替代 runtime controller。
+  - `Innsmouth Base` 的 prompt 选择权仍按 played minion owner，但“是否被 Infiltrate 忽略”应按 played minion controller 匹配 Infiltrate controller。
+  - `Egg Chamber` 的保护对象已经按目标随从 controller 判断，忽略保护的 Infiltrate 来源也必须按 controller 匹配。
+- 逐效果原子结论：
+  - 新 focused gate `borrowed Infiltrate 不应按真实 owner 错误阻止其他玩家的 Innsmouth Base 触发` 首轮红灯：`ownerId='1', metadata.sourceControllerId='0'` 的 borrowed Infiltrate 会按真实 owner P1 错误阻止 P1 随从触发 Innsmouth Base，导致没有 `base_innsmouth_base_choose_player` prompt。
+  - 新 focused gate `borrowed Infiltrate 由控制者控制时，应让 Egg Chamber 不再保护控制者的有指示物随从` 首轮红灯：P0 控制的 borrowed Infiltrate 没有让 P0 有 +1 指示物的随从忽略 Egg Chamber 保护，`isMinionProtected(..., 'destroy')` 仍为 true。
+  - 最小修复为：`base_innsmouth_base` handler 与 `canTrigger` 分支统一用 played minion controller 匹配 `ninja_infiltrate` 的 `metadata.sourceControllerId ?? ownerId`；`base_egg_chamber` protection checker 统一用目标随从 controller 匹配 `metadata.sourceControllerId ?? ownerId`。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/expansionBaseAbilities.test.ts -t "borrowed Infiltrate"` -> 首轮 `2 failed`，修复后 `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/expansionBaseAbilities.test.ts -t "base_innsmouth_base|base_egg_chamber|borrowed Infiltrate"` -> `1 file passed, 7 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/baseProtection.test.ts -t "base_egg_chamber|Egg Chamber|卵室"` -> `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 只闭合 `base_innsmouth_base` 与 `base_egg_chamber` 两条 expansion base ability/protection gate 的 borrowed Infiltrate controller provenance。
+  - 不外推所有 expansion base abilities、所有 Infiltrate base-gate sibling、所有 protection checker、或整个长期任务已完成。
+  - 下一格继续筛其它 `metadata.sourceControllerId` 已持久化但 runtime consumer / restriction / interceptor / candidate-builder 仍裸读 `ownerId` 的 sibling。
+
 ## 2026-05-25 `trickster_hideout_pod` borrowed interceptor controller seam
 
 ## 2026-05-25 `vampire_dinner_date_pod` queued destroyer provenance seam
@@ -14038,3 +14300,559 @@
   - 只闭合 Skeletons `Returned One` 自埋 borrowed play-source 与 Skeletons discard-bury helper 的 true owner provenance。
   - 不外推 Titans Sphinx、所有 bury caller、所有 discard/deck 来源、所有 `trueOwnerId: playerId` producer，或整个长期任务已完成。
   - 下一格应离开已转绿的 Skeletons Returned One / Skeletons discard-bury helper，继续筛 `Titans Sphinx` 或其它仍把最终 owner 写成当前玩家区位的 producer。
+
+## 2026-05-26 `cthulhu_complete_the_ritual` CARD_TO_DECK_BOTTOM source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/cthulhu.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cthulhu.ts>)
+  - [`src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts>)
+  - 邻近回归：[`src/games/smashup/__tests__/newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>)
+- 权威来源：
+  - 这格不是 2026-05-25 borrowed runtime base-reset controller seam，也不是 same-def per-instance 入队 seam 的复读；那两格证明 Ritual 会按控制者回合开始、逐实例执行清场换基地。
+  - 当前要验证的是更细的 event provenance：清场时产生的 `CARD_TO_DECK_BOTTOM` 既要保留目标牌库真实 `ownerId`，也要在 borrowed/source-controller 场景保留 effect source。
+- 逐效果原子结论：
+  - 收紧 borrowed `Complete the Ritual` gate 后，首轮直接红灯坐实：`ritual-borrowed-a` 与被清场的 `ritual-host-b` 都正确写入 `ownerId:'1'`，但缺 `sourcePlayerId:'0'`。
+  - 最小根因只在 `cthulhuCompleteTheRitualTrigger()` 的清场 producer：随从、附着行动、基地 ongoing 三类 `CARD_TO_DECK_BOTTOM` 事件都只写目标对象真实 owner，没有在 owner != controller 时补 effect source。
+  - 当前最小修复为：三类 producer 统一在 `ownerId !== controllerId` 时补 `sourcePlayerId: controllerId`；不改 base replacement、per-instance trigger、其它 Cthulhu sibling 或 shared reducer。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts -t "borrowed cthulhu_complete_the_ritual"` -> `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "cthulhu_complete_the_ritual|CARD_TO_DECK_BOTTOM 应按 sourcePlayerId|dino_tooth_and_claw 保护"` -> `1 file passed, 5 passed`
+  - `npx eslint src/games/smashup/abilities/cthulhu.ts src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` -> 0 errors
+  - `git diff --check -- src/games/smashup/abilities/cthulhu.ts src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` -> passed，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 `cthulhu_complete_the_ritual` 清场沉底事件的 `sourcePlayerId` provenance。
+  - 不外推所有 Cthulhu、所有 `CARD_TO_DECK_TOP/BOTTOM` producer、所有 turn-boundary callback、所有 replacement trigger 或整个长期任务已完成。
+  - 下一格继续沿固定清单筛其它 deck top/bottom producer：`domain/baseAbilities.ts` 的 `base_temple_of_goju/base_ritual_site`、`cthulhu.ts` 其它 top/bottom producer、`elder_things/giant_ants/mythic_greeks/titans/vikings/wizards/yuanhou` 中尚未证明的 sibling。
+
+## 2026-05-26 `shapeshifters_gelf` borrowed self-bottom source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>)
+  - [`src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>)
+- 权威来源：
+  - G.E.L.F. 的 talent 是当前控制者发动；本体沉底落点必须按真实 owner，但事件 source provenance 应保留发动 talent 的玩家。
+  - 这格不是 Time Walk 或 Complete the Ritual 的复读，而是同一 `CARD_TO_DECK_BOTTOM owner/source provenance` family 在 Shapeshifters self-bottom talent 上的 sibling。
+- 逐效果原子结论：
+  - 新增 focused gate `变形者：borrowed G.E.L.F. 天赋将自身放到拥有者牌库底时应保留 sourcePlayerId` 后，首轮直接红灯坐实：`ownerId:'1'` 正确，`sourcePlayerId:'0'` 缺失。
+  - 最小根因只在 `shapeshiftersGelf()`：旧代码调用 `buildValidatedCardToDeckBottomEvents(...)` 时只传 `ownerId: located.minion.owner`，没有在 borrowed self-bottom 场景传 `sourcePlayerId`。
+  - 当前最小修复为：当 `located.minion.owner !== ctx.playerId` 时传 `sourcePlayerId: ctx.playerId`；不改 G.E.L.F. 搜牌 prompt、`queueDeckMinionSearch`、候选过滤、extraDeckUidsForShuffle 或其它 Shapeshifters sibling。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts -t "borrowed G.E.L.F|G.E.L.F. 天赋"` -> 首轮 failed，修复后 `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` -> 0 errors，仅 Babel 大文件提示
+  - `git diff --check -- src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` -> passed，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 borrowed `shapeshifters_gelf` talent self-bottom 的 `sourcePlayerId` provenance。
+  - 不外推所有 Shapeshifters、所有 `CARD_TO_DECK_BOTTOM` producer、所有 deck-search caller 或整个长期任务已完成。
+  - 下一格继续筛 `yuanhou.ts` 中仍调用 `buildValidatedCardToDeckBottomEvents(...)` 但缺 source 的 sibling，优先看 `cyborg_apes_monkey_on_your_back` 与 `time_travelers_wormhole`，并继续排除已转绿的 Time Walk / Time Raider / Complete the Ritual / G.E.L.F.。
+
+## 2026-05-26 `time_travelers_wormhole` selected borrowed minion source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>)
+  - [`src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>)
+- 权威来源：
+  - Wormhole 在 afterScoring 响应中由当前响应玩家打出并选择“你控制的这里随从”洗入各自牌库。
+  - 对 borrowed minion，落点 owner 是卡牌 owner，但 effect source 应保留发动 Wormhole 的 player。
+- 逐效果原子结论：
+  - 收紧既有 borrowed Wormhole gate 后，首轮直接红灯坐实：`borrowed-a` 的 `CARD_TO_DECK_BOTTOM.payload.ownerId === '1'`，但缺 `sourcePlayerId:'0'`。
+  - 最小根因只在 `buildTimeTravelersWormholeEvents()`：旧函数只接收 `state/selectedMinions/random/now`，没有 source player 参数，因此只能按 owner 分组落点，不能写 effect source。
+  - 当前最小修复为：`buildTimeTravelersWormholeEvents()` 增加 `sourcePlayerId` 参数；direct special 与 interaction handler 都传入发动 Wormhole 的玩家，并在 `ownerId !== sourcePlayerId` 时向 `buildValidatedCardToDeckBottomEvents(...)` 传 `sourcePlayerId`。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts -t "虫洞应允许选择你控制但归其他玩家拥有|时间旅行者：虫洞"` -> 首轮 failed，修复后 `1 file passed, 5 passed`；stderr 为既有 baseDeck fixture warning
+  - `npx eslint src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` -> 0 errors，仅 Babel 大文件提示
+  - `git diff --check -- src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` -> passed，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 Wormhole 对 borrowed selected minion 的 `CARD_TO_DECK_BOTTOM.sourcePlayerId` provenance。
+  - 不外推所有 Time Travelers、所有 afterScoring special、所有 selected-minion producer 或整个长期任务已完成。
+  - 下一格继续筛 `yuanhou.ts` 中仍缺 source 的 self/attached action bottom sibling，优先看 `cyborg_apes_monkey_on_your_back`，并继续排除已转绿的 Wormhole / G.E.L.F. / Time Walk / Time Raider / Complete the Ritual。
+
+## 2026-05-26 `cyborg_apes_monkey_on_your_back` borrowed attached action self-bottom source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/yuanhou.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/yuanhou.ts>)
+  - [`src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts>)
+- 权威来源：
+  - `Monkey on Your Back` talent 由 attached action 当前控制者发动，结算后该 attached action 自身放到真实 owner 牌库底。
+  - 对 borrowed attached action，`ownerId` 表示落点 owner，`sourcePlayerId` 应表示发动 talent 的控制者。
+- 逐效果原子结论：
+  - 收紧既有 borrowed gate 后，首轮直接红灯坐实：`monkey-back-borrowed` 的 `CARD_TO_DECK_BOTTOM.payload.ownerId === '1'`，但缺 `sourcePlayerId:'0'`。
+  - 最小根因只在 `buildMonkeyOnYourBackResolvedEvents()`：旧代码用 `action.ownerId` 作为回牌库底 owner，但没有在 owner != playerId 时传 effect source。
+  - 当前最小修复为：attached action owner 不同于 talent 发动者时，向 `buildValidatedCardToDeckBottomEvents(...)` 传 `sourcePlayerId: playerId`；不改目标摧毁、候选过滤、多目标 prompt 或 handler 快照。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts -t "borrowed 猴子在你的背上|猴子在你的背上"` -> 首轮 failed，修复后 `1 file passed, 4 passed`
+  - `npx eslint src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` -> 0 errors，仅 Babel 大文件提示
+  - `git diff --check -- src/games/smashup/abilities/yuanhou.ts src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts` -> passed，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 `cyborg_apes_monkey_on_your_back` 自身 attached action 回 owner deck bottom 的 `sourcePlayerId` provenance。
+  - 不外推所有 Cyborg Apes、所有 attached action self-bottom producer、所有 talent action cleanup 或整个长期任务已完成。
+  - 下一格继续离开已转绿的 Monkey on Your Back / Wormhole / G.E.L.F. / Time Walk / Time Raider，转去固定清单中其它未证明 producer。
+
+## 2026-05-26 `bear_cavalry_bear_hug` automatic destroyer provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/bear_cavalry.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/bear_cavalry.ts>)
+  - [`src/games/smashup/__tests__/expansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionAbilities.test.ts>)
+- 权威来源：
+  - `Bear Hug` 是行动玩家打出的行动；其自动消灭每位对手唯一最弱随从时，`MINION_DESTROYED.destroyerId` 应表达 effect source，也就是行动玩家。
+  - 这格不是继续追 `elder_thing_dunwich_horror`：当前 evidence 已证明基础版/POD 与 shared destroy ledger 均已闭合，继续排查 Dunwich 会变成过期候选复读。
+- 逐效果原子结论：
+  - 收紧 `每位对手消灭自己最弱随从` 后，首轮直接红灯坐实：`MINION_DESTROYED.payload.minionUid === 'm3'` 正确，但 `destroyerId === undefined`。
+  - 最小根因只在 `bearCavalryBearHug()` 与 `bearHugProcessNext()` 的唯一最弱自动消灭出口：两处都调用 `destroyMinion(... undefined, 'bear_cavalry_bear_hug', ...)`。
+  - 当前最小修复为：两处自动消灭出口传 `ctx.playerId` 作为 destroyer；平局选择 handler 继续保持原有响应玩家 `playerId`，不改 prompt 候选、链式对手处理或 POD 复用。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/expansionAbilities.test.ts -t "每位对手消灭自己最弱随从|bear_cavalry_bear_hug"` -> 首轮 failed，修复后 `1 file passed, 6 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/expansionAbilities.test.ts -t "bear_cavalry_bear_hug resolves tied weakest choice|bear_cavalry_bear_hug（黑熊擒抱"` -> `1 file passed, 6 passed`
+  - `npx eslint src/games/smashup/abilities/bear_cavalry.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 0 errors，69 existing warnings
+- 未覆盖风险：
+  - 这格只闭合 `bear_cavalry_bear_hug` 自动分支的 destroyer provenance。
+  - 不外推整个 Bear Cavalry、所有 action destroy producer、所有 `MINION_DESTROYED` consumer 或整个长期任务完成。
+  - 下一格继续筛剩余 `destroyMinion(... undefined ...)` 候选，优先看 `dino_survival_of_the_fittest`、`robot_nukebot` 与 `killer_plant_sprout`，并排除已收口的 Dunwich Horror / Choking Vines / Bear Hug。
+
+## 2026-05-26 `dino_survival_of_the_fittest` automatic destroyer provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/dinosaurs.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/dinosaurs.ts>)
+  - [`src/games/smashup/__tests__/factionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/factionAbilities.test.ts>)
+- 权威来源：
+  - `Survival of the Fittest` 是行动玩家打出的行动；其自动消灭每个基地唯一最低力量随从时，`MINION_DESTROYED.destroyerId` 应表达该行动玩家。
+  - 这格是 `destroyMinion(... undefined ...)` 有限 frontier 的第二条真红灯，不是 Tooth and Claw consumer 的回扫。
+- 逐效果原子结论：
+  - 收紧 `dino_survival_of_the_fittest: 每个基地消灭一个最低力量随从` 后，首轮直接红灯坐实：两个最低力量随从都被正确消灭，但至少一个 destroy event 缺 `destroyerId:'0'`。
+  - 最小根因只在 `dinoSurvivalOfTheFittestProgram` 的唯一最低力量自动分支：旧代码调用 `destroyMinion(... undefined, 'dino_survival_of_the_fittest', ...)`。
+  - 当前最小修复为：自动分支传 `ctx.playerId` 作为 destroyer；平局 tiebreak prompt 继续保持原有 `playerId`，不改候选、力量计算、POD 复用或其它 Dinosaur sibling。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/factionAbilities.test.ts -t "dino_survival_of_the_fittest"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "CARD_TO_DECK_BOTTOM 应按 sourcePlayerId|dino_tooth_and_claw 保护|MINION_DESTROYED 应按 destroyerId"` -> `1 file passed, 3 passed`
+  - `npx eslint src/games/smashup/abilities/dinosaurs.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors，11 existing warnings
+  - `audit-d1-d8-d33-dino-survival-of-the-fittest.test.ts` 直接 `pnpm vitest run` 被当前 Vitest exclude 规则排除，结果为 “No test files found”；未作为业务失败计入。
+- 未覆盖风险：
+  - 这格只闭合 `dino_survival_of_the_fittest` 自动分支的 destroyer provenance。
+  - 不外推所有 Dinosaurs、所有最低力量消灭行动、所有 action destroy producer 或整个长期任务完成。
+  - 下一格继续筛剩余 `destroyMinion(... undefined ...)` 候选，优先看 `robot_nukebot` 与 `killer_plant_sprout`；`Dunwich Horror / Choking Vines / Bear Hug / Survival of the Fittest` 不再回扫。
+
+## 2026-05-26 `robot_nukebot` / `killer_plant_sprout` destroyer provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/robots.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/robots.ts>)
+  - [`src/games/smashup/abilities/killer_plants.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/killer_plants.ts>)
+  - [`src/games/smashup/__tests__/onDestroyAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/onDestroyAbilities.test.ts>)
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+- 权威来源：
+  - `Nukebot` 的 onDestroy 来源是核弹机器人控制者；它链式消灭同基地其他玩家随从时，应把该控制者写成 `MINION_DESTROYED.destroyerId`。
+  - `Sprout` 的 onTurnStart 来源是 Sprout 控制者；它自毁后搜牌时，自毁事件同样应保留控制者作为 `destroyerId`。
+- 逐效果原子结论：
+  - `robot_nukebot`：收紧 `被消灭后消灭同基地其他玩家所有随从` 后，首轮 failed，坐实链式 destroy events 缺 `destroyerId:'1'`；最小修复为 `robotNukebotOnDestroy()` 传 `ctx.playerId`。
+  - `killer_plant_sprout`：收紧 Sprout onTurnStart gate 后，首轮 failed，坐实事件已有 `controllerId:'0'` 但 `destroyerId === undefined`；最小修复为两个 Sprout 自毁出口传当前 Sprout 控制者。
+  - 不改 Nukebot 目标过滤、Warbot 保护、Sprout 搜牌 prompt、Sprout/POD trigger 入队或 deck-search resolution。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/onDestroyAbilities.test.ts -t "robot_nukebot"` -> 首轮 failed，修复后 `1 file passed, 4 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts -t "Sprout|killer_plant_sprout"` -> 首轮 failed，修复后 `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "MINION_DESTROYED 应按 destroyerId|dino_tooth_and_claw 保护|killer_plant_sprout|robot_nukebot"` -> `1 file passed, 3 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/expansionOngoing.test.ts -t "killer_plant_sprout"` -> `1 file passed, 6 passed`
+  - `npx eslint src/games/smashup/abilities/robots.ts src/games/smashup/abilities/killer_plants.ts src/games/smashup/__tests__/onDestroyAbilities.test.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> 0 errors，4 existing warnings
+- 未覆盖风险：
+  - 这格只闭合 `robot_nukebot` 链式 destroy 与 `killer_plant_sprout` 自毁的 `destroyerId` provenance。
+  - 不外推整个 Robots、整个 Killer Plants、所有 onDestroy/onTurnStart producer 或整个长期任务完成。
+  - 静态复扫 `destroyMinion(... undefined ...)` 后，当前剩余可疑项只剩 `elder_thing_dunwich_horror`。下一步应只复核它的 destroyerId payload，不重挖已闭合的 old turn-end registration / sourceHostController 问题。
+
+## 2026-05-26 `elder_thing_dunwich_horror` destroyer payload seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/elder_things.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/elder_things.ts>)
+  - [`src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts>)
+- 权威来源：
+  - 基础版 `Dunwich Horror` 已经在 2026-05-22 完成 turn-end registration / sourceController 归属纠偏；本轮不重挖该问题。
+  - 当前唯一复核点是 `MINION_DESTROYED.destroyerId`：消灭宿主的来源应是具体 attached action 的控制者/拥有者，而不是空值。
+- 逐效果原子结论：
+  - 收紧既有 `sourceController queued onTurnEnd trigger 仍应只在拥有者回合结束让 Dunwich Horror 消灭宿主` gate 后，首轮 failed：queued trigger `ownerPlayerId/sourceCardUid` 正确，宿主正确离场，但 destroy event `destroyerId === undefined`。
+  - 最小根因只在 `elderThingDunwichHorrorTrigger()`：旧代码用 `some()` 判断宿主附着了 Dunwich，然后直接 `destroyMinion(... undefined, 'elder_thing_dunwich_horror', ...)`。
+  - 当前最小修复为：取出具体 `elder_thing_dunwich_horror` attached action，并按 `metadata.sourceControllerId ?? ownerId` 传 destroyer；不改 registration、turn-end eligibility、POD sourceHostController 或 +5 power modifier。
+- 命中的审计维度：D1/D5/D8/D34/D49。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts -t "Dunwich Horror|elder_thing_dunwich_horror"` -> 首轮 failed，修复后 `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "elder_thing_dunwich_horror|MINION_DESTROYED 应按 destroyerId|dino_tooth_and_claw 保护"` -> `1 file passed, 5 passed`
+  - `npx eslint src/games/smashup/abilities/elder_things.ts src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` -> 0 errors，2 existing warnings
+  - `rg "destroyMinion\\([^\\n]*,\\s*undefined,\\s*'" src/games/smashup/abilities -S` -> no matches
+- 未覆盖风险：
+  - 这格只闭合基础版 `elder_thing_dunwich_horror` 的 destroyer payload。
+  - 不外推 Elder Things 全量、所有 attached-action destroy producer、所有 onTurnEnd trigger 或整个长期任务完成。
+  - `destroyerId` 第五参数为空的 `destroyMinion` frontier 已清空；下一步应离开该 family，回到其它开放 owner/source provenance family。
+
+## 2026-05-26 `base_the_asylum` / `CARD_BOXED` borrowed owner-zone seam
+
+- 审计范围：
+  - [`src/games/smashup/domain/baseAbilities_expansion.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities_expansion.ts>)
+  - [`src/games/smashup/domain/reduce.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reduce.ts>)
+  - [`src/games/smashup/domain/types.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/types.ts>)
+  - [`src/games/smashup/domain/reactionResources.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/reactionResources.ts>)
+  - [`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>)
+  - [`src/games/smashup/__tests__/expansionBaseAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionBaseAbilities.test.ts>)
+- 权威来源：
+  - `base_the_asylum` 是从当前玩家手牌选择一张牌放入盒中，再给己方随从加 +1 指示物。若当前玩家手牌里有 owner 属于其他玩家的 borrowed card，来源区仍是当前玩家手牌，但最终 removed/boxed 区位应归真实 owner。
+  - 这格是 `CARD_REMOVED_FROM_GAME owner zone` family 的 sibling，不是 `Insanity POD` 或 `Viking Funeral` 的回扫；它暴露的是 shared `CARD_BOXED` 合同也缺少 source-player 与 true-owner 区分。
+- focused 红灯：
+  - 新增 `base_the_asylum` gate：`P0.hand=['borrowed-hand(owner=1)']`，P0 在疯人院触发后选择该手牌，再选择 P0 控制的 `m2` 加指示物。
+  - 首轮 failed：`CARD_BOXED.payload` 只有 `playerId:'0'`，没有 `ownerId:'1'`；reducer 会把 `borrowed-hand` 从 P0 hand 移除后放进 `P0.removedFromGame`，而不是 `P1.removedFromGame`。
+- 最小修复：
+  - `CardBoxedEvent.payload` 增加可选 `ownerId`；`playerId` 保持“来源区玩家”，`ownerId` 表示真实盒区归属，旧事件默认 `ownerId ?? playerId`。
+  - `CARD_BOXED` reducer 改为从 `playerId` 的 `from` 区移除 source card，再把该卡追加到 `ownerId ?? playerId` 的 `removedFromGame`。
+  - `reactionResources.ts` 对 `CARD_BOXED/CARD_REMOVED_FROM_GAME` 若存在不同 `ownerId`，额外写入 owner 的 `removed` footprint。
+  - `base_the_asylum` producer 写入 `ownerId: boxedCard.owner`；同类 `frankenstein_the_bride_special` 的 box 分支也写入 `ownerId: card.owner`，避免同一 `CARD_BOXED` seam 在 Titan sibling 上继续漏。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/expansionBaseAbilities.test.ts -t "base_the_asylum|borrowed 手牌"` -> 首轮 failed，修复后 `1 file passed, 4 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/smashup.smoke.test.ts -t "The Bride 开始回合 special|The Bride 仅在己方随从新增"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/domain/types.ts src/games/smashup/domain/reduce.ts src/games/smashup/domain/reactionResources.ts src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors，21 existing warnings
+  - `git diff --check -- src/games/smashup/domain/types.ts src/games/smashup/domain/reduce.ts src/games/smashup/domain/reactionResources.ts src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/abilities/titans.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts src/games/smashup/__tests__/smashup.smoke.test.ts` -> 通过，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 `CARD_BOXED` 对 borrowed source-zone / true-owner removed-zone 的 shared seam，并用 `base_the_asylum` 红灯与 The Bride 邻近 green 锁住两个当前 producer。
+  - 不外推所有 boxed/removed effect、所有 removedFromGame consumer、所有 Titans 或整个长期任务完成。
+
+## 2026-05-26 `alien_crop_circles` MINION_RETURNED source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/aliens.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/aliens.ts>) 的 `buildCropCirclesReturnEvents()`
+  - [`src/games/smashup/__tests__/factionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/factionAbilities.test.ts>) 的 `alien_crop_circles` focused gate
+- 权威来源：
+  - `Crop Circles` 是行动玩家打出的行动；它把一个基地上的所有随从返回各自拥有者手牌时，`MINION_RETURNED.toPlayerId` 表示最终回手 owner，不等于影响来源玩家。
+  - `buildCropCirclesReturnEvents()` 已接收 `sourcePlayerId` 并用它做 `protectionFilter`，因此下游事件也应保留同一 source provenance。
+- focused 红灯：
+  - 新增 `alien_crop_circles: 返回随从事件应保留行动玩家 sourcePlayerId`。
+  - 首轮 failed：两个 `MINION_RETURNED` 事件都正确返回各自 owner，但 `payload.sourcePlayerId === undefined`，下游只能看到回手落点，无法知道本次 affect 来自行动玩家 P0。
+- 最小修复：
+  - `buildCropCirclesReturnEvents()` 在每条 `MINION_RETURNED.payload` 中透传既有 `sourcePlayerId` 参数。
+  - 不改 Crop Circles 的 base prompt、保护过滤、目标数量、回手 owner、其它 Aliens action 或 shared reducer。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/factionAbilities.test.ts -t "alien_crop_circles"` -> 首轮 failed，修复后 `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "MINION_RETURNED|dino_tooth_and_claw 保护"` -> `1 file passed, 4 passed`
+  - `npx eslint src/games/smashup/abilities/aliens.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors，13 existing warnings
+  - `git diff --check -- src/games/smashup/abilities/aliens.ts src/games/smashup/__tests__/factionAbilities.test.ts task_plan.md progress.md evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md` -> 通过，仅 CRLF warning
+- 未覆盖风险：
+  - 这格只闭合 `alien_crop_circles` 全基地回手事件的 `MINION_RETURNED.sourcePlayerId` provenance。
+  - 不外推所有 Aliens、所有 `MINION_RETURNED` producer、所有 Dinosaur protection consumer，或整个长期任务已完成。
+  - `alienAuditFixes.test.ts` 这类 `*audit*.test.ts` 当前被 Vitest exclude 排除，不能作为业务验证证据；本格业务 gate 已迁入实际运行的 `factionAbilities.test.ts`。
+
+## 2026-05-26 `frankenstein_grave_situation` MINION_RETURNED source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/frankenstein.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/frankenstein.ts>) 的 `frankenstein_grave_situation` replacement trigger
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 的 borrowed `grave_situation` focused gate
+- 权威来源：
+  - `Grave Situation` 是基地 ongoing replacement：当该基地上你控制的随从将被消灭时，改为返回其拥有者手牌。
+  - `MINION_RETURNED.toPlayerId` 表示最终回手 owner；`sourcePlayerId` 应表达 replacement 来源/受保护随从控制者，不能留空后让下游只能依赖 owner。
+- focused 红灯：
+  - 现有 borrowed gate 已证明 P0 控制、P1 拥有的 borrowed `Grave Situation` 会按 P0 控制者保护 P0 随从，并把随从返回 P0 手牌。
+  - 本轮收紧该 gate，追加断言 `MINION_RETURNED.payload.sourcePlayerId === '0'`；首轮 failed，实际值为 `undefined`。
+- 最小修复：
+  - `frankenstein_grave_situation` trigger 已经计算 `controllerId` 并用它匹配 ongoing 的 `metadata.sourceControllerId ?? ownerId`；现在同一 `controllerId` 写入返回事件的 `sourcePlayerId`。
+  - 不改 replacement phase、触发资格、返回 owner 落点、其它 Frankenstein trigger 或 shared reducer。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "borrowed grave_situation"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "MINION_RETURNED|dino_tooth_and_claw 保护"` -> `1 file passed, 4 passed`
+- 未覆盖风险：
+  - 这格只闭合 `frankenstein_grave_situation` replacement return 的 `MINION_RETURNED.sourcePlayerId` provenance。
+  - 不外推 Frankenstein 全量、所有 replacement trigger、所有 `MINION_RETURNED` producer，或整个长期任务已完成。
+
+## 2026-05-26 `ninja_disguise` MINION_RETURNED source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/ninjas.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ninjas.ts>) 的 `buildNinjaDisguiseReturnEvents()` 与 `ninjaDisguisePlayPromptProgram.onResolve()`
+  - [`src/games/smashup/__tests__/query6Abilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/query6Abilities.test.ts>) 的 borrowed hand minion gate
+- 权威来源：
+  - `Disguise` 先选择自己控制的随从回手，再从手牌打出同数量随从；返回事件的 `toPlayerId` 是被替换随从 owner，而 `sourcePlayerId` 应表达本次行动玩家。
+  - 既有 borrowed hand gate 已证明新打出的 borrowed 手牌随从保留真实 owner；本轮补的是前半段被替换随从返回事件的 source provenance。
+- focused 红灯：
+  - 在 `ninja_disguise: 打出 borrowed 手牌随从时应保留真实 owner` 中追加 `MINION_RETURNED.payload.sourcePlayerId === '0'`。
+  - 首轮 failed：`returnedEvent.payload.sourcePlayerId === undefined`。
+- 最小修复：
+  - `buildNinjaDisguiseReturnEvents()` 增加 `sourcePlayerId` 参数，并写入每条 `MINION_RETURNED.payload`。
+  - `ninjaDisguisePlayPromptProgram.onResolve()` 在最终回手被替换随从时传入当前行动玩家 `playerId`。
+  - 不改 base/minion/hand 三段 prompt、borrowed hand minion 的 `MINION_PLAYED.ownerId`、返回目标 owner 或 hand-play 数量。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/query6Abilities.test.ts -t "ninja_disguise: 打出 borrowed 手牌随从"` -> 首轮 failed，修复后 `1 file passed, 1 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/interactionChainE2E.test.ts -t "ninja_disguise"` -> `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这格只闭合 `ninja_disguise` 替换随从回手事件的 `MINION_RETURNED.sourcePlayerId` provenance。
+  - 不外推 Ninjas 全量、所有 `MINION_RETURNED` producer、所有 hand-play chain，或整个长期任务已完成。
+
+## 2026-05-26 `ninja_acolyte / ninja_acolyte_pod` MINION_RETURNED source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/ninjas.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/ninjas.ts>) 的 `ninjaAcolyteSpecialProgram` 与 `ninjaAcolytePodTalentProgram`
+  - [`src/games/smashup/__tests__/baseFactionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/baseFactionOngoing.test.ts>) 的 `ninja_acolyte` focused gates
+- 权威来源：
+  - `Acolyte` special / POD talent 都是当前玩家主动发动后让自身返回手牌，再进入额外打出随从的 hand prompt。
+  - `toPlayerId` 表示回到谁手牌；`sourcePlayerId` 应表达本次 special/talent 的发动玩家。
+- focused 红灯：
+  - 在基础版 special gate 中追加 self-return 事件 `sourcePlayerId:'0'` 断言。
+  - 新增 POD talent self-return gate，同样要求 `sourcePlayerId:'0'`。
+  - 首轮 `baseFactionOngoing.test.ts -t "ninja_acolyte"` failed：两条事件的 `sourcePlayerId` 都是 `undefined`。
+- 最小修复：
+  - `ninjaAcolyteSpecialProgram` 的 `MINION_RETURNED.payload` 补 `sourcePlayerId: ctx.playerId`。
+  - `ninjaAcolytePodTalentProgram` 的 `MINION_RETURNED.payload` 补 `sourcePlayerId: ctx.playerId`。
+  - 不改 special limit、POD talent validator、hand prompt、`MINION_PLAYED.consumesNormalLimit` 或 reducer。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/baseFactionOngoing.test.ts -t "ninja_acolyte"` -> 首轮 failed，修复后 `1 file passed, 7 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/interactionChainE2E.test.ts -t "ninja_acolyte"` -> `1 file passed, 1 passed`
+- 未覆盖风险：
+  - 这格只闭合 `ninja_acolyte / ninja_acolyte_pod` self-return 的 `MINION_RETURNED.sourcePlayerId` provenance。
+  - 不外推 Ninjas 全量、所有 special/talent return、所有 `MINION_RETURNED` producer，或整个长期任务已完成。
+
+## 2026-05-26 `steampunk_escape_hatch` MINION_RETURNED source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/steampunks.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/steampunks.ts>) 的 `steampunkEscapeHatchTrigger()`
+  - [`src/games/smashup/__tests__/expansionOngoing.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/expansionOngoing.test.ts>) 的 borrowed `Escape Hatch` focused gate
+- 权威来源：
+  - `Escape Hatch` 是基地 ongoing replacement：该基地上你控制的随从被消灭时回到其拥有者手牌。
+  - borrowed ongoing 场景下，“你控制的随从”由 `metadata.sourceControllerId ?? ownerId` 判断；返回事件的 `toPlayerId` 是随从 owner，而 `sourcePlayerId` 应表达 replacement ongoing 当前控制者。
+- focused 红灯：
+  - 在 `borrowed Escape Hatch 应按控制者而不是真实 owner 保护控制者的随从` 中追加 `sourcePlayerId:'0'`。
+  - 首轮 failed：返回事件已有 `toPlayerId:'0'` 与 `reason:'steampunk_escape_hatch'`，但缺 `sourcePlayerId`。
+- 最小修复：
+  - `steampunkEscapeHatchTrigger()` 已经计算 `hatchControllerId` 并用它判断受保护随从；现在同一 `hatchControllerId` 写入 `MINION_RETURNED.payload.sourcePlayerId`。
+  - 不改受保护随从过滤、返回 owner 落点、replacement phase、其它 Steampunks ongoing 或 shared reducer。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/expansionOngoing.test.ts -t "borrowed Escape Hatch|steampunk_escape_hatch"` -> 首轮 failed，修复后 `1 file passed, 3 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "MINION_RETURNED|dino_tooth_and_claw 保护"` -> `1 file passed, 4 passed`
+- 未覆盖风险：
+  - 这格只闭合 `steampunk_escape_hatch` replacement return 的 `MINION_RETURNED.sourcePlayerId` provenance。
+  - 不外推 Steampunks 全量、所有 replacement trigger、所有 `MINION_RETURNED` producer，或整个长期任务已完成。
+
+## 2026-05-26 `base_the_mothership` MINION_RETURNED source provenance seam
+
+- 审计范围：
+  - [`src/games/smashup/domain/baseAbilities.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities.ts>) 的 `base_the_mothership` interaction handler
+  - [`src/games/smashup/__tests__/newOngoingAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newOngoingAbilities.test.ts>) 的 Mothership handler gate
+  - [`src/games/smashup/__tests__/baseAbilitiesPrompt.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/baseAbilitiesPrompt.test.ts>) 的 stale return regression
+- 权威来源：
+  - `Mothership` 在基地计分后让冠军将这里一个力量不大于 3 的随从收回手牌。
+  - `toPlayerId` 表示该随从最终回到谁的手牌；`sourcePlayerId` 应表达本次基地效果的决策/来源玩家，也就是冠军 `playerId`，不能留空让下游只能 fallback 到目标 owner。
+- focused 红灯：
+  - 在 `handler 收回随从时产生 MINION_RETURNED` 中追加 `MINION_RETURNED.payload.sourcePlayerId === '0'`。
+  - 首轮 `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "base_the_mothership"` failed：实际 `sourcePlayerId` 为 `undefined`。
+  - 静态复扫也命中 `baseAbilities.ts` fallback 分支手写 `SU_EVENTS.MINION_RETURNED` 只写 `toPlayerId`，没有写 source。
+- 最小修复：
+  - live 分支调用 `buildValidatedReturnEvents(...)` 时传入 `sourcePlayerId: playerId`。
+  - snapshot fallback 手写 `MINION_RETURNED` 事件同样写入 `sourcePlayerId: playerId`。
+  - 不改 afterScoring winner/champion 判定、力量候选过滤、快照 continuation、stale 防回手逻辑或其它 base ability。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "base_the_mothership"` -> 首轮 failed
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "base_the_mothership|MINION_RETURNED|dino_tooth_and_claw 保护"` -> 修复后 `1 file passed, 5 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/baseAbilitiesPrompt.test.ts -t "base_the_mothership"` -> `1 file passed, 6 passed`
+  - `npx eslint src/games/smashup/domain/baseAbilities.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts` -> 0 errors
+  - 非测试代码静态复扫 `type: SU_EVENTS.MINION_RETURNED` 且 900 字符窗口内无 `sourcePlayerId` -> 无输出，当前 `MINION_RETURNED sourcePlayerId` producer 候选清空
+- 未覆盖风险：
+  - 这格只闭合 `base_the_mothership` champion return 的 `MINION_RETURNED.sourcePlayerId` provenance。
+  - 当前静态候选清空只代表这一条 `MINION_RETURNED sourcePlayerId` producer inventory 暂无裸手写点，不外推所有 return 语义、所有基地能力、所有 source/owner provenance family 或整个长期任务已完成。
+
+## 2026-05-26 `CARD_REMOVED_FROM_GAME / CARD_BOXED` owner-zone inventory closure
+
+- 审计范围：
+  - 非测试代码中的 `SU_EVENTS.CARD_REMOVED_FROM_GAME` 与 `SU_EVENTS.CARD_BOXED` producer
+  - [`src/games/smashup/abilities/vikings.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vikings.ts>) 的 `vikings_viking_funeral`
+  - [`src/games/smashup/abilities/elder_things.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/elder_things.ts>) 的 `elder_thing_insanity_pod_box`
+  - [`src/games/smashup/domain/baseAbilities_expansion.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/domain/baseAbilities_expansion.ts>) / [`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/titans.ts>) 的 `CARD_BOXED` 已修复 producer
+- 权威来源：
+  - `CARD_REMOVED_FROM_GAME.payload.playerId` 当前合同表示实际从哪个玩家区域移除，并将卡写入该玩家 `removedFromGame`；因此 borrowed card 场景必须使用真实 owner zone，而不是行动玩家或控制者。
+  - `CARD_BOXED` 已升级为 `playerId` 表示 source zone、`ownerId` 表示最终 removed zone。
+- 本轮复核：
+  - 静态 inventory 中 `CARD_REMOVED_FROM_GAME` 只剩 `vikings_viking_funeral` 的 `playerId: ctx.triggerMinion.owner` 与 `elder_thing_insanity_pod_box` 的 `playerId: ownerId`。
+  - `CARD_BOXED` 当前无裸 owner-zone 候选。
+  - `elder_thing_insanity_pod` 已有 borrowed gate 证明 P0 打出 owner=P1 的 POD 后进入 P1 `removedFromGame`，复跑通过。
+  - `vikings_viking_funeral` 已有 borrowed event gate；本轮进一步把 returned events reduce 到 core，证明 `borrowed-host` 实际进入 P1 `removedFromGame`，不会进入 P0 `removedFromGame`。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "vikings_viking_funeral"` -> `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/baseScoring.test.ts -t "Viking Funeral"` -> `1 file passed, 1 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/elderThingsPod.test.ts -t "Insanity POD"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/__tests__/newFactionAbilities.test.ts` -> 0 errors、6 existing warnings
+  - 非测试代码复扫未知 `CARD_REMOVED_FROM_GAME/CARD_BOXED` owner-zone candidate -> 无输出
+- 未覆盖风险：
+  - 这格只说明 removed/boxed owner-zone producer inventory 当前收敛到已证绿点。
+  - 不外推所有 removed-from-game consumer、所有 queued reaction、所有 owner/controller consumer、所有 `CARD_REMOVED_FROM_GAME` 未来 producer 或整个长期任务已完成。
+
+## 2026-05-26 `princesses_direct_to_dvd_sequel` borrowed owner/source/draw split green evidence
+
+- 审计范围：
+  - [`src/games/smashup/abilities/princesses.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/princesses.ts>) 的 `princessesDirectToDvdSequelResolve()`
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 的 borrowed `princesses_direct_to_dvd_sequel` gate
+- 权威来源：
+  - `Direct-to-DVD Sequel` 从你的弃牌堆选择一个随从，洗回牌库并抽 1。
+  - borrowed 场景下，所选卡的最终牌库落点必须是真实 owner；但行动玩家仍是当前玩家，抽牌也应归当前玩家。
+  - `CARD_TO_DECK_BOTTOM.ownerId` 表示落点牌库 owner，`sourcePlayerId` 表示本次行动来源。
+- 本轮复核：
+  - `ownerId === playerId` 分支只在“所选卡就是当前玩家拥有”时，从刚洗回的 owner deck 抽顶牌。
+  - 当 `ownerId !== playerId` 时，代码已经对 deck-bottom 事件补 `sourcePlayerId: playerId`，并改为当前玩家执行标准抽牌；这不是 controller/owner 红灯。
+- 补强证据：
+  - borrowed gate 增加 P0 自己牌库顶 `p0-draw-1`。
+  - 断言 resolved events 包含 `CARD_TO_DECK_BOTTOM(cardUid='borrowed-discard', ownerId='1', sourcePlayerId='0')`。
+  - 断言 resolved events 包含 P0 的 `CARDS_DRAWN` 且 `cardUids` 包含 `p0-draw-1`，最终 P0 hand 也包含 `p0-draw-1`。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "princesses_direct_to_dvd_sequel"` -> `1 file passed, 2 passed`
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "CARD_TO_DECK_BOTTOM 应按 sourcePlayerId|dino_tooth_and_claw 保护"` -> `1 file passed, 3 passed`
+  - `npx eslint src/games/smashup/__tests__/newFactionAbilities.test.ts` -> 0 errors、6 existing warnings
+- 未覆盖风险：
+  - 这格只证明 Direct-to-DVD borrowed discard minion 的 owner/source/draw split 正确。
+  - 不外推 Princesses 全量、所有 discard-to-deck caller、所有 owner/controller consumer 或整个长期任务已完成。
+
+## 2026-05-26 `zombie_lend_a_hand` borrowed discard card -> owner deck shuffle source provenance green evidence
+
+- 审计范围：
+  - [`src/games/smashup/abilities/zombies.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/zombies.ts>) 的 `zombieLendAHandPromptProgram`
+  - [`src/games/smashup/__tests__/zombieWizardAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/zombieWizardAbilities.test.ts>) 的 borrowed `zombie_lend_a_hand` gate
+- 权威来源：
+  - `Lend a Hand` 从你的弃牌堆选择任意数量卡洗回牌库。
+  - borrowed 场景下，来源区是当前玩家弃牌堆，但最终洗回的牌库应按每张卡真实 owner 分组；`DECK_REORDERED.playerId` 表示 owner deck，`sourcePlayerId` 表示本次从哪个玩家弃牌堆移出。
+- 本轮复核：
+  - 代码当前已经按 `card.owner` 分组生成 owner-scoped `DECK_REORDERED`。
+  - 对 `ownerId !== playerId` 的 borrowed 组，payload 已写入 `sourcePlayerId: playerId`。
+  - 旧 borrowed 测试只断言最终 `borrowed-discard` 进入 P1 deck，没有锁住事件级 source provenance。
+- 补强证据：
+  - 在 borrowed gate 中追加断言：P0 从自己弃牌堆选择 `borrowed-discard(owner=1)` 后，`DECK_REORDERED(playerId='1')` 的 `payload.sourcePlayerId === '0'`。
+  - 最终仍断言 P0 deck 保持 `['p0-deck-a']`、P0 discard 只剩 `own-discard + a1`、P1 deck 为 `['p1-deck-a','borrowed-discard']`。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/zombieWizardAbilities.test.ts -t "zombie_lend_a_hand"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/__tests__/zombieWizardAbilities.test.ts` -> 0 errors
+- 未覆盖风险：
+  - 这格只证明 `zombie_lend_a_hand` 的 borrowed discard card -> owner deck shuffle source provenance 已被事件级测试锁住。
+  - 不外推 Zombies 全量、所有 discard-shuffle caller、所有 `DECK_REORDERED` producer 或整个长期任务完成。
+
+## 2026-05-26 `cowboys_gold_in_them_thar_hills` borrowed reveal remainder -> owner deck source provenance green evidence
+
+- 审计范围：
+  - [`src/games/smashup/abilities/cowboys.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cowboys.ts>) 的 `buildGoldDrawAndDeckEvents()`
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 的 borrowed `cowboys_gold_in_them_thar_hills` gate
+- 权威来源：
+  - `Gold in Them Thar Hills` 揭示牌库顶牌，选择一张进手牌，其余按选择顺序回牌库。
+  - borrowed reveal 场景下，未选中的 borrowed card 应回到真实 owner deck；`DECK_REORDERED.playerId` 表示被重排牌库 owner，`sourcePlayerId` 表示这批揭示牌来自当前玩家牌库/行动。
+- 本轮复核：
+  - 代码当前已经把 `remainingCards` 拆成当前玩家 source remainder 与 borrowed-by-owner groups。
+  - borrowed groups 会生成 `DECK_REORDERED(playerId=ownerId, deckUids=[borrowed..., ownerDeck...], sourcePlayerId=playerId)`。
+  - 旧 borrowed 测试只断言 `borrowed-top-a` 最终回到 P1 deck，没有锁住事件级 source provenance。
+- 补强证据：
+  - 在 borrowed gate 中追加断言：P0 抽走 `top-b` 后，未选中的 `borrowed-top-a(owner=1)` 对应 `DECK_REORDERED(playerId='1')` 的 `payload.sourcePlayerId === '0'`。
+  - 最终仍断言 P0 hand 包含 `top-b`，P0 deck 为 `['top-c','rest-1']`，P1 deck 为 `['borrowed-top-a','p1-deck-a']`。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "cowboys_gold_in_them_thar_hills 未选中的 borrowed"` -> `1 file passed, 1 passed`
+  - `npx eslint src/games/smashup/__tests__/newFactionAbilities.test.ts` -> 0 errors、6 existing warnings
+- 未覆盖风险：
+  - 这格只证明 `cowboys_gold_in_them_thar_hills` 未选 borrowed reveal card -> owner deck 的 source provenance 已被事件级测试锁住。
+  - 不外推 Cowboys 全量、所有 reveal/order caller、所有 `DECK_REORDERED` producer 或整个长期任务完成。
+
+## 2026-05-26 `vikings_cast_the_runes_order` target deck borrowed reveal -> owner deck source provenance green evidence
+
+- 审计范围：
+  - [`src/games/smashup/abilities/vikings.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vikings.ts>) 的 `vikings_cast_the_runes_order` runtime handler
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 的 borrowed `vikings_cast_the_runes_order` gate
+- 权威来源：
+  - `Cast the Runes` 查看目标玩家牌库顶若干牌并重排。
+  - 如果目标玩家牌库顶快照中含有其他玩家拥有的 borrowed card，最终应回到真实 owner deck；`DECK_REORDERED.playerId` 表示被重排牌库 owner，`sourcePlayerId` 表示这张牌来自哪个目标玩家牌库快照。
+- 本轮复核：
+  - 代码当前已经把 `currentRevealed` 按 `card.owner` 与 `targetPlayerId` 分流。
+  - borrowed groups 会生成 `DECK_REORDERED(playerId=ownerId, deckUids=[borrowed..., ownerDeck...], sourcePlayerId=targetPlayerId)`。
+  - 旧 borrowed 测试只断言 `borrowed-top(owner=0)` 最终回到 P0 deck，没有锁住事件级 source provenance。
+- 补强证据：
+  - 在 borrowed gate 中追加断言：P0 打出 `Cast the Runes` 查看 P1 牌库，P1 deck 顶的 `borrowed-top(owner=0)` 被分流回 P0 deck 时，对应 `DECK_REORDERED(playerId='0')` 的 `payload.sourcePlayerId === '1'`。
+  - 最终仍断言 P1 deck 为 `['own-top','rest-1']`，P0 deck 为 `['borrowed-top','p0-deck-a']`。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "vikings_cast_the_runes_order 排序 borrowed"` -> `1 file passed, 1 passed`
+  - `npx eslint src/games/smashup/__tests__/newFactionAbilities.test.ts` -> 0 errors、6 existing warnings
+- 未覆盖风险：
+  - 这格只证明 `vikings_cast_the_runes_order` 对目标玩家牌库中 borrowed reveal card 的 owner/source split 已被事件级测试锁住。
+  - 不外推 Vikings 全量、所有 peek/order caller、所有 `DECK_REORDERED` producer 或整个长期任务完成。
+
+## 2026-05-26 `vikings_huscarl` borrowed hand -> owner deck top source provenance green evidence
+
+- 审计范围：
+  - [`src/games/smashup/abilities/vikings.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/vikings.ts>) 的 `vikings_huscarl` hand topdeck path 与本地 `toDeckTop(...)` helper
+  - [`src/games/smashup/__tests__/newFactionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/newFactionAbilities.test.ts>) 的 borrowed `vikings_huscarl` gate
+- 权威来源：
+  - `Huscarl` 选择一张手牌置于牌库顶，并让自身本回合 +2。
+  - borrowed hand 场景下，来源区仍是行动玩家手牌，但牌库顶落点必须是真实 owner deck；`CARD_TO_DECK_TOP.ownerId` 表示落点 owner，`sourcePlayerId` 表示从哪个玩家区位移出/由谁发动。
+- 本轮复核：
+  - 旧红灯修复已经让 `borrowed-1(owner=1)` 从 P0 手牌移出后进入 P1 deck top。
+  - 本轮继续收紧事件 payload，避免只看最终 deck 落点而漏掉下游 consumer 需要的行动 source provenance。
+- 补强证据：
+  - 在 borrowed gate 中追加断言：`CARD_TO_DECK_TOP(cardUid='borrowed-1').payload.sourcePlayerId === '0'`。
+  - 最终仍断言 P0 hand 清空、P0 deck 为 `['p0-deck-1']`，P1 deck 为 `['borrowed-1','p1-deck-1']`。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/newFactionAbilities.test.ts -t "vikings_huscarl 选择被他人拥有"` -> `1 file passed, 1 passed`
+  - `npx eslint src/games/smashup/__tests__/newFactionAbilities.test.ts` -> 0 errors、6 existing warnings
+- 未覆盖风险：
+  - 这格只证明 `vikings_huscarl` borrowed hand card 的 owner/source provenance 已被事件级测试锁住。
+  - 不外推 Vikings 全量、所有 hand topdeck caller、所有 `CARD_TO_DECK_TOP` producer 或整个长期任务完成。
+
+## 2026-05-26 `cthulhu_recruit_by_force / cthulhu_it_begins_again` borrowed discard -> owner deck source provenance green evidence
+
+- 审计范围：
+  - [`src/games/smashup/abilities/cthulhu.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cthulhu.ts>) 的 `cthulhu_recruit_by_force` 与 `cthulhu_it_begins_again` prompt handlers
+  - [`src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts>) 的两条 borrowed discard gates
+- 权威来源：
+  - `Recruit by Force` 从你的弃牌堆选择力量不大于 3 的随从放到牌库顶。
+  - `It Begins Again` 从你的弃牌堆选择任意行动洗回牌库。
+  - borrowed 场景下，来源区是当前玩家弃牌堆；最终落点应是真实 owner deck；事件 payload 还必须保留行动 source，供后续 protection / replacement / audit consumer 区分“谁发动”与“牌归谁”。
+- 本轮复核：
+  - `cthulhu_recruit_by_force` 当前已对所选 discard card 生成 `CARD_TO_DECK_TOP(ownerId=card.owner, sourcePlayerId=playerId)`。
+  - `cthulhu_it_begins_again` 当前已按 `card.owner` 分组生成 owner-scoped `DECK_REORDERED`，borrowed 组写 `sourcePlayerId=playerId`。
+  - 旧测试只断最终 P1 deck 落点，没锁事件级 source provenance。
+- 补强证据：
+  - `borrowed-discard(owner=1)` 从 P0 discard 被 `Recruit by Force` 选择后，断言 `CARD_TO_DECK_TOP(cardUid='borrowed-discard').payload.sourcePlayerId === '0'`，最终 P1 deck 为 `['borrowed-discard','p1-deck-1']`。
+  - `borrowed-action(owner=1)` 从 P0 discard 被 `It Begins Again` 选择后，断言 `DECK_REORDERED(playerId='1').payload.sourcePlayerId === '0'`，最终 P1 deck 为 `['p1-deck-1','borrowed-action']`。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts -t "选择被他人拥有的弃牌随从|选择被他人拥有的弃牌行动"` -> `1 file passed, 2 passed`
+  - `npx eslint src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts` -> 0 errors、2 existing warnings
+- 未覆盖风险：
+  - 这格只证明 `cthulhu_recruit_by_force` 与 `cthulhu_it_begins_again` 的 borrowed discard-to-deck source provenance 已被事件级测试锁住。
+  - 不外推 Cthulhu 全量、所有 discard 回收 caller、所有 `CARD_TO_DECK_TOP/DECK_REORDERED` producer 或整个长期任务完成。
+
+## 2026-05-26 `cthulhu_altar` queued source sibling contamination seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/cthulhu.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cthulhu.ts>) 的 `isCthulhuAltarEligibleForMinionPlayed()` / `cthulhuAltarTrigger()`，以及同类循环中的 `cthulhuFurtheringTheCauseTrigger()`、`cthulhuCompleteTheRitualTrigger()` fallback。
+  - [`src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts>) 的 Cthulhu queued source runtime gates。
+- 权威来源：
+  - `cthulhu_altar` 语义是“你在该基地打随从后，额外打出 1 张行动”。当同一基地有多张同名 ongoing 时，queued trigger 的 `sourceCardUid/sourceControllerId` 只代表当前 source，不能把该 controller 套到同基地其它 ongoing。
+- 红灯证据：
+  - 新增 gate：P0 控制 borrowed `cthulhu_altar(owner=1, sourcePlayerId=0)`，同基地另有 P1 自己的 `cthulhu_altar(owner=1)`；P0 在该基地打出随从。
+  - 首轮 failed：collector 只入队 borrowed source，但 runtime resolve 吐出 2 个 `LIMIT_MODIFIED(reason='cthulhu_altar')`，把同基地 P1 Altar 也当成 P0 source。
+  - 第一版只把循环内 controller 改为 `metadata.sourceControllerId ?? ownerId` 后继续 failed：`canTrigger` 在逐 source 判定时扫描整基地，反而把 `opponent-altar` 入队，说明 collector eligibility 也必须 source-specific。
+- 最小修复：
+  - 新增 `getCthulhuOngoingControllerId(ongoing)`，统一读取 `metadata.sourceControllerId ?? ownerId`。
+  - `cthulhu_altar` 的 canTrigger 与 callback 在存在 `ctx.sourceCardUid` 时只判断/结算当前 source；非 queued/direct fallback 才继续扫描基地候选。
+  - `cthulhu_furthering_the_cause` 同步在有 `ctx.sourceCardUid` 时只结算当前 source，避免未来同类 sibling 污染。
+  - `cthulhu_complete_the_ritual` fallback 改用具体 ongoing 的 controller，而不是把 `ctx.sourceControllerId` 套给任意同名 ongoing。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts -t "同基地其他玩家的 Altar|borrowed cthulhu_altar|borrowed cthulhu_furthering_the_cause|borrowed cthulhu_complete_the_ritual"` -> 首轮 failed，修复后 `1 file passed, 5 passed`。
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "cthulhu_altar|cthulhu_furthering_the_cause|cthulhu_complete_the_ritual"` -> `1 file passed, 10 passed`。
+  - `npx eslint src/games/smashup/abilities/cthulhu.ts src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` -> 0 errors。
+- 未覆盖风险：
+  - 这格只闭合 Cthulhu 同基地同名 ongoing 在 queued source collector/resolve 中的 controller 污染 seam。
+  - 不外推 Cthulhu 全量、所有 sourceScope trigger、所有同名 ongoing、或整个长期任务完成。
+
+## 2026-05-26 `bear_cavalry_high_ground_pod` queued source sibling contamination seam
+
+- 审计范围：
+  - [`src/games/smashup/abilities/bear_cavalry.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/bear_cavalry.ts>) 的 `bearCavalryHighGroundPodTrigger()`。
+  - [`src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts>) 的 High Ground POD queued runtime gates。
+- 权威来源：
+  - `bear_cavalry_high_ground_pod` 是 onMinionMoved queued source。triggerQueue 的 `sourceCardUid/sourceControllerId` 只代表当前 source，不应让当前 controller 污染同基地其它 `High Ground POD`。
+- 红灯证据：
+  - 新增 gate 手动构造 trigger：`sourceCardUid='high-ground-pod-a'`、`sourceControllerId='0'`，但目标基地 `ongoingActions` 中先放 P1 自己的 `opponent-high-ground`，再通过 `ONGOING_ATTACHED` 附上 P0 控制的 borrowed `high-ground-pod-a(owner=1, sourcePlayerId=0)`。
+  - 首轮 failed：prompt id 为 `bear_cavalry_high_ground_pod_trigger_12_opponent-high-ground`，说明 runtime resolve 明确把其它玩家的同名 POD 当成当前 queued source。
+- 最小修复：
+  - `bearCavalryHighGroundPodTrigger()` 在 `ctx.sourceCardUid` 存在时跳过 uid 不匹配的 ongoing。
+  - 同一循环中的 controller 判定改为当前 ongoing 的 `metadata.sourceControllerId ?? ownerId`，不再用 `ctx.sourceControllerId ?? ongoing.ownerId`。
+  - 不改基础版 `bear_cavalry_high_ground`，也不改 High Ground POD prompt 的选项/响应语义。
+- 已验证测试/证据：
+  - `pnpm vitest run src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts -t "High Ground POD|bear_cavalry_high_ground_pod"` -> 首轮 failed，修复后 `1 file passed, 2 passed`。
+  - `pnpm vitest run src/games/smashup/__tests__/newOngoingAbilities.test.ts -t "bear_cavalry_high_ground"` -> `1 file passed, 4 passed`。
+  - `npx eslint src/games/smashup/abilities/bear_cavalry.ts src/games/smashup/__tests__/reactionQueueSourceRuntimeContext.test.ts` -> 0 errors、65 existing warnings。
+- 未覆盖风险：
+  - 这格只闭合 `bear_cavalry_high_ground_pod` 的 queued source runtime 污染 seam。
+  - 不外推 Bear Cavalry 全量、基础版 High Ground、所有 onMinionMoved trigger、或整个长期任务完成。

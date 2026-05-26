@@ -3565,6 +3565,7 @@ function buildTheBrideEffectEvents(
             type: SU_EVENTS.CARD_BOXED,
             payload: {
                 playerId,
+                ownerId: card.owner,
                 cardUid: card.uid,
                 defId: card.defId,
                 from: selection.from,

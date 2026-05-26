@@ -19,7 +19,7 @@ import {
     triggerBaseAbility,
     triggerExtendedBaseAbility,
 } from '../domain/baseAbilities';
-import { collectTriggers, fireTriggers } from '../domain/ongoingEffects';
+import { collectTriggers, fireTriggers, interceptEvent } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { processDestroyTriggers } from '../domain/reducer';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
@@ -1131,6 +1131,35 @@ describe('base_temple_of_goju: 最高力量随从放牌库底', () => {
         expect((p1Event as any).payload.ownerId).toBe('1');
     });
 
+    it('borrowed 最高力量随从被基地放入牌库底时，不应被 Tooth and Claw 误判为其他玩家影响', () => {
+        const borrowed = {
+            ...makeMinion('borrowed-m1', '0', 5, 'test_minion'),
+            owner: '1',
+            attachedActions: [{ uid: 'tc-1', defId: 'dino_tooth_and_claw', ownerId: '0', metadata: {} }],
+        };
+        const state = makeState({
+            bases: [{
+                defId: 'base_temple_of_goju',
+                minions: [borrowed],
+                ongoingActions: [],
+            }],
+        });
+        const ctx: BaseAbilityContext = {
+            state,
+            baseIndex: 0,
+            baseDefId: 'base_temple_of_goju',
+            playerId: '1',
+            now: 1000,
+        };
+
+        const { events } = triggerBaseAbility('base_temple_of_goju', 'afterScoring', ctx);
+        const bottomEvent = events.find(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
+        expect(bottomEvent).toBeDefined();
+        expect((bottomEvent as any).payload.ownerId).toBe('1');
+        expect((bottomEvent as any).payload.sourcePlayerId).toBe('0');
+        expect(interceptEvent(state, bottomEvent!)).toBeUndefined();
+    });
+
     it('基地无随从时不触发', () => {
         const ctx: BaseAbilityContext = {
             state: makeState({
@@ -1309,6 +1338,35 @@ describe('base_ritual_site: 随从洗回牌库', () => {
         // 验证 owner 正确
         const m2Event = events.find(e => (e as any).payload.cardUid === 'm2');
         expect((m2Event as any).payload.ownerId).toBe('1');
+    });
+
+    it('borrowed 随从被基地洗回牌库时，不应被 Tooth and Claw 误判为其他玩家影响', () => {
+        const borrowed = {
+            ...makeMinion('borrowed-m1', '0', 3, 'test_minion'),
+            owner: '1',
+            attachedActions: [{ uid: 'tc-1', defId: 'dino_tooth_and_claw', ownerId: '0', metadata: {} }],
+        };
+        const state = makeState({
+            bases: [{
+                defId: 'base_ritual_site',
+                minions: [borrowed],
+                ongoingActions: [],
+            }],
+        });
+        const ctx: BaseAbilityContext = {
+            state,
+            baseIndex: 0,
+            baseDefId: 'base_ritual_site',
+            playerId: '1',
+            now: 1000,
+        };
+
+        const { events } = triggerBaseAbility('base_ritual_site', 'afterScoring', ctx);
+        const bottomEvent = events.find(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
+        expect(bottomEvent).toBeDefined();
+        expect((bottomEvent as any).payload.ownerId).toBe('1');
+        expect((bottomEvent as any).payload.sourcePlayerId).toBe('0');
+        expect(interceptEvent(state, bottomEvent!)).toBeUndefined();
     });
 
     it('基地无随从时不触发', () => {

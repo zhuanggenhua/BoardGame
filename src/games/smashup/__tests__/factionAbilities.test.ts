@@ -598,6 +598,7 @@ describe('恐龙派系能力', () => {
         const destroyedUids = destroyEvents.map(e => (e as any).payload.minionUid);
         expect(destroyedUids).toContain('m1');
         expect(destroyedUids).toContain('m2');
+        expect(destroyEvents.every(e => (e as any).payload.destroyerId === '0')).toBe(true);
     });
 });
 
@@ -1334,6 +1335,34 @@ describe('外星人派系能力', () => {
         });
     });
 
+    it('alien_disintegrator: 影响对手 borrowed 随从时应保留 sourcePlayerId', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'alien_disintegrator', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-rest', 'test', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'b1', minions: [
+                    makeMinion('m1', 'test', '1', 2),
+                ], ongoingActions: [],
+            }],
+        });
+
+        const resolved = execPlayAction(state, '0', 'a1', 0, 'm1');
+        const deckBottom = resolved.events.find(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
+        expect((deckBottom as any)?.payload).toMatchObject({
+            cardUid: 'm1',
+            ownerId: '1',
+            sourcePlayerId: '0',
+            reason: 'alien_disintegrator',
+        });
+        expect(resolved.matchState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-rest', 'm1']);
+    });
+
     it('alien_crop_circles: 单个基地有随从时创建 Prompt', () => {
         const state = makeState({
             players: {
@@ -1355,6 +1384,38 @@ describe('外星人派系能力', () => {
         const current = (matchState.sys as any).interaction?.current;
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('alien_crop_circles');
+    });
+
+    it('alien_crop_circles: 返回随从事件应保留行动玩家 sourcePlayerId', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'alien_crop_circles', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'b1', minions: [
+                    makeMinion('m1', 'test', '0', 3),
+                    makeMinion('m2', 'test', '1', 2),
+                ], ongoingActions: [],
+            }],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const current = (matchState.sys as any).interaction?.current;
+        const baseOption = current?.data?.options?.find((entry: any) => entry.value?.baseIndex === 0);
+        expect(baseOption).toBeDefined();
+
+        const result = runCommand(matchState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: baseOption.id },
+        } as any, defaultRandom);
+        const returned = result.events.filter(event => event.type === SU_EVENTS.MINION_RETURNED);
+
+        expect(returned).toHaveLength(2);
+        expect(returned.every(event => (event as any).payload.sourcePlayerId === '0')).toBe(true);
     });
 });
 

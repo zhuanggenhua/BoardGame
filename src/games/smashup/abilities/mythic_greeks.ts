@@ -396,6 +396,7 @@ const dionysusTopPromptProgram = createPromptProgram<DionysusTopContext, SmashUp
                     cardUid: context.cardUid,
                     defId: context.defId,
                     ownerId: context.ownerId,
+                    ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                     reason: 'mythic_greeks_favor_of_dionysus',
                 },
                 timestamp,

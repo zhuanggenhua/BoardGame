@@ -490,8 +490,28 @@ describe('忍者 ongoing/special 能力', () => {
             expect(acolyteEvents).toHaveLength(2);
             expect(acolyteEvents[0].type).toBe(SU_EVENTS.SPECIAL_LIMIT_USED);
             expect(acolyteEvents[1].type).toBe(SU_EVENTS.MINION_RETURNED);
+            expect((acolyteEvents[1] as any).payload.sourcePlayerId).toBe('0');
             // 应创建交互（选择手牌中的随从）
             expect(result.matchState).toBeDefined();
+        });
+
+        test('POD talent 返回自身时保留 sourcePlayerId', () => {
+            const base = makeBase({
+                minions: [makeMinion({ defId: 'ninja_acolyte_pod', uid: 'ac-pod-1', controller: '0' })],
+            });
+            const state = makeState([base]);
+            const matchState = makeMatchState(state);
+            const executor = resolveAbility('ninja_acolyte_pod', 'talent')!;
+            const result = executor({
+                state, matchState, playerId: '0', cardUid: 'ac-pod-1', defId: 'ninja_acolyte_pod',
+                baseIndex: 0, random: dummyRandom, now: 1000,
+            });
+
+            const returnEvt = result.events.find(e =>
+                e.type === SU_EVENTS.MINION_RETURNED && (e as any).payload?.minionDefId === 'ninja_acolyte_pod'
+            );
+            expect(returnEvt).toBeDefined();
+            expect((returnEvt as any).payload.sourcePlayerId).toBe('0');
         });
 
         test('同基地已使用忍者 special 时被阻止', () => {
@@ -1432,6 +1452,45 @@ describe('诡术师 ongoing 能力', () => {
             expect((events[0] as any).payload.reason).toBe('trickster_flame_trap');
             expect(events[1].type).toBe(SU_EVENTS.ONGOING_DETACHED);
             expect((events[1] as any).payload.ownerId).toBe('1');
+        });
+
+        test('Flame Trap 消灭 borrowed 随从时，MINION_DESTROYED 应保留被消灭随从真实 owner', () => {
+            const borrowedMinion = makeMinion({
+                uid: 'borrowed-played',
+                defId: 'some_minion',
+                controller: '1',
+                owner: '0',
+            });
+            const base = makeBase({
+                minions: [borrowedMinion],
+                ongoingActions: [{ uid: 'ft-1', defId: 'trickster_flame_trap', ownerId: '0' }],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'borrowed-played',
+                triggerMinionDefId: 'some_minion',
+                triggerMinion: borrowedMinion,
+                random: dummyRandom,
+                now: 1000,
+            } as any);
+
+            expect(events).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        type: SU_EVENTS.MINION_DESTROYED,
+                        payload: expect.objectContaining({
+                            minionUid: 'borrowed-played',
+                            ownerId: '0',
+                            controllerId: '1',
+                            destroyerId: '0',
+                        }),
+                    }),
+                ]),
+            );
         });
     });
 

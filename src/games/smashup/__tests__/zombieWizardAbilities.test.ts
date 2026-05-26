@@ -502,6 +502,10 @@ describe('僵尸派系能力', () => {
         } as any, defaultRandom);
 
         expect(resolved.success).toBe(true);
+        const reorderEvent = resolved.events.find((event: any) =>
+            event.type === SU_EVENTS.DECK_REORDERED && event.payload?.playerId === '1'
+        );
+        expect(reorderEvent?.payload?.sourcePlayerId).toBe('0');
         const p0 = resolved.finalState.core.players['0'];
         const p1 = resolved.finalState.core.players['1'];
         expect(p0.deck.map(card => card.uid)).toEqual(['p0-deck-a']);

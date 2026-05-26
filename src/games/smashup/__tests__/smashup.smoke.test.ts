@@ -6136,6 +6136,7 @@ describe('smashup', () => {
             payload: expect.objectContaining({
                 cardUid: 'penguin-borrowed-minion',
                 ownerId: '1',
+                sourcePlayerId: '0',
             }),
         }));
         expect(resolved.events).toContainEqual(expect.objectContaining({

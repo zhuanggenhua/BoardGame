@@ -576,7 +576,14 @@ const ninjaAcolyteSpecialProgram = createEffectProgram<AbilityContext, AbilityCo
     const events: SmashUpEvent[] = limitEvt ? [limitEvt] : [];
     events.push({
         type: SU_EVENTS.MINION_RETURNED,
-        payload: { minionUid: ctx.cardUid, minionDefId: 'ninja_acolyte', fromBaseIndex: ctx.baseIndex, toPlayerId: ctx.playerId, reason: 'ninja_acolyte' },
+        payload: {
+            minionUid: ctx.cardUid,
+            minionDefId: 'ninja_acolyte',
+            fromBaseIndex: ctx.baseIndex,
+            toPlayerId: ctx.playerId,
+            sourcePlayerId: ctx.playerId,
+            reason: 'ninja_acolyte',
+        },
         timestamp: ctx.now,
     } as MinionReturnedEvent);
     const acolyteDef = getCardDef('ninja_acolyte') as MinionCardDef | undefined;
@@ -615,6 +622,7 @@ const ninjaAcolytePodTalentProgram = createEffectProgram<AbilityContext, Ability
             minionDefId: 'ninja_acolyte_pod',
             fromBaseIndex: ctx.baseIndex,
             toPlayerId: ctx.playerId,
+            sourcePlayerId: ctx.playerId,
             reason: 'ninja_acolyte_pod',
         },
         timestamp: ctx.now,
@@ -696,6 +704,7 @@ function buildNinjaDisguiseReturnEvents(
     state: AbilityContext['state'],
     baseIndex: number,
     selectedMinionUids: string[],
+    sourcePlayerId: PlayerId,
     timestamp: number,
 ): MinionReturnedEvent[] {
     const base = state.bases[baseIndex];
@@ -712,6 +721,7 @@ function buildNinjaDisguiseReturnEvents(
                 minionDefId: minion.defId,
                 fromBaseIndex: baseIndex,
                 toPlayerId: minion.owner,
+                sourcePlayerId,
                 reason: 'ninja_disguise',
             },
             timestamp,
@@ -926,6 +936,7 @@ const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext,
                 state.core,
                 context.baseIndex,
                 context.selectedMinionUids,
+                playerId,
                 timestamp,
             ),
         );

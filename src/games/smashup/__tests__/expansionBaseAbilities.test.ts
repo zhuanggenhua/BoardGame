@@ -32,7 +32,7 @@ import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
-import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, isMinionProtected } from '../domain/ongoingEffects';
 import { appendScoringFrameDeferredPayload, buildPendingPostScoringActionEvents, consumeScoringFrameDeferredPayload, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, CardInstance } from '../domain/types';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
@@ -547,6 +547,74 @@ describe('base_the_asylum: 疯人院 - 放入盒子并加指示物', () => {
         expect((reduced.players['0'].removedFromGame ?? []).some(card => card.uid === 'h1')).toBe(true);
     });
 
+    it('选择被他人拥有的 borrowed 手牌时，应从当前玩家手牌移除并进入真实拥有者盒区', () => {
+        const result = triggerBaseAbilityWithMS('base_the_asylum', 'onMinionPlayed', makeCtx({
+            state: makeState({
+                bases: [
+                    makeBase('base_the_asylum', {
+                        minions: [makeMinion('m1', '0', 3)],
+                    }),
+                    makeBase('other_base', {
+                        minions: [makeMinion('m2', '0', 4)],
+                    }),
+                ],
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('borrowed-hand', 'normal_action', 'action', '1')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+            }),
+            baseDefId: 'base_the_asylum',
+            baseIndex: 0,
+            minionUid: 'm1',
+        }));
+        const firstInteraction = getInteractionsFromResult(result)[0];
+        const handOption = firstInteraction.data.options.find((entry: any) => entry.value?.cardUid === 'borrowed-hand');
+        const chooseCardHandler = getInteractionHandler('base_the_asylum');
+        const chooseMinionHandler = getInteractionHandler('base_the_asylum_choose_minion');
+
+        expect(handOption).toBeDefined();
+        expect(chooseCardHandler).toBeDefined();
+        expect(chooseMinionHandler).toBeDefined();
+
+        const step1 = chooseCardHandler!(
+            result.matchState!,
+            '0',
+            handOption.value,
+            firstInteraction.data,
+            dummyRandom,
+            1011,
+        );
+        const secondInteraction = getInteractionsFromMS(step1.state)
+            .find((interaction: any) => interaction.data?.sourceId === 'base_the_asylum_choose_minion')!;
+        const minionOption = secondInteraction.data.options.find((entry: any) => entry.value?.minionUid === 'm2');
+
+        const step2 = chooseMinionHandler!(
+            step1.state,
+            '0',
+            minionOption.value,
+            secondInteraction.data,
+            dummyRandom,
+            1012,
+        );
+
+        expect(step2.events[0]).toMatchObject({
+            type: SU_EVENTS.CARD_BOXED,
+            payload: {
+                playerId: '0',
+                ownerId: '1',
+                cardUid: 'borrowed-hand',
+                from: 'hand',
+            },
+        });
+
+        const reduced = applyEvents(step1.state.core, step2.events as any);
+        expect(reduced.players['0'].hand.some(card => card.uid === 'borrowed-hand')).toBe(false);
+        expect((reduced.players['0'].removedFromGame ?? []).some(card => card.uid === 'borrowed-hand')).toBe(false);
+        expect((reduced.players['1'].removedFromGame ?? []).some(card => card.uid === 'borrowed-hand')).toBe(true);
+    });
+
     it('无手牌时不触发', () => {
         const { events } = triggerBaseAbility('base_the_asylum', 'onMinionPlayed', makeCtx({
             state: makeState({
@@ -749,6 +817,31 @@ describe('base_innsmouth_base: 印斯茅斯 - 弃牌堆卡入牌库底', () => {
         expect(interactions[0].playerId).toBe('1');
     });
 
+    it('borrowed Infiltrate 不应按真实 owner 错误阻止其他玩家的 Innsmouth Base 触发', () => {
+        const result = triggerBaseAbilityWithMS('base_innsmouth_base', 'onMinionPlayed', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_innsmouth_base', {
+                    minions: [makeMinion('m1', '1', 3, 'innsmouth_the_locals')],
+                    ongoingActions: [{ uid: 'inf-borrowed', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+                })],
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1', {
+                        discard: [makeCard('d1', 'wizard_scry', 'action', '1')],
+                    }),
+                },
+            }),
+            baseDefId: 'base_innsmouth_base',
+            minionUid: 'm1',
+            playerId: '1',
+        }));
+
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        expect(interactions[0].data.sourceId).toBe('base_innsmouth_base_choose_player');
+        expect(interactions[0].playerId).toBe('1');
+    });
+
     it('所有弃牌堆为空时不触发', () => {
         const { events } = triggerBaseAbility('base_innsmouth_base', 'onMinionPlayed', makeCtx({
             state: makeState({ bases: [makeBase('base_innsmouth_base')] }),
@@ -802,6 +895,21 @@ describe('base_innsmouth_base: 印斯茅斯 - 弃牌堆卡入牌库底', () => {
         expect(getInteractionsFromMS(resolved!.state as any).some((interaction: any) =>
             interaction?.data?.sourceId === 'base_innsmouth_base_choose_player',
         )).toBe(true);
+    });
+});
+
+describe('base_egg_chamber: Infiltrate controller provenance', () => {
+    it('borrowed Infiltrate 由控制者控制时，应让 Egg Chamber 不再保护控制者的有指示物随从', () => {
+        const protectedMinion = makeMinion('m1', '0', 3, 'alien_collector');
+        protectedMinion.powerCounters = 1;
+        const core = makeState({
+            bases: [makeBase('base_egg_chamber', {
+                minions: [protectedMinion],
+                ongoingActions: [{ uid: 'inf-borrowed', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            })],
+        });
+
+        expect(isMinionProtected(core, protectedMinion, 0, '1', 'destroy')).toBe(false);
     });
 });
 
