@@ -1,5 +1,5 @@
 import type { CardDef, BaseCardDef, MinionCardDef, ActionCardDef, FusionCardDef, TitanCardDef } from '../domain/types';
-import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import { isSmashUpDiyFaction, SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import { TITAN_CARD_DEFS } from './titans';
 
 import { PIRATE_CARDS } from './factions/pirates';
@@ -1393,8 +1393,9 @@ const POD_BASE_POOL_VARIANT_FACTIONS = new Set<string>([
 
 /** 查找卡牌定义 */
 /** 根据所选派系获取基地定义 ID（同变体补充：POD 只补 POD，基础只补基础） */
-export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
+export function getBaseDefIdsForFactions(factionIds: string[], enabledExpansions: readonly string[] = ['titans', 'diy']): string[] {
     const selectedFactionIds = [...new Set(factionIds)];
+    const diyEnabled = enabledExpansions.includes('diy');
     const selectedOriginalFactions = new Set(
         selectedFactionIds.filter(factionId => !factionId.endsWith('_pod')),
     );
@@ -1403,6 +1404,9 @@ export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
         selectedFactionIds.filter(factionId => POD_BASE_POOL_VARIANT_FACTIONS.has(factionId)),
     );
     const matchedBases = getPublicBaseDefs().filter(base => {
+        if (isSmashUpDiyFaction(base.faction) && !diyEnabled) {
+            return false;
+        }
         if (base.faction && selectedOriginalFactions.has(base.faction)) {
             return true;
         }
@@ -1429,7 +1433,11 @@ export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
     if (factionsWithoutBases.length > 0) {
         const allBases = getAllBaseDefIds();
         const usedBases = new Set(matchedBases.map(base => base.id));
-        const availableBases = allBases.filter(id => !usedBases.has(id));
+        const availableBases = allBases.filter(id => {
+            if (usedBases.has(id)) return false;
+            const base = getBaseDef(id);
+            return !isSmashUpDiyFaction(base?.faction) || diyEnabled;
+        });
 
         const missingCount = factionsWithoutBases.length * 2;
         const supplementBases = availableBases.slice(0, Math.min(missingCount, availableBases.length));

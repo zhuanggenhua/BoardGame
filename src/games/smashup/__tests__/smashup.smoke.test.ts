@@ -272,6 +272,34 @@ describe('smashup', () => {
         expect(result.finalState.core.titans ?? []).toEqual([]);
     });
 
+    it('房间关闭 diy 扩展后不会初始化 DIY 基地，也不能选择 DIY 派系', () => {
+        const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
+            expansions: ['titans'],
+            setupSelections: {
+                expansions: ['titans'],
+            },
+        });
+
+        const setupBaseIds = [
+            ...state.bases.map((base) => base.defId),
+            ...state.baseDeck,
+        ];
+        expect(state.enabledExpansions).toEqual(['titans']);
+        expect(setupBaseIds).not.toContain('base_huluwawa_mountain');
+        expect(setupBaseIds).not.toContain('base_seven_colored_lotus');
+
+        const matchState = makeMatchState(state);
+        matchState.sys.phase = 'factionSelect';
+        expect(SmashUpDomain.validate!(matchState, {
+            type: SU_COMMANDS.SELECT_FACTION,
+            playerId: '0',
+            payload: { factionId: SMASHUP_FACTION_IDS.HULUWAWA },
+        })).toMatchObject({
+            valid: false,
+            error: '该 DIY 派系未开启',
+        });
+    });
+
     it('4 人房间开启 2v2 后按团队模式初始化座位与规则', () => {
         const runner = createRunner(['0', '1', '2', '3'], {
             teamMode: '2v2',

@@ -5,7 +5,8 @@
   "setup": {
     "expansions": {
       "label": "Expansion Rules",
-      "titans": "Titans"
+      "titans": "Titans",
+      "diy": "DIY"
     },
     "teamMode": {
       "label": "Match Mode",

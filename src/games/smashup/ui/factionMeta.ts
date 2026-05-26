@@ -39,6 +39,8 @@ export interface FactionMeta {
     implementationHintKey?: string;
     /** 可选：限制仅在哪些语言界面中显示此阵营，不填则全语言显示 */
     locales?: string[];
+    /** 可选：扩展开关分组；DIY 派系仅在 diy 开关开启时显示 */
+    expansion?: 'diy';
 }
 
 export interface FactionMechanicTutorialMeta {
@@ -62,6 +64,10 @@ function toFactionGroupId(factionId: string): string {
 
 function isFactionVisibleInLocale(faction: FactionMeta, locale: string): boolean {
     return !faction.locales || faction.locales.includes(locale);
+}
+
+function isFactionEnabledInExpansions(faction: FactionMeta, enabledExpansions: readonly string[]): boolean {
+    return !faction.expansion || enabledExpansions.includes(faction.expansion);
 }
 
 function preferBaseVariant(variants: FactionMeta[], locale: string): FactionMeta {
@@ -124,7 +130,7 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.GIANT_ANTS_POD, nameKey: 'factions.giant_ants_pod.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants_pod.description' },
     { id: SMASHUP_FACTION_IDS.MERMAIDS, nameKey: 'factions.mermaids.name', icon: Fish, color: '#0ea5e9', descriptionKey: 'factions.mermaids.description' },
     { id: SMASHUP_FACTION_IDS.FAIRIES, nameKey: 'factions.fairies.name', icon: Flower2, color: '#ec4899', descriptionKey: 'factions.fairies.description' },
-    { id: SMASHUP_FACTION_IDS.HULUWAWA, nameKey: 'factions.huluwawa.name', icon: Sprout, color: '#15803d', descriptionKey: 'factions.huluwawa.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.HULUWAWA, nameKey: 'factions.huluwawa.name', icon: Sprout, color: '#15803d', descriptionKey: 'factions.huluwawa.description', locales: ['zh-CN'], expansion: 'diy' },
     { id: SMASHUP_FACTION_IDS.PRINCESSES, nameKey: 'factions.princesses.name', icon: Wand2, color: '#f59eb8', descriptionKey: 'factions.princesses.description' },
     { id: SMASHUP_FACTION_IDS.SHARKS, nameKey: 'factions.sharks.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks.description', implementationStatus: 'in_progress' },
     { id: SMASHUP_FACTION_IDS.TORNADOS, nameKey: 'factions.tornados.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados.description', implementationStatus: 'in_progress' },
@@ -164,19 +170,25 @@ export const FACTION_VARIANT_GROUPS: FactionVariantGroup[] = (() => {
     }));
 })();
 
-export function getVisibleFactionMetadata(locale: string): FactionMeta[] {
-    return FACTION_METADATA.filter((faction) => isFactionVisibleInLocale(faction, locale));
+export function getVisibleFactionMetadata(locale: string, enabledExpansions: readonly string[] = ['titans', 'diy']): FactionMeta[] {
+    return FACTION_METADATA.filter((faction) =>
+        isFactionVisibleInLocale(faction, locale)
+        && isFactionEnabledInExpansions(faction, enabledExpansions),
+    );
 }
 
-export function getVisibleFactionVariantGroups(locale: string): Array<FactionVariantGroup & { defaultVariant: FactionMeta }> {
+export function getVisibleFactionVariantGroups(locale: string, enabledExpansions: readonly string[] = ['titans', 'diy']): Array<FactionVariantGroup & { defaultVariant: FactionMeta }> {
     return FACTION_VARIANT_GROUPS
         .map((group) => {
-            const visibleVariants = group.variants.filter((variant) => isFactionVisibleInLocale(variant, locale));
+            const visibleVariants = group.variants.filter((variant) =>
+                isFactionVisibleInLocale(variant, locale)
+                && isFactionEnabledInExpansions(variant, enabledExpansions),
+            );
             if (visibleVariants.length === 0) return null;
             return {
                 ...group,
                 variants: visibleVariants,
-                defaultVariant: preferBaseVariant(group.variants, locale),
+                defaultVariant: preferBaseVariant(visibleVariants, locale),
             };
         })
         .filter((group): group is FactionVariantGroup & { defaultVariant: FactionMeta } => Boolean(group));
@@ -187,10 +199,12 @@ export function getFactionVariantGroupById(factionId: string): FactionVariantGro
     return FACTION_VARIANT_GROUPS.find((group) => group.groupId === groupId);
 }
 
-export function getPreferredFactionVariant(groupId: string, locale: string): FactionMeta | undefined {
+export function getPreferredFactionVariant(groupId: string, locale: string, enabledExpansions: readonly string[] = ['titans', 'diy']): FactionMeta | undefined {
     const group = getFactionVariantGroupById(groupId);
     if (!group) return undefined;
-    return preferBaseVariant(group.variants, locale);
+    const enabledVariants = group.variants.filter((variant) => isFactionEnabledInExpansions(variant, enabledExpansions));
+    if (enabledVariants.length === 0) return undefined;
+    return preferBaseVariant(enabledVariants, locale);
 }
 
 export function getFactionMeta(id: string): FactionMeta | undefined {

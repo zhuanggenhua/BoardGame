@@ -84,7 +84,7 @@ function buildCore(): SmashUpCore {
         teamMode: undefined,
         bases: [],
         titans: [],
-        enabledExpansions: [],
+        enabledExpansions: ['titans', 'diy'],
         baseDeck: [],
         baseDiscard: [],
         triggerQueue: undefined,
@@ -275,5 +275,16 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
         expect(orderedIds.indexOf(SMASHUP_FACTION_IDS.SKELETONS)).toBeLessThan(orderedIds.indexOf(SMASHUP_FACTION_IDS.FAIRIES));
         expect(orderedIds.indexOf(SMASHUP_FACTION_IDS.WORLD_CHAMPS)).toBeLessThan(orderedIds.indexOf(SMASHUP_FACTION_IDS.SHARKS));
+    });
+
+    it('关闭 diy 扩展后不显示 DIY 派系', () => {
+        const core = buildCore();
+        core.enabledExpansions = ['titans'];
+
+        renderSelection(vi.fn(), core);
+
+        expect(screen.queryByTestId('faction-option-huluwawa')).not.toBeInTheDocument();
+        expect(getVisibleFactionVariantGroups('zh-CN', ['titans']).map(group => group.groupId))
+            .not.toContain(SMASHUP_FACTION_IDS.HULUWAWA);
     });
 });

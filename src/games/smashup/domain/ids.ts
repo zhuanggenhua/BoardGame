@@ -130,6 +130,16 @@ export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>([
     SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
 ]);
 
+export const SMASHUP_DIY_FACTION_IDS = new Set<string>([
+    SMASHUP_FACTION_IDS.HULUWAWA,
+]);
+
+export function isSmashUpDiyFaction(factionId: string | null | undefined): boolean {
+    const normalizedId = normalizeFactionSelectionId(factionId);
+    return SMASHUP_DIY_FACTION_IDS.has(factionId ?? '')
+        || SMASHUP_DIY_FACTION_IDS.has(normalizedId);
+}
+
 export function isSmashUpFactionImplementationInProgress(factionId: string): boolean {
     const normalizedId = normalizeFactionSelectionId(factionId);
     return SMASHUP_IN_PROGRESS_FACTION_IDS.has(factionId)
