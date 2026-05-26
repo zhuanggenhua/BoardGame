@@ -565,6 +565,14 @@ function shouldSkipTriggerInstance(
         }
     }
 
+    if (
+        entry.sourceDefId === 'bear_cavalry_major_ursa'
+        && timing === 'onMinionMoved'
+        && located.baseIndex !== undefined
+    ) {
+        return ctx.moveToBaseIndex !== located.baseIndex;
+    }
+
     return entry.sourceDefId === 'explorers_very_large_boulder'
         && timing === 'onMinionMoved'
         && !!located.titanUid

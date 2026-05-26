@@ -1,71 +1,32 @@
-import { Capacitor } from '@capacitor/core';
+import {
+    getNativeMobileRuntimeDiagnostics,
+    type NativeMobileRuntimeDiagnostics,
+} from './mobileRuntime';
 
-type CapacitorRuntimeLike = {
-    getPlatform?: () => string;
-    isNativePlatform?: () => boolean;
-};
-
-type AndroidRuntimeWindowLike = {
-    Capacitor?: CapacitorRuntimeLike;
-    androidBridge?: unknown;
-    __BG_E2E_NATIVE_ANDROID_RUNTIME__?: boolean;
-};
-
-const safeInvoke = <T,>(fn: () => T): T | undefined => {
-    try {
-        return fn();
-    } catch {
-        return undefined;
-    }
-};
+type CapacitorRuntimeLike = Parameters<typeof getNativeMobileRuntimeDiagnostics>[0] extends { capacitor?: infer T }
+    ? T
+    : never;
+type AndroidRuntimeWindowLike = Parameters<typeof getNativeMobileRuntimeDiagnostics>[0] extends { windowObject?: infer T }
+    ? T
+    : never;
 
 export const isAndroidShellBuildMode = (env: Partial<ImportMetaEnv> = import.meta.env) => env.MODE === 'android';
 
-export type NativeAndroidRuntimeDiagnostics = {
-    nativeAndroid: boolean;
-    importCapacitorPlatform?: string;
-    importCapacitorNative?: boolean;
-    windowCapacitorPlatform?: string;
-    windowCapacitorNative?: boolean;
-    hasAndroidBridge: boolean;
-    summary: string;
-};
+export type NativeAndroidRuntimeDiagnostics = Pick<
+    NativeMobileRuntimeDiagnostics,
+    | 'nativeAndroid'
+    | 'importCapacitorPlatform'
+    | 'importCapacitorNative'
+    | 'windowCapacitorPlatform'
+    | 'windowCapacitorNative'
+    | 'hasAndroidBridge'
+    | 'summary'
+>;
 
 export const getNativeAndroidRuntimeDiagnostics = (options?: {
     capacitor?: CapacitorRuntimeLike;
     windowObject?: AndroidRuntimeWindowLike | undefined;
-}): NativeAndroidRuntimeDiagnostics => {
-    const capacitorRuntime = options?.capacitor ?? Capacitor;
-    const runtimeWindow = options?.windowObject ?? (
-        typeof window !== 'undefined'
-            ? window as typeof window & AndroidRuntimeWindowLike
-            : undefined
-    );
-
-    const importCapacitorPlatform = safeInvoke(() => capacitorRuntime.getPlatform?.());
-    const importCapacitorNative = safeInvoke(() => capacitorRuntime.isNativePlatform?.());
-    const windowCapacitorPlatform = safeInvoke(() => runtimeWindow?.Capacitor?.getPlatform?.());
-    const windowCapacitorNative = safeInvoke(() => runtimeWindow?.Capacitor?.isNativePlatform?.());
-    const hasAndroidBridge = Boolean(runtimeWindow?.androidBridge);
-    const hasE2ENativeAndroidOverride = import.meta.env.DEV
-        && runtimeWindow?.__BG_E2E_NATIVE_ANDROID_RUNTIME__ === true;
-    const hasImportRuntimeSignal = typeof importCapacitorNative === 'boolean' || typeof importCapacitorPlatform === 'string';
-    const nativeAndroid = hasE2ENativeAndroidOverride
-        ? true
-        : hasImportRuntimeSignal
-        ? Boolean(importCapacitorNative && importCapacitorPlatform === 'android')
-        : Boolean(windowCapacitorNative && windowCapacitorPlatform === 'android');
-
-    return {
-        nativeAndroid,
-        importCapacitorPlatform,
-        importCapacitorNative,
-        windowCapacitorPlatform,
-        windowCapacitorNative,
-        hasAndroidBridge,
-        summary: `import:${String(importCapacitorNative)}/${importCapacitorPlatform ?? '?'} win:${String(windowCapacitorNative)}/${windowCapacitorPlatform ?? '?'} bridge:${hasAndroidBridge ? '1' : '0'}`,
-    };
-};
+}): NativeAndroidRuntimeDiagnostics => getNativeMobileRuntimeDiagnostics(options);
 
 export const detectNativeAndroidRuntime = (options?: {
     capacitor?: CapacitorRuntimeLike;

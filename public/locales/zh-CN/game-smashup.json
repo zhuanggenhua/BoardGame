@@ -276,6 +276,7 @@
     "ongoingDetached": "移除持续战术：",
     "reasonSuffix": "（原因：{{reason}}）",
     "reasonPrefix": "（原因：",
+    "reasonSelfDestructSuffix": "自毁）",
     "talentUsed": "天赋触发：",
     "baseScored": "基地结算：",
     "baseScoredRanking": "{{playerId}} +{{vp}}VP",

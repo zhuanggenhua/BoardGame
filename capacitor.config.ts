@@ -6,8 +6,16 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const rootDir = process.cwd();
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa']);
 const preservedProcessEnv = { ...process.env };
+const requestedPlatform = process.argv.includes('ios')
+    ? 'ios'
+    : process.argv.includes('android')
+        ? 'android'
+        : undefined;
+const envFiles = requestedPlatform
+    ? ['.env', `.env.${requestedPlatform}`, `.env.${requestedPlatform}.local`]
+    : ['.env', '.env.android', '.env.android.local'];
 
-for (const file of ['.env', '.env.android', '.env.android.local']) {
+for (const file of envFiles) {
     const fullPath = path.join(rootDir, file);
     if (!existsSync(fullPath)) continue;
     dotenv.config({ path: fullPath, override: true, quiet: true });
@@ -22,6 +30,8 @@ for (const [key, value] of Object.entries(preservedProcessEnv)) {
 }
 
 const parseBooleanEnv = (value: string | undefined) => /^(1|true|yes|on)$/i.test(value?.trim() || '');
+const readPlatformEnv = (platformKey: string, genericKey: string) =>
+    process.env[platformKey]?.trim() || process.env[genericKey]?.trim() || '';
 const appId = process.env.CAPACITOR_APP_ID?.trim() || 'top.easyboardgame.app';
 const appName = process.env.CAPACITOR_APP_NAME?.trim() || '易桌游';
 const mode = (process.env.ANDROID_WEBVIEW_MODE?.trim().toLowerCase() || 'embedded');
@@ -30,9 +40,16 @@ const isHttpRemoteUrl = /^http:\/\//i.test(remoteUrl);
 const isNonReleaseAndroidAppId = (value: string) => value
     .split('.')
     .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()));
-const otaEnabled = parseBooleanEnv(process.env.VITE_ANDROID_OTA_ENABLED)
-    && (!isNonReleaseAndroidAppId(appId) || parseBooleanEnv(process.env.VITE_ANDROID_OTA_ALLOW_DEBUG_APP));
-const otaAppReadyTimeout = Number.parseInt(process.env.VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS?.trim() || '', 10);
+const platformOtaPrefix = requestedPlatform === 'ios' ? 'VITE_IOS_OTA' : 'VITE_ANDROID_OTA';
+const otaEnabledValue = readPlatformEnv(`${platformOtaPrefix}_ENABLED`, 'VITE_MOBILE_OTA_ENABLED');
+const otaAllowDebugValue = readPlatformEnv(`${platformOtaPrefix}_ALLOW_DEBUG_APP`, 'VITE_MOBILE_OTA_ALLOW_DEBUG_APP');
+const otaChannelValue = readPlatformEnv(`${platformOtaPrefix}_CHANNEL`, 'VITE_MOBILE_OTA_CHANNEL');
+const otaAppReadyTimeout = Number.parseInt(
+    readPlatformEnv(`${platformOtaPrefix}_APP_READY_TIMEOUT_MS`, 'VITE_MOBILE_OTA_APP_READY_TIMEOUT_MS'),
+    10,
+);
+const otaEnabled = parseBooleanEnv(otaEnabledValue)
+    && (!isNonReleaseAndroidAppId(appId) || parseBooleanEnv(otaAllowDebugValue));
 
 if (mode !== 'embedded' && mode !== 'remote') {
     throw new Error(`ANDROID_WEBVIEW_MODE 只支持 embedded 或 remote，当前值为: ${mode}`);
@@ -70,7 +87,7 @@ const config: CapacitorConfig = {
                 resetWhenUpdate: true,
                 keepUrlPathAfterReload: true,
                 allowManualBundleError: true,
-                defaultChannel: process.env.VITE_ANDROID_OTA_CHANNEL?.trim() || undefined,
+                defaultChannel: otaChannelValue || undefined,
             },
         }
         : undefined,

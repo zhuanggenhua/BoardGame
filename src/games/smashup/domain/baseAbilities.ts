@@ -774,7 +774,12 @@ export function registerBaseAbilities(): void {
             pid,
             '鬼屋：选择要弃掉的卡牌',
             initialOptions,
-            { sourceId: 'base_haunted_house_al9000', targetType: 'hand' },
+            {
+                sourceId: 'base_haunted_house_al9000',
+                targetType: 'hand',
+                // 手牌在共享态与座位态之间可能发生刷新漂移，响应时必须按最新手牌重算。
+                responseValidationMode: 'live',
+            },
         );
         
         // 手牌弃牌类交互：使用 optionsGenerator 动态生成选项
@@ -1509,7 +1514,15 @@ export function registerBaseAbilities(): void {
 export function registerBaseInteractionHandlers(): void {
     // 鬼屋：选择弃哪张卡
     registerInteractionHandler('base_haunted_house_al9000', (state, playerId, value, _iData, _random, timestamp) => {
-        const { cardUid } = value as { cardUid: string };
+        const { cardUid, skip, __cancel__, __emergency_skip__ } = value as {
+            cardUid?: string;
+            skip?: boolean;
+            __cancel__?: boolean;
+            __emergency_skip__?: boolean;
+        };
+        if (skip || __cancel__ || __emergency_skip__ || !cardUid) {
+            return { state, events: [] };
+        }
         return { state, events: [{
             type: SU_EVENTS.CARDS_DISCARDED,
             payload: { playerId, cardUids: [cardUid] },

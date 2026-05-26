@@ -2410,7 +2410,14 @@ function bearCavalryMajorUrsaOnTitanMoved(ctx: TriggerContext): TriggerResult | 
 }
 
 function bearCavalryMajorUrsaOnMinionMoved(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
-    if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return [];
+    if (
+        !ctx.triggerMinionUid
+        || ctx.baseIndex === undefined
+        || ctx.moveToBaseIndex === undefined
+        || ctx.baseIndex !== ctx.moveToBaseIndex
+    ) {
+        return [];
+    }
 
     const titan = (ctx.state.titans ?? []).find(candidate =>
         candidate.defId === 'bear_cavalry_major_ursa'
@@ -2422,13 +2429,7 @@ function bearCavalryMajorUrsaOnMinionMoved(ctx: TriggerContext): TriggerResult |
         return [];
     }
 
-    const movedMinion = [
-        ctx.moveToBaseIndex,
-        ctx.moveFromBaseIndex,
-        ctx.baseIndex,
-    ]
-        .filter((baseIndex): baseIndex is number => baseIndex !== undefined)
-        .flatMap(baseIndex => ctx.state.bases[baseIndex]?.minions ?? [])
+    const movedMinion = ctx.state.bases[ctx.moveToBaseIndex]?.minions
         .find(minion => minion.uid === ctx.triggerMinionUid);
     if (!movedMinion || movedMinion.controller === ctx.playerId) {
         return [];

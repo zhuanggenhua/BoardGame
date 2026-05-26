@@ -228,6 +228,9 @@ android/build/
 android/captures/
 android/keystore.properties
 android/keystores/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+!ios/App/App/Assets.xcassets/**/*.png
 
 # Python/cache/temp artifacts
 **/__pycache__/

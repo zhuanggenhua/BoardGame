@@ -70,11 +70,22 @@ const i18nSeg = (
 
 const textSegment = (text: string): ActionLogSegment => ({ type: 'text', text });
 
+const SELF_DESTRUCT_REASON_SUFFIX = '_self_destruct';
+
 /** 构建原因后缀 segment 列表：优先用卡牌预览，fallback 为纯文本 */
 const buildReasonSegments = (
     reason: string,
     buildCardSeg: (cardId?: string) => ActionLogSegment | null,
 ): ActionLogSegment[] => {
+    if (reason.endsWith(SELF_DESTRUCT_REASON_SUFFIX)) {
+        const sourceDefId = reason.slice(0, -SELF_DESTRUCT_REASON_SUFFIX.length);
+        const cardSeg = buildCardSeg(sourceDefId);
+        if (cardSeg && cardSeg.type === 'card') {
+            // 卡牌预览：（原因：[卡牌名]自毁）
+            return [i18nSeg('actionLog.reasonPrefix'), cardSeg, i18nSeg('actionLog.reasonSelfDestructSuffix')];
+        }
+    }
+
     const cardSeg = buildCardSeg(reason);
     if (cardSeg && cardSeg.type === 'card') {
         // 卡牌预览：（原因：[卡牌名]）

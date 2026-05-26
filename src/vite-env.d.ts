@@ -5,6 +5,16 @@ interface ImportMetaEnv {
     readonly VITE_AUTH_API_URL?: string;
     readonly VITE_GAME_SERVER_URL?: string;
     readonly VITE_ASSETS_BASE_URL?: string;
+    readonly VITE_MOBILE_OTA_ENABLED?: string;
+    readonly VITE_MOBILE_OTA_ALLOW_DEBUG_APP?: string;
+    readonly VITE_MOBILE_OTA_MANIFEST_URL?: string;
+    readonly VITE_MOBILE_OTA_CHANNEL?: string;
+    readonly VITE_MOBILE_OTA_APP_READY_TIMEOUT_MS?: string;
+    readonly VITE_IOS_OTA_ENABLED?: string;
+    readonly VITE_IOS_OTA_ALLOW_DEBUG_APP?: string;
+    readonly VITE_IOS_OTA_MANIFEST_URL?: string;
+    readonly VITE_IOS_OTA_CHANNEL?: string;
+    readonly VITE_IOS_OTA_APP_READY_TIMEOUT_MS?: string;
     readonly VITE_ANDROID_OTA_ENABLED?: string;
     readonly VITE_ANDROID_OTA_ALLOW_DEBUG_APP?: string;
     readonly VITE_ANDROID_OTA_MANIFEST_URL?: string;

@@ -832,19 +832,25 @@ export function filterProtectedDestroyEvents(
         // 检查 destroy 保护和 action 保护
         if (isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'destroy')) continue;
         // 只有当来源是行动/融合牌时才判定 action 保护
-        const actionSource = buildAffectRecords(core, e, rawSource).some(record =>
+        const actionRecord = buildAffectRecords(core, e, rawSource).find(record =>
             record.targetKind === 'minion'
             && record.triggerMinionUid === minionUid
             && isActionAffectRecord(record),
         );
-        const actionProtected = actionSource
-            ? isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'action')
+        const actionSourcePlayerId = actionRecord
+            ? resolveProtectionSourcePlayerId(core, actionRecord) ?? rawSource
+            : undefined;
+        const actionProtected = actionSourcePlayerId
+            ? isMinionProtected(core, minion, fromBaseIndex, actionSourcePlayerId, 'action')
             : false;
         const affectProtected = isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'affect');
         if (actionProtected || affectProtected) {
             // 消耗型保护：发射自毁事件
             const protType = actionProtected ? 'action' : 'affect';
-            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, effectiveSource, protType);
+            const protectionSourcePlayerId = actionProtected && actionSourcePlayerId
+                ? actionSourcePlayerId
+                : effectiveSource;
+            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, protectionSourcePlayerId, protType);
             if (source) {
                 result.push({
                     type: SU_EVENTS.ONGOING_DETACHED,
@@ -869,6 +875,56 @@ function isActionAffectRecord(record: AffectRecord): boolean {
     if (!record.sourceDefId) return false;
     const def = getCardDef(record.sourceDefId);
     return def?.type === 'action' || def?.type === 'fusion';
+}
+
+function getPreferredBaseIndexes(core: SmashUpCore, ...indexes: Array<number | undefined>): number[] {
+    const ordered: number[] = [];
+    for (const index of [...indexes, ...core.bases.map((_, baseIndex) => baseIndex)]) {
+        if (typeof index !== 'number') continue;
+        if (index < 0 || index >= core.bases.length) continue;
+        if (!ordered.includes(index)) ordered.push(index);
+    }
+    return ordered;
+}
+
+function inferInPlayActionSourcePlayerId(core: SmashUpCore, record: AffectRecord): PlayerId | undefined {
+    if (!isActionAffectRecord(record)) return undefined;
+
+    const preferredBaseIndexes = getPreferredBaseIndexes(core, record.sourceBaseIndex, record.baseIndex);
+
+    if (record.sourceCardUid) {
+        for (const baseIndex of preferredBaseIndexes) {
+            const base = core.bases[baseIndex];
+            const ongoing = base.ongoingActions.find(action => action.uid === record.sourceCardUid);
+            if (ongoing) return ongoing.ownerId;
+            for (const minion of base.minions) {
+                const attached = minion.attachedActions.find(action => action.uid === record.sourceCardUid);
+                if (attached) return attached.ownerId;
+            }
+        }
+    }
+
+    if (!record.sourceDefId) return undefined;
+    const owners = new Set<PlayerId>();
+    for (const baseIndex of preferredBaseIndexes) {
+        const base = core.bases[baseIndex];
+        for (const action of base.ongoingActions) {
+            if (action.defId === record.sourceDefId) owners.add(action.ownerId);
+        }
+        for (const minion of base.minions) {
+            for (const action of minion.attachedActions) {
+                if (action.defId === record.sourceDefId) owners.add(action.ownerId);
+            }
+        }
+        if (owners.size === 1) return [...owners][0];
+        if (owners.size > 1) return undefined;
+    }
+    return undefined;
+}
+
+function resolveProtectionSourcePlayerId(core: SmashUpCore, record: AffectRecord): PlayerId | undefined {
+    if (record.reason?.startsWith('base_')) return undefined;
+    return inferInPlayActionSourcePlayerId(core, record) ?? record.sourcePlayerId;
 }
 
 function buildProtectionSelfDestructEvent(
@@ -918,9 +974,7 @@ function resolveBlockedProtectionType(
 ): 'move' | 'affect' | 'action' | undefined {
     if (record.baseIndex === undefined) return undefined;
 
-    const effectiveSourcePlayerId = record.reason?.startsWith('base_')
-        ? undefined
-        : record.sourcePlayerId;
+    const effectiveSourcePlayerId = resolveProtectionSourcePlayerId(core, record);
     if (!effectiveSourcePlayerId) return undefined;
 
     const orderedChecks: Array<'move' | 'affect' | 'action'> = [];
@@ -971,9 +1025,7 @@ export function filterProtectedAffectEvents(
             const blockedProtectionType = resolveBlockedProtectionType(core, record, record.protectionTargetMinion ?? record.triggerMinion);
             if (!blockedProtectionType) continue;
 
-            const effectiveSourcePlayerId = record.reason?.startsWith('base_')
-                ? undefined
-                : record.sourcePlayerId;
+            const effectiveSourcePlayerId = resolveProtectionSourcePlayerId(core, record);
 
             const blockedAttachCleanup = buildBlockedAttachedActionDiscardEvent(record, event);
             if (blockedAttachCleanup && effectiveSourcePlayerId) {
@@ -1336,12 +1388,25 @@ export function filterProtectedMoveEvents(
         const effectiveSource = me.payload.reason?.startsWith('base_') ? minion.controller : sourcePlayerId;
         if (isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'move')) continue;
         // 检查 'action' 和 'affect' 两种广义保护类型（与 filterProtectedDestroyEvents 对齐）
-        const actionProtected = isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'action');
+        const actionRecord = buildAffectRecords(core, e, sourcePlayerId).find(record =>
+            record.targetKind === 'minion'
+            && record.triggerMinionUid === minionUid
+            && isActionAffectRecord(record),
+        );
+        const actionSourcePlayerId = actionRecord
+            ? resolveProtectionSourcePlayerId(core, actionRecord) ?? sourcePlayerId
+            : undefined;
+        const actionProtected = actionSourcePlayerId
+            ? isMinionProtected(core, minion, fromBaseIndex, actionSourcePlayerId, 'action')
+            : false;
         const affectProtected = isMinionProtected(core, minion, fromBaseIndex, effectiveSource, 'affect');
         if (actionProtected || affectProtected) {
             // 消耗型保护：发射自毁事件
             const protType = actionProtected ? 'action' : 'affect';
-            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, effectiveSource, protType);
+            const protectionSourcePlayerId = actionProtected && actionSourcePlayerId
+                ? actionSourcePlayerId
+                : effectiveSource;
+            const source = getConsumableProtectionSource(core, minion, fromBaseIndex, protectionSourcePlayerId, protType);
             if (source) {
                 result.push({
                     type: SU_EVENTS.ONGOING_DETACHED,

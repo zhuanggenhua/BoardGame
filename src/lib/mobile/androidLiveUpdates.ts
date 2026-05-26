@@ -1,8 +1,6 @@
 import { logMobileRuntime, logMobileRuntimeCritical } from './mobileRuntimeDebug';
-import {
-    getNativeAndroidRuntimeDiagnostics,
-    type NativeAndroidRuntimeDiagnostics,
-} from './androidRuntime';
+import type { NativeAndroidRuntimeDiagnostics } from './androidRuntime';
+import { getNativeMobileRuntimeDiagnostics } from './mobileRuntime';
 
 type PluginListenerHandle = {
     remove(): Promise<void>;
@@ -226,6 +224,17 @@ const isAndroidOtaAllowedForAppId = (env: Record<string, string | boolean | unde
     return parseBooleanEnv(env.VITE_ANDROID_OTA_ALLOW_DEBUG_APP);
 };
 
+const isMobileOtaAllowedForAppId = (env: Record<string, string | boolean | undefined>) => {
+    const appId = readTrimmedEnv(env.VITE_CAPACITOR_APP_ID)
+        || readTrimmedEnv(env.CAPACITOR_APP_ID);
+    if (!appId || !isNonReleaseAndroidAppId(appId)) {
+        return true;
+    }
+    return parseBooleanEnv(env.VITE_MOBILE_OTA_ALLOW_DEBUG_APP)
+        || parseBooleanEnv(env.VITE_IOS_OTA_ALLOW_DEBUG_APP)
+        || parseBooleanEnv(env.VITE_ANDROID_OTA_ALLOW_DEBUG_APP);
+};
+
 const parseTimeoutEnv = (value: string | boolean | undefined) => {
     if (typeof value !== 'string') return DEFAULT_APP_READY_TIMEOUT_MS;
     const parsed = Number.parseInt(value.trim(), 10);
@@ -409,17 +418,28 @@ export const compareBundleVersion = (left: string, right: string) => {
 export const readAndroidLiveUpdateConfig = (
     env: Record<string, string | boolean | undefined>,
 ): AndroidLiveUpdateConfig => {
-    const manifestUrl = readTrimmedEnv(env.VITE_ANDROID_OTA_MANIFEST_URL);
+    const manifestUrl = readTrimmedEnv(env.VITE_ANDROID_OTA_MANIFEST_URL)
+        || readTrimmedEnv(env.VITE_IOS_OTA_MANIFEST_URL)
+        || readTrimmedEnv(env.VITE_MOBILE_OTA_MANIFEST_URL);
+    const channel = readTrimmedEnv(env.VITE_ANDROID_OTA_CHANNEL)
+        || readTrimmedEnv(env.VITE_IOS_OTA_CHANNEL)
+        || readTrimmedEnv(env.VITE_MOBILE_OTA_CHANNEL)
+        || DEFAULT_OTA_CHANNEL;
+    const enabled = parseBooleanEnv(env.VITE_ANDROID_OTA_ENABLED)
+        ? isAndroidOtaAllowedForAppId(env)
+        : parseBooleanEnv(env.VITE_IOS_OTA_ENABLED) || parseBooleanEnv(env.VITE_MOBILE_OTA_ENABLED)
+            ? isMobileOtaAllowedForAppId(env)
+            : false;
 
     return {
-        enabled: parseBooleanEnv(env.VITE_ANDROID_OTA_ENABLED)
-            && isAbsoluteHttpUrl(manifestUrl)
-            && isAndroidOtaAllowedForAppId(env),
+        enabled: enabled && isAbsoluteHttpUrl(manifestUrl),
         manifestUrl,
-        channel: readTrimmedEnv(env.VITE_ANDROID_OTA_CHANNEL)
-            ? readTrimmedEnv(env.VITE_ANDROID_OTA_CHANNEL)
-            : DEFAULT_OTA_CHANNEL,
-        appReadyTimeoutMs: parseTimeoutEnv(env.VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS),
+        channel,
+        appReadyTimeoutMs: parseTimeoutEnv(
+            env.VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS
+                || env.VITE_IOS_OTA_APP_READY_TIMEOUT_MS
+                || env.VITE_MOBILE_OTA_APP_READY_TIMEOUT_MS,
+        ),
     };
 };
 
@@ -592,16 +612,16 @@ export const readAndroidLiveUpdateSnapshot = async (
         return baseSnapshot;
     }
 
-    const nativeDiagnostics = getNativeAndroidRuntimeDiagnostics();
+    const nativeDiagnostics = getNativeMobileRuntimeDiagnostics();
     emitCriticalOtaLog('native-runtime-check', {
         context: 'snapshot-read',
         ...nativeDiagnostics,
     });
-    const nativeAndroid = nativeDiagnostics.nativeAndroid;
-    if (!nativeAndroid) {
+    const nativeMobile = nativeDiagnostics.nativeMobile;
+    if (!nativeMobile) {
         const snapshot = {
             ...baseSnapshot,
-            nativeAndroid,
+            nativeAndroid: nativeDiagnostics.nativeAndroid,
         };
         emitCriticalOtaLog('snapshot-read-not-native', {
             ...snapshot,
@@ -614,7 +634,7 @@ export const readAndroidLiveUpdateSnapshot = async (
     if (!updaterModule) {
         const snapshot = {
             ...baseSnapshot,
-            nativeAndroid: true,
+            nativeAndroid: nativeDiagnostics.nativeAndroid,
             updaterLoaded: false,
         };
         emitCriticalOtaLog('snapshot-read-updater-missing', snapshot);
@@ -629,7 +649,7 @@ export const readAndroidLiveUpdateSnapshot = async (
 
     const snapshot: AndroidLiveUpdateSnapshot = {
         ...baseSnapshot,
-        nativeAndroid: true,
+        nativeAndroid: nativeDiagnostics.nativeAndroid,
         updaterLoaded: true,
         nativeVersion: current.native,
         currentBundleVersion: current.bundle.version,
@@ -693,17 +713,17 @@ const removeListenerSafely = async (handle: PluginListenerHandle | null) => {
 export const notifyAndroidBundleReady = async () => {
     if (!notifyAppReadyPromise) {
         notifyAppReadyPromise = (async () => {
-            const nativeDiagnostics = getNativeAndroidRuntimeDiagnostics();
-            const nativeAndroid = nativeDiagnostics.nativeAndroid;
+            const nativeDiagnostics = getNativeMobileRuntimeDiagnostics();
+            const nativeMobile = nativeDiagnostics.nativeMobile;
             logMobileRuntime('OTA', 'notify-app-ready-native-check', {
-                nativeAndroid,
+                nativeMobile,
                 ...nativeDiagnostics,
             });
             updateOtaDebugState({
                 stage: 'notify-app-ready-native-check',
                 ...toNativeDebugPatch(nativeDiagnostics),
             });
-            if (!nativeAndroid) return;
+            if (!nativeMobile) return;
 
             const updaterModule = await loadUpdater();
             logMobileRuntime('OTA', 'notify-app-ready-updater-check', {
@@ -740,9 +760,9 @@ export const notifyAndroidBundleReady = async () => {
 export const registerAndroidLiveUpdateListeners = async () => {
     if (!listenerRegistrationPromise) {
         listenerRegistrationPromise = (async () => {
-            const nativeDiagnostics = getNativeAndroidRuntimeDiagnostics();
-            const nativeAndroid = nativeDiagnostics.nativeAndroid;
-            if (!nativeAndroid) return null;
+            const nativeDiagnostics = getNativeMobileRuntimeDiagnostics();
+            const nativeMobile = nativeDiagnostics.nativeMobile;
+            if (!nativeMobile) return null;
 
             const updaterModule = await loadUpdater();
             logMobileRuntime('OTA', 'register-listeners-updater-check', {
@@ -909,13 +929,13 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 return { status: 'disabled' } as const;
             }
 
-            const nativeDiagnostics = getNativeAndroidRuntimeDiagnostics();
-            const nativeAndroid = nativeDiagnostics.nativeAndroid;
+            const nativeDiagnostics = getNativeMobileRuntimeDiagnostics();
+            const nativeMobile = nativeDiagnostics.nativeMobile;
             logMobileRuntime('OTA', 'background-check-native-check', {
-                nativeAndroid,
+                nativeMobile,
                 ...nativeDiagnostics,
             });
-            if (!nativeAndroid) {
+            if (!nativeMobile) {
                 if (applyMode === 'immediate') {
                     clearImmediateActivityPhase();
                 }

@@ -202,6 +202,63 @@ describe('Smash Up AI 交互候选枚举', () => {
         expect(emergencyAction).toBeDefined();
     });
 
+    it('鬼屋交互在旧快照仍保留手牌、但 live 手牌已空时，AI 应改发 emergency skip', () => {
+        const state = makeAiState({
+            core: {
+                players: {
+                    '0': {
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                    },
+                },
+            } as any,
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'base-haunted-house-live-empty',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'base_haunted_house_al9000',
+                            options: [
+                                { id: 'card-0', label: 'Cast the Runes', value: { cardUid: 'c94', defId: 'vikings_cast_the_runes' } },
+                                { id: 'card-1', label: 'Ghostly Arrival', value: { cardUid: 'c114', defId: 'ghost_ghostly_arrival_pod' } },
+                            ],
+                            targetType: 'hand',
+                            responseValidationMode: 'live',
+                            optionsGenerator: (nextState: MatchState<SmashUpCore>) => {
+                                const hand = nextState.core.players['0']?.hand ?? [];
+                                return hand.map((card, index) => ({
+                                    id: `card-${index}`,
+                                    label: card.defId,
+                                    value: { cardUid: card.uid, defId: card.defId },
+                                }));
+                            },
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const emergencyAction = legalActions.find(action =>
+            action.kind === 'interaction-choice'
+            && (action.commands[0] as any)?.payload?.interactionId === 'base-haunted-house-live-empty'
+            && (action.commands[0] as any)?.payload?.optionId === '__emergency_skip__',
+        );
+
+        expect(emergencyAction).toBeDefined();
+    });
+
     it('exact-multi 交互应枚举所有合法组合，而不是总拿前两个', () => {
         const state = makeAiState({
             sys: {

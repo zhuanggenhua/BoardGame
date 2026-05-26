@@ -58,6 +58,10 @@ describe('base_haunted_house_al9000: 随从入场后弃牌', () => {
         const prompt = getSimpleChoicePrompt(result.matchState!, 'base_haunted_house_al9000');
         expect(getPromptSourceId(prompt)).toBe('base_haunted_house_al9000');
         expect(getPromptOptions(prompt)).toHaveLength(2);
+        expect(
+            (prompt as { responseValidationMode?: string }).responseValidationMode
+            ?? (prompt as { data?: { responseValidationMode?: string } }).data?.responseValidationMode,
+        ).toBe('live');
     });
 
     it('只有 1 张手牌时自动弃掉', () => {
@@ -138,6 +142,59 @@ describe('base_haunted_house_al9000: 随从入场后弃牌', () => {
         const discarded = response.events.find(event => event.type === SU_EVENTS.CARDS_DISCARDED);
         expect(discarded).toBeDefined();
         expect((discarded as any).payload.cardUids).toEqual(['h2']);
+    });
+
+    it('响应前若手牌已被清空，应允许 emergency skip 且不再弃牌', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{
+                    defId: 'base_haunted_house_al9000',
+                    minions: [],
+                    ongoingActions: [],
+                }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0,
+                        hand: [makeCard('h1', '0'), makeCard('h2', '0')],
+                        deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1,
+                        actionsPlayed: 0, actionLimit: 1,
+                        factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_haunted_house_al9000',
+            playerId: '0',
+            minionUid: 'm1',
+            minionDefId: 'd1',
+            minionPower: 3,
+            now: 1000,
+        };
+
+        const result = triggerBaseAbility('base_haunted_house_al9000', 'onMinionPlayed', {
+            ...ctx,
+            matchState: makeMatchState(ctx.state),
+        });
+
+        const emptiedState = {
+            ...result.matchState!,
+            core: {
+                ...result.matchState!.core,
+                players: {
+                    ...result.matchState!.core.players,
+                    '0': {
+                        ...result.matchState!.core.players['0'],
+                        hand: [],
+                    },
+                },
+            },
+        };
+
+        const response = runCommand(emptiedState, respondCommand('__emergency_skip__', '0'), dummyRandom);
+
+        expect(response.success).toBe(true);
+        expect(response.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
     });
 
     it('手牌为空时不触发弃牌', () => {

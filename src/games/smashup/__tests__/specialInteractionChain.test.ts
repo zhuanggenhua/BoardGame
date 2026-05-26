@@ -634,6 +634,39 @@ describe('onMinionPlayed trigger: trickster_flame_trap', () => {
         // 火焰陷阱仍在
         expect(base.ongoingActions.some(o => o.uid === 'ft1')).toBe(true);
     });
+
+    it('对手火焰陷阱影响己方随从时，藏身处应自毁并取消这次消灭', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'pirate_first_mate', '0', 'minion')],
+                    factions: ['pirates', 'tricksters'] as [string, string],
+                }),
+                '1': makePlayer('1', { factions: ['tricksters', 'robots'] as [string, string] }),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    { uid: 'hideout-1', defId: 'trickster_hideout', ownerId: '0', metadata: {} },
+                    { uid: 'ft1', defId: 'trickster_flame_trap', ownerId: '1', metadata: {} },
+                ]),
+            ],
+        });
+        const state = makeFullMatchState(core);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        }, 'hideout cancels opponent flame trap');
+
+        expect(result.steps[0]?.success).toBe(true);
+        expect(result.steps[0]?.events).toContain('su:ongoing_detached');
+        const base = result.finalState.core.bases[0];
+        expect(base.minions.some((m: MinionOnBase) => m.uid === 'm1')).toBe(true);
+        expect(base.ongoingActions.some(o => o.uid === 'hideout-1')).toBe(false);
+        expect(base.ongoingActions.some(o => o.uid === 'ft1')).toBe(false);
+        expect(result.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'm1')).toBe(false);
+    });
 });
 
 // ============================================================================
@@ -679,6 +712,43 @@ describe('onMinionPlayed trigger: trickster_pay_the_piper', () => {
         expect(['h1', 'h2']).toContain(discardedCardUid);
         expect(p0.hand.some(card => card.uid === discardedCardUid)).toBe(false);
         expect(p0.hand.some(card => card.uid === 'm1')).toBe(false);
+    });
+
+    it('留下买路钱只让玩家弃手牌，不应消耗同基地的藏身处', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('m1', 'pirate_first_mate', '0', 'minion'),
+                        makeCard('h1', 'test_action_a', '0', 'action'),
+                    ],
+                    factions: ['pirates', 'tricksters'] as [string, string],
+                }),
+                '1': makePlayer('1', { factions: ['tricksters', 'robots'] as [string, string] }),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    { uid: 'hideout-1', defId: 'trickster_hideout', ownerId: '0', metadata: {} },
+                    { uid: 'ptp1', defId: 'trickster_pay_the_piper', ownerId: '1', metadata: {} },
+                ]),
+            ],
+        });
+        const state = makeFullMatchState(core);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        }, 'pay_the_piper should not consume hideout');
+
+        expect(result.steps[0]?.success).toBe(true);
+        expect(result.steps[0]?.events).toContain('su:cards_discarded');
+        expect(result.steps[0]?.events).not.toContain('su:ongoing_detached');
+        expect(result.finalState.core.bases[0].ongoingActions).toEqual([
+            expect.objectContaining({ uid: 'hideout-1', defId: 'trickster_hideout' }),
+            expect.objectContaining({ uid: 'ptp1', defId: 'trickster_pay_the_piper' }),
+        ]);
+        expectNoPrompt(result.finalState);
     });
 });
 
@@ -792,6 +862,45 @@ describe('onMinionDestroyed trigger: steampunk_escape_hatch', () => {
         const inHand = p0.hand.some((c: CardInstance) => c.uid === 'target1');
         const inDiscard = p0.discard.some((c: CardInstance) => c.uid === 'target1');
         // escape_hatch 应该让它回手牌
+        expect(inHand || inDiscard).toBe(true);
+    });
+
+    it('自己的逃生舱回手牌效果不应被自己的藏身处挡掉', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    factions: ['steampunks', 'tricksters'] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('lt1', 'dino_laser_triceratops', '1', 'minion')],
+                    factions: ['dinosaurs', 'aliens'] as [string, string],
+                }),
+            },
+            bases: [
+                makeBase('test_base_1', [
+                    makeMinion('target1', 'test_minion', '0', 2),
+                ], [
+                    { uid: 'hideout-1', defId: 'trickster_hideout', ownerId: '0', metadata: {} },
+                    { uid: 'eh1', defId: 'steampunk_escape_hatch', ownerId: '0', metadata: {} },
+                ]),
+            ],
+            currentPlayerIndex: 1,
+        });
+        const state = makeFullMatchState(core);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'lt1', baseIndex: 0 },
+        }, 'own escape hatch should not consume own hideout');
+
+        expect(result.steps[0]?.success).toBe(true);
+        const base = result.finalState.core.bases[0];
+        expect(base.ongoingActions.some(o => o.uid === 'hideout-1')).toBe(true);
+        expect(base.ongoingActions.some(o => o.uid === 'eh1')).toBe(true);
+        const inHand = result.finalState.core.players['0'].hand.some((c: CardInstance) => c.uid === 'target1');
+        const inDiscard = result.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'target1');
         expect(inHand || inDiscard).toBe(true);
     });
 });

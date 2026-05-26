@@ -17,7 +17,7 @@ import { ViewportDebugProbe } from './components/system/ViewportDebugProbe';
 import { Toaster } from 'react-hot-toast';
 import { GlobalErrorBoundary } from './components/system/GlobalErrorBoundary';
 import { BrowserCompatibilityGate } from './components/system/BrowserCompatibilityGate';
-import { AndroidLiveUpdateManager } from './components/system/AndroidLiveUpdateManager';
+import { MobileLiveUpdateManager } from './components/system/MobileLiveUpdateManager';
 import { AndroidNativeUpdateManager } from './components/system/AndroidNativeUpdateManager';
 import { AndroidBackNavigationBridge } from './components/system/AndroidBackNavigationBridge';
 import { GamePageRescueGate } from './components/system/GamePageRescueGate';
@@ -30,6 +30,7 @@ import AdminGuard from './components/auth/AdminGuard';
 import { MobileOrientationGuard } from './components/common/MobileOrientationGuard';
 import { installGlobalErrorContextCapture } from './lib/feedback/errorContext';
 import { isNativeAndroidRuntime } from './lib/mobile/androidRuntime';
+import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
 import { HOME_V2_PREVIEW_PATH } from './lib/homeV2Routing';
 import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
 
@@ -90,6 +91,7 @@ const DevMobileEvidenceCaptureAgent = import.meta.env.DEV
 const AppContent = () => {
   const { t } = useTranslation('lobby');
   const isNativeAndroid = isNativeAndroidRuntime();
+  const isNativeMobile = isNativeMobileRuntime();
   
   // Token 自动刷新
   useTokenRefresh();
@@ -257,7 +259,7 @@ const AppContent = () => {
                     </React.Suspense>
                     <Toaster />
                     {isNativeAndroid ? <AndroidNativeUpdateManager /> : null}
-                    {isNativeAndroid ? <AndroidLiveUpdateManager /> : null}
+                    {isNativeMobile ? <MobileLiveUpdateManager /> : null}
                     <PcWebMascot />
                     <EngineNotificationListener />
                     <GamePageRescueGate />

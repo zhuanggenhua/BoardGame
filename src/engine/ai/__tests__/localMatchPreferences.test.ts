@@ -1,8 +1,40 @@
 import { describe, expect, it } from 'vitest';
 import {
+    createDefaultLocalMatchPreferences,
+    normalizeLocalMatchPreferences,
     stripAiSeatsFromLocalMatchPreferences,
     type LocalMatchPreferences,
 } from '../localMatchPreferences';
+import type { GameManifestEntry } from '../../../shared/gameManifest.types';
+
+const smashupManifest: GameManifestEntry = {
+    id: 'smashup',
+    type: 'game',
+    enabled: true,
+    titleKey: 'games.smashup.title',
+    descriptionKey: 'games.smashup.description',
+    category: 'card',
+    playersKey: 'games.smashup.players',
+    icon: '🎲',
+    allowLocalMode: false,
+    playerOptions: [2, 3, 4],
+    setupOptions: {
+        expansions: {
+            type: 'multi-select',
+            labelKey: 'games.smashup.setup.expansions.label',
+            options: [
+                { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
+                { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
+            ],
+            default: ['titans', 'diy'],
+        },
+    },
+    ai: {
+        capture: true,
+        localAi: true,
+        remoteAi: false,
+    },
+};
 
 describe('localMatchPreferences create-room sanitization', () => {
     it('会移除 AI 座位与 manualFactionSelection，只保留人数和 setup 选择', () => {
@@ -38,5 +70,38 @@ describe('localMatchPreferences create-room sanitization', () => {
             difficulty: 'hard',
             manualFactionSelection: true,
         });
+    });
+
+    it('Smash Up 旧偏好未带 schemaVersion 时，会为历史 expansions 自动补上 diy 默认值', () => {
+        const normalized = normalizeLocalMatchPreferences(smashupManifest, {
+            numPlayers: 2,
+            setupSelections: {
+                expansions: ['titans'],
+            },
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'human' },
+            },
+        });
+
+        expect(normalized.setupSelections).toEqual({
+            expansions: ['titans', 'diy'],
+        });
+        expect(normalized.schemaVersion).toBe(2);
+    });
+
+    it('Smash Up 新版本偏好手动关闭 diy 后，不会在后续归一化时被重新打开', () => {
+        const current = createDefaultLocalMatchPreferences(smashupManifest);
+        const normalized = normalizeLocalMatchPreferences(smashupManifest, {
+            ...current,
+            setupSelections: {
+                expansions: ['titans'],
+            },
+        });
+
+        expect(normalized.setupSelections).toEqual({
+            expansions: ['titans'],
+        });
+        expect(normalized.schemaVersion).toBe(2);
     });
 });

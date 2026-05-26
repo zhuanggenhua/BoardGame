@@ -11,7 +11,7 @@ import {
     isMinionProtected,
 } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry, getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
-import { reduce } from '../../domain/reducer';
+import { processMoveTriggers, reduce } from '../../domain/reducer';
 import type { CardInstance, TurnStartedEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
@@ -312,6 +312,90 @@ describe('bear_cavalry_high_ground 触发', () => {
         });
 
         expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+    });
+});
+
+describe('bear_cavalry_major_ursa 移动触发', () => {
+    it('敌方随从移入大熊座所在基地时，会入队一次可选触发', () => {
+        const state = makeMatchState(makeState({
+            bases: [
+                makeBase({ defId: 'base_a', minions: [] }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [makeMinion('enemy-buccaneer', 'pirate_buccaneer', '1', 2, { powerModifier: 0 })],
+                }),
+            ],
+            titans: [{
+                uid: 'ursa-1',
+                defId: 'bear_cavalry_major_ursa',
+                faction: 'bear_cavalry',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+            } as any],
+        }));
+
+        const movedEvent = {
+            type: SU_EVENTS.MINION_MOVED,
+            payload: {
+                minionUid: 'enemy-buccaneer',
+                minionDefId: 'pirate_buccaneer',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                ownerId: '1',
+                controllerId: '1',
+                reason: 'pirate_buccaneer',
+            },
+            timestamp: 10,
+        } as any;
+
+        const result = processMoveTriggers([movedEvent], state, '1', dummyRandom, 10);
+        const queuedCore = result.events.reduce((core, event) => reduce(core, event), state.core);
+
+        expect(queuedCore.triggerQueue?.filter(trigger => trigger.sourceDefId === 'bear_cavalry_major_ursa')).toHaveLength(1);
+    });
+
+    it('敌方随从离开大熊座所在基地时，不应为大熊座入队触发', () => {
+        const state = makeMatchState(makeState({
+            bases: [
+                makeBase({ defId: 'base_a', minions: [] }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [makeMinion('enemy-buccaneer', 'pirate_buccaneer', '1', 2, { powerModifier: 0 })],
+                }),
+            ],
+            titans: [{
+                uid: 'ursa-1',
+                defId: 'bear_cavalry_major_ursa',
+                faction: 'bear_cavalry',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        }));
+
+        const movedEvent = {
+            type: SU_EVENTS.MINION_MOVED,
+            payload: {
+                minionUid: 'enemy-buccaneer',
+                minionDefId: 'pirate_buccaneer',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                ownerId: '1',
+                controllerId: '1',
+                reason: 'pirate_buccaneer',
+            },
+            timestamp: 11,
+        } as any;
+
+        const result = processMoveTriggers([movedEvent], state, '1', dummyRandom, 11);
+        const queuedCore = result.events.reduce((core, event) => reduce(core, event), state.core);
+
+        expect(queuedCore.triggerQueue?.filter(trigger => trigger.sourceDefId === 'bear_cavalry_major_ursa') ?? []).toHaveLength(0);
     });
 });
 

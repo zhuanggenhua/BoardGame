@@ -254,6 +254,41 @@ describe('formatSmashUpActionEntry', () => {
         expect(reasonSeg?.params?.reason).toBe('test-reason');
     });
 
+    it('ONGOING_DETACHED 的 *_self_destruct reason 显示为卡牌名 + 自毁', () => {
+        const command: Command = {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'pirate_first_mate-1-1', baseIndex: 0 },
+            timestamp: 4,
+        };
+        const event: GameEvent = {
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: {
+                cardUid: 'hideout-1',
+                defId: 'trickster_hideout',
+                ownerId: '0',
+                reason: 'trickster_hideout_self_destruct',
+            },
+            timestamp: 4,
+        } as GameEvent;
+
+        const result = formatSmashUpActionEntry({
+            command,
+            state: createMatchState(),
+            events: [event],
+        });
+        const entries = normalizeEntries(result);
+        const detachedEntry = entries.find((entry) => entry.kind === SU_EVENTS.ONGOING_DETACHED);
+        expect(detachedEntry).toBeTruthy();
+        expect(getI18nKeys(detachedEntry!.segments)).toEqual(expect.arrayContaining([
+            'actionLog.ongoingDetached',
+            'actionLog.reasonPrefix',
+            'actionLog.reasonSelfDestructSuffix',
+        ]));
+        expect(findI18nSegment(detachedEntry!.segments, 'actionLog.reasonSuffix')).toBeUndefined();
+        expect(detachedEntry!.segments).toContainEqual(expect.objectContaining({ type: 'card', cardId: 'trickster_hideout' }));
+    });
+
     it('过度生长的 BREAKPOINT_MODIFIED 使用“降至0”文案', () => {
         const command: Command = {
             type: SU_COMMANDS.PLAY_ACTION,

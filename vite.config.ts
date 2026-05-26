@@ -26,6 +26,17 @@ const ANDROID_BUILD_PRUNE_PATHS = [
   'assets/common/audio/registry.json',
   'assets/common/audio/phrase-mappings.zh-CN.json',
 ]
+const IOS_EMBEDDED_PRUNE_PATHS = [
+  'assets/i18n',
+  'assets/common/audio',
+  'assets/common/images/mascot',
+  'assets/common/images/home-v2/book-close',
+  'assets/common/images/home-v2/catalog-thumbnails',
+  'assets/common/images/home-v2/generated-reference-homepage',
+  'assets/common/images/home-v2/overview-spread',
+  'assets/common/images/home-v2/reference-homepage',
+  'assets/common/images/home-v2/reference-thumbnails',
+]
 const API_DISABLED_PREFIXES = [
   '/auth',
   '/feedback',
@@ -103,6 +114,40 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string, homeV2Dr
   },
 })
 
+const createIosBuildMetaPlugin = (mode: string, backendUrl: string, env: Record<string, string>) => ({
+  name: 'ios-build-meta',
+  apply: 'build' as const,
+  generateBundle() {
+    if (mode !== 'ios') return
+
+    const appId = env.VITE_CAPACITOR_APP_ID?.trim()
+      || env.CAPACITOR_APP_ID?.trim()
+      || process.env.VITE_CAPACITOR_APP_ID?.trim()
+      || process.env.CAPACITOR_APP_ID?.trim()
+      || ''
+    const appName = env.CAPACITOR_APP_NAME?.trim()
+      || process.env.CAPACITOR_APP_NAME?.trim()
+      || ''
+
+    this.emitFile({
+      type: 'asset',
+      fileName: 'ios-build-meta.json',
+      source: JSON.stringify(
+        {
+          mode,
+          backendUrl,
+          builtAt: new Date().toISOString(),
+          appId,
+          appName,
+          shellType: appId === 'top.easyboardgame.app' ? 'release' : 'non-release',
+        },
+        null,
+        2,
+      ),
+    })
+  },
+})
+
 const createInlineTypeScriptFallbackPlugin = (enabled: boolean) => ({
   name: 'inline-typescript-fallback',
   enforce: 'pre' as const,
@@ -147,6 +192,29 @@ const createAndroidDistPrunePlugin = (mode: string) => ({
       const targetPath = path.join(distDir, relativePath)
       if (!fs.existsSync(targetPath)) continue
       fs.rmSync(targetPath, { force: true })
+    }
+  },
+})
+
+const createIosEmbeddedDistPrunePlugin = (mode: string) => ({
+  name: 'ios-embedded-dist-prune',
+  apply: 'build' as const,
+  closeBundle() {
+    if (mode !== 'ios') return
+
+    const distDir = path.resolve(configDir, 'dist')
+    const localesDir = path.join(distDir, 'locales')
+    if (fs.existsSync(localesDir)) {
+      for (const entry of fs.readdirSync(localesDir, { withFileTypes: true })) {
+        if (entry.name === 'zh-CN') continue
+        fs.rmSync(path.join(localesDir, entry.name), { recursive: true, force: true })
+      }
+    }
+
+    for (const relativePath of IOS_EMBEDDED_PRUNE_PATHS) {
+      const targetPath = path.join(distDir, relativePath)
+      if (!fs.existsSync(targetPath)) continue
+      fs.rmSync(targetPath, { recursive: true, force: true })
     }
   },
 })
@@ -263,7 +331,9 @@ export default defineConfig(({ mode }) => {
       publicFileHashPlugin(),
       readyCheckPlugin(),
       createAndroidBuildMetaPlugin(mode, backendUrl, env.VITE_HOME_V2_DRAFT === '1'),
+      createIosBuildMetaPlugin(mode, backendUrl, env),
       createAndroidDistPrunePlugin(mode),
+      createIosEmbeddedDistPrunePlugin(mode),
     ],
     esbuild: forceInlineVite ? false : undefined,
     build: {

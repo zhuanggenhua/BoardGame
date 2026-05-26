@@ -1905,6 +1905,51 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
             { type: 'SKIP_BONUS_DICE_REROLL', payload: {} },
         ]);
     });
+
+    it('summonerwars pregame 中 AI 已选阵营且已 ready、仅等待 human host 时，不应误判为 active-turn-legal-only', () => {
+        const sharedState = {
+            core: {
+                activePlayerId: '1',
+                currentPlayerIndex: 1,
+                turnOrder: ['0', '1'],
+                hostStarted: false,
+                hostPlayerId: '0',
+                selectedFactions: {
+                    '0': 'unselected',
+                    '1': 'trickster',
+                },
+                readyPlayers: {
+                    '0': false,
+                    '1': true,
+                },
+            },
+            sys: {
+                phase: 'summon',
+                turnNumber: 0,
+                eventStream: { nextId: 1 },
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        } as any;
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {},
+            gameId: 'summonerwars',
+        });
+
+        expect(candidate).toBeNull();
+    });
 });
 
 describe('resolveUnsatisfiableReasonFromInteraction（诊断口径）', () => {
@@ -18264,6 +18309,85 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         await serverInternal.loadMatch('match-watchdog-manual-faction-selection-suppressed');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
+    it('online AI watchdog 在 summonerwars pregame 已 ready 但仍等待 human host 时，不应上报 legal_action_unavailable 噪音反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-summonerwars-pregame-waiting-host', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                        hostStarted: false,
+                        hostPlayerId: '0',
+                        selectedFactions: {
+                            '0': 'unselected',
+                            '1': 'trickster',
+                        },
+                        readyPlayers: {
+                            '0': false,
+                            '1': true,
+                        },
+                    },
+                    sys: {
+                        phase: 'summon',
+                        turnNumber: 0,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'summonerwars',
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('summonerwars')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { suppressBroadcast?: boolean },
+            ) => Promise<boolean>;
+        };
+
+        await serverInternal.loadMatch('match-watchdog-summonerwars-pregame-waiting-host');
         const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
 
         await serverInternal.runOnlineAiRecoveryTick();

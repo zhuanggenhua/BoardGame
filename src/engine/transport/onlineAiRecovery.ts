@@ -645,6 +645,69 @@ function resolveWatchdogAdvancePhaseCommandType(gameId?: string | null): string 
     return 'ADVANCE_PHASE';
 }
 
+function shouldSuppressSummonerWarsPregameWaitingState(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    currentPlayerId: string;
+    phase: string;
+    gameId?: string | null;
+}): boolean {
+    if (args.gameId !== 'summonerwars') {
+        return false;
+    }
+
+    if (args.phase !== 'summon' && args.phase !== 'factionSelect') {
+        return false;
+    }
+
+    const core = args.sharedState?.core as {
+        hostStarted?: unknown;
+        hostPlayerId?: unknown;
+        turnOrder?: unknown;
+        selectedFactions?: unknown;
+        readyPlayers?: unknown;
+    } | undefined;
+    if (core?.hostStarted !== false) {
+        return false;
+    }
+
+    const selectedFactions = isPlainRecord(core.selectedFactions) ? core.selectedFactions : {};
+    const readyPlayers = isPlainRecord(core.readyPlayers) ? core.readyPlayers : {};
+    const currentFaction = selectedFactions[args.currentPlayerId];
+    const hasSelectedFaction = typeof currentFaction === 'string'
+        && currentFaction.length > 0
+        && currentFaction !== 'unselected';
+    if (!hasSelectedFaction) {
+        return false;
+    }
+
+    const hostPlayerId = typeof core.hostPlayerId === 'string' ? core.hostPlayerId : null;
+    if (!hostPlayerId) {
+        return false;
+    }
+
+    if (args.currentPlayerId !== hostPlayerId) {
+        return readyPlayers[args.currentPlayerId] === true;
+    }
+
+    const allPlayerIds = Array.isArray(core.turnOrder)
+        ? core.turnOrder.filter((playerId): playerId is string => typeof playerId === 'string')
+        : Object.keys(selectedFactions);
+    const otherPlayerIds = allPlayerIds.filter((playerId) => playerId !== hostPlayerId);
+    if (otherPlayerIds.length === 0) {
+        return false;
+    }
+
+    const allOthersReady = otherPlayerIds.every((playerId) => {
+        const faction = selectedFactions[playerId];
+        return typeof faction === 'string'
+            && faction.length > 0
+            && faction !== 'unselected'
+            && readyPlayers[playerId] === true;
+    });
+
+    return !allOthersReady;
+}
+
 export function resolveForceAdvancePhaseAfterRecovery(args: {
     authoritativeState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
@@ -1097,6 +1160,14 @@ export function resolveForceEndTurnForStalledAi(args: {
         // 但 hostStarted 丢失/未对齐的开局前快照。这里不能把它误当成 active AI 卡死，
         // 否则只会写出 legal_action_unavailable 噪音反馈。
         if (isSplendorPregameResidualState) {
+            return null;
+        }
+        if (shouldSuppressSummonerWarsPregameWaitingState({
+            sharedState: args.sharedState,
+            currentPlayerId,
+            phase,
+            gameId: args.gameId,
+        })) {
             return null;
         }
         if (core?.hostStarted === false && !isPublicPregameLegalActionPhase) {

@@ -307,6 +307,7 @@
     "ongoingDetached": "Ongoing removed:",
     "reasonSuffix": "(Reason: {{reason}})",
     "reasonPrefix": "(Reason: ",
+    "reasonSelfDestructSuffix": " self-destructed)",
     "talentUsed": "Talent triggered:",
     "baseScored": "Base scored:",
     "baseScoredRanking": "{{playerId}} +{{vp}}VP",
