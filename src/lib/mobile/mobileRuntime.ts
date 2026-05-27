@@ -103,4 +103,3 @@ export const detectNativeMobileRuntime = (options?: {
 export const isNativeMobileRuntime = () => detectNativeMobileRuntime();
 
 export const isNativeIosRuntime = () => getNativeMobileRuntimeDiagnostics().nativeIos;
-
