@@ -1494,6 +1494,10 @@
       "name": "Big Funny Giant",
       "effectText": "Special: You may play this titan on a base with no players' minions instead of playing a normal minion. Ongoing: Other players must discard a card to play a minion here. At the end of your turn, if there are no other players' minions here, place a +1 power counter on this titan. Talent: Destroy a minion of power 2 or less on this base to move this titan to another base."
     },
+    "tricksters_big_funny_giant_pod": {
+      "name": "Big Funny Giant",
+      "effectText": "Special: Instead of your regular minion play, you may play this titan. Ongoing: After another player plays a minion here, they must discard a card. At the end of each other player's turn, if they do not have a minion here, you may place a +1 power counter on this titan. Special: When this base scores, if you are the winner and at least one other player does not have a minion here, gain 1 VP."
+    },
     "vampires_ancient_lord": {
       "name": "Ancient Lord",
       "effectText": "Special: After you place 2 or more +1 power counters on minions in a turn, you may play this titan. Ongoing: After you place a +1 power counter on one of your cards that doesn't already have a +1 power counter, place one additional +1 power counter on it. Talent: Place a +1 power counter on one of your minions here that already has a +1 power counter."
