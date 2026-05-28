@@ -15,8 +15,8 @@
 - [x] 3.1 完成可直接复用 helper / trigger / restriction 的一批能力
 - [x] 3.2 完成需要 replacement / protection / attached-action 扩展的一批能力
 - [x] 3.3 完成 `二娃`、`一根藤上七朵花` 与 `葫芦小金刚` 这批高交互能力
-  - 已完成 `二娃`、`一根藤上七朵花`、`葫芦小金刚` 的 special summon、titan clash 改移动、以及对 minion talent 的复制。
-  - `葫芦小金刚` 首版复制范围明确限定为当前引擎已有的 minion talent 主动入口；未来若新增其他仆从手动入口，应追加同合同 C1/C2/C3。
+  - 已完成 `二娃`、`一根藤上七朵花`、`葫芦小金刚` 的 special summon、titan clash 改移动、以及“己方仆从发动 talent 后触发询问并复制另一个 minion talent”的真实入口。
+  - `葫芦小金刚` 首版复制范围明确限定为当前引擎已有的 minion talent 主动入口；未来若新增其他仆从手动入口（例如随从持续主动能力），应追加同合同 C1/C2/C3。
 
 ## 4. Verification / Closeout
 
