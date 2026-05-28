@@ -99,7 +99,7 @@
 ### Transport / watchdog
 
 ```bash
-node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts src/games/smashup/__tests__/scoring-eligible-base-indices-regression.test.ts --configLoader native --maxWorkers 1 --testNamePattern "summonerwars pregame 已 ready 但仍等待 human host|AI 走无解交互 emergency skip 时，服务端应立即自动反馈|AI seat-view 只剩 emergency skip、但 authoritative interaction 仍保留旧选项时，应翻译成 CANCEL 收口|旧快照把 scoringEligibleBaseIndices 写成 null 时，应回退到实时计算而不是崩溃"
+node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts src/games/smashup/__tests__/scoreBases-eligible-lock-null-snapshot.test.ts --configLoader native --maxWorkers 1 --testNamePattern "summonerwars pregame 已 ready 但仍等待 human host|AI 走无解交互 emergency skip 时，服务端应立即自动反馈|AI seat-view 只剩 emergency skip、但 authoritative interaction 仍保留旧选项时，应翻译成 CANCEL 收口|旧快照把 scoringEligibleBaseIndices 写成 null 时，应回退到实时计算而不是崩溃"
 ```
 
 结果：
