@@ -52,7 +52,7 @@ import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from 
 import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent } from '../domain/bury';
 import { continueActiveDuel } from '../domain/duel';
 import { registerInterceptor, registerProtection, registerRestriction, registerTrigger } from '../domain/ongoingEffects';
-import type { ProtectionCheckContext, TriggerContext, TriggerResult } from '../domain/ongoingEffects';
+import type { ProtectionCheckContext, RestrictionCheckContext, TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getPlayerEffectivePowerOnBase, registerTitanPowerModifier } from '../domain/ongoingModifiers';
 import {
     appendPendingPostScoringActions,
@@ -1842,6 +1842,10 @@ function trickstersBigFunnyGiantSpecial(ctx: AbilityContext): AbilityResult {
     return playTitanFromSetAside(ctx, 'tricksters_big_funny_giant_special');
 }
 
+function isTrickstersBigFunnyGiantDefId(defId: string): boolean {
+    return defId === 'tricksters_big_funny_giant' || defId === 'tricksters_big_funny_giant_pod';
+}
+
 function getBigFunnyGiantDiscardableHandCards(state: AbilityContext['state'], playerId: string, excludeCardUid?: string) {
     const player = state.players[playerId];
     if (!player) return [];
@@ -1885,10 +1889,54 @@ function trickstersBigFunnyGiantOnTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
     return events;
 }
 
+function trickstersBigFunnyGiantPodOnTurnEnd(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    const titans = (ctx.state.titans ?? []).filter(candidate =>
+        candidate.defId === 'tricksters_big_funny_giant_pod'
+        && candidate.location.zone === 'base'
+        && candidate.controllerId !== ctx.playerId,
+    );
+    if (titans.length === 0) {
+        return [];
+    }
+
+    const eligibleTitans = titans.filter(titan => {
+        const base = ctx.state.bases[titan.location.baseIndex];
+        return base && !base.minions.some(minion => minion.controller === ctx.playerId);
+    });
+    if (eligibleTitans.length === 0) {
+        return [];
+    }
+
+    if (!ctx.matchState) {
+        return eligibleTitans.map(titan => addTitanPowerCounter(titan.uid, 1, 'tricksters_big_funny_giant_pod_turn_end', ctx.now));
+    }
+
+    let nextMatchState = ctx.matchState;
+    for (const titan of eligibleTitans) {
+        const interaction = createSimpleChoice(
+            `titan_tricksters_big_funny_giant_pod_counter_${titan.uid}_${ctx.now}`,
+            titan.controllerId,
+            'Big Funny Giant: place a +1 power counter on this titan?',
+            [
+                { id: 'add', label: '放置 +1 指示物', value: { add: true }, displayMode: 'button' as const },
+                { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
+            ],
+            { sourceId: 'titan_tricksters_big_funny_giant_pod_counter', targetType: 'button' },
+        );
+        (interaction.data as { continuationContext?: unknown }).continuationContext = {
+            titanUid: titan.uid,
+            titanDefId: titan.defId,
+        };
+        nextMatchState = queueInteraction(nextMatchState, interaction);
+    }
+
+    return { events: [], matchState: nextMatchState };
+}
+
 function trickstersBigFunnyGiantOnMinionPlayed(ctx: AbilityContext): AbilityResult | SmashUpEvent[] {
     if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return [];
     const titan = (ctx.state.titans ?? []).find(candidate =>
-        candidate.defId === 'tricksters_big_funny_giant'
+        isTrickstersBigFunnyGiantDefId(candidate.defId)
         && candidate.location.zone === 'base'
         && candidate.location.baseIndex === ctx.baseIndex,
     );
@@ -1957,7 +2005,7 @@ function trickstersBigFunnyGiantTalent(ctx: AbilityContext): AbilityResult {
         buildMinionTargetOptions(minionTargets, {
             state: ctx.state,
             sourcePlayerId: ctx.playerId,
-            sourceDefId: 'tricksters_big_funny_giant',
+            sourceDefId: titan.defId,
             effectType: 'destroy',
         }),
         { sourceId: 'titan_tricksters_big_funny_giant_choose_minion', targetType: 'minion' },
@@ -2000,7 +2048,7 @@ function trickstersBigFunnyGiantAfterScoring(ctx: {
     }
 
     const titans = (ctx.state.titans ?? []).filter(candidate =>
-        candidate.defId === 'tricksters_big_funny_giant'
+        isTrickstersBigFunnyGiantDefId(candidate.defId)
         && candidate.location.zone === 'base'
         && candidate.location.baseIndex === ctx.baseIndex
         && winnerIds.has(candidate.controllerId),
@@ -3947,7 +3995,12 @@ export function registerTitanAbilities(): void {
         if (!base) return '无效的基地索引';
         return base.minions.length === 0 ? null : '只能打到空基地';
     });
-    registerRestriction('tricksters_big_funny_giant', 'play_minion', (ctx) => {
+    registerAbility('tricksters_big_funny_giant_pod', 'special', trickstersBigFunnyGiantSpecial);
+    registerTitanSpecialValidator('tricksters_big_funny_giant_pod', ({ state, titan, baseIndex }) => {
+        if (titan.location.zone !== 'setaside') return '该泰坦当前不在牌库旁';
+        return state.bases[baseIndex] ? null : '无效的基地索引';
+    });
+    const bigFunnyGiantPlayMinionRestriction = (ctx: RestrictionCheckContext) => {
         const titan = (ctx.state.titans ?? []).find(candidate =>
             candidate.defId === 'tricksters_big_funny_giant'
             && candidate.location.zone === 'base'
@@ -3960,29 +4013,37 @@ export function registerTitanAbilities(): void {
         const isFromHand = !!cardUid && player.hand.some(card => card.uid === cardUid);
         const requiredHandSize = isFromHand ? 2 : 1;
         return player.hand.length < requiredHandSize;
-    });
-    registerAbility('tricksters_big_funny_giant', 'talent', trickstersBigFunnyGiantTalent);
-    registerTitanTalentValidator('tricksters_big_funny_giant', ({ state, titan, baseIndex }) => {
-        if (titan.location.zone !== 'base') return '该泰坦当前不在场';
-        if (titan.location.baseIndex !== baseIndex) return '必须选择泰坦所在基地';
-        const targets = getBigFunnyGiantTalentTargets(state, titan.location.baseIndex);
-        if (targets.length === 0) return '没有可选择的低战力随从';
-        return getOtherBaseOptions(state, titan.location.baseIndex).length > 0
-            ? null
-            : '没有可移动的基地';
-    });
+    };
+    registerRestriction('tricksters_big_funny_giant', 'play_minion', bigFunnyGiantPlayMinionRestriction);
+    const registerBigFunnyGiantTalent = (defId: string) => {
+        registerAbility(defId, 'talent', trickstersBigFunnyGiantTalent);
+        registerTitanTalentValidator(defId, ({ state, titan, baseIndex }) => {
+            if (titan.location.zone !== 'base') return '该泰坦当前不在场';
+            if (titan.location.baseIndex !== baseIndex) return '必须选择泰坦所在基地';
+            const targets = getBigFunnyGiantTalentTargets(state, titan.location.baseIndex);
+            if (targets.length === 0) return '没有可选择的低战力随从';
+            return getOtherBaseOptions(state, titan.location.baseIndex).length > 0
+                ? null
+                : '没有可移动的基地';
+        });
+    };
+    registerBigFunnyGiantTalent('tricksters_big_funny_giant');
     registerTrigger('tricksters_big_funny_giant', 'onTurnEnd', trickstersBigFunnyGiantOnTurnEnd, {
     });
-    registerTrigger('tricksters_big_funny_giant', 'onMinionPlayed', trickstersBigFunnyGiantOnMinionPlayed, {
+    registerTrigger('tricksters_big_funny_giant_pod', 'onTurnEnd', trickstersBigFunnyGiantPodOnTurnEnd, {
     });
-    registerTrigger('tricksters_big_funny_giant', 'afterScoring', (ctx) => trickstersBigFunnyGiantAfterScoring({
-        state: ctx.state,
-        baseIndex: ctx.baseIndex,
-        rankings: ctx.rankings,
-        now: ctx.now,
-    }), {
-        global: true,
-    });
+    for (const defId of ['tricksters_big_funny_giant', 'tricksters_big_funny_giant_pod']) {
+        registerTrigger(defId, 'onMinionPlayed', trickstersBigFunnyGiantOnMinionPlayed, {
+        });
+        registerTrigger(defId, 'afterScoring', (ctx) => trickstersBigFunnyGiantAfterScoring({
+            state: ctx.state,
+            baseIndex: ctx.baseIndex,
+            rankings: ctx.rankings,
+            now: ctx.now,
+        }), {
+            global: true,
+        });
+    }
 
     registerAbility('pirates_the_kraken', 'talent', piratesTheKrakenTalent);
     registerTitanTalentValidator('pirates_the_kraken', ({ state, titan }) => {
@@ -6194,6 +6255,26 @@ export function registerTitanInteractionHandlers(): void {
                 payload: { playerId, cardUids: [selected.cardUid] },
                 timestamp,
             }],
+        };
+    });
+
+    registerInteractionHandler('titan_tricksters_big_funny_giant_pod_counter', (state, _playerId, value, data, _random, timestamp) => {
+        const selected = value as { add?: boolean; skip?: boolean } | undefined;
+        const continuation = (data as {
+            continuationContext?: { titanUid?: string; titanDefId?: string };
+        } | undefined)?.continuationContext;
+        if (!selected?.add || selected.skip || !continuation?.titanUid || continuation.titanDefId !== 'tricksters_big_funny_giant_pod') {
+            return { state, events: [] };
+        }
+
+        const titan = getTitanByUid(state.core, continuation.titanUid);
+        if (!titan || titan.defId !== 'tricksters_big_funny_giant_pod' || titan.location.zone !== 'base') {
+            return { state, events: [] };
+        }
+
+        return {
+            state,
+            events: [addTitanPowerCounter(titan.uid, 1, 'tricksters_big_funny_giant_pod_turn_end', timestamp)],
         };
     });
 

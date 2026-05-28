@@ -267,6 +267,21 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.TITANS, index: 17 },
     },
     {
+        id: 'tricksters_big_funny_giant_pod',
+        type: 'titan',
+        name: '滑稽巨人',
+        nameEn: 'Big Funny Giant',
+        faction: SMASHUP_FACTION_IDS.TRICKSTERS_POD,
+        abilityTags: ['special', 'ongoing'],
+        activatableAbilities: [
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
+            { kind: 'ongoing', zone: 'board', window: 'playCards' },
+        ],
+        summonMode: 'insteadOfRegularMinion',
+        playAsKinds: ['minion'],
+        previewRef: { type: 'atlas', atlasId: 'tts_atlas_8789f47742', index: 3 },
+    },
+    {
         id: 'vampires_ancient_lord',
         type: 'titan',
         name: '鲜血领主',

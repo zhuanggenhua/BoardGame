@@ -6549,6 +6549,7 @@ describe('smashup', () => {
             'cthulhu_cthulhu_titan',
             'penguins_emperor_penguin',
             'tricksters_big_funny_giant',
+            'tricksters_big_funny_giant_pod',
             'vampires_ancient_lord',
             'werewolves_great_wolf_spirit',
             'wizards_arcane_protector',
@@ -6559,7 +6560,7 @@ describe('smashup', () => {
             'sphinx',
             'pecos_bill',
         ]);
-        expect(TITAN_CARD_DEFS).toHaveLength(28);
+        expect(TITAN_CARD_DEFS).toHaveLength(29);
         expect(getTitanDef('fairies_spirit_of_the_forest')?.abilityTags).toEqual(['special', 'ongoing']);
         expect(getTitanDef('fairies_spirit_of_the_forest')?.previewRef).toEqual({
             type: 'atlas',
@@ -6573,6 +6574,8 @@ describe('smashup', () => {
         expect(getTitanDef('pecos_bill')?.abilityTags).toEqual(['special', 'ongoing']);
         expect(getTitanDef('pecos_bill')?.previewRef).toEqual({ type: 'atlas', atlasId: 'tts_atlas_8789f47742', index: 30 });
         expect(getTitanDef('tricksters_big_funny_giant')?.abilityTags).toEqual(['special', 'ongoing', 'talent']);
+        expect(getTitanDef('tricksters_big_funny_giant_pod')?.abilityTags).toEqual(['special', 'ongoing']);
+        expect(getTitanDef('tricksters_big_funny_giant_pod')?.previewRef).toEqual({ type: 'atlas', atlasId: 'tts_atlas_8789f47742', index: 3 });
         expect(getTitanDef('time_travelers_time_box')?.abilityTags).toEqual(['special', 'talent']);
         expect(getSmashUpCardPreviewMeta('sphinx')).toEqual({
             name: getTitanDef('sphinx')?.name,
