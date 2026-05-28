@@ -2,7 +2,8 @@
   "button": {
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "close": "Close"
+    "close": "Close",
+    "processing": "Processing"
   },
   "category": {
     "all": "All Games",
