@@ -324,10 +324,10 @@ export const HomeV2 = () => {
                     onDestroyContinueMatch={(match) => setPendingDestroyMatch(match)}
                 />
                 <HomeVersionFooter
-                    align="right"
+                    align="left"
                     compact
                     positionMode="absolute"
-                    positionClassName="left-[22.4%] top-[76.1%] max-w-[10.4%]"
+                    positionClassName="left-[9.2%] bottom-[9.7%] max-w-[11.6%]"
                     theme="book"
                 />
             </div>
@@ -507,7 +507,7 @@ export const HomeV2 = () => {
                     >
                         <div className="relative z-10 flex flex-col items-center gap-4 px-7 pb-6 text-center">
                             <div className="max-w-[23rem] text-[13px] leading-[1.7] text-[#5b3823]">
-                                {t('confirm.destroy.description')}
+                                {t('homeV2.confirm.destroyDescription', { defaultValue: '销毁后会立即关闭房间，所有玩家将被移出当前对局。' })}
                             </div>
                             <div className="w-full max-w-[20rem] rounded-[2px] border border-[#a5743c]/28 bg-[rgba(244,230,206,0.24)] px-3 py-2 text-[13px] font-semibold text-[#3f2616]">
                                 {pendingDestroyMatch.gameLabel} #{pendingDestroyMatch.matchID.slice(-4).toUpperCase()}

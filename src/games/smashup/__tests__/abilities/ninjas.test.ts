@@ -570,6 +570,38 @@ describe('忍者 ongoing/special 能力', () => {
             expect(getFirstPrompt(result.finalState)).toBeDefined();
         });
 
+        it('把自己收回再额外打出后，应视为本回合已打出过随从，不能再发动其他忍者侍从', () => {
+            const state = makeNinjaOngoingState([
+                makeBase({ minions: [makeNinjaOngoingMinion({ defId: 'ninja_acolyte', uid: 'ac-1', controller: '0' })] }),
+                makeBase({ minions: [makeNinjaOngoingMinion({ defId: 'ninja_acolyte', uid: 'ac-2', controller: '0' })] }),
+            ]);
+
+            const activated = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { minionUid: 'ac-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+            expect(activated.success, activated.error).toBe(true);
+
+            const prompt = getFirstPrompt(activated.finalState);
+            const selfOption = getPromptOption(
+                prompt,
+                option => option?.value?.cardUid === 'ac-1' && option?.value?.defId === 'ninja_acolyte',
+                'Acolyte self replay option',
+            );
+            const replayed = respondToPrompt(activated.finalState, selfOption.id, '0', defaultTestRandom);
+            expect(replayed.success, replayed.error).toBe(true);
+
+            const secondAttempt = runCommand(replayed.finalState, {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { minionUid: 'ac-2', baseIndex: 1 },
+            } as any, defaultTestRandom);
+
+            expect(secondAttempt.success).toBe(false);
+            expect(secondAttempt.error).toContain('已打出过随从');
+        });
+
         it('同基地已使用忍者 special 时被阻止', () => {
             const state = makeNinjaOngoingState([
                 makeBase({ minions: [makeNinjaOngoingMinion({ defId: 'ninja_acolyte', uid: 'ac-1', controller: '0' })] }),
@@ -595,7 +627,8 @@ describe('忍者 ongoing/special 能力', () => {
                 playerId: '0',
                 payload: { minionUid: 'ac-1', baseIndex: 0 },
             } as any, defaultTestRandom);
-            expect(result.success, result.error).toBe(true);
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('已打出过随从');
             expect(result.events).toHaveLength(0);
         });
     });

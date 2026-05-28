@@ -25,6 +25,9 @@
     "emptyRoomDescription": "暂无可加入房间记录。",
     "lockedRoomLabel": "加密",
     "lockedRoomHint": "密码房间暂时请从原大厅进入。",
+    "confirm": {
+      "destroyDescription": "销毁后会立即关闭房间，所有玩家将被移出当前对局。"
+    },
     "details": {
       "typeLabel": "类型",
       "defaultCategory": "桌游",
@@ -150,7 +153,7 @@
   "confirm": {
     "destroy": {
       "title": "销毁房间",
-      "description": "确定要销毁房间吗？"
+      "description": "销毁后会立即关闭房间，所有玩家将被移出当前对局。"
     },
     "leave": {
       "title": "离开房间",

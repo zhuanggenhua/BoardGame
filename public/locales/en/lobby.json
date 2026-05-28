@@ -25,6 +25,9 @@
     "emptyRoomDescription": "No joinable room records yet.",
     "lockedRoomLabel": "Locked",
     "lockedRoomHint": "Please use the legacy lobby to enter password-protected rooms for now.",
+    "confirm": {
+      "destroyDescription": "Destroying the room closes it immediately and removes every player from the current match."
+    },
     "details": {
       "typeLabel": "Type",
       "defaultCategory": "Board Game",
@@ -150,7 +153,7 @@
   "confirm": {
     "destroy": {
       "title": "Destroy Room",
-      "description": "Are you sure you want to destroy this room?"
+      "description": "Destroying the room closes it immediately and removes every player from the current match."
     },
     "leave": {
       "title": "Leave Room",

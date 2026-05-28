@@ -1649,14 +1649,14 @@ export const Right = ({ game }: RightProps) => {
                     titleClassName={isCompactLandscape ? 'text-[11.8px] tracking-[0.075em]' : undefined}
                     dividerClassName={isCompactLandscape ? 'mt-[7px] w-[72%] gap-1.5' : undefined}
                 >
-                    <div className={`relative z-10 flex flex-col ${isCompactLandscape ? 'gap-[8px] px-[22px] pb-[11px]' : 'gap-4 px-7 pb-6'}`}>
-                        <div className={`${isCompactLandscape ? 'text-[8.2px] leading-[1.55]' : 'text-[13px] leading-[1.7]'} text-center text-[#5b3823]`}>
-                            {t('lobby:confirm.destroy.description', { defaultValue: '确定要销毁这个房间吗？房间内所有玩家都会被移出对局。' })}
+                    <div className={`relative z-10 flex flex-col items-center text-center ${isCompactLandscape ? 'gap-[8px] px-[22px] pb-[11px]' : 'gap-4 px-7 pb-6'}`}>
+                        <div className={`${isCompactLandscape ? 'max-w-[11.5rem] text-[8.2px] leading-[1.55]' : 'max-w-[23rem] text-[13px] leading-[1.7]'} text-[#5b3823]`}>
+                            {t('lobby:homeV2.confirm.destroyDescription', { defaultValue: '销毁后会立即关闭房间，所有玩家将被移出当前对局。' })}
                         </div>
-                        <div className={`rounded-[2px] border border-[#a5743c]/28 bg-[rgba(244,230,206,0.24)] text-center font-semibold text-[#3f2616] ${isCompactLandscape ? 'px-[8px] py-[6px] text-[8.6px]' : 'px-3 py-2 text-[13px]'}`}>
+                        <div className={`w-full rounded-[2px] border border-[#a5743c]/28 bg-[rgba(244,230,206,0.24)] font-semibold text-[#3f2616] ${isCompactLandscape ? 'max-w-[11.5rem] px-[8px] py-[6px] text-[8.6px]' : 'max-w-[20rem] px-3 py-2 text-[13px]'}`}>
                             {getRoomTitle(pendingDestroyRoom.matchID, t, pendingDestroyRoom.roomName)}
                         </div>
-                        <div className="flex items-center justify-end gap-3">
+                        <div className={`flex w-full items-center justify-center ${isCompactLandscape ? 'gap-[6px]' : 'gap-3'}`}>
                             <button
                                 type="button"
                                 onClick={() => {

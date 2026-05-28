@@ -645,8 +645,8 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         vpAwards: [5, 3, 2],
         faction: 'elder_things',
         podFactions: [SMASHUP_FACTION_IDS.ELDER_THINGS_POD],
-        // NOTE: atlas index 10 is reserved for this base in our atlas map
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 10 },
+        // 本地 zh-CN base4.webp 的 index 10 实际是“更衣室”，这里直接改走正确的 Elder Things 4x2 图集。
+        previewRef: { type: 'atlas', atlasId: 'tts_atlas_0b888d02fd', index: 0 },
         restrictions: [{ type: 'play_minion', condition: { minionPlayLimitPerTurn: 1 } }],
     },
     {

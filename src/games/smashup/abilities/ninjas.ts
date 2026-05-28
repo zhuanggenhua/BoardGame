@@ -8,7 +8,7 @@ import { registerAbility, registerAbilityProgram } from '../domain/abilityRegist
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback, buildValidatedMoveEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, MinionReturnedEvent, OngoingDetachedEvent, MinionPlayedEvent } from '../domain/types';
+import type { SmashUpEvent, MinionReturnedEvent, OngoingDetachedEvent, MinionPlayedEvent, PlayerState } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
@@ -124,6 +124,30 @@ function buildHandPlayEvents(
     };
 }
 
+function hasPlayedAnyMinionThisTurn(player: PlayerState | undefined): boolean {
+    if (!player) return false;
+    if (player.minionsPlayed > 0) return true;
+    return Object.values(player.minionsPlayedPerBase ?? {}).some((count) => count > 0);
+}
+
+function ninjaAcolyteSpecialValidate(ctx: AbilityContext): string | null {
+    const player = ctx.state.players[ctx.playerId];
+    if (!player) return '玩家不存在';
+    if (hasPlayedAnyMinionThisTurn(player)) {
+        return '本回合已打出过随从，不能使用该特殊能力';
+    }
+    return null;
+}
+
+function ninjaAcolytePodTalentValidate(ctx: AbilityContext): string | null {
+    const player = ctx.state.players[ctx.playerId];
+    if (!player) return '玩家不存在';
+    if (hasPlayedAnyMinionThisTurn(player)) {
+        return '本回合已打出过随从，不能使用该天赋';
+    }
+    return null;
+}
+
 /** 注册忍者派系所有能力*/
 export function registerNinjaAbilities(): void {
     // 忍者大师：消灭本基地一个随从
@@ -144,7 +168,10 @@ export function registerNinjaAbilities(): void {
     // 隐忍（special action）：基地计分前打出手牌中的随从到该基地
     registerAbilityProgram('ninja_hidden_ninja', 'special', { program: ninjaHiddenNinjaProgram });
     // 忍者侍从（special）：基地计分前返回手牌并额外打出一个随从到该基地
-    registerAbilityProgram('ninja_acolyte', 'special', { program: ninjaAcolyteSpecialProgram });
+    registerAbilityProgram('ninja_acolyte', 'special', {
+        program: ninjaAcolyteSpecialProgram,
+        validateUse: ninjaAcolyteSpecialValidate,
+    });
     // 忍者侍从 POD（talent）：若本回合尚未打出过随从，则返回手牌并立即在这里额外打出一个随从
     registerAbilityProgram('ninja_acolyte_pod', 'talent', {
         program: ninjaAcolytePodTalentProgram,
@@ -571,7 +598,7 @@ const ninjaHiddenNinjaProgram = createEffectProgram<AbilityContext, AbilityConte
 const ninjaAcolyteSpecialProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
     if (isSpecialLimitBlocked(ctx.state, 'ninja_acolyte', ctx.baseIndex)) return { events: [] };
     const player = ctx.state.players[ctx.playerId];
-    if (player.minionsPlayed > 0) return { events: [] };
+    if (hasPlayedAnyMinionThisTurn(player)) return { events: [] };
     const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_acolyte', ctx.baseIndex, ctx.now);
     const events: SmashUpEvent[] = limitEvt ? [limitEvt] : [];
     events.push({
@@ -606,7 +633,7 @@ const ninjaAcolyteSpecialProgram = createEffectProgram<AbilityContext, AbilityCo
 
 const ninjaAcolytePodTalentProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
     const player = ctx.state.players[ctx.playerId];
-    if (player.minionsPlayed > 0) return { events: [] };
+    if (hasPlayedAnyMinionThisTurn(player)) return { events: [] };
 
     const events: SmashUpEvent[] = [{
         type: SU_EVENTS.MINION_RETURNED,
@@ -972,15 +999,6 @@ function ninjaInfiltratePodTalent(ctx: AbilityContext): AbilityResult {
         } as any,
     ];
     return { events };
-}
-
-function ninjaAcolytePodTalentValidate(ctx: AbilityContext): string | null {
-    const player = ctx.state.players[ctx.playerId];
-    if (!player) return '玩家不存在';
-    if (player.minionsPlayed > 0) {
-        return '本回合已打出过随从，不能使用该天赋';
-    }
-    return null;
 }
 
 // ============================================================================

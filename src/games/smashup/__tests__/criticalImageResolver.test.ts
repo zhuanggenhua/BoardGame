@@ -165,6 +165,19 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical).toContain('smashup/cards/tts_atlas_0b888d02fd');
     });
 
+    it('普通版远古物种也会预热修正后的南极基地图集', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['elder_things', 'pirates'],
+                '1': ['dinosaurs', 'wizards'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/tts_atlas_0b888d02fd');
+    });
+
     it('playing 阶段缺少派系数据时回退到全量图集', () => {
         const result = smashUpCriticalImageResolver(
             { sys: { phase: 'playCards' }, core: {} },

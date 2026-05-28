@@ -257,13 +257,23 @@ function isTriggerSourceStillPresentDuringScoring(
     ));
 }
 
+function shouldKeepQueuedScoringTriggerFromSnapshot(trigger: TriggerInstance): boolean {
+    return Boolean(
+        trigger.lkiMinion
+        || trigger.lkiBase,
+    );
+}
+
 function pruneUnavailableScoringFrameTriggers(
     state: MatchState<SmashUpCore>,
     session: SmashUpReactionSession,
     now: number,
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const staleTriggers = getSessionFrameTriggers(state, session.frameId).filter(
-        trigger => !isTriggerSourceStillPresentDuringScoring(state, trigger),
+        (trigger) => (
+            !isTriggerSourceStillPresentDuringScoring(state, trigger)
+            && !shouldKeepQueuedScoringTriggerFromSnapshot(trigger)
+        ),
     );
     if (staleTriggers.length === 0) {
         return { state, events: [] };

@@ -719,6 +719,20 @@ describe('派系选择系统', () => {
             }));
         });
 
+        it('南极基地不再误用本地 base4 的更衣室槽位', () => {
+            const englishMap = smashUpEnglishMap as Record<string, { atlasId: string; index: number }>;
+
+            expect(getBaseDef('base_antarctic_base')?.previewRef).toEqual({
+                type: 'atlas',
+                atlasId: 'tts_atlas_0b888d02fd',
+                index: 0,
+            });
+            expect(englishMap.base_antarctic_base).toEqual({
+                atlasId: 'tts_atlas_0b888d02fd',
+                index: 0,
+            });
+        });
+
         it('uses the corrected POD base atlas for monster smash bases', () => {
             const englishMap = smashUpEnglishMap as Record<string, { atlasId: string; index: number }>;
 
