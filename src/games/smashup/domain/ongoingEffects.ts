@@ -130,6 +130,8 @@ export interface TriggerContext {
     /** 完整的 match 状态，用于触发器创建交互 */
     matchState?: MatchState<SmashUpCore>;
     timing: TitanAwareTriggerTiming;
+    /** 触发来源 defId（queued trigger 在源对象离场后仍可依赖） */
+    sourceDefId?: string;
     /** 同一事件/同一牌的反应 frame */
     frameId?: string;
     /** 触发来源事件 id */
@@ -1242,6 +1244,7 @@ export function fireTriggers(
                 ...fullCtx,
                 state: filteredState,
                 matchState: getFilteredMatchState(),
+                sourceDefId: entry.sourceDefId,
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
                 sourceControllerId: located.controllerId });
@@ -1258,7 +1261,7 @@ export function fireTriggers(
         const locatedSources = locateSources(filteredState, entry.sourceDefId);
         if (locatedSources.length === 0) {
             if (!entry.perInstance && isSourceActive(filteredState, entry.sourceDefId)) {
-                const result = entry.callback({ ...fullCtx, state: filteredState, matchState: getFilteredMatchState() });
+            const result = entry.callback({ ...fullCtx, state: filteredState, matchState: getFilteredMatchState() });
                 const triggerEvents = Array.isArray(result) ? result : result.events;
                 if (triggerEvents.length > 0) {
                     events.push(...triggerEvents);
@@ -1286,6 +1289,7 @@ export function fireTriggers(
                 ...fullCtx,
                 state: filteredState,
                 matchState: getFilteredMatchState(),
+                sourceDefId: entry.sourceDefId,
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
                 sourceControllerId: located.controllerId });
@@ -1365,6 +1369,7 @@ export function fireTriggerForSource(
                 ...fullCtx,
                 state: filteredState,
                 matchState: getFilteredMatchState(),
+                sourceDefId: entry.sourceDefId,
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
                 sourceControllerId: located.controllerId });
@@ -1381,7 +1386,12 @@ export function fireTriggerForSource(
         const locatedSources = locateSources(filteredState, entry.sourceDefId);
         if (locatedSources.length === 0) {
             if (!entry.perInstance && isSourceActive(filteredState, entry.sourceDefId)) {
-                const result = entry.callback({ ...fullCtx, state: filteredState, matchState: getFilteredMatchState() });
+                const result = entry.callback({
+                    ...fullCtx,
+                    state: filteredState,
+                    matchState: getFilteredMatchState(),
+                    sourceDefId: entry.sourceDefId,
+                });
                 const triggerEvents = Array.isArray(result) ? result : result.events;
                 if (triggerEvents.length > 0) {
                     events.push(...triggerEvents);
@@ -1409,6 +1419,7 @@ export function fireTriggerForSource(
                 ...fullCtx,
                 state: filteredState,
                 matchState: getFilteredMatchState(),
+                sourceDefId: entry.sourceDefId,
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
                 sourceControllerId: located.controllerId });

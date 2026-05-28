@@ -341,6 +341,35 @@ const resolveUnsatisfiableReasonFromSelectability = (
     return null;
 };
 
+const isEmergencySkipOnlySelectability = (
+    diagnostic: InteractionSelectabilityDiagnostic | null | undefined,
+): boolean => {
+    if (!diagnostic) {
+        return false;
+    }
+    return diagnostic.totalOptions === 1
+        && diagnostic.enabledOptions === 1
+        && diagnostic.disabledOptions === 0
+        && diagnostic.selectionState === 'recoverable-option-available'
+        && diagnostic.enabledOptionIds[0] === '__emergency_skip__';
+};
+
+const shouldSuppressUnsatisfiableInteractionFeedback = (args: {
+    sharedInteraction: AiInteractionSnapshot | null | undefined;
+    seatInteraction: AiInteractionSnapshot | null | undefined;
+}): boolean => {
+    const sharedSelectability = buildInteractionSelectabilityDiagnostic(args.sharedInteraction);
+    if (isEmergencySkipOnlySelectability(sharedSelectability)) {
+        return true;
+    }
+
+    const seatSelectability = buildInteractionSelectabilityDiagnostic(args.seatInteraction);
+    return args.sharedInteraction?.kind === 'dt:defender-choice'
+        && args.seatInteraction?.kind === 'dt:defender-choice'
+        && sharedSelectability?.selectionState === 'no-options'
+        && seatSelectability?.selectionState === 'no-options';
+};
+
 const shouldTranslateAiEmergencySkipToCancel = (payload: unknown): boolean => {
     if (!payload || typeof payload !== 'object') {
         return false;
@@ -4278,6 +4307,12 @@ export class GameTransportServer {
                 if (reason && UNSATISFIABLE_INTERACTION_REASONS.has(reason)) {
                     const interaction = extractAiInteractionSnapshot(preTrainingState);
                     const sharedInteraction = extractAiInteractionSnapshot(match.state);
+                    if (shouldSuppressUnsatisfiableInteractionFeedback({
+                        sharedInteraction,
+                        seatInteraction: interaction,
+                    })) {
+                        continue;
+                    }
                     const responseWindow = extractAiResponseWindowSnapshot(preTrainingState);
                     const blockerFingerprint = buildOnlineAiWatchdogBlockerFingerprint({
                         phase: preTrainingState.sys?.phase ?? match.state.sys?.phase ?? null,

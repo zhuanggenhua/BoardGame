@@ -11,7 +11,10 @@ import { useToast } from '../../contexts/ToastContext';
 import {
     claimSeat,
     clearOwnerActiveMatch,
+    destroyMatch as destroyOwnedMatch,
+    getLatestStoredMatchCredentials,
     getOwnerActiveMatch,
+    readStoredMatchCredentials,
     persistMatchCredentials,
     setOwnerActiveMatch,
 } from '../../hooks/match/useMatchStatus';
@@ -878,10 +881,14 @@ export const Right = ({ game }: RightProps) => {
     });
     const [showCreateRoomModal, setShowCreateRoomModal] = React.useState(false);
     const [pendingPasswordRoom, setPendingPasswordRoom] = React.useState<{ matchID: string; roomName?: string } | null>(null);
+    const [pendingDestroyRoom, setPendingDestroyRoom] = React.useState<{ matchID: string; roomName?: string } | null>(null);
     const [roomPasswordDraft, setRoomPasswordDraft] = React.useState('');
     const [roomSearch, setRoomSearch] = React.useState('');
+    const [matchStorageTick, setMatchStorageTick] = React.useState(0);
     const [isLoading, setIsLoading] = React.useState(false);
+    const [isDestroyingRoom, setIsDestroyingRoom] = React.useState(false);
     const [isPreparingCreateRoom, setIsPreparingCreateRoom] = React.useState(false);
+    const [optimisticallyRemovedRoomIds, setOptimisticallyRemovedRoomIds] = React.useState<string[]>([]);
     const [initialCreateRoomPreferences, setInitialCreateRoomPreferences] = React.useState<ReturnType<typeof readLocalMatchPreferences> | null>(null);
     const createRoomInFlightRef = React.useRef(false);
     const [activeTab, setActiveTab] = React.useState<HomeV2DetailTab>('lobby');
@@ -900,8 +907,12 @@ export const Right = ({ game }: RightProps) => {
     const passwordInputClassName = isCompactLandscape ? homeV2PaperCompactInputClassName : homeV2PaperInputClassName;
     const passwordPrimaryButtonClassName = isCompactLandscape ? homeV2PaperCompactPrimaryButtonClassName : homeV2PaperPrimaryButtonClassName;
     const passwordSecondaryButtonClassName = isCompactLandscape ? homeV2PaperCompactSecondaryButtonClassName : homeV2PaperSecondaryButtonClassName;
+    const guestId = user?.id ? undefined : getOrCreateGuestId();
+    const ownerKey = getOwnerKey(user?.id, guestId);
+    const guestName = getGuestName(t, guestId);
 
     const roomPreviewItems = matches
+        .filter((room) => !optimisticallyRemovedRoomIds.includes(room.matchID))
         .slice()
         .sort((left, right) => {
             const leftPlayers = left.players.filter((player) => Boolean(player.name)).length;
@@ -928,17 +939,66 @@ export const Right = ({ game }: RightProps) => {
         return getRoomSearchHaystack(room, fallbackTitle).includes(normalizedRoomSearch);
     }), [normalizedRoomSearch, roomPreviewItems, t]);
 
-    const guestId = user?.id ? undefined : getOrCreateGuestId();
-    const ownerKey = getOwnerKey(user?.id, guestId);
-    const guestName = getGuestName(t, guestId);
+    const ownerActiveRoom = React.useMemo(() => {
+        void matchStorageTick;
+        if (!gameId) {
+            return null;
+        }
+
+        const ownerActive = getOwnerActiveMatch();
+        if (!ownerActive?.matchID || ownerActive.ownerKey !== ownerKey) {
+            return null;
+        }
+        if (optimisticallyRemovedRoomIds.includes(ownerActive.matchID)) {
+            return null;
+        }
+
+        const activeGameName = (ownerActive.gameName || '').toLowerCase();
+        if (activeGameName !== gameId.toLowerCase()) {
+            return null;
+        }
+
+        const storedCredentials = readStoredMatchCredentials(ownerActive.matchID);
+        const latestStored = getLatestStoredMatchCredentials();
+        const roomSummary = matches.find((room) => room.matchID === ownerActive.matchID) ?? null;
+        const latestStoredForOwnerRoom = latestStored?.matchID === ownerActive.matchID ? latestStored : null;
+
+        return {
+            matchID: ownerActive.matchID,
+            gameName: activeGameName || gameId.toLowerCase(),
+            roomName: roomSummary?.roomName,
+            playerID: storedCredentials?.playerID ?? latestStoredForOwnerRoom?.playerID ?? '0',
+            credentials: storedCredentials?.credentials ?? latestStoredForOwnerRoom?.credentials ?? null,
+        };
+    }, [gameId, matchStorageTick, matches, optimisticallyRemovedRoomIds, ownerKey]);
 
     React.useEffect(() => {
         setActiveTab('lobby');
         setRoomSearch('');
         setPendingPasswordRoom(null);
+        setPendingDestroyRoom(null);
         setRoomPasswordDraft('');
+        setIsDestroyingRoom(false);
+        setOptimisticallyRemovedRoomIds([]);
         setIsMobilePackageCardExpanded(false);
     }, [gameId]);
+
+    React.useEffect(() => {
+        if (typeof window === 'undefined') {
+            return undefined;
+        }
+
+        const refresh = () => setMatchStorageTick((tick) => tick + 1);
+        window.addEventListener('match-credentials-changed', refresh);
+        window.addEventListener('owner-active-match-changed', refresh);
+        window.addEventListener('storage', refresh);
+
+        return () => {
+            window.removeEventListener('match-credentials-changed', refresh);
+            window.removeEventListener('owner-active-match-changed', refresh);
+            window.removeEventListener('storage', refresh);
+        };
+    }, []);
 
     React.useEffect(() => {
         if (!shouldShowMobilePackageRegion) {
@@ -1416,6 +1476,69 @@ export const Right = ({ game }: RightProps) => {
         void handleJoinRoom(matchID, password);
     };
 
+    const handleDestroyRoomConfirm = async () => {
+        if (!game || !pendingDestroyRoom || isDestroyingRoom) return;
+
+        const { matchID } = pendingDestroyRoom;
+        const storedCredentials = readStoredMatchCredentials(matchID);
+        const roomSummary = matches.find((item) => item.matchID === matchID);
+        const roomGameName = (roomSummary?.gameName || storedCredentials?.gameName || game.id || 'tictactoe').toLowerCase();
+
+        setIsDestroyingRoom(true);
+        try {
+            let destroyPlayerID = storedCredentials?.playerID ?? '0';
+            let destroyCredentials = storedCredentials?.credentials ?? null;
+
+            if (!destroyCredentials || destroyPlayerID !== '0') {
+                const claimResult = await claimSeat(roomGameName, matchID, '0', {
+                    token: token ?? undefined,
+                    guestId,
+                    playerName: user?.username ?? guestName,
+                });
+                if (!claimResult.success || !claimResult.credentials) {
+                    toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+                    return;
+                }
+                destroyPlayerID = '0';
+                destroyCredentials = claimResult.credentials;
+            }
+
+            let result = await destroyOwnedMatch(roomGameName, matchID, destroyPlayerID, destroyCredentials);
+            if (!result.success && result.error === 'forbidden') {
+                const claimResult = await claimSeat(roomGameName, matchID, '0', {
+                    token: token ?? undefined,
+                    guestId,
+                    playerName: user?.username ?? guestName,
+                });
+                if (!claimResult.success || !claimResult.credentials) {
+                    toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+                    return;
+                }
+                result = await destroyOwnedMatch(roomGameName, matchID, '0', claimResult.credentials);
+            }
+
+            if (!result.success) {
+                toast.error({
+                    kind: 'i18n',
+                    key: result.error === 'forbidden' ? 'error.destroyForbidden' : 'error.destroyNetwork',
+                    ns: 'lobby',
+                });
+                return;
+            }
+
+            setOptimisticallyRemovedRoomIds((current) => (
+                current.includes(matchID) ? current : [...current, matchID]
+            ));
+            if (pendingPasswordRoom?.matchID === matchID) {
+                setPendingPasswordRoom(null);
+                setRoomPasswordDraft('');
+            }
+            setPendingDestroyRoom(null);
+        } finally {
+            setIsDestroyingRoom(false);
+        }
+    };
+
     if (!game) return null;
 
     const passwordModal = activeTab === 'lobby' && pendingPasswordRoom && typeof document !== 'undefined'
@@ -1503,6 +1626,67 @@ export const Right = ({ game }: RightProps) => {
         )
         : null;
 
+    const destroyRoomModal = activeTab === 'lobby' && pendingDestroyRoom && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+                data-testid="home-v2-destroy-room-panel"
+                className="fixed inset-0 flex items-center justify-center bg-[rgba(18,13,9,0.56)] p-4 pointer-events-auto backdrop-blur-[2px]"
+                style={{ zIndex: UI_Z_INDEX.modalContent }}
+            >
+                <HomeV2PaperModalFrame
+                    title={t('lobby:confirm.destroy.title', { defaultValue: '销毁房间' })}
+                    dataTestId="home-v2-destroy-room-surface"
+                    surfaceClassName={`font-serif ${isCompactLandscape ? 'home-v2-paper-modal-compact w-[min(15.5rem,calc(100vw-1rem))]' : 'w-[min(31rem,calc(100vw-2rem))]'}`}
+                    surfaceStyle={{
+                        height: isCompactLandscape
+                            ? 'min(calc(var(--runtime-viewport-height, 100vh) - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 0.5rem), 11.25rem)'
+                            : undefined,
+                        maxHeight: isCompactLandscape
+                            ? undefined
+                            : 'min(calc(var(--runtime-viewport-height, 100vh) - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 2rem), 22rem)',
+                    }}
+                    headerClassName={isCompactLandscape ? 'px-[22px] pb-[9px] pt-[13px]' : 'px-7 pb-3 pt-6'}
+                    titleClassName={isCompactLandscape ? 'text-[11.8px] tracking-[0.075em]' : undefined}
+                    dividerClassName={isCompactLandscape ? 'mt-[7px] w-[72%] gap-1.5' : undefined}
+                >
+                    <div className={`relative z-10 flex flex-col ${isCompactLandscape ? 'gap-[8px] px-[22px] pb-[11px]' : 'gap-4 px-7 pb-6'}`}>
+                        <div className={`${isCompactLandscape ? 'text-[8.2px] leading-[1.55]' : 'text-[13px] leading-[1.7]'} text-center text-[#5b3823]`}>
+                            {t('lobby:confirm.destroy.description', { defaultValue: '确定要销毁这个房间吗？房间内所有玩家都会被移出对局。' })}
+                        </div>
+                        <div className={`rounded-[2px] border border-[#a5743c]/28 bg-[rgba(244,230,206,0.24)] text-center font-semibold text-[#3f2616] ${isCompactLandscape ? 'px-[8px] py-[6px] text-[8.6px]' : 'px-3 py-2 text-[13px]'}`}>
+                            {getRoomTitle(pendingDestroyRoom.matchID, t, pendingDestroyRoom.roomName)}
+                        </div>
+                        <div className="flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (isDestroyingRoom) return;
+                                    setPendingDestroyRoom(null);
+                                }}
+                                data-testid="home-v2-destroy-room-cancel"
+                                className={`${passwordSecondaryButtonClassName} min-w-[6.75rem]`}
+                            >
+                                {t('common:button.cancel')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleDestroyRoomConfirm()}
+                                disabled={isDestroyingRoom}
+                                data-testid="home-v2-destroy-room-confirm"
+                                className={`min-w-[7.5rem] rounded-[3px] border border-[#a16f43]/76 bg-[linear-gradient(180deg,rgba(98,56,31,0.98)_0%,rgba(71,40,22,1)_100%)] font-bold text-[#f3e0bf] shadow-[0_8px_14px_rgba(50,29,16,0.18),inset_0_1px_0_rgba(255,240,206,0.16)] transition-colors hover:bg-[linear-gradient(180deg,rgba(108,61,33,0.98)_0%,rgba(76,43,23,1)_100%)] disabled:cursor-not-allowed disabled:opacity-65 ${isCompactLandscape ? 'px-[8px] py-[4px] text-[7.8px] tracking-[0.08em]' : 'px-4 py-[11px] text-[15px] tracking-[0.12em]'}`}
+                            >
+                                {isDestroyingRoom
+                                    ? t('common:button.processing', { defaultValue: '处理中' })
+                                    : t('lobby:actions.destroy', { defaultValue: '销毁' })}
+                            </button>
+                        </div>
+                    </div>
+                </HomeV2PaperModalFrame>
+            </div>,
+            document.body,
+        )
+        : null;
+
     const hasVisibleRooms = filteredRoomPreviewItems.length > 0;
     const detailTabs: Array<{ id: HomeV2DetailTab; label: string; compactLabel: string }> = [
         { id: 'lobby', label: t('lobby:homeV2.details.onlineLobbyLabel'), compactLabel: t('lobby:homeV2.details.onlineLobbyCompactLabel', { defaultValue: '大厅' }) },
@@ -1511,8 +1695,8 @@ export const Right = ({ game }: RightProps) => {
         { id: 'leaderboard', label: t('lobby:homeV2.detailTabs.ranking', { defaultValue: '排行榜' }), compactLabel: t('lobby:homeV2.detailTabs.rankingCompact', { defaultValue: '排行' }) },
     ];
     const roomLedgerGridClassName = isCompactLandscape
-        ? 'grid-cols-[minmax(0,3.06fr)_44px_60px_56px]'
-        : 'grid-cols-[minmax(0,2.2fr)_112px_132px_132px]';
+        ? 'grid-cols-[minmax(0,3.06fr)_44px_60px]'
+        : 'grid-cols-[minmax(0,2.2fr)_112px_132px]';
     const showRoomThumbnail = !isCompactLandscape;
     const mobilePackageRegion = shouldShowMobilePackageRegion ? (
         <div
@@ -1636,14 +1820,45 @@ export const Right = ({ game }: RightProps) => {
                         <BookFrameButton
                             className={`${isCompactLandscape ? 'min-h-[31px] min-w-[94px] px-[9px] py-[4px] text-[10.1px]' : ''} shrink-0`}
                             size={isCompactLandscape ? 'compact' : 'prominent'}
-                            icon={<Plus aria-hidden="true" className={isCompactLandscape ? 'h-[10px] w-[10px]' : 'h-[18px] w-[18px]'} strokeWidth={2.2} />}
+                            icon={ownerActiveRoom
+                                ? <RefreshCw aria-hidden="true" className={isCompactLandscape ? 'h-[10px] w-[10px]' : 'h-[18px] w-[18px]'} strokeWidth={2.2} />
+                                : <Plus aria-hidden="true" className={isCompactLandscape ? 'h-[10px] w-[10px]' : 'h-[18px] w-[18px]'} strokeWidth={2.2} />}
                             disabled={isLoading || isPreparingCreateRoom}
-                            onClick={() => void openCreateRoom()}
-                            testId="home-v2-create-room-button"
+                            onClick={() => ownerActiveRoom ? void handleJoinRoom(ownerActiveRoom.matchID) : void openCreateRoom()}
+                            testId={ownerActiveRoom ? 'home-v2-active-room-return-button' : 'home-v2-create-room-button'}
                         >
-                            {t('lobby:actions.createRoom', '创建房间')}
+                            {ownerActiveRoom
+                                ? t('lobby:activeMatch.return', { id: ownerActiveRoom.matchID.slice(0, 4) })
+                                : t('lobby:actions.createRoom', '创建房间')}
                         </BookFrameButton>
                     </div>
+
+                    {ownerActiveRoom ? (
+                        <div
+                            data-testid="home-v2-active-room-banner"
+                            className={`flex items-center justify-between rounded-[2px] border border-[rgba(105,66,37,0.22)] bg-[rgba(244,230,206,0.28)] ${isCompactLandscape ? 'mt-[4px] gap-[8px] px-[8px] py-[5px]' : 'mt-[1.1%] gap-[14px] px-[14px] py-[10px]'}`}
+                        >
+                            <div className="min-w-0">
+                                <div className={`${isCompactLandscape ? 'text-[7.1px] tracking-[0.08em]' : 'text-[11px] tracking-[0.12em]'} font-bold uppercase text-[#7b5a3e]/86`}>
+                                    {t('lobby:activeMatch.notice')}
+                                </div>
+                                <div className={`${isCompactLandscape ? 'mt-[1px] text-[8.4px]' : 'mt-[3px] text-[clamp(13px,0.94vw,15px)]'} truncate font-semibold text-[#3f2718]`}>
+                                    {getRoomTitle(ownerActiveRoom.matchID, t, ownerActiveRoom.roomName)}
+                                </div>
+                            </div>
+                            <BookLineButton
+                                className={isCompactLandscape ? 'min-h-[19px] min-w-[38px] px-[6px] text-[7.6px]' : 'min-h-[34px] min-w-[78px] px-[12px] text-[clamp(12px,0.88vw,14px)]'}
+                                disabled={isDestroyingRoom}
+                                onClick={() => setPendingDestroyRoom({
+                                    matchID: ownerActiveRoom.matchID,
+                                    roomName: ownerActiveRoom.roomName,
+                                })}
+                                testId="home-v2-active-room-destroy-button"
+                            >
+                                {t('lobby:actions.destroy', { defaultValue: '销毁' })}
+                            </BookLineButton>
+                        </div>
+                    ) : null}
 
                     <div data-testid="home-v2-room-ledger" className={`${isCompactLandscape ? 'mt-[3px]' : 'mt-[0.8%]'} flex min-h-0 flex-1 flex-col px-[0.6%]`}>
                         <div
@@ -1657,7 +1872,6 @@ export const Right = ({ game }: RightProps) => {
                             <div className={isCompactLandscape ? 'pl-[4px]' : ''}>{t('lobby:homeV2.detailColumns.roomName')}</div>
                             <div className="text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.34)' }}>{t('lobby:homeV2.detailColumns.players')}</div>
                             <div className="text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.34)' }}>{t('lobby:homeV2.detailColumns.status')}</div>
-                            <div className="text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.34)' }}>{t('lobby:homeV2.detailColumns.action')}</div>
                         </div>
 
                         <div className="min-h-0 flex-1">
@@ -1686,8 +1900,9 @@ export const Right = ({ game }: RightProps) => {
                                             const actionLabel = roomState.key === 'locked'
                                                 ? t('lobby:homeV2.lockedRoomLabel')
                                                 : roomState.key === 'full'
-                                                    ? t('lobby:actions.spectate')
-                                                    : t('lobby:actions.join');
+                                                    ? t('lobby:actions.spectate', { defaultValue: '观战' })
+                                                    : t('lobby:actions.join', { defaultValue: '加入' });
+                                            const roomButtonDisabled = isLoading || isDestroyingRoom;
 
                                             return (
                                                 <article
@@ -1702,7 +1917,7 @@ export const Right = ({ game }: RightProps) => {
                                                                 ? `min-h-[36px] ${roomLedgerGridClassName} py-[2px]`
                                                                 : `min-h-[82px] ${roomLedgerGridClassName} py-[9px]`
                                                         }`}
-                                                        disabled={isLoading}
+                                                        disabled={roomButtonDisabled}
                                                         onClick={() => void handleJoinRoom(room.matchID)}
                                                     >
                                                         <div className={`flex min-w-0 ${showRoomThumbnail ? 'items-center' : 'items-start'} ${isCompactLandscape ? 'pl-[4px] pr-[8px]' : 'gap-[15px] pr-[12px]'}`}>
@@ -1725,17 +1940,6 @@ export const Right = ({ game }: RightProps) => {
                                                         </div>
                                                         <div className={`${isCompactLandscape ? 'text-[11px]' : 'text-[clamp(20px,1.36vw,24px)]'} flex h-full items-center justify-center text-center font-semibold text-[#2f1b10]`} style={{ borderLeft: '1px solid rgba(105,66,37,0.26)' }}>
                                                             {playerCount}/{totalSeats || playerCount}
-                                                        </div>
-                                                        <div className="flex h-full items-center justify-center text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.26)' }}>
-                                                            <span className={`inline-flex items-center justify-center border-b font-semibold leading-none ${isCompactLandscape ? 'min-w-[34px] px-[3px] py-[1px] text-[8.4px]' : 'min-w-[68px] px-[8px] py-[5px] text-[clamp(13px,0.92vw,15px)]'} ${
-                                                                roomState.key === 'locked'
-                                                                    ? 'border-[#9d773f]/42 bg-transparent text-[#4e321f]'
-                                                                    : roomState.key === 'full'
-                                                                        ? 'border-[#7d6a58]/34 bg-transparent text-[#5f5144]'
-                                                                        : 'border-[#526d3d]/38 bg-transparent text-[#314625]'
-                                                            }`}>
-                                                                {roomState.label}
-                                                            </span>
                                                         </div>
                                                         <div className="flex h-full items-center justify-center text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.26)' }}>
                                                             <RoomLedgerActionTag compact={isCompactLandscape}>
@@ -1772,6 +1976,7 @@ export const Right = ({ game }: RightProps) => {
                 : mobilePackageRegion}
 
             {passwordModal}
+            {destroyRoomModal}
             <CreateRoomModal
                 isOpen={showCreateRoomModal}
                 onClose={() => setShowCreateRoomModal(false)}

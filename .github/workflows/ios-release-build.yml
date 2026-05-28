@@ -1,0 +1,341 @@
+name: iOS Release Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: 'Git ref to build (branch, tag, or commit SHA; empty means current ref)'
+        required: false
+        type: string
+      export_method:
+        description: 'Xcode export method'
+        required: true
+        default: app-store-connect
+        type: choice
+        options:
+          - app-store-connect
+          - release-testing
+          - enterprise
+      channel:
+        description: 'iOS OTA channel baked into the production shell'
+        required: true
+        default: stable
+        type: choice
+        options:
+          - stable
+          - gray
+          - edge
+      marketing_version:
+        description: 'CFBundleShortVersionString; empty means package.json.version'
+        required: false
+        type: string
+      build_number:
+        description: 'CFBundleVersion; empty means GitHub run number'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && (inputs.git_ref || github.ref) || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-release-ipa:
+    runs-on: macos-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Resolve build parameters
+        id: params
+        shell: bash
+        run: |
+          target_ref="${{ inputs.git_ref }}"
+          if [[ -z "${target_ref}" ]]; then
+            target_ref="${GITHUB_SHA}"
+          fi
+
+          {
+            echo "target_ref=${target_ref}"
+            echo "export_method=${{ inputs.export_method }}"
+            echo "channel=${{ inputs.channel }}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Validate required configuration
+        shell: bash
+        env:
+          IOS_BACKEND_URL: ${{ vars.IOS_VITE_BACKEND_URL || vars.VITE_BACKEND_URL || secrets.IOS_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL }}
+          IOS_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          IOS_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+          IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        run: |
+          missing=()
+
+          [[ -n "${IOS_BACKEND_URL}" ]] || missing+=("IOS_VITE_BACKEND_URL or VITE_BACKEND_URL")
+          [[ -n "${IOS_DISTRIBUTION_CERTIFICATE_BASE64}" ]] || missing+=("IOS_DISTRIBUTION_CERTIFICATE_BASE64")
+          [[ -n "${IOS_DISTRIBUTION_CERTIFICATE_PASSWORD}" ]] || missing+=("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD")
+          [[ -n "${IOS_PROVISION_PROFILE_BASE64}" ]] || missing+=("IOS_PROVISION_PROFILE_BASE64")
+          [[ -n "${IOS_KEYCHAIN_PASSWORD}" ]] || missing+=("IOS_KEYCHAIN_PASSWORD")
+
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            echo "::error::Missing required iOS release configuration: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.params.outputs.target_ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.1.0
+          cache: npm
+
+      - name: Create CI local flow-host package
+        shell: bash
+        run: |
+          mkdir -p ../flow-host/packages/flow-host-core
+          cat > ../flow-host/packages/flow-host-core/package.json <<'EOF'
+          {
+            "name": "@flow-host/core",
+            "version": "0.0.0-local",
+            "type": "module",
+            "main": "./index.js",
+            "exports": {
+              ".": "./index.js"
+            }
+          }
+          EOF
+          cat > ../flow-host/packages/flow-host-core/index.js <<'EOF'
+          export const FLOWISE_HOST_BASELINE = {
+            id: 'flowise',
+            name: 'Flowise',
+            description: 'Flowise baseline for GitHub Actions iOS release builds',
+            repoUrl: 'https://github.com/FlowiseAI/Flowise',
+            docsUrl: 'https://github.com/FlowiseAI/Flowise',
+            localSourcePath: '../flowise-fork',
+            workflowPackIds: [],
+          };
+
+          export const FLOW_HOST_WORKFLOW_PACK_SUMMARIES = [];
+          EOF
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Create iOS env file
+        shell: bash
+        run: |
+          cat <<EOF > .env.ios
+          VITE_BACKEND_URL=${{ vars.IOS_VITE_BACKEND_URL || vars.VITE_BACKEND_URL || secrets.IOS_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL }}
+          VITE_ASSETS_BASE_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}
+          CAPACITOR_APP_ID=${{ vars.IOS_CAPACITOR_APP_ID || vars.CAPACITOR_APP_ID || 'top.easyboardgame.app' }}
+          CAPACITOR_APP_NAME=${{ vars.IOS_CAPACITOR_APP_NAME || vars.CAPACITOR_APP_NAME || '易桌游' }}
+          VITE_IOS_OTA_ENABLED=true
+          VITE_IOS_OTA_MANIFEST_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/app-updates/ios/${{ steps.params.outputs.channel }}/latest.json
+          VITE_IOS_OTA_CHANNEL=${{ steps.params.outputs.channel }}
+          VITE_IOS_OTA_APP_READY_TIMEOUT_MS=${{ vars.IOS_OTA_APP_READY_TIMEOUT_MS || '15000' }}
+          VITE_MOBILE_PACKAGE_MANIFEST_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/mobile-packages/ios
+          EOF
+
+      - name: Build and sync Capacitor iOS project
+        run: npm run mobile:ios:sync
+
+      - name: Resolve app version
+        id: version
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          marketing_version="${{ inputs.marketing_version }}"
+          build_number="${{ inputs.build_number }}"
+
+          if [[ -z "${marketing_version}" ]]; then
+            marketing_version="${package_version}"
+          fi
+
+          if [[ -z "${build_number}" ]]; then
+            build_number="${GITHUB_RUN_NUMBER}"
+          fi
+
+          {
+            echo "package_version=${package_version}"
+            echo "marketing_version=${marketing_version}"
+            echo "build_number=${build_number}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Install Apple signing assets
+        id: signing
+        shell: bash
+        env:
+          IOS_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          IOS_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+          IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+          IOS_BUNDLE_ID: ${{ vars.IOS_CAPACITOR_APP_ID || vars.CAPACITOR_APP_ID || 'top.easyboardgame.app' }}
+          IOS_DEVELOPMENT_TEAM: ${{ vars.IOS_DEVELOPMENT_TEAM || secrets.IOS_DEVELOPMENT_TEAM }}
+          EXPORT_METHOD: ${{ steps.params.outputs.export_method }}
+        run: |
+          cert_path="${RUNNER_TEMP}/ios_distribution.p12"
+          profile_path="${RUNNER_TEMP}/ios_profile.mobileprovision"
+          profile_plist="${RUNNER_TEMP}/ios_profile.plist"
+          keychain_path="${RUNNER_TEMP}/ios-signing.keychain-db"
+
+          echo -n "${IOS_DISTRIBUTION_CERTIFICATE_BASE64}" | base64 --decode -o "${cert_path}"
+          echo -n "${IOS_PROVISION_PROFILE_BASE64}" | base64 --decode -o "${profile_path}"
+
+          security create-keychain -p "${IOS_KEYCHAIN_PASSWORD}" "${keychain_path}"
+          security set-keychain-settings -lut 21600 "${keychain_path}"
+          security unlock-keychain -p "${IOS_KEYCHAIN_PASSWORD}" "${keychain_path}"
+          security import "${cert_path}" -P "${IOS_DISTRIBUTION_CERTIFICATE_PASSWORD}" -A -t cert -f pkcs12 -k "${keychain_path}"
+          security set-key-partition-list -S apple-tool:,apple: -k "${IOS_KEYCHAIN_PASSWORD}" "${keychain_path}"
+          security list-keychains -d user -s "${keychain_path}"
+          security default-keychain -s "${keychain_path}"
+
+          security cms -D -i "${profile_path}" > "${profile_plist}"
+          profile_uuid="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "${profile_plist}")"
+          profile_name="$(/usr/libexec/PlistBuddy -c 'Print :Name' "${profile_plist}")"
+          profile_team_id="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "${profile_plist}")"
+          profile_app_identifier="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "${profile_plist}")"
+          profile_bundle_id="${profile_app_identifier#${profile_team_id}.}"
+          get_task_allow="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:get-task-allow' "${profile_plist}" 2>/dev/null || echo false)"
+          team_id="${IOS_DEVELOPMENT_TEAM:-${profile_team_id}}"
+
+          if [[ "${team_id}" != "${profile_team_id}" ]]; then
+            echo "::error::IOS_DEVELOPMENT_TEAM (${team_id}) does not match provisioning profile team (${profile_team_id})."
+            exit 1
+          fi
+
+          if [[ "${profile_bundle_id}" != "${IOS_BUNDLE_ID}" ]]; then
+            if [[ "${profile_bundle_id}" == *"*" ]]; then
+              wildcard_prefix="${profile_bundle_id%\*}"
+              if [[ "${EXPORT_METHOD}" == "app-store-connect" ]]; then
+                echo "::error::app-store-connect export requires an explicit App ID profile, but got ${profile_bundle_id}."
+                exit 1
+              fi
+              if [[ "${IOS_BUNDLE_ID}" != "${wildcard_prefix}"* ]]; then
+                echo "::error::Provisioning profile bundle id (${profile_bundle_id}) does not match ${IOS_BUNDLE_ID}."
+                exit 1
+              fi
+            else
+              echo "::error::Provisioning profile bundle id (${profile_bundle_id}) does not match ${IOS_BUNDLE_ID}."
+              exit 1
+            fi
+          fi
+
+          if [[ "${EXPORT_METHOD}" == "app-store-connect" && "${get_task_allow}" == "true" ]]; then
+            echo "::error::app-store-connect export requires a distribution provisioning profile, but get-task-allow is true."
+            exit 1
+          fi
+
+          mkdir -p "${HOME}/Library/MobileDevice/Provisioning Profiles"
+          cp "${profile_path}" "${HOME}/Library/MobileDevice/Provisioning Profiles/${profile_uuid}.mobileprovision"
+
+          {
+            echo "bundle_id=${IOS_BUNDLE_ID}"
+            echo "profile_name=${profile_name}"
+            echo "team_id=${team_id}"
+            echo "profile_bundle_id=${profile_bundle_id}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Write export options
+        shell: bash
+        run: |
+          cat > "${RUNNER_TEMP}/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>${{ steps.params.outputs.export_method }}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>teamID</key>
+            <string>${{ steps.signing.outputs.team_id }}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${{ steps.signing.outputs.bundle_id }}</key>
+              <string>${{ steps.signing.outputs.profile_name }}</string>
+            </dict>
+            <key>destination</key>
+            <string>export</string>
+            <key>manageAppVersionAndBuildNumber</key>
+            <false/>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -resolvePackageDependencies
+
+      - name: Archive iOS app
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "${RUNNER_TEMP}/App.xcarchive" \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="${{ steps.signing.outputs.team_id }}" \
+            PRODUCT_BUNDLE_IDENTIFIER="${{ steps.signing.outputs.bundle_id }}" \
+            PROVISIONING_PROFILE_SPECIFIER="${{ steps.signing.outputs.profile_name }}" \
+            CODE_SIGN_IDENTITY="${{ vars.IOS_CODE_SIGN_IDENTITY || 'Apple Distribution' }}" \
+            MARKETING_VERSION="${{ steps.version.outputs.marketing_version }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build_number }}"
+
+      - name: Export IPA
+        run: |
+          xcodebuild \
+            -exportArchive \
+            -archivePath "${RUNNER_TEMP}/App.xcarchive" \
+            -exportOptionsPlist "${RUNNER_TEMP}/ExportOptions.plist" \
+            -exportPath "${RUNNER_TEMP}/export"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: ${{ runner.temp }}/export/*.ipa
+          retention-days: 7
+
+      - name: Upload dSYM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-dsym
+          path: ${{ runner.temp }}/App.xcarchive/dSYMs
+          retention-days: 7
+
+      - name: Write workflow summary
+        shell: bash
+        run: |
+          {
+            echo "### iOS release build"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Git ref | ${{ steps.params.outputs.target_ref }} |"
+            echo "| Export method | ${{ steps.params.outputs.export_method }} |"
+            echo "| Bundle ID | ${{ steps.signing.outputs.bundle_id }} |"
+            echo "| Profile Bundle ID | ${{ steps.signing.outputs.profile_bundle_id }} |"
+            echo "| Team ID | ${{ steps.signing.outputs.team_id }} |"
+            echo "| OTA channel | ${{ steps.params.outputs.channel }} |"
+            echo "| Marketing version | ${{ steps.version.outputs.marketing_version }} |"
+            echo "| Build number | ${{ steps.version.outputs.build_number }} |"
+            echo "| Device test | Not run; this job only archives and exports on macOS runner. |"
+          } >> "${GITHUB_STEP_SUMMARY}"

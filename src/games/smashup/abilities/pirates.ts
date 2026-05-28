@@ -419,7 +419,7 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
         ? findMinionOnBases(ctx.state, mateUid)
         : undefined;
     const mate = locatedMate?.minion ?? snapshotMate;
-    const mateDefId = mate?.defId ?? ctx.triggerMinionDefId;
+    const mateDefId = mate?.defId ?? ctx.triggerMinionDefId ?? ctx.sourceDefId;
     const mateBaseIndex = locatedMate?.baseIndex ?? ctx.sourceBaseIndex;
     if (!mateUid || !mateDefId || mateBaseIndex === undefined) return [];
 

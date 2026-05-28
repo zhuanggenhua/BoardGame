@@ -23109,6 +23109,191 @@ describe('GameTransportServer（离座与重连）', () => {
             selectionState: 'recoverable-option-available',
         });
     });
+
+    it('authoritative interaction 本身已退化成单一 emergency skip 时，不应再持久化系统反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        const interaction = createSimpleChoice(
+            'already-recoverable-choice',
+            '1',
+            '当前无可执行选项',
+            [{
+                id: '__emergency_skip__',
+                label: '跳过（当前无可执行选项）',
+                value: {
+                    __emergency_skip__: true,
+                    __emergency_skip_reason__: 'empty-options',
+                },
+                displayMode: 'button',
+            }],
+            {
+                sourceId: 'already-recoverable-choice',
+                responseValidationMode: 'live',
+            },
+        );
+
+        await storage.createMatch('match-unsat-already-recoverable', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                        players: {
+                            '0': { hand: [], deck: [], discard: [] },
+                            '1': { hand: [], deck: [], discard: [] },
+                        },
+                    },
+                    sys: {
+                        phase: 'playCards',
+                        turnNumber: 0,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: interaction,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createInteractiveEngineConfig()],
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-unsat-already-recoverable');
+        const success = await serverInternal.executeCommandInternal(
+            match,
+            '1',
+            INTERACTION_COMMANDS.RESPOND,
+            { interactionId: 'already-recoverable-choice', optionId: '__emergency_skip__' },
+        );
+
+        expect(success).toBe(true);
+        expect(match.state.sys.interaction.current).toBeUndefined();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
+    it('dt:defender-choice 已经是 0 个目标的恢复态时，不应再持久化系统反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-dt-defender-choice-empty-options', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '3',
+                        currentPlayerIndex: 3,
+                        turnOrder: ['0', '1', '2', '3'],
+                        players: {
+                            '0': { hand: [], deck: [], discard: [] },
+                            '1': { hand: [], deck: [], discard: [] },
+                            '2': { hand: [], deck: [], discard: [] },
+                            '3': { hand: [], deck: [], discard: [] },
+                        },
+                    },
+                    sys: {
+                        phase: 'targetingRoll',
+                        turnNumber: 0,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: {
+                                id: 'dt-defender-choice-empty',
+                                kind: 'dt:defender-choice',
+                                playerId: '3',
+                                data: {
+                                    attackerId: '3',
+                                    chooserPlayerId: '3',
+                                    sourceAbilityId: 'katana-slice-4',
+                                    sourceId: 'katana-slice-4',
+                                    titleKey: '选择本次攻击目标',
+                                    targetRollValue: 6,
+                                    options: [],
+                                },
+                            },
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'dicethrone',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'human' },
+                    '2': { type: 'human' },
+                    '3': { type: 'local-ai', policyId: 'baseline' },
+                },
+            }),
+        });
+
+        const dtEngine = createEngineConfigWithId('dicethrone');
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [{
+                ...dtEngine,
+                systems: [
+                    createInteractionSystem(),
+                    createSimpleChoiceSystem(),
+                ],
+            }],
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-dt-defender-choice-empty-options');
+        const success = await serverInternal.executeCommandInternal(
+            match,
+            '3',
+            INTERACTION_COMMANDS.CANCEL,
+            { interactionId: 'dt-defender-choice-empty', reason: 'empty-options' },
+        );
+
+        expect(success).toBe(true);
+        expect(match.state.sys.interaction.current).toBeUndefined();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
 });
 
 

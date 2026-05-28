@@ -30,6 +30,7 @@ export type HomeV2ContinueMatch = {
     gameLabel: string;
     playerID?: string;
     playerLabel?: string;
+    isHost?: boolean;
 };
 
 const CATEGORY_NAV_ITEMS: CategoryNavItem[] = [
@@ -67,6 +68,7 @@ const PREVIOUS_PAGE_RECT: PositionedRect = { left: '33.7%', top: '75.4%', width:
 const PAGE_LABEL_RECT: PositionedRect = { left: '37.3%', top: '75.4%', width: '5.8%', height: '5.6%' };
 const NEXT_PAGE_RECT: PositionedRect = { left: '44.2%', top: '75.4%', width: '2.4%', height: '5.6%' };
 const CONTINUE_RECT: PositionedRect = { left: '52.8%', top: '74.8%', width: '38.4%', height: '6.8%' };
+const CONTINUE_HOST_RECT: PositionedRect = { left: '52.8%', top: '74.8%', width: '34.6%', height: '6.8%' };
 const EMPTY_STATE_RECT: PositionedRect = { left: '31.0%', top: '44.0%', width: '38.0%', height: '10.0%' };
 
 function asAbsoluteStyle(rect: PositionedRect): React.CSSProperties {
@@ -277,6 +279,7 @@ export interface OverviewSpreadProps {
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
     onContinueMatch?: (match: HomeV2ContinueMatch) => void;
+    onDestroyContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
 export const OverviewSpread = ({
@@ -287,6 +290,7 @@ export const OverviewSpread = ({
     onAccountClick,
     continueMatch,
     onContinueMatch,
+    onDestroyContinueMatch,
 }: OverviewSpreadProps) => {
     const { t, i18n } = useTranslation(['lobby', 'common']);
     const { user } = useAuth();
@@ -339,6 +343,7 @@ export const OverviewSpread = ({
     const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
     const currentLanguageOption = LANGUAGE_OPTIONS.find((option) => option.code === currentLanguage) ?? LANGUAGE_OPTIONS[0];
     const continueMatchCode = continueMatch?.matchID ? `#${continueMatch.matchID.slice(-4).toUpperCase()}` : '';
+    const continueRect = continueMatch?.isHost ? CONTINUE_HOST_RECT : CONTINUE_RECT;
 
     React.useEffect(() => {
         if (!languageMenuOpen) return undefined;
@@ -684,38 +689,66 @@ export const OverviewSpread = ({
             >
                 <ChevronRight aria-hidden="true" style={{ width: scaled(18), height: scaled(18) }} />
             </button>
-            <button
-                type="button"
-                data-testid="home-v2-continue-entry"
-                aria-label={continueMatch ? `继续对局 ${continueMatch.gameLabel}` : '暂无可继续对局'}
-                className="absolute flex items-center border border-[#9a7a4a]/52 bg-[rgba(196,179,136,0.36)] font-serif text-[#3b321f] shadow-[inset_0_1px_0_rgba(255,248,222,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+            <div
+                className="absolute flex items-center"
                 style={{
-                    ...asAbsoluteStyle(CONTINUE_RECT),
-                    borderRadius: scaled(3),
-                    fontSize: scaled(16),
-                    fontWeight: 700,
+                    ...asAbsoluteStyle(continueRect),
+                    gap: scaled(continueMatch?.isHost ? 6 : 8),
                     opacity: continueMatch ? 1 : 0.48,
                 }}
-                disabled={!continueMatch}
-                onClick={() => continueMatch ? onContinueMatch?.(continueMatch) : undefined}
             >
-                <span
-                    aria-hidden="true"
-                    className="self-stretch bg-[#315c27]"
+                <button
+                    type="button"
+                    data-testid="home-v2-continue-entry"
+                    aria-label={continueMatch ? `继续对局 ${continueMatch.gameLabel}` : '暂无可继续对局'}
+                    className="flex min-w-0 flex-1 items-center border border-[#9a7a4a]/52 bg-[rgba(196,179,136,0.36)] font-serif text-[#3b321f] shadow-[inset_0_1px_0_rgba(255,248,222,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
                     style={{
-                        width: scaled(27),
-                        marginRight: scaled(18),
-                        clipPath: 'polygon(0 0,100% 0,100% 100%,50% 78%,0 100%)',
+                        height: '100%',
+                        borderRadius: scaled(3),
+                        fontSize: scaled(16),
+                        fontWeight: 700,
                     }}
-                />
-                <span className="min-w-0 flex-1 truncate leading-none">
-                    {continueMatch ? `继续对局 · ${continueMatch.gameLabel} ${continueMatchCode}` : '暂无可继续对局'}
-                </span>
-                <span className="flex items-center whitespace-nowrap" style={{ gap: scaled(5), marginLeft: scaled(12) }}>
-                    <span>{continueMatch?.playerLabel ?? '-'}</span>
-                    <ChevronRight aria-hidden="true" style={{ width: scaled(19), height: scaled(19) }} />
-                </span>
-            </button>
+                    disabled={!continueMatch}
+                    onClick={() => continueMatch ? onContinueMatch?.(continueMatch) : undefined}
+                >
+                    <span
+                        aria-hidden="true"
+                        className="self-stretch bg-[#315c27]"
+                        style={{
+                            width: scaled(27),
+                            marginRight: scaled(18),
+                            clipPath: 'polygon(0 0,100% 0,100% 100%,50% 78%,0 100%)',
+                        }}
+                    />
+                    <span className="min-w-0 flex-1 truncate leading-none">
+                        {continueMatch ? `继续对局 · ${continueMatch.gameLabel} ${continueMatchCode}` : '暂无可继续对局'}
+                    </span>
+                    <span className="flex items-center whitespace-nowrap" style={{ gap: scaled(5), marginLeft: scaled(12), marginRight: scaled(14) }}>
+                        <span>{continueMatch?.playerLabel ?? '-'}</span>
+                        <ChevronRight aria-hidden="true" style={{ width: scaled(19), height: scaled(19) }} />
+                    </span>
+                </button>
+                {continueMatch?.isHost ? (
+                    <button
+                        type="button"
+                        data-testid="home-v2-continue-destroy-button"
+                        aria-label="销毁当前房间"
+                        className="shrink-0 border border-[#a16f43]/72 bg-[linear-gradient(180deg,rgba(94,53,29,0.96)_0%,rgba(70,39,21,0.98)_100%)] font-serif text-[#f3dfbd] shadow-[0_2px_5px_rgba(59,33,17,0.18)] transition-colors hover:bg-[linear-gradient(180deg,rgba(104,58,30,0.98)_0%,rgba(75,42,22,1)_100%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+                        style={{
+                            height: '100%',
+                            minWidth: scaled(68),
+                            borderRadius: scaled(3),
+                            fontSize: scaled(14),
+                            fontWeight: 700,
+                            letterSpacing: '0.02em',
+                            padding: `${scaled(4)} ${scaled(10)}`,
+                        }}
+                        onClick={() => onDestroyContinueMatch?.(continueMatch)}
+                    >
+                        销毁
+                    </button>
+                ) : null}
+            </div>
         </div>
     );
 };
@@ -726,10 +759,11 @@ export interface OverviewProps {
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
     onContinueMatch?: (match: HomeV2ContinueMatch) => void;
+    onDestroyContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Overview = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch }: OverviewProps) => (
-    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} />
+export const Overview = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: OverviewProps) => (
+    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
 );
 
 export interface LeftProps {
@@ -738,10 +772,11 @@ export interface LeftProps {
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
     onContinueMatch?: (match: HomeV2ContinueMatch) => void;
+    onDestroyContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Left = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch }: LeftProps) => (
-    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} />
+export const Left = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: LeftProps) => (
+    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
 );
 
 export interface RightProps {
@@ -750,10 +785,11 @@ export interface RightProps {
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
     onContinueMatch?: (match: HomeV2ContinueMatch) => void;
+    onDestroyContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Right = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch }: RightProps) => (
-    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} />
+export const Right = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: RightProps) => (
+    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
 );
 
 export const LobbyDirectory = {

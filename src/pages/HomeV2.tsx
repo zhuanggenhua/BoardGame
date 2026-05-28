@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { getAllGames, getGameById } from '../config/games.config';
@@ -6,10 +7,19 @@ import { AuthModal } from '../components/auth/AuthModal';
 import { LobbyDirectory, type HomeV2ContinueMatch, type LobbyCategory } from '../components/home-v2/LobbyDirectory';
 import { GameDetailsLeft, GameDetailsRight } from '../components/home-v2/GameDetails';
 import { FoldLinePageFlipStage } from '../components/home-v2/FoldLinePageFlipStage';
+import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
+import { HomeV2PaperModalFrame } from '../components/common/overlays/HomeV2PaperModalFrame';
 import {
+    claimSeat,
+    destroyMatch as destroyOwnedMatch,
     getLatestStoredMatchCredentials,
     getOwnerActiveMatch,
+    readStoredMatchCredentials,
 } from '../hooks/match/useMatchStatus';
+import { UI_Z_INDEX } from '../core';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { getGuestName, getOrCreateGuestId } from '../hooks/match/ownerIdentity';
 
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
 const HOME_V2_OVERVIEW_BACKGROUND = `${HOME_V2_ASSET_ROOT}/book-catalog-wide/1.png`;
@@ -48,6 +58,8 @@ function renderAbsoluteRect(rect: { left: string; top: string; width: string; he
 export const HomeV2 = () => {
     const { t } = useTranslation('lobby');
     const navigate = useNavigate();
+    const { user, token } = useAuth();
+    const toast = useToast();
     const [sceneState, setSceneState] = React.useState<HomeV2SceneState>('overview');
     const [selectedGameId, setSelectedGameId] = React.useState<string | null>(null);
     const [pendingGameId, setPendingGameId] = React.useState<string | null>(null);
@@ -56,6 +68,8 @@ export const HomeV2 = () => {
     const [authMode, setAuthMode] = React.useState<'login' | 'register' | 'reset'>('login');
     const [authModalOpen, setAuthModalOpen] = React.useState(false);
     const [matchStorageTick, setMatchStorageTick] = React.useState(0);
+    const [pendingDestroyMatch, setPendingDestroyMatch] = React.useState<HomeV2ContinueMatch | null>(null);
+    const [isDestroyingMatch, setIsDestroyingMatch] = React.useState(false);
     const pendingGameIdRef = React.useRef<string | null>(null);
     const [viewportSize, setViewportSize] = React.useState(() => ({
         width: typeof window === 'undefined' ? 0 : window.innerWidth,
@@ -85,6 +99,7 @@ export const HomeV2 = () => {
         void matchStorageTick;
         const stored = getLatestStoredMatchCredentials();
         const ownerActive = getOwnerActiveMatch();
+        const guestId = user?.id ? undefined : getOrCreateGuestId();
 
         const resolveGameLabel = (gameName?: string) => {
             const game = gameName ? getGameById(gameName) : null;
@@ -98,21 +113,23 @@ export const HomeV2 = () => {
                 gameLabel: resolveGameLabel(stored.gameName),
                 playerID: stored.playerID,
                 playerLabel: stored.playerID ? `玩家 ${stored.playerID}` : undefined,
+                isHost: stored.playerID === '0',
             };
         }
 
-        if (ownerActive?.matchID && ownerActive.gameName) {
+        if (ownerActive?.matchID && ownerActive.gameName && (!ownerActive.ownerKey || ownerActive.ownerKey === `guest:${guestId}` || ownerActive.ownerKey === `user:${user?.id}`)) {
             return {
                 matchID: ownerActive.matchID,
                 gameName: ownerActive.gameName,
                 gameLabel: resolveGameLabel(ownerActive.gameName),
                 playerID: '0',
                 playerLabel: '玩家 0',
+                isHost: true,
             };
         }
 
         return null;
-    }, [matchStorageTick, t]);
+    }, [matchStorageTick, t, user?.id]);
     const isExactHomepageOverview = sceneState === 'overview';
     const isOverviewDetailFlip = sceneState === 'flippingToDetail' || sceneState === 'flippingToOverview';
     const isCategoryFlip = sceneState === 'flippingCategoryForward' || sceneState === 'flippingCategoryBackward';
@@ -207,6 +224,63 @@ export const HomeV2 = () => {
         navigate(`/play/${match.gameName}/match/${match.matchID}?playerID=${match.playerID ?? '0'}`);
     }, [navigate]);
 
+    const handleDestroyContinueMatch = React.useCallback(async () => {
+        if (!pendingDestroyMatch || isDestroyingMatch) {
+            return;
+        }
+
+        const guestId = user?.id ? undefined : getOrCreateGuestId();
+        const guestName = getGuestName(t, guestId);
+        setIsDestroyingMatch(true);
+        try {
+            const storedCredentials = readStoredMatchCredentials(pendingDestroyMatch.matchID);
+            let destroyPlayerID = storedCredentials?.playerID ?? pendingDestroyMatch.playerID ?? '0';
+            let destroyCredentials = storedCredentials?.credentials ?? null;
+
+            if (!destroyCredentials || destroyPlayerID !== '0') {
+                const claimResult = await claimSeat(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, '0', {
+                    token: token ?? undefined,
+                    guestId,
+                    playerName: user?.username ?? guestName,
+                });
+                if (!claimResult.success || !claimResult.credentials) {
+                    toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+                    return;
+                }
+                destroyPlayerID = '0';
+                destroyCredentials = claimResult.credentials;
+            }
+
+            let result = await destroyOwnedMatch(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, destroyPlayerID, destroyCredentials);
+            if (!result.success && result.error === 'forbidden') {
+                const claimResult = await claimSeat(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, '0', {
+                    token: token ?? undefined,
+                    guestId,
+                    playerName: user?.username ?? guestName,
+                });
+                if (!claimResult.success || !claimResult.credentials) {
+                    toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+                    return;
+                }
+                result = await destroyOwnedMatch(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, '0', claimResult.credentials);
+            }
+
+            if (!result.success) {
+                toast.error({
+                    kind: 'i18n',
+                    key: result.error === 'forbidden' ? 'error.destroyForbidden' : 'error.destroyNetwork',
+                    ns: 'lobby',
+                });
+                return;
+            }
+
+            setPendingDestroyMatch(null);
+            setMatchStorageTick((tick) => tick + 1);
+        } finally {
+            setIsDestroyingMatch(false);
+        }
+    }, [isDestroyingMatch, pendingDestroyMatch, t, toast, token, user?.id, user?.username]);
+
     React.useEffect(() => {
         const refresh = () => setMatchStorageTick((tick) => tick + 1);
         window.addEventListener('match-credentials-changed', refresh);
@@ -247,6 +321,14 @@ export const HomeV2 = () => {
                     onAccountClick={handleOpenAuthModal}
                     continueMatch={continueMatch}
                     onContinueMatch={handleContinueMatch}
+                    onDestroyContinueMatch={(match) => setPendingDestroyMatch(match)}
+                />
+                <HomeVersionFooter
+                    align="right"
+                    compact
+                    positionMode="absolute"
+                    positionClassName="left-[22.4%] top-[76.1%] max-w-[10.4%]"
+                    theme="book"
                 />
             </div>
         </div>
@@ -410,6 +492,51 @@ export const HomeV2 = () => {
                     closeOnBackdrop
                     visualStyle="home-v2"
                 />
+            ) : null}
+            {pendingDestroyMatch && typeof document !== 'undefined' ? createPortal(
+                <div
+                    data-testid="home-v2-overview-destroy-room-panel"
+                    className="fixed inset-0 flex items-center justify-center bg-[rgba(18,13,9,0.56)] p-4 pointer-events-auto backdrop-blur-[2px]"
+                    style={{ zIndex: UI_Z_INDEX.modalContent }}
+                >
+                    <HomeV2PaperModalFrame
+                        title={t('confirm.destroy.title')}
+                        dataTestId="home-v2-overview-destroy-room-surface"
+                        surfaceClassName="font-serif w-[min(28rem,calc(100vw-2rem))]"
+                        headerClassName="px-7 pb-3 pt-6"
+                    >
+                        <div className="relative z-10 flex flex-col items-center gap-4 px-7 pb-6 text-center">
+                            <div className="max-w-[23rem] text-[13px] leading-[1.7] text-[#5b3823]">
+                                {t('confirm.destroy.description')}
+                            </div>
+                            <div className="w-full max-w-[20rem] rounded-[2px] border border-[#a5743c]/28 bg-[rgba(244,230,206,0.24)] px-3 py-2 text-[13px] font-semibold text-[#3f2616]">
+                                {pendingDestroyMatch.gameLabel} #{pendingDestroyMatch.matchID.slice(-4).toUpperCase()}
+                            </div>
+                            <div className="flex w-full items-center justify-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (isDestroyingMatch) return;
+                                        setPendingDestroyMatch(null);
+                                    }}
+                                    className="min-w-[6.75rem] rounded-[4px] border border-[#a67845] bg-[rgba(246,230,199,0.44)] px-4 py-[11px] text-[14px] font-semibold text-[#4c2e1a] transition-colors hover:bg-[rgba(240,212,164,0.70)] disabled:cursor-not-allowed disabled:opacity-55"
+                                >
+                                    {t('common:button.cancel')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => void handleDestroyContinueMatch()}
+                                    disabled={isDestroyingMatch}
+                                    data-testid="home-v2-overview-destroy-room-confirm"
+                                    className="min-w-[7.5rem] rounded-[3px] border border-[#a16f43]/76 bg-[linear-gradient(180deg,rgba(98,56,31,0.98)_0%,rgba(71,40,22,1)_100%)] px-4 py-[11px] text-[15px] font-bold tracking-[0.12em] text-[#f3e0bf] shadow-[0_8px_14px_rgba(50,29,16,0.18),inset_0_1px_0_rgba(255,240,206,0.16)] transition-colors hover:bg-[linear-gradient(180deg,rgba(108,61,33,0.98)_0%,rgba(76,43,23,1)_100%)] disabled:cursor-not-allowed disabled:opacity-65"
+                                >
+                                    {isDestroyingMatch ? t('button.processing') : t('actions.destroy')}
+                                </button>
+                            </div>
+                        </div>
+                    </HomeV2PaperModalFrame>
+                </div>,
+                document.body,
             ) : null}
         </main>
     );

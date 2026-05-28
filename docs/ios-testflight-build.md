@@ -7,9 +7,77 @@
 - iOS 原生二进制更新只能重新上传 TestFlight build；不要做 IPA 内下载/安装。
 - Android 现有 APK、OTA、native update、game package 路径不因 iOS 变更而改变。
 
+## GitHub Actions 远程生产包
+
+当前可直接使用标准 GitHub 托管 `macos-latest` runner 打 iOS 生产 `.ipa`，不要求本地有 Mac 或 iPhone。入口：
+
+- GitHub Actions -> `iOS Release Build`
+- 默认 `export_method=app-store-connect`
+- 默认 `channel=stable`
+- 产物 artifact：`ios-release-ipa`
+- 符号表 artifact：`ios-release-dsym`
+
+这条 workflow 只负责 `Archive + export .ipa`，不自动上传 TestFlight。上传 TestFlight 需要后续再接 App Store Connect API Key 或 Transporter。
+
+### GitHub Vars
+
+建议放在 repository variables：
+
+```text
+VITE_BACKEND_URL=https://api.easyboardgame.top
+VITE_ASSETS_BASE_URL=https://assets.easyboardgame.top/official
+IOS_CAPACITOR_APP_ID=top.easyboardgame.app
+IOS_CAPACITOR_APP_NAME=易桌游
+IOS_OTA_APP_READY_TIMEOUT_MS=15000
+IOS_DEVELOPMENT_TEAM=<Apple Team ID，可选；不填则从 provisioning profile 读取>
+IOS_CODE_SIGN_IDENTITY=Apple Distribution
+```
+
+### GitHub Secrets
+
+必须放在 repository secrets：
+
+```text
+IOS_DISTRIBUTION_CERTIFICATE_BASE64=<Apple Distribution .p12 的 base64>
+IOS_DISTRIBUTION_CERTIFICATE_PASSWORD=<导出 .p12 时设置的密码>
+IOS_PROVISION_PROFILE_BASE64=<App Store provisioning profile 的 base64>
+IOS_KEYCHAIN_PASSWORD=<GitHub runner 临时 keychain 密码，自己生成一个强密码>
+```
+
+没有 Mac 时可以用 Windows / Git Bash / WSL 的 OpenSSL 生成 Apple 证书需要的 CSR 和 `.p12`：
+
+```bash
+openssl genrsa -out ios_distribution.key 2048
+openssl req -new -key ios_distribution.key -out ios_distribution.csr -subj "/CN=EasyBoardGame iOS Distribution"
+```
+
+然后在 Apple Developer 网站创建 `Apple Distribution` 证书，上传 `ios_distribution.csr`，下载 `distribution.cer` 后生成 `.p12`：
+
+```bash
+openssl x509 -inform DER -in distribution.cer -out distribution.pem
+openssl pkcs12 -export -out ios_distribution.p12 -inkey ios_distribution.key -in distribution.pem
+```
+
+PowerShell 转 base64：
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("ios_distribution.p12")) | Set-Content ios_distribution.p12.base64 -NoNewline
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("AppStore_top.easyboardgame.app.mobileprovision")) | Set-Content ios_profile.mobileprovision.base64 -NoNewline
+```
+
+### 一次性运行前核对
+
+- Apple Developer 里存在显式 App ID：`top.easyboardgame.app`。
+- App Store Connect 里已创建对应 App 记录。
+- provisioning profile 类型是 App Store / App Store Connect 分发，Bundle ID 是 `top.easyboardgame.app`，Team ID 与证书一致。
+- workflow 默认 `app-store-connect`，不要用 development/debug profile。
+- `VITE_BACKEND_URL` 指向线上 HTTPS API。
+- `VITE_ASSETS_BASE_URL` 指向 `https://assets.easyboardgame.top/official`。
+- 仓库当前 ref 已包含最新 `ios/`、`capacitor.config.ts`、`package-lock.json`。
+
 ## 本地准备
 
-Windows 可以维护仓库和执行 Web 构建；最终 Archive、签名和上传必须在 macOS + Xcode 上完成。
+Windows 可以维护仓库和执行 Web 构建；如果不用 GitHub Actions，最终 Archive、签名和上传仍必须在 macOS + Xcode 上完成。
 
 首次或依赖变化后：
 
@@ -41,6 +109,8 @@ VITE_MOBILE_PACKAGE_MANIFEST_URL=https://assets.easyboardgame.top/official/mobil
 ```
 
 ## TestFlight 发布步骤
+
+### 手动 Xcode 路线
 
 1. 在 Apple Developer / App Store Connect 创建 App ID 与 App 记录。
 2. 在 Xcode 中设置 Team、Bundle Identifier、Signing。
@@ -93,4 +163,4 @@ npm run mobile:ios:ota:publish -- --channel stable --expected-base-version 0.5.8
 
 ## CI 签名状态
 
-iOS CI Archive / upload 暂缓到 Apple Developer Team、App Store Connect API Key、证书和 provisioning profile 确认后再接入。当前先保留手动 Xcode Archive + TestFlight 上传路线。
+iOS CI Archive 已接入 `.github/workflows/ios-release-build.yml`。CI upload 到 TestFlight 仍暂缓到 App Store Connect API Key 确认后再接入。

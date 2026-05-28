@@ -2124,6 +2124,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const buccaneerPodUsedUids = reason === 'pirate_buccaneer_pod'
                 ? Array.from(new Set([...(state.buccaneerPodUsedUids ?? []), minionUid]))
                 : state.buccaneerPodUsedUids;
+            const canRecoverFromDeck = reason === 'pirate_first_mate' || reason === 'pirate_first_mate_pod';
             const removalResult = removeMinionUidFromBases(state.bases, minionUid, fromBaseIndex);
             let movedMinion: MinionOnBase | undefined = removalResult.movedMinion;
             const wasDestroyedThisTurn = (state.turnDestroyedMinions ?? []).some(record => record.uid === minionUid);
@@ -2163,6 +2164,41 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                             players: {
                                 ...state.players,
                                 [pid]: { ...player, discard: newDiscard },
+                            },
+                        };
+                    }
+                }
+                if (canRecoverFromDeck) {
+                    for (const [pid, player] of Object.entries(state.players)) {
+                        const idx = player.deck.findIndex(c => c.uid === minionUid);
+                        if (idx === -1) continue;
+                        const card = player.deck[idx];
+                        const minionDef = getMinionDef(card.defId);
+                        movedMinion = {
+                            uid: card.uid,
+                            defId: card.defId,
+                            owner: card.owner,
+                            controller: card.owner,
+                            basePower: minionDef?.power ?? 0,
+                            powerCounters: 0,
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                            talentUsed: false,
+                            attachedActions: [],
+                        };
+                        const newDeck = [...player.deck];
+                        newDeck.splice(idx, 1);
+                        const updatedBases = removalResult.bases.map((base, i) => {
+                            if (i !== resolvedToBaseIndex) return base;
+                            return { ...base, minions: [...base.minions, movedMinion!] };
+                        });
+                        return {
+                            ...state,
+                            bases: updatedBases,
+                            buccaneerPodUsedUids,
+                            players: {
+                                ...state.players,
+                                [pid]: { ...player, deck: newDeck },
                             },
                         };
                     }

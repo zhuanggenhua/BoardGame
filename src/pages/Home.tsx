@@ -1,7 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode, lazy, Suspense, useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import packageJson from '../../package.json';
 import { CategoryPills, type Category } from '../components/layout/CategoryPills';
 import { GameList } from '../components/lobby/GameList';
 import { getGamesByCategory, getGameById, subscribeGameRegistry } from '../config/games.config';
@@ -42,26 +41,16 @@ import { useLobbyStats } from '../hooks/useLobbyStats';
 import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
 import { useGlobalCursor } from '../core/cursor/useGlobalCursor';
 import { versionedPublicFileUrl } from '../lib/publicFileUrl';
-import {
-    readAndroidLiveUpdateActivityState,
-    readAndroidLiveUpdateConfig,
-    readAndroidLiveUpdateSnapshot,
-    requestAndroidLiveUpdateCheck,
-    subscribeAndroidLiveUpdateActivityState,
-    type AndroidLiveUpdateSnapshot,
-} from '../lib/mobile/androidLiveUpdates';
-import { isNativeAndroidRuntime } from '../lib/mobile/androidRuntime';
-import { RefreshCw } from 'lucide-react';
 import { AudioManager } from '../lib/audio/AudioManager';
 import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
+import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
 
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_WARMUP_DELAY_MS = 120;
 const loadGameDetailsModalModule = () => import('../components/lobby/GameDetailsModal');
 const LazyGameDetailsModal = lazy(() => loadGameDetailsModalModule().then((m) => ({ default: m.GameDetailsModal })));
-const toShortVersionLabel = (version: string) => version.replace(/^v/i, '').split('-')[0] || version.replace(/^v/i, '');
 
 type IdleSchedulerHost = Pick<Window, 'setTimeout' | 'clearTimeout'> & Partial<Pick<Window, 'requestIdleCallback' | 'cancelIdleCallback'>>;
 
@@ -235,9 +224,6 @@ const HomeGameDetailsModalFallback = ({
 
 export const Home = () => {
     useGlobalCursor();
-    const isNativeAndroid = isNativeAndroidRuntime();
-    const otaConfig = readAndroidLiveUpdateConfig(import.meta.env);
-    const otaEnabledForCurrentShell = isNativeAndroid && otaConfig.enabled;
     const [activeCategory, setActiveCategory] = useState<Category>('All');
     const [, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -250,9 +236,6 @@ export const Home = () => {
     const [localStorageTick, setLocalStorageTick] = useState(0);
     const [missingMatchConfirmRetryTick, setMissingMatchConfirmRetryTick] = useState(0);
     const [guestId, setGuestId] = useState<string | null>(null);
-    const [otaSnapshot, setOtaSnapshot] = useState<AndroidLiveUpdateSnapshot | null>(null);
-    const [isVersionExpanded, setIsVersionExpanded] = useState(false);
-    const [otaActivityState, setOtaActivityState] = useState(() => readAndroidLiveUpdateActivityState());
     const [pendingAction, setPendingAction] = useState<{
         matchID: string;
         playerID: string;
@@ -260,36 +243,6 @@ export const Home = () => {
         isHost: boolean;
     } | null>(null);
     const forceExitModalIdRef = useRef<string | null>(null);
-
-    const refreshOtaSnapshot = useCallback(() => {
-        if (!isNativeAndroid) {
-            return;
-        }
-
-        let cancelled = false;
-        void readAndroidLiveUpdateSnapshot({ includeManifest: true })
-            .then((snapshot) => {
-                if (!cancelled) {
-                    setOtaSnapshot(snapshot);
-                }
-            })
-            .catch((error) => {
-                console.warn('[Home] 读取 OTA 快照失败', error);
-                if (!cancelled) {
-                    setOtaSnapshot({
-                        enabled: false,
-                        manifestUrl: '',
-                        channel: 'stable',
-                        nativeAndroid: true,
-                        updaterLoaded: false,
-                    });
-                }
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [isNativeAndroid]);
 
     // Monitoring & Stats
     const { mostPopularGameId } = useLobbyStats();
@@ -339,24 +292,6 @@ export const Home = () => {
         AudioManager.stopBgm();
     }, []);
 
-    useEffect(() => {
-        if (!isNativeAndroid) {
-            return;
-        }
-
-        return refreshOtaSnapshot();
-    }, [isNativeAndroid, refreshOtaSnapshot]);
-
-    useEffect(() => {
-        if (!isNativeAndroid) {
-            return;
-        }
-
-        return subscribeAndroidLiveUpdateActivityState((state) => {
-            setOtaActivityState(state);
-        });
-    }, [isNativeAndroid]);
-
     const storedLocalMatchRole = useMemo(() => {
         void localStorageTick;
         const latestCreds = getLatestStoredMatchCredentials();
@@ -395,81 +330,6 @@ export const Home = () => {
     }, [ownerActive, ownerKey, storedLocalMatchRole, suppressedOwnerMatchId]);
     const localMatchRole = storedLocalMatchRole ?? ownerLocalMatchRole;
     const activePlayerCount = activeMatch?.players.filter(player => player.name).length ?? 0;
-    const activeBundleVersion = useMemo(() => {
-        const bundleVersion = otaSnapshot?.currentBundleVersion?.trim();
-        return bundleVersion || packageJson.version;
-    }, [otaSnapshot?.currentBundleVersion]);
-    const shouldShowNativeAppVersion = isNativeAndroid;
-    const homeVersionLabel = useMemo(
-        () => isVersionExpanded ? activeBundleVersion.replace(/^v/i, '') : toShortVersionLabel(activeBundleVersion),
-        [activeBundleVersion, isVersionExpanded],
-    );
-    const nativeAppVersion = otaSnapshot?.nativeVersion?.trim() || packageJson.version;
-    const appVersionLabel = useMemo(
-        () => isVersionExpanded ? nativeAppVersion.replace(/^v/i, '') : toShortVersionLabel(nativeAppVersion),
-        [isVersionExpanded, nativeAppVersion],
-    );
-    const latestManifestVersion = otaSnapshot?.manifestVersion?.trim() || null;
-    const latestManifestVersionLabel = useMemo(
-        () => latestManifestVersion
-            ? (isVersionExpanded ? latestManifestVersion.replace(/^v/i, '') : toShortVersionLabel(latestManifestVersion))
-            : null,
-        [isVersionExpanded, latestManifestVersion],
-    );
-    const otaVersionMismatch = otaEnabledForCurrentShell
-        && Boolean(latestManifestVersion)
-        && latestManifestVersion !== activeBundleVersion;
-    const isImmediateOtaActive = otaEnabledForCurrentShell && otaActivityState.active;
-    const handleVersionFooterClick = () => {
-        if (shouldShowNativeAppVersion) {
-            if (!otaEnabledForCurrentShell) {
-                return;
-            }
-            if (otaActivityState.active) {
-                return;
-            }
-            requestAndroidLiveUpdateCheck({
-                interactive: true,
-                applyMode: 'immediate',
-                initialImmediatePhase: otaVersionMismatch ? 'downloading' : 'checking',
-            });
-            return;
-        }
-
-        setIsVersionExpanded((expanded) => !expanded);
-    };
-    const nativeVersionTitle = useMemo(() => {
-        if (!shouldShowNativeAppVersion) {
-            return `当前版本 ${activeBundleVersion.replace(/^v/i, '')}\n点击${isVersionExpanded ? '收起' : '展开'}完整版本号`;
-        }
-
-        const lines = [
-            `当前 Bundle ${activeBundleVersion.replace(/^v/i, '')}`,
-            `App 壳版本 ${nativeAppVersion.replace(/^v/i, '')}`,
-        ];
-        if (latestManifestVersion) {
-            lines.push(`最新 OTA ${latestManifestVersion.replace(/^v/i, '')}`);
-        }
-        lines.push(
-            !otaEnabledForCurrentShell
-                ? '状态：当前测试壳已禁用 OTA，请改用正式版 App'
-                : isImmediateOtaActive
-                    ? '状态：正在检查并应用 OTA 更新'
-                    : otaVersionMismatch
-                        ? '状态：当前 Bundle 与最新 OTA 不一致，点击立即更新'
-                        : '状态：点击立即检查 OTA 更新',
-        );
-        return lines.join('\n');
-    }, [
-        activeBundleVersion,
-        isImmediateOtaActive,
-        isVersionExpanded,
-        latestManifestVersion,
-        nativeAppVersion,
-        otaVersionMismatch,
-        shouldShowNativeAppVersion,
-    ]);
-
     const confirmModalIdRef = useRef<string | null>(null);
     const authModalIdRef = useRef<string | null>(null);
     const missingMatchConfirmRef = useRef<string | null>(null);
@@ -1226,51 +1086,7 @@ export const Home = () => {
             </main>
 
             {/* 活跃对局指示器 */}
-            <button
-                type="button"
-                onClick={handleVersionFooterClick}
-                className="fixed right-[max(0.75rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 max-w-[min(72vw,20rem)] select-none text-right text-[0.7rem] md:text-[0.78rem] leading-none tracking-[0.08em] text-parchment-light-text/80 cursor-pointer"
-                aria-label={shouldShowNativeAppVersion
-                    ? otaEnabledForCurrentShell
-                        ? otaVersionMismatch
-                            ? `Current bundle version ${homeVersionLabel}, app version ${appVersionLabel}, latest ota version ${latestManifestVersionLabel ?? 'unknown'}, versions are not aligned`
-                            : `Current bundle version ${homeVersionLabel}, app version ${appVersionLabel}`
-                        : `Current bundle version ${homeVersionLabel}, app version ${appVersionLabel}, ota disabled for current shell`
-                    : `Current version ${homeVersionLabel}`}
-                title={nativeVersionTitle}
-            >
-                <span className="inline-flex max-w-full items-center justify-end gap-1 break-all">
-                    {shouldShowNativeAppVersion && (
-                        <RefreshCw size={11} className={`shrink-0 ${otaEnabledForCurrentShell ? (isImmediateOtaActive ? 'animate-spin text-amber-700' : otaVersionMismatch ? 'text-red-700' : 'text-parchment-light-text/60') : 'text-parchment-light-text/30'}`} />
-                    )}
-                    <span>{shouldShowNativeAppVersion ? `Bundle ${homeVersionLabel}` : homeVersionLabel}</span>
-                </span>
-                {shouldShowNativeAppVersion && (
-                    <span className="mt-1 block text-[0.58rem] tracking-[0.04em] text-parchment-light-text/60 md:text-[0.64rem]">
-                        App {appVersionLabel}
-                    </span>
-                )}
-                {shouldShowNativeAppVersion && latestManifestVersionLabel && (
-                    <span className={`mt-1 block text-[0.58rem] tracking-[0.04em] md:text-[0.64rem] ${otaEnabledForCurrentShell && otaVersionMismatch ? 'text-red-700/90' : 'text-parchment-light-text/55'}`}>
-                        Latest {latestManifestVersionLabel}
-                    </span>
-                )}
-                {!otaEnabledForCurrentShell && shouldShowNativeAppVersion && (
-                    <span className="mt-1 block text-[0.58rem] font-bold tracking-[0.04em] text-parchment-light-text/70 md:text-[0.64rem]">
-                        当前测试壳已禁用 OTA
-                    </span>
-                )}
-                {otaEnabledForCurrentShell && otaVersionMismatch && (
-                    <span className={`mt-1 block text-[0.58rem] font-bold tracking-[0.04em] md:text-[0.64rem] ${isImmediateOtaActive ? 'text-amber-800' : 'text-red-800'}`}>
-                        {isImmediateOtaActive ? '正在立即更新' : 'OTA 未对齐，点击立即更新'}
-                    </span>
-                )}
-                {otaEnabledForCurrentShell && !otaVersionMismatch && shouldShowNativeAppVersion && (
-                    <span className={`mt-1 block text-[0.58rem] font-bold tracking-[0.04em] md:text-[0.64rem] ${isImmediateOtaActive ? 'text-amber-800' : 'text-parchment-light-text/55'}`}>
-                        {isImmediateOtaActive ? '正在检查更新' : '点击检查更新'}
-                    </span>
-                )}
-            </button>
+            <HomeVersionFooter />
 
             {activeMatch && (
                 <div

@@ -21,7 +21,7 @@ const packageMocks = vi.hoisted(() => ({
     openNotificationSettings: vi.fn(),
     hookResult: null as null | Record<string, unknown>,
 }));
-const lockedMatches = [{
+let mockMatches = [{
     matchID: 'match-locked-1',
     players: [
         { id: 0, name: 'Host' },
@@ -34,6 +34,12 @@ const lockedMatches = [{
     ownerType: 'guest',
     isLocked: true,
 }];
+let mockOwnerActiveMatch: null | {
+    matchID: string;
+    gameName: string;
+    ownerKey?: string;
+    ownerType?: 'user' | 'guest';
+} = null;
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -62,7 +68,7 @@ vi.mock('../../../contexts/ToastContext', () => ({
 
 vi.mock('../../../hooks/useLobbyMatchPresence', () => ({
     useLobbyMatchPresence: () => ({
-        matches: lockedMatches,
+        matches: mockMatches,
         hasSnapshot: true,
     }),
 }));
@@ -104,8 +110,11 @@ vi.mock('../../../hooks/match/ownerIdentity', () => ({
 vi.mock('../../../hooks/match/useMatchStatus', () => ({
     claimSeat: vi.fn(),
     clearOwnerActiveMatch: vi.fn(),
-    getOwnerActiveMatch: vi.fn(() => null),
+    destroyMatch: vi.fn(),
+    getLatestStoredMatchCredentials: vi.fn(() => null),
+    getOwnerActiveMatch: vi.fn(() => mockOwnerActiveMatch),
     persistMatchCredentials: vi.fn(),
+    readStoredMatchCredentials: vi.fn(() => null),
     setOwnerActiveMatch: vi.fn(),
 }));
 
@@ -162,6 +171,20 @@ vi.mock('../../lobby/gameDetailsContent', () => ({
 beforeEach(() => {
     packageMocks.nativeAndroidRuntime = false;
     packageMocks.hookResult = null;
+    mockOwnerActiveMatch = null;
+    mockMatches = [{
+        matchID: 'match-locked-1',
+        players: [
+            { id: 0, name: 'Host' },
+            { id: 1, name: undefined },
+        ],
+        totalSeats: 2,
+        gameName: 'tictactoe',
+        roomName: '加锁房间',
+        ownerKey: 'owner-2',
+        ownerType: 'guest',
+        isLocked: true,
+    }];
 });
 
 afterEach(() => {
@@ -261,5 +284,66 @@ describe('HomeV2 GameDetails locked room join', () => {
         fireEvent.click(await screen.findByTestId('home-v2-mobile-package-toggle'));
 
         expect(packageMocks.requestInstall).toHaveBeenCalledTimes(1);
+    });
+
+    it('当前房主房间会显示独立销毁入口，并在确认后调用销毁接口与隐藏房间行', async () => {
+        mockMatches = [{
+            matchID: 'match-owner-1',
+            players: [
+                { id: 0, name: 'Guest' },
+                { id: 1, name: undefined },
+            ],
+            totalSeats: 2,
+            gameName: 'tictactoe',
+            roomName: '我的房间',
+            ownerKey: 'owner-1',
+            ownerType: 'guest',
+            isLocked: false,
+        }];
+        mockOwnerActiveMatch = {
+            matchID: 'match-owner-1',
+            gameName: 'tictactoe',
+            ownerKey: 'owner-1',
+            ownerType: 'guest',
+        };
+
+        vi.mocked(matchStatus.readStoredMatchCredentials).mockReturnValue({
+            matchID: 'match-owner-1',
+            playerID: '0',
+            credentials: 'owner-cred',
+            gameName: 'tictactoe',
+        });
+        vi.mocked(matchStatus.destroyMatch).mockResolvedValue({
+            success: true,
+        });
+
+        render(createElement(GameDetailsRight, {
+            game: {
+                id: 'tictactoe',
+                type: 'game',
+                enabled: true,
+                titleKey: 'games.tictactoe.title',
+                descriptionKey: 'games.tictactoe.description',
+                category: 'abstract',
+                playersKey: 'games.tictactoe.players',
+                icon: 'XO',
+                playerOptions: [2],
+            },
+        }));
+
+        expect(screen.queryByTestId('home-v2-room-destroy-button')).not.toBeInTheDocument();
+        expect(screen.getByTestId('home-v2-active-room-banner')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('home-v2-active-room-destroy-button'));
+        expect(await screen.findByTestId('home-v2-destroy-room-panel')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('home-v2-destroy-room-confirm'));
+
+        await waitFor(() => {
+            expect(matchStatus.destroyMatch).toHaveBeenCalledWith('tictactoe', 'match-owner-1', '0', 'owner-cred');
+        });
+        await waitFor(() => {
+            expect(screen.queryByText('我的房间')).not.toBeInTheDocument();
+        });
     });
 });

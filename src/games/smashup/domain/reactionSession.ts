@@ -1,5 +1,5 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
-import { queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { queueInteraction, resolveInteraction } from '../../../engine/systems/InteractionSystem';
 import {
     completeResolutionFrame,
     getActiveResolutionFrame,
@@ -221,6 +221,12 @@ function isTriggerSourceStillPresentDuringScoring(
     trigger: TriggerInstance,
 ): boolean {
     if (trigger.timing !== 'beforeScoring' && trigger.timing !== 'whenScoring' && trigger.timing !== 'afterScoring') {
+        return true;
+    }
+    if (
+        trigger.timing === 'afterScoring'
+        && (trigger.sourceDefId === 'pirate_first_mate' || trigger.sourceDefId === 'pirate_first_mate_pod')
+    ) {
         return true;
     }
     if (!trigger.sourceCardUid) {
@@ -655,6 +661,7 @@ function executeQueuedTrigger(
         state: coreAfterConsume,
         matchState: baseState,
         timing: trigger.timing,
+        sourceDefId: trigger.sourceDefId,
         frameId: trigger.frameId,
         sourceEventId: trigger.sourceEventId,
         sourceCardUid: trigger.sourceCardUid,
@@ -1076,6 +1083,9 @@ export function resolveSmashUpReactionChoice(
     const resolvedChoice = resolveLiveSmashUpReactionChoice(state, value, now, random);
     if (!resolvedChoice) return { state, events: [] };
     const { session, value: liveValue, wasStale } = resolvedChoice;
+    const originInteractionSourceId = state.sys.interaction?.current
+        ? ((state.sys.interaction.current.data ?? {}) as { sourceId?: string }).sourceId
+        : undefined;
 
     if (wasStale && liveValue === value) {
         const refreshed = advanceSmashUpReactionSession(state, random, now);
@@ -1123,25 +1133,77 @@ export function resolveSmashUpReactionChoice(
     if (resultSession && resultSession.frameId !== session.frameId) {
         return result;
     }
+    const producedDomainEvents = result.events.some(
+        event => typeof event.type === 'string' && !event.type.startsWith('SYS_'),
+    );
+    const continuationBaseState = originInteractionSourceId === 'smashup_reaction_choose' && producedDomainEvents
+        ? (() => {
+            let projectedState = clearSmashUpReactionSession(resolveInteraction(result.state));
+            for (const event of result.events) {
+                projectedState = {
+                    ...projectedState,
+                    core: reduce(projectedState.core, event),
+                };
+            }
+            return projectedState;
+        })()
+        : result.state;
 
-    const currentInteraction = result.state.sys.interaction?.current;
+    const currentInteraction = continuationBaseState.sys.interaction?.current;
     const currentInteractionSourceId = currentInteraction
         ? ((currentInteraction.data ?? {}) as { sourceId?: string }).sourceId
         : undefined;
     if (currentInteraction) {
+        const queuedFollowup = currentInteractionSourceId === 'smashup_reaction_choose'
+            ? continuationBaseState.sys.interaction?.queue?.[0]
+            : undefined;
+        const queuedFollowupSourceId = queuedFollowup
+            ? ((queuedFollowup.data ?? {}) as { sourceId?: string }).sourceId
+            : undefined;
+        if (queuedFollowup && queuedFollowupSourceId && queuedFollowupSourceId !== 'smashup_reaction_choose') {
+            const promotedState = resolveInteraction(continuationBaseState);
+            const parkedState = continuationSession === session
+                ? promotedState
+                : setSmashUpReactionSession(promotedState, continuationSession);
+            return {
+                ...result,
+                state: clearSmashUpReactionSession(parkedState),
+            };
+        }
         if (currentInteractionSourceId === 'smashup_reaction_choose') {
-            return result;
+            if (originInteractionSourceId === 'smashup_reaction_choose' && producedDomainEvents) {
+                const projectedMandatory = getMandatoryFrameTriggers(continuationBaseState, session.frameId);
+                const resumed = projectedMandatory.length === 1
+                    ? resolveSmashUpReactionChoice(continuationBaseState, random, now, {
+                        kind: 'trigger',
+                        triggerId: projectedMandatory[0].id,
+                    })
+                    : advanceSmashUpReactionSession(continuationBaseState, random, now);
+                return resumed?.state.sys.interaction?.current
+                    ? {
+                        state: resumed.state,
+                        events: [...result.events, ...resumed.events],
+                    }
+                    : {
+                        ...result,
+                        state: continuationBaseState,
+                    };
+            }
+            return {
+                ...result,
+                state: continuationBaseState,
+            };
         }
         const parkedState = continuationSession === session
-            ? result.state
-            : setSmashUpReactionSession(result.state, continuationSession);
+            ? continuationBaseState
+            : setSmashUpReactionSession(continuationBaseState, continuationSession);
         return {
             ...result,
             state: clearSmashUpReactionSession(parkedState),
         };
     }
 
-    const continuedBaseState = setSmashUpReactionSession(result.state, continuationSession);
+    const continuedBaseState = setSmashUpReactionSession(continuationBaseState, continuationSession);
     const continued = advanceSmashUpReactionSession(continuedBaseState, random, now);
     return continued
         ? { state: continued.state, events: [...result.events, ...continued.events] }

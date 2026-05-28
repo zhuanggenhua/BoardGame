@@ -65,6 +65,38 @@ async function ensureHomeV2BookMaterialsReady(
     }).toEqual(requiredImageKeywords.map(() => 'ok'));
 }
 
+async function ensureHomeV2OverviewThumbnailsReady(page: Page): Promise<void> {
+    await expect.poll(async () => page.evaluate(() => {
+        const visibleCards = Array.from(
+            document.querySelectorAll('[data-testid="home-v2-book-stage"] [data-game-id]'),
+        ).slice(0, 6);
+
+        if (visibleCards.length < 6) {
+            return `cards:${visibleCards.length}`;
+        }
+
+        const cardStates = visibleCards.map((card) => {
+            const gameId = card.getAttribute('data-game-id') ?? 'unknown';
+            const image = card.querySelector('img');
+            if (!(image instanceof HTMLImageElement)) {
+                return `${gameId}:no-image`;
+            }
+
+            const backgroundImage = window.getComputedStyle(image).backgroundImage || '';
+            const shimmerVisible = backgroundImage.includes('linear-gradient');
+            const ready = image.complete && image.naturalWidth > 0 && !shimmerVisible;
+            return ready ? `${gameId}:ready` : `${gameId}:loading`;
+        });
+
+        return cardStates.every((state) => state.endsWith(':ready') || state.endsWith(':no-image'))
+            ? 'ready'
+            : cardStates.join('|');
+    }), {
+        timeout: 45000,
+        message: 'HomeV2 首页可见缩略图未完成加载，暂不允许截图',
+    }).toBe('ready');
+}
+
 async function waitForMatchBoardOrLoading(page: Page): Promise<'board' | 'loading' | 'gated'> {
     const detectPhase = async () => page.evaluate(() => {
         if (document.querySelector('[data-testid="tictactoe-turn-status"]')
@@ -694,6 +726,7 @@ test.describe('Lobby E2E', () => {
             await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
             await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
             await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
+            await ensureHomeV2OverviewThumbnailsReady(page);
             await page.route('**/leaderboard', async (route) => {
                 await route.fulfill({
                     status: 200,
@@ -744,6 +777,54 @@ test.describe('Lobby E2E', () => {
             await expect(page.getByTestId('home-v2-category-tools')).toBeVisible({ timeout: 10000 });
             await expect(page.getByTestId('home-v2-continue-entry')).toContainText('井字棋');
             await expect(page.getByTestId('home-v2-continue-entry')).not.toContainText('#A12F');
+            const versionFooter = page.getByTestId('home-version-footer');
+            await expect(versionFooter).toBeVisible({ timeout: 10000 });
+            await expect(versionFooter).toContainText(/\d+\.\d+\.\d+/);
+            await expect(versionFooter).not.toContainText(/^App /);
+            await expect(versionFooter).not.toContainText(/^Latest /);
+            await expect.poll(async () => {
+                const footerBox = await versionFooter.boundingBox();
+                const stageBox = await page.getByTestId('home-v2-book-stage').boundingBox();
+                if (!footerBox || !stageBox) {
+                    return 'missing';
+                }
+
+                const footerCenterX = footerBox.x + footerBox.width / 2;
+                const footerCenterY = footerBox.y + footerBox.height / 2;
+                const isInLeftBottomCorner = footerBox.x >= stageBox.x + stageBox.width * 0.075
+                    && footerCenterX < stageBox.x + stageBox.width * 0.18
+                    && footerCenterY > stageBox.y + stageBox.height * 0.80
+                    && footerCenterY < stageBox.y + stageBox.height * 0.92
+                    && footerBox.y + footerBox.height <= stageBox.y + stageBox.height * 0.93;
+                return isInLeftBottomCorner ? 'left-bottom' : `x=${Math.round(footerCenterX)},y=${Math.round(footerCenterY)}`;
+            }, {
+                timeout: 10000,
+                message: 'Home V2 版本角标应位于书本左下角范围内',
+            }).toBe('left-bottom');
+            await expect.poll(async () => {
+                const footerLine = await versionFooter.locator('span.inline-flex').first().evaluate((element) => {
+                    const style = window.getComputedStyle(element);
+                    return {
+                        color: style.color,
+                        title: element.closest('button')?.getAttribute('title') ?? '',
+                    };
+                }).catch(() => null);
+                if (!footerLine) {
+                    return 'missing';
+                }
+
+                const isMismatch = footerLine.title.includes('不一致');
+                if (!isMismatch) {
+                    return 'not-mismatch';
+                }
+
+                return footerLine.color === 'rgb(212, 83, 71)' ? 'mismatch-red' : footerLine.color;
+            }, {
+                timeout: 10000,
+                message: 'Home V2 OTA 未对齐时第一排版本号应显示为红色',
+            }).toBe('mismatch-red');
+            const versionFooterScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-version-footer-visible');
+            await page.screenshot({ path: versionFooterScreenshotPath, fullPage: true });
             await page.getByTestId('home-v2-language-entry').click();
             await expect(page.getByTestId('home-v2-language-menu')).toBeVisible({ timeout: 10000 });
             await page.getByTestId('home-v2-language-option-en').click();
