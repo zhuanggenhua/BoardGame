@@ -1,7 +1,6 @@
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import {
     getDefaultSetupSelections,
-    isMultiSelectField,
     normalizeSetupSelections,
     type GameSetupSelections,
 } from '../../shared/gameSetupOptions';
@@ -13,51 +12,11 @@ import {
 import type { AiSeatController } from './types';
 
 const STORAGE_PREFIX = 'local_ai_match_preferences:';
-const LOCAL_MATCH_PREFERENCES_SCHEMA_VERSION = 2;
 
 export interface LocalMatchPreferences {
-    schemaVersion?: number;
     numPlayers: number;
     seatControllers: Record<string, AiSeatController>;
     setupSelections: GameSetupSelections;
-}
-
-function migrateLegacySetupSelections(
-    gameManifest: GameManifestEntry,
-    rawSetupSelections: Record<string, unknown>,
-    schemaVersion: number | null,
-): Record<string, unknown> {
-    if (schemaVersion !== null || gameManifest.id !== 'smashup') {
-        return rawSetupSelections;
-    }
-
-    const expansionsField = gameManifest.setupOptions?.expansions;
-    if (!expansionsField || !isMultiSelectField(expansionsField)) {
-        return rawSetupSelections;
-    }
-
-    const defaultValues = expansionsField.default ?? expansionsField.options.map((option) => option.value);
-    if (!defaultValues.includes('diy')) {
-        return rawSetupSelections;
-    }
-
-    const rawExpansions = rawSetupSelections.expansions;
-    if (!Array.isArray(rawExpansions) || rawExpansions.includes('diy')) {
-        return rawSetupSelections;
-    }
-
-    const allowedValues = new Set(expansionsField.options.map((option) => option.value));
-    const migratedExpansions = rawExpansions.filter(
-        (value): value is string => typeof value === 'string' && allowedValues.has(value),
-    );
-    if (migratedExpansions.includes('diy')) {
-        return rawSetupSelections;
-    }
-
-    return {
-        ...rawSetupSelections,
-        expansions: [...migratedExpansions, 'diy'],
-    };
 }
 
 export function readStoredLocalMatchPreferences(
@@ -87,7 +46,6 @@ export function createDefaultLocalMatchPreferences(gameManifest: GameManifestEnt
     }
 
     return {
-        schemaVersion: LOCAL_MATCH_PREFERENCES_SCHEMA_VERSION,
         numPlayers,
         seatControllers,
         setupSelections: getDefaultSetupSelections(gameManifest),
@@ -99,9 +57,6 @@ export function normalizeLocalMatchPreferences(
     raw: Record<string, unknown> | null | undefined,
 ): LocalMatchPreferences {
     const defaults = createDefaultLocalMatchPreferences(gameManifest);
-    const schemaVersion = typeof raw?.schemaVersion === 'number'
-        ? raw.schemaVersion
-        : null;
     const numPlayers = resolveLocalMatchPlayerCount(
         typeof raw?.numPlayers === 'number' || typeof raw?.numPlayers === 'string'
             ? String(raw.numPlayers)
@@ -129,12 +84,11 @@ export function normalizeLocalMatchPreferences(
         : {};
     const setupSelections = normalizeSetupSelections(
         gameManifest,
-        migrateLegacySetupSelections(gameManifest, rawSetupSelections, schemaVersion),
+        rawSetupSelections,
     );
 
     return {
         ...defaults,
-        schemaVersion: LOCAL_MATCH_PREFERENCES_SCHEMA_VERSION,
         numPlayers,
         seatControllers,
         setupSelections,

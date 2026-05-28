@@ -341,6 +341,75 @@ const resolveUnsatisfiableReasonFromSelectability = (
     return null;
 };
 
+const shouldTranslateAiEmergencySkipToCancel = (payload: unknown): boolean => {
+    if (!payload || typeof payload !== 'object') {
+        return false;
+    }
+
+    const candidate = payload as {
+        optionId?: unknown;
+        optionIds?: unknown;
+        mergedValue?: unknown;
+    };
+    if (candidate.optionId === '__emergency_skip__') {
+        return true;
+    }
+    if (
+        Array.isArray(candidate.optionIds)
+        && candidate.optionIds.length === 1
+        && candidate.optionIds[0] === '__emergency_skip__'
+    ) {
+        return true;
+    }
+
+    const mergedValue = candidate.mergedValue as { __emergency_skip__?: unknown } | undefined;
+    return mergedValue?.__emergency_skip__ === true;
+};
+
+const resolveAiEmergencySkipCancelPayload = (
+    preCommandSeatState: MatchState<unknown>,
+    payload: unknown,
+): { interactionId?: string; reason?: string } | null => {
+    if (!shouldTranslateAiEmergencySkipToCancel(payload)) {
+        return null;
+    }
+
+    const interaction = extractAiInteractionSnapshot(preCommandSeatState);
+    if (!interaction) {
+        return null;
+    }
+
+    const payloadInteractionId = payload && typeof payload === 'object'
+        ? (payload as { interactionId?: unknown }).interactionId
+        : undefined;
+    if (
+        typeof payloadInteractionId === 'string'
+        && typeof interaction.id === 'string'
+        && payloadInteractionId !== interaction.id
+    ) {
+        return null;
+    }
+
+    const options = Array.isArray(interaction.options) ? interaction.options : [];
+    const emergencyOption = options.find((option) => option.id === '__emergency_skip__' && option.disabled !== true);
+    if (!emergencyOption) {
+        return null;
+    }
+
+    const reasonFromOption = emergencyOption.value
+        && typeof emergencyOption.value === 'object'
+        ? (emergencyOption.value as { __emergency_skip_reason__?: unknown }).__emergency_skip_reason__
+        : undefined;
+    const reason = typeof reasonFromOption === 'string'
+        ? reasonFromOption
+        : resolveUnsatisfiableReasonFromSelectability(interaction) ?? 'empty-options';
+
+    return {
+        interactionId: typeof interaction.id === 'string' ? interaction.id : undefined,
+        reason,
+    };
+};
+
 const normalizeOnlineAiDiagnosticSegment = (value: unknown, fallback: string): string => {
     if (typeof value !== 'string') {
         return fallback;
@@ -4051,10 +4120,20 @@ export class GameTransportServer {
         const setupSeatControllers = extractSetupSeatControllers(match.metadata.setupData);
         const seatControllerType = resolveSeatControllerTypeForTraining(setupSeatControllers, playerID);
 
+        let effectiveCommandType = commandType;
+        let effectivePayload = payload;
+        if (seatControllerType !== 'human' && commandType === INTERACTION_COMMANDS.RESPOND) {
+            const cancelPayload = resolveAiEmergencySkipCancelPayload(preTrainingState, payload);
+            if (cancelPayload) {
+                effectiveCommandType = INTERACTION_COMMANDS.CANCEL;
+                effectivePayload = cancelPayload;
+            }
+        }
+
         const command: Command = {
-            type: commandType,
+            type: effectiveCommandType,
             playerId: playerID,
-            payload,
+            payload: effectivePayload,
             timestamp: Date.now(),
         };
 
@@ -4090,7 +4169,7 @@ export class GameTransportServer {
                 await this.reportCommandFailureFeedback(this.buildCommandFailureFeedbackPayload({
                     match,
                     playerId: playerID,
-                    commandType,
+                    commandType: effectiveCommandType,
                     reason: failureReason,
                     progressMarker: progressMarkerBeforeCommand,
                     stateIdBefore,
@@ -4100,7 +4179,7 @@ export class GameTransportServer {
 
             // 自动取消 pending interaction（防止游戏卡死）
             // 但如果当前命令本身就是 CANCEL，不能再次递归触发取消.
-            if (commandType !== INTERACTION_COMMANDS.CANCEL) {
+            if (effectiveCommandType !== INTERACTION_COMMANDS.CANCEL) {
                 await this.cancelInteractionOnError(match, playerID);
                 match.lastCommandFailureReason = failureReason;
             }
@@ -4133,7 +4212,7 @@ export class GameTransportServer {
                 await this.reportCommandFailureFeedback(this.buildCommandFailureFeedbackPayload({
                     match,
                     playerId: playerID,
-                    commandType,
+                    commandType: effectiveCommandType,
                     reason: failureReason,
                     progressMarker: progressMarkerBeforeCommand,
                     stateIdBefore,
@@ -4146,7 +4225,7 @@ export class GameTransportServer {
         match.lastCommandFailureReason = null;
 
         // 记录成功日志
-        gameLogger.commandExecuted(match.matchID, commandType, playerID, duration);
+        gameLogger.commandExecuted(match.matchID, effectiveCommandType, playerID, duration);
 
         // 记录关键游戏事件（用于 bug 追溯）
         let unsatisfiableInteractionFeedback: OnlineAiRecoveryFeedbackPayload | null = null;
@@ -4182,7 +4261,7 @@ export class GameTransportServer {
 
             if (
                 seatControllerType !== 'human'
-                && (commandType === INTERACTION_COMMANDS.RESPOND || commandType === INTERACTION_COMMANDS.CANCEL)
+                && (effectiveCommandType === INTERACTION_COMMANDS.RESPOND || effectiveCommandType === INTERACTION_COMMANDS.CANCEL)
                 && eventType === INTERACTION_EVENTS.CANCELLED
             ) {
                 const payload = (event as GameEvent & {
@@ -4225,7 +4304,7 @@ export class GameTransportServer {
                             match,
                             playerId: playerID,
                             reason,
-                            commandType,
+                            commandType: effectiveCommandType,
                             progressMarkerBefore: progressMarkerBeforeCommand,
                             preCommandSeatView: preTrainingState,
                         }),
@@ -4239,7 +4318,7 @@ export class GameTransportServer {
                             interaction,
                             responseWindow,
                             pendingDamage: this.buildOnlineAiPendingDamageDiagnostic(match.state),
-                            commandType,
+                            commandType: effectiveCommandType,
                             reason,
                         }),
                     };
@@ -4297,8 +4376,8 @@ export class GameTransportServer {
         this.recordTrainingDecisionSample({
             match,
             playerID,
-            commandType,
-            payload,
+            commandType: effectiveCommandType,
+            payload: effectivePayload,
             stateIdBefore,
             stateIdAfter: match.stateID,
             preState: preTrainingState,

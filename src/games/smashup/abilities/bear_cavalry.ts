@@ -764,6 +764,7 @@ function bearCavalryCubScoutTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     const destBaseIndex = ctx.baseIndex;
     if (destBaseIndex === undefined || !ctx.triggerMinionUid) return events;
+    if (ctx.moveToBaseIndex !== undefined && destBaseIndex !== ctx.moveToBaseIndex) return events;
     const destBase = ctx.state.bases[destBaseIndex];
     if (!destBase) return events;
 
@@ -803,6 +804,9 @@ function bearCavalryCubScoutPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { 
     const events: SmashUpEvent[] = [];
     const destBaseIndex = ctx.baseIndex;
     if (destBaseIndex === undefined || !ctx.triggerMinionUid) {
+        return events;
+    }
+    if (ctx.moveToBaseIndex !== undefined && destBaseIndex !== ctx.moveToBaseIndex) {
         return events;
     }
     
@@ -893,6 +897,7 @@ function bearCavalryHighGroundTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     const destBaseIndex = ctx.baseIndex;
     if (destBaseIndex === undefined || !ctx.triggerMinionUid) return events;
+    if (ctx.moveToBaseIndex !== undefined && destBaseIndex !== ctx.moveToBaseIndex) return events;
     const destBase = ctx.state.bases[destBaseIndex];
     if (!destBase) return events;
 
@@ -930,6 +935,7 @@ function bearCavalryHighGroundPodTrigger(ctx: TriggerContext): SmashUpEvent[] | 
     const events: SmashUpEvent[] = [];
     const destBaseIndex = ctx.baseIndex;
     if (destBaseIndex === undefined || !ctx.triggerMinionUid) return events;
+    if (ctx.moveToBaseIndex !== undefined && destBaseIndex !== ctx.moveToBaseIndex) return events;
     
     const destBase = ctx.state.bases[destBaseIndex];
     if (!destBase) return events;

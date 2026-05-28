@@ -667,6 +667,44 @@ describe('onMinionPlayed trigger: trickster_flame_trap', () => {
         expect(base.ongoingActions.some(o => o.uid === 'ft1')).toBe(false);
         expect(result.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'm1')).toBe(false);
     });
+
+    it('不散阴魂在打出后手牌≤2时应先获得保护，阻止对手火焰陷阱消灭', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('haunting-1', 'ghost_haunting', '0', 'minion'),
+                        makeCard('keep-1', 'ghost_ghost', '0', 'minion'),
+                        makeCard('keep-2', 'ghost_seance', '0', 'action'),
+                    ],
+                    factions: ['ghosts', 'pirates'] as [string, string],
+                }),
+                '1': makePlayer('1', { factions: ['tricksters', 'robots'] as [string, string] }),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    { uid: 'ft1', defId: 'trickster_flame_trap', ownerId: '1', metadata: {} },
+                ]),
+                makeBase('test_base_2'),
+            ],
+        });
+        const state = makeFullMatchState(core);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'haunting-1', baseIndex: 0 },
+        }, 'haunting blocks opponent flame trap after play');
+
+        expect(result.steps[0]?.success).toBe(true);
+        expect(result.steps[0]?.events).not.toContain('su:minion_destroyed');
+        expect(result.steps[0]?.events).toContain('su:ongoing_detached');
+        const base = result.finalState.core.bases[0];
+        expect(base.minions.some((m: MinionOnBase) => m.uid === 'haunting-1')).toBe(true);
+        expect(base.ongoingActions.some(o => o.uid === 'ft1')).toBe(false);
+        expect(result.finalState.core.players['0'].hand).toHaveLength(2);
+        expect(result.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'haunting-1')).toBe(false);
+    });
 });
 
 // ============================================================================

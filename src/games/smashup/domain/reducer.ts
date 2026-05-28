@@ -1105,13 +1105,35 @@ export function processDestroyTriggers(
 
     const extraEvents: SmashUpEvent[] = [];
     let ms: MatchState<SmashUpCore> | undefined;
+    let prefixCursor = 0;
     // 待拯救随从：trigger 创建了交互（玩家选择是否拯救）但未产生 MINION_RETURNED，
     // 需要暂缓 MINION_DESTROYED，等交互解决后再决定消灭或拯救
     const pendingSaveMinionUids = new Set<string>();
     // FAQ batching: some base triggers apply once per destruction ability
     const baseDestroyBatchSeen = new Set<string>();
 
+    const advanceStateBeforeDestroy = (destroyEvent: MinionDestroyedEvent) => {
+        const targetIndex = filteredEvents.findIndex((event, index) => index >= prefixCursor && event === destroyEvent);
+        if (targetIndex < 0) return;
+
+        const prefixEvents = filteredEvents
+            .slice(prefixCursor, targetIndex)
+            .filter(event => event.type !== SU_EVENTS.MINION_DESTROYED);
+        if (prefixEvents.length > 0) {
+            const stateBeforePrefix = ms ?? state;
+            const advancedCore = prefixEvents.reduce((acc, event) => reduce(acc, event), stateBeforePrefix.core);
+            if (advancedCore !== stateBeforePrefix.core) {
+                ms = {
+                    ...stateBeforePrefix,
+                    core: advancedCore,
+                };
+            }
+        }
+        prefixCursor = targetIndex + 1;
+    };
+
     for (const de of destroyEvents) {
+        advanceStateBeforeDestroy(de);
         const currentState = ms ?? state;
         const currentCore = currentState.core;
         const { minionUid, minionDefId, fromBaseIndex, ownerId: eventOwnerId, destroyerId: eventDestroyerId, reason } = de.payload;

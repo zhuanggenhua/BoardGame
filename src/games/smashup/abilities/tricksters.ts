@@ -1233,6 +1233,7 @@ function registerTricksterOngoingEffects(): void {
                         minionDefId: trigCtx.triggerMinionDefId,
                         fromBaseIndex: i,
                         ownerId: trigCtx.playerId,
+                        destroyerId: trap.ownerId,
                         reason: 'trickster_flame_trap',
                     },
                     timestamp: trigCtx.now,

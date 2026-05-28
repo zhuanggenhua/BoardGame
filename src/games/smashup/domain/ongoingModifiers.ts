@@ -728,7 +728,7 @@ export function getEffectiveBreakpoint(
  * - 否则实时计算（正常流程不应走到这里，仅作为安全回退）。
  */
 export function getScoringEligibleBaseIndices(state: SmashUpCore): number[] {
-    if (state.scoringEligibleBaseIndices !== undefined) {
+    if (Array.isArray(state.scoringEligibleBaseIndices)) {
         return normalizeScoringEligibleBaseIndices(state.scoringEligibleBaseIndices);
     }
     // 回退：实时计算

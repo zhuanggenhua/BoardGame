@@ -570,7 +570,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
         const discardP0 = events.filter(
             e => e.type === SU_EVENTS.CARDS_DISCARDED && (e as any).payload.playerId === '0'
         );
-        expect(discardP0.length).toBe(1);
+        expect(discardP0.length).toBe(0);
     });
 
     it('三人游戏中手牌为空的对手不产生弃牌事件', () => {

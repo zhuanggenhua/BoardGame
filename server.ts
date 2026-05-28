@@ -49,6 +49,7 @@ import { resolveMatchStatus } from './src/engine/transport/storage';
 import logger, { gameLogger } from './server/logger';
 import { createTrainingDataRecorderFromEnv } from './server/trainingDataRecorder';
 import { requestLogger, errorHandler } from './server/middleware/logging';
+import { buildLeaderboardEntries } from './src/server/leaderboard';
 
 // ============================================================================
 // 事件常量（与前端保持一致）
@@ -336,7 +337,12 @@ const archiveMatchResult = async ({
         const winnerSeatID = gameover?.winner !== undefined ? String(gameover.winner) : undefined;
         const resultType = winnerSeatID ? 'win' : 'draw';
 
-        const players: Array<{ id: string; name: string; result: string; ownerKey?: string }> = [];
+        const setupData = metadata?.setupData && typeof metadata.setupData === 'object' && !Array.isArray(metadata.setupData)
+            ? metadata.setupData as { seatControllers?: Record<string, { type?: unknown } | undefined> }
+            : undefined;
+        const aiSeatIds = new Set(getAiSeatIds(setupData?.seatControllers));
+
+        const players: Array<{ id: string; name: string; result: string; ownerKey?: string; isAi?: boolean }> = [];
         let winnerOwnerKey: string | undefined;
         if (metadata?.players) {
             for (const [seatId, pdata] of Object.entries(metadata.players)) {
@@ -349,8 +355,9 @@ const archiveMatchResult = async ({
                 players.push({
                     id: playerId,
                     name,
-                    result: isWinner ? 'win' : resultType === 'draw' ? 'draw' : 'loss',
                     ownerKey,
+                    isAi: aiSeatIds.has(seatId),
+                    result: isWinner ? 'win' : resultType === 'draw' ? 'draw' : 'loss',
                 });
             }
         }
@@ -1220,37 +1227,9 @@ router.get('/games/:name/leaderboard', async (ctx) => {
 
     try {
         const records = await MatchRecord.find({ gameName });
-        // 用 ownerKey 聚合（新数据），旧数据 fallback 到 name
-        const stats: Record<string, { name: string; wins: number; matches: number }> = {};
-
-        records.forEach((record) => {
-            record.players.forEach((p: { id: string; name: string; ownerKey?: string }) => {
-                // 聚合 key：优先 ownerKey，fallback 到 id（新数据 id 已是 ownerKey/name），再 fallback 到 name
-                const key = p.ownerKey || (p.id !== '0' && p.id !== '1' ? p.id : null) || p.name;
-                if (!key) return;
-                if (!stats[key]) stats[key] = { name: p.name || key, wins: 0, matches: 0 };
-                // 用最新的名字覆盖（用户可能改名）
-                if (p.name) stats[key].name = p.name;
-                stats[key].matches++;
-            });
-            // 统计胜场
-            if (record.winnerID) {
-                const winner = record.players.find((p: { id: string }) => p.id === record.winnerID);
-                if (winner) {
-                    const key = (winner as { ownerKey?: string }).ownerKey
-                        || (winner.id !== '0' && winner.id !== '1' ? winner.id : null)
-                        || winner.name;
-                    if (key && stats[key]) {
-                        stats[key].wins++;
-                    }
-                }
-            }
-        });
 
         ctx.body = {
-            leaderboard: Object.values(stats)
-                .sort((a, b) => b.wins - a.wins)
-                .slice(0, 50),
+            leaderboard: buildLeaderboardEntries(records),
         };
     } catch (err) {
         logger.error('Leaderboard error:', err);

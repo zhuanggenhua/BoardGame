@@ -236,6 +236,69 @@ describe('Oops Ancient Egyptians bases', () => {
         expect(drawEvent.payload.playerId).toBe('0');
         expect(drawEvent.payload.count).toBe(1);
     });
+
+    it('base_star_portal_pod 上打出并自埋 Tomb Trap 时，应同时触发 onActionPlayed 与 onCardBuried 各抓一张', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_star_portal_pod',
+                minions: [],
+                ongoingActions: [],
+            }],
+            players: {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [{
+                        uid: 'trap-1',
+                        defId: 'ancient_egyptians_tomb_trap_pod',
+                        type: 'action',
+                        owner: '0',
+                    }],
+                    deck: [
+                        { uid: 'draw-1', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' },
+                        { uid: 'draw-2', defId: 'robot_microbot_beta', type: 'minion', owner: '0' },
+                    ],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS_POD, SMASHUP_FACTION_IDS.ALIENS],
+                },
+                '1': {
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.PIRATES],
+                },
+            } as any,
+        });
+
+        const result = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'trap-1', targetBaseIndex: 0 },
+            } as any,
+            defaultTestRandom,
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.finalState.core.bases[0].buriedCards?.some(card => card.uid === 'trap-1')).toBe(true);
+
+        const drawEvents = result.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        expect(drawEvents).toHaveLength(2);
+        expect(drawEvents.every(event => event.payload.playerId === '0')).toBe(true);
+        expect(drawEvents.every(event => event.payload.count === 1)).toBe(true);
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2']);
+    });
 });
 
 // ============================================================================

@@ -467,6 +467,7 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 
 | D51 | **交互语义单一真相** | 候选、UI 高亮/置灰、点击提交、validator、resolver、reducer 是否共享同一权威语义？**触发条件**：新增/修改 `createSimpleChoice`、`targetType`、`optionsGenerator`、`selectable*Uids`、`playable*Ids/Uids`、`canActivate*`、`validate(...)`、`resolve*`，或修“高亮但点不了 / 点了没反应 / 能点但无效 / UI 显示可用但命令失败”类 bug。**核心原则**：一个交互链只能有一个业务真相。优先让 UI 从 `currentPrompt.options` 派生高亮并提交同一个 `optionId`；主动能力可用态优先从 `validate(...)` 或唯一查询 helper 派生；resolver 只能复核活体性、权限和防作弊，不得另写一套与候选生成不一致的业务过滤。**审查方法**：① 画出“候选生成 → UI 可见态 → 点击 payload → validator → resolver → reducer”链路 ② 标出每一层使用的字段和 helper ③ 检查是否有一层改用弱标识（如 `defId` 代替 `uid`、`baseIndex` 代替稳定身份、`abilityTags` 代替 activation metadata）或局部近似条件 ④ 至少补一个测试证明 UI/命令选择的是同一 option，响应成功，并断言最终权威状态变化。**判定标准**：同一 `PromptOption`/`optionId` 或同一 `validate/query` helper 贯穿全链路 → ✅；UI 高亮一套条件、resolver 再拒绝另一套条件 → ❌；同名/同 defId 多实体时按 defId 高亮但按 uid 结算 → ❌；修复只覆盖反馈中的两张牌但未 grep 同 targetType/同组件/同 helper → ❌。 |
 | D52 | **权威可视合同一致性** | 运行时对象与权威图片/面板/棋盘/图集/布局图之间的“可直接目视判定的合同”是否一致？**触发条件**：新增/修改图片驱动录入、玩家板/棋盘/基地/槽位布局、头像/图集切片、display-only 元数据、可交互区映射，或修“图上明明是 A，运行时却落成 B / 高亮错位 / 被动混入主动 / 应为空却被占用 / atlas 切错 / 共享槽语义套错”类 bug 时必查。**核心原则**：只要图片能直接回答问题，就必须直接看图，不能再靠共享旧语义、命名习惯、历史顺序或推测。代码里的共享映射只能服从图片真相源，不能反过来覆盖图片。**审查方法**：① 为对象建立“图片合同表”，至少列出 `visualRegion/slotId -> 图上对象 -> 运行时对象 -> 允许状态（active/passive/defense/display-only/empty） -> 是否可交互` ② 对每个可判定区域逐项核对，不得只抽样 ③ 反查运行时代码：映射表、atlas/frame 索引、overlay 元数据、UI data-attributes 是否与图片合同一致 ④ 至少补 1 条合同测试和 1 条真实截图证据，证明特殊区域没有被共享语义误占 ⑤ 若图片上存在故意留空或仅展示不执行的区域，必须显式记录 `empty/display-only`，禁止让运行时“自动补一个最像的对象”。**典型缺陷模式**：❌ 复用旧角色共享槽位语义，把被动塞进普通技能槽 ❌ 防御技能沿用旧 `calm/meditate` 语义，结果高亮到错误槽位 ❌ atlas/portrait 仍按旧 row-major 或旧列数切片，导致图像错位但静态测试不报错 ❌ 图片上清楚存在独立区域，审计却只验证“能触发”而没验证“落在哪”。**修复策略**：① 先以图片合同表锁定每个区域的真相 ② 再修运行时映射/atlas/index/display-only 元数据 ③ 最后用合同测试 + 截图收口。**排查信号**：① “有图但实现还在猜” ② “第一个技能对，后面被动/防御错位” ③ “能触发，但高亮/落点/贴图落错格” ④ “应该为空或只是说明区，却被当成可选区域”。 |
+| D53 | **入场后触发源归属与结算窗口** | “当/每当/在一个随从打出到此基地后/After a minion is played here” 这类 played-to-base 触发是否在随从打出本体与该随从 onPlay/入场后效果之后结算，并且后续消灭/移动/影响事件携带触发源真实 owner？**触发条件**：新增/修改 `onMinionPlayed`、基地/ongoing 的 played-to-base 触发、保护/不受影响、或修“刚打出的随从被陷阱/基地/持续卡错误消灭、保护不生效、归因错到打出者本人”类 bug 时必查。**核心原则**：`打出到基地` 描述的是触发窗口，不是抢在随从入场效果之前结算；此窗口内后续卡牌效果的来源玩家必须是触发卡/基地效果的拥有者或规则规定来源，不能默认沿用被触发事件的 `playerId`。**审查方法**：① 拆出 `MINION_PLAYED -> 随从 onPlay/入场效果 -> base/ongoing onMinionPlayed -> 后续 destroy/move/affect -> 保护过滤` 的顺序 ② 对每个派生事件核对 `destroyerId/sourcePlayerId/sourceDefId/reason` 是否足以让保护层判断“其他玩家卡牌” ③ 至少补一条同时包含 played-to-base 触发与被影响随从自身保护/入场后状态变化的回归测试。**典型缺陷模式**：❌ 火焰陷阱生成 `MINION_DESTROYED` 时缺 `destroyerId`，保护过滤回退到打出者本人，导致“不受其他玩家卡牌影响”失效 ❌ onMinionPlayed 触发读取随从入场前状态，漏掉刚打出的随从自身 ongoing/保护/计数变化 ❌ 审计只测“陷阱能消灭普通随从”，没测“目标在打出后立即满足保护条件”。**判定标准**：顺序在随从效果之后、来源归因到触发卡 owner、保护层能正确拦截 → ✅；来源归因缺失或回退到目标 controller、或触发读取 pre-play 状态 → ❌。 |
 
 ### 需要展开的关键维度
 
@@ -1239,7 +1240,7 @@ onAutoContinueCheck({ state }) {
 | 新增 UI 展示 | D5,D3,D15 | D1,D20 |
 | 新增基于位置计算的 UI 交互 | D15,D5,D1 | D2,D3 |
 | 修"UI 计算结果不符合描述" | D15,D1,D5 | D2,D3 |
-| 全面审查 | D1-D52 | — |
+| 全面审查 | D1-D53 | — |
 | 新增 buff/共享 | D4,D1,D6,D22 | D10,D13,D19 |
 | 重构事件流 | D3,D8,D9 | D10,D4,D17 |
 | 新增交互能力 | D5,D3,D1 | D2,D8,D21,D23,D24 |
@@ -1264,6 +1265,7 @@ onAutoContinueCheck({ state }) {
 | 编写 E2E 测试 | D47 | - |
 | 新增/修改"注册+过滤"拦截机制 | D31,D3,D8 | D17,D6 |
 | 修"保护在某些场景下不生效" | D31,D3,D1 | D8,D17 |
+| 修"打出到基地后触发导致保护/不受影响不生效" | D53,D31,D3 | D8,D40,D42 |
 | 新增事件产生路径 | D31,D8,D3 | D17,D6 |
 | 新增/修改绕过正常流程的替代路径 | D32,D8,D17 | D31,D3 |
 | 修"替代路径下交互/动画不触发" | D32,D8,D5 | D17,D3 |

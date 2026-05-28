@@ -623,6 +623,42 @@ describe('巫师派系能力', () => {
         getSimpleChoicePrompt(matchState, 'wizard_sacrifice');
     });
 
+    it('wizard_sacrifice: 献祭小鬼时先抽等量力量，随后结算小鬼 onDestroy 抽牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_sacrifice', 'action', '0')],
+                    deck: [
+                        makeCard('d1', 'test_card', 'minion', '0'),
+                        makeCard('d2', 'test_card', 'minion', '0'),
+                        makeCard('d3', 'test_card', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('o1', 'test_card', 'action', '1')],
+                }),
+            },
+            bases: [makeBase({
+                defId: 'b1',
+                minions: [makeMinion('g1', 'trickster_gremlin', '0', 2)],
+            })],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const prompt = getSimpleChoicePrompt(matchState, 'wizard_sacrifice');
+        const gremlinOption = getPromptOption(
+            prompt,
+            option => option.value?.minionUid === 'g1',
+            'gremlin sacrifice target',
+        );
+        const resolved = respondToPrompt(matchState, gremlinOption.id, '0', defaultTestRandom);
+
+        const player = resolved.finalState.core.players['0'];
+        expect(player.hand.map(card => card.uid)).toEqual(['d1', 'd2', 'd3']);
+        expect(player.deck.map(card => card.uid)).toEqual([]);
+        expect(resolved.finalState.core.players['1'].hand).toHaveLength(0);
+    });
+
     it('wizard_time_loop: off-phase 额外行动必须标记为 immediate', () => {
         const state = makeState({
             players: {

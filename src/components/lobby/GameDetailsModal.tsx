@@ -2104,13 +2104,14 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                             data-testid={`game-details-tab-${tab.id}`}
                                             onClick={() => setActiveTab(tab.id)}
                                             className={clsx(
-                                                'relative min-w-0 shrink text-[11px] font-bold uppercase tracking-[0.08em] transition-colors whitespace-nowrap sm:shrink-0 sm:text-lg sm:tracking-wider',
-                                                activeTab === tab.id ? 'text-parchment-base-text' : 'text-parchment-light-text hover:text-parchment-base-text',
+                                                'min-w-0 shrink whitespace-nowrap border-b-2 border-transparent pb-0.5 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors sm:shrink-0 sm:text-lg sm:tracking-wider',
+                                                activeTab === tab.id
+                                                    ? 'border-parchment-base-text text-parchment-base-text'
+                                                    : 'text-parchment-light-text hover:text-parchment-base-text',
                                             )}
                                         >
                                             <span className="sm:hidden">{tab.mobileLabel}</span>
                                             <span className="hidden sm:inline">{tab.label}</span>
-                                            {activeTab === tab.id && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
                                         </button>
                                     </div>
                                 ))}

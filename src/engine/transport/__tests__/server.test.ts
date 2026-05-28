@@ -22924,7 +22924,7 @@ describe('GameTransportServer（离座与重连）', () => {
         const actionLog = JSON.parse(payload?.actionLog ?? '{}');
         expect(actionLog).toMatchObject({
             kind: 'online-ai-feedback-diagnostic',
-            commandType: INTERACTION_COMMANDS.RESPOND,
+            commandType: INTERACTION_COMMANDS.CANCEL,
             reason: 'all-options-disabled',
             blockerFingerprint: 'main2:all-options-disabled:interaction:simple-choice:test-unsat-choice',
         });
@@ -22944,6 +22944,170 @@ describe('GameTransportServer（离座与重连）', () => {
             id: 'only-disabled',
             disabledReason: '目标已失效',
         }));
+    });
+
+    it('AI seat-view 只剩 emergency skip、但 authoritative interaction 仍保留旧选项时，应翻译成 CANCEL 收口', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        const interaction = createSimpleChoice(
+            'haunted-house-live-drift',
+            '1',
+            '鬼屋：选择要弃掉的卡牌',
+            [
+                { id: 'card-0', label: '卡牌 0', value: { cardUid: 'c94', defId: 'vikings_cast_the_runes' } },
+                { id: 'card-1', label: '卡牌 1', value: { cardUid: 'c114', defId: 'ghost_ghostly_arrival_pod' } },
+            ],
+            {
+                sourceId: 'base_haunted_house_al9000',
+                targetType: 'hand',
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state: any) => {
+            const hand = state?.core?.players?.['1']?.hand ?? [];
+            return hand.map((card: any, index: number) => ({
+                id: `card-${index}`,
+                label: card.defId,
+                value: { cardUid: card.uid, defId: card.defId },
+                displayMode: 'card' as const,
+            }));
+        };
+
+        const engine = createInteractiveEngineConfig();
+        const customEngine: GameEngineConfig = {
+            ...engine,
+            systems: [
+                ...engine.systems,
+                {
+                    id: 'force-emergency-seat-view',
+                    name: 'force-emergency-seat-view',
+                    priority: 999,
+                    playerView: (state: any, playerId: string) => {
+                        if (playerId !== '1') {
+                            return {};
+                        }
+
+                        const current = state.sys?.interaction?.current;
+                        if (!current) {
+                            return {};
+                        }
+
+                        return {
+                            interaction: {
+                                ...state.sys?.interaction,
+                                current: {
+                                    ...current,
+                                    data: {
+                                        ...current.data,
+                                        options: [{
+                                            id: '__emergency_skip__',
+                                            label: '跳过（当前无可执行选项）',
+                                            value: {
+                                                __emergency_skip__: true,
+                                                __emergency_skip_reason__: 'empty-options',
+                                            },
+                                            displayMode: 'button',
+                                        }],
+                                    },
+                                },
+                            },
+                        };
+                    },
+                },
+            ],
+        };
+
+        await storage.createMatch('match-ai-emergency-skip-authoritative-drift', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                        players: {
+                            '0': { hand: [], deck: [], discard: [] },
+                            '1': {
+                                hand: [
+                                    { uid: 'c94', defId: 'vikings_cast_the_runes', type: 'action', owner: '1' },
+                                    { uid: 'c114', defId: 'ghost_ghostly_arrival_pod', type: 'action', owner: '1' },
+                                ],
+                                deck: [],
+                                discard: [],
+                            },
+                        },
+                    },
+                    sys: {
+                        phase: 'playCards',
+                        turnNumber: 0,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: interaction,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [customEngine],
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-ai-emergency-skip-authoritative-drift');
+        const success = await serverInternal.executeCommandInternal(
+            match,
+            '1',
+            INTERACTION_COMMANDS.RESPOND,
+            { interactionId: 'haunted-house-live-drift', optionId: '__emergency_skip__' },
+        );
+
+        expect(success).toBe(true);
+        expect(match.state.sys.interaction.current).toBeUndefined();
+        expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-ai-emergency-skip-authoritative-drift',
+            playerId: '1',
+            incidentKind: 'unsatisfiable-interaction-auto-skipped',
+            status: 'resolved',
+            reason: 'empty-options',
+        }));
+
+        const payload = feedbackReporter.mock.calls[0]?.[0] as {
+            stateSnapshot?: string;
+        } | undefined;
+        const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
+        expect(snapshot.interaction?.sharedSelectability).toMatchObject({
+            totalOptions: 2,
+            enabledOptions: 2,
+            selectionState: 'manual-selection-required',
+        });
+        expect(snapshot.interaction?.seatSelectability).toMatchObject({
+            totalOptions: 1,
+            enabledOptions: 1,
+            selectionState: 'recoverable-option-available',
+        });
     });
 });
 

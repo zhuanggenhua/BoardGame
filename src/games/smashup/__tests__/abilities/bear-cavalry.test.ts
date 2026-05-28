@@ -259,6 +259,31 @@ describe('bear_cavalry_cub_scout 触发', () => {
 
         expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
     });
+
+    it('随从离开幼熊斥候所在基地时，不应由原基地斥候误触发', () => {
+        const scout = makeMinion('scout', 'bear_cavalry_cub_scout', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 2, { powerModifier: 0 });
+        const state = makeState({
+            bases: [
+                makeBase({ minions: [] }),
+                makeBase({ minions: [scout, moved] }),
+            ],
+        });
+
+        const { events } = fireTriggers(state, 'onMinionMoved', {
+            state,
+            playerId: '1',
+            baseIndex: 1,
+            moveFromBaseIndex: 1,
+            moveToBaseIndex: 0,
+            triggerMinionUid: 'moved',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 0,
+        });
+
+        expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+    });
 });
 
 describe('bear_cavalry_high_ground 触发', () => {
@@ -312,6 +337,34 @@ describe('bear_cavalry_high_ground 触发', () => {
         });
 
         expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+    });
+
+    it('随从离开制高点所在基地时，不应由原基地制高点误触发', () => {
+        const myMinion = makeMinion('my', 'test_minion', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('moved', 'test_minion', '1', 5, { powerModifier: 0 });
+        const state = makeState({
+            bases: [
+                makeBase({ minions: [] }),
+                makeBase({
+                    minions: [myMinion, moved],
+                    ongoingActions: [{ uid: 'hg-1', defId: 'bear_cavalry_high_ground', ownerId: '0' }],
+                }),
+            ],
+        });
+
+        const { events } = fireTriggers(state, 'onMinionMoved', {
+            state,
+            playerId: '1',
+            baseIndex: 1,
+            moveFromBaseIndex: 1,
+            moveToBaseIndex: 0,
+            triggerMinionUid: 'moved',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 0,
+        });
+
+        expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
     });
 });
 

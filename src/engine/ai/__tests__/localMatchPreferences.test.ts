@@ -72,7 +72,15 @@ describe('localMatchPreferences create-room sanitization', () => {
         });
     });
 
-    it('Smash Up 旧偏好未带 schemaVersion 时，会为历史 expansions 自动补上 diy 默认值', () => {
+    it('Smash Up 首次创建默认开启 diy 扩展', () => {
+        const normalized = createDefaultLocalMatchPreferences(smashupManifest);
+
+        expect(normalized.setupSelections).toEqual({
+            expansions: ['titans', 'diy'],
+        });
+    });
+
+    it('Smash Up 手动关闭 diy 后，不会在后续归一化时被重新打开', () => {
         const normalized = normalizeLocalMatchPreferences(smashupManifest, {
             numPlayers: 2,
             setupSelections: {
@@ -85,23 +93,7 @@ describe('localMatchPreferences create-room sanitization', () => {
         });
 
         expect(normalized.setupSelections).toEqual({
-            expansions: ['titans', 'diy'],
-        });
-        expect(normalized.schemaVersion).toBe(2);
-    });
-
-    it('Smash Up 新版本偏好手动关闭 diy 后，不会在后续归一化时被重新打开', () => {
-        const current = createDefaultLocalMatchPreferences(smashupManifest);
-        const normalized = normalizeLocalMatchPreferences(smashupManifest, {
-            ...current,
-            setupSelections: {
-                expansions: ['titans'],
-            },
-        });
-
-        expect(normalized.setupSelections).toEqual({
             expansions: ['titans'],
         });
-        expect(normalized.schemaVersion).toBe(2);
     });
 });
