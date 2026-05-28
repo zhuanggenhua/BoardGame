@@ -8,11 +8,10 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         name: '葫芦小金刚',
         nameEn: 'Little King Kong',
         faction: SMASHUP_FACTION_IDS.HULUWAWA,
-        abilityTags: ['special', 'ongoing', 'talent'],
+        abilityTags: ['special', 'ongoing'],
         activatableAbilities: [
             { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
-            { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'insteadOfRegularMinion',
         playAsKinds: ['minion'],

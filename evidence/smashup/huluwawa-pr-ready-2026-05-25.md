@@ -26,8 +26,9 @@
 ## 行为证据
 
 - `src/games/smashup/__tests__/abilities/huluwawa.test.ts`
-  - 17 tests passed
+  - 2026-05-25：17 tests passed
   - 覆盖静态接入、中文可见/英文隐藏、大娃、二娃、三娃、四娃、五娃、六娃、七娃、一根藤、紫金宝葫芦、人多力量大、妖精哪里逃、碰、快放了我爷爷、毫无存在感、一个一个来、蝴蝶妹妹的帮助。
+  - 2026-05-28 修订：19 tests passed；补充覆盖 `葫芦小金刚` 在己方仆从发动天赋后弹出复制提示、选择另一个仆从结算、目标仆从 `talentUsed` 写回、泰坦本回合复制标记写回，以及本回合已复制后不再弹窗。
 - `src/games/smashup/__tests__/bases/huluwawa-bases.test.ts`
   - 3 tests passed
   - 覆盖葫芦山保护、七彩莲蓬 prompt -> 选择 -> 状态改变 -> interaction 清空。
@@ -50,14 +51,22 @@
 ## 验收命令
 
 - `openspec validate add-smashup-huluwawa-faction --strict --no-interactive`：通过
-- `npm run typecheck`：通过
+- `npm run typecheck`：通过；2026-05-28 葫芦小金刚触发式复制修订后复跑通过
 - `npx vitest run src/games/smashup/__tests__/abilities/huluwawa.test.ts src/games/smashup/__tests__/bases/huluwawa-bases.test.ts`：通过，20 tests passed
+- `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/huluwawa.test.ts --configLoader native --maxWorkers 1`：2026-05-28 通过，19 tests passed
 - `npx vitest run src/games/smashup/__tests__/cardI18nIntegrity.test.ts src/games/smashup/__tests__/criticalImageResolver.test.ts src/games/smashup/__tests__/factionSelection.test.ts src/games/smashup/__tests__/factionVariantGroups.test.ts`：通过，80 tests passed
 - `npm run test:e2e:ci:file -- e2e/smashup/smashup-huluwawa-pr.e2e.ts`：通过，3 tests passed
 - `npm run assets:check`：葫芦娃远端一致；仅报告 unrelated `pretty_pretty.webp` 本地差异
 
+## 2026-05-28 旧结论修订
+
+- 旧结论失效：原文“葫芦小金刚首版复制范围限定为当前引擎已有的 minion talent 主动入口”容易被误读为复制链路已完整落地；玩家反馈后复核发现旧实现只有 `huluwawa_little_king_kong_copy_talent` handler，缺少“仆从发动能力后触发询问”的真实入口。
+- 修复口径：`葫芦小金刚` 不再暴露为可手动点的泰坦天赋；系统新增 `onTalentUsed` 触发时机，在己方仆从发动天赋后、且小金刚本玩家回合尚未复制过时，弹出复制提示。
+- 当前覆盖：已覆盖当前引擎存在的场上随从 `talent` 主动入口；尚未存在独立“随从持续主动能力”命令形态，因此该类未来入口仍属残余范围。
+- 新证据：`src/games/smashup/__tests__/abilities/huluwawa.test.ts` 新增 2 条回归，覆盖正路径与每回合一次不再弹窗。
+
 ## 残余边界
 
-- 葫芦小金刚首版复制范围限定为当前引擎已有的 minion talent 主动入口；尚不存在的其他仆从手动入口不在本 PR 承诺范围内。
+- 葫芦小金刚首版复制范围限定为当前引擎已有的 minion talent 主动入口；尚不存在的其他仆从手动入口（例如未来若引入的随从持续主动能力）不在本 PR 承诺范围内。
 - 穿山甲当前复用同一套移动 prompt 程序，单元层覆盖同类移动成功路径；若后续 UI 入口独立变化，应补穿山甲专项 E2E。
 - 未把 ignored PNG/WebP 源图纳入 git；交付依赖 manifest hash 与 R2/CDN 回查。

@@ -28,6 +28,7 @@ import type {
     MinionDestroyedEvent,
     MinionPowerBreakdown,
     MinionOnBase,
+    TalentUsedEvent,
 } from './types';
 import {
     PHASE_ORDER,
@@ -2348,6 +2349,39 @@ function postProcessSystemEvents(
     const combined = [...afterDeckInspection.events, ...finalDerived];
     const alreadyReducedEventCount = inputEventsAlreadyReduced ? afterDeckInspection.events.length : 0;
 
+    const talentDerived: SmashUpEvent[] = [];
+    let talentCore = state;
+    for (let eventIndex = 0; eventIndex < combined.length; eventIndex++) {
+        const event = combined[eventIndex];
+        if (eventIndex >= alreadyReducedEventCount) {
+            talentCore = reduce(talentCore, event);
+        }
+        if (event.type !== SU_EVENTS.TALENT_USED) continue;
+        const talentEvent = event as TalentUsedEvent;
+        const { playerId, minionUid, defId, baseIndex } = talentEvent.payload;
+        if (!minionUid) continue;
+        const triggerMinion = talentCore.bases[baseIndex]?.minions.find(minion => minion.uid === minionUid);
+        const sourceEventId = `onTalentUsed:${minionUid}:${event.timestamp}`;
+        const queuedTalentTriggers = collectTriggers(talentCore, 'onTalentUsed', {
+            state: talentCore,
+            matchState: talentCore === ms.core ? ms : { ...ms, core: talentCore },
+            playerId,
+            baseIndex,
+            triggerMinionUid: minionUid,
+            triggerMinionDefId: defId,
+            triggerMinion,
+            frameId: sourceEventId,
+            sourceEventId,
+            random,
+            now: event.timestamp,
+        });
+        if (queuedTalentTriggers) {
+            talentDerived.push(queuedTalentTriggers);
+            talentCore = reduce(talentCore, queuedTalentTriggers);
+        }
+    }
+    const combinedWithTalent = [...combined, ...talentDerived];
+
     // 泰坦位置事件后处理：标准基地双泰坦自动 clash。
     // 使用 sys 上的去重集合，避免 pipeline 多次调用 postProcessSystemEvents 时重复追加同一批 clash 结果。
     const titanSysAny = ms.sys as any;
@@ -2358,8 +2392,8 @@ function postProcessSystemEvents(
 
     const titanDerived: SmashUpEvent[] = [];
     let titanCore = state;
-    for (let eventIndex = 0; eventIndex < combined.length; eventIndex++) {
-        const event = combined[eventIndex];
+    for (let eventIndex = 0; eventIndex < combinedWithTalent.length; eventIndex++) {
+        const event = combinedWithTalent[eventIndex];
         // state 已经包含了本轮原始领域事件（afterDeckInspection.events）的 reduce 结果；
         // 这里只需要把新增的派生事件继续 reduce 进临时 core，避免原始事件被重复结算。
         if (eventIndex >= alreadyReducedEventCount) {
@@ -2432,7 +2466,7 @@ function postProcessSystemEvents(
     const msForQueue = titanCore === ms.core ? ms : { ...ms, core: titanCore };
 
     const rq = maybeResolveReactionQueue(msForQueue, random, now);
-    let finalEvents = [...combined, ...titanDerived];
+    let finalEvents = [...combinedWithTalent, ...titanDerived];
     if (rq) {
         finalEvents = [...finalEvents, ...rq.events];
         ms = rq.state;

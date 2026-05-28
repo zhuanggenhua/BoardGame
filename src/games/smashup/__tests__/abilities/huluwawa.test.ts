@@ -64,6 +64,76 @@ describe('葫芦娃派系作者 PR 级行为合同', () => {
         expect(talent.finalState.core.bases[0].minions[0].talentUsed).toBe(true);
     });
 
+    it('葫芦小金刚会在己方仆从发动天赋后提示复制另一个仆从天赋', () => {
+        const core = makeState({
+            bases: [makeBase('base_huluwawa_mountain', [
+                makeMinion('source-da', 'huluwawa_da_wa', '0', 4),
+                makeMinion('copy-da', 'huluwawa_da_wa', '0', 4),
+            ])],
+            titans: [{
+                uid: 'king-kong',
+                defId: 'huluwawa_little_king_kong',
+                faction: SMASHUP_FACTION_IDS.HULUWAWA,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+            }],
+        });
+
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'source-da', baseIndex: 0 },
+        } as any);
+        expect(talent.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(talent.finalState, 'huluwawa_little_king_kong_copy_talent');
+        expect(prompt.options.some(option => option.value?.minionUid === 'source-da')).toBe(false);
+        const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'copy-da', '葫芦小金刚复制大娃天赋');
+        const resolved = respondToPrompt(talent.finalState, option.id, '0');
+
+        const sourceDa = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'source-da');
+        const copyDa = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'copy-da');
+        const titan = resolved.finalState.core.titans?.find(candidate => candidate.uid === 'king-kong');
+        expect(sourceDa?.tempPowerModifier).toBe(2);
+        expect(sourceDa?.talentUsed).toBe(true);
+        expect(copyDa?.tempPowerModifier).toBe(2);
+        expect(copyDa?.talentUsed).toBe(true);
+        expect(titan?.metadata?.huluwawaCopiedTalentTurn).toBe(core.turnNumber);
+        expectNoPrompt(resolved.finalState);
+    });
+
+    it('葫芦小金刚本回合已复制过时不会再次弹出复制提示', () => {
+        const core = makeState({
+            bases: [makeBase('base_huluwawa_mountain', [
+                makeMinion('source-da', 'huluwawa_da_wa', '0', 4),
+                makeMinion('copy-da', 'huluwawa_da_wa', '0', 4),
+            ])],
+            titans: [{
+                uid: 'king-kong',
+                defId: 'huluwawa_little_king_kong',
+                faction: SMASHUP_FACTION_IDS.HULUWAWA,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0 },
+                metadata: { huluwawaCopiedTalentTurn: 1 },
+            }],
+        });
+
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'source-da', baseIndex: 0 },
+        } as any);
+
+        expect(talent.success).toBe(true);
+        expectNoPrompt(talent.finalState);
+        expect(talent.finalState.core.bases[0].minions.find(minion => minion.uid === 'copy-da')?.tempPowerModifier ?? 0).toBe(0);
+    });
+
     it('四娃打出后可摧毁这里力量 3 或更小仆从并获得 +1 指示物', () => {
         const core = makeState({
             players: {

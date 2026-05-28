@@ -54,6 +54,7 @@ import {
     type SmashUpCore,
     type SmashUpCommand,
     type SmashUpEvent,
+    type TalentUsedEvent,
     type TitanMetadataUpdatedEvent,
     SU_COMMANDS,
     SU_EVENTS,
@@ -826,6 +827,63 @@ function huluwawaLittleKingKongSpecial(ctx: AbilityContext): AbilityResult {
     if (!titan || !base) return { events: [] };
     return {
         events: [playTitan(titan, ctx.playerId, ctx.baseIndex, 'huluwawa_little_king_kong_special', ctx.now, base.defId)],
+    };
+}
+
+function getLittleKingKongCopyTalentCandidates(core: SmashUpCore, playerId: PlayerId, excludedMinionUid?: string) {
+    return collectOwnMinions(core, playerId)
+        .filter(target => {
+            if (target.uid === excludedMinionUid) return false;
+            const live = core.bases[target.baseIndex]?.minions.find(minion => minion.uid === target.uid);
+            if (!live || live.talentUsed) return false;
+            const def = getMinionDef(live.defId);
+            return Boolean(def?.abilityTags?.includes('talent') && resolveTalent(live.defId));
+        });
+}
+
+function hasLittleKingKongCopiedThisTurn(core: SmashUpCore, titanUid: string): boolean {
+    const titan = getTitanByUid(core, titanUid);
+    return titan?.metadata?.huluwawaCopiedTalentTurn === core.turnNumber;
+}
+
+function huluwawaLittleKingKongOnTalentUsed(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    const titanUid = ctx.sourceCardUid;
+    if (!titanUid || !ctx.triggerMinionUid || !ctx.matchState) return [];
+    if (ctx.sourceControllerId !== ctx.playerId) return [];
+    if (hasLittleKingKongCopiedThisTurn(ctx.state, titanUid)) return [];
+
+    const titan = getTitanByUid(ctx.state, titanUid);
+    if (!titan || titan.defId !== 'huluwawa_little_king_kong' || titan.location.zone !== 'base') return [];
+
+    const candidates = getLittleKingKongCopyTalentCandidates(ctx.state, ctx.playerId, ctx.triggerMinionUid);
+    if (candidates.length === 0) return { events: [] };
+
+    const interaction = createSimpleChoice(
+        `huluwawa_little_king_kong_copy_talent_${ctx.now}`,
+        ctx.playerId,
+        '葫芦小金刚：你可以令你的另一个仆从发动相同的主动能力',
+        [
+            createSkipOption('不复制'),
+            ...candidates.map((target, index) => ({
+                id: `copy-talent-${index}`,
+                label: target.label,
+                value: {
+                    minionUid: target.uid,
+                    defId: target.defId,
+                    minionDefId: target.defId,
+                    sourceDefId: target.defId,
+                    baseIndex: target.baseIndex,
+                    titanUid: titan.uid,
+                },
+                displayMode: 'card' as const,
+            })),
+        ],
+        { sourceId: 'huluwawa_little_king_kong_copy_talent', targetType: 'minion' },
+    );
+
+    return {
+        events: [],
+        matchState: queueOrSetCurrentInteraction(ctx.matchState, interaction),
     };
 }
 
@@ -1870,7 +1928,18 @@ export function registerHuluwawaAbilities(): void {
         const executor = resolveTalent(selected.sourceDefId);
         const liveMinion = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         const titan = getTitanByUid(state.core, selected.titanUid);
-        if (!executor || !liveMinion || !titan) {
+        if (
+            !executor
+            || !liveMinion
+            || liveMinion.defId !== selected.sourceDefId
+            || liveMinion.controller !== playerId
+            || liveMinion.talentUsed
+            || !titan
+            || titan.defId !== 'huluwawa_little_king_kong'
+            || titan.controllerId !== playerId
+            || titan.location.zone !== 'base'
+            || hasLittleKingKongCopiedThisTurn(state.core, titan.uid)
+        ) {
             return { state, events: [] };
         }
 
@@ -1888,6 +1957,17 @@ export function registerHuluwawaAbilities(): void {
         return {
             state: result.matchState ?? state,
             events: [
+                {
+                    type: SU_EVENTS.TALENT_USED,
+                    payload: {
+                        playerId,
+                        minionUid: selected.minionUid,
+                        defId: selected.sourceDefId,
+                        baseIndex: selected.baseIndex,
+                    },
+                    sourceCommandType: SU_COMMANDS.USE_TALENT,
+                    timestamp,
+                } as TalentUsedEvent,
                 buildTitanMetadataUpdatedEvent(
                     titan.uid,
                     { huluwawaCopiedTalentTurn: state.core.turnNumber },
@@ -1937,6 +2017,11 @@ export function registerHuluwawaAbilities(): void {
     });
     registerTrigger('huluwawa_butterfly_sisters_help', 'onCardReturnedToHand', huluwawaButterflyDrawOnDetach, {
         perInstance: true,
+    });
+    registerTrigger('huluwawa_little_king_kong', 'onTalentUsed', huluwawaLittleKingKongOnTalentUsed, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        baseScoped: false,
     });
 
     registerProtection('huluwawa_san_wa', 'destroy', huluwawaSanWaProtection);
