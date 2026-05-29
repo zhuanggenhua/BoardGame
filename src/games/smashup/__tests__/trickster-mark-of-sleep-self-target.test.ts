@@ -217,8 +217,14 @@ describe('睡眠印记 POD', () => {
             timestamp: 1101,
         } as any, defaultRandom);
 
-        expect(resolved.finalState.core.sleepMarkedPlayers).toEqual(['1']);
-        expect(resolved.finalState.core.sleepMarkExpiresOnTurnNumber).toBeDefined();
+        expect(resolved.finalState.core.playerRestrictionsUntilTurnStart).toEqual([
+            {
+                sourceDefId: 'trickster_mark_of_sleep_pod',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                restrictionType: 'play_action',
+            },
+        ]);
 
         const restrictedCore = {
             ...resolved.finalState.core,
@@ -290,8 +296,14 @@ describe('睡眠印记 POD', () => {
             timestamp: 1201,
         } as any, defaultRandom);
 
-        expect(resolved.finalState.core.sleepMoveMarkedPlayers).toEqual(['1']);
-        expect(resolved.finalState.core.sleepMarkExpiresOnTurnNumber).toBeDefined();
+        expect(resolved.finalState.core.playerRestrictionsUntilTurnStart).toEqual([
+            {
+                sourceDefId: 'trickster_mark_of_sleep_pod',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                restrictionType: 'move_minion',
+            },
+        ]);
 
         const moveEvent = moveMinion('m1', 'test_minion', 0, 1, 'test_move', 1202);
         // 应拦截被标记者（controller=1）的移动事件
@@ -312,7 +324,7 @@ describe('睡眠印记 POD', () => {
         expect(interceptEvent(otherControlled, moveEvent as any)).toBeUndefined();
     });
 
-    it('再次施放会覆盖上一轮的标记（不做叠加合并）', () => {
+    it('同一玩家再次施放时，会替换自己先前的睡眠印记 POD 限制', () => {
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -321,8 +333,14 @@ describe('睡眠印记 POD', () => {
                 '1': makePlayer('1'),
             },
             turnOrder: ['0', '1'],
-            sleepMarkedPlayers: ['1'],
-            sleepMarkExpiresOnTurnNumber: 999,
+            playerRestrictionsUntilTurnStart: [
+                {
+                    sourceDefId: 'trickster_mark_of_sleep_pod',
+                    sourcePlayerId: '0',
+                    targetPlayerId: '1',
+                    restrictionType: 'play_action',
+                },
+            ],
         });
 
         const played = runCommand(makeMatchState(state), {
@@ -345,9 +363,103 @@ describe('睡眠印记 POD', () => {
             timestamp: 1301,
         } as any, defaultRandom);
 
-        // noActions 为空 → sleepMarkedPlayers 被清空（覆盖旧值）
-        expect(resolved.finalState.core.sleepMarkedPlayers).toBeUndefined();
-        expect(resolved.finalState.core.sleepMoveMarkedPlayers).toEqual(['1']);
+        expect(resolved.finalState.core.playerRestrictionsUntilTurnStart).toEqual([
+            {
+                sourceDefId: 'trickster_mark_of_sleep_pod',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                restrictionType: 'move_minion',
+            },
+        ]);
+    });
+
+    it('不同玩家连续施放时，后来的睡眠印记 POD 不应覆盖先前来源尚未到期的不能移动限制', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('mark-pod-p0', 'trickster_mark_of_sleep_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('mark-pod-p1', 'trickster_mark_of_sleep_pod', 'action', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        {
+                            uid: 'p1-minion',
+                            defId: 'test_minion',
+                            controller: '1',
+                            owner: '1',
+                            basePower: 3,
+                            powerModifier: 0,
+                            talentUsed: false,
+                            attachedActions: [],
+                        },
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const p0Played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'mark-pod-p0' },
+            timestamp: 1310,
+        } as any, defaultRandom);
+        const p0Options = (((p0Played.finalState.sys.interaction?.current?.data as any)?.options ?? []) as any[])
+            .filter(opt => !(opt?.value as any)?.__cancel__);
+        const p0NoMoveP1 = p0Options.find((opt: any) => (opt.value?.noMove ?? []).includes('1'));
+        expect(p0NoMoveP1).toBeDefined();
+
+        const afterP0Resolve = runCommand(p0Played.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: p0NoMoveP1.id },
+            timestamp: 1311,
+        } as any, defaultRandom);
+        expect(afterP0Resolve.finalState.core.playerRestrictionsUntilTurnStart).toEqual([
+            {
+                sourceDefId: 'trickster_mark_of_sleep_pod',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                restrictionType: 'move_minion',
+            },
+        ]);
+
+        const p1TurnCore = {
+            ...afterP0Resolve.finalState.core,
+            currentPlayerIndex: 1,
+            turnNumber: 2,
+        };
+        const p1Played = runCommand(makeMatchState(p1TurnCore), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '1',
+            payload: { cardUid: 'mark-pod-p1' },
+            timestamp: 1312,
+        } as any, defaultRandom);
+        const p1Options = (((p1Played.finalState.sys.interaction?.current?.data as any)?.options ?? []) as any[])
+            .filter(opt => !(opt?.value as any)?.__cancel__);
+        const p1NoMoveP0 = p1Options.find((opt: any) => (opt.value?.noMove ?? []).includes('0'));
+        expect(p1NoMoveP0).toBeDefined();
+
+        const afterP1Resolve = runCommand(p1Played.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '1',
+            payload: { optionId: p1NoMoveP0.id },
+            timestamp: 1313,
+        } as any, defaultRandom);
+
+        const moveEvent = moveMinion('p1-minion', 'test_minion', 0, 1, 'test_move', 1314);
+        expect(interceptEvent(afterP1Resolve.finalState.core, moveEvent as any)).toBeNull();
     });
 
     it('沉睡印记在目标回合内即使获得额外行动也仍然禁止打出战术，并在回合结束后清除', () => {
@@ -360,7 +472,14 @@ describe('睡眠印记 POD', () => {
                 }),
             },
             currentPlayerIndex: 1,
-            sleepMarkedPlayers: ['1'],
+            playerRestrictionsUntilTurnStart: [
+                {
+                    sourceDefId: 'trickster_mark_of_sleep_pod',
+                    sourcePlayerId: '0',
+                    targetPlayerId: '1',
+                    restrictionType: 'play_action',
+                },
+            ],
         });
 
         const startedCore = reduce(state, {
@@ -370,7 +489,14 @@ describe('睡眠印记 POD', () => {
         } as any);
 
         expect(startedCore.players['1'].actionLimit).toBe(0);
-        expect(startedCore.sleepMarkedPlayers).toEqual(['1']);
+        expect(startedCore.playerRestrictionsUntilTurnStart).toEqual([
+            {
+                sourceDefId: 'trickster_mark_of_sleep_pod',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                restrictionType: 'play_action',
+            },
+        ]);
 
         const boostedCore = {
             ...startedCore,
@@ -398,7 +524,22 @@ describe('睡眠印记 POD', () => {
             timestamp: 1402,
         } as any);
 
-        expect(endedCore.sleepMarkedPlayers).toBeUndefined();
+        expect(endedCore.playerRestrictionsUntilTurnStart).toEqual([
+            {
+                sourceDefId: 'trickster_mark_of_sleep_pod',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                restrictionType: 'play_action',
+            },
+        ]);
+
+        const clearedCore = reduce(endedCore, {
+            type: SU_EVENTS.TURN_STARTED,
+            payload: { playerId: '0', turnNumber: 3 },
+            timestamp: 1403,
+        } as any);
+
+        expect(clearedCore.playerRestrictionsUntilTurnStart).toBeUndefined();
     });
 
     it('基地原因触发的移动不会错误套用命令发起者的不能移动随从限制', () => {

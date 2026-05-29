@@ -8,6 +8,7 @@ import type { SmashUpReactionSession, TitanState } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
+import { runCommand } from './testRunner';
 
 function makeTitan(overrides: Partial<TitanState> & Pick<TitanState, 'uid' | 'defId' | 'faction' | 'ownerId' | 'controllerId'>): TitanState {
     return {
@@ -80,6 +81,50 @@ describe('SmashUp command validation', () => {
         } as any);
 
         expect(result.valid).toBe(true);
+    });
+
+    it('borrowed setaside Time Box 达到 5 计数后，当前控制者也应能通过 ACTIVATE_SPECIAL 打出', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            titans: [
+                makeTitan({
+                    uid: 'borrowed-time-box',
+                    defId: 'time_travelers_time_box',
+                    faction: 'time_travelers',
+                    ownerId: '1',
+                    controllerId: '0',
+                    metadata: { timeBoxCounters: 5, timeBoxPlayArmed: true },
+                }),
+            ],
+            currentPlayerIndex: 0,
+            turnOrder: ['0', '1'],
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'borrowed-time-box', baseIndex: 0 },
+        } as any);
+
+        expect(result.valid).toBe(true);
+
+        const executed = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'borrowed-time-box', baseIndex: 0 },
+        } as any);
+
+        expect(executed.success).toBe(true);
+        expect(executed.finalState.core.titans?.find(titan => titan.uid === 'borrowed-time-box')).toMatchObject({
+            location: { zone: 'base', baseIndex: 0 },
+            ownerId: '1',
+            controllerId: '0',
+            metadata: expect.objectContaining({ timeBoxCounters: 0, timeBoxPlayArmed: false }),
+        });
     });
 
     it('fairies_spirit_of_the_forest special 需要同时保留通常随从与通常行动额度', () => {

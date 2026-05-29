@@ -456,16 +456,18 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const buriedHasCard = fromBuried
                 ? (state.bases[resolvedBaseIndex]?.buriedCards ?? []).some(c => c.uid === cardUid)
                 : false;
+            const canResolveFromDeck = fromDeck ? (cardInDeck || cardInHand) : false;
             if (fromBuried && !buriedHasCard && !allowImplicitSource) return state;
-            if (!fromBuried && !allowImplicitSource && ((fromDiscard && !cardInDiscard) || (fromDeck && !cardInDeck) || (!fromDiscard && !fromDeck && !cardInHand))) {
+            if (!fromBuried && !allowImplicitSource && ((fromDiscard && !cardInDiscard) || (fromDeck && !canResolveFromDeck) || (!fromDiscard && !fromDeck && !cardInHand))) {
                 return state;
             }
             // 根据来源从手牌、弃牌堆或牌库移除卡牌
             // allowImplicitSource: true 时从所有位置尝试移除（用于动态牌源）
             const removeCard = (cards: CardInstance[]) => cards.filter(c => c.uid !== cardUid);
-            const newHand = allowImplicitSource ? removeCard(player.hand) : (fromDiscard || fromDeck || fromBuried) ? player.hand : removeCard(player.hand);
+            const shouldRemoveFromHand = !fromDiscard && !fromBuried && (!fromDeck || cardInHand);
+            const newHand = allowImplicitSource ? removeCard(player.hand) : shouldRemoveFromHand ? removeCard(player.hand) : player.hand;
             const newDiscard = allowImplicitSource ? removeCard(player.discard) : fromDiscard ? removeCard(player.discard) : player.discard;
-            const newDeck = allowImplicitSource ? removeCard(player.deck) : fromDeck ? removeCard(player.deck) : player.deck;
+            const newDeck = allowImplicitSource ? removeCard(player.deck) : (fromDeck && cardInDeck) ? removeCard(player.deck) : player.deck;
             const minion: MinionOnBase = {
                 uid: cardUid,
                 defId,
@@ -813,7 +815,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const nextTitans = [...titans];
             nextTitans[titanIndex] = {
                 ...titan,
-                controllerId: titan.ownerId,
+                controllerId: titan.controllerId,
                 powerCounters: 0,
                 talentUsed: false,
                 metadata: undefined,
@@ -1220,7 +1222,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 if (titan.location.baseIndex === baseIndex) {
                     return {
                         ...titan,
-                        controllerId: titan.ownerId,
+                        controllerId: titan.controllerId,
                         powerCounters: 0,
                         talentUsed: false,
                         metadata: undefined,
@@ -1820,7 +1822,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         if (!removedTitanUids.has(titan.uid)) return titan;
                         return {
                             ...titan,
-                            controllerId: titan.ownerId,
+                            controllerId: titan.controllerId,
                             powerCounters: 0,
                             talentUsed: false,
                             metadata: undefined,
@@ -2306,7 +2308,13 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 const currentPlayerId = state.turnOrder[state.currentPlayerIndex];
                 const movedOpponentMinion = movedMinion.controller !== currentPlayerId;
                 const updatedMovedOpp = movedOpponentMinion
-                    ? { ...(state.movedToBasesThisTurn ?? {}), [resolvedToBaseIndex]: true }
+                    ? {
+                        ...(state.movedToBasesThisTurn ?? {}),
+                        [resolvedToBaseIndex]: {
+                            ...(state.movedToBasesThisTurn?.[resolvedToBaseIndex] ?? {}),
+                            [currentPlayerId]: true,
+                        },
+                    }
                     : state.movedToBasesThisTurn;
 
                 return {

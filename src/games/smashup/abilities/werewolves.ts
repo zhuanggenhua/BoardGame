@@ -723,6 +723,38 @@ function registerWerewolfOngoingEffects(): void {
     // 制造恐慌 ongoing：回合开始时若你力量最高，爆破点降到0
     registerTrigger('werewolf_marking_territory', 'onTurnStart', (ctx: TriggerContext) => {
         const { state, playerId, now } = ctx;
+        if (ctx.sourceCardUid) {
+            const candidateBases = ctx.sourceBaseIndex !== undefined
+                ? [{ base: state.bases[ctx.sourceBaseIndex], baseIndex: ctx.sourceBaseIndex }]
+                : state.bases.map((base, baseIndex) => ({ base, baseIndex }));
+            for (const { base, baseIndex } of candidateBases) {
+                if (!base) continue;
+                const source = base.ongoingActions.find(a =>
+                    a.uid === ctx.sourceCardUid && matchesDefId(a.defId, 'werewolf_marking_territory'));
+                if (!source) continue;
+                const controllerId = (source.metadata?.sourceControllerId as PlayerId | undefined) ?? source.ownerId;
+                if (controllerId !== playerId) return [];
+
+                let myTotal = 0;
+                const opponentTotals = new Map<string, number>();
+                for (const m of base.minions) {
+                    const power = getEffectivePower(state, m, baseIndex);
+                    if (m.controller === playerId) myTotal += power;
+                    else opponentTotals.set(m.controller, (opponentTotals.get(m.controller) ?? 0) + power);
+                }
+                let isHighest = myTotal > 0;
+                for (const total of opponentTotals.values()) {
+                    if (total >= myTotal) { isHighest = false; break; }
+                }
+                if (!isHighest) return [];
+                const currentBp = getEffectiveBreakpoint(state, baseIndex);
+                return currentBp > 0
+                    ? [modifyBreakpoint(baseIndex, -currentBp, 'werewolf_marking_territory', now)]
+                    : [];
+            }
+            return [];
+        }
+
         for (let i = 0; i < state.bases.length; i++) {
             const base = state.bases[i];
             const hasMT = base.ongoingActions.some(a =>
@@ -757,6 +789,7 @@ function registerWerewolfOngoingEffects(): void {
         }
         return [];
     }, {
+        perInstance: true,
         playerContext: 'sourceController',
     });
 

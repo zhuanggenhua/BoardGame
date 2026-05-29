@@ -52,6 +52,12 @@ function countMinionsWithDefId(
     return count;
 }
 
+function getOngoingActionControllerId(action: { ownerId: PlayerId; metadata?: Record<string, unknown> }): PlayerId {
+    return (typeof action.metadata?.sourceControllerId === 'string'
+        ? action.metadata.sourceControllerId
+        : action.ownerId) as PlayerId;
+}
+
 // ============================================================================
 // 恐龙派系
 // ============================================================================
@@ -232,14 +238,18 @@ function registerBearCavalryModifiers(): void {
     // Bearing Down POD（ongoing 行动卡附着在基地上）：动态调整爆破点
     // 规则：每个在此基地有随从的玩家 +2 爆破点；如果本回合你曾把对手随从移动到此基地，则改为每个玩家 -2
     registerBreakpointModifier('bear_cavalry_bearing_down_pod', (ctx) => {
-        const card = ctx.base.ongoingActions.find(a => a.defId === 'bear_cavalry_bearing_down_pod');
-        if (!card) return 0;
+        const cards = ctx.base.ongoingActions.filter(a => a.defId === 'bear_cavalry_bearing_down_pod');
+        if (cards.length === 0) return 0;
 
         const playersWithMinions = new Set(ctx.base.minions.map(m => m.controller)).size;
-        const movedOpponentHereThisTurn = ctx.state.movedToBasesThisTurn?.[ctx.baseIndex] ?? false;
-
         const modifier = playersWithMinions * 2;
-        return movedOpponentHereThisTurn ? -modifier : modifier;
+        let total = 0;
+        for (const card of cards) {
+            const controllerId = getOngoingActionControllerId(card);
+            const movedOpponentHereThisTurn = ctx.state.movedToBasesThisTurn?.[ctx.baseIndex]?.[controllerId] ?? false;
+            total += movedOpponentHereThisTurn ? -modifier : modifier;
+        }
+        return total;
     });
 }
 

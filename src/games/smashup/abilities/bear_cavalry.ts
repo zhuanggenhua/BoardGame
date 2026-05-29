@@ -140,6 +140,8 @@ export function registerBearCavalryAbilities(): void {
     registerAbility('bear_cavalry_bear_cavalry_pod', 'onPlay', bearCavalryBearCavalryPodAbility);
     // 幼熊斥候 POD：响应式消灭
     registerTrigger('bear_cavalry_cub_scout_pod', 'onMinionMoved', bearCavalryCubScoutPodTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
     // 黑熊擒抱 POD：全局最弱消灭（与原版相同，已在上方注册）
     // 你们已经完蛋 POD：降低临界点并提供 +2 力量
@@ -147,6 +149,7 @@ export function registerBearCavalryAbilities(): void {
     // 黑熊口粮 POD：压制天赋 + 回合开始自毁
     registerAbility('bear_cavalry_bear_necessities_pod', 'talent', bearCavalryBearNecessitiesPodTalent);
     registerTrigger('bear_cavalry_bear_necessities_pod', 'onTurnStart', bearCavalryBearNecessitiesPodTurnStart, {
+        perInstance: true,
         playerContext: 'sourceController',
     });
     // 你们都是美食 POD: 批量移动（与原版相同，已在上方注册）
@@ -580,8 +583,11 @@ function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
 /** 伊万将军保护检查：你控制的所有随从（含伊万自身）不能被消灭 */
 function bearCavalryGeneralIvanChecker(ctx: ProtectionCheckContext): boolean {
     for (const base of ctx.state.bases) {
-        const ivan = base.minions.find(m => matchesDefId(m.defId, 'bear_cavalry_general_ivan'));
-        if (ivan && ivan.controller === ctx.targetMinion.controller) {
+        const hasMatchingIvan = base.minions.some(
+            minion => matchesDefId(minion.defId, 'bear_cavalry_general_ivan')
+                && minion.controller === ctx.targetMinion.controller,
+        );
+        if (hasMatchingIvan) {
             // 原版文本：Your minions cannot be destroyed.
             // FAQ 指明不区分来源，因此同控制者的所有随从（包括伊万自己）一律保护
             return true;
@@ -595,8 +601,11 @@ function bearCavalryGeneralIvanChecker(ctx: ProtectionCheckContext): boolean {
 function bearCavalryGeneralIvanPodProtection(ctx: ProtectionCheckContext): boolean {
     // 检查是否有伊万将军 POD 在场
     for (const base of ctx.state.bases) {
-        const ivan = base.minions.find(m => m.defId === 'bear_cavalry_general_ivan_pod');
-        if (ivan && ivan.controller === ctx.targetMinion.controller) {
+        const hasMatchingIvan = base.minions.some(
+            minion => minion.defId === 'bear_cavalry_general_ivan_pod'
+                && minion.controller === ctx.targetMinion.controller,
+        );
+        if (hasMatchingIvan) {
             // 保护同控制者的所有随从（包括伊万自己）
             // POD 文本：Your minions cannot be destroyed.（不区分来源）
             return true;
@@ -626,53 +635,59 @@ function bearCavalryGeneralIvanPodTrigger(ctx: TriggerContext): SmashUpEvent[] |
     if (!movedMinion || movedToBaseIndex === -1) return events;
     
     // 找到所有场上的伊万将军 POD
+    let currentMatchState = ctx.matchState;
     for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex++) {
         const base = ctx.state.bases[baseIndex];
-        const ivan = base.minions.find(m => m.defId === 'bear_cavalry_general_ivan_pod');
-        if (!ivan) continue;
-        
-        // 检查是否是其他玩家移动的随从
-        if (movedMinion.controller === ivan.controller) continue;
+        const ivans = base.minions.filter(m => m.defId === 'bear_cavalry_general_ivan_pod');
+        if (!ivans.length) continue;
 
-        // “there”：移动到的基地上必须有伊万控制者的随从，否则触发也不会产生效果
-        const movedToBase = ctx.state.bases[movedToBaseIndex];
-        const hasMyMinionThere = movedToBase?.minions.some(m => m.controller === ivan.controller) ?? false;
-        if (!hasMyMinionThere) continue;
-        
-        // 检查是否已经在本回合使用过（每回合限一次）
-        const limitKey = `bear_cavalry_general_ivan_pod_${ivan.controller}`;
-        if (ctx.state.specialLimitUsed?.[limitKey]?.length) continue;
-        
-        // 去重检查：检查交互队列中是否已存在相同的确认交互
-        if (ctx.matchState) {
-            const queue = ctx.matchState.sys.interaction.queue;
-            const current = ctx.matchState.sys.interaction.current;
-            const allInteractions = current ? [current, ...queue] : queue;
+        for (const ivan of ivans) {
+            // 检查是否是其他玩家移动的随从
+            if (movedMinion.controller === ivan.controller) continue;
+
+            // “there”：移动到的基地上必须有伊万控制者的随从，否则触发也不会产生效果
+            const movedToBase = ctx.state.bases[movedToBaseIndex];
+            const hasMyMinionThere = movedToBase?.minions.some(m => m.controller === ivan.controller) ?? false;
+            if (!hasMyMinionThere) continue;
             
-            const existingInteraction = allInteractions.find(
-                (i: any) => i.data?.sourceId === 'bear_cavalry_general_ivan_pod_trigger' &&
-                            i.data?.ivanController === ivan.controller &&
-                            i.data?.turnNumber === ctx.state.turnNumber
-            );
+            // 检查是否已经在本回合使用过（每回合限一次）
+            const limitKey = `bear_cavalry_general_ivan_pod_${ivan.controller}`;
+            if (ctx.state.specialLimitUsed?.[limitKey]?.length) continue;
             
-            if (existingInteraction) {
-                continue; // 已存在相同的交互，跳过（去重）
+            // 去重检查：检查交互队列中是否已存在相同的确认交互
+            if (currentMatchState) {
+                const queue = currentMatchState.sys.interaction.queue;
+                const current = currentMatchState.sys.interaction.current;
+                const allInteractions = current ? [current, ...queue] : queue;
+
+                const existingInteraction = allInteractions.find(
+                    (i: any) => i.data?.sourceId === 'bear_cavalry_general_ivan_pod_trigger' &&
+                                i.data?.ivanController === ivan.controller &&
+                                i.data?.turnNumber === ctx.state.turnNumber
+                );
+
+                if (existingInteraction) {
+                    continue; // 已存在相同的交互，跳过（去重）
+                }
             }
+
+            if (!currentMatchState) return events;
+            const result = executeAbilityProgram(
+                bearCavalryGeneralIvanPodPromptProgram,
+                createBearCavalryPromptContext(currentMatchState, ivan.controller, ctx.now, {
+                    baseIndex: movedToBaseIndex,
+                    ivanController: ivan.controller,
+                    limitKey,
+                }) satisfies BearCavalryGeneralIvanPromptContext,
+            );
+            events.push(...result.events);
+            currentMatchState = result.matchState ?? currentMatchState;
         }
-        
-        if (!ctx.matchState) return events;
-        const result = executeAbilityProgram(
-            bearCavalryGeneralIvanPodPromptProgram,
-            createBearCavalryPromptContext(ctx.matchState, ivan.controller, ctx.now, {
-                baseIndex: movedToBaseIndex,
-                ivanController: ivan.controller,
-                limitKey,
-            }) satisfies BearCavalryGeneralIvanPromptContext,
-        );
-        return { events: [...events, ...result.events], matchState: result.matchState };
     }
     
-    return events;
+    return currentMatchState && currentMatchState !== ctx.matchState
+        ? { events, matchState: currentMatchState }
+        : events;
 }
 
 /** 极地突击队员保护检查：基地上唯一己方随从时不收回可消灭 */
@@ -806,7 +821,7 @@ function bearCavalryCubScoutTrigger(ctx: TriggerContext): SmashUpEvent[] {
                 movedMinion.defId,
                 destBaseIndex,
                 movedMinion.owner,
-                undefined,
+                scout.controller,
                 'bear_cavalry_cub_scout',
                 ctx.now,
             ));
@@ -833,7 +848,8 @@ function bearCavalryCubScoutPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { 
         
         const existingInteraction = allInteractions.find(
             (i: any) => i.data?.sourceId === 'bear_cavalry_cub_scout_pod_destroy' &&
-                        i.data?.minionUid === ctx.triggerMinionUid
+                        i.data?.minionUid === ctx.triggerMinionUid &&
+                        (!ctx.sourceCardUid || i.data?.scoutUid === ctx.sourceCardUid)
         );
         
         if (existingInteraction) {
@@ -856,6 +872,7 @@ function bearCavalryCubScoutPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { 
     
     // 找到幼熊斥候
     for (const scout of destBase.minions) {
+        if (ctx.sourceCardUid && scout.uid !== ctx.sourceCardUid) continue;
         if (scout.defId !== 'bear_cavalry_cub_scout_pod') continue;
         if (scout.controller === movedMinion.controller) continue;
 
@@ -1305,6 +1322,25 @@ function bearCavalryBearNecessitiesPodTalent(ctx: AbilityContext): AbilityResult
 
 /** 黑熊口粮 POD 回合开始触发器：自毁 */
 function bearCavalryBearNecessitiesPodTurnStart(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.sourceCardUid) {
+        for (const base of ctx.state.bases) {
+            const card = base.ongoingActions.find((ongoing) =>
+                ongoing.uid === ctx.sourceCardUid
+                && ongoing.defId === 'bear_cavalry_bear_necessities_pod'
+                && ongoing.talentUsed === true,
+            );
+            if (!card) continue;
+            const controllerId = ((card.metadata?.sourceControllerId as PlayerId | undefined) ?? card.ownerId);
+            if (controllerId !== ctx.playerId) return [];
+            return [{
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: { cardUid: card.uid, defId: card.defId, ownerId: card.ownerId, reason: 'bear_cavalry_bear_necessities_pod' },
+                timestamp: ctx.now,
+            } as OngoingDetachedEvent];
+        }
+        return [];
+    }
+
     const events: SmashUpEvent[] = [];
     
     // 检查是否是卡牌拥有者的回合

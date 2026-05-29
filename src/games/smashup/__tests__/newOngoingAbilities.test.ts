@@ -38,7 +38,7 @@ import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import type { RandomFn } from '../../../engine/types';
 import { runCommand, defaultTestRandom } from './testRunner';
-import { makeMatchState as makePromptMatchState } from './helpers';
+import { makeMatchState as makePromptMatchState, getInteractionsFromMS } from './helpers';
 
 // ============================================================================
 // 测试辅助
@@ -124,6 +124,28 @@ describe('bear_cavalry_general_ivan 保护', () => {
         const base = makeBase({ minions: [ivan, enemy] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, enemy, 0, '0', 'destroy')).toBe(false);
+    });
+
+    it('同一基地上若同时有两张不同控制者的 General Ivan，不应因第一张同名来源而丢失另一方的 destroy 保护', () => {
+        const ivanP0 = makeMinion('ivan-p0', 'bear_cavalry_general_ivan', '0', 6, { powerModifier: 0 });
+        const ivanP1 = makeMinion('ivan-p1', 'bear_cavalry_general_ivan', '1', 6, { powerModifier: 0 });
+        const allyP1 = makeMinion('ally-p1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const base = makeBase({ minions: [ivanP0, ivanP1, allyP1] });
+        const state = makeState({ bases: [base] });
+
+        expect(isMinionProtected(state, allyP1, 0, '0', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, ivanP1, 0, '0', 'destroy')).toBe(true);
+    });
+
+    it('同一基地上若同时有两张不同控制者的 General Ivan POD，不应因第一张同名来源而丢失另一方的 destroy 保护', () => {
+        const ivanP0 = makeMinion('ivan-pod-p0', 'bear_cavalry_general_ivan_pod', '0', 6, { powerModifier: 0 });
+        const ivanP1 = makeMinion('ivan-pod-p1', 'bear_cavalry_general_ivan_pod', '1', 6, { powerModifier: 0 });
+        const allyP1 = makeMinion('ally-pod-p1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const base = makeBase({ minions: [ivanP0, ivanP1, allyP1] });
+        const state = makeState({ bases: [base] });
+
+        expect(isMinionProtected(state, allyP1, 0, '0', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, ivanP1, 0, '0', 'destroy')).toBe(true);
     });
 });
 
@@ -288,7 +310,9 @@ describe('bear_cavalry_high_ground 触发', () => {
             triggerMinionUid: 'moved', triggerMinionDefId: 'test_minion',
             random: dummyRandom, now: 0,
         });
-        expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(1);
+        expect((destroyEvents[0] as any).payload.destroyerId).toBe('0');
     });
 
     it('POD 版高地也会消灭移入的对手随从', () => {
@@ -363,6 +387,51 @@ describe('bear_cavalry_high_ground 触发', () => {
 
         expect(secondTriggered.events).toEqual([]);
         expect(secondTriggered.matchState?.sys.interaction.current).toBeUndefined();
+    });
+
+    it('同一基地第一张 General Ivan POD 不符合条件时，不应吞掉后面另一控制者的真实 prompt', () => {
+        const ivanPodP0 = makeMinion('ivan-pod-p0', 'bear_cavalry_general_ivan_pod', '0', 6, { powerModifier: 0 });
+        const ivanPodP1 = makeMinion('ivan-pod-p1', 'bear_cavalry_general_ivan_pod', '1', 6, { powerModifier: 0 });
+        const allyP1 = makeMinion('ally-p1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const movedP0 = makeMinion('moved-p0', 'test_minion', '0', 2, { powerModifier: 0 });
+        const base = makeBase({ minions: [ivanPodP0, ivanPodP1, allyP1, movedP0] });
+        const state = makeState({ bases: [base] });
+
+        const triggered = fireTriggers(state, 'onMinionMoved', {
+            state,
+            matchState: makePromptMatchState(state as any),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'moved-p0',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        const prompt = triggered.matchState?.sys.interaction.current as any;
+        expect(prompt?.data?.sourceId).toBe('bear_cavalry_general_ivan_pod_trigger');
+        expect(prompt?.playerId).toBe('1');
+
+        const yesOption = (prompt?.data?.options ?? []).find((option: any) => option?.value?.action === 'yes');
+        expect(yesOption).toBeDefined();
+
+        const resolved = runCommand(
+            triggered.matchState!,
+            {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: '1',
+                payload: { optionId: yesOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.specialLimitUsed).toEqual({
+            bear_cavalry_general_ivan_pod_1: [0],
+        });
+        const buffedAlly = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-p1');
+        expect(buffedAlly).toBeDefined();
+        expect(getEffectivePower(resolved.finalState.core, buffedAlly!, 0)).toBe(4);
     });
 });
 
@@ -465,6 +534,42 @@ describe('dino_tooth_and_claw 保护', () => {
         expect(Array.isArray(result) ? result : [result]).toEqual(
             expect.arrayContaining([expect.objectContaining({ type: SU_EVENTS.ONGOING_DETACHED })]),
         );
+    });
+
+    it('同一宿主上若同时有不同控制者的 Tooth and Claw，不应因第一张同名来源而吞掉 foreign 保护', () => {
+        const minion = makeMinion('m1', 'test_minion', '0', 3, {
+            attachedActions: [
+                { uid: 'tc-self', defId: 'dino_tooth_and_claw', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                { uid: 'tc-foreign', defId: 'dino_tooth_and_claw', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+            ],
+        });
+        const base = makeBase({ minions: [minion] });
+        const state = makeState({ bases: [base] });
+
+        const destroyEvt = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'm1',
+                minionDefId: 'test_minion',
+                fromBaseIndex: 0,
+                ownerId: '0',
+                controllerId: '0',
+                destroyerId: '0',
+                reason: 'self_destroy_attempt',
+            },
+            timestamp: 0,
+        };
+
+        const result = interceptEvent(state, destroyEvt);
+        expect(Array.isArray(result) ? result : [result]).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.ONGOING_DETACHED,
+                    payload: expect.objectContaining({ cardUid: 'tc-foreign' }),
+                }),
+            ]),
+        );
+        expect(isMinionProtected(state, minion, 0, '0', 'affect')).toBe(true);
     });
 });
 
@@ -755,6 +860,33 @@ describe('killer_plant_entangled 保护 + 自毁', () => {
         expect(isMinionProtected(state, myMinion, 0, '1', 'move')).toBe(true);
     });
 
+    it('同一基地上若同时有两张不同控制者的 Entangled，不应因第一张同名来源而放行对手移动', () => {
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const base = makeBase({
+            minions: [myMinion],
+            ongoingActions: [
+                { uid: 'ent-enemy-1', defId: 'killer_plant_entangled', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                { uid: 'ent-borrowed-1', defId: 'killer_plant_entangled', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+            ],
+        });
+        const state = makeState({ bases: [base] });
+        expect(isMinionProtected(state, myMinion, 0, '1', 'move')).toBe(true);
+    });
+
+    it('borrowed Entangled 不应把控制者自己的 borrowed 效果误判成“其他玩家的卡牌影响”而被 In Plain Sight 抵消', () => {
+        const weakMinion = makeMinion('m1', 'test_minion', '0', 2, { powerModifier: 0 });
+        const base = makeBase({
+            minions: [weakMinion],
+            ongoingActions: [
+                { uid: 'ips-borrowed-1', defId: 'innsmouth_in_plain_sight', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                { uid: 'ent-borrowed-1', defId: 'killer_plant_entangled', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+            ],
+        });
+        const state = makeState({ bases: [base] });
+
+        expect(isMinionProtected(state, weakMinion, 0, '1', 'move')).toBe(true);
+    });
+
     it('控制者回合开始时消灭本卡', () => {
         const base = makeBase({
             ongoingActions: [{ uid: 'ent-1', defId: 'killer_plant_entangled', ownerId: '0' }],
@@ -824,6 +956,29 @@ describe('elder_thing_dunwich_horror', () => {
             state, playerId: '0', random: dummyRandom, now: 0,
         });
         expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+    });
+
+    it('同一宿主上第一张 Dunwich Horror 不属于当前回合玩家时，不应吞掉后面另一控制者的真实触发', () => {
+        const minion = makeMinion('m1', 'test_minion', '0', 3, {
+            attachedActions: [
+                { uid: 'dh-p1-1', defId: 'elder_thing_dunwich_horror', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                { uid: 'dh-p0-1', defId: 'elder_thing_dunwich_horror', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+            ],
+        });
+        const base = makeBase({ minions: [minion] });
+        const state = makeState({ bases: [base] });
+
+        const { events } = fireTriggers(state, 'onTurnEnd', {
+            state, playerId: '0', random: dummyRandom, now: 0,
+        });
+
+        const destroyEvents = events.filter(event =>
+            event.type === SU_EVENTS.MINION_DESTROYED
+            && (event as any).payload.minionUid === 'm1'
+            && (event as any).payload.reason === 'elder_thing_dunwich_horror',
+        );
+        expect(destroyEvents).toHaveLength(1);
+        expect((destroyEvents[0] as any).payload.destroyerId).toBe('0');
     });
 });
 
@@ -1156,6 +1311,41 @@ describe('cthulhu_chosen beforeScoring', () => {
         expect(result.matchState).toBeDefined();
     });
 
+    it('多个天选之人走 direct fireTriggers 时，应按每个 source 继续给出对应 uid 的链式确认交互', () => {
+        const ch1 = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
+        const ch2 = makeMinion('ch2', 'cthulhu_chosen', '1', 3, { powerModifier: 0 });
+        const scoringBase = makeBase({ minions: [ch1] });
+        const otherBase = makeBase({ minions: [ch2] });
+        const state = makeState({
+            bases: [scoringBase, otherBase],
+            madnessDeck: Array.from({ length: 5 }, (_, i) => ({ uid: `mad-${i}`, defId: MADNESS_CARD_DEF_ID, type: 'madness' as const })),
+            nextUid: 200,
+        });
+        const ms = makeMS(state);
+
+        const triggered = fireTriggers(state, 'beforeScoring', {
+            state, matchState: ms, playerId: '0', baseIndex: 0, random: dummyRandom, now: 0,
+        });
+        expect(triggered.events.length).toBe(0);
+        expect(triggered.matchState).toBeDefined();
+
+        const firstPrompt = getInteractionsFromMS(triggered.matchState as any)[0] as any;
+        expect(firstPrompt?.data?.sourceId).toBe('cthulhu_chosen_confirm');
+        expect(firstPrompt?.id).toContain('ch1');
+        expect(firstPrompt?.playerId).toBe('0');
+
+        const afterFirst = runCommand(triggered.matchState as any, {
+            type: 'SYS_INTERACTION_RESPOND' as any,
+            playerId: '0',
+            payload: { optionId: 'no' },
+        } as any, defaultTestRandom);
+
+        const secondPrompt = getInteractionsFromMS(afterFirst.finalState)[0] as any;
+        expect(secondPrompt?.data?.sourceId).toBe('cthulhu_chosen_confirm');
+        expect(secondPrompt?.id).toContain('ch2');
+        expect(secondPrompt?.playerId).toBe('1');
+    });
+
     it('不在计分基地上的天选之人也能触发（回退模式）', () => {
         const ch1 = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const otherBase = makeBase({ minions: [ch1] });
@@ -1174,6 +1364,52 @@ describe('cthulhu_chosen beforeScoring', () => {
         expect(powerEvts.length).toBe(1);
         expect(powerEvts[0].payload.minionUid).toBe('ch1');
         expect(powerEvts[0].payload.baseIndex).toBe(1); // 力量加在天选之人所在的基地
+    });
+});
+
+describe('alien_scout afterScoring', () => {
+    function makeMS(core: SmashUpCore) {
+        return { core, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } as any } as any;
+    }
+
+    it('多个侦察兵走 direct fireTriggers 时，应按每个 source 继续给出对应 uid 的链式回手确认交互', () => {
+        const scout1 = makeMinion('scout-1', 'alien_scout', '0', 3);
+        const scout2 = makeMinion('scout-2', 'alien_scout', '1', 3);
+        const state = makeState({
+            bases: [makeBase({ minions: [scout1, scout2] })],
+        });
+        const ms = makeMS(state);
+
+        const triggered = fireTriggers(state, 'afterScoring', {
+            state,
+            matchState: ms,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [
+                { playerId: '0', power: 3, vp: 2 },
+                { playerId: '1', power: 3, vp: 2 },
+            ],
+            random: dummyRandom,
+            now: 0,
+        });
+        expect(triggered.events.length).toBe(0);
+        expect(triggered.matchState).toBeDefined();
+
+        const firstPrompt = getInteractionsFromMS(triggered.matchState as any)[0] as any;
+        expect(firstPrompt?.data?.sourceId).toBe('alien_scout_return');
+        expect(firstPrompt?.id).toContain('scout-1');
+        expect(firstPrompt?.playerId).toBe('0');
+
+        const afterFirst = runCommand(triggered.matchState as any, {
+            type: 'SYS_INTERACTION_RESPOND' as any,
+            playerId: '0',
+            payload: { optionId: 'no' },
+        } as any, defaultTestRandom);
+
+        const secondPrompt = getInteractionsFromMS(afterFirst.finalState)[0] as any;
+        expect(secondPrompt?.data?.sourceId).toBe('alien_scout_return');
+        expect(secondPrompt?.id).toContain('scout-2');
+        expect(secondPrompt?.playerId).toBe('1');
     });
 });
 

@@ -1199,6 +1199,30 @@ describe('cthulhu_complete_the_ritual 打出约束', () => {
         expect(result.success).toBe(true);
     });
 
+    it('目标基地只有自己控制但不拥有的 borrowed 随从时也可以打出', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'cthulhu_complete_the_ritual', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'b1',
+                minions: [makeMinion('borrowed-m1', 'test_minion', '0', 3, '1')],
+                ongoingActions: [],
+            }],
+            baseDeck: ['b2'],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a1', targetBaseIndex: 0 },
+        } as any);
+        expect(result.success).toBe(true);
+    });
+
     it('目标基地没有自己随从时被拒绝', () => {
         const state = makeState({
             players: {

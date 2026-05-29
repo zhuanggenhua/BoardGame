@@ -1015,6 +1015,35 @@ describe('zombie_overrun（泛滥横行）ongoing 效果', () => {
         expect(allowed.steps[0]?.success).toBe(true);
     });
 
+    it('同一基地上若同时有两张不同控制者的 zombie_overrun，不应因第一张同名来源而放行对手打随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['zombies', 'pirates'] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('m1', 'pirate_first_mate', '1', 'minion')],
+                }),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    { uid: 'enemy-overrun-1', defId: 'zombie_overrun', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'borrowed-overrun-1', defId: 'zombie_overrun', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ]),
+                makeBase('test_base_2'),
+            ],
+            currentPlayerIndex: 1,
+        });
+        const state = makeFullMatchState(core);
+
+        const blocked = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        }, 'double overrun: P1 不应因第一张同名来源而绕过 P0 控制的限制基地');
+        expect(blocked.steps[0]?.success).toBe(false);
+    });
+
     it('与其他 source instance 自收口 trigger 同时出现时，应自动收口且不弹排序选择', () => {
         const core = makeState({
             players: {

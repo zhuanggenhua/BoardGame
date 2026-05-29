@@ -97,6 +97,7 @@ import { getSmashUpSelectableBaseIndices, hasSmashUpDirectHandPromptPlayableOpti
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
+import { getSetAsideTitansForActivation, getSetAsideTitansForDeckDisplay } from './ui/setAsideTitanRail';
 
 const ABILITY_FEEDBACK_DEFAULT_MESSAGES: Record<string, string> = {
     'ui.extra_minion_granted': '获得{{count}}次额外随从机会',
@@ -241,7 +242,7 @@ function checkPlayConstraintUI(
     playerId: string,
 ): boolean {
     if (constraint === 'requireOwnMinion') {
-        return core.bases[baseIndex].minions.some(m => m.owner === playerId);
+        return core.bases[baseIndex].minions.some(m => m.controller === playerId);
     }
     if (typeof constraint === 'object' && constraint.type === 'requireOwnPower') {
         const base = core.bases[baseIndex];
@@ -1191,9 +1192,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [meFirstPendingCard, core]);
 
     const setAsideTitansForDisplay = useMemo(() => {
-        return coreTitans.filter((titan) =>
-            titan.ownerId === displayedDeckPlayerId && titan.location.zone === 'setaside',
-        );
+        return getSetAsideTitansForDeckDisplay(coreTitans, displayedDeckPlayerId);
     }, [coreTitans, displayedDeckPlayerId]);
     const focusedReactionSetAsideTitans = useMemo(() => {
         if (!isTitanReactionPrompt) return [];
@@ -1205,9 +1204,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const result = new Map<string, { baseIndices: Set<number>; firstError: string | null }>();
         if (!playerID) return result;
 
-        const ownedSetAsideTitans = coreTitans.filter((titan) =>
-            titan.ownerId === playerID && titan.location.zone === 'setaside',
-        );
+        const ownedSetAsideTitans = getSetAsideTitansForActivation(coreTitans, playerID);
 
         for (const titan of ownedSetAsideTitans) {
             const baseIndices = new Set<number>();
@@ -1335,7 +1332,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             const base = coreBases[baseIndex];
 
             for (const ongoing of base.ongoingActions ?? []) {
-                if (ongoing.ownerId !== playerID) continue;
+                const ongoingControllerId =
+                    (ongoing.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                    ?? ongoing.ownerId;
+                if (ongoingControllerId !== playerID) continue;
                 const validation = validate(G, {
                     type: SU_COMMANDS.USE_TALENT,
                     playerId: playerID,
@@ -1348,7 +1348,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
             for (const minion of base.minions) {
                 for (const attachedAction of minion.attachedActions ?? []) {
-                    if (attachedAction.ownerId !== playerID) continue;
+                    const attachedControllerId =
+                        (attachedAction.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                        ?? attachedAction.ownerId;
+                    if (attachedControllerId !== playerID) continue;
                     const validation = validate(G, {
                         type: SU_COMMANDS.USE_TALENT,
                         playerId: playerID,

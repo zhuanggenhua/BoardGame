@@ -470,6 +470,28 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(isOperationRestricted(state, 0, '0', 'play_action')).toBe(false);
         });
 
+        test('同一基地上若同时有两张不同控制者的 ornate_dome，不应因第一张同名来源而放行对手打行动', () => {
+            const base = makeBase({
+                ongoingActions: [
+                    {
+                        uid: 'od-owned-by-p0',
+                        defId: 'steampunk_ornate_dome',
+                        ownerId: '0',
+                    } as any,
+                    {
+                        uid: 'od-borrowed-by-p1',
+                        defId: 'steampunk_ornate_dome',
+                        ownerId: '0',
+                        metadata: { sourceControllerId: '1' },
+                    } as any,
+                ],
+            });
+            const state = makeState([base]);
+
+            expect(isOperationRestricted(state, 0, '0', 'play_action')).toBe(true);
+            expect(isOperationRestricted(state, 0, '1', 'play_action')).toBe(true);
+        });
+
         test('borrowed ornate_dome onPlay 应按控制者而不是真实 owner 仅摧毁其他玩家行动', () => {
             const executor = resolveAbility('steampunk_ornate_dome', 'onPlay')!;
             const state = makeState([makeBase({
@@ -606,6 +628,40 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 sourcePlayerId: '0',
                 reason: 'steampunk_escape_hatch',
             });
+        });
+
+        test('borrowed Escape Hatch 不应被同基地其他玩家的同名 ongoing 抢走 source', () => {
+            const minion = makeMinion({ defId: 'steampunk_a', uid: 'sa-borrowed', controller: '0', owner: '0' });
+            const base = makeBase({
+                minions: [minion],
+                ongoingActions: [
+                    { uid: 'opponent-hatch', defId: 'steampunk_escape_hatch', ownerId: '1' } as any,
+                    {
+                        uid: 'borrowed-hatch',
+                        defId: 'steampunk_escape_hatch',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    } as any,
+                ],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionDestroyed', {
+                state, playerId: '1', baseIndex: 0,
+                triggerMinionUid: 'sa-borrowed', triggerMinionDefId: 'steampunk_a',
+                random: dummyRandom, now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0]).toEqual(expect.objectContaining({
+                type: SU_EVENTS.MINION_RETURNED,
+                payload: expect.objectContaining({
+                    minionUid: 'sa-borrowed',
+                    toPlayerId: '0',
+                    sourcePlayerId: '0',
+                    reason: 'steampunk_escape_hatch',
+                }),
+            }));
         });
 
         test('对手随从被消灭时不触发', () => {
@@ -1563,6 +1619,20 @@ describe('食人花 ongoing 能力', () => {
             expect(isMinionProtected(state, minion, 0, '0', 'move')).toBe(false);
         });
 
+        test('同一基地上若同时有两张不同控制者的 deep_roots，不应因第一张同名来源而放行对手移动', () => {
+            const minion = makeMinion({ defId: 'kp_a', uid: 'kp-double-1', controller: '0' });
+            const base = makeBase({
+                minions: [minion],
+                ongoingActions: [
+                    { uid: 'dr-enemy', defId: 'killer_plant_deep_roots', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'dr-borrowed', defId: 'killer_plant_deep_roots', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, minion, 0, '1', 'move')).toBe(true);
+        });
+
         test('borrowed deep_roots 不应反向保护真实 owner 的随从', () => {
             const minion = makeMinion({ defId: 'kp_a', uid: 'kp-1', controller: '1' });
             const base = makeBase({
@@ -1823,6 +1893,35 @@ describe('食人花 ongoing 能力', () => {
             expect(destroyEvts).toHaveLength(1);
             expect((destroyEvts[0] as any).payload.destroyerId).toBe('0');
         });
+
+        test('同一宿主上第一张 Choking Vines 不属于当前回合玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const target = makeMinion({
+                defId: 'weak_m',
+                uid: 'wm-multi-1',
+                controller: '1',
+                owner: '1',
+                basePower: 1,
+                attachedActions: [
+                    { uid: 'cv-p1-1', defId: 'killer_plant_choking_vines', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'cv-p0-1', defId: 'killer_plant_choking_vines', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const strong = makeMinion({ defId: 'strong_m', uid: 'sm-1', controller: '0', basePower: 5 });
+            const base = makeBase({ minions: [target, strong] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onTurnStart', {
+                state, playerId: '0', random: dummyRandom, now: 1000,
+            });
+
+            const destroyEvts = events.filter(
+                e => e.type === SU_EVENTS.MINION_DESTROYED
+                    && (e as any).payload.minionUid === 'wm-multi-1'
+                    && (e as any).payload.reason === 'killer_plant_choking_vines',
+            );
+            expect(destroyEvts).toHaveLength(1);
+            expect((destroyEvts[0] as any).payload.destroyerId).toBe('0');
+        });
     });
 
     describe('killer_plant_venus_man_trap: 金星捕蝇草', () => {
@@ -2018,6 +2117,20 @@ describe('印斯茅斯 ongoing 能力', () => {
             const base = makeBase({
                 minions: [weakMinion],
                 ongoingActions: [{ uid: 'ips-borrowed-1', defId: 'innsmouth_in_plain_sight', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, weakMinion, 0, '1', 'affect')).toBe(true);
+        });
+
+        test('同一基地上若同时有两张不同控制者的 in_plain_sight，不应因第一张同名来源而放行对手影响', () => {
+            const weakMinion = makeMinion({ defId: 'inn_a', uid: 'ia-double-1', controller: '0', basePower: 2 });
+            const base = makeBase({
+                minions: [weakMinion],
+                ongoingActions: [
+                    { uid: 'ips-enemy-1', defId: 'innsmouth_in_plain_sight', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'ips-borrowed-1', defId: 'innsmouth_in_plain_sight', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
             });
             const state = makeState([base]);
 

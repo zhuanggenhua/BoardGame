@@ -732,15 +732,16 @@ export function registerExpansionBaseAbilities(): void {
         // 随从在九命之屋本身被消灭→不触发（只拦截其他基地）
         if (baseIndex === houseBaseIndex) return [];
 
-        // 查找被消灭随从的拥有者
+        // 九命之屋文本里的 “your minion” 看控制者，不看真实 owner。
         const minion = state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
         const ownerId = minion?.owner ?? trigCtx.playerId;
+        const controllerId = minion?.controller ?? trigCtx.controllerId ?? trigCtx.playerId;
 
         // 创建玩家选择交互：移动到九命之屋 or 正常消灭
         if (!trigCtx.matchState) return [];
         const interaction = createSimpleChoice(
             `nine_lives_${triggerMinionUid}_${trigCtx.now}`,
-            ownerId,
+            controllerId,
             '九命之屋：是否将随从移动到九命之屋？',
             [
                 {
@@ -763,6 +764,7 @@ export function registerExpansionBaseAbilities(): void {
                     fromBaseIndex: baseIndex,
                     houseBaseIndex,
                     ownerId,
+                    controllerId,
                     destroyerId: trigCtx.destroyerId,
                 },
             },
@@ -1367,6 +1369,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         const fromBaseIndex = selected.fromBaseIndex ?? ctx?.fromBaseIndex;
         const houseBaseIndex = selected.houseBaseIndex ?? ctx?.houseBaseIndex;
         const ownerId = selected.ownerId ?? ctx?.ownerId ?? playerId;
+        const controllerId = selected.controllerId ?? ctx?.controllerId ?? playerId;
         const destroyerId = selected.destroyerId ?? ctx?.destroyerId;
 
         if (!minionUid || !minionDefId || fromBaseIndex === undefined) return { state, events: [] };
@@ -1393,6 +1396,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     minionDefId,
                     fromBaseIndex,
                     ownerId,
+                    controllerId,
                     destroyerId,
                     reason: '九命之屋：玩家选择不拯救',
                 },

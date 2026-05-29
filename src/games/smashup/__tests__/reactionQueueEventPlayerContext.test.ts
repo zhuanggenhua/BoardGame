@@ -5,6 +5,7 @@ import { clearRegistry } from '../domain/abilityRegistry';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { postProcessSystemEvents } from '../domain';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
@@ -863,6 +864,67 @@ describe('reaction queue: preserves event player context', () => {
         )).toBe(false);
     });
 
+    it('global Way of the Warrior queued trigger 在场上同时存在其他玩家同名来源时，不应抢成第一张 discard source', () => {
+        const core = makeState({
+            turnOrder: ['0', '1', '2'],
+            currentPlayerIndex: 2,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('warrior-action-p0', 'samurai_way_of_the_warrior', 'action', '0')],
+                    factions: [SMASHUP_FACTION_IDS.SAMURAI, SMASHUP_FACTION_IDS.ROBOTS],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('warrior-draw-p1-a', 'robot_microbot_alpha', 'minion', '1'),
+                        makeCard('warrior-draw-p1-b', 'robot_microbot_beta', 'minion', '1'),
+                    ],
+                    discard: [makeCard('warrior-action-p1', 'samurai_way_of_the_warrior', 'action', '1')],
+                    factions: [SMASHUP_FACTION_IDS.SAMURAI, SMASHUP_FACTION_IDS.TRICKSTERS],
+                }),
+                '2': makePlayer('2', {
+                    deck: [makeCard('event-player-draw-a', 'ghosts_spectre', 'minion', '2')],
+                    factions: [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.SHARKS],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_isis_swingin_pad',
+                    minions: [
+                        makeMinion('warrior-marked-b', 'samurai_ronin', '2', 4, {
+                            metadata: {
+                                samuraiWayOfTheWarriorDrawUntilTurnNumber: 2,
+                                samuraiWayOfTheWarriorDrawPlayerId: '1',
+                                samuraiWayOfTheWarriorSourceCardUid: 'warrior-action-p1',
+                            },
+                        }),
+                    ],
+                    ongoingActions: [],
+                }),
+            ],
+        });
+
+        const queued = collectTriggers(core, 'onMinionDiscardedFromBase', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '2',
+            baseIndex: 0,
+            triggerMinionUid: 'warrior-marked-b',
+            triggerMinionDefId: 'samurai_ronin',
+            triggerMinion: core.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 29,
+        }) as any;
+
+        const warriorTrigger = queued?.payload?.triggers?.find((trigger: any) =>
+            trigger.sourceDefId === 'samurai_way_of_the_warrior');
+        expect(warriorTrigger).toEqual(expect.objectContaining({
+            sourceCardUid: 'warrior-action-p1',
+            sourceControllerId: '1',
+            eventPlayerId: '2',
+        }));
+    });
+
     it('global Way of the Warrior POD queued trigger 应按标记元数据给施放者抽牌而不是按事件玩家或行动拥有者', () => {
         const core = makeState({
             turnOrder: ['0', '1', '2'],
@@ -1153,6 +1215,74 @@ describe('reaction queue: preserves event player context', () => {
         expect(rainborocTriggers).toHaveLength(0);
     });
 
+    it('collectTriggers onMinionPlayed 处理 itty_critters_rainboroc 时，若第一只本回合已触发应改选仍可触发的第二只 source', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 41,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.ITTY_CRITTERS, SMASHUP_FACTION_IDS.ROBOTS],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.TRICKSTERS],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_isis_swingin_pad',
+                    minions: [makeMinion('rain-target-minion', 'robot_microbot_alpha', '0', 2)],
+                    ongoingActions: [],
+                }),
+            ],
+            titans: [
+                {
+                    uid: 'rainboroc-a',
+                    defId: 'itty_critters_rainboroc',
+                    faction: SMASHUP_FACTION_IDS.ITTY_CRITTERS,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                } as any,
+                {
+                    uid: 'rainboroc-b',
+                    defId: 'itty_critters_rainboroc',
+                    faction: SMASHUP_FACTION_IDS.ITTY_CRITTERS,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 2 },
+                } as any,
+            ],
+            rainborocTriggeredTurnByTitan: {
+                'rainboroc-a': 41,
+            },
+        });
+
+        const queued = collectTriggers(core, 'onMinionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'rain-target-minion',
+            triggerMinionDefId: 'robot_microbot_alpha',
+            triggerMinion: core.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 41,
+        }) as any;
+
+        const rainborocTrigger = queued?.payload?.triggers?.find((trigger: TriggerInstance) =>
+            trigger.sourceDefId === 'itty_critters_rainboroc');
+        expect(rainborocTrigger).toEqual(expect.objectContaining({
+            sourceCardUid: 'rainboroc-b',
+            sourceControllerId: '0',
+            eventPlayerId: '0',
+        }));
+    });
+
     it('collectTriggers onMinionPlayed 只应在对手有剩余手牌时为 Big Funny Giant 排出 trigger', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
@@ -1242,6 +1372,73 @@ describe('reaction queue: preserves event player context', () => {
         const noHandTriggers = (opponentNoHandQueued?.payload?.triggers ?? []).filter((trigger: any) =>
             trigger.sourceDefId === 'tricksters_big_funny_giant');
         expect(noHandTriggers).toHaveLength(0);
+    });
+
+    it('collectTriggers onMinionPlayed 遇到同基地两只 Big Funny Giant 时，不应因第一只属于当前玩家就吞掉对手那只 trigger', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.TRICKSTERS, SMASHUP_FACTION_IDS.ROBOTS],
+                    hand: [makeCard('p0-spare', 'robot_microbot', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.TRICKSTERS, SMASHUP_FACTION_IDS.GHOSTS],
+                    hand: [makeCard('p1-spare', 'ghosts_spectre', 'minion', '1')],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_isis_swingin_pad',
+                    minions: [makeMinion('p0-played-minion', 'robot_microbot', '0', 1)],
+                }),
+            ],
+            titans: [
+                {
+                    uid: 'big-funny-self-first',
+                    defId: 'tricksters_big_funny_giant',
+                    faction: SMASHUP_FACTION_IDS.TRICKSTERS,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                } as any,
+                {
+                    uid: 'big-funny-opponent-second',
+                    defId: 'tricksters_big_funny_giant',
+                    faction: SMASHUP_FACTION_IDS.TRICKSTERS,
+                    ownerId: '1',
+                    controllerId: '1',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 2 },
+                } as any,
+            ],
+            turnNumber: 7,
+        });
+
+        const queued = collectTriggers(core, 'onMinionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'p0-played-minion',
+            triggerMinionDefId: 'robot_microbot',
+            triggerMinion: core.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 14,
+        }) as any;
+
+        const giantTriggers = (queued?.payload?.triggers ?? []).filter((trigger: any) =>
+            trigger.sourceDefId === 'tricksters_big_funny_giant');
+        expect(giantTriggers).toHaveLength(1);
+        expect(giantTriggers[0]).toEqual(expect.objectContaining({
+            sourceCardUid: 'big-funny-opponent-second',
+            sourceControllerId: '1',
+            eventPlayerId: '0',
+        }));
     });
 
     it('默认 eventPlayer queued onMinionPlayed trigger 应把 Big Funny Giant 弃牌 prompt 交给打出随从的对手', () => {
@@ -1476,6 +1673,83 @@ describe('reaction queue: preserves event player context', () => {
         const highTriggers = (opponentHighQueued?.payload?.triggers ?? []).filter((trigger: any) =>
             trigger.sourceDefId === sourceDefId);
         expect(highTriggers).toHaveLength(0);
+    });
+
+    it('collectTriggers onMinionPlayed 处理 trickster_leprechaun_pod 时，若第一只本回合已用应改选仍可触发的第二只 source', () => {
+        const core = makeState({
+            turnOrder: ['0', '1', '2'],
+            currentPlayerIndex: 2,
+            turnNumber: 36,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.TRICKSTERS, SMASHUP_FACTION_IDS.ROBOTS],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.TRICKSTERS, SMASHUP_FACTION_IDS.SHARKS],
+                }),
+                '2': makePlayer('2', {
+                    factions: [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.ALIENS],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_isis_swingin_pad',
+                    minions: [
+                        makeMinion('lp-pod-a', 'trickster_leprechaun_pod', '0', 4, {
+                            metadata: { leprechaunPodLastTurnTriggered: 36 },
+                        }),
+                        makeMinion('lp-pod-b', 'trickster_leprechaun_pod', '1', 5),
+                        makeMinion('lep-target-minion', 'robot_microbot', '2', 1),
+                    ],
+                    ongoingActions: [],
+                }),
+            ],
+        });
+
+        const queued = collectTriggers(core, 'onMinionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '2',
+            baseIndex: 0,
+            triggerMinionUid: 'lep-target-minion',
+            triggerMinionDefId: 'robot_microbot',
+            triggerMinion: core.bases[0].minions[2],
+            random: defaultTestRandom,
+            now: 36,
+        }) as any;
+
+        const lepTrigger = queued?.payload?.triggers?.find((trigger: TriggerInstance) =>
+            trigger.sourceDefId === 'trickster_leprechaun_pod');
+        expect(lepTrigger).toEqual(expect.objectContaining({
+            sourceCardUid: 'lp-pod-b',
+            sourceControllerId: '1',
+            eventPlayerId: '2',
+        }));
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: [lepTrigger],
+            }),
+            defaultTestRandom,
+            36,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({
+                minionUid: 'lep-target-minion',
+                destroyerId: '1',
+                reason: 'trickster_leprechaun_pod',
+            }),
+        }));
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_METADATA_UPDATED,
+            payload: expect.objectContaining({
+                minionUid: 'lp-pod-b',
+                reason: 'trickster_leprechaun_pod_once_per_turn',
+            }),
+        }));
     });
 
     it('collectTriggers onMinionPlayed 应按对手/异基地/回合次数/可抽牌过滤 Brownie POD 空 trigger', () => {
@@ -2198,6 +2472,66 @@ describe('reaction queue: preserves event player context', () => {
         expect(chooseMinionPrompt?.playerId).toBe('0');
         expect(chooseMinionPrompt?.data?.sourceId).toBe('titan_bear_cavalry_major_ursa_choose_minion');
 
+    });
+
+    it('postProcessSystemEvents 处理 TITAN_MOVED 时，应给 Major Ursa 的 queued trigger 保留 source provenance', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.BEAR_CAVALRY, SMASHUP_FACTION_IDS.PIRATES],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.TRICKSTERS],
+                }),
+            },
+            bases: [
+                makeBase('base_isis_swingin_pad', [
+                    makeMinion('enemy-moved', 'ghosts_spectre', '1', 3),
+                ]),
+                makeBase('base_portal_room', []),
+            ],
+            titans: [{
+                uid: 't-ursa',
+                defId: 'bear_cavalry_major_ursa',
+                faction: SMASHUP_FACTION_IDS.BEAR_CAVALRY,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+            } as any],
+        });
+
+        const result = postProcessSystemEvents(
+            core,
+            [{
+                type: SU_EVENTS.TITAN_MOVED,
+                payload: {
+                    titanUid: 't-ursa',
+                    defId: 'bear_cavalry_major_ursa',
+                    fromBaseIndex: 1,
+                    toBaseIndex: 0,
+                    reason: 'test_major_ursa_move',
+                },
+                timestamp: 2,
+            } as any],
+            defaultTestRandom,
+            makeMatchState(core),
+        );
+
+        const queuedEvent = result.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        const ursaTrigger = queuedEvent?.payload?.triggers?.find((candidate: any) =>
+            candidate?.sourceDefId === 'bear_cavalry_major_ursa');
+
+        expect(ursaTrigger).toEqual(expect.objectContaining({
+            sourceCardUid: 't-ursa',
+            sourceControllerId: '0',
+            sourceBaseIndex: 0,
+            ownerPlayerId: '0',
+            playerContext: 'sourceController',
+        }));
     });
 
     it('sourceController queued onMinionMoved trigger 仍应把 Very Large Boulder 的移动选择交给泰坦控制者', () => {
@@ -3336,6 +3670,66 @@ describe('reaction queue: preserves event player context', () => {
         expect(minionLimitEvents.map((event: any) => event.payload?.playerId)).toEqual(['0']);
     });
 
+    it('queued onMinionDestroyed 的 borrowed sharks_blood_in_the_water source 应把额外随从额度交给当前控制者而不是真实 owner', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.SHARKS, SMASHUP_FACTION_IDS.ROBOTS],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.SHARKS, SMASHUP_FACTION_IDS.GHOSTS],
+                }),
+            },
+            bases: [makeBase({
+                defId: 'base_the_deep',
+                minions: [
+                    makeMinion('victim-borrowed-blood', 'ghosts_spectre', '1', 2),
+                    makeMinion('destroyer-borrowed-blood', 'sharks_great_white', '0', 4),
+                ],
+                ongoingActions: [
+                    { uid: 'blood-borrowed', defId: 'sharks_blood_in_the_water', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            })],
+        });
+
+        const victim = core.bases[0].minions.find(minion => minion.uid === 'victim-borrowed-blood');
+        const queued = collectTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core, 'playCards', '1'),
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'victim-borrowed-blood',
+            triggerMinionDefId: 'ghosts_spectre',
+            triggerMinion: victim,
+            destroyerId: '0',
+            reason: 'test_destroy',
+            random: defaultTestRandom,
+            now: 26,
+        }) as any;
+
+        const bloodTrigger = (queued?.payload?.triggers ?? [])
+            .find((trigger: any) => trigger.sourceCardUid === 'blood-borrowed');
+        expect(bloodTrigger?.sourceControllerId).toBe('0');
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: [bloodTrigger],
+            }, 'playCards', '1'),
+            defaultTestRandom,
+            26,
+        );
+
+        const minionLimitEvents = resolved?.events.filter((event: any) =>
+            event.type === SU_EVENTS.LIMIT_MODIFIED
+            && event.payload?.limitType === 'minion'
+            && event.payload?.reason === 'sharks_blood_in_the_water'
+        ) ?? [];
+        expect(minionLimitEvents.map((event: any) => event.payload?.playerId)).toEqual(['0']);
+    });
+
     it('queued onMinionDestroyed 全局 Sharks Mako 应选择 destroyer 自己的 source', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
@@ -3755,6 +4149,102 @@ describe('reaction queue: preserves event player context', () => {
         const drawPrompt = getInteractionsFromMS(resolved.finalState)[0] as any;
         expect(drawPrompt?.playerId).toBe('0');
         expect(drawPrompt?.data?.sourceId).toBe('titan_ninjas_invisible_ninja_ongoing');
+    });
+
+    it('手工回放第二条 Invisible Ninja queued source 时，draw prompt 的 continuationContext 应绑定被选中的 titanUid，而不是扫描顺序里的第一只', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 7,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('peek-1', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('peek-2', 'robot_microbot_beta', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_a', [makeMinion('ally-a', 'robot_microbot_alpha', '0', 2, { powerModifier: 0 })]),
+                makeBase('base_b', [makeMinion('ally-b', 'robot_microbot_beta', '0', 3, { powerModifier: 0 })]),
+            ],
+            titans: [
+                {
+                    uid: 'ninja-titan-a',
+                    defId: 'ninjas_invisible_ninja',
+                    faction: 'ninjas',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                } as any,
+                {
+                    uid: 'ninja-titan-b',
+                    defId: 'ninjas_invisible_ninja',
+                    faction: 'ninjas',
+                    ownerId: '1',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 2 },
+                } as any,
+            ],
+        });
+
+        const trigger: TriggerInstance = {
+            id: 'queued-invisible-ninja-b',
+            timing: 'onCardReturnedToHand',
+            playerContext: 'sourceController',
+            sourceDefId: 'ninjas_invisible_ninja',
+            sourceCardUid: 'ninja-titan-b',
+            sourceControllerId: '0',
+            sourceBaseIndex: 1,
+            mandatory: false,
+            resolutionClass: 'optional',
+            ownerPlayerId: '0',
+            eventPlayerId: '0',
+            witnessRequirement: 'inPlayAtTriggerTime',
+            witnessed: true,
+            triggerMinionUid: 'returned-own',
+            triggerMinionDefId: 'robot_microbot_beta',
+            sourceEventId: 'card-returned:0:3303:1',
+        };
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...(core as SmashUpCore),
+                triggerQueue: [trigger],
+            }),
+            defaultTestRandom,
+            3303,
+        );
+
+        const prompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        expect(prompt?.playerId).toBe('0');
+        expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
+
+        const ninjaOption = prompt?.data?.options?.find((option: any) => {
+            const triggerId = option?.value?.triggerId;
+            const queuedTrigger = resolved?.state.core.triggerQueue?.find((entry: any) => entry.id === triggerId);
+            return queuedTrigger?.sourceCardUid === 'ninja-titan-b';
+        });
+        expect(ninjaOption).toBeDefined();
+
+        const afterChoice = runCommand(
+            resolved!.state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: ninjaOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const drawPrompt = getInteractionsFromMS(afterChoice.finalState)[0] as any;
+        expect(drawPrompt?.playerId).toBe('0');
+        expect(drawPrompt?.data?.sourceId).toBe('titan_ninjas_invisible_ninja_ongoing');
+        expect(drawPrompt?.data?.continuationContext).toEqual(expect.objectContaining({
+            titanUid: 'ninja-titan-b',
+            cardUids: ['peek-1', 'peek-2'],
+        }));
     });
 
     it('sourceController queued onCardReturnedToHand trigger 在他人随从回到他人手牌时不应误给 Invisible Ninja 排抽牌', () => {
@@ -4182,6 +4672,86 @@ describe('reaction queue: preserves event player context', () => {
         expect(resolved?.state.core.players['1']?.discard.map((card: any) => card.uid)).toContain('stasis-borrowed');
     });
 
+    it('同一控制者有两张 Stasis Field 时，queued onTurnStart 应逐实例排队并逐张自毁，而不是一次清空全部', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_portal_room',
+                    ongoingActions: [
+                        { uid: 'stasis-a', defId: 'time_travelers_stasis_field', ownerId: '0' } as any,
+                        { uid: 'stasis-b', defId: 'time_travelers_stasis_field', ownerId: '0' } as any,
+                    ],
+                }),
+            ],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+        });
+
+        const queued = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 13,
+        }) as any;
+
+        const stasisTriggers = (queued?.payload?.triggers ?? []).filter((trigger: any) =>
+            trigger.sourceDefId === 'time_travelers_stasis_field');
+        expect(stasisTriggers).toHaveLength(2);
+        expect(stasisTriggers.map((trigger: any) => trigger.sourceCardUid)).toEqual(['stasis-a', 'stasis-b']);
+
+        const firstResolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: [stasisTriggers[0]],
+            }),
+            defaultTestRandom,
+            13,
+        );
+
+        expect(firstResolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({
+                cardUid: 'stasis-a',
+                defId: 'time_travelers_stasis_field',
+                ownerId: '0',
+                reason: 'time_travelers_stasis_field',
+            }),
+        }));
+        expect(firstResolved?.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({
+                cardUid: 'stasis-b',
+            }),
+        }));
+        expect(firstResolved?.state.core.bases[0]?.ongoingActions.map((action: any) => action.uid)).toEqual(['stasis-b']);
+
+        const secondResolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...(firstResolved?.state.core as SmashUpCore),
+                triggerQueue: [stasisTriggers[1]],
+            }),
+            defaultTestRandom,
+            14,
+        );
+
+        expect(secondResolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({
+                cardUid: 'stasis-b',
+                defId: 'time_travelers_stasis_field',
+                ownerId: '0',
+                reason: 'time_travelers_stasis_field',
+            }),
+        }));
+        expect(secondResolved?.state.core.bases[0]?.ongoingActions ?? []).toEqual([]);
+    });
+
     it('sourceController queued onTurnEnd trigger 仍应只在拥有者回合结束让 Missing Uplink 按自己实例数给拥有者抽牌', () => {
         const baseCore = makeState({
             turnOrder: ['0', '1'],
@@ -4578,6 +5148,70 @@ describe('reaction queue: preserves event player context', () => {
         expect((resolved?.state.core.bases[0]?.minions ?? []).find((minion: any) => minion.uid === 'shark-host')?.powerCounters).toBe(1);
     });
 
+    it('同一基地第一张 Shark Tattoo 属于其他控制者时，不应吞掉后面 borrowed source 的真实 trigger', () => {
+        const baseCore = makeState({
+            turnOrder: ['0', '1'],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_portal_room', [
+                    makeMinion('shark-host-opponent', 'world_champs_stoneford', '1', 3, {
+                        attachedActions: [{ uid: 'shark-tattoo-opponent', defId: 'world_champs_shark_tattoo', ownerId: '1' } as any],
+                    }),
+                    makeMinion('shark-host-borrowed', 'world_champs_stoneford', '0', 3, {
+                        attachedActions: [{
+                            uid: 'shark-tattoo-borrowed',
+                            defId: 'world_champs_shark_tattoo',
+                            ownerId: '1',
+                            metadata: { sourceControllerId: '0' },
+                        } as any],
+                    }),
+                ]),
+            ],
+            turnNumber: 2,
+        });
+
+        const ownerTurnCore = {
+            ...baseCore,
+            currentPlayerIndex: 0,
+        };
+        const ownerQueued = collectTriggers(ownerTurnCore, 'onTurnStart', {
+            state: ownerTurnCore,
+            matchState: makeMatchState(ownerTurnCore),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 14,
+        }) as any;
+
+        expect(ownerQueued?.payload?.triggers).toHaveLength(1);
+        expect(ownerQueued?.payload?.triggers?.[0]?.sourceDefId).toBe('world_champs_shark_tattoo');
+        expect(ownerQueued?.payload?.triggers?.[0]?.sourceCardUid).toBe('shark-tattoo-borrowed');
+        expect(ownerQueued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...ownerTurnCore,
+                triggerQueue: ownerQueued.payload.triggers,
+            }),
+            defaultTestRandom,
+            14,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.POWER_COUNTER_ADDED,
+            payload: expect.objectContaining({
+                minionUid: 'shark-host-borrowed',
+                baseIndex: 0,
+                amount: 1,
+                reason: 'world_champs_shark_tattoo',
+            }),
+        }));
+        expect((resolved?.state.core.bases[0]?.minions ?? []).find((minion: any) => minion.uid === 'shark-host-borrowed')?.powerCounters).toBe(1);
+        expect((resolved?.state.core.bases[0]?.minions ?? []).find((minion: any) => minion.uid === 'shark-host-opponent')?.powerCounters ?? 0).toBe(0);
+    });
+
     it('sourceController queued onTurnStart trigger 仍应只在拥有者回合开始让 Mermaid Desert Island 自毁', () => {
         const baseCore = makeState({
             turnOrder: ['0', '1'],
@@ -4882,6 +5516,125 @@ describe('reaction queue: preserves event player context', () => {
         expect(resolved?.state.core.players['0']?.discard.map((card: any) => card.uid)).not.toContain('borrowed-sleep-a');
         expect(resolved?.state.core.players['0']?.deck.map((card: any) => card.uid)).not.toContain('borrowed-sleep-a');
         expect(resolved?.state.core.players['1']?.deck.map((card: any) => card.uid)).toEqual(['owner-deck-a', 'borrowed-sleep-a']);
+    });
+
+    it('queued onDeckInspected trigger 在双方都持有 Dynamite Surprise 时，应只把被翻开的那张归给其拥有者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('dyn-p0', 'cowboys_dynamite_surprise', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('dyn-p1', 'cowboys_dynamite_surprise', 'action', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('enemy-1', 'robot_microbot_alpha', '0', 4)],
+                ongoingActions: [],
+            }],
+            turnNumber: 6,
+        });
+
+        const queued = collectTriggers(core, 'onDeckInspected', {
+            state: core,
+            matchState: makeMatchState(core, 'playCards', '0'),
+            playerId: '0',
+            inspectionCards: [{ uid: 'dyn-p1', defId: 'cowboys_dynamite_surprise' }],
+            inspectionZone: 'hand',
+            inspectionTargetPlayerIds: ['1'],
+            inspectionCausePlayerId: '0',
+            random: defaultTestRandom,
+            now: 112,
+        }) as any;
+
+        expect(queued?.payload?.triggers).toHaveLength(1);
+        expect(queued?.payload?.triggers?.[0]).toEqual(expect.objectContaining({
+            sourceDefId: 'cowboys_dynamite_surprise',
+            sourceCardUid: 'dyn-p1',
+            sourceControllerId: '1',
+            ownerPlayerId: '1',
+            eventPlayerId: '0',
+        }));
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }, 'playCards', '0'),
+            defaultTestRandom,
+            112,
+        );
+
+        let promptState = resolved?.state ?? makeMatchState(core, 'playCards', '0');
+        const firstInteraction = getInteractionsFromMS(promptState)[0] as any;
+        if (firstInteraction?.data?.sourceId === 'smashup_reaction_choose') {
+            const option = firstInteraction.data.options.find((entry: any) => entry.value?.kind === 'trigger');
+            expect(option).toBeDefined();
+            const chosen = runCommand(promptState, {
+                type: 'SYS_INTERACTION_RESPOND' as any,
+                playerId: firstInteraction.playerId,
+                payload: { optionId: option.id },
+            } as any, defaultTestRandom);
+            promptState = chosen.finalState;
+        }
+
+        const prompt = getInteractionsFromMS(promptState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('cowboys_dynamite_surprise_seen');
+        expect(prompt?.playerId).toBe('1');
+    });
+
+    it('queued onDeckInspected trigger 在双方都持有 Dynamite Surprise POD 时，应只把被翻开的那张归给其拥有者', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('dyn-p0', 'cowboys_dynamite_surprise_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('dyn-p1', 'cowboys_dynamite_surprise_pod', 'action', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('target-1', 'robot_microbot_alpha', '0', 4)],
+                ongoingActions: [],
+            }],
+        });
+
+        const queued = collectTriggers(core, 'onDeckInspected', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            reason: 'test_reveal_hand_pod',
+            inspectionCards: [{ uid: 'dyn-p1', defId: 'cowboys_dynamite_surprise_pod' }],
+            inspectionZone: 'hand',
+            inspectionTargetPlayerIds: ['1'],
+            inspectionCausePlayerId: '0',
+            random: defaultTestRandom,
+            now: 1202,
+        }) as any;
+
+        const dynamiteTriggers = (queued?.payload?.triggers ?? []).filter((trigger: any) =>
+            trigger.sourceDefId === 'cowboys_dynamite_surprise_pod');
+        expect(dynamiteTriggers).toHaveLength(1);
+        expect(dynamiteTriggers[0]?.sourceCardUid).toBe('dyn-p1');
+        expect(dynamiteTriggers[0]?.sourceControllerId).toBe('1');
+        expect(dynamiteTriggers[0]?.ownerPlayerId).toBe('1');
+        expect(dynamiteTriggers[0]?.eventPlayerId).toBe('0');
+
+        const resolved = maybeResolveReactionQueue(makeMatchState({
+            ...core,
+            triggerQueue: dynamiteTriggers,
+        }), defaultTestRandom, 1203);
+        expect(resolved).toBeDefined();
+
+        const prompt = getInteractionsFromMS(resolved!.state)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('cowboys_dynamite_surprise_seen');
+        expect(prompt?.playerId).toBe('1');
     });
 
     it('sourceController queued onTurnStart trigger 仍应只在拥有者回合开始让 Water Lily POD 为拥有者抽牌', () => {
@@ -7502,6 +8255,75 @@ describe('reaction queue: preserves event player context', () => {
         }));
     });
 
+    it('collectTriggers onMinionAffected 处理 frankenstein_the_bride 时，若第一只本回合已触发应改选仍可触发的第二只 source', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 4,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.WIZARDS],
+                    deck: [makeCard('bride-draw-a', 'frankenstein_igor', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.ROBOTS],
+                }),
+            },
+            bases: [
+                makeBase('base_the_factory', [
+                    makeMinion('bride-counter-target', 'frankenstein_lab_assistant', '0', 2),
+                ]),
+            ],
+            titans: [
+                {
+                    uid: 'bride-a',
+                    defId: 'frankenstein_the_bride',
+                    faction: SMASHUP_FACTION_IDS.FRANKENSTEIN,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    metadata: { theBrideTriggeredTurn: 4 },
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                } as any,
+                {
+                    uid: 'bride-b',
+                    defId: 'frankenstein_the_bride',
+                    faction: SMASHUP_FACTION_IDS.FRANKENSTEIN,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 2 },
+                } as any,
+            ],
+        });
+
+        const queued = collectTriggers(core, 'onMinionAffected', {
+            state: core,
+            matchState: makeMatchState(core, 'playCards', '1'),
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'bride-counter-target',
+            triggerMinionDefId: 'frankenstein_lab_assistant',
+            triggerMinion: core.bases[0].minions[0],
+            affectType: 'power_change',
+            counterChangeKind: 'added',
+            counterDelta: 1,
+            reason: 'test_bride_second_source',
+            random: defaultTestRandom,
+            now: 42,
+        }) as any;
+
+        const brideTrigger = queued?.payload?.triggers?.find((trigger: TriggerInstance) =>
+            trigger.sourceDefId === 'frankenstein_the_bride');
+        expect(brideTrigger).toEqual(expect.objectContaining({
+            sourceCardUid: 'bride-b',
+            sourceControllerId: '0',
+            eventPlayerId: '1',
+        }));
+    });
+
     it('sourceController queued onTurnStart trigger 仍应只在拥有者回合开始把 Emperor Penguin 的进场选择交给拥有者', () => {
         const baseCore = makeState({
             turnOrder: ['0', '1'],
@@ -7713,6 +8535,68 @@ describe('reaction queue: preserves event player context', () => {
         expect(prompt?.data?.sourceId).toBe('titan_sphinx_start_turn');
     });
 
+    it('sourceController queued onTurnStart trigger 在 borrowed Sphinx 上仍应把回手选择交给当前控制者', () => {
+        const baseCore = makeState({
+            turnOrder: ['0', '1'],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_ancient_ruins',
+                    buriedCards: [{
+                        uid: 'borrowed-sphinx-buried-a',
+                        defId: 'ancient_egyptians_lost_knowledge',
+                        ownerId: '0',
+                        controllerId: '0',
+                        buriedFrom: 'discard',
+                    } as any],
+                }),
+            ],
+            titans: [{
+                uid: 'borrowed-sphinx-a',
+                defId: 'sphinx',
+                faction: SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS,
+                ownerId: '1',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } as any],
+            turnNumber: 22,
+        });
+
+        const controllerTurnCore = {
+            ...baseCore,
+            currentPlayerIndex: 0,
+        };
+        const queued = collectTriggers(controllerTurnCore, 'onTurnStart', {
+            state: controllerTurnCore,
+            matchState: makeMatchState(controllerTurnCore),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 46,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('sphinx');
+        expect(queued?.payload?.triggers?.[0]?.sourceCardUid).toBe('borrowed-sphinx-a');
+        expect(queued?.payload?.triggers?.[0]?.sourceControllerId).toBe('0');
+        expect(queued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('0');
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...controllerTurnCore,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            46,
+        );
+        const prompt = getInteractionsFromMS(resolved!.state)[0] as any;
+        expect(prompt?.playerId).toBe('0');
+        expect(prompt?.data?.sourceId).toBe('titan_sphinx_start_turn');
+    });
+
     it('sourceController queued onTurnStart trigger 仍应只在控制者回合开始把 Great Wolf Spirit 的移动选择交给控制者', () => {
         const baseCore = makeState({
             turnOrder: ['0', '1'],
@@ -7803,6 +8687,103 @@ describe('reaction queue: preserves event player context', () => {
         }
 
         expect(prompt?.data?.sourceId).toBe('titan_werewolves_great_wolf_spirit_move');
+    });
+
+    it('手工回放第二条 Great Wolf Spirit queued source 时，continuationContext 应绑定被选中的 titanUid 与 fromBaseIndex，而不是扫描顺序里的第一只', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_portal_room', [
+                    makeMinion('wolf-a-own', 'werewolf_alpha', '0', 5),
+                ]),
+                makeBase('base_the_jungle', [
+                    makeMinion('wolf-b-own', 'werewolf_pack_alpha', '0', 5),
+                ]),
+                makeBase('base_faceless_city', [
+                    makeMinion('wolf-opp', 'sharks_mako', '1', 2),
+                ]),
+            ],
+            titans: [
+                {
+                    uid: 'wolf-spirit-a',
+                    defId: 'werewolves_great_wolf_spirit',
+                    faction: SMASHUP_FACTION_IDS.WEREWOLVES,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                } as any,
+                {
+                    uid: 'wolf-spirit-b',
+                    defId: 'werewolves_great_wolf_spirit',
+                    faction: SMASHUP_FACTION_IDS.WEREWOLVES,
+                    ownerId: '1',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 2 },
+                } as any,
+            ],
+            turnNumber: 24,
+        });
+
+        const trigger: TriggerInstance = {
+            id: 'queued-great-wolf-spirit-b',
+            timing: 'onTurnStart',
+            playerContext: 'sourceController',
+            sourceDefId: 'werewolves_great_wolf_spirit',
+            sourceCardUid: 'wolf-spirit-b',
+            sourceControllerId: '0',
+            sourceBaseIndex: 1,
+            mandatory: false,
+            resolutionClass: 'optional',
+            ownerPlayerId: '0',
+            eventPlayerId: '0',
+            witnessRequirement: 'inPlayAtTriggerTime',
+            witnessed: true,
+            sourceEventId: 'turn-start:0:48:1',
+        };
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...(core as SmashUpCore),
+                triggerQueue: [trigger],
+            }),
+            defaultTestRandom,
+            48,
+        );
+
+        const prompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        expect(prompt?.playerId).toBe('0');
+        expect(prompt?.data?.sourceId).toBe('smashup_reaction_choose');
+
+        const wolfSpiritOption = prompt?.data?.options?.find((option: any) => {
+            const triggerId = option?.value?.triggerId;
+            const queuedTrigger = resolved?.state.core.triggerQueue?.find((entry: any) => entry.id === triggerId);
+            return queuedTrigger?.sourceCardUid === 'wolf-spirit-b';
+        });
+        expect(wolfSpiritOption).toBeDefined();
+
+        const afterChoice = runCommand(
+            resolved!.state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: wolfSpiritOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const wolfSpiritPrompt = getInteractionsFromMS(afterChoice.finalState)[0] as any;
+        expect(wolfSpiritPrompt?.playerId).toBe('0');
+        expect(wolfSpiritPrompt?.data?.sourceId).toBe('titan_werewolves_great_wolf_spirit_move');
+        expect(wolfSpiritPrompt?.data?.continuationContext).toEqual(expect.objectContaining({
+            titanUid: 'wolf-spirit-b',
+            titanDefId: 'werewolves_great_wolf_spirit',
+            fromBaseIndex: 1,
+        }));
     });
 
     it('sourceController queued onMinionDestroyed trigger 仍应把 Death on Six Legs 的加标记结算交给泰坦控制者', () => {
@@ -8200,6 +9181,104 @@ describe('reaction queue: preserves event player context', () => {
         }
 
         expect(firstPrompt?.data?.sourceId).toBe('titan_vampires_ancient_lord_special');
+    });
+
+    it('borrowed Ancient Lord 的 queued special 应允许当前控制者存放标记并将泰坦真实打到基地', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.VAMPIRES, SMASHUP_FACTION_IDS.PIRATES],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_ancient_ruins', [
+                    makeMinion('borrowed-target', 'ghosts_spectre', '0', 2, { powerCounters: 1 }),
+                ]),
+            ],
+            titans: [{
+                uid: 'ancient-lord-borrowed-a',
+                defId: 'vampires_ancient_lord',
+                faction: SMASHUP_FACTION_IDS.VAMPIRES,
+                ownerId: '1',
+                controllerId: '0',
+                powerCounters: 2,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } as any],
+        });
+
+        const queued = collectTriggers(core, 'onMinionAffected', {
+            state: core,
+            matchState: makeMatchState(core, 'playCards', '1'),
+            playerId: '1',
+            baseIndex: 0,
+            sourceCardUid: 'ancient-lord-borrowed-a',
+            sourceControllerId: '0',
+            triggerMinionUid: 'borrowed-target',
+            triggerMinionDefId: 'ghosts_spectre',
+            triggerMinion: core.bases[0].minions.find((minion: any) => minion.uid === 'borrowed-target'),
+            affectType: 'power_change',
+            counterChangeKind: 'added',
+            counterDelta: 1,
+            reason: 'test_borrowed_ancient_lord_counter',
+            random: defaultTestRandom,
+            now: 25,
+        }) as any;
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }, 'playCards', '1'),
+            defaultTestRandom,
+            25,
+        );
+
+        const firstPrompt = getInteractionsFromMS(resolved?.state ?? makeMatchState(core))[0] as any;
+        expect(firstPrompt?.playerId).toBe('0');
+
+        let ancientLordState = resolved!.state;
+        let ancientLordPrompt = firstPrompt;
+        if (firstPrompt?.data?.sourceId === 'smashup_reaction_choose') {
+            const ancientLordOption = firstPrompt?.data?.options?.find((option: any) => {
+                const triggerId = option?.value?.triggerId;
+                const trigger = resolved?.state.core.triggerQueue?.find((entry: any) => entry.id === triggerId);
+                return trigger?.sourceDefId === 'vampires_ancient_lord';
+            });
+            expect(ancientLordOption).toBeDefined();
+
+            const afterQueueChoice = runCommand(
+                resolved!.state,
+                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: ancientLordOption.id } } as any,
+                defaultTestRandom,
+            );
+            ancientLordState = afterQueueChoice.finalState;
+            ancientLordPrompt = getInteractionsFromMS(afterQueueChoice.finalState)[0] as any;
+        }
+
+        expect(ancientLordPrompt?.data?.sourceId).toBe('titan_vampires_ancient_lord_special');
+
+        const storeAndPlayOption = ancientLordPrompt?.data?.options?.find((option: any) => option?.value?.mode === 'storeAndPlay');
+        expect(storeAndPlayOption).toBeDefined();
+
+        const afterChoice = runCommand(
+            ancientLordState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: storeAndPlayOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const titan = (afterChoice.finalState.core.titans ?? []).find((candidate: any) => candidate.uid === 'ancient-lord-borrowed-a');
+        expect(titan).toMatchObject({
+            ownerId: '1',
+            controllerId: '0',
+            powerCounters: 0,
+            location: { zone: 'base', baseIndex: 0 },
+        });
+        const target = afterChoice.finalState.core.bases[0].minions.find((minion: any) => minion.uid === 'borrowed-target');
+        expect(target?.powerCounters ?? 0).toBe(0);
     });
 
 });

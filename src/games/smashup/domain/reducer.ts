@@ -884,11 +884,7 @@ export function filterProtectedDestroyEvents(
             const protType = actionProtected ? 'action' : 'affect';
             const source = getConsumableProtectionSource(workingCore, minion, fromBaseIndex, effectiveSource, protType);
             if (source) {
-                appendEvent({
-                    type: SU_EVENTS.ONGOING_DETACHED,
-                    payload: { cardUid: source.uid, defId: source.defId, ownerId: source.ownerId, reason: `${source.defId}_self_destruct` },
-                    timestamp: e.timestamp,
-                } as OngoingDetachedEvent, sourceKey);
+                appendEvent(buildProtectionSelfDestructEvent(source, fromBaseIndex, e.timestamp), sourceKey);
             }
             continue;
         }
@@ -997,7 +993,8 @@ function isActionAffectRecord(record: AffectRecord): boolean {
 }
 
 function buildProtectionSelfDestructEvent(
-    source: { uid: string; defId: string; ownerId: PlayerId },
+    source: { uid: string; defId: string; ownerId: PlayerId; controllerId: PlayerId },
+    sourceBaseIndex: number | undefined,
     timestamp?: number,
 ): OngoingDetachedEvent {
     return {
@@ -1007,6 +1004,11 @@ function buildProtectionSelfDestructEvent(
             defId: source.defId,
             ownerId: source.ownerId,
             reason: `${source.defId}_self_destruct`,
+            sourcePlayerId: source.controllerId,
+            sourceCardUid: source.uid,
+            sourceDefId: source.defId,
+            sourceControllerId: source.controllerId,
+            sourceBaseIndex,
         },
         timestamp,
     };
@@ -1019,12 +1021,13 @@ function buildBlockedAttachedActionDiscardEvent(
     if (event.type !== SU_EVENTS.ONGOING_ATTACHED || !record.sourceCardUid || !record.sourceDefId || !record.sourcePlayerId) {
         return undefined;
     }
+    const ownerId = (event as OngoingAttachedEvent).payload.ownerId;
     return {
         type: SU_EVENTS.ONGOING_DETACHED,
         payload: {
             cardUid: record.sourceCardUid,
             defId: record.sourceDefId,
-            ownerId: record.sourcePlayerId,
+            ownerId,
             reason: `${record.sourceDefId}_blocked_attach`,
             sourcePlayerId: record.sourcePlayerId,
             sourceCardUid: record.sourceCardUid,
@@ -1144,7 +1147,14 @@ export function filterProtectedAffectEvents(
                     blockedProtectionType,
                 );
                 if (protectionSource) {
-                    extraEvents.push(buildProtectionSelfDestructEvent(protectionSource, event.timestamp));
+                    extraEvents.push(buildProtectionSelfDestructEvent(
+                        {
+                            ...protectionSource,
+                            controllerId: protectionSource.controllerId,
+                        },
+                        record.baseIndex,
+                        event.timestamp,
+                    ));
                 }
             }
 
@@ -1309,6 +1319,7 @@ export function processDestroyTriggers(
         const triggerMinionPower = minion ? getEffectivePower(currentCore, minion, fromBaseIndex) : undefined;
         // ✅ 优先从 state 读取 owner（兜底修复：即使事件中的 ownerId 错了也能修复）
         const ownerId = minion?.owner ?? eventOwnerId;
+        const triggerPlayerId = minion?.controller ?? ownerId;
         const destroyerId = eventDestroyerId ?? playerId ?? minion?.controller ?? ownerId;
 
         // === Phase 1: 先检查防止消灭触发器（ongoing replacement） ===
@@ -1323,12 +1334,13 @@ export function processDestroyTriggers(
         const ongoingDestroyEvents = fireTriggers(currentCore, 'onMinionDestroyed', {
             state: currentCore,
             matchState: ms ?? currentMS_save,
-            playerId: ownerId,
+            playerId: triggerPlayerId,
             baseIndex: fromBaseIndex,
             triggerMinionUid: minionUid,
             triggerMinionDefId: minionDefId,
             triggerMinion: minion,
             triggerMinionPower,
+            controllerId: triggerPlayerId,
             destroyerId,
             reason: de.payload.reason,
             random,
@@ -1425,12 +1437,13 @@ export function processDestroyTriggers(
             const queuedDestroyReactions = collectTriggers(phase2Core, 'onMinionDestroyed', {
                 state: phase2Core,
                 matchState: phase2State,
-                playerId: ownerId,
+                playerId: triggerPlayerId,
                 baseIndex: fromBaseIndex,
                 triggerMinionUid: minionUid,
                 triggerMinionDefId: minionDefId,
                 triggerMinion: minion,
                 triggerMinionPower,
+                controllerId: triggerPlayerId,
                 destroyerId,
                 reason: de.payload.reason,
                 frameId,
@@ -1471,10 +1484,11 @@ export function processDestroyTriggers(
             // 1. 触发随从自身的 onDestroy 能力
             const executor = resolveOnDestroy(minionDefId);
             if (executor) {
+                const onDestroyPlayerId = minion?.controller ?? ownerId;
                 const ctx: AbilityContext = {
                     state: phase2Core,
                     matchState: phase2State,
-                    playerId: ownerId,  // ✅ onDestroy 能力属于随从拥有者，不是消灭者
+                    playerId: onDestroyPlayerId,
                     cardUid: minionUid,
                     defId: minionDefId,
                     baseIndex: fromBaseIndex,
@@ -1627,11 +1641,7 @@ export function filterProtectedMoveEvents(
             const protType = actionProtected ? 'action' : 'affect';
             const source = getConsumableProtectionSource(workingCore, minion, fromBaseIndex, effectiveSource, protType);
             if (source) {
-                appendEvent({
-                    type: SU_EVENTS.ONGOING_DETACHED,
-                    payload: { cardUid: source.uid, defId: source.defId, ownerId: source.ownerId, reason: `${source.defId}_self_destruct` },
-                    timestamp: e.timestamp,
-                } as OngoingDetachedEvent, sourceKey);
+                appendEvent(buildProtectionSelfDestructEvent(source, fromBaseIndex, e.timestamp), sourceKey);
             }
             continue;
         }
@@ -1967,8 +1977,10 @@ export function processReturnToHandTriggers(
                         frameId,
                         sourceEventId,
                         sourceCardUid: attachedAction.uid,
+                        sourceDefId: attachedAction.defId,
                         sourceBaseIndex: returnedMinionLki.baseIndex,
                         sourceControllerId: attachedControllerId,
+                        sourceOwnerPlayerId: attachedAction.ownerId,
                         triggerMinion: returnedMinionLki.minion,
                         triggerMinionUid: returnedMinionLki.minion.uid,
                         triggerMinionDefId: returnedMinionLki.minion.defId,
@@ -2037,8 +2049,10 @@ export function processReturnToHandTriggers(
                         frameId,
                         sourceEventId,
                         sourceCardUid: attachedAction.uid,
+                        sourceDefId: attachedAction.defId,
                         sourceBaseIndex: transferredMinionLki.baseIndex,
                         sourceControllerId: attachedControllerId,
+                        sourceOwnerPlayerId: attachedAction.ownerId,
                         triggerMinion: transferredMinionLki.minion,
                         triggerMinionUid: transferredMinionLki.minion.uid,
                         triggerMinionDefId: transferredMinionLki.minion.defId,
@@ -2270,8 +2284,10 @@ export function processAffectTriggers(
                 frameId,
                 sourceEventId,
                 sourceCardUid: record.sourceCardUid,
+                sourceDefId: record.sourceDefId,
                 sourceBaseIndex: record.sourceBaseIndex,
                 sourceControllerId: record.sourceControllerId,
+                sourceOwnerPlayerId: record.sourceOwnerPlayerId,
                 triggerMinionUid: record.triggerMinionUid,
                 triggerMinionDefId: record.triggerMinionDefId,
                 triggerMinion: record.triggerMinion,

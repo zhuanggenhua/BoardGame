@@ -745,4 +745,95 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             baseIndex: 1,
         });
     });
+
+    it('smashup_immediate_extra_minion 应允许当前控制者选择 borrowed setaside 泰坦', () => {
+        const runner = createRunner((ids, random) => {
+            const core = SmashUpDomain.setup(ids, random);
+            const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            core.currentPlayerIndex = 0;
+            core.bases = [
+                {
+                    defId: 'base_secret_garden',
+                    minions: [makeMinion('ally-0', 'zombie_walker', '0', '0', 2, 0)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_the_jungle',
+                    minions: [makeMinion('ally-1', 'alien_invader', '0', '0', 3, 0)],
+                    ongoingActions: [],
+                },
+            ];
+            core.titans = [{
+                uid: 'borrowed-ursa',
+                defId: 'bear_cavalry_major_ursa',
+                faction: 'bear_cavalry',
+                ownerId: '1',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } satisfies TitanState];
+            core.players['0'].hand = [];
+            core.players['1'].hand = [];
+            sys.phase = 'startTurn';
+
+            return queueImmediateExtraPlayInteractions(
+                { sys, core },
+                [{
+                    type: SU_EVENTS.LIMIT_MODIFIED,
+                    payload: {
+                        playerId: '0',
+                        limitType: 'minion',
+                        delta: 1,
+                        reason: '测试：额外随从可打 borrowed 泰坦',
+                        playTiming: 'immediate',
+                    },
+                    timestamp: 0,
+                } as any],
+            );
+        });
+
+        const current = getCurrentChoice(runner.getState());
+        expect(current?.sourceId).toBe('smashup_immediate_extra_minion');
+        const titanOption = current?.options.find(option => option.value?.titanUid === 'borrowed-ursa');
+        expect(titanOption).toBeDefined();
+        expect(titanOption?.value).toMatchObject({
+            titanUid: 'borrowed-ursa',
+            defId: 'bear_cavalry_major_ursa',
+            playKind: 'minion',
+        });
+
+        const chooseTitan = runner.resolveInteraction('0', { optionId: titanOption!.id });
+        expect(chooseTitan.success).toBe(true);
+
+        const nextChoice = getCurrentChoice(runner.getState());
+        expect(nextChoice?.sourceId).toBe('smashup_immediate_extra_minion_base');
+
+        const chooseBase = runner.resolveInteraction('0', {
+            optionId: findOptionId(
+                nextChoice!,
+                option => option.value?.baseIndex === 1,
+                '找不到 borrowed 大熊座的合法基地选项',
+            ),
+        });
+        expect(chooseBase.success).toBe(true);
+
+        const titanPlayed = chooseBase.events.find(event => event.type === SU_EVENTS.TITAN_PLAYED);
+        expect(titanPlayed).toBeDefined();
+        expect((titanPlayed as any).payload).toMatchObject({
+            titanUid: 'borrowed-ursa',
+            defId: 'bear_cavalry_major_ursa',
+            ownerId: '1',
+            controllerId: '0',
+            baseIndex: 1,
+            reason: 'bear_cavalry_major_ursa_special',
+        });
+
+        expect((runner.getState().core.titans ?? []).find(titan => titan.uid === 'borrowed-ursa')?.location).toMatchObject({
+            zone: 'base',
+            baseIndex: 1,
+        });
+    });
 });

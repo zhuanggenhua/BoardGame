@@ -955,13 +955,11 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
     if (!target) {
         return undefined;
     }
-    const toothCard = target.attachedActions.find(a => a.defId === 'dino_tooth_and_claw');
+    const toothCard = target.attachedActions.find(a =>
+        a.defId === 'dino_tooth_and_claw'
+        && (sourcePlayerId === undefined || (((a.metadata?.sourceControllerId as string | undefined) ?? a.ownerId) !== sourcePlayerId))
+    );
     if (!toothCard) {
-        return undefined;
-    }
-    // 只拦截其他玩家发起的影响
-    // 如果 sourcePlayerId 未定义，假设是对手操作（保护系统已过滤无效目标）
-    if (sourcePlayerId !== undefined && sourcePlayerId === target.controller) {
         return undefined;
     }
     // 自毁全副武装，阻止影响
@@ -980,14 +978,18 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
 
 /** 全副武装(原版) 保护检查：附着了此卡的随从不受其他玩家影响（affect 类型，触发拦截自毁） */
 function dinoToothAndClawChecker(ctx: ProtectionCheckContext): boolean {
-    if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
-    return ctx.targetMinion.attachedActions.some(a => a.defId === 'dino_tooth_and_claw');
+    return ctx.targetMinion.attachedActions.some(a =>
+        a.defId === 'dino_tooth_and_claw'
+        && (ctx.sourcePlayerId === undefined || (((a.metadata?.sourceControllerId as string | undefined) ?? a.ownerId) !== ctx.sourcePlayerId))
+    );
 }
 
 /** 全副武装(POD版) 保护检查：This minion is not affected by other players' cards. (只有结界免影响，不发生自毁) */
 function dinoToothAndClawPodChecker(ctx: ProtectionCheckContext): boolean {
-    if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
-    return ctx.targetMinion.attachedActions.some(a => a.defId === 'dino_tooth_and_claw_pod');
+    return ctx.targetMinion.attachedActions.some(a =>
+        a.defId === 'dino_tooth_and_claw_pod'
+        && (ctx.sourcePlayerId === undefined || (((a.metadata?.sourceControllerId as string | undefined) ?? a.ownerId) !== ctx.sourcePlayerId))
+    );
 }
 
 /** 野生保护区保护检查：该基地上你的随从不受其他玩家战术影响 */

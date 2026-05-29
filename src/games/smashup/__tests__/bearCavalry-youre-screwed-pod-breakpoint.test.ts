@@ -33,7 +33,51 @@ describe('bear_cavalry_bearing_down_pod: 动态爆破点修正', () => {
         base.ongoingActions = [{ uid: 'oa1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' } as any];
 
         const state = makeStateWithBases([base], {
-            movedToBasesThisTurn: { 0: true },
+            movedToBasesThisTurn: { 0: { '0': true } },
+        });
+        const baseBreakpoint = getEffectiveBreakpoint(
+            makeStateWithBases([makeBase('base_the_jungle')]),
+            0,
+        );
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint - 4);
+    });
+
+    it('同一基地两张不同控制者的 bearing_down_pod 不应因一方满足条件而一起翻成负修正', () => {
+        const base = makeBase('base_the_jungle', [
+            makeMinion('m0', 'test_minion', '0', 3),
+            makeMinion('m1', 'test_minion', '1', 3),
+        ]);
+        base.ongoingActions = [
+            { uid: 'oa0', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' },
+            { uid: 'oa1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '1' },
+        ] as any;
+
+        const state = makeStateWithBases([base], {
+            movedToBasesThisTurn: { 0: { '0': true } },
+        });
+        const baseBreakpoint = getEffectiveBreakpoint(
+            makeStateWithBases([makeBase('base_the_jungle')]),
+            0,
+        );
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint);
+    });
+
+    it('borrowed bearing_down_pod 应按 sourceControllerId 而不是真实 owner 判断是否改成负修正', () => {
+        const base = makeBase('base_the_jungle', [
+            makeMinion('m0', 'test_minion', '0', 3),
+            makeMinion('m1', 'test_minion', '1', 3),
+        ]);
+        base.ongoingActions = [{
+            uid: 'oa-borrowed',
+            defId: 'bear_cavalry_bearing_down_pod',
+            ownerId: '1',
+            metadata: { sourceControllerId: '0' },
+        } as any];
+
+        const state = makeStateWithBases([base], {
+            movedToBasesThisTurn: { 0: { '0': true } },
         });
         const baseBreakpoint = getEffectiveBreakpoint(
             makeStateWithBases([makeBase('base_the_jungle')]),

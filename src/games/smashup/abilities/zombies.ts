@@ -956,10 +956,11 @@ const zombieLordProgram = createBranchProgram<ZombieLordContext, SmashUpCore, Sm
 function zombieOverrunRestriction(ctx: RestrictionCheckContext): boolean {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return false;
-    const overrun = base.ongoingActions.find(o => o.defId === 'zombie_overrun' || o.defId === 'zombie_overrun_pod');
-    if (!overrun) return false;
-    const controllerId = (overrun.metadata?.sourceControllerId as PlayerId | undefined) ?? overrun.ownerId;
-    return ctx.playerId !== controllerId;
+    return base.ongoingActions.some((overrun) => {
+        if (overrun.defId !== 'zombie_overrun' && overrun.defId !== 'zombie_overrun_pod') return false;
+        const controllerId = (overrun.metadata?.sourceControllerId as PlayerId | undefined) ?? overrun.ownerId;
+        return ctx.playerId !== controllerId;
+    });
 }
 
 /** 泛滥横行触发：拥有者回合开始时自毁 */

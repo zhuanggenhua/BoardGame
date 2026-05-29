@@ -4,6 +4,7 @@ import { clearOngoingEffectRegistry, collectTriggers, registerTrigger } from '..
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { processDestroyTriggers } from '../domain/reducer';
 import { registerKillerPlantAbilities } from '../abilities/killer_plants';
 import { registerSamuraiAbilities } from '../abilities/samurai';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
@@ -90,6 +91,87 @@ describe('reaction queue: preserves controller runtime context', () => {
             type: SU_EVENTS.ABILITY_FEEDBACK,
             payload: expect.objectContaining({
                 messageKey: 'controller:1',
+            }),
+        }));
+    });
+
+    it('processDestroyTriggers 在 borrowed 随从被消灭时，queued onMinionDestroyed trigger 仍应把 playerId 视为当前 controller', () => {
+        registerTrigger('test_destroy_runtime_player', 'onMinionDestroyed', (ctx) => ([{
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: {
+                playerId: ctx.playerId,
+                messageKey: `destroy-runtime:${ctx.playerId}:${ctx.controllerId ?? 'missing-controller'}`,
+                tone: 'info',
+            },
+            timestamp: ctx.now,
+        }] as any), {
+            perInstance: true,
+            canTrigger: (ctx) => (
+                ctx.playerId === '0'
+                && ctx.controllerId === '0'
+                && ctx.destroyerId === '1'
+                && ctx.reason === 'process_destroy_runtime'
+                && ctx.triggerMinionUid === 'victim-borrowed'
+            ),
+        });
+
+        const borrowedVictim = makeMinion('victim-borrowed', 'victim_card', '0', 2, { owner: '1' });
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('source-destroy-1', 'test_destroy_runtime_player', '0', 3),
+                        borrowedVictim,
+                    ],
+                    ongoingActions: [],
+                }),
+            ],
+        });
+
+        const destroyed = processDestroyTriggers([{
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'victim-borrowed',
+                minionDefId: 'victim_card',
+                fromBaseIndex: 0,
+                ownerId: '1',
+                controllerId: '0',
+                destroyerId: '1',
+                reason: 'process_destroy_runtime',
+            },
+            timestamp: 11,
+        } as any], makeMatchState(core), '1', defaultTestRandom, 11);
+
+        const queuedEvent = destroyed.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        const queuedTrigger = queuedEvent?.payload?.triggers?.find((trigger: any) =>
+            trigger.sourceDefId === 'test_destroy_runtime_player');
+        expect(queuedTrigger).toBeDefined();
+        expect([queuedTrigger?.eventPlayerId, queuedTrigger?.controllerId, queuedTrigger?.sourceControllerId]).toEqual([
+            '0',
+            '0',
+            '0',
+        ]);
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...(core as any),
+                triggerQueue: queuedEvent.payload.triggers,
+            }),
+            defaultTestRandom,
+            11,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: expect.objectContaining({
+                messageKey: 'destroy-runtime:0:0',
             }),
         }));
     });

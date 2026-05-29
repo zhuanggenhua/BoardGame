@@ -184,6 +184,33 @@ describe('持续力量修正基础设施', () => {
         expect(movedTemptress).toBeTruthy();
         expect(getEffectivePower(moved, movedTemptress!, 1)).toBe(6);
     });
+
+    it('当前玩家把对手随从移动到基地时，应按当前玩家维度记录 bearing_down_pod 的对手移动状态', () => {
+        const enemy = makeMinion('enemy-1', 'test_minion', '1', 4, { powerModifier: 0 });
+        const mover = makeMinion('mover-1', 'test_minion', '0', 4, { powerModifier: 0 });
+        const state = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                { defId: 'base_a', minions: [enemy], ongoingActions: [] },
+                { defId: 'base_b', minions: [mover], ongoingActions: [] },
+            ],
+        });
+
+        const moved = reduce(state, {
+            type: SU_EVENTS.MINION_MOVED,
+            payload: {
+                minionUid: 'enemy-1',
+                minionDefId: 'test_minion',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                reason: 'test_move',
+            },
+        });
+
+        expect(moved.movedToBasesThisTurn?.[1]?.['0']).toBe(true);
+        expect(moved.movedToBasesThisTurn?.[1]?.['1']).toBeUndefined();
+    });
 });
 
 describe('suppressed source modifiers', () => {

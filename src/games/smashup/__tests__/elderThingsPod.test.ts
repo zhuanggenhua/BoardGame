@@ -10,7 +10,7 @@ import { runCommand, defaultTestRandom } from './testRunner';
 import { getEffectivePower } from '../domain/ongoingModifiers';
 import { executeTriggerProgramExecutor } from '../domain/triggerExecutors';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
-import { collectTriggers } from '../domain/ongoingEffects';
+import { collectTriggers, fireTriggers } from '../domain/ongoingEffects';
 
 beforeAll(() => {
     clearRegistry();
@@ -360,6 +360,80 @@ describe('elder_things_pod: Dunwich Horror POD', () => {
         const prompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
         expect(prompt?.playerId).toBe('0');
         expect(prompt?.data?.sourceId).toBe('elder_thing_dunwich_horror_pod_choice');
+    });
+
+    it('多个 Dunwich Horror POD 走 direct fireTriggers 时，应按每个 source 继续给各自宿主控制者链式抉择 prompt', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 9,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            madnessDeck: [
+                makeCard('mad-1', MADNESS_CARD_DEF_ID, 'action', '0'),
+                makeCard('mad-2', MADNESS_CARD_DEF_ID, 'action', '1'),
+                makeCard('mad-3', MADNESS_CARD_DEF_ID, 'action', '0'),
+                makeCard('mad-4', MADNESS_CARD_DEF_ID, 'action', '1'),
+            ],
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    {
+                        ...makeMinion('host-1', 'robot_microbot', '1', 3),
+                        attachedActions: [{ uid: 'dh-1', defId: 'elder_thing_dunwich_horror_pod', ownerId: '0' } as any],
+                    },
+                    {
+                        ...makeMinion('host-2', 'ninja_shinobi', '0', 4),
+                        attachedActions: [{ uid: 'dh-2', defId: 'elder_thing_dunwich_horror_pod', ownerId: '1' } as any],
+                    },
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const triggered = fireTriggers(core, 'beforeScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 1003,
+        });
+        expect(triggered.events).toEqual([]);
+        expect(triggered.matchState).toBeDefined();
+
+        const firstPrompt = getInteractionsFromMS(triggered.matchState as any)[0] as any;
+        expect(firstPrompt?.playerId).toBe('1');
+        expect(firstPrompt?.id).toContain('host-1');
+        expect(firstPrompt?.data?.sourceId).toBe('elder_thing_dunwich_horror_pod_choice');
+
+        const afterFirst = runCommand(
+            triggered.matchState as any,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'draw' } },
+            defaultTestRandom,
+        );
+        expect(afterFirst.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MADNESS_DRAWN,
+            payload: expect.objectContaining({ playerId: '1', count: 2 }),
+        }));
+
+        const secondPrompt = getInteractionsFromMS(afterFirst.finalState)[0] as any;
+        expect(secondPrompt?.playerId).toBe('0');
+        expect(secondPrompt?.id).toContain('host-2');
+        expect(secondPrompt?.data?.sourceId).toBe('elder_thing_dunwich_horror_pod_choice');
+
+        const afterSecond = runCommand(
+            afterFirst.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'draw' } },
+            defaultTestRandom,
+        );
+        expect(afterSecond.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MADNESS_DRAWN,
+            payload: expect.objectContaining({ playerId: '0', count: 2 }),
+        }));
+        expect(getInteractionsFromMS(afterSecond.finalState).length).toBe(0);
     });
 });
 

@@ -735,7 +735,11 @@ function buildForceSkipPayloadFromSeatState(
         };
     }
 
+    const allowWhenHasNonControl = options?.allowWhenHasNonControl ?? true;
     if (minCount === 0) {
+        if (!allowWhenHasNonControl && hasEnabledNonControlOptions(data)) {
+            return null;
+        }
         return {
             interactionId: current.id,
             payload: { optionIds: [] },
@@ -744,7 +748,6 @@ function buildForceSkipPayloadFromSeatState(
         };
     }
 
-    const allowWhenHasNonControl = options?.allowWhenHasNonControl ?? true;
     if (!allowWhenHasNonControl && hasEnabledNonControlOptions(data)) {
         return null;
     }

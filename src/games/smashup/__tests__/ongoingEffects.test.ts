@@ -168,6 +168,64 @@ describe('持续效果拦截框架', () => {
                 uid: 'guard-source',
                 defId: 'alias_guard_pod',
                 ownerId: '0',
+                controllerId: '0',
+            });
+        });
+
+        test('consumable protection source 不应在同宿主两张不同控制者的同名 attached action 中错 detach 第一张', () => {
+            registerProtection('trickster_hideout', 'action', (ctx) => {
+                return ctx.targetMinion.attachedActions.some((attachedHideout) => {
+                    if (attachedHideout.defId !== 'trickster_hideout') return false;
+                    const controllerId = (attachedHideout.metadata as any)?.sourceControllerId ?? attachedHideout.ownerId;
+                    return ctx.targetMinion.controller === controllerId && ctx.sourcePlayerId !== controllerId;
+                });
+            }, { consumable: true });
+
+            const targetMinion = makeMinion({
+                uid: 'hideout-host',
+                controller: '0',
+                attachedActions: [
+                    { uid: 'hideout-opponent', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'hideout-protector', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const state = makeState([makeBase({ minions: [targetMinion] })]);
+
+            expect(getConsumableProtectionSource(state, targetMinion, 0, '1', 'action')).toEqual({
+                uid: 'hideout-protector',
+                defId: 'trickster_hideout',
+                ownerId: '1',
+                controllerId: '0',
+            });
+        });
+
+        test('consumable protection source 不应在同基地两张不同控制者的同名 ongoing 中错 detach 第一张', () => {
+            registerProtection('trickster_hideout', 'action', (ctx) => {
+                const base = ctx.state.bases[ctx.targetBaseIndex];
+                return base?.ongoingActions.some((baseHideout) => {
+                    if (baseHideout.defId !== 'trickster_hideout') return false;
+                    const controllerId = (baseHideout.metadata as any)?.sourceControllerId ?? baseHideout.ownerId;
+                    return ctx.targetMinion.controller === controllerId && ctx.sourcePlayerId !== controllerId;
+                }) ?? false;
+            }, { consumable: true });
+
+            const targetMinion = makeMinion({
+                uid: 'base-hideout-host',
+                controller: '0',
+            });
+            const state = makeState([makeBase({
+                minions: [targetMinion],
+                ongoingActions: [
+                    { uid: 'base-hideout-opponent', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'base-hideout-protector', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            })]);
+
+            expect(getConsumableProtectionSource(state, targetMinion, 0, '1', 'action')).toEqual({
+                uid: 'base-hideout-protector',
+                defId: 'trickster_hideout',
+                ownerId: '1',
+                controllerId: '0',
             });
         });
 
@@ -653,6 +711,39 @@ describe('持续效果拦截框架', () => {
             });
         });
 
+        test('fireTriggerForSource 在显式 sourceCardUid 已指向不合格实例时，不应回退到别的同名 source', () => {
+            registerTrigger('test_shared_source_choice', 'onMinionDestroyed', (ctx) => [{
+                type: 'TEST_EVENT' as any,
+                payload: {
+                    sourceCardUid: ctx.sourceCardUid,
+                    sourceControllerId: ctx.sourceControllerId,
+                },
+                timestamp: ctx.now,
+            } as SmashUpEvent], {
+                playerContext: 'sourceController',
+                canTrigger: ctx => ctx.sourceControllerId === '1',
+            });
+
+            const state = makeState([
+                makeBase({
+                    minions: [
+                        makeMinion({ uid: 'source-p0', defId: 'test_shared_source_choice', controller: '0' }),
+                        makeMinion({ uid: 'source-p1', defId: 'test_shared_source_choice', controller: '1' }),
+                    ],
+                }),
+            ]);
+
+            const result = fireTriggerForSource(state, 'test_shared_source_choice', 'onMinionDestroyed', {
+                state,
+                playerId: '0',
+                sourceCardUid: 'source-p0',
+                random: dummyRandom,
+                now: 2,
+            });
+
+            expect(result.events).toHaveLength(0);
+        });
+
         test('fireTriggerForSource 支持 globalZones=deck', () => {
             registerTrigger('test_global', 'onTurnStart', (ctx) => [{
                 type: 'TEST_EVENT' as any,
@@ -680,6 +771,44 @@ describe('持续效果拦截框架', () => {
 
             expect(result.events).toHaveLength(1);
             expect((result.events[0] as any).payload).toEqual({ hit: true });
+        });
+
+        test('fireTriggerForSource 在显式 global source uid 已失配时，应保留显式 provenance 而不偷换成别的同名 discard source', () => {
+            registerTrigger('test_global_residual', 'onTurnStart', (ctx) => [{
+                type: 'TEST_EVENT' as any,
+                payload: {
+                    sourceCardUid: ctx.sourceCardUid,
+                    sourceControllerId: ctx.sourceControllerId,
+                },
+                timestamp: ctx.now,
+            } as SmashUpEvent], {
+                global: true,
+                globalZones: ['discard'],
+                playerContext: 'sourceController',
+            });
+
+            const state = makeState([makeBase()]);
+            state.players['0'].discard = [{
+                uid: 'other-copy',
+                defId: 'test_global_residual',
+                type: 'action',
+                owner: '0',
+            }];
+
+            const result = fireTriggerForSource(state, 'test_global_residual', 'onTurnStart', {
+                state,
+                playerId: '1',
+                sourceCardUid: 'missing-copy',
+                sourceControllerId: '1',
+                random: dummyRandom,
+                now: 3,
+            });
+
+            expect(result.events).toHaveLength(1);
+            expect((result.events[0] as any).payload).toEqual({
+                sourceCardUid: 'missing-copy',
+                sourceControllerId: '1',
+            });
         });
     });
 });
@@ -1012,6 +1141,31 @@ describe('getBaseRestrictions', () => {
             displayText: SMASHUP_FACTION_IDS.PIRATES,
             sourceDefId: 'trickster_block_the_path',
         });
+    });
+
+    test('同一基地两张不同 blockedFaction 的 Block the Path 并存时，不应只返回第一张同名来源的限制信息', () => {
+        const base = makeBase({
+            ongoingActions: [
+                { uid: 'bp-pirates', defId: 'trickster_block_the_path', ownerId: '0', metadata: { blockedFaction: SMASHUP_FACTION_IDS.PIRATES } },
+                { uid: 'bp-robots', defId: 'trickster_block_the_path', ownerId: '1', metadata: { blockedFaction: SMASHUP_FACTION_IDS.ROBOTS } },
+            ],
+        });
+        const state = makeState([base]);
+
+        const restrictions = getBaseRestrictions(state, 0);
+
+        expect(restrictions).toEqual([
+            {
+                type: 'blocked_faction',
+                displayText: SMASHUP_FACTION_IDS.PIRATES,
+                sourceDefId: 'trickster_block_the_path',
+            },
+            {
+                type: 'blocked_faction',
+                displayText: SMASHUP_FACTION_IDS.ROBOTS,
+                sourceDefId: 'trickster_block_the_path',
+            },
+        ]);
     });
 
     test('POD 版 Block the Path 也返回限制信息并保留真实来源 defId', () => {

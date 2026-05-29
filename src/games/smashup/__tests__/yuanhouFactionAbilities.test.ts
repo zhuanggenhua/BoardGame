@@ -4673,6 +4673,63 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(filtered.map(event => (event as any).payload?.cardUid)).toEqual(['shield-a', 'protected-action']);
     });
 
+    it('电子猿：borrowed attached action 因保护被拦截附着时，应回真实 owner 弃牌并保留 sourceControllerId', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_monkey_lab', [
+                makeMinion('protected-host', 'sharks_mako', '1', 3, {
+                    attachedActions: [
+                        { uid: 'shield-a', defId: 'cyborg_apes_shielding', ownerId: '1' },
+                    ],
+                }),
+            ])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const filtered = filterProtectedAffectEvents([
+            {
+                type: SU_EVENTS.ONGOING_ATTACHED,
+                payload: {
+                    cardUid: 'borrowed-evo',
+                    defId: 'cyborg_apes_cyberevolution',
+                    ownerId: '1',
+                    sourcePlayerId: '0',
+                    targetType: 'minion',
+                    targetBaseIndex: 0,
+                    targetMinionUid: 'protected-host',
+                },
+                timestamp: 1000,
+            } as any,
+        ], core as any, '0');
+
+        const blockedAttachDetach = filtered.find((event: any) =>
+            event.type === SU_EVENTS.ONGOING_DETACHED
+            && event.payload?.cardUid === 'borrowed-evo',
+        ) as any;
+        expect(blockedAttachDetach?.payload).toEqual(expect.objectContaining({
+            cardUid: 'borrowed-evo',
+            defId: 'cyborg_apes_cyberevolution',
+            ownerId: '1',
+            reason: 'cyborg_apes_cyberevolution_blocked_attach',
+            sourcePlayerId: '0',
+            sourceCardUid: 'borrowed-evo',
+            sourceDefId: 'cyborg_apes_cyberevolution',
+            sourceControllerId: '0',
+            sourceBaseIndex: 0,
+        }));
+
+        const final = applyEvents(core as any, filtered);
+        expect(final.players['1'].discard.map((card: any) => card.uid)).toContain('borrowed-evo');
+        expect(final.players['0'].discard.map((card: any) => card.uid)).not.toContain('borrowed-evo');
+    });
+
     it('电子猿：护盾被前置不同来源事件移除后，不应继续保护随后移动的宿主', () => {
         const core = {
             players: {
@@ -6704,6 +6761,32 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(isOperationRestricted(core, 0, '0', 'play_action', { activationWindow: 'meFirst' })).toBe(false);
     });
 
+    it('超级间谍：同一基地上若同时有两张不同控制者的 Mindraker，不应因第一张同名来源而放行对手在计分窗口打行动', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase({
+                defId: 'base_isis_swingin_pad',
+                minions: [],
+                ongoingActions: [
+                    { uid: 'mind-p0', defId: 'super_spies_mindraker', ownerId: '0' },
+                    { uid: 'mind-p1', defId: 'super_spies_mindraker', ownerId: '0', metadata: { sourceControllerId: '1' } } as any,
+                ],
+            })],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        expect(isOperationRestricted(core, 0, '0', 'play_action')).toBe(false);
+        expect(isOperationRestricted(core, 0, '0', 'play_action', { activationWindow: 'meFirst' })).toBe(true);
+        expect(isOperationRestricted(core, 0, '1', 'play_action', { activationWindow: 'meFirst' })).toBe(true);
+    });
+
     it('超级间谍：鼹鼠在计分窗口必须通过 ACTIVATE_SPECIAL 校验暴露真实响应入口', () => {
         const core = {
             players: {
@@ -7916,6 +7999,70 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         ]);
     });
 
+    it('时间旅行者：1.21千兆瓦选择行动牌种时，应按弃牌真实 owner 分别洗回各自牌库', () => {
+        const reverseRandom = {
+            shuffle: <T,>(items: T[]) => [...items].reverse(),
+            random: () => 0.5,
+            d: () => 1,
+            range: (min: number) => min,
+        };
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('giga-owner-split', 'time_travelers_1_21_gigawatts', 'action', '0')],
+                    deck: [makeCard('p0-deck-a', 'sharks_mako', 'minion', '0')],
+                    discard: [
+                        makeCard('borrowed-action-a', 'super_spies_from_q_with_love', 'action', '1'),
+                        makeCard('own-action-a', 'cyborg_apes_juiced_up', 'action', '0'),
+                        makeCard('minion-a', 'time_travelers_jumper', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'ghosts_spectre', 'minion', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_portal_room', [])],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'giga-owner-split' },
+        } as any, reverseRandom);
+
+        expect(played.success).toBe(true);
+        expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_1_21_gigawatts_choose');
+
+        const resolved = resolveInteractionChain(played.finalState, (prompt) => {
+            const option = findInteractionOption(prompt, candidate => candidate.value?.cardType === 'action');
+            return { optionId: option.id };
+        }, reverseRandom);
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '1',
+                sourcePlayerId: '0',
+            }),
+        }));
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([
+            'p0-deck-a',
+            'giga-owner-split',
+            'own-action-a',
+        ]);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual([
+            'p1-deck-a',
+            'borrowed-action-a',
+        ]);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['minion-a']);
+    });
+
     it('时间旅行者：1.21千兆瓦在弃牌堆只剩单一牌种时应自动洗回整副牌库且不弹牌种选择 prompt', () => {
         const reverseRandom = {
             shuffle: <T,>(items: T[]) => [...items].reverse(),
@@ -7966,6 +8113,63 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             'action-a',
         ]);
         expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['giga-single']);
+    });
+
+    it('时间旅行者：1.21千兆瓦在弃牌堆只剩行动时，仍应按弃牌真实 owner 自动分别洗回各自牌库', () => {
+        const reverseRandom = {
+            shuffle: <T,>(items: T[]) => [...items].reverse(),
+            random: () => 0.5,
+            d: () => 1,
+            range: (min: number) => min,
+        };
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('giga-owner-split-auto', 'time_travelers_1_21_gigawatts', 'action', '0')],
+                    deck: [makeCard('p0-deck-a', 'sharks_great_white', 'minion', '0')],
+                    discard: [
+                        makeCard('borrowed-action-a', 'super_spies_from_q_with_love', 'action', '1'),
+                        makeCard('own-action-a', 'cyborg_apes_juiced_up', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'ghosts_spectre', 'minion', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_portal_room', [])],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'giga-owner-split-auto' },
+        } as any, reverseRandom);
+
+        expect(played.success).toBe(true);
+        expect(played.finalState.sys.interaction.current).toBeUndefined();
+        expect(played.events.filter(event => event.type === SU_EVENTS.DECK_REORDERED)).toHaveLength(2);
+        expect(played.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '1',
+                sourcePlayerId: '0',
+            }),
+        }));
+        expect(played.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([
+            'p0-deck-a',
+            'own-action-a',
+        ]);
+        expect(played.finalState.core.players['1'].deck.map(card => card.uid)).toEqual([
+            'p1-deck-a',
+            'borrowed-action-a',
+        ]);
+        expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['giga-owner-split-auto']);
     });
 
     it('时间旅行者：1.21千兆瓦在弃牌堆为空时应给出反馈且不创建牌种选择 prompt', () => {
@@ -9859,6 +10063,59 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(triggered.matchState?.sys.interaction.current?.data?.sourceId).toBe('cyborg_apes_flying_monkey_move');
         expect(triggered.matchState?.sys.interaction.current?.playerId).toBe('0');
+    });
+
+    it('变形者：borrowed 细胞结合复制飞猴后也应把移动选择权交给控制者而不是真实 owner', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_primate_park', [
+                    makeMinion('bond-host', 'sharks_mako', '0', 2, {
+                        attachedActions: [{
+                            uid: 'bond-borrowed',
+                            defId: 'shapeshifters_cellular_bonding',
+                            ownerId: '1',
+                            metadata: { sourceControllerId: '0' },
+                        } as any],
+                        metadata: {
+                            cellularBondingCardUid: 'bond-borrowed',
+                            cellularBondingCopiedActionDefId: 'cyborg_apes_flying_monkey',
+                        } as any,
+                    }),
+                ]),
+                makeBase('base_monkey_lab', []),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const triggered = fireTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            sourceCardUid: 'bond-borrowed',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            random: () => 0.5,
+            now: 1001,
+        });
+
+        expect(triggered.matchState?.sys.interaction.current?.data?.sourceId).toBe('cyborg_apes_flying_monkey_move');
+        expect(triggered.matchState?.sys.interaction.current?.playerId).toBe('0');
+        expect(triggered.matchState?.sys.interaction.current?.data?.allowedFlyingMonkeyMoves).toEqual([{
+            minionUid: 'bond-host',
+            actionUid: 'bond-borrowed',
+            fromBaseIndex: 0,
+            toBaseIndex: 1,
+            reason: 'shapeshifters_cellular_bonding_flying_monkey',
+        }]);
     });
 
     it('电子猿：飞猴真实计分后移动宿主并摧毁本行动进入弃牌', () => {

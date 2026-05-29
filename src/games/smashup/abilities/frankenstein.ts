@@ -885,6 +885,7 @@ function registerFrankensteinOngoingEffects(): void {
         executeAbilityProgram(frankensteinGermanEngineeringDslProgram, ctx).events, {
         sourceScope: 'triggerBase',
         canTrigger: isFrankensteinGermanEngineeringEligible,
+        perInstance: true,
     }, {
     });
     registerTriggerProgramExecutor(
@@ -926,20 +927,37 @@ function registerFrankensteinOngoingEffects(): void {
 
     registerTrigger('frankenstein_uberserum', 'onTurnStart', (ctx: TriggerContext) => {
         const { state, playerId, now } = ctx;
+        if (ctx.sourceCardUid) {
+            for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+                for (const minion of state.bases[baseIndex].minions) {
+                    const attachment = minion.attachedActions.find((action) =>
+                        action.uid === ctx.sourceCardUid
+                        && matchesDefId(action.defId, 'frankenstein_uberserum'),
+                    );
+                    if (!attachment) continue;
+                    const attachmentControllerId = ((attachment.metadata?.sourceControllerId as PlayerId | undefined) ?? attachment.ownerId);
+                    if (attachmentControllerId !== playerId) return [];
+                    return [addPowerCounter(minion.uid, baseIndex, 1, 'frankenstein_uberserum', now)];
+                }
+            }
+            return [];
+        }
+
         const events: SmashUpEvent[] = [];
         for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
             for (const minion of state.bases[baseIndex].minions) {
-                const hasUberserum = minion.attachedActions.some((action) =>
+                const matchingAttachments = minion.attachedActions.filter((action) =>
                     matchesDefId(action.defId, 'frankenstein_uberserum')
                     && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === playerId),
                 );
-                if (hasUberserum) {
+                for (const _attachment of matchingAttachments) {
                     events.push(addPowerCounter(minion.uid, baseIndex, 1, 'frankenstein_uberserum', now));
                 }
             }
         }
         return events;
     }, {
+        perInstance: true,
         playerContext: 'sourceController',
     });
 

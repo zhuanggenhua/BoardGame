@@ -127,6 +127,7 @@ export function registerPirateAbilities(): void {
     // 海盗王：基地计分前移动到该基地
     registerTrigger('pirate_king', 'beforeScoring', pirateKingBeforeScoring, {
         playerContext: 'sourceController',
+        canTrigger: canTriggerPirateKingBeforeScoring,
     });
     // 副官：基地计分后移动到其他基地（而非弃牌堆）
     registerTrigger('pirate_first_mate', 'afterScoring', pirateFirstMateAfterScoring, {
@@ -138,6 +139,12 @@ export function registerPirateAbilities(): void {
     registerTrigger('pirate_buccaneer', 'onMinionDestroyed', buccaneerOnDestroyed, {
         phase: 'replacement',
     });
+}
+
+function canTriggerPirateKingBeforeScoring(ctx: TriggerContext): boolean {
+    return ctx.baseIndex !== undefined
+        && ctx.sourceBaseIndex !== undefined
+        && ctx.sourceBaseIndex !== ctx.baseIndex;
 }
 
 /** 粗鲁少妇 onPlay：消灭本基地一个力量≤2的随从*/
@@ -377,10 +384,16 @@ function pirateKingBeforeScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerR
 
 
     if (kings.length === 0) return [];
+    const preferredKingIndex = ctx.sourceCardUid
+        ? kings.findIndex(king => king.uid === ctx.sourceCardUid)
+        : -1;
+    const orderedKings = preferredKingIndex > 0
+        ? [kings[preferredKingIndex], ...kings.slice(0, preferredKingIndex), ...kings.slice(preferredKingIndex + 1)]
+        : kings;
 
     // 无 matchState 时回退自动移动
     if (!ctx.matchState) {
-        return kings.map(k => moveMinion(
+        return orderedKings.map(k => moveMinion(
             k.uid,
             k.defId,
             k.fromBaseIndex,
@@ -393,10 +406,10 @@ function pirateKingBeforeScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerR
     // 链式处理每个海盗王：创建确认交互（发送给各 king 的 controller）
     const result = executeAbilityProgram(
         pirateKingMovePromptProgram,
-        createPiratePromptContext(ctx.matchState, kings[0].controller, ctx.now, {
+        createPiratePromptContext(ctx.matchState, orderedKings[0].controller, ctx.now, {
             scoringBaseIndex,
-            current: kings[0],
-            remaining: kings.slice(1),
+            current: orderedKings[0],
+            remaining: orderedKings.slice(1),
         }),
     );
     return { events: result.events, matchState: result.matchState ?? ctx.matchState };

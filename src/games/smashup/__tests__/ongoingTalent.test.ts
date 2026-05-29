@@ -416,6 +416,77 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
         expect(step2?.events ?? []).toHaveLength(0);
     });
 
+    it('同基地有两张齐柏林飞艇时，若被选中的那张在第二步前离场，则不应继续移动随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [
+                        makeOngoing('oa1', 'steampunk_zeppelin', '0'),
+                        makeOngoing('oa2', 'steampunk_zeppelin', '0'),
+                    ],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('m2', 'pirate_saucy_wench', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const ms = makeMatchState(core);
+        execute(ms, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa2', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const chooseMinionInteraction = getInteractionsFromMS(ms)[0];
+        expect(chooseMinionInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_minion');
+
+        const chooseMinion = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_minion');
+        const chooseBase = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_base');
+        expect(chooseMinion).toBeDefined();
+        expect(chooseBase).toBeDefined();
+
+        const step1 = chooseMinion!(
+            ms,
+            '0',
+            { minionUid: 'm2', baseIndex: 1 },
+            chooseMinionInteraction?.data,
+            defaultRandom,
+            2102,
+        );
+        const chooseBaseInteraction = (step1?.state.sys as any).interaction?.queue?.[0];
+        expect(chooseBaseInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_base');
+
+        const staleCore = makeState({
+            ...core,
+            bases: [
+                {
+                    ...core.bases[0],
+                    ongoingActions: [makeOngoing('oa1', 'steampunk_zeppelin', '0')],
+                },
+                core.bases[1],
+            ],
+        });
+
+        const step2 = chooseBase!(
+            makeMatchState(staleCore),
+            '0',
+            { baseIndex: 0 },
+            chooseBaseInteraction?.data,
+            defaultRandom,
+            2103,
+        );
+        expect(step2?.events ?? []).toHaveLength(0);
+    });
+
     it('从其他基地选择随从时，第二步只能移动到齐柏林所在基地', () => {
         const core = makeState({
             players: {
@@ -1087,6 +1158,74 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
                 payload: expect.objectContaining({ minionUid: 'ally-a', baseIndex: 0, amount: 2, reason: 'trickster_pixie_pod_action' }),
             }),
         ]);
+    });
+
+    it('作为战术打出时，销毁 borrowed ongoing 后应进入真实 owner 弃牌堆，且后续加指示物选择权仍归行动玩家', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-a', 'pirate_saucy_wench', '0', 2)],
+                ongoingActions: [{
+                    uid: 'borrowed-oa',
+                    defId: 'trickster_flame_trap_pod',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            }],
+        });
+
+        const executor = resolveAbility('trickster_pixie_pod', 'onPlay')!;
+        const result = executor({
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'pixie-action',
+            defId: 'trickster_pixie_pod',
+            baseIndex: 0,
+            random: defaultRandom,
+            now: 4110,
+        });
+
+        const destroyInteraction = getInteractionsFromMS(result.matchState!)[0];
+        expect(destroyInteraction?.data?.sourceId).toBe('trickster_pixie_pod_action_destroy');
+
+        const destroyHandler = getInteractionHandler('trickster_pixie_pod_action_destroy');
+        expect(destroyHandler).toBeDefined();
+        const chained = destroyHandler!(
+            result.matchState!,
+            '0',
+            { cardUid: 'borrowed-oa', defId: 'trickster_flame_trap_pod', ownerId: '1' },
+            destroyInteraction?.data,
+            defaultRandom,
+            4111,
+        );
+
+        expect(chained?.events).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: expect.objectContaining({
+                    cardUid: 'borrowed-oa',
+                    defId: 'trickster_flame_trap_pod',
+                    ownerId: '1',
+                    reason: 'trickster_pixie_pod_action',
+                }),
+            }),
+        ]);
+
+        const detachedState = chained!.events.reduce((state, event) => reduce(state, event), core);
+        expect(detachedState.bases[0].ongoingActions).toEqual([]);
+        expect(detachedState.players['1'].discard).toEqual([
+            expect.objectContaining({ uid: 'borrowed-oa', defId: 'trickster_flame_trap_pod' }),
+        ]);
+        expect(detachedState.players['0'].discard).toEqual([]);
+
+        const counterInteraction = (chained?.state.sys as any).interaction?.queue?.[0];
+        expect(counterInteraction?.data?.sourceId).toBe('trickster_pixie_pod_action_counters');
+        expect(counterInteraction?.playerId).toBe('0');
     });
 });
 

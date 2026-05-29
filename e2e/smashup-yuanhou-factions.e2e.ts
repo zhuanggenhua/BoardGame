@@ -8117,6 +8117,131 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
     }).toBe(true);
   });
 
+  test('时间旅行者-Time Box-borrowed setaside Titan 应在控制者页真实出现在 rail 并可打到基地', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { skipInitialization: true }, 45000);
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '0',
+      phase: 'playCards',
+      extra: {
+        core: {
+          turnOrder: ['0', '1'],
+          currentPlayerIndex: 0,
+          turnNumber: 1,
+          nextUid: 1000,
+          players: {
+            '0': {
+              id: '0',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['time_travelers', 'cyborg_apes'],
+              minionsPlayed: 0,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+            },
+            '1': {
+              id: '1',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['super_spies'],
+              minionsPlayed: 0,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+            },
+          },
+          bases: [
+            {
+              defId: 'base_monkey_lab',
+              breakpoint: 20,
+              minions: [{
+                uid: 'borrowed-time-box-host',
+                defId: 'cyborg_apes_cyberback',
+                controller: '0',
+                owner: '0',
+                basePower: 5,
+                powerCounters: 0,
+                powerModifier: 0,
+                tempPowerModifier: 0,
+                talentUsed: false,
+                playedThisTurn: false,
+                attachedActions: [],
+              }],
+              ongoingActions: [],
+            },
+            {
+              defId: 'base_portal_room',
+              breakpoint: 20,
+              minions: [],
+              ongoingActions: [],
+            },
+          ],
+          titans: [{
+            uid: 'borrowed-time-box-setaside',
+            defId: 'time_travelers_time_box',
+            faction: 'time_travelers',
+            ownerId: '1',
+            controllerId: '0',
+            powerCounters: 0,
+            talentUsed: false,
+            metadata: { timeBoxCounters: 5, timeBoxPlayArmed: true },
+            location: { zone: 'setaside' },
+          }],
+          baseDeck: ['base_the_nexus'],
+          baseDiscard: [],
+        },
+      },
+    });
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const titan = (state?.core?.titans ?? []).find((candidate: any) => candidate?.uid === 'borrowed-time-box-setaside');
+      return titan?.location?.zone === 'setaside'
+        && titan?.controllerId === '0'
+        && titan?.ownerId === '1'
+        && titan?.metadata?.timeBoxCounters === 5
+        && titan?.metadata?.timeBoxPlayArmed === true;
+    }, {
+      message: '场景注入后，borrowed Time Box 应先处于 controller=P0、owner=P1 的牌库旁待进场状态',
+      timeout: 10000,
+    }).toBe(true);
+
+    const borrowedTimeBoxRail = page.getByTestId('su-rail-titan-borrowed-time-box-setaside');
+    const borrowedTimeBoxBadge = page.getByTestId('su-rail-titan-badge-borrowed-time-box-setaside');
+    await expect(borrowedTimeBoxRail).toBeVisible({ timeout: 15000 });
+    await expect(borrowedTimeBoxBadge).toBeVisible({ timeout: 15000 });
+    await screenshotViewport(page, 'yuanhou-borrowed-time-box-visible-on-controller-rail', testInfo);
+
+    await borrowedTimeBoxRail.click({ force: true });
+    await expect(borrowedTimeBoxRail).toHaveClass(/ring-2 ring-purple-400/);
+
+    await page.getByTestId('base-zone-1').click();
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const titan = (state?.core?.titans ?? []).find((candidate: any) => candidate?.uid === 'borrowed-time-box-setaside');
+      return state?.sys?.interaction?.current == null
+        && titan?.location?.zone === 'base'
+        && titan?.location?.baseIndex === 1
+        && titan?.controllerId === '0'
+        && titan?.ownerId === '1'
+        && titan?.metadata?.timeBoxCounters === 0
+        && titan?.metadata?.timeBoxPlayArmed === false;
+    }, {
+      message: 'controller=P0 从 rail 选择 borrowed Time Box 后，应能真实把它打到基地，且保留 owner=P1 并清零计数',
+      timeout: 15000,
+    }).toBe(true);
+
+    await screenshotViewport(page, 'yuanhou-borrowed-time-box-played-from-controller-rail', testInfo);
+  });
+
   test('超级间谍-Moon Zero Three-与 Time Box 同时可用时切换 rail 选择后应由 Time Box 真实进场', async ({ page, game }, testInfo) => {
     test.setTimeout(120000);
     await setChineseLocale(page.context());

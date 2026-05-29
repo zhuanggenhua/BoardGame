@@ -6864,6 +6864,48 @@ describe('吸血鬼派系能力', () => {
         expect(result.finalState.core.bases[0].minions.some(m => m.uid === 'e1')).toBe(false);
     });
 
+    it('同一宿主上两张 vampire_opportunist 在对手随从被消灭后，应逐实例各给宿主放 1 个指示物', () => {
+        const host = makeMinion('m0', 'test_host', '0', 5, {
+            attachedActions: [
+                { uid: 'oa1', defId: 'vampire_opportunist', ownerId: '0' },
+                { uid: 'oa2', defId: 'vampire_opportunist', ownerId: '0' },
+            ],
+        });
+        const victim = makeMinion('e1', 'enemy_low', '1', 2, { powerModifier: 0 });
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [host, victim],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const { events } = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            playerId: '0',
+            controllerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'e1',
+            triggerMinionDefId: 'enemy_low',
+            triggerMinion: victim,
+            now: 1200,
+        });
+
+        const opportunistEvents = events.filter(
+            e => e.type === SU_EVENTS.POWER_COUNTER_ADDED && (e as any).payload.reason === 'vampire_opportunist',
+        );
+        expect(opportunistEvents).toHaveLength(2);
+
+        const reduced = events.reduce((current, event) => reduce(current, event as any), core);
+        expect(reduced.bases[0].minions.find(m => m.uid === 'm0')?.powerCounters).toBe(2);
+    });
+
     it('投机主义：己方随从被消灭时不应触发', () => {
         const core = makeState({
             players: {
@@ -7628,6 +7670,80 @@ describe('幽灵派系能力', () => {
             expect(result.events.find(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBeUndefined();
         });
     });
+
+    it('ghosts_creampuff_man 的 source titan 若在第二段响应前已离开基地，不应继续沿旧 play prompt 进入目标选择', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('cream-cost', 'ghost_ghost', 'minion', '0')],
+                    discard: [makeCard('bananas-discard', 'cyborg_apes_going_bananas', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'base_portal_room', minions: [], ongoingActions: [] },
+                {
+                    defId: 'base_monkey_lab',
+                    minions: [],
+                    ongoingActions: [{
+                        uid: 'enemy-ongoing',
+                        defId: 'time_travelers_stasis_field',
+                        ownerId: '1',
+                    } as any],
+                },
+            ],
+            titans: [{
+                uid: 'cream-stale',
+                defId: 'ghosts_creampuff_man',
+                ownerId: '0',
+                controllerId: '0',
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                powerCounters: 0,
+                talentUsed: false,
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'cream-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const discardPrompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(discardPrompt?.data?.sourceId).toBe('titan_ghosts_creampuff_man_discard');
+        const discardOption = discardPrompt.data.options.find((entry: any) => entry.value?.cardUid === 'cream-cost');
+        expect(discardOption).toBeDefined();
+
+        const afterDiscard = runCommand(
+            talent.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: discardOption.id } } as any,
+            defaultTestRandom,
+        );
+        const playPrompt = getInteractionsFromMS(afterDiscard.finalState)[0] as any;
+        expect(playPrompt?.data?.sourceId).toBe('titan_ghosts_creampuff_man_play');
+        const playOption = playPrompt.data.options.find((entry: any) => entry.value?.cardUid === 'bananas-discard');
+        expect(playOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...afterDiscard.finalState,
+            core: {
+                ...afterDiscard.finalState.core,
+                titans: (afterDiscard.finalState.core.titans ?? []).map(titan => titan.uid === 'cream-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: playOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.some(event => event.type === SU_EVENTS.ACTION_PLAYED)).toBe(false);
+        expect(getInteractionsFromMS(resolved.finalState)).toHaveLength(0);
+    });
 });
 
 describe('World Champs abilities', () => {
@@ -8239,6 +8355,64 @@ describe('World Champs abilities', () => {
         expect(reused.error).toBe('本回合天赋已使用');
     });
 
+    it('world_champs_high_speed_chase 在同基地有两张同名时，不应把第二张天赋结算错绑到第一张 ongoing', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('runner-hsc-2', 'robot_microbot_alpha', '0', 1, { powerModifier: 0 })],
+                    ongoingActions: [
+                        { uid: 'hsc-source-a', defId: 'world_champs_high_speed_chase', ownerId: '0', talentUsed: false } as any,
+                        { uid: 'hsc-source-b', defId: 'world_champs_high_speed_chase', ownerId: '1', talentUsed: false, metadata: { sourceControllerId: '0' } } as any,
+                    ],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { ongoingCardUid: 'hsc-source-b', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const chooseMinionPrompt = getInteractionsFromMS(used.finalState)[0] as any;
+        expect(chooseMinionPrompt?.data?.sourceId).toBe('world_champs_high_speed_chase_minion');
+        const minionOption = chooseMinionPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'runner-hsc-2');
+        expect(minionOption).toBeDefined();
+
+        const afterMinion = runCommand(
+            used.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minionOption.id } } as any,
+            defaultTestRandom,
+        );
+        const chooseBasePrompt = getInteractionsFromMS(afterMinion.finalState)[0] as any;
+        expect(chooseBasePrompt?.data?.sourceId).toBe('world_champs_high_speed_chase_base');
+        const baseOption = chooseBasePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const resolved = runCommand(
+            afterMinion.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'runner-hsc-2')).toBe(true);
+        expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === 'hsc-source-b')).toBe(true);
+        expect(resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'hsc-source-b')?.ownerId).toBe('1');
+        expect(
+            resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'hsc-source-b')?.metadata?.sourceControllerId,
+        ).toBe('0');
+        expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === 'hsc-source-a')).toBe(false);
+        expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === 'hsc-source-a')).toBe(true);
+    });
+
     it('world_champs_aramis 每回合一次在自己回合被行动直接影响后获得额外行动', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
@@ -8391,6 +8565,250 @@ describe('World Champs abilities', () => {
             && event.payload?.reason === 'world_champs_diva_once_per_turn',
         )).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'diva-1')?.tempPowerModifier ?? 0).toBe(2);
+    });
+
+    it('world_champs_diva 复制敌方标准行动的力量效果时，仍会保留敌方来源以便护盾阻止该复制效果', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 5,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('diva-1', 'world_champs_diva', '0', 3, {
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [{ uid: 'shield-a', defId: 'cyborg_apes_shielding', ownerId: '0' }],
+                    }),
+                    makeMinion('ally-1', 'robot_microbot_alpha', '0', 1, { powerModifier: 0 }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const originalEvent = {
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: {
+                minionUid: 'ally-1',
+                baseIndex: 0,
+                amount: 2,
+                reason: 'world_champs_fast_as_lightning',
+                sourcePlayerId: '1',
+                sourceDefId: 'world_champs_fast_as_lightning',
+                sourceCardUid: 'enemy-fast-1',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 3200,
+        };
+        const afterOriginal = reduce(core, originalEvent as any);
+        const queued = collectTriggers(afterOriginal, 'onMinionAffected', {
+            state: afterOriginal,
+            matchState: makeMatchState(afterOriginal),
+            playerId: '1',
+            baseIndex: 0,
+            sourceCardUid: 'enemy-fast-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '1',
+            triggerMinionUid: 'ally-1',
+            triggerMinionDefId: 'robot_microbot_alpha',
+            triggerMinion: afterOriginal.bases[0].minions.find(minion => minion.uid === 'ally-1'),
+            affectType: 'power_change',
+            affectEvent: originalEvent as any,
+            affectBatchTargets: [{ minionUid: 'ally-1', baseIndex: 0, controllerId: '0' }],
+            reason: 'world_champs_fast_as_lightning',
+            random: defaultTestRandom,
+            now: 3200,
+        });
+
+        expect(queued).toBeDefined();
+        const queuedCore = {
+            ...afterOriginal,
+            triggerQueue: (queued as any).payload.triggers,
+        };
+        const prompt = maybeResolveReactionQueue(makeMatchState(queuedCore), defaultTestRandom, 3200);
+        expect(prompt?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+
+        const queueById = new Map(prompt!.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
+        const divaOption = (prompt!.state.sys.interaction.current as any).data.options.find((option: any) => {
+            const trigger = queueById.get(option.value?.triggerId) as any;
+            return trigger?.sourceDefId === 'world_champs_diva';
+        });
+        expect(divaOption).toBeDefined();
+
+        const resolved = runCommand(
+            prompt!.state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: divaOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.some((event: any) =>
+            event.type === SU_EVENTS.TEMP_POWER_ADDED
+            && event.payload?.minionUid === 'diva-1'
+            && event.payload?.amount === 2,
+        )).toBe(false);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'diva-1')?.tempPowerModifier ?? 0).toBe(0);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'diva-1')?.attachedActions.map(action => action.uid) ?? []).toEqual(['shield-a']);
+        expect(resolved.finalState.core.players['0'].discard.map((card: any) => card.uid)).not.toContain('shield-a');
+    });
+
+    it('world_champs_diva 复制敌方标准行动的移动效果时，仍应保留敌方来源以便 Deep Roots 阻止该复制移动', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 5,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('diva-1', 'world_champs_diva', '0', 3, {
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                        }),
+                        makeMinion('ally-1', 'robot_microbot_alpha', '0', 1, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [{ uid: 'roots-a', defId: 'killer_plant_deep_roots', ownerId: '0' }],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const processed = processAffectTriggers([{
+            type: SU_EVENTS.MINION_MOVED,
+            payload: {
+                minionUid: 'ally-1',
+                minionDefId: 'robot_microbot_alpha',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                reason: 'pirate_shanghai',
+            },
+            timestamp: 3202,
+        } as any], makeMatchState(core), '1', defaultTestRandom as any, 3202);
+
+        const queued = (processed.events as any[]).find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        expect(queued).toBeDefined();
+        const queuedCore = reduce(processed.matchState!.core, queued) as any;
+        const prompt = maybeResolveReactionQueue(
+            { ...processed.matchState!, core: queuedCore },
+            defaultTestRandom,
+            3202,
+        );
+        expect(prompt?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+
+        const queueById = new Map(prompt!.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
+        const divaOption = (prompt!.state.sys.interaction.current as any).data.options.find((option: any) => {
+            const trigger = queueById.get(option.value?.triggerId) as any;
+            return trigger?.sourceDefId === 'world_champs_diva';
+        });
+        expect(divaOption).toBeDefined();
+
+        const resolved = runCommand(
+            prompt!.state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: divaOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.some((event: any) =>
+            event.type === SU_EVENTS.MINION_MOVED
+            && event.payload?.minionUid === 'diva-1'
+            && event.payload?.toBaseIndex === 1,
+        )).toBe(false);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'diva-1')).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'diva-1')).toBe(false);
+    });
+
+    it('world_champs_diva 复制敌方标准行动的移动效果时，应保留原移动事件的来源字段', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 5,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('diva-1', 'world_champs_diva', '0', 3, {
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                        }),
+                        makeMinion('ally-1', 'robot_microbot_alpha', '0', 1, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const processed = processAffectTriggers([{
+            type: SU_EVENTS.MINION_MOVED,
+            payload: {
+                minionUid: 'ally-1',
+                minionDefId: 'robot_microbot_alpha',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                reason: 'pirate_shanghai',
+                sourcePlayerId: '1',
+                sourceDefId: 'pirate_shanghai',
+                sourceCardUid: 'enemy-shanghai-1',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 3203,
+        } as any], makeMatchState(core), '1', defaultTestRandom as any, 3203);
+
+        const queued = (processed.events as any[]).find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        expect(queued).toBeDefined();
+        const queuedCore = reduce(processed.matchState!.core, queued) as any;
+        const prompt = maybeResolveReactionQueue(
+            { ...processed.matchState!, core: queuedCore },
+            defaultTestRandom,
+            3203,
+        );
+        expect(prompt?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+
+        const queueById = new Map(prompt!.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
+        const divaOption = (prompt!.state.sys.interaction.current as any).data.options.find((option: any) => {
+            const trigger = queueById.get(option.value?.triggerId) as any;
+            return trigger?.sourceDefId === 'world_champs_diva';
+        });
+        expect(divaOption).toBeDefined();
+
+        const resolved = runCommand(
+            prompt!.state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: divaOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const divaMoveEvent = resolved.events.find((event: any) =>
+            event.type === SU_EVENTS.MINION_MOVED
+            && event.payload?.minionUid === 'diva-1'
+            && event.payload?.toBaseIndex === 1,
+        ) as any;
+        expect(divaMoveEvent).toBeDefined();
+        expect(divaMoveEvent.payload?.sourcePlayerId).toBe('1');
+        expect(divaMoveEvent.payload?.sourceDefId).toBe('pirate_shanghai');
+        expect(divaMoveEvent.payload?.sourceCardUid).toBe('enemy-shanghai-1');
+        expect(divaMoveEvent.payload?.sourceControllerId).toBe('1');
+        expect(divaMoveEvent.payload?.sourceBaseIndex).toBe(0);
     });
 
     it('world_champs_diva 在被他人控制时复制 destroy 效果后，仍应进入自己拥有者的弃牌堆', () => {
@@ -9711,6 +10129,65 @@ describe('Mermaids abilities', () => {
         expect(afterTurnEnded.bases[0].minions.find(minion => minion.uid === 'enemy-small')?.controller).toBe('1');
     });
 
+    it('mermaids_mermaid_queen 控制一个已被借用的目标直到回合结束后，应恢复给夺控前的控制者而不是真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('queen-1', 'mermaids_mermaid_queen', 'minion', '0')] }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('borrowed-small', 'robot_microbot_alpha', '1', 1, {
+                        owner: '2',
+                    })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'queen-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const firstPrompt = getInteractionsFromMS(played.finalState)[0] as any;
+        let controlState = played.finalState;
+        let controlPrompt = firstPrompt;
+        if (firstPrompt?.data?.sourceId === 'mermaids_mermaid_queen_mode') {
+            const controlMode = firstPrompt.data.options.find((entry: any) => entry.value?.mode === 'control');
+            controlState = runCommand(
+                played.finalState,
+                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: controlMode.id } } as any,
+                defaultTestRandom,
+            ).finalState;
+            controlPrompt = getInteractionsFromMS(controlState)[0] as any;
+        }
+        expect(controlPrompt?.data?.sourceId).toBe('mermaids_mermaid_queen_control');
+        const controlOption = controlPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'borrowed-small');
+
+        const resolved = runCommand(
+            controlState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: controlOption.id } } as any,
+            defaultTestRandom,
+        );
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'borrowed-small')).toMatchObject({
+            controller: '0',
+            owner: '2',
+        });
+
+        const afterTurnEnded = reduce(resolved.finalState.core, {
+            type: SU_EVENTS.TURN_ENDED,
+            payload: { playerId: '0', nextPlayerIndex: 1 },
+            timestamp: 3702,
+        } as any);
+        expect(afterTurnEnded.bases[0].minions.find(minion => minion.uid === 'borrowed-small')).toMatchObject({
+            controller: '1',
+            owner: '2',
+        });
+    });
+
     it('mermaids_mermaid_queen 也可选择把其他玩家的一个仆从移到这里', () => {
         const core = makeState({
             players: {
@@ -9852,6 +10329,66 @@ describe('Mermaids abilities', () => {
         });
         expect(reused.valid).toBe(false);
         expect(reused.error).toBe('本回合天赋已使用');
+    });
+
+    it('borrowed mermaids_becalmed_shores 使用天赋移动到其他基地时，仍应保留真实 ownerId 与真正移动玩家的 sourcePlayerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [{
+                        uid: 'becalm-borrowed-1',
+                        defId: 'mermaids_becalmed_shores',
+                        ownerId: '1',
+                        talentUsed: false,
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { ongoingCardUid: 'becalm-borrowed-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(used.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('mermaids_becalmed_shores');
+        const option = prompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+
+        const resolved = runCommand(
+            used.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'becalm-borrowed-1',
+                defId: 'mermaids_becalmed_shores',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 1,
+            }),
+        }));
+        expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === 'becalm-borrowed-1')).toBe(false);
+        expect(resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'becalm-borrowed-1')).toMatchObject({
+            ownerId: '1',
+            talentUsed: true,
+            metadata: expect.objectContaining({ sourceControllerId: '0' }),
+        });
     });
 
     it('mermaids_siren_song 会把每位其他玩家各一个随从移动到同一个你有随从的基地', () => {
@@ -10063,6 +10600,62 @@ describe('Mermaids abilities', () => {
         expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === sourceCardUid)).toBe(false);
         expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === sourceCardUid)).toBe(true);
     });
+
+    it('同一基地同时存在其他玩家的 Shipwreck Cove 与 borrowed Shipwreck Cove 时，应按各自控制者分别给己方随从 +1', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('ally-0', 'robot_microbot_alpha', '0', 3, { powerModifier: 0 }),
+                    makeMinion('ally-1', 'robot_microbot_beta', '1', 4, { powerModifier: 0 }),
+                ],
+                ongoingActions: [
+                    { uid: 'ship-opponent', defId: 'mermaids_shipwreck_cove', ownerId: '1' } as any,
+                    { uid: 'ship-borrowed', defId: 'mermaids_shipwreck_cove', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            }],
+        });
+
+        const p0Minion = core.bases[0].minions.find(minion => minion.uid === 'ally-0');
+        const p1Minion = core.bases[0].minions.find(minion => minion.uid === 'ally-1');
+        expect(p0Minion).toBeDefined();
+        expect(p1Minion).toBeDefined();
+
+        expect(getEffectivePower(core, p0Minion!, 0)).toBe(4);
+        expect(getEffectivePower(core, p1Minion!, 0)).toBe(5);
+    });
+
+    it('同一基地同时存在其他玩家的 Becalmed Shores 与 borrowed Becalmed Shores 时，应按各自控制者分别给对手随从 -1', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('ally-0', 'robot_microbot_alpha', '0', 4, { powerModifier: 0 }),
+                    makeMinion('ally-1', 'robot_microbot_beta', '1', 5, { powerModifier: 0 }),
+                ],
+                ongoingActions: [
+                    { uid: 'becalm-opponent', defId: 'mermaids_becalmed_shores', ownerId: '1' } as any,
+                    { uid: 'becalm-borrowed', defId: 'mermaids_becalmed_shores', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            }],
+        });
+
+        const p0Minion = core.bases[0].minions.find(minion => minion.uid === 'ally-0');
+        const p1Minion = core.bases[0].minions.find(minion => minion.uid === 'ally-1');
+        expect(p0Minion).toBeDefined();
+        expect(p1Minion).toBeDefined();
+
+        expect(getEffectivePower(core, p0Minion!, 0)).toBe(3);
+        expect(getEffectivePower(core, p1Minion!, 0)).toBe(4);
+    });
 });
 describe('Titans abilities', () => {
     it('titan_sphinx_talent 埋葬 borrowed 手牌时应保留真实 trueOwnerId', () => {
@@ -10109,6 +10702,1022 @@ describe('Titans abilities', () => {
             controllerId: '0',
             buriedFrom: 'hand',
         }));
+    });
+
+    it('titan_sphinx_talent 的 source titan 若在响应前已不在基地上，不应继续按过期 baseIndex 埋葬手牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('stale-sphinx-hand', 'robot_warbot', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'base_a', minions: [], ongoingActions: [] },
+                { defId: 'base_b', minions: [], ongoingActions: [] },
+            ],
+            titans: [{
+                uid: 'sphinx-stale',
+                defId: 'sphinx',
+                faction: 'ancient_egyptians',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'sphinx-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('titan_sphinx_talent');
+        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'stale-sphinx-hand');
+        expect(option).toBeDefined();
+
+        const staleState = {
+            ...talent.finalState,
+            core: {
+                ...talent.finalState.core,
+                titans: (talent.finalState.core.titans ?? []).map(titan => titan.uid === 'sphinx-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.CARD_BURIED)).toHaveLength(0);
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'stale-sphinx-hand')).toBe(true);
+        expect(resolved.finalState.core.bases[0].buriedCards?.some(card => card.uid === 'stale-sphinx-hand') ?? false).toBe(false);
+        expect(resolved.finalState.core.bases[1].buriedCards?.some(card => card.uid === 'stale-sphinx-hand') ?? false).toBe(false);
+    });
+
+    it('titan_frankenstein_the_bride_talent_add_counter 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 给随从加标记', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('bride-target', 'robot_microbot_alpha', '0', 2, {
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                    }),
+                ],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'bride-stale',
+                defId: 'frankenstein_the_bride',
+                faction: 'frankenstein',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'bride-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('titan_frankenstein_the_bride_talent_add_counter');
+        const option = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'bride-target');
+        expect(option).toBeDefined();
+
+        const staleState = {
+            ...talent.finalState,
+            core: {
+                ...talent.finalState.core,
+                titans: (talent.finalState.core.titans ?? []).map(titan => titan.uid === 'bride-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toHaveLength(0);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'bride-target')?.powerCounters ?? 0).toBe(0);
+    });
+
+    it('titan_ignobles_the_hill_that_strolls_choose_player 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 交出随从控制权', () => {
+        const core = makeState({
+            turnOrder: ['0', '1', '2'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('hill-draw', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('hill-owned', 'robot_microbot_beta', '0', 2)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'hill-stale',
+                defId: 'ignobles_the_hill_that_strolls',
+                faction: 'ignobles',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'hill-stale', baseIndex: 1 } },
+            defaultTestRandom,
+        );
+        const givePrompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(givePrompt?.data?.sourceId).toBe('titan_ignobles_the_hill_that_strolls_give_minion');
+        const giveOption = givePrompt.data.options.find((entry: any) => entry.value?.minionUid === 'hill-owned');
+        expect(giveOption).toBeDefined();
+
+        const afterGiveMinion = runCommand(
+            talent.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: giveOption.id } } as any,
+            defaultTestRandom,
+        );
+        const choosePlayerPrompt = getInteractionsFromMS(afterGiveMinion.finalState)[0] as any;
+        expect(choosePlayerPrompt?.data?.sourceId).toBe('titan_ignobles_the_hill_that_strolls_choose_player');
+        const playerOption = choosePlayerPrompt.data.options.find((entry: any) => entry.value?.targetPlayerId === '1');
+        expect(playerOption).toBeDefined();
+
+        const staleState = {
+            ...afterGiveMinion.finalState,
+            core: {
+                ...afterGiveMinion.finalState.core,
+                titans: (afterGiveMinion.finalState.core.titans ?? []).map(titan => titan.uid === 'hill-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: playerOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)).toHaveLength(0);
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN)).toHaveLength(0);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'hill-owned')?.controller).toBe('0');
+    });
+
+    it('titan_magical_girls_walking_castle_choose_minions 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦与随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('castle-move-a', 'robot_microbot_alpha', '0', 2),
+                        makeMinion('castle-stay', 'robot_microbot_beta', '0', 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'castle-stale',
+                defId: 'magical_girls_walking_castle',
+                faction: 'magical_girls',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'castle-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const chooseBasePrompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(chooseBasePrompt?.data?.sourceId).toBe('titan_magical_girls_walking_castle_choose_base');
+        const baseOption = chooseBasePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const afterChooseBase = runCommand(
+            talent.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+        const chooseMinionsPrompt = getInteractionsFromMS(afterChooseBase.finalState)[0] as any;
+        expect(chooseMinionsPrompt?.data?.sourceId).toBe('titan_magical_girls_walking_castle_choose_minions');
+
+        const chooseMinionsHandler = getInteractionHandler('titan_magical_girls_walking_castle_choose_minions');
+        expect(chooseMinionsHandler).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...afterChooseBase.finalState,
+            core: {
+                ...afterChooseBase.finalState.core,
+                titans: (afterChooseBase.finalState.core.titans ?? []).map(titan => titan.uid === 'castle-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = chooseMinionsHandler!(
+            staleState,
+            '0',
+            [{ minionUid: 'castle-move-a', baseIndex: 0 }],
+            chooseMinionsPrompt.data,
+            defaultTestRandom,
+            104,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.TITAN_MOVED)).toHaveLength(0);
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.MINION_MOVED)).toHaveLength(0);
+        expect(resolved.state.core.titans?.find(titan => titan.uid === 'castle-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+        expect(resolved.state.core.bases[0].minions.some(minion => minion.uid === 'castle-move-a')).toBe(true);
+        expect(resolved.state.core.bases[1].minions.some(minion => minion.uid === 'castle-move-a')).toBe(false);
+    });
+
+    it('titan_changerbots_mergacon_talent 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 压制并移动泰坦', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('mergacon-a', 'robot_microbot_alpha', '0', 2),
+                        makeMinion('mergacon-b', 'robot_microbot_beta', '0', 2),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'mergacon-stale',
+                defId: 'changerbots_mergacon',
+                faction: 'changerbots',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'mergacon-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('titan_changerbots_mergacon_talent');
+        const baseOption = prompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...talent.finalState,
+            core: {
+                ...talent.finalState.core,
+                titans: (talent.finalState.core.titans ?? []).map(titan => titan.uid === 'mergacon-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.TITAN_ONGOING_SUPPRESSED)).toHaveLength(0);
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.TITAN_MOVED)).toHaveLength(0);
+        expect(resolved.finalState.core.titanOngoingSuppressedUntilTurnEnd ?? []).not.toContain('mergacon-stale');
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'mergacon-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_itty_critters_rainboroc_choose_base 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('rain-stale-card', 'pirate_first_mate', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'base_a', minions: [], ongoingActions: [] },
+                { defId: 'base_b', minions: [], ongoingActions: [] },
+            ],
+            titans: [{
+                uid: 'rain-stale',
+                defId: 'itty_critters_rainboroc',
+                faction: 'itty_critters',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'rain-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const discardPrompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(discardPrompt?.data?.sourceId).toBe('titan_itty_critters_rainboroc_choose_discard');
+        const discardOption = discardPrompt.data.options.find((entry: any) => entry.value?.cardUid === 'rain-stale-card');
+        expect(discardOption).toBeDefined();
+
+        const afterDiscard = runCommand(
+            talent.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: discardOption.id } } as any,
+            defaultTestRandom,
+        );
+        const chooseBasePrompt = getInteractionsFromMS(afterDiscard.finalState)[0] as any;
+        expect(chooseBasePrompt?.data?.sourceId).toBe('titan_itty_critters_rainboroc_choose_base');
+        const baseOption = chooseBasePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...afterDiscard.finalState,
+            core: {
+                ...afterDiscard.finalState.core,
+                titans: (afterDiscard.finalState.core.titans ?? []).map(titan => titan.uid === 'rain-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.TITAN_MOVED)).toHaveLength(0);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'rain-stale-card')).toBe(false);
+        expect(resolved.finalState.core.players['0'].deck.some(card => card.uid === 'rain-stale-card')).toBe(true);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'rain-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_super_spies_moon_zero_three_resolve 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 把牌放到牌库底', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('moon-top', 'robot_microbot_alpha', 'minion', '1'),
+                        makeCard('moon-next', 'robot_microbot_beta', 'minion', '1'),
+                    ],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'moon-stale',
+                defId: 'super_spies_moon_zero_three',
+                faction: 'super_spies',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'moon-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const choosePlayerPrompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(choosePlayerPrompt?.data?.sourceId).toBe('titan_super_spies_moon_zero_three_choose_player');
+        const playerOption = choosePlayerPrompt.data.options.find((entry: any) => entry.value?.targetPlayerId === '1');
+        expect(playerOption).toBeDefined();
+
+        const afterChoosePlayer = runCommand(
+            talent.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: playerOption.id } } as any,
+            defaultTestRandom,
+        );
+        const resolvePrompt = getInteractionsFromMS(afterChoosePlayer.finalState)[0] as any;
+        expect(resolvePrompt?.data?.sourceId).toBe('titan_super_spies_moon_zero_three_resolve');
+        const bottomOption = resolvePrompt.data.options.find((entry: any) => entry.value?.placement === 'bottom');
+        expect(bottomOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...afterChoosePlayer.finalState,
+            core: {
+                ...afterChoosePlayer.finalState.core,
+                titans: (afterChoosePlayer.finalState.core.titans ?? []).map(titan => titan.uid === 'moon-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: bottomOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toHaveLength(0);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['moon-top', 'moon-next']);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'moon-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_cthulhu_cthulhu_titan_talent_target 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 把 Madness 交给对手', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('madness-hand', 'special_madness', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            titans: [{
+                uid: 'cthulhu-stale',
+                defId: 'cthulhu_cthulhu_titan',
+                faction: 'minions_of_cthulhu',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+            madnessDeck: [],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'cthulhu-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const targetPrompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(targetPrompt?.data?.sourceId).toBe('titan_cthulhu_cthulhu_titan_talent_target');
+        const targetOption = targetPrompt.data.options.find((entry: any) => entry.value?.targetPlayerId === '1');
+        expect(targetOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...talent.finalState,
+            core: {
+                ...talent.finalState.core,
+                titans: (talent.finalState.core.titans ?? []).map(titan => titan.uid === 'cthulhu-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.CARD_TRANSFERRED)).toHaveLength(0);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['madness-hand']);
+        expect(resolved.finalState.core.players['1'].hand).toHaveLength(0);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'cthulhu-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_werewolves_great_wolf_spirit_talent 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 给随从 +1 临时力量', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('wolf-target', 'werewolf_teenage_wolf', '0', 3),
+                    makeMinion('wolf-other', 'robot_microbot_alpha', '1', 1),
+                ],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'wolf-stale',
+                defId: 'werewolves_great_wolf_spirit',
+                faction: 'werewolves',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'wolf-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('titan_werewolves_great_wolf_spirit_talent');
+        const targetOption = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'wolf-target');
+        expect(targetOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...talent.finalState,
+            core: {
+                ...talent.finalState.core,
+                titans: (talent.finalState.core.titans ?? []).map(titan => titan.uid === 'wolf-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toHaveLength(0);
+        expect(resolved.finalState.core.bases[0]?.minions.find(minion => minion.uid === 'wolf-target')?.tempPowerModifier ?? 0).toBe(0);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'wolf-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_vampires_ancient_lord_talent 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 给随从加 +1 指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('ancient-target', 'vampire_nightstalker', '0', 3, { powerCounters: 1 }),
+                    makeMinion('ancient-other', 'robot_microbot_alpha', '1', 1),
+                ],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'ancient-stale',
+                defId: 'vampires_ancient_lord',
+                faction: 'vampires',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'ancient-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('titan_vampires_ancient_lord_talent');
+        const targetOption = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'ancient-target');
+        expect(targetOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...talent.finalState,
+            core: {
+                ...talent.finalState.core,
+                titans: (talent.finalState.core.titans ?? []).map(titan => titan.uid === 'ancient-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toHaveLength(0);
+        expect(resolved.finalState.core.bases[0]?.minions.find(minion => minion.uid === 'ancient-target')?.powerCounters ?? 0).toBe(1);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'ancient-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_pirates_the_kraken_talent 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦并给敌方 -1 战力', () => {
+        const core = makeState({
+            turnNumber: 3,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('kraken-enemy', 'ghosts_spectre', '1', 3),
+                        makeMinion('kraken-ally', 'pirate_first_mate', '0', 2),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_c',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'kraken-stale',
+                defId: 'pirates_the_kraken',
+                faction: 'pirates',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'kraken-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('titan_pirates_the_kraken_talent');
+        const targetOption = prompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(targetOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...talent.finalState,
+            core: {
+                ...talent.finalState.core,
+                titans: (talent.finalState.core.titans ?? []).map(titan => titan.uid === 'kraken-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.TITAN_MOVED)).toHaveLength(0);
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.PERMANENT_POWER_ADDED)).toHaveLength(0);
+        expect(resolved.finalState.core.bases[1]?.minions.find(minion => minion.uid === 'kraken-enemy')?.powerModifier ?? 0).toBe(0);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'kraken-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_tricksters_big_funny_giant_choose_base 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 消灭随从并移动泰坦', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('giant-target', 'ghosts_spectre', '1', 2),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_c',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'giant-stale',
+                defId: 'tricksters_big_funny_giant',
+                faction: 'tricksters',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const talent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'giant-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const chooseMinionPrompt = getInteractionsFromMS(talent.finalState)[0] as any;
+        expect(chooseMinionPrompt?.data?.sourceId).toBe('titan_tricksters_big_funny_giant_choose_minion');
+        const minionOption = chooseMinionPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'giant-target');
+        expect(minionOption).toBeDefined();
+
+        const afterChooseMinion = runCommand(
+            talent.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minionOption.id } } as any,
+            defaultTestRandom,
+        );
+        const chooseBasePrompt = getInteractionsFromMS(afterChooseMinion.finalState)[0] as any;
+        expect(chooseBasePrompt?.data?.sourceId).toBe('titan_tricksters_big_funny_giant_choose_base');
+        const baseOption = chooseBasePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...afterChooseMinion.finalState,
+            core: {
+                ...afterChooseMinion.finalState.core,
+                titans: (afterChooseMinion.finalState.core.titans ?? []).map(titan => titan.uid === 'giant-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.TITAN_MOVED)).toHaveLength(0);
+        expect(resolved.finalState.core.bases[0]?.minions.some(minion => minion.uid === 'giant-target')).toBe(true);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'giant-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_pirates_the_kraken_choose_base 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动待救随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('kraken-save-target', 'robot_microbot_alpha', '0', 2)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'kraken-rescue-stale',
+                defId: 'pirates_the_kraken',
+                faction: 'pirates',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const triggered = fireTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', rank: 1, points: 3 }],
+            random: defaultTestRandom,
+            now: 80,
+        }) as any;
+        const chooseMinionPrompt = getInteractionsFromMS(triggered.matchState)[0] as any;
+        expect(chooseMinionPrompt?.data?.sourceId).toBe('titan_pirates_the_kraken_choose_minion');
+        const minionOption = chooseMinionPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'kraken-save-target');
+        expect(minionOption).toBeDefined();
+
+        const afterChooseMinion = runCommand(
+            triggered.matchState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minionOption.id } } as any,
+            defaultTestRandom,
+        );
+        const chooseBasePrompt = getInteractionsFromMS(afterChooseMinion.finalState)[0] as any;
+        expect(chooseBasePrompt?.data?.sourceId).toBe('titan_pirates_the_kraken_choose_base');
+        const baseOption = chooseBasePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...afterChooseMinion.finalState,
+            core: {
+                ...afterChooseMinion.finalState.core,
+                titans: (afterChooseMinion.finalState.core.titans ?? []).map(titan => titan.uid === 'kraken-rescue-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.MINION_MOVED)).toHaveLength(0);
+        expect(resolved.finalState.core.bases[0]?.minions.some(minion => minion.uid === 'kraken-save-target')).toBe(true);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'kraken-rescue-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_pirates_the_kraken_choose_minion 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 进入目标基地选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('kraken-save-target', 'robot_microbot_alpha', '0', 2)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'kraken-first-stale',
+                defId: 'pirates_the_kraken',
+                faction: 'pirates',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const triggered = fireTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', rank: 1, points: 3 }],
+            random: defaultTestRandom,
+            now: 79,
+        }) as any;
+        const chooseMinionPrompt = getInteractionsFromMS(triggered.matchState)[0] as any;
+        expect(chooseMinionPrompt?.data?.sourceId).toBe('titan_pirates_the_kraken_choose_minion');
+        const minionOption = chooseMinionPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'kraken-save-target');
+        expect(minionOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...triggered.matchState,
+            core: {
+                ...triggered.matchState.core,
+                titans: (triggered.matchState.core.titans ?? []).map(titan => titan.uid === 'kraken-first-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minionOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(getInteractionsFromMS(resolved.finalState).find((interaction: any) => interaction?.data?.sourceId === 'titan_pirates_the_kraken_choose_base')).toBeUndefined();
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.MINION_MOVED)).toHaveLength(0);
+        expect(resolved.finalState.core.bases[0]?.minions.some(minion => minion.uid === 'kraken-save-target')).toBe(true);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'kraken-first-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
+    });
+
+    it('titan_tricksters_big_funny_giant_choose_minion 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 进入目标基地选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('giant-target-first', 'robot_microbot_alpha', '1', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'giant-first-stale',
+                defId: 'tricksters_big_funny_giant',
+                faction: 'tricksters',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } as any],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { titanUid: 'giant-first-stale', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const chooseMinionPrompt = getInteractionsFromMS(used.finalState)[0] as any;
+        expect(chooseMinionPrompt?.data?.sourceId).toBe('titan_tricksters_big_funny_giant_choose_minion');
+        const minionOption = chooseMinionPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'giant-target-first');
+        expect(minionOption).toBeDefined();
+
+        const staleState: MatchState<SmashUpCore> = {
+            ...used.finalState,
+            core: {
+                ...used.finalState.core,
+                titans: (used.finalState.core.titans ?? []).map(titan => titan.uid === 'giant-first-stale'
+                    ? { ...titan, location: { zone: 'setaside', enteredAt: 1 } }
+                    : titan),
+            },
+        };
+
+        const resolved = runCommand(
+            staleState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minionOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.TITAN_MOVED)).toHaveLength(0);
+        expect(getInteractionsFromMS(resolved.finalState)).toHaveLength(0);
+        expect(resolved.finalState.core.bases[0]?.minions.some(minion => minion.uid === 'giant-target-first')).toBe(true);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'giant-first-stale')?.location).toMatchObject({
+            zone: 'setaside',
+        });
     });
 
     it('ninjas_invisible_ninja 在自己消灭对手随从时应给泰坦控制者创建抽牌交互', () => {
@@ -12008,6 +13617,32 @@ describe('Fairies abilities', () => {
         expect(isOperationRestricted(core, 0, '0', 'play_action')).toBe(false);
     });
 
+    it('同一基地两张不同控制者的 fairies_magic_ward 并存时，不应因第一张同名来源而放行对手打行动', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [
+                    {
+                        uid: 'ward-self',
+                        defId: 'fairies_magic_ward',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '1' },
+                    } as any,
+                    {
+                        uid: 'ward-enemy',
+                        defId: 'fairies_magic_ward',
+                        ownerId: '0',
+                        metadata: { sourceControllerId: '0' },
+                    } as any,
+                ],
+            }],
+        });
+
+        expect(isOperationRestricted(core, 0, '1', 'play_action')).toBe(true);
+        expect(isOperationRestricted(core, 0, '0', 'play_action')).toBe(true);
+    });
+
     it('fairies_tinx 把 borrowed 附着行动移到自己身上时，仍应保留 sourcePlayerId', () => {
         const sourceHost = makeMinion('host-a', 'robot_microbot_alpha', '0', 3, {
             powerModifier: 0,
@@ -12281,6 +13916,67 @@ describe('Fairies abilities', () => {
         const spirit = summoned.finalState.core.titans?.find(titan => titan.uid === 'spirit-1');
         expect(spirit?.location.zone).toBe('base');
         expect(spirit?.location.baseIndex).toBe(0);
+        expect(summoned.finalState.core.players['0'].actionsPlayed).toBe(1);
+        expect(summoned.finalState.core.players['0'].minionsPlayed).toBe(0);
+    });
+
+    it('fairies_playful_tricks 应允许当前控制者打出 borrowed 丛林之灵并保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('playful-1', 'fairies_playful_tricks', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            titans: [{
+                uid: 'borrowed-spirit-1',
+                defId: 'fairies_spirit_of_the_forest',
+                faction: 'fairies',
+                ownerId: '1',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            }],
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'playful-1' } },
+            defaultTestRandom,
+        );
+
+        const modePrompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(modePrompt?.data?.sourceId).toBe('fairies_playful_tricks');
+        const playSpiritOption = modePrompt.data.options.find((entry: any) => entry.value?.branchId === 'play_spirit');
+        expect(playSpiritOption).toBeDefined();
+
+        const choseSpirit = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: playSpiritOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        const basePrompt = getInteractionsFromMS(choseSpirit.finalState)[0] as any;
+        expect(basePrompt?.data?.sourceId).toBe('fairies_playful_tricks_spirit_base');
+
+        const summoned = runCommand(
+            choseSpirit.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: basePrompt.data.options[0].id } } as any,
+            defaultTestRandom,
+        );
+
+        const spirit = summoned.finalState.core.titans?.find(titan => titan.uid === 'borrowed-spirit-1');
+        expect(spirit).toMatchObject({
+            ownerId: '1',
+            controllerId: '0',
+            location: { zone: 'base', baseIndex: 0 },
+        });
         expect(summoned.finalState.core.players['0'].actionsPlayed).toBe(1);
         expect(summoned.finalState.core.players['0'].minionsPlayed).toBe(0);
     });

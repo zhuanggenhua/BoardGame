@@ -136,6 +136,51 @@ describe('wildlife_preserve: 统一 affect 保护过滤', () => {
 
         expect(filtered).toEqual([]);
     });
+
+    it('borrowed consumable protection 自毁时仍应保留真实 owner 与控制者 provenance', () => {
+        const protectedMinion = makeMinion('protected-hideout-host', 'trickster_a', '0', 3, {
+            attachedActions: [{ uid: 'borrowed-hideout', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+        });
+        const state = makeState({
+            bases: [makeBase('base_portal_room', {
+                minions: [protectedMinion],
+            })],
+        });
+
+        const filtered = filterProtectedAffectEvents([{
+            type: SU_EVENTS.MINION_RETURNED,
+            payload: {
+                minionUid: 'protected-hideout-host',
+                minionDefId: 'trickster_a',
+                fromBaseIndex: 0,
+                toPlayerId: '0',
+                reason: 'pirate_shanghai',
+                sourcePlayerId: '1',
+                sourceCardUid: 'opp-action-borrowed-hideout',
+                sourceDefId: 'pirate_shanghai',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1001,
+        } as any], state, '1');
+
+        expect(filtered).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: expect.objectContaining({
+                    cardUid: 'borrowed-hideout',
+                    defId: 'trickster_hideout',
+                    ownerId: '1',
+                    reason: 'trickster_hideout_self_destruct',
+                    sourcePlayerId: '0',
+                    sourceCardUid: 'borrowed-hideout',
+                    sourceDefId: 'trickster_hideout',
+                    sourceControllerId: '0',
+                    sourceBaseIndex: 0,
+                }),
+            }),
+        ]);
+    });
 });
 
 // ============================================================================

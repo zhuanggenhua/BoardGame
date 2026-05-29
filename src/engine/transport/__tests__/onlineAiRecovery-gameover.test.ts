@@ -2715,17 +2715,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             seatStates: {
                 '1': emptyMultiSeatState,
             },
-        })).toMatchObject({
-            playerId: '1',
-            interactionId: 'hidden-choice-empty-multi',
-            sourceId: 'time_travelers_wormhole_choose',
-            resolution: {
-                playerId: '1',
-                action: {
-                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionIds: [] } }],
-                },
-            },
-        });
+        })).toBeNull();
 
         expect(resolveForceSkippableHiddenAiInteraction({
             sharedState,

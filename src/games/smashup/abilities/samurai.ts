@@ -159,10 +159,22 @@ export function registerSamuraiAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
     });
-    registerTrigger('samurai_way_of_the_warrior', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true });
-    registerTrigger('samurai_way_of_the_warrior', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true });
-    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true });
-    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true });
+    registerTrigger('samurai_way_of_the_warrior', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, {
+        global: true,
+        canTrigger: canTriggerSamuraiWayOfTheWarrior,
+    });
+    registerTrigger('samurai_way_of_the_warrior', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, {
+        global: true,
+        canTrigger: canTriggerSamuraiWayOfTheWarrior,
+    });
+    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, {
+        global: true,
+        canTrigger: canTriggerSamuraiWayOfTheWarrior,
+    });
+    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, {
+        global: true,
+        canTrigger: canTriggerSamuraiWayOfTheWarrior,
+    });
     registerTrigger('samurai_honor_the_fallen', 'onMinionDestroyed', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
@@ -664,6 +676,7 @@ function samuraiWayOfTheWarriorOnPlay(ctx: AbilityContext): AbilityResult {
                     metadataUpdate: {
                         samuraiWayOfTheWarriorDrawUntilTurnNumber: (ctx.state.turnNumber ?? 0) + 1,
                         samuraiWayOfTheWarriorDrawPlayerId: ctx.playerId,
+                        samuraiWayOfTheWarriorSourceCardUid: ctx.cardUid,
                     },
                     reason: 'samurai_way_of_the_warrior',
                 },
@@ -760,6 +773,14 @@ function samuraiWayOfTheWarriorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     }
 
     return buildStandardDrawEvents(ctx.state, drawPlayerId, 2, ctx.random, ctx.now);
+}
+
+function canTriggerSamuraiWayOfTheWarrior(ctx: TriggerContext): boolean {
+    const metadata = ctx.triggerMinion?.metadata ?? {};
+    const sourceCardUid = typeof metadata.samuraiWayOfTheWarriorSourceCardUid === 'string'
+        ? metadata.samuraiWayOfTheWarriorSourceCardUid
+        : undefined;
+    return !sourceCardUid || ctx.sourceCardUid === sourceCardUid;
 }
 
 function samuraiSakuraGardenTrigger(ctx: TriggerContext): SmashUpEvent[] {

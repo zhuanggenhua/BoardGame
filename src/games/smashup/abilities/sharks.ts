@@ -502,8 +502,11 @@ function sharksBloodInTheWaterTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.sourceCardUid) {
         const source = base.ongoingActions.find(action =>
             action.uid === ctx.sourceCardUid && action.defId === 'sharks_blood_in_the_water');
+        const sourceControllerId = source
+            ? (((source.metadata?.sourceControllerId as PlayerId | undefined) ?? source.ownerId) as PlayerId)
+            : undefined;
         return source
-            ? [grantExtraMinion(source.ownerId, 'sharks_blood_in_the_water', ctx.now, ctx.baseIndex, {
+            ? [grantExtraMinion(sourceControllerId ?? source.ownerId, 'sharks_blood_in_the_water', ctx.now, ctx.baseIndex, {
                 powerMax: 3,
                 playTiming: 'immediate',
             })]
@@ -511,7 +514,12 @@ function sharksBloodInTheWaterTrigger(ctx: TriggerContext): SmashUpEvent[] {
     }
     return base.ongoingActions
         .filter(action => action.defId === 'sharks_blood_in_the_water')
-        .map(action => grantExtraMinion(action.ownerId, 'sharks_blood_in_the_water', ctx.now, ctx.baseIndex, {
+        .map(action => grantExtraMinion(
+            ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) as PlayerId,
+            'sharks_blood_in_the_water',
+            ctx.now,
+            ctx.baseIndex,
+            {
             powerMax: 3,
             playTiming: 'immediate',
         }));

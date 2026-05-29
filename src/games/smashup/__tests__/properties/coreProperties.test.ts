@@ -1601,7 +1601,14 @@ describe('Property 15: 记分循环完整性', () => {
  * 收集所有在 BaseCardDef 上声明了 restrictions 的基地 defId。
  * 这些限制由 isOperationRestricted 的 "层 1" 数据驱动分支自动解析。
  */
-const basesWithRestrictions: { defId: string; rType: 'play_minion' | 'play_action'; maxPower?: number; extraPlayMax?: number; minionPlayLimitPerTurn?: number }[] = [];
+const basesWithRestrictions: {
+    defId: string;
+    rType: 'play_minion' | 'play_action';
+    maxPower?: number;
+    extraPlayMax?: number;
+    minionPlayLimitPerTurn?: number;
+    sameNameAlreadyAtBase?: boolean;
+}[] = [];
 for (const defId of getAllBaseDefIds()) {
     const def = getBaseDef(defId);
     if (!def?.restrictions) continue;
@@ -1612,6 +1619,7 @@ for (const defId of getAllBaseDefIds()) {
             maxPower: r.condition?.maxPower,
             extraPlayMax: r.condition?.extraPlayMinionPowerMax,
             minionPlayLimitPerTurn: r.condition?.minionPlayLimitPerTurn,
+            sameNameAlreadyAtBase: r.condition?.sameNameAlreadyAtBase,
         });
     }
 }
@@ -1623,7 +1631,11 @@ describe('Property 20: 基地限制一致性', () => {
 
     test('无条件 play_minion 限制始终生效', () => {
         const unconditional = basesWithRestrictions.filter(
-            r => r.rType === 'play_minion' && r.maxPower === undefined && r.extraPlayMax === undefined && r.minionPlayLimitPerTurn === undefined,
+            r => r.rType === 'play_minion'
+                && r.maxPower === undefined
+                && r.extraPlayMax === undefined
+                && r.minionPlayLimitPerTurn === undefined
+                && r.sameNameAlreadyAtBase !== true,
         );
         // 如 castle_of_ice：禁止一切随从
         fc.assert(
@@ -1644,6 +1656,33 @@ describe('Property 20: 基地限制一致性', () => {
                     };
                     const restricted = isOperationRestricted(state, 0, '0', 'play_minion', { basePower });
                     expect(restricted).toBe(true);
+                },
+            ),
+            { numRuns: 20 },
+        );
+    });
+
+    test('sameNameAlreadyAtBase 条件限制：仅当同名随从已在基地时限制', () => {
+        const sameNameBases = basesWithRestrictions.filter(r => r.rType === 'play_minion' && r.sameNameAlreadyAtBase === true);
+        fc.assert(
+            fc.property(
+                fc.integer({ min: 0, max: Math.max(sameNameBases.length - 1, 0) }),
+                (idx) => {
+                    fc.pre(sameNameBases.length > 0);
+                    const { defId } = sameNameBases[idx];
+                    const state: SmashUpCore = {
+                        players: {
+                            '0': makePlayer('0', [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.NINJAS]),
+                            '1': makePlayer('1', [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.ALIENS]),
+                        },
+                        turnOrder: ['0', '1'], currentPlayerIndex: 0,
+                        bases: [makeBase(defId, {
+                            minions: [makeMinion('existing-same', 'pirate_first_mate', '0', 2)],
+                        })],
+                        baseDeck: [], turnNumber: 1, nextUid: 100,
+                    };
+                    expect(isOperationRestricted(state, 0, '0', 'play_minion', { minionDefId: 'pirate_first_mate' })).toBe(true);
+                    expect(isOperationRestricted(state, 0, '0', 'play_minion', { minionDefId: 'ninja_tiger_assassin' })).toBe(false);
                 },
             ),
             { numRuns: 20 },

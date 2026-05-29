@@ -321,7 +321,10 @@ function registerVampirePodOngoingEffects(): void {
         if (!base) return [];
         const minion = base.minions.find(m => m.uid === triggerMinionUid);
         if (!minion) return [];
-        const attachment = minion.attachedActions.find(a => a.defId === 'vampire_dinner_date_pod');
+        const attachment = minion.attachedActions.find(a =>
+            a.defId === 'vampire_dinner_date_pod'
+            && (!ctx.sourceCardUid || a.uid === ctx.sourceCardUid)
+        );
         if (!attachment) return [];
         if (getEffectivePower(state, minion, baseIndex) > 0) return [];
         const destroyerId = (attachment.metadata?.sourceControllerId as PlayerId | undefined) ?? attachment.ownerId;
@@ -335,6 +338,7 @@ function registerVampirePodOngoingEffects(): void {
         });
     }, {
         canTrigger: canTriggerVampireDinnerDatePod,
+        perInstance: true,
         playerContext: 'sourceController',
     });
 
@@ -417,11 +421,9 @@ function registerVampirePodOngoingEffects(): void {
     // Stakeout POD restriction: block minions power>=3 when active
     registerRestriction('vampire_stakeout_pod', 'play_minion', (rctx) => {
         const blocks = rctx.state.stakeoutPodBlocks ?? [];
-        const block = blocks.find(b => b.baseIndex === rctx.baseIndex);
-        if (!block) return false;
-        if (rctx.playerId === block.ownerId) return false;
         const power = (rctx.extra?.basePower as number | undefined) ?? 0;
-        return power >= 3;
+        if (power < 3) return false;
+        return blocks.some(block => block.baseIndex === rctx.baseIndex && rctx.playerId !== block.ownerId);
     }, {
     });
 }
@@ -1927,7 +1929,10 @@ function registerVampireOngoingEffects(): void {
         for (let i = 0; i < state.bases.length; i++) {
             for (const m of state.bases[i].minions) {
                 if (m.controller === destroyedControllerId) continue;
-                if (m.attachedActions.some(a => matchesDefId(a.defId, 'vampire_opportunist'))) {
+                const opportunistCount = m.attachedActions.filter(a =>
+                    matchesDefId(a.defId, 'vampire_opportunist'),
+                ).length;
+                for (let index = 0; index < opportunistCount; index += 1) {
                     events.push(addPowerCounter(m.uid, i, 1, 'vampire_opportunist', now));
                 }
             }
@@ -1939,6 +1944,27 @@ function registerVampireOngoingEffects(): void {
     // 召唤狼群 ongoing(base)：回合开始在本卡上放+1力量指示物
     registerTrigger('vampire_summon_wolves', 'onTurnStart', (ctx: TriggerContext) => {
         const { state, playerId, now } = ctx;
+        if (ctx.sourceCardUid) {
+            const candidateBases = ctx.sourceBaseIndex !== undefined
+                ? [{ base: state.bases[ctx.sourceBaseIndex], baseIndex: ctx.sourceBaseIndex }]
+                : state.bases.map((base, baseIndex) => ({ base, baseIndex }));
+            for (const candidate of candidateBases) {
+                const ongoing = candidate.base?.ongoingActions.find((oa) =>
+                    oa.uid === ctx.sourceCardUid && matchesDefId(oa.defId, 'vampire_summon_wolves'));
+                if (!ongoing) continue;
+                const ongoingControllerId = (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
+                if (ongoingControllerId !== playerId) return [];
+                return [addOngoingCardCounter(
+                    ongoing.uid,
+                    candidate.baseIndex,
+                    1,
+                    'vampire_summon_wolves',
+                    now,
+                ) as unknown as SmashUpEvent];
+            }
+            return [];
+        }
+
         const events: SmashUpEvent[] = [];
         for (let i = 0; i < state.bases.length; i++) {
             for (const oa of state.bases[i].ongoingActions) {
@@ -1950,6 +1976,7 @@ function registerVampireOngoingEffects(): void {
         }
         return events;
     }, {
+        perInstance: true,
         playerContext: 'sourceController',
     });
 

@@ -830,6 +830,7 @@ export function registerElderThingAbilities(): void {
     // Dunwich Horror POD：before scoring trigger (mandatory)
     registerTrigger('elder_thing_dunwich_horror_pod', 'beforeScoring', elderThingDunwichHorrorPodBeforeScoring, {
         mandatory: true,
+        perInstance: true,
         playerContext: 'sourceHostController',
     });
     // POD 版不会“回合结束自动消灭”，这里显式注册 no-op，阻止 alias 继承原版 onTurnEnd 触发。
@@ -2048,27 +2049,24 @@ const elderThingDunwichHorrorPodBeforeScoringProgram = createEffectProgram<Trigg
     const base = state.bases[baseIndex];
     if (!base) return { events: [] };
 
-    // Find minions on this base with Dunwich Horror POD attached
-    const targets: { controller: string; minionUid: string; minionDefId: string; ownerId: string }[] = [];
-    for (const m of base.minions) {
-        if (m.attachedActions.some(a => a.defId === 'elder_thing_dunwich_horror_pod')) {
-            targets.push({ controller: m.controller, minionUid: m.uid, minionDefId: m.defId, ownerId: m.owner });
-        }
-    }
-    if (targets.length === 0) return { events: [] };
+    const sourceHost = ctx.sourceCardUid
+        ? base.minions.find(minion => minion.attachedActions.some(action =>
+            action.uid === ctx.sourceCardUid && action.defId === 'elder_thing_dunwich_horror_pod'))
+        : undefined;
+    const target = sourceHost ?? base.minions.find(minion =>
+        minion.attachedActions.some(action => action.defId === 'elder_thing_dunwich_horror_pod'));
+    if (!target) return { events: [] };
 
-    // Only handle one at a time (queue will re-trigger next scoring check if multiple)
-    const t = targets[0];
     return {
         events: [],
         context: {
             matchState: ctx.matchState,
-            playerId: t.controller,
+            playerId: target.controller,
             now,
             baseIndex,
-            minionUid: t.minionUid,
-            minionDefId: t.minionDefId,
-            ownerId: t.ownerId,
+            minionUid: target.uid,
+            minionDefId: target.defId,
+            ownerId: target.owner,
         } satisfies ElderThingDunwichHorrorPodChoicePromptContext,
         nextProgram: elderThingDunwichHorrorPodChoicePromptProgram,
     };
@@ -2655,7 +2653,10 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         for (const m of ctx.state.bases[i].minions) {
-            const horror = m.attachedActions.find(a => matchesDefId(a.defId, 'elder_thing_dunwich_horror'));
+            const horror = m.attachedActions.find((a) =>
+                matchesDefId(a.defId, 'elder_thing_dunwich_horror')
+                && ((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === ctx.playerId,
+            );
             if (!horror) continue;
             const destroyerId = horror.metadata?.sourceControllerId ?? horror.ownerId;
             events.push(destroyMinion(m.uid, m.defId, i, m.owner, destroyerId, 'elder_thing_dunwich_horror', ctx.now, undefined, m.controller));

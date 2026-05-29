@@ -178,6 +178,20 @@ describe('忍者 ongoing/special 能力', () => {
             expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
         });
 
+        test('同一宿主上若同时有两张不同控制者的 Smoke Bomb，不应因第一张同名来源而放行对手行动', () => {
+            const myMinion = makeMinion({
+                defId: 'ninja_a', uid: 'n-double-1', controller: '0',
+                attachedActions: [
+                    { uid: 'sb-enemy-1', defId: 'ninja_smoke_bomb', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'sb-borrowed-1', defId: 'ninja_smoke_bomb', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const base = makeBase({ minions: [myMinion] });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
+        });
+
         test('POD 版烟雾弹也会保护被附着的随从', () => {
             const myMinion = makeMinion({
                 defId: 'ninja_a', uid: 'n-pod-1', controller: '0',
@@ -250,6 +264,34 @@ describe('忍者 ongoing/special 能力', () => {
             expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
             expect((events[0] as any).payload.minionUid).toBe('om-pod-1');
             expect((events[0] as any).payload.reason).toBe('ninja_assassination');
+        });
+
+        test('同一宿主上第一张暗杀不属于当前回合玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const target = makeMinion({
+                defId: 'opp_minion',
+                uid: 'om-multi-1',
+                controller: '1',
+                owner: '1',
+                attachedActions: [
+                    { uid: 'as-p1-1', defId: 'ninja_assassination', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'as-p0-1', defId: 'ninja_assassination', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const base = makeBase({ minions: [target] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onTurnEnd', {
+                state,
+                playerId: '0',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+            expect((events[0] as any).payload.minionUid).toBe('om-multi-1');
+            expect((events[0] as any).payload.reason).toBe('ninja_assassination');
+            expect((events[0] as any).payload.destroyerId).toBe('0');
         });
 
         test('无附着暗杀时不触发', () => {
@@ -1454,6 +1496,32 @@ describe('诡术师 ongoing 能力', () => {
             expect((events[1] as any).payload.ownerId).toBe('1');
         });
 
+        test('同一基地第一张 Flame Trap 属于出牌玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const base = makeBase({
+                ongoingActions: [
+                    { uid: 'ft-self-1', defId: 'trickster_flame_trap', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'ft-enemy-1', defId: 'trickster_flame_trap', ownerId: '0', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(2);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+            expect((events[0] as any).payload.destroyerId).toBe('0');
+            expect(events[1].type).toBe(SU_EVENTS.ONGOING_DETACHED);
+            expect((events[1] as any).payload.cardUid).toBe('ft-enemy-1');
+        });
+
         test('Flame Trap 消灭 borrowed 随从时，MINION_DESTROYED 应保留被消灭随从真实 owner', () => {
             const borrowedMinion = makeMinion({
                 uid: 'borrowed-played',
@@ -1518,6 +1586,53 @@ describe('诡术师 ongoing 能力', () => {
             expect(events[1].type).toBe(SU_EVENTS.MINION_METADATA_UPDATED);
         });
 
+        test('POD 版：同一玩家两只 Brownie 在不同基地同时触发时，应各自真实抽一张而不是重复声明同一顶牌', () => {
+            const brownieA = makeMinion({ defId: 'trickster_brownie_pod', uid: 'brownie-pod-a', controller: '0', owner: '0' });
+            const brownieB = makeMinion({ defId: 'trickster_brownie_pod', uid: 'brownie-pod-b', controller: '0', owner: '0' });
+            const base0 = makeBase({ defId: 'base_a', minions: [brownieA] });
+            const base1 = makeBase({ defId: 'base_b', minions: [brownieB] });
+            const base2 = makeBase({ defId: 'base_c' });
+            const state = makeState([base0, base1, base2], {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [
+                        makeCard('draw-a', 'deck_card_1', 'minion', '0', SMASHUP_FACTION_IDS.NINJAS),
+                        makeCard('draw-b', 'deck_card_2', 'action', '0', SMASHUP_FACTION_IDS.NINJAS),
+                    ],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.TRICKSTERS, 'test_b'] as [string, string],
+                },
+            });
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 2,
+                triggerMinionUid: 'opp-new-m',
+                triggerMinionDefId: 'some_minion',
+                triggerMinion: makeMinion({ uid: 'opp-new-m', defId: 'some_minion', controller: '1', owner: '1' }),
+                random: dummyRandom,
+                now: 1000,
+            } as any);
+
+            const drawEvents = events.filter(e => e.type === SU_EVENTS.CARDS_DRAWN) as any[];
+            expect(drawEvents).toHaveLength(2);
+            expect(drawEvents[0].payload.cardUids).toEqual(['draw-a']);
+            expect(drawEvents[1].payload.cardUids).toEqual(['draw-b']);
+
+            const finalState = events.reduce((currentState, event) => reduce(currentState, event as any), state);
+            expect(finalState.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
+            expect(finalState.players['0'].deck).toHaveLength(0);
+            expect((finalState.bases[0].minions[0] as any).metadata?.browniePodLastTurnTriggered).toBe(1);
+            expect((finalState.bases[1].minions[0] as any).metadata?.browniePodLastTurnTriggered).toBe(1);
+        });
+
         test('POD 版不沿用旧版 onMinionAffected 触发', () => {
             const brownie = makeMinion({ defId: 'trickster_brownie_pod', uid: 'brownie-pod-1', controller: '0', owner: '0' });
             const base0 = makeBase({ minions: [brownie] });
@@ -1577,6 +1692,32 @@ describe('诡术师 ongoing 能力', () => {
             expect(events).toHaveLength(2);
             expect(events[0].type).toBe(SU_EVENTS.ONGOING_DETACHED);
             expect((events[0] as any).payload.ownerId).toBe('1');
+            expect(events[1].type).toBe(SU_EVENTS.MINION_DESTROYED);
+            expect((events[1] as any).payload.destroyerId).toBe('0');
+        });
+
+        test('同一基地第一张 Flame Trap POD 属于出牌玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const base = makeBase({
+                ongoingActions: [
+                    { uid: 'ft-pod-self-1', defId: 'trickster_flame_trap_pod', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'ft-pod-enemy-1', defId: 'trickster_flame_trap_pod', ownerId: '0', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(2);
+            expect(events[0].type).toBe(SU_EVENTS.ONGOING_DETACHED);
+            expect((events[0] as any).payload.cardUid).toBe('ft-pod-enemy-1');
             expect(events[1].type).toBe(SU_EVENTS.MINION_DESTROYED);
             expect((events[1] as any).payload.destroyerId).toBe('0');
         });
@@ -1864,6 +2005,40 @@ describe('诡术师 ongoing 能力', () => {
             // 拥有者也受限制（描述无"对手"限定词）
             expect(isOperationRestricted(state, 0, '0', 'play_minion', { minionDefId: 'robot_zapbot' })).toBe(true);
         });
+
+        test('同一基地两张不同 blockedFaction 的封路并存时，不应只吃第一张同名 ongoing 的 metadata', () => {
+            const base = makeBase({
+                ongoingActions: [
+                    { uid: 'bp-pirates', defId: 'trickster_block_the_path', ownerId: '0', metadata: { blockedFaction: SMASHUP_FACTION_IDS.PIRATES } },
+                    { uid: 'bp-robots', defId: 'trickster_block_the_path', ownerId: '1', metadata: { blockedFaction: SMASHUP_FACTION_IDS.ROBOTS } },
+                ],
+            });
+            const state = makeState([base]);
+
+            expect(isOperationRestricted(state, 0, '1', 'play_minion', { minionDefId: 'robot_zapbot' })).toBe(true);
+        });
+
+        test('同一基地两张不同 blockedFactionsByPlayer 的封路 POD 并存时，不应因第一张无关 metadata 漏掉第二张限制', () => {
+            const base = makeBase({
+                ongoingActions: [
+                    {
+                        uid: 'bp-pod-a',
+                        defId: 'trickster_block_the_path_pod',
+                        ownerId: '0',
+                        metadata: { blockedFactionsByPlayer: { '1': SMASHUP_FACTION_IDS.PIRATES } },
+                    },
+                    {
+                        uid: 'bp-pod-b',
+                        defId: 'trickster_block_the_path_pod',
+                        ownerId: '1',
+                        metadata: { blockedFactionsByPlayer: { '1': SMASHUP_FACTION_IDS.ROBOTS } },
+                    },
+                ],
+            });
+            const state = makeState([base]);
+
+            expect(isOperationRestricted(state, 0, '1', 'play_minion', { minionDefId: 'robot_zapbot' })).toBe(true);
+        });
     });
 
     describe('trickster_hideout: 藏身处保护', () => {
@@ -1897,6 +2072,36 @@ describe('诡术师 ongoing 能力', () => {
                 attachedActions: [{ uid: 'ho-1', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
             });
             const base = makeBase({ minions: [myMinion] });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
+        });
+
+        test('同一宿主上若同时有两张不同控制者的 Hideout，不应因第一张同名来源而放行对手行动', () => {
+            const myMinion = makeMinion({
+                defId: 'trickster_a',
+                uid: 't-1',
+                controller: '0',
+                attachedActions: [
+                    { uid: 'enemy-hideout', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'borrowed-hideout', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const base = makeBase({ minions: [myMinion] });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
+        });
+
+        test('同一基地上若同时有两张不同控制者的 Hideout，不应因第一张同名来源而放行对手行动', () => {
+            const myMinion = makeMinion({ defId: 'trickster_a', uid: 't-1', controller: '0' });
+            const base = makeBase({
+                minions: [myMinion],
+                ongoingActions: [
+                    { uid: 'enemy-hideout', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'borrowed-hideout', defId: 'trickster_hideout', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
             const state = makeState([base]);
 
             expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
@@ -2019,6 +2224,33 @@ describe('诡术师 ongoing 能力', () => {
             } as any);
             expect(ownerMove).toBeUndefined();
         });
+
+        test('同一基地两张不同控制者的 Hideout POD 并存时，不应因第一张允许移动就漏掉后面另一张真实拦截', () => {
+            const sourceBase = makeBase({
+                minions: [makeMinion({ defId: 'robot_zapbot', uid: 'm-5', controller: '1', owner: '1' })],
+            });
+            const targetBase = makeBase({
+                ongoingActions: [
+                    { uid: 'ho-owner-1', defId: 'trickster_hideout_pod', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'ho-borrowed-2', defId: 'trickster_hideout_pod', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const state = makeState([sourceBase, targetBase]);
+
+            const result = interceptEvent(state, {
+                type: SU_EVENTS.MINION_MOVED,
+                payload: {
+                    minionUid: 'm-5',
+                    minionDefId: 'robot_zapbot',
+                    fromBaseIndex: 0,
+                    toBaseIndex: 1,
+                    reason: 'test_move',
+                },
+                timestamp: 1000,
+            } as any);
+
+            expect(result).toBeNull();
+        });
     });
 
     describe('trickster_pay_the_piper: 付笛手的钱', () => {
@@ -2063,12 +2295,60 @@ describe('诡术师 ongoing 能力', () => {
             expect(events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
             expect((events[0] as any).payload.playerId).toBe('1');
         });
+
+        test('同一基地第一张 Pay the Piper 属于出牌玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const base = makeBase({
+                ongoingActions: [
+                    { uid: 'pp-self-1', defId: 'trickster_pay_the_piper', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'pp-enemy-1', defId: 'trickster_pay_the_piper', ownerId: '0', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
+            expect((events[0] as any).payload.playerId).toBe('1');
+        });
     });
 
     describe('trickster_pay_the_piper_pod: 付笛手的钱 POD', () => {
         test('borrowed Pay the Piper POD 应按控制者而不是真实 owner 让对手弃牌', () => {
             const base = makeBase({
                 ongoingActions: [{ uid: 'pp-pod-borrowed', defId: 'trickster_pay_the_piper_pod', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
+            expect((events[0] as any).payload.playerId).toBe('1');
+        });
+
+        test('同一基地第一张 Pay the Piper POD 属于出牌玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const base = makeBase({
+                ongoingActions: [
+                    { uid: 'pp-pod-self-1', defId: 'trickster_pay_the_piper_pod', ownerId: '1', metadata: { sourceControllerId: '1' } } as any,
+                    { uid: 'pp-pod-enemy-1', defId: 'trickster_pay_the_piper_pod', ownerId: '0', metadata: { sourceControllerId: '0' } } as any,
+                ],
             });
             const state = makeState([base]);
 
@@ -2169,6 +2449,40 @@ describe('诡术师 ongoing 能力', () => {
             expect(events).toHaveLength(1);
             expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
             expect((events[0] as any).payload.minionUid).toBe('wm-1');
+        });
+
+        test('同一基地第一张 Leprechaun 属于出牌玩家时，不应吞掉后面敌方 Leprechaun 的真实触发', () => {
+            const alliedLeprechaun = makeMinion({
+                defId: 'trickster_leprechaun', uid: 'lp-ally-1', controller: '0', basePower: 4,
+            });
+            const enemyLeprechaun = makeMinion({
+                defId: 'trickster_leprechaun', uid: 'lp-enemy-1', controller: '1', basePower: 5,
+            });
+            const weakMinion = makeMinion({
+                defId: 'weak_minion', uid: 'wm-double-1', controller: '0', owner: '0', basePower: 2,
+            });
+            const base = makeBase({ minions: [alliedLeprechaun, enemyLeprechaun, weakMinion] });
+            const state = makeState([base]);
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '0',
+                baseIndex: 0,
+                triggerMinionUid: 'wm-double-1',
+                triggerMinionDefId: 'weak_minion',
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0]).toEqual(expect.objectContaining({
+                type: SU_EVENTS.MINION_DESTROYED,
+                payload: expect.objectContaining({
+                    minionUid: 'wm-double-1',
+                    destroyerId: '1',
+                    reason: 'trickster_leprechaun',
+                }),
+            }));
         });
 
         test('POD 版应标记消灭者', () => {

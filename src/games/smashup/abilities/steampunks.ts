@@ -351,11 +351,12 @@ function findInPlayActionController(state: SmashUpCore, cardUid: string): string
 export function steampunkOrnateDomeChecker(ctx: RestrictionCheckContext): boolean {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return false;
-    const dome = base.ongoingActions.find(o => o.defId.startsWith('steampunk_ornate_dome'));
-    if (!dome) return false;
-    const domeControllerId = dome.metadata?.sourceControllerId ?? dome.ownerId;
-    // 只限制非拥有者
-    return ctx.playerId !== domeControllerId;
+    return base.ongoingActions
+        .filter(ongoing => ongoing.defId.startsWith('steampunk_ornate_dome'))
+        .some(dome => {
+            const domeControllerId = dome.metadata?.sourceControllerId ?? dome.ownerId;
+            return ctx.playerId !== domeControllerId;
+        });
 }
 
 /**
@@ -479,7 +480,10 @@ export function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[]
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return [];
 
-    const hatch = base.ongoingActions.find(o => o.defId.startsWith('steampunk_escape_hatch'));
+    const hatch = ctx.sourceCardUid
+        ? base.ongoingActions.find(o =>
+            o.uid === ctx.sourceCardUid && o.defId.startsWith('steampunk_escape_hatch'))
+        : base.ongoingActions.find(o => o.defId.startsWith('steampunk_escape_hatch'));
     if (!hatch) return [];
 
     // 找被消灭的随从
@@ -618,11 +622,16 @@ const steampunkZeppelinChooseBasePromptProgram = createPromptProgram<SteampunkPr
         if (
             typeof selected?.baseIndex !== 'number'
             || context.fromBaseIndex === undefined
+            || !context.sourceCardUid
             || !context.selectedMinionUid
             || !context.selectedMinionDefId
         ) {
             return { events: [] };
         }
+        const sourceStillThere = state.core.bases[context.zepBaseIndex ?? -1]?.ongoingActions.some(
+            ongoing => ongoing.uid === context.sourceCardUid && ongoing.defId === 'steampunk_zeppelin',
+        );
+        if (!sourceStillThere) return { events: [] };
         const stillThere = state.core.bases[context.fromBaseIndex]?.minions.some(
             minion => minion.uid === context.selectedMinionUid,
         );
@@ -665,6 +674,7 @@ const steampunkZeppelinChooseMinionPromptProgram = createPromptProgram<Steampunk
         return {
             events: [],
             context: createPromptContext(state, playerId, timestamp, {
+                sourceCardUid: context.sourceCardUid,
                 zepBaseIndex: context.zepBaseIndex,
                 fromBaseIndex: selected.baseIndex,
                 selectedMinionUid: selected.minionUid,
@@ -685,7 +695,7 @@ const steampunkZeppelinProgram = createEffectProgram<AbilityContext, SmashUpCore
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { zepBaseIndex }),
+        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { sourceCardUid: ctx.cardUid, zepBaseIndex }),
         nextProgram: steampunkZeppelinChooseMinionPromptProgram,
     };
 });
@@ -1089,6 +1099,7 @@ export function registerSteampunkAbilities(): void {
         playerContext: 'sourceController',
     });
     registerTrigger('steampunk_escape_hatch', 'onMinionDestroyed', steampunkEscapeHatchTrigger, {
+        perInstance: true,
         phase: 'replacement',
     });
     registerAbilityProgram('steampunk_zeppelin', 'talent', {

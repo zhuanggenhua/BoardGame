@@ -540,6 +540,12 @@ export interface MinionLkiSnapshot {
     powerModifier: number;
     tempPowerModifier: number;
     attachedActionDefIds?: string[];
+    attachedActions?: Array<{
+        uid: string;
+        defId: string;
+        ownerId: PlayerId;
+        metadata?: Record<string, unknown>;
+    }>;
     metadata?: Record<string, unknown>;
 }
 
@@ -593,6 +599,8 @@ export interface TriggerInstance {
     sourceCardUid?: string;
     /** who controls the source at trigger time (best-effort) */
     sourceControllerId?: PlayerId;
+    /** true owner of the source at trigger time when it differs from controller */
+    sourceOwnerPlayerId?: PlayerId;
     /** base index where source is located at trigger time (best-effort) */
     sourceBaseIndex?: number;
 
@@ -800,12 +808,12 @@ export interface SmashUpCore {
     /** 本回合每位玩家移动随从到各基地的次数（用于牧场等"首次移动"触发） */
     minionsMovedToBaseThisTurn?: Record<string, Record<number, number>>;
     /**
-     * 本回合是否曾把对手随从移动到各基地（你们已经完蛋 POD）
-     * key = baseIndex, value = true（本回合有“对手随从”被移动到该基地）
+     * 本回合各玩家是否曾把对手随从移动到各基地（你们已经完蛋 POD）
+     * key1 = baseIndex, key2 = playerId, value = true
      *
      * 生命周期：在 TURN_STARTED 时清空
      */
-    movedToBasesThisTurn?: Record<number, boolean>;
+    movedToBasesThisTurn?: Record<number, Record<PlayerId, boolean>>;
     /** 海盗 POD：私掠者每回合一次触发追踪（minionUid 列表） */
     buccaneerPodUsedUids?: string[];
     /** 临时临界点修正（回合结束自动清零，baseIndex → delta） */
@@ -912,6 +920,7 @@ export type PlayerTurnRestrictionType = 'play_action' | 'move_minion';
 export interface PlayerTurnRestriction {
     targetPlayerId: PlayerId;
     sourcePlayerId: PlayerId;
+    sourceDefId?: string;
     restrictionType: PlayerTurnRestrictionType;
 }
 

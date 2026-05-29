@@ -228,6 +228,13 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
         case SU_EVENTS.ACTION_PLAYED:
             addGenericResourcesFromValue(fp, payload, 'write');
             addPlayerZoneWrites(fp, playerId(payload.playerId), ['hand', 'playLimit']);
+            if (payload.fromDiscard) {
+                addPlayerZoneWrites(fp, playerId(payload.playerId), ['discard']);
+                const owner = playerId(payload.ownerId);
+                if (owner && owner !== playerId(payload.playerId)) {
+                    addPlayerZoneWrites(fp, owner, ['discard']);
+                }
+            }
             break;
         case SU_EVENTS.TITAN_PLAYED:
             addGenericResourcesFromValue(fp, payload, 'write');
@@ -303,10 +310,14 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
         case SU_EVENTS.ONGOING_ATTACHED:
             addGenericResourcesFromValue(fp, payload, 'write');
             add(fp.writes, { kind: 'base', index: numberValue(payload.targetBaseIndex) ?? -1 });
+            if (playerId(payload.sourcePlayerId) && playerId(payload.sourcePlayerId) !== playerId(payload.ownerId)) {
+                addPlayerZoneWrites(fp, playerId(payload.sourcePlayerId), ['hand', 'deck', 'discard']);
+            }
             addPlayerZoneWrites(fp, playerId(payload.ownerId), ['hand', 'deck', 'discard']);
             break;
         case SU_EVENTS.ONGOING_DETACHED:
             addGenericResourcesFromValue(fp, payload, 'write');
+            addPlayerZoneWrites(fp, playerId(payload.ownerId), ['discard']);
             break;
         case SU_EVENTS.CARDS_DRAWN:
         case SU_EVENTS.CARD_RECOVERED_FROM_DISCARD:
@@ -333,6 +344,12 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
         case SU_EVENTS.CARD_TO_DECK_TOP:
         case SU_EVENTS.CARD_TO_DECK_BOTTOM:
             addGenericResourcesFromValue(fp, payload, 'write');
+            {
+                const sourceZonePlayerId = playerId(payload.sourcePlayerId) ?? playerId(payload.sourceControllerId);
+                if (sourceZonePlayerId && sourceZonePlayerId !== playerId(payload.ownerId)) {
+                    addPlayerZoneWrites(fp, sourceZonePlayerId, ['hand', 'deck', 'discard']);
+                }
+            }
             addPlayerZoneWrites(fp, playerId(payload.ownerId), ['deck', 'discard']);
             break;
         case SU_EVENTS.CARD_TRANSFERRED:
@@ -592,6 +609,7 @@ function buildTriggerProbeContext(
         sourceCardUid: trigger.sourceCardUid,
         sourceBaseIndex: trigger.sourceBaseIndex,
         sourceControllerId: trigger.sourceControllerId,
+        sourceOwnerPlayerId: trigger.sourceOwnerPlayerId,
         triggerBaseControllersAtTrigger: trigger.triggerBaseControllersAtTrigger,
         playerId: trigger.ownerPlayerId,
         baseIndex: trigger.baseIndex,

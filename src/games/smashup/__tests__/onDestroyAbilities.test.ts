@@ -204,6 +204,58 @@ describe('onDestroy 基础设施', () => {
         const vpEvt = events.find(e => e.type === SU_EVENTS.VP_AWARDED) as any;
         expect(vpEvt?.payload?.playerId).toBe('1');
     });
+
+    it('borrowed frankenstein_igor 被消灭时，应按当前 controller 而不是真实 owner 给控制者创建 onDestroy 目标选择', () => {
+        const borrowedIgor = makeMinion('igor-borrowed', 'frankenstein_igor', '0', 2, { owner: '1' });
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        borrowedIgor,
+                        makeMinion('ally-same-base', 'werewolf_howler', '0', 3),
+                        makeMinion('enemy-same-base', 'test_enemy', '1', 4),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('ally-other-base', 'werewolf_alpha', '0', 5),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const processed = processDestroyTriggers([{
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'igor-borrowed',
+                minionDefId: 'frankenstein_igor',
+                fromBaseIndex: 0,
+                ownerId: '1',
+                controllerId: '0',
+                destroyerId: '1',
+                reason: 'borrowed_igor_destroyed',
+            },
+            timestamp: 2002,
+        } as any], makeMatchState(core), '1', defaultRandom, 2002);
+
+        const current = processed.matchState?.sys.interaction.current as any;
+        const optionUids = (current?.data?.options ?? []).map((option: any) => option?.value?.minionUid);
+
+        expect(current?.data?.sourceId).toBe('frankenstein_igor');
+        expect(current?.playerId).toBe('0');
+        expect(optionUids).toContain('ally-same-base');
+        expect(optionUids).toContain('ally-other-base');
+        expect(optionUids).not.toContain('igor-borrowed');
+        expect(optionUids).not.toContain('enemy-same-base');
+    });
 });
 
 
@@ -329,6 +381,45 @@ describe('robot_nukebot（核弹机器人 onDestroy）', () => {
             e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.reason === 'robot_nukebot'
         );
         expect(chainDestroys.length).toBe(0);
+    });
+
+    it('borrowed robot_nukebot 被消灭时，应按当前 controller 而不是真实 owner 消灭其他玩家的随从', () => {
+        const borrowedNukebot = makeMinion('nukebot-borrowed', 'robot_nukebot', '0', 5, { owner: '1' });
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    borrowedNukebot,
+                    makeMinion('ally-p0', 'test_ally', '0', 2),
+                    makeMinion('enemy-p1', 'test_enemy', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const destroyed = processDestroyTriggers([{
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'nukebot-borrowed',
+                minionDefId: 'robot_nukebot',
+                fromBaseIndex: 0,
+                ownerId: '1',
+                controllerId: '0',
+                destroyerId: '1',
+                reason: 'borrowed_nukebot_destroyed',
+            },
+            timestamp: 2001,
+        } as any], makeMatchState(core), '1', defaultRandom, 2001);
+
+        const chainDestroys = destroyed.events.filter(
+            e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.reason === 'robot_nukebot'
+        );
+        expect(chainDestroys.map(e => (e as any).payload.minionUid)).toEqual(['enemy-p1']);
+        expect((chainDestroys[0] as any).payload.destroyerId).toBe('0');
     });
 
     it('核弹机器人链式消灭会被 destroy 保护拦截', () => {

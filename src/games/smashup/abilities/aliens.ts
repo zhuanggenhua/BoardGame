@@ -954,7 +954,7 @@ const alienTerraformPlayMinionPromptProgram = createPromptProgram<
             const selectedTitan = state.core.titans?.find((titan) =>
                 titan.uid === selected.titanUid
                 && titan.defId === selected.defId
-                && titan.ownerId === playerId
+                && titan.controllerId === playerId
                 && titan.location.zone === 'setaside',
             );
             if (!selectedTitan || !canControllerPlayTitan(state.core, playerId, selectedTitan.uid)) {

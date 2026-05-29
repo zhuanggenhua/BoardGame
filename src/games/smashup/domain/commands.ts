@@ -137,8 +137,8 @@ function validateTitanAbility(
         if (titan.location.zone !== 'setaside') {
             return { valid: false, error: '该泰坦当前不在牌库旁' };
         }
-        if (titan.ownerId !== command.playerId) {
-            return { valid: false, error: '只能激活自己拥有的泰坦特殊能力' };
+        if (titan.controllerId !== command.playerId) {
+            return { valid: false, error: '只能激活自己控制的泰坦特殊能力' };
         }
     } else {
         if (titan.location.zone !== 'base') {

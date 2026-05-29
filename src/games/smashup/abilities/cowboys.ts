@@ -176,6 +176,27 @@ function isDynamiteSurpriseDefId(defId: string): boolean {
     return defId === 'cowboys_dynamite_surprise' || defId === 'cowboys_dynamite_surprise_pod';
 }
 
+function canTriggerCowboysDynamiteSurpriseSeen(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || !ctx.sourceControllerId || !ctx.inspectionZone || !ctx.inspectionCausePlayerId) {
+        return false;
+    }
+    if (ctx.sourceControllerId === ctx.inspectionCausePlayerId) {
+        return false;
+    }
+    if (!(ctx.inspectionTargetPlayerIds ?? []).includes(ctx.sourceControllerId)) {
+        return false;
+    }
+    const player = ctx.state.players[ctx.sourceControllerId];
+    if (!player) return false;
+    const zoneCards = ctx.inspectionZone === 'hand' ? player.hand : player.deck;
+    const exposed = ctx.inspectionCards ?? [];
+    return exposed.some(card =>
+        isDynamiteSurpriseDefId(card.defId) && card.uid === ctx.sourceCardUid,
+    ) && zoneCards.some(card =>
+        isDynamiteSurpriseDefId(card.defId) && card.uid === ctx.sourceCardUid,
+    );
+}
+
 export function registerCowboysAbilities(): void {
     registerAbilityProgram('cowboys_gunfighter', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(cowboysGunfighterOnPlay),
@@ -214,6 +235,8 @@ export function registerCowboysAbilities(): void {
     registerTrigger('cowboys_dynamite_surprise', 'onDeckInspected', cowboysDynamiteSurpriseSeenTrigger, {
         global: true,
         globalZones: ['hand', 'deck'],
+        playerContext: 'sourceController',
+        canTrigger: canTriggerCowboysDynamiteSurpriseSeen,
     });
 
     registerBaseAbility('base_so_so_corral', 'onMinionPlayed', cowboysBaseSoSoCorralOnMinionPlayed, {
@@ -396,22 +419,32 @@ function cowboysDynamiteSurpriseSeenTrigger(ctx: TriggerContext): AbilityResult 
         return { events: [] };
     }
 
+    const queuedSourceCardUid = ctx.sourceCardUid;
     const ownerPlayerId = (ctx.inspectionTargetPlayerIds ?? []).find((candidate) => {
         const player = ctx.state.players[candidate];
         if (!player) return false;
         const zoneCards = ctx.inspectionZone === 'hand' ? player.hand : player.deck;
-        return ctx.inspectionCards!.some(card => (
+        if (queuedSourceCardUid) {
+            return zoneCards.some(entry => entry.uid === queuedSourceCardUid);
+        }
+        return ctx.inspectionCards!.some(card =>
             isDynamiteSurpriseDefId(card.defId) && zoneCards.some(entry => entry.uid === card.uid)
-        ));
+        );
     });
     if (!ownerPlayerId || ownerPlayerId === ctx.inspectionCausePlayerId) return { events: [] };
 
-    const exposedCard = ctx.inspectionCards.find((card) => {
-        if (!isDynamiteSurpriseDefId(card.defId)) return false;
-        const player = ctx.state.players[ownerPlayerId];
-        const zoneCards = ctx.inspectionZone === 'hand' ? player.hand : player.deck;
-        return zoneCards.some(entry => entry.uid === card.uid);
-    });
+    const player = ctx.state.players[ownerPlayerId];
+    const zoneCards = ctx.inspectionZone === 'hand' ? player?.hand ?? [] : player?.deck ?? [];
+    const exposedCard = queuedSourceCardUid
+        ? ctx.inspectionCards.find(card =>
+            card.uid === queuedSourceCardUid
+            && isDynamiteSurpriseDefId(card.defId)
+            && zoneCards.some(entry => entry.uid === card.uid)
+        )
+        : ctx.inspectionCards.find(card =>
+            isDynamiteSurpriseDefId(card.defId)
+            && zoneCards.some(entry => entry.uid === card.uid)
+        );
     if (!exposedCard) return { events: [] };
 
     const targets = collectDynamiteSeenTargets(ctx.state, ctx.inspectionCausePlayerId);

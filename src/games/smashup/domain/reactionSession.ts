@@ -664,6 +664,15 @@ export function buildReactionOptions(
         }));
     }
 
+    // Optional phase 里若仍残留同 frame 的 mandatory trigger，必须继续暴露它们，
+    // 否则 live refresh 会把这类 trigger 误判成 stale，进而被 pass 吃掉。
+    const mandatoryOptions = getMandatoryFrameTriggers(state, session.frameId).map(trigger => ({
+        id: `trigger:${trigger.id}`,
+        label: buildTriggerLabel(trigger),
+        value: { kind: 'trigger', triggerId: trigger.id },
+        displayMode: 'button' as const,
+    }));
+
     const triggerOptions = getOptionalFrameTriggers(state, session.frameId, session.activePlayerId).map(trigger => ({
         id: `trigger:${trigger.id}`,
         label: buildTriggerLabel(trigger),
@@ -673,6 +682,7 @@ export function buildReactionOptions(
 
     const cardOptions = buildPlayableCardOptions(state, session, session.activePlayerId, now);
     return dedupeReactionOptions([
+        ...mandatoryOptions,
         ...triggerOptions,
         ...cardOptions,
         {
@@ -811,13 +821,25 @@ function executeQueuedTrigger(
                 powerModifier: trigger.lkiMinion.powerModifier,
                 tempPowerModifier: trigger.lkiMinion.tempPowerModifier,
                 talentUsed: false,
-                attachedActions: (trigger.lkiMinion.attachedActionDefIds ?? []).map((defId, index) => ({
-                    uid: defId === trigger.sourceDefId && trigger.sourceCardUid
-                        ? trigger.sourceCardUid
-                        : `${defId}:lki:${index}`,
-                    defId,
-                    ownerId: trigger.sourceControllerId ?? trigger.ownerPlayerId,
-                })),
+                attachedActions: trigger.lkiMinion.attachedActions?.map(action => ({
+                    uid: action.uid,
+                    defId: action.defId,
+                    ownerId: action.ownerId,
+                    metadata: action.metadata ? structuredClone(action.metadata) : undefined,
+                })) ?? (() => {
+                    const matchingSourceDefCount = (trigger.lkiMinion.attachedActionDefIds ?? [])
+                        .filter(defId => defId === trigger.sourceDefId)
+                        .length;
+                    return (trigger.lkiMinion.attachedActionDefIds ?? []).map((defId, index) => ({
+                        uid: defId === trigger.sourceDefId && trigger.sourceCardUid && matchingSourceDefCount === 1
+                            ? trigger.sourceCardUid
+                            : `${defId}:lki:${index}`,
+                        defId,
+                        ownerId: defId === trigger.sourceDefId && matchingSourceDefCount === 1
+                            ? (trigger.sourceOwnerPlayerId ?? trigger.sourceControllerId ?? trigger.ownerPlayerId)
+                            : (trigger.sourceControllerId ?? trigger.ownerPlayerId),
+                    }));
+                })(),
                 metadata: trigger.lkiMinion.metadata ? structuredClone(trigger.lkiMinion.metadata) : undefined,
             }
             : undefined,

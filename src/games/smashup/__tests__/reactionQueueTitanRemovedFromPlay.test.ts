@@ -9,6 +9,7 @@ import { SU_EVENTS, type SmashUpCore, type TitanState } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { defaultTestRandom, runCommand } from './testRunner';
 import { getInteractionsFromMS, makeBase, makeCard, makeMatchState, makePlayer, makeState } from './helpers';
+import { getSetAsideTitansForActivation } from '../ui/setAsideTitanRail';
 
 describe('reaction queue: titan removed from play', () => {
     beforeEach(() => {
@@ -155,5 +156,58 @@ describe('reaction queue: titan removed from play', () => {
         expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-sprout')).toBe(false);
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-a']);
         expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-a', 'borrowed-sprout']);
+    });
+
+    it('borrowed titan 离场回到 setaside 时，不应把 controllerId 洗回真实 owner', () => {
+        const borrowedKraken: TitanState = {
+            uid: 'borrowed-kraken',
+            defId: 'pirates_the_kraken',
+            faction: SMASHUP_FACTION_IDS.PIRATES,
+            ownerId: '1',
+            controllerId: '0',
+            powerCounters: 2,
+            talentUsed: true,
+            metadata: { borrowedFrom: 'test' } as any,
+            location: { zone: 'base', baseIndex: 0 },
+        };
+        const core: SmashUpCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a')],
+            titans: [borrowedKraken],
+        });
+
+        const removedEvent = {
+            type: SU_EVENTS.TITAN_REMOVED_FROM_PLAY,
+            payload: {
+                titanUid: 'borrowed-kraken',
+                defId: 'pirates_the_kraken',
+                ownerId: '1',
+                controllerId: '0',
+                fromBaseIndex: 0,
+                reason: 'test_borrowed_titan_removed',
+            },
+            timestamp: 99,
+        } as const;
+
+        const result = postProcessSystemEvents(core, [removedEvent], defaultTestRandom, makeMatchState(core));
+        const finalCore = result.matchState?.core ?? core;
+        const titan = finalCore.titans?.find(candidate => candidate.uid === 'borrowed-kraken');
+
+        expect(titan).toMatchObject({
+            uid: 'borrowed-kraken',
+            ownerId: '1',
+            controllerId: '0',
+            powerCounters: 0,
+            talentUsed: false,
+            metadata: undefined,
+            location: { zone: 'setaside' },
+        });
+        expect(getSetAsideTitansForActivation(finalCore.titans, '0').map(candidate => candidate.uid)).toContain('borrowed-kraken');
+        expect(getSetAsideTitansForActivation(finalCore.titans, '1').map(candidate => candidate.uid)).not.toContain('borrowed-kraken');
     });
 });

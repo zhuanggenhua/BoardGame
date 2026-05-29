@@ -66,6 +66,7 @@ type AkyeContinuation = {
 };
 
 type HighSpeedChaseContinuation = {
+    sourceCardUid: string;
     sourceBaseIndex: number;
     minionUid: string;
     minionDefId: string;
@@ -548,10 +549,7 @@ const worldChampsHighSpeedChaseBasePromptProgram = createPromptProgram<WorldCham
         if (selected.baseIndex === undefined) return { events: [] };
 
         const sourceBase = state.core.bases[context.sourceBaseIndex];
-        const ongoing = sourceBase?.ongoingActions.find(action =>
-            action.defId === 'world_champs_high_speed_chase'
-            && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === context.playerId),
-        );
+        const ongoing = sourceBase?.ongoingActions.find(action => action.uid === context.sourceCardUid);
         if (!ongoing) return { events: [] };
         const moveEvents = buildValidatedMoveEvents(state, {
             minionUid: context.minionUid,
@@ -620,7 +618,7 @@ const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldCh
             { sourceId: 'world_champs_high_speed_chase_minion', targetType: 'minion' },
         );
     },
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ state, context, playerId, value, timestamp }) => {
         const selected = value as MinionChoice;
         if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
         const baseOptions = state.core.bases
@@ -633,6 +631,7 @@ const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldCh
         return {
             events: [],
             context: createWorldChampsPromptContext(state, playerId, timestamp, {
+                sourceCardUid: context.sourceCardUid,
                 sourceBaseIndex: selected.baseIndex,
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId,
@@ -1055,6 +1054,7 @@ function worldChampsHighSpeedChaseTalent(ctx: AbilityContext): AbilityResult {
     const result = executeAbilityProgram(
         worldChampsHighSpeedChaseMinionPromptProgram,
         createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceCardUid: ctx.cardUid,
             sourceBaseIndex: ctx.baseIndex,
         }),
     );
@@ -1358,6 +1358,7 @@ function buildDivaMirroredEvent(
             return {
                 type: SU_EVENTS.MINION_MOVED,
                 payload: {
+                    ...payload,
                     minionUid: divaUid,
                     minionDefId: divaDefId,
                     fromBaseIndex: divaBaseIndex,

@@ -38,6 +38,7 @@ export interface AffectRecord {
     sourceCardUid?: string;
     sourceDefId?: string;
     sourceControllerId?: PlayerId;
+    sourceOwnerPlayerId?: PlayerId;
     sourceBaseIndex?: number;
     triggerMinion?: MinionOnBase;
     triggerMinionUid?: string;
@@ -51,6 +52,7 @@ interface CardSourceMeta {
     sourceCardUid?: string;
     sourceDefId?: string;
     sourceControllerId?: PlayerId;
+    sourceOwnerPlayerId?: PlayerId;
     sourceBaseIndex?: number;
 }
 
@@ -111,6 +113,7 @@ function resolveSourceMeta(
             ?? defaultSourceDefId
             ?? normalizeReasonToSourceDefId(payload.reason as string | undefined),
         sourceControllerId: payload.sourceControllerId as PlayerId | undefined,
+        sourceOwnerPlayerId: payload.sourceOwnerPlayerId as PlayerId | undefined,
         sourceBaseIndex: payload.sourceBaseIndex as number | undefined,
     };
 }
@@ -133,6 +136,7 @@ function buildMinionAffectRecord(
         sourceCardUid: source.sourceCardUid,
         sourceDefId: source.sourceDefId,
         sourceControllerId: source.sourceControllerId,
+        sourceOwnerPlayerId: source.sourceOwnerPlayerId,
         sourceBaseIndex: source.sourceBaseIndex,
         triggerMinion: minion,
         triggerMinionUid: minion.uid,
@@ -157,6 +161,7 @@ function buildInPlayCardAffectRecord(
         sourceCardUid: source.sourceCardUid,
         sourceDefId: source.sourceDefId,
         sourceControllerId: source.sourceControllerId,
+        sourceOwnerPlayerId: source.sourceOwnerPlayerId,
         sourceBaseIndex: source.sourceBaseIndex,
     };
 }
@@ -239,6 +244,7 @@ export function buildAffectRecords(
                     sourceCardUid: payload.cardUid,
                     sourceDefId: payload.defId,
                     sourceControllerId: sourcePlayerId,
+                    sourceOwnerPlayerId: payload.ownerId,
                     sourceBaseIndex: payload.targetBaseIndex,
                 },
             )];

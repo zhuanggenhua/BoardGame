@@ -1548,7 +1548,10 @@ const buildTalentActions = (state: SmashUpState, playerId: PlayerId): AiLegalAct
         }
 
         for (const ongoing of base.ongoingActions) {
-            if (ongoing.ownerId !== playerId) continue;
+            const ongoingControllerId =
+                (ongoing.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                ?? ongoing.ownerId;
+            if (ongoingControllerId !== playerId) continue;
             appendAction(actions, state, playerId, {
                 actionId: createAiLegalActionId('use-talent', 'ongoing', ongoing.uid, baseIndex),
                 kind: 'use-talent',
@@ -1568,7 +1571,10 @@ const buildTalentActions = (state: SmashUpState, playerId: PlayerId): AiLegalAct
 
         for (const minion of base.minions) {
             for (const attached of minion.attachedActions) {
-                if (attached.ownerId !== playerId) continue;
+                const attachedControllerId =
+                    (attached.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                    ?? attached.ownerId;
+                if (attachedControllerId !== playerId) continue;
                 appendAction(actions, state, playerId, {
                     actionId: createAiLegalActionId('use-talent', 'attached', attached.uid, baseIndex),
                     kind: 'use-talent',

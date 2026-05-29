@@ -254,7 +254,8 @@ export const BaseZone: React.FC<{
         const actionName = resolveCardName(actionDef, t) || oa.defId;
         const actionText = resolveCardText(actionDef, t);
         const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
-        const pConf = PLAYER_CONFIG[parseInt(oa.ownerId) % PLAYER_CONFIG.length];
+        const ongoingControllerId = ((oa.metadata?.sourceControllerId as string | undefined) ?? oa.ownerId);
+        const pConf = PLAYER_CONFIG[parseInt(ongoingControllerId) % PLAYER_CONFIG.length];
         const hasOngoingTalent = actionDef?.abilityTags?.includes('talent') ?? false;
         const canUseOngoingTalent = !!usableOngoingTalentUids?.has(oa.uid);
         const ongoingActivationKey = `ongoing-${oa.uid}`;
@@ -266,7 +267,7 @@ export const BaseZone: React.FC<{
         const ongoingPowerContribution = getOngoingCardPowerContribution({
             ...base,
             ongoingActions: [oa],
-        }, oa.ownerId);
+        }, ongoingControllerId);
         const ongoingPowerCounters = ((oa.metadata?.powerCounters as number) ?? 0);
 
         return (

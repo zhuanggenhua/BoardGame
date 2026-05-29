@@ -177,10 +177,14 @@ function buildPlayMinionFromZoneEvent(params: {
     };
 }
 
-function deckReordered(playerId: PlayerId, deckUids: string[], now: number): DeckReorderedEvent {
+function deckReordered(playerId: PlayerId, deckUids: string[], now: number, sourcePlayerId?: PlayerId): DeckReorderedEvent {
     return {
         type: SU_EVENTS.DECK_REORDERED,
-        payload: { playerId, deckUids },
+        payload: {
+            playerId,
+            deckUids,
+            ...(sourcePlayerId !== undefined && sourcePlayerId !== playerId ? { sourcePlayerId } : {}),
+        },
         timestamp: now,
     };
 }
@@ -776,9 +780,19 @@ function cyborgApesFlyingMonkeyAfterScoring(ctx: TriggerContext): TriggerResult 
     if (ctx.baseIndex === undefined) return { events: [] };
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
-    for (const minion of base.minions) {
-        const action = minion.attachedActions.find(attached => attached.defId === 'cyborg_apes_flying_monkey');
-        if (!action) continue;
+    const sourceHost = ctx.sourceCardUid
+        ? base.minions.find(minion => minion.attachedActions.some(attached => attached.uid === ctx.sourceCardUid))
+        : undefined;
+    const sourceAction = sourceHost?.attachedActions.find(attached => attached.uid === ctx.sourceCardUid);
+    const sourceCandidates = sourceHost && sourceAction
+        ? [{ minion: sourceHost, action: sourceAction }]
+        : base.minions
+            .map(minion => ({
+                minion,
+                action: minion.attachedActions.find(attached => attached.defId === 'cyborg_apes_flying_monkey'),
+            }))
+            .filter((entry): entry is { minion: MinionOnBase; action: OngoingActionOnBase | AttachedActionOnMinion } => Boolean(entry.action));
+    for (const { minion, action } of sourceCandidates) {
         const destinations = ctx.state.bases
             .map((candidate, index) => ({ base: candidate, index }))
             .filter(candidate => candidate.index !== ctx.baseIndex);
@@ -861,7 +875,7 @@ function shapeshiftersCellularBondingFlyingMonkey(ctx: TriggerContext): TriggerR
     }));
     const interaction = createSimpleChoice(
         `shapeshifters_cellular_bonding_flying_monkey_move_${ctx.now}`,
-        bondingAction.ownerId,
+        getOngoingActionControllerId(bondingAction),
         '细胞结合-飞猴：选择要移动到的另一基地',
         [
             createSkipOption('跳过（照常进入弃牌堆）'),
@@ -1417,12 +1431,35 @@ function timeTravelersGigawatts(ctx: AbilityContext): AbilityResult {
     const selected = actions.length > 0 ? actions : minions;
     if (selected.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
     return {
-        events: [deckReordered(
-            ctx.playerId,
-            ctx.random.shuffle([...selected, ...player.deck]).map(card => card.uid),
-            ctx.now,
-        )],
+        events: buildOwnerScopedDeckReorderedEventsFromDiscard(ctx.state, ctx.playerId, selected, ctx.random, ctx.now),
     };
+}
+
+function buildOwnerScopedDeckReorderedEventsFromDiscard(
+    core: SmashUpCore,
+    sourcePlayerId: PlayerId,
+    selectedCards: CardInstance[],
+    random: { shuffle: <T>(items: T[]) => T[] },
+    now: number,
+): DeckReorderedEvent[] {
+    const cardsByOwner = new Map<PlayerId, CardInstance[]>();
+    for (const card of selectedCards) {
+        const ownerCards = cardsByOwner.get(card.owner) ?? [];
+        ownerCards.push(card);
+        cardsByOwner.set(card.owner, ownerCards);
+    }
+    const events: DeckReorderedEvent[] = [];
+    for (const [ownerId, cards] of cardsByOwner) {
+        const owner = core.players[ownerId];
+        if (!owner) continue;
+        events.push(deckReordered(
+            ownerId,
+            random.shuffle([...cards, ...owner.deck]).map(card => card.uid),
+            now,
+            ownerId !== sourcePlayerId ? sourcePlayerId : undefined,
+        ));
+    }
+    return events;
 }
 
 function timeTravelersDoOver(ctx: AbilityContext): AbilityResult {
@@ -1574,7 +1611,9 @@ function timeTravelersStasisFieldTurnStart(ctx: TriggerContext): SmashUpEvent[] 
     for (const base of ctx.state.bases) {
         for (const action of base.ongoingActions) {
             const controllerId = action.metadata?.sourceControllerId ?? action.ownerId;
-            if (action.defId === 'time_travelers_stasis_field' && controllerId === ctx.playerId) {
+            if (action.defId !== 'time_travelers_stasis_field') continue;
+            if (ctx.sourceCardUid && action.uid !== ctx.sourceCardUid) continue;
+            if (controllerId === ctx.playerId) {
                 events.push(detachOngoing(action.uid, action.defId, action.ownerId, 'time_travelers_stasis_field', ctx.now));
             }
         }
@@ -2600,8 +2639,10 @@ export function registerYuanhouAbilities(): void {
         const activationWindow = ctx.extra?.activationWindow;
         if (activationWindow !== 'meFirst' && activationWindow !== 'afterScoring') return false;
         const base = ctx.state.bases[ctx.baseIndex];
-        const action = base?.ongoingActions.find(candidate => candidate.defId === 'super_spies_mindraker');
-        return Boolean(action && getOngoingActionControllerId(action) !== ctx.playerId);
+        return Boolean(base?.ongoingActions.some(
+            candidate => candidate.defId === 'super_spies_mindraker'
+                && getOngoingActionControllerId(candidate) !== ctx.playerId,
+        ));
     });
 
     registerAbilityProgram('time_travelers_time_raider', 'talent', { program: createEffectProgram(timeTravelersTimeRaider) });
@@ -2631,6 +2672,7 @@ export function registerYuanhouAbilities(): void {
     registerTrigger('time_travelers_stasis_field', 'onTurnStart', timeTravelersStasisFieldTurnStart, {
         playerContext: 'sourceController',
         effectContract: SHAYU_TRIGGER_CONTRACT,
+        perInstance: true,
     });
 
     registerBaseAbility('base_faceless_city', 'onMinionPlayed', baseFacelessCity, {
@@ -3380,11 +3422,7 @@ export function registerYuanhouAbilities(): void {
         if (selected.length === 0) return { state, events: [] };
         return {
             state,
-            events: [deckReordered(
-                playerId,
-                random.shuffle([...selected, ...player.deck]).map(card => card.uid),
-                timestamp,
-            )],
+            events: buildOwnerScopedDeckReorderedEventsFromDiscard(state.core, playerId, selected, random, timestamp),
         };
     });
 

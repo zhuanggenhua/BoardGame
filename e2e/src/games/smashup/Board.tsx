@@ -241,7 +241,7 @@ function checkPlayConstraintUI(
     playerId: string,
 ): boolean {
     if (constraint === 'requireOwnMinion') {
-        return core.bases[baseIndex].minions.some(m => m.owner === playerId);
+        return core.bases[baseIndex].minions.some(m => m.controller === playerId);
     }
     if (typeof constraint === 'object' && constraint.type === 'requireOwnPower') {
         const base = core.bases[baseIndex];
@@ -1239,7 +1239,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             const base = coreBases[baseIndex];
 
             for (const ongoing of base.ongoingActions ?? []) {
-                if (ongoing.ownerId !== playerID) continue;
+                const ongoingControllerId =
+                    (ongoing.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                    ?? ongoing.ownerId;
+                if (ongoingControllerId !== playerID) continue;
                 const validation = validate(G, {
                     type: SU_COMMANDS.USE_TALENT,
                     playerId: playerID,
@@ -1252,7 +1255,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
             for (const minion of base.minions) {
                 for (const attachedAction of minion.attachedActions ?? []) {
-                    if (attachedAction.ownerId !== playerID) continue;
+                    const attachedControllerId =
+                        (attachedAction.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                        ?? attachedAction.ownerId;
+                    if (attachedControllerId !== playerID) continue;
                     const validation = validate(G, {
                         type: SU_COMMANDS.USE_TALENT,
                         playerId: playerID,

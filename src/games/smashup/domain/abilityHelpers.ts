@@ -295,7 +295,7 @@ export function getSetAsideTitansPlayableAs(
 ): TitanState[] {
     if (getTitanByController(state, playerId)) return [];
     return getAllTitans(state).filter((titan) => {
-        if (titan.ownerId !== playerId || titan.location.zone !== 'setaside') return false;
+        if (titan.controllerId !== playerId || titan.location.zone !== 'setaside') return false;
         const titanDef = getTitanDef(titan.defId);
         return !!titanDef?.playAsKinds?.includes(playKind);
     });
@@ -863,24 +863,55 @@ export function peekDeckTop(
     const player = state.players[playerId];
     if (!player) return undefined;
 
+    const splitDiscardByOwnerForDeckRebuild = (
+        discardCards: CardInstance[],
+    ): { sourceCards: CardInstance[]; ownerDeckEvents: DeckReorderedEvent[] } => {
+        const sourceCards: CardInstance[] = [];
+        const borrowedByOwner = new Map<PlayerId, CardInstance[]>();
+
+        for (const card of discardCards) {
+            if (card.owner !== playerId && state.players[card.owner]) {
+                borrowedByOwner.set(card.owner, [...(borrowedByOwner.get(card.owner) ?? []), card]);
+                continue;
+            }
+            sourceCards.push(card);
+        }
+
+        return {
+            sourceCards,
+            ownerDeckEvents: Array.from(borrowedByOwner.entries()).map(([ownerId, cards]) => ({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ownerId,
+                    sourcePlayerId: playerId,
+                    deckUids: [...state.players[ownerId].deck.map(card => card.uid), ...cards.map(card => card.uid)],
+                },
+                timestamp: now,
+            }) as DeckReorderedEvent),
+        };
+    };
+
     // 规则：当需要 look/reveal/search/draw 而牌库为空时，将弃牌堆洗入牌库并继续。
     // peekDeckTop 不消耗牌库顶，只在必要时重排牌库顺序（DECK_REORDERED）。
     const events: SmashUpEvent[] = [];
     if (player.deck.length === 0) {
         if (player.discard.length === 0) return undefined;
         const shuffled = random.shuffle([...player.discard]);
+        const { sourceCards, ownerDeckEvents } = splitDiscardByOwnerForDeckRebuild(shuffled);
+        events.push(...ownerDeckEvents);
+        if (sourceCards.length === 0) return undefined;
         events.push({
             type: SU_EVENTS.DECK_REORDERED,
             payload: {
                 playerId,
-                deckUids: shuffled.map(c => c.uid),
+                deckUids: sourceCards.map(c => c.uid),
             },
             timestamp: now,
         } as DeckReorderedEvent);
         // 注意：此处不直接修改 state；由 reducer 根据 DECK_REORDERED 更新 deck/discard 后，
         // 才会在后续流程中体现为“弃牌堆洗回牌库”。
-        // 为了本次 peek 能返回正确的 card，我们用模拟的 shuffled[0]。
-        const card = shuffled[0];
+        // 为了本次 peek 能返回正确的 card，我们用模拟的 sourceCards[0]。
+        const card = sourceCards[0];
         events.push(inspectDeck(playerId, inspectorPlayerId, 1, reason, now));
         if (revealTo === 'none') {
             return { card, events };

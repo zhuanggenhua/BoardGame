@@ -218,19 +218,18 @@ const innsmouthRecruitmentProgram = createEffectProgram<AbilityContext, SmashUpC
 function innsmouthInPlainSightChecker(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
-    // 检查基地上是否?in_plain_sight ongoing 行动?
-    const sight = base.ongoingActions.find(o => matchesDefId(o.defId, 'innsmouth_in_plain_sight'));
-    if (!sight) return false;
-    const controllerId = (sight.metadata?.sourceControllerId as PlayerId | undefined) ?? sight.ownerId;
-    // 只保护?sight 拥有者的随从
-    if (ctx.targetMinion.controller !== controllerId) return false;
-    // POD 版按印刷力量（basePower）判断；原版按当前有效力量判断
-    const isPodVersion = sight.defId.endsWith('_pod');
-    const protectedByPower =
-        isPodVersion
-            ? ctx.targetMinion.basePower <= 2
-            : getMinionPower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex) <= 2;
-    return protectedByPower && ctx.sourcePlayerId !== controllerId;
+    return base.ongoingActions.some((sight) => {
+        if (!matchesDefId(sight.defId, 'innsmouth_in_plain_sight')) return false;
+        const controllerId = (sight.metadata?.sourceControllerId as PlayerId | undefined) ?? sight.ownerId;
+        if (ctx.targetMinion.controller !== controllerId) return false;
+        // POD 版按印刷力量（basePower）判断；原版按当前有效力量判断
+        const isPodVersion = sight.defId.endsWith('_pod');
+        const protectedByPower =
+            isPodVersion
+                ? ctx.targetMinion.basePower <= 2
+                : getMinionPower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex) <= 2;
+        return protectedByPower && ctx.sourcePlayerId !== controllerId;
+    });
 }
 
 function buildReturnToSeaMinionOptions(

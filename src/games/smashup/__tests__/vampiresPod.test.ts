@@ -10,7 +10,7 @@ import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { getEffectivePower } from '../domain/ongoingModifiers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
-import { collectTriggers, isOperationRestricted } from '../domain/ongoingEffects';
+import { collectTriggers, fireTriggers, isOperationRestricted } from '../domain/ongoingEffects';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
@@ -509,6 +509,73 @@ describe('vampires_pod: The Count POD', () => {
         }
     });
 
+    it('多个 The Count POD 走 direct fireTriggers 时，应按每个 source 继续给各自控制者链式加指示物 prompt', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['vampires', 'robots'],
+                }),
+                '1': makePlayer('1', {
+                    factions: ['vampires', 'ghosts'],
+                }),
+            },
+            bases: [
+                makeState().bases[0],
+                makeState().bases[0],
+                {
+                    defId: 'base_c',
+                    minions: [
+                        makeMinion('count-p0', 'vampire_the_count_pod', '0', 5),
+                        makeMinion('target-a', 'robot_microbot', '0', 2),
+                        makeMinion('victim-a', 'ghosts_spectre', '1', 2),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_d',
+                    minions: [
+                        makeMinion('count-p1', 'vampire_the_count_pod', '1', 5),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const victim = core.bases[2].minions.find(minion => minion.uid === 'victim-a');
+        const triggered = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core, 'playCards', '0'),
+            playerId: '1',
+            baseIndex: 2,
+            triggerMinionUid: 'victim-a',
+            triggerMinionDefId: 'ghosts_spectre',
+            triggerMinion: victim,
+            destroyerId: '0',
+            reason: 'test_destroy',
+            random: defaultTestRandom,
+            now: 60,
+        });
+        expect(triggered.events).toEqual([]);
+        expect(triggered.matchState).toBeDefined();
+
+        const firstPrompt = getInteractionsFromMS(triggered.matchState!)[0] as any;
+        expect(firstPrompt?.data?.sourceId).toBe('vampire_the_count_pod_add_counter');
+        expect(firstPrompt?.playerId).toBe('0');
+
+        const skipFirst = runCommand(
+            triggered.matchState!,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'skip' } } as any,
+            defaultTestRandom,
+        );
+        expect(skipFirst.success).toBe(true);
+
+        const secondPrompt = getInteractionsFromMS(skipFirst.finalState)[0] as any;
+        expect(secondPrompt?.data?.sourceId).toBe('vampire_the_count_pod_add_counter');
+        expect(secondPrompt?.playerId).toBe('1');
+    });
+
     it('talent 的 -1 应持续到自己下回合开始', () => {
         const core = makeState({
             players: {
@@ -663,6 +730,32 @@ describe('vampires_pod: Stakeout POD', () => {
         );
         expect(isOperationRestricted(result.finalState.core, 0, '0', 'play_minion', { basePower: 3 })).toBe(false);
         expect(isOperationRestricted(result.finalState.core, 0, '1', 'play_minion', { basePower: 3 })).toBe(true);
+    });
+
+    it('同一基地两条不同 owner 的 Stakeout POD block 并存时，不应因第一条自豁免 block 漏掉后面另一条真实限制', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [
+                    { uid: 'stakeout-owner-1', defId: 'vampire_stakeout_pod', ownerId: '1', talentUsed: false } as any,
+                    { uid: 'stakeout-owner-0', defId: 'vampire_stakeout_pod', ownerId: '0', talentUsed: false } as any,
+                ],
+            }],
+            stakeoutPodBlocks: [
+                { baseIndex: 0, ownerId: '1', expiresOnTurnNumber: 3 },
+                { baseIndex: 0, ownerId: '0', expiresOnTurnNumber: 3 },
+            ],
+        });
+
+        expect(isOperationRestricted(core, 0, '1', 'play_minion', { basePower: 3 })).toBe(true);
     });
 });
 

@@ -342,10 +342,10 @@ function buildPlayfulTricksActionOptions(state: SmashUpCore) {
     return options;
 }
 
-function getOwnedSetAsideSpiritOfTheForest(state: SmashUpCore, playerId: PlayerId) {
+function getControlledSetAsideSpiritOfTheForest(state: SmashUpCore, playerId: PlayerId) {
     return (state.titans ?? []).find((titan) =>
         titan.defId === 'fairies_spirit_of_the_forest'
-        && titan.ownerId === playerId
+        && titan.controllerId === playerId
         && titan.location.zone === 'setaside',
     );
 }
@@ -875,7 +875,7 @@ const fairiesPlayfulTricksSpiritBasePromptProgram = createPromptProgram<FairiesP
         }
         const titan = state.core.titans?.find((candidate) =>
             candidate.uid === context.titanUid
-            && candidate.ownerId === playerId
+            && candidate.controllerId === playerId
             && candidate.location.zone === 'setaside',
         );
         if (!titan || !canControllerPlayTitan(state.core, playerId, titan.uid)) return { events: [] };
@@ -1075,7 +1075,7 @@ function fairiesMagicAcorns(ctx: AbilityContext): AbilityResult {
 
 function fairiesPlayfulTricks(ctx: AbilityContext): AbilityResult {
     const actionOptions = buildPlayfulTricksActionOptions(ctx.state);
-    const setAsideSpirit = getOwnedSetAsideSpiritOfTheForest(ctx.state, ctx.playerId);
+    const setAsideSpirit = getControlledSetAsideSpiritOfTheForest(ctx.state, ctx.playerId);
     const canPlaySpirit = !!setAsideSpirit && !getTitanByController(ctx.state, ctx.playerId);
 
     if (!canPlaySpirit) {

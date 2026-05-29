@@ -21,6 +21,7 @@ describe('reaction queue: preserves inspection runtime context', () => {
     it.each([
         {
             label: '被另一位玩家展示手牌',
+            defId: 'cowboys_dynamite_surprise',
             inspectionZone: 'hand' as const,
             ownerCards: {
                 hand: [makeCard('dyn-1', 'cowboys_dynamite_surprise', 'action', '0')],
@@ -30,6 +31,7 @@ describe('reaction queue: preserves inspection runtime context', () => {
         },
         {
             label: '被另一位玩家翻开牌库顶',
+            defId: 'cowboys_dynamite_surprise',
             inspectionZone: 'deck' as const,
             ownerCards: {
                 hand: [],
@@ -37,7 +39,27 @@ describe('reaction queue: preserves inspection runtime context', () => {
             },
             expectedZone: 'deck' as const,
         },
-    ])('queued onDeckInspected trigger 在 $label 时仍应保留 inspection 上下文并打出炸药惊喜', ({ inspectionZone, ownerCards, expectedZone }) => {
+        {
+            label: '被另一位玩家展示手牌（POD）',
+            defId: 'cowboys_dynamite_surprise_pod',
+            inspectionZone: 'hand' as const,
+            ownerCards: {
+                hand: [makeCard('dyn-1', 'cowboys_dynamite_surprise_pod', 'action', '0')],
+                deck: [],
+            },
+            expectedZone: 'hand' as const,
+        },
+        {
+            label: '被另一位玩家翻开牌库顶（POD）',
+            defId: 'cowboys_dynamite_surprise_pod',
+            inspectionZone: 'deck' as const,
+            ownerCards: {
+                hand: [],
+                deck: [makeCard('dyn-1', 'cowboys_dynamite_surprise_pod', 'action', '0')],
+            },
+            expectedZone: 'deck' as const,
+        },
+    ])('queued onDeckInspected trigger 在 $label 时仍应保留 inspection 上下文并打出炸药惊喜', ({ defId, inspectionZone, ownerCards, expectedZone }) => {
         const core = makeState({
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1,
@@ -55,7 +77,7 @@ describe('reaction queue: preserves inspection runtime context', () => {
         const trigger: TriggerInstance = {
             id: `queued-dynamite-${inspectionZone}`,
             timing: 'onDeckInspected',
-            sourceDefId: 'cowboys_dynamite_surprise',
+            sourceDefId: defId,
             mandatory: false,
             resolutionClass: 'optional',
             ownerPlayerId: '0',
@@ -63,7 +85,7 @@ describe('reaction queue: preserves inspection runtime context', () => {
             witnessRequirement: 'zoneCardAtTriggerTime',
             witnessed: true,
             reason: `queued_inspection_${inspectionZone}`,
-            inspectionCards: [{ uid: 'dyn-1', defId: 'cowboys_dynamite_surprise' }],
+            inspectionCards: [{ uid: 'dyn-1', defId }],
             inspectionZone,
             inspectionTargetPlayerIds: ['0'],
             inspectionCausePlayerId: '1',
@@ -113,6 +135,93 @@ describe('reaction queue: preserves inspection runtime context', () => {
             expect(responded.finalState.core.players['0'].deck.some(card => card.uid === 'dyn-1')).toBe(false);
         }
         expect(responded.finalState.core.players['0'].discard.some(card => card.uid === 'dyn-1')).toBe(true);
+        expect(responded.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy-1')).toBe(false);
+    });
+
+    it('queued onDeckInspected trigger 在同次 inspection 同时暴露两张 Dynamite Surprise 时，应按 sourceCardUid 只打出被排队的那张', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('dyn-a', 'cowboys_dynamite_surprise', 'action', '0'),
+                        makeCard('dyn-b', 'cowboys_dynamite_surprise', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [
+                makeMinion('enemy-1', 'robot_microbot_alpha', '1', 4),
+            ])],
+        });
+
+        const trigger: TriggerInstance = {
+            id: 'queued-dynamite-hand-multi-source',
+            timing: 'onDeckInspected',
+            sourceDefId: 'cowboys_dynamite_surprise',
+            sourceCardUid: 'dyn-b',
+            sourceControllerId: '0',
+            mandatory: false,
+            resolutionClass: 'optional',
+            ownerPlayerId: '0',
+            eventPlayerId: '1',
+            witnessRequirement: 'zoneCardAtTriggerTime',
+            witnessed: true,
+            reason: 'queued_inspection_same_owner_multi_source',
+            inspectionCards: [
+                { uid: 'dyn-a', defId: 'cowboys_dynamite_surprise' },
+                { uid: 'dyn-b', defId: 'cowboys_dynamite_surprise' },
+            ],
+            inspectionZone: 'hand',
+            inspectionTargetPlayerIds: ['0'],
+            inspectionCausePlayerId: '1',
+        };
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...(core as SmashUpCore),
+                triggerQueue: [trigger],
+            }),
+            defaultTestRandom,
+            1300,
+        );
+        expect(resolved).toBeDefined();
+
+        let promptState = resolved!.state;
+        const firstInteraction = getInteractionsFromMS(promptState)[0] as any;
+        if (firstInteraction?.data?.sourceId === 'smashup_reaction_choose') {
+            const option = firstInteraction.data.options.find((entry: any) => entry.value?.kind === 'trigger');
+            expect(option).toBeDefined();
+            const chosen = runCommand(
+                promptState,
+                {
+                    type: 'SYS_INTERACTION_RESPOND' as any,
+                    playerId: firstInteraction.playerId,
+                    payload: { optionId: option.id },
+                } as any,
+                defaultTestRandom,
+            );
+            promptState = chosen.finalState;
+        }
+
+        const prompt = getInteractionsFromMS(promptState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('cowboys_dynamite_surprise_seen');
+        expect(prompt?.playerId).toBe('0');
+
+        const target = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
+        expect(target).toBeDefined();
+
+        const responded = runCommand(promptState, {
+            type: 'SYS_INTERACTION_RESPOND' as any,
+            playerId: '0',
+            payload: { optionId: target.id },
+        } as any, defaultTestRandom);
+
+        expect(responded.finalState.core.players['0'].hand.some(card => card.uid === 'dyn-a')).toBe(true);
+        expect(responded.finalState.core.players['0'].hand.some(card => card.uid === 'dyn-b')).toBe(false);
+        expect(responded.finalState.core.players['0'].discard.some(card => card.uid === 'dyn-a')).toBe(false);
+        expect(responded.finalState.core.players['0'].discard.some(card => card.uid === 'dyn-b')).toBe(true);
         expect(responded.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy-1')).toBe(false);
     });
 });

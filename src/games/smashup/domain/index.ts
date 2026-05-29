@@ -1834,7 +1834,7 @@ function playerView(state: SmashUpCore, playerId: PlayerId): Partial<SmashUpCore
                 return {
                     uid: c.uid,
                     defId: 'buried_unknown',
-                    trueOwnerId: c.controllerId,
+                    trueOwnerId: c.trueOwnerId,
                     controllerId: c.controllerId,
                     buriedFrom: c.buriedFrom,
                 };
@@ -2497,8 +2497,10 @@ function postProcessSystemEvents(
                 sourceEventId: `titan-removed:${event.payload.titanUid}:${eventIndex}:${now}`,
                 frameId: `titan-removed-frame:${event.payload.titanUid}:${eventIndex}:${now}`,
                 sourceCardUid: event.payload.titanUid,
+                sourceDefId: event.payload.defId,
                 sourceBaseIndex: event.payload.fromBaseIndex,
                 sourceControllerId: event.payload.controllerId,
+                sourceOwnerPlayerId: event.payload.ownerId,
                 random,
                 now,
             }, { sourceDefIds: [event.payload.defId] });
