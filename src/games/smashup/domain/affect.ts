@@ -37,6 +37,7 @@ export interface AffectRecord {
     sourceCardUid?: string;
     sourceDefId?: string;
     sourceControllerId?: PlayerId;
+    sourceOwnerPlayerId?: PlayerId;
     sourceBaseIndex?: number;
     triggerMinion?: MinionOnBase;
     protectionTargetMinion?: MinionOnBase;
@@ -55,6 +56,7 @@ interface CardSourceMeta {
     sourceCardUid?: string;
     sourceDefId?: string;
     sourceControllerId?: PlayerId;
+    sourceOwnerPlayerId?: PlayerId;
     sourceBaseIndex?: number;
 }
 
@@ -115,6 +117,7 @@ function resolveSourceMeta(
             ?? defaultSourceDefId
             ?? normalizeReasonToSourceDefId(payload.reason as string | undefined),
         sourceControllerId: payload.sourceControllerId as PlayerId | undefined,
+        sourceOwnerPlayerId: payload.sourceOwnerPlayerId as PlayerId | undefined,
         sourceBaseIndex: payload.sourceBaseIndex as number | undefined,
     };
 }
@@ -137,6 +140,7 @@ function buildMinionAffectRecord(
         sourceCardUid: source.sourceCardUid,
         sourceDefId: source.sourceDefId,
         sourceControllerId: source.sourceControllerId,
+        sourceOwnerPlayerId: source.sourceOwnerPlayerId,
         sourceBaseIndex: source.sourceBaseIndex,
         triggerMinion: minion,
         triggerMinionUid: minion.uid,
@@ -161,6 +165,7 @@ function buildInPlayCardAffectRecord(
         sourceCardUid: source.sourceCardUid,
         sourceDefId: source.sourceDefId,
         sourceControllerId: source.sourceControllerId,
+        sourceOwnerPlayerId: source.sourceOwnerPlayerId,
         sourceBaseIndex: source.sourceBaseIndex,
         triggerCardUid: lookup.targetKind === 'ongoing' ? lookup.ongoing.uid : lookup.action.uid,
         triggerCardDefId: lookup.targetKind === 'ongoing' ? lookup.ongoing.defId : lookup.action.defId,
@@ -236,16 +241,18 @@ export function buildAffectRecords(
             if (payload.targetType !== 'minion' || !payload.targetMinionUid) return [];
             const minion = core.bases[payload.targetBaseIndex]?.minions.find(candidate => candidate.uid === payload.targetMinionUid);
             if (!minion) return [];
+            const sourcePlayerId = payload.sourcePlayerId ?? payload.ownerId;
             return [buildMinionAffectRecord(
                 minion,
                 payload.targetBaseIndex,
                 'attach_action',
                 undefined,
                 {
-                    sourcePlayerId: payload.ownerId,
+                    sourcePlayerId,
                     sourceCardUid: payload.cardUid,
                     sourceDefId: payload.defId,
-                    sourceControllerId: payload.ownerId,
+                    sourceControllerId: sourcePlayerId,
+                    sourceOwnerPlayerId: payload.ownerId,
                     sourceBaseIndex: payload.targetBaseIndex,
                 },
             )];

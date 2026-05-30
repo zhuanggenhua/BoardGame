@@ -11,10 +11,7 @@ async function openScene(game: any): Promise<void> {
 
 async function dismissRevealOverlay(page: any): Promise<void> {
     const overlay = page.getByTestId('reveal-overlay');
-    await overlay.click({
-        force: true,
-        position: { x: 16, y: 16 },
-    });
+    await page.getByTestId('reveal-dismiss-btn').click({ force: true });
     await expect(overlay).toBeHidden({ timeout: 3000 });
 }
 
@@ -40,7 +37,7 @@ test.describe('印斯茅斯“本地人”展示功能（简化版）', () => {
 
         await game.playCard('innsmouth_the_locals', { targetBaseIndex: 0 });
         await expect(page.getByTestId('reveal-overlay')).toBeVisible({ timeout: 5000 });
-        await expect(page.locator('[data-testid="reveal-overlay"] [data-card-preview]')).toHaveCount(3);
+        await expect(page.locator('[data-testid="reveal-overlay"] [data-testid="reveal-card"]')).toHaveCount(3);
         await game.screenshot('innsmouth-locals-reveal', testInfo);
 
         await dismissRevealOverlay(page);

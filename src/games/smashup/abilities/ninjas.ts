@@ -609,7 +609,14 @@ const ninjaAcolyteSpecialProgram = createEffectProgram<AbilityContext, AbilityCo
     const events: SmashUpEvent[] = limitEvt ? [limitEvt] : [];
     events.push({
         type: SU_EVENTS.MINION_RETURNED,
-        payload: { minionUid: ctx.cardUid, minionDefId: 'ninja_acolyte', fromBaseIndex: ctx.baseIndex, toPlayerId: ctx.playerId, reason: 'ninja_acolyte' },
+        payload: {
+            minionUid: ctx.cardUid,
+            minionDefId: 'ninja_acolyte',
+            fromBaseIndex: ctx.baseIndex,
+            toPlayerId: ctx.playerId,
+            sourcePlayerId: ctx.playerId,
+            reason: 'ninja_acolyte',
+        },
         timestamp: ctx.now,
     } as MinionReturnedEvent);
     const acolyteDef = getCardDef('ninja_acolyte') as MinionCardDef | undefined;
@@ -648,6 +655,7 @@ const ninjaAcolytePodTalentProgram = createEffectProgram<AbilityContext, Ability
             minionDefId: 'ninja_acolyte_pod',
             fromBaseIndex: ctx.baseIndex,
             toPlayerId: ctx.playerId,
+            sourcePlayerId: ctx.playerId,
             reason: 'ninja_acolyte_pod',
         },
         timestamp: ctx.now,
@@ -729,6 +737,7 @@ function buildNinjaDisguiseReturnEvents(
     state: AbilityContext['state'],
     baseIndex: number,
     selectedMinionUids: string[],
+    sourcePlayerId: PlayerId,
     timestamp: number,
 ): MinionReturnedEvent[] {
     const base = state.bases[baseIndex];
@@ -745,6 +754,7 @@ function buildNinjaDisguiseReturnEvents(
                 minionDefId: minion.defId,
                 fromBaseIndex: baseIndex,
                 toPlayerId: minion.owner,
+                sourcePlayerId,
                 reason: 'ninja_disguise',
             },
             timestamp,
@@ -899,6 +909,14 @@ const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext,
         if (!selected?.cardUid || !selected.defId || selected.power === undefined) {
             return { events: [], matchState: state };
         }
+        const selectedCard = state.core.players[playerId]?.hand.find((card) =>
+            card.uid === selected.cardUid
+            && card.defId === selected.defId
+            && card.type === 'minion',
+        );
+        if (!selectedCard) {
+            return { events: [], matchState: state };
+        }
 
         const base = state.core.bases[context.baseIndex];
         if (!base) {
@@ -909,8 +927,9 @@ const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext,
             type: SU_EVENTS.MINION_PLAYED,
             payload: {
                 playerId,
-                cardUid: selected.cardUid,
-                defId: selected.defId,
+                cardUid: selectedCard.uid,
+                defId: selectedCard.defId,
+                ownerId: selectedCard.owner,
                 baseIndex: context.baseIndex,
                 baseDefId: base.defId,
                 power: selected.power,
@@ -950,6 +969,7 @@ const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext,
                 state.core,
                 context.baseIndex,
                 context.selectedMinionUids,
+                playerId,
                 timestamp,
             ),
         );
@@ -1025,21 +1045,47 @@ function registerNinjaOngoingEffects(): void {
     // 烟幕弹是 ongoingTarget: 'minion'，附着在随从的 attachedActions 上
     // 卡牌描述："该随从不会受到其他玩家战术的影响" → 保护被附着的随从
     registerProtection('ninja_smoke_bomb', 'action', (ctx) => {
-        // 检查目标随从是否附着了烟幕弹，且来源是对手
-        const bomb = ctx.targetMinion.attachedActions.find(a => matchesDefId(a.defId, 'ninja_smoke_bomb'));
-        if (!bomb) return false;
-        return ctx.sourcePlayerId !== bomb.ownerId;
+        return ctx.targetMinion.attachedActions.some((bomb) => {
+            if (!matchesDefId(bomb.defId, 'ninja_smoke_bomb')) return false;
+            const controllerId = (bomb.metadata?.sourceControllerId as PlayerId | undefined) ?? bomb.ownerId;
+            return ctx.sourcePlayerId !== controllerId;
+        });
     });
 
     // 烟雾弹：拥有者回合开始时自毁
     // 烟幕弹附着在随从的 attachedActions 上，不在 base.ongoingActions 上
     registerTrigger('ninja_smoke_bomb', 'onTurnStart', (trigCtx) => {
+        if (trigCtx.sourceCardUid) {
+            for (const base of trigCtx.state.bases) {
+                for (const m of base.minions) {
+                    const attached = m.attachedActions.find((candidate) =>
+                        candidate.uid === trigCtx.sourceCardUid && matchesDefId(candidate.defId, 'ninja_smoke_bomb'),
+                    );
+                    if (!attached) continue;
+                    const controllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
+                    if (controllerId !== trigCtx.playerId) return [];
+                    return [{
+                        type: SU_EVENTS.ONGOING_DETACHED,
+                        payload: {
+                            cardUid: attached.uid,
+                            defId: attached.defId,
+                            ownerId: attached.ownerId,
+                            reason: 'ninja_smoke_bomb_self_destruct',
+                        },
+                        timestamp: trigCtx.now,
+                    }];
+                }
+            }
+            return [];
+        }
+
         const events: SmashUpEvent[] = [];
         for (const base of trigCtx.state.bases) {
             for (const m of base.minions) {
                 for (const attached of m.attachedActions) {
                     if (!matchesDefId(attached.defId, 'ninja_smoke_bomb')) continue;
-                    if (attached.ownerId !== trigCtx.playerId) continue;
+                    const controllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
+                    if (controllerId !== trigCtx.playerId) continue;
                     events.push({
                         type: SU_EVENTS.ONGOING_DETACHED,
                         payload: {
@@ -1055,20 +1101,56 @@ function registerNinjaOngoingEffects(): void {
         }
         return events;
     }, {
-    }, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
 
     // 暗杀：回合结束时消灭目标随从（附着在随从上）
     // 注意：只在暗杀卡拥有者的回合结束时触发
     registerTrigger('ninja_assassination', 'onTurnEnd', (trigCtx) => {
+        if (trigCtx.sourceCardUid) {
+            for (let i = 0; i < trigCtx.state.bases.length; i++) {
+                const base = trigCtx.state.bases[i];
+                for (const m of base.minions) {
+                    const assassinationCard = m.attachedActions.find((a) =>
+                        a.uid === trigCtx.sourceCardUid
+                        && matchesDefId(a.defId, 'ninja_assassination')
+                    );
+                    if (!assassinationCard) continue;
+                    const controllerId = (assassinationCard.metadata?.sourceControllerId as PlayerId | undefined) ?? assassinationCard.ownerId;
+                    if (controllerId !== trigCtx.playerId) return [];
+                    return [{
+                        type: SU_EVENTS.MINION_DESTROYED,
+                        payload: {
+                            minionUid: m.uid,
+                            minionDefId: m.defId,
+                            fromBaseIndex: i,
+                            ownerId: m.owner,
+                            controllerId: m.controller,
+                            destroyerId: controllerId,
+                            reason: 'ninja_assassination',
+                        },
+                        timestamp: trigCtx.now,
+                    }];
+                }
+            }
+            return [];
+        }
+
         const events: SmashUpEvent[] = [];
         // 查找所有附着了 assassination 的随从
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             const base = trigCtx.state.bases[i];
             for (const m of base.minions) {
-                const assassinationCard = m.attachedActions.find(a => matchesDefId(a.defId, 'ninja_assassination'));
-                // 只在暗杀卡拥有者的回合结束时触发
-                if (assassinationCard && assassinationCard.ownerId === trigCtx.playerId) {
+                const assassinationCard = m.attachedActions.find((a) =>
+                    matchesDefId(a.defId, 'ninja_assassination')
+                    && (((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === trigCtx.playerId),
+                );
+                // 只在当前回合玩家拥有/控制的那张暗杀上触发，不被宿主上的第一张同名来源抢走
+                const controllerId = assassinationCard
+                    ? ((assassinationCard.metadata?.sourceControllerId as PlayerId | undefined) ?? assassinationCard.ownerId)
+                    : undefined;
+                if (assassinationCard && controllerId === trigCtx.playerId) {
                     events.push({
                         type: SU_EVENTS.MINION_DESTROYED,
                         payload: {
@@ -1076,7 +1158,8 @@ function registerNinjaOngoingEffects(): void {
                             minionDefId: m.defId,
                             fromBaseIndex: i,
                             ownerId: m.owner,
-                            destroyerId: assassinationCard.ownerId, // 暗杀卡的拥有者是消灭者
+                            controllerId: m.controller,
+                            destroyerId: controllerId,
                             reason: 'ninja_assassination',
                         },
                         timestamp: trigCtx.now,
@@ -1086,7 +1169,7 @@ function registerNinjaOngoingEffects(): void {
         }
         return events;
     }, {
-    }, {
+        playerContext: 'sourceController',
     });
 
     // 渗透：附着此卡的随从不受基地能力影响（广义保护）?
@@ -1096,12 +1179,37 @@ function registerNinjaOngoingEffects(): void {
     });
     // 渗透：拥有者下回合开始时自毁
     registerTrigger('ninja_infiltrate', 'onTurnStart', (trigCtx) => {
+        if (trigCtx.sourceCardUid) {
+            for (let i = 0; i < trigCtx.state.bases.length; i++) {
+                for (const m of trigCtx.state.bases[i].minions) {
+                    const attached = m.attachedActions.find((candidate) =>
+                        candidate.uid === trigCtx.sourceCardUid && candidate.defId === 'ninja_infiltrate',
+                    );
+                    if (!attached) continue;
+                    const controllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
+                    if (controllerId !== trigCtx.playerId) return [];
+                    return [{
+                        type: SU_EVENTS.ONGOING_DETACHED,
+                        payload: {
+                            cardUid: attached.uid,
+                            defId: attached.defId,
+                            ownerId: attached.ownerId,
+                            reason: 'ninja_infiltrate_expired',
+                        },
+                        timestamp: trigCtx.now,
+                    }];
+                }
+            }
+            return [];
+        }
+
         const events: SmashUpEvent[] = [];
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             for (const m of trigCtx.state.bases[i].minions) {
                 for (const a of m.attachedActions) {
                     if (a.defId !== 'ninja_infiltrate') continue;
-                    if (a.ownerId !== trigCtx.playerId) continue;
+                    const controllerId = (a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId;
+                    if (controllerId !== trigCtx.playerId) continue;
                     events.push({
                         type: SU_EVENTS.ONGOING_DETACHED,
                         payload: {
@@ -1117,7 +1225,8 @@ function registerNinjaOngoingEffects(): void {
         }
         return events;
     }, {
-    }, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
 }
 

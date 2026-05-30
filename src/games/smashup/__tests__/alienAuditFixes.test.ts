@@ -297,6 +297,42 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     });
   });
 
+  it('alien_terraform: 第三步额外打出借来的手牌随从时应保留真实 owner', () => {
+    const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('tf1', 'alien_terraform', 'action', '0'), makeCard('borrowed', 'alien_invader', 'minion', '1')] }),
+        '1': makePlayer('1'),
+      },
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })])],
+      baseDeck: ['base_new', 'base_alt'],
+    });
+
+    const played = execPlayAction(core, '0', 'tf1', 0);
+    const step1Current = (played.matchState.sys as any).interaction?.current;
+    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
+    expect(replacementOption).toBeDefined();
+
+    const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
+    const step2Current = (step2.finalState.sys as any).interaction?.current;
+    const minionOption = step2Current?.data?.options?.find((entry: any) => entry.value?.cardUid === 'borrowed');
+    expect(minionOption).toBeDefined();
+
+    const step3 = respondInteraction(step2.finalState, '0', minionOption.id);
+    const minionPlayed = step3.events.find(e => e.type === SU_EVENTS.MINION_PLAYED);
+    expect((minionPlayed as any)?.payload).toMatchObject({
+      playerId: '0',
+      cardUid: 'borrowed',
+      defId: 'alien_invader',
+      ownerId: '1',
+      baseIndex: 0,
+      reason: 'alien_terraform',
+    });
+    expect(step3.finalState.core.bases[0]?.minions.find(minion => minion.uid === 'borrowed')).toMatchObject({
+      controller: '0',
+      owner: '1',
+    });
+  });
+
   it('alien_terraform: 第三步允许选择可视作随从打出的 set-aside 泰坦', () => {
     const tricksterTitan: TitanState = {
       uid: 't1',
@@ -340,6 +376,56 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       baseIndex: 0,
       baseDefId: 'base_new',
       reason: 'alien_terraform',
+    });
+  });
+
+  it('alien_terraform: 第三步应允许当前控制者打出 borrowed set-aside 泰坦', () => {
+    const borrowedTitan: TitanState = {
+      uid: 'borrowed-titan',
+      defId: 'tricksters_big_funny_giant',
+      faction: 'tricksters',
+      ownerId: '1',
+      controllerId: '0',
+      powerCounters: 0,
+      talentUsed: false,
+      location: { zone: 'setaside' },
+    };
+    const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('tf1', 'alien_terraform', 'action', '0'), makeCard('h1', 'alien_invader', 'minion', '0')] }),
+        '1': makePlayer('1'),
+      },
+      titans: [borrowedTitan],
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })])],
+      baseDeck: ['base_new', 'base_alt'],
+    });
+
+    const played = execPlayAction(core, '0', 'tf1', 0);
+    const step1Current = (played.matchState.sys as any).interaction?.current;
+    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
+    expect(replacementOption).toBeDefined();
+
+    const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
+    const step2Current = (step2.finalState.sys as any).interaction?.current;
+    const titanOption = step2Current?.data?.options?.find((opt: any) => opt.value?.titanUid === 'borrowed-titan');
+    expect(titanOption).toBeDefined();
+
+    const step3 = respondInteraction(step2.finalState, '0', titanOption.id);
+    const titanPlayed = step3.events.find(e => e.type === SU_EVENTS.TITAN_PLAYED);
+    expect(titanPlayed).toBeDefined();
+    expect((titanPlayed as any).payload).toMatchObject({
+      titanUid: 'borrowed-titan',
+      defId: 'tricksters_big_funny_giant',
+      ownerId: '1',
+      controllerId: '0',
+      baseIndex: 0,
+      baseDefId: 'base_new',
+      reason: 'alien_terraform',
+    });
+    expect((step3.finalState.core.titans ?? []).find(titan => titan.uid === 'borrowed-titan')).toMatchObject({
+      ownerId: '1',
+      controllerId: '0',
+      location: { zone: 'base', baseIndex: 0 },
     });
   });
 

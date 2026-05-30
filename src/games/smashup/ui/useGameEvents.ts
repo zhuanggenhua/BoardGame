@@ -52,6 +52,22 @@ interface UseGameEventsParams {
   playerNames?: Record<string, string>;
 }
 
+function isImmediateExtraPromptFamilyActive(
+  G: MatchState<SmashUpCore>,
+  playerId: string,
+  limitType: 'minion' | 'action',
+): boolean {
+  const current = G.sys.interaction?.current;
+  if (current?.playerId !== playerId) return false;
+  const sourceId = current?.data?.sourceId;
+  if (typeof sourceId !== 'string') return false;
+
+  const familyPrefix = limitType === 'minion'
+    ? 'smashup_immediate_extra_minion'
+    : 'smashup_immediate_extra_action';
+  return sourceId === familyPrefix || sourceId.startsWith(`${familyPrefix}_`);
+}
+
 export function useGameEvents({ G, myPlayerId, fxBus, baseRefs, playerNames }: UseGameEventsParams) {
   const entries = getEventStreamEntries(G);
   const { consumeNew } = useEventStreamCursor({ entries });
@@ -89,6 +105,7 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs, playerNames }: U
   useEffect(() => {
     const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
 
+    // Undo 回退 / reconnect-resync 乐观回滚：清空本地 feedback，避免旧 toast 残留或重播。
     // Undo 回退 / reconnect-resync 乐观回滚：清空本地反馈，避免旧 toast 残留或重播。
     if (didReset || didOptimisticRollback) {
       setFeedbacks([]);
@@ -200,8 +217,16 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs, playerNames }: U
             payload.sameNameDefId === undefined;
           const isWaitingForOwnInteraction =
             G.sys.interaction?.current?.playerId === payload.playerId;
+          const shouldSuppressDeferredGrantFeedback =
+            isWaitingForOwnInteraction &&
+            isImmediateExtraPromptFamilyActive(G, payload.playerId, payload.limitType);
 
-          if (payload.delta > 0 && payload.playerId === myPlayerId && isUnrestricted) {
+          if (
+            payload.delta > 0 &&
+            payload.playerId === myPlayerId &&
+            isUnrestricted &&
+            !shouldSuppressDeferredGrantFeedback
+          ) {
             setFeedbacks(prev => [...prev, {
               id: `fb-${uidCounter++}`,
               playerId: payload.playerId,

@@ -9,7 +9,10 @@ import {
   registerInteractionHandler,
   getInteractionHandler,
   clearInteractionHandlers,
+  getRegisteredInteractionHandlerIds,
+  registerPodInteractionAliases,
 } from '../domain/abilityInteractionHandlers';
+import { registerAbilityRuntimePrompt } from '../domain/abilityRuntime';
 
 describe('SmashUp 交互处理函数注册表', () => {
   beforeEach(() => {
@@ -63,47 +66,98 @@ describe('SmashUp 交互处理函数注册表', () => {
       expect(getInteractionHandler('ability_1')).toBeUndefined();
       expect(getInteractionHandler('ability_2')).toBeUndefined();
     });
+
+    it('POD interaction alias 不应给已是 POD 专用的子 handler 再追加一层 _pod', () => {
+      const baseChooseHandler = () => ({ events: [] });
+      const podChooseHandler = () => ({ events: [] });
+
+      registerInteractionHandler('alias_card_choose_base', baseChooseHandler);
+      registerInteractionHandler('alias_card_pod_choose_base', podChooseHandler);
+
+      registerPodInteractionAliases();
+
+      const ids = getRegisteredInteractionHandlerIds();
+      expect(getInteractionHandler('alias_card_choose_base_pod')).toBe(baseChooseHandler);
+      expect(ids.has('alias_card_choose_base_pod')).toBe(false);
+      expect(ids.has('alias_card_pod_choose_base')).toBe(true);
+      expect(getInteractionHandler('alias_card_pod_choose_base_pod')).toBeUndefined();
+      expect(ids.has('alias_card_pod_choose_base_pod')).toBe(false);
+    });
+
+    it('getRegisteredInteractionHandlerIds 不应暴露无实体的自动 _pod interaction handler id', () => {
+      const handler = () => ({ events: [] });
+
+      registerInteractionHandler('helper_choose_base', handler);
+      registerPodInteractionAliases();
+
+      const ids = getRegisteredInteractionHandlerIds();
+      expect(getInteractionHandler('helper_choose_base_pod')).toBe(handler);
+      expect(ids.has('helper_choose_base_pod')).toBe(false);
+    });
+
+    it('runtime prompt source 应通过 registry bridge 暴露，但不应伪装成业务 source 的普通 handler', () => {
+      const runtimeHandler = () => ({
+        state: { core: {} as any, sys: {} as any },
+        events: [{ type: 'runtime:bridge' } as any],
+      });
+
+      registerAbilityRuntimePrompt('runtime_bridge_test_prompt', runtimeHandler);
+
+      const ids = getRegisteredInteractionHandlerIds();
+      expect(ids.has('runtime_bridge_test_prompt')).toBe(true);
+      expect(getInteractionHandler('runtime_bridge_test_prompt')).toBeDefined();
+      expect(getInteractionHandler('runtime_bridge_test_business_source')).toBeUndefined();
+    });
   });
 
   describe('处理函数签名验证', () => {
     it('处理函数接收正确的参数', () => {
-      let receivedArgs: any = null;
+      let receivedArgs: any[] | null = null;
 
-      const handler = (args: any) => {
+      const handler = (...args: any[]) => {
         receivedArgs = args;
-        return { events: [] };
+        return { state: { core: {}, sys: {} }, events: [] };
       };
 
       registerInteractionHandler('test_ability', handler);
 
       const found = getInteractionHandler('test_ability');
-      const testArgs = {
-        state: { core: {}, sys: {} },
-        optionId: 'option-1',
-        sourceId: 'test_ability',
-      };
+      const matchState = { core: {}, sys: {} } as any;
+      const interactionData = { sourceId: 'test_ability', optionId: 'option-1' };
+      const random = { random: () => 0.5, d: () => 1, range: (min: number) => min, shuffle: <T>(items: T[]) => items };
 
-      found?.(testArgs);
+      found?.(matchState, '0', { chosen: 'yes' }, interactionData, random, 123);
 
-      expect(receivedArgs).toEqual(testArgs);
+      expect(receivedArgs).toEqual([
+        matchState,
+        '0',
+        { chosen: 'yes' },
+        interactionData,
+        random,
+        123,
+      ]);
     });
 
     it('处理函数返回正确的结果格式', () => {
       const handler = () => ({
         events: [{ type: 'test:event', payload: {} }],
-        matchState: { core: {}, sys: {} },
+        state: { core: {}, sys: {} },
       });
 
       registerInteractionHandler('test_ability', handler);
 
       const found = getInteractionHandler('test_ability');
-      const result = found?.({
-        state: { core: {}, sys: {} },
-        optionId: 'option-1',
-        sourceId: 'test_ability',
-      });
+      const result = found?.(
+        { core: {}, sys: {} } as any,
+        '0',
+        { chosen: 'yes' },
+        { sourceId: 'test_ability', optionId: 'option-1' },
+        { random: () => 0.5, d: () => 1, range: (min: number) => min, shuffle: <T>(items: T[]) => items },
+        123,
+      );
 
       expect(result).toHaveProperty('events');
+      expect(result).toHaveProperty('state');
       expect(Array.isArray(result?.events)).toBe(true);
     });
   });

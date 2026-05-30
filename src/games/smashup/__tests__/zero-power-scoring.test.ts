@@ -132,6 +132,44 @@ describe('战力为0但有随从的玩家应该参与计分', () => {
         expect(result.steps[0]?.events).toContain('su:base_scored');
     });
 
+    it('只有 borrowed ongoing 卡力量贡献（无随从）的控制者也应该参与计分', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_great_library', // breakpoint=22, vpAwards=[4,2,1]
+                    minions: [
+                        { uid: 'borrowed-score-host', defId: 'wizard_archmage', controller: '1', owner: '1', basePower: 5, powerCounters: 17, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] }, // 22
+                    ],
+                    ongoingActions: [
+                        { uid: 'borrowed-score-ongoing', defId: 'vampire_summon_wolves', ownerId: '1', talentUsed: false, metadata: { powerCounters: 5, sourceControllerId: '0' } },
+                    ],
+                },
+            ],
+        });
+
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => ({ core, sys: { ...createInitialSystemState(PLAYER_IDS, systems), phase: 'playCards' } }),
+        });
+
+        const result = runner.run({
+            name: 'borrowed ongoing 卡力量贡献参与计分',
+            commands: [
+                { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
+            ] as any[],
+        });
+
+        expect(result.steps[0]?.success).toBe(true);
+
+        const finalCore = result.finalState.core;
+        expect(finalCore.players['1'].vp).toBe(4); // 第1名（22分）
+        expect(finalCore.players['0'].vp).toBe(2); // 第2名（5分，来自 borrowed ongoing）
+        expect(finalCore.players['2'].vp).toBe(0);
+        expect(result.steps[0]?.events).toContain('su:base_scored');
+    });
+
     it('无随从且无力量的玩家不应该参与计分', () => {
         // 场景：P0 有随从，P1 和 P2 无随从且无力量
         // 预期：只有 P0 参与计分

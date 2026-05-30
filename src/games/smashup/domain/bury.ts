@@ -15,7 +15,7 @@ import type { AbilityContext } from './abilityRegistry';
 import { buildActionPlayedEvent } from './actionPlayEvent';
 import { collectTriggers } from './ongoingEffects';
 import { buildMinionTargetOptions } from './abilityHelpers';
-import { triggerBaseAbility } from './baseAbilities';
+import { reduce } from './reducer';
 
 type UncoverChoiceValue = { cardUid: string; baseIndex: number } | { skip: true };
 
@@ -63,6 +63,17 @@ function requireUncoveredActionExecutor(
         return requireOnPlay(defId, 'bury.executeUncoveredAction');
     }
     return requireOnPlay(defId, 'bury.executeUncoveredAction');
+}
+
+function previewEventsOnMatchState(
+    matchState: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    if (events.length === 0) return matchState;
+    return {
+        ...matchState,
+        core: events.reduce((core, event) => reduce(core, event), matchState.core),
+    };
 }
 
 type BuildBuriedCardReturnedToHandEventParams = {
@@ -201,6 +212,7 @@ export function uncoverBuriedCard(params: UncoverBuriedCardParams): {
                 playerId,
                 cardUid,
                 defId: buried.defId,
+                ownerId: buried.trueOwnerId,
                 baseIndex,
                 baseDefId: base.defId,
                 power: (def as any).power ?? 0,
@@ -253,13 +265,7 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
     const actionDef = getCardDef(buried.defId) as any;
     if (!actionDef || actionDef.type !== 'action') return { state: matchState, events: [], discardWithoutPlay: true };
 
-    const playedEvt: ActionPlayedEvent = {
-        type: SU_EVENTS.ACTION_PLAYED,
-        payload: { playerId, cardUid: buried.uid, defId: buried.defId, isExtraAction: true, fromBuried: true },
-        timestamp: now,
-    };
-
-    const events: SmashUpEvent[] = [playedEvt];
+    const events: SmashUpEvent[] = [];
     let currentState = matchState;
     const subtype = actionDef.subtype as string;
     const isOngoing = subtype === 'ongoing';
@@ -275,7 +281,8 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
                 payload: {
                     cardUid: buried.uid,
                     defId: buried.defId,
-                    ownerId: playerId,
+                    ownerId: buried.trueOwnerId,
+                    ...(buried.trueOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
                     targetType: 'base',
                     targetBaseIndex: baseIndex,
                 },
@@ -335,7 +342,8 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
                 payload: {
                     cardUid: buried.uid,
                     defId: buried.defId,
-                    ownerId: playerId,
+                    ownerId: buried.trueOwnerId,
+                    ...(buried.trueOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
                     targetType: 'minion',
                     targetBaseIndex: resolvedActionTargetBaseIndex,
                     targetMinionUid: resolvedActionTargetMinionUid,
@@ -345,13 +353,26 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
         }
     }
 
+    events.unshift(buildActionPlayedEvent({
+        playerId,
+        cardUid: buried.uid,
+        defId: buried.defId,
+        ownerId: buried.trueOwnerId,
+        isExtraAction: true,
+        fromBuried: true,
+        targetBaseIndex: isOngoing ? resolvedActionTargetBaseIndex : targetBaseIndex,
+        targetMinionUid: isOngoing ? resolvedActionTargetMinionUid : targetMinionUid,
+        timestamp: now,
+    }));
+
     if (subtype !== 'ongoing' || resolveOnPlay(buried.defId)) {
         const executor = subtype === 'ongoing'
             ? requireOnPlay(buried.defId, 'bury.executeUncoveredAction.ongoing')
             : requireUncoveredActionExecutor(buried.defId, subtype);
+        const previewState = previewEventsOnMatchState(currentState, events);
         const ctx: AbilityContext = {
-            state: currentState.core,
-            matchState: currentState,
+            state: previewState.core,
+            matchState: previewState,
             playerId,
             cardUid: buried.uid,
             defId: buried.defId,
@@ -362,24 +383,8 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
         };
         const result = executor(ctx);
         events.push(...result.events);
-        if (result.matchState) currentState = result.matchState;
+        if (result.matchState) currentState = previewEventsOnMatchState(result.matchState, result.events);
     }
-
-    const resolvedBase = currentState.core.bases[resolvedActionTargetBaseIndex] ?? base;
-    const baseAbilityResult = triggerBaseAbility(resolvedBase.defId, 'onActionPlayed', {
-        state: currentState.core,
-        matchState: currentState,
-        random,
-        baseIndex: resolvedActionTargetBaseIndex,
-        baseDefId: resolvedBase.defId,
-        playerId,
-        actionTargetBaseIndex: resolvedActionTargetBaseIndex,
-        actionTargetType: resolvedActionTargetMinionUid ? 'minion' : 'base',
-        actionTargetMinionUid: resolvedActionTargetMinionUid,
-        now,
-    });
-    events.push(...baseAbilityResult.events);
-    if (baseAbilityResult.matchState) currentState = baseAbilityResult.matchState;
 
     return { state: currentState, events };
 }
@@ -430,7 +435,8 @@ const handleUncoverOngoingPickTargetMinion: InteractionHandler = (state, playerI
         payload: {
             cardUid: ctx.cardUid,
             defId: ctx.defId,
-            ownerId: playerId,
+            ownerId: buried.trueOwnerId,
+            ...(buried.trueOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
             targetType: 'minion',
             targetBaseIndex,
             targetMinionUid,
@@ -443,6 +449,7 @@ const handleUncoverOngoingPickTargetMinion: InteractionHandler = (state, playerI
             playerId,
             cardUid: ctx.cardUid,
             defId: ctx.defId,
+            ownerId: buried.trueOwnerId,
             isExtraAction: true,
             fromBuried: true,
             targetBaseIndex,
@@ -455,9 +462,10 @@ const handleUncoverOngoingPickTargetMinion: InteractionHandler = (state, playerI
     let currentState = state;
     const executor = resolveOnPlay(ctx.defId);
     if (executor) {
+        const previewState = previewEventsOnMatchState(currentState, events);
         const abilityCtx: AbilityContext = {
-            state: currentState.core,
-            matchState: currentState,
+            state: previewState.core,
+            matchState: previewState,
             playerId,
             cardUid: ctx.cardUid,
             defId: ctx.defId,
@@ -469,27 +477,7 @@ const handleUncoverOngoingPickTargetMinion: InteractionHandler = (state, playerI
         const result = executor(abilityCtx);
         events.push(...result.events);
         if (result.matchState) {
-            currentState = result.matchState;
-        }
-    }
-
-    const resolvedBase = currentState.core.bases[targetBaseIndex] ?? currentState.core.bases[ctx.baseIndex];
-    if (resolvedBase) {
-        const baseAbilityResult = triggerBaseAbility(resolvedBase.defId, 'onActionPlayed', {
-            state: currentState.core,
-            matchState: currentState,
-            random,
-            baseIndex: targetBaseIndex,
-            baseDefId: resolvedBase.defId,
-            playerId,
-            actionTargetBaseIndex: targetBaseIndex,
-            actionTargetType: 'minion',
-            actionTargetMinionUid: targetMinionUid,
-            now,
-        });
-        events.push(...baseAbilityResult.events);
-        if (baseAbilityResult.matchState) {
-            return { state: baseAbilityResult.matchState, events };
+            currentState = previewEventsOnMatchState(result.matchState, result.events);
         }
     }
 

@@ -188,7 +188,14 @@ function isOptionalChoiceText(effectText: string): boolean {
 
 /** 收集所有已注册的 ongoing 效果 ID（合并所有注册表） */
 function collectAllRegisteredIds(): Set<string> {
-    const { protectionIds, restrictionIds, triggerIds, interceptorIds, baseAbilitySuppressionIds } = getRegisteredOngoingEffectIds();
+    const {
+        protectionIds,
+        restrictionIds,
+        triggerIds,
+        interceptorIds,
+        baseAbilitySuppressionIds,
+        baseScoringSuppressionIds,
+    } = getRegisteredOngoingEffectIds();
     const { powerModifierIds, breakpointModifierIds } = getRegisteredModifierIds();
     const abilityKeys = getRegisteredAbilityKeys();
     const all = new Set<string>();
@@ -197,6 +204,7 @@ function collectAllRegisteredIds(): Set<string> {
     for (const id of triggerIds.keys()) all.add(id);
     for (const id of interceptorIds) all.add(id);
     for (const id of baseAbilitySuppressionIds) all.add(id);
+    for (const id of baseScoringSuppressionIds) all.add(id);
     for (const id of powerModifierIds) all.add(id);
     for (const id of breakpointModifierIds) all.add(id);
     for (const key of abilityKeys) all.add(key.split('::')[0]);
@@ -262,6 +270,7 @@ describe('SmashUp 能力行为审计', () => {
                 'mega_troopers.ts',
                 'skeletons.ts',
                 'titans.ts',
+                'yuanhou.ts',
             ];
             expect(collectAbilityFileUsage(/\bregisterInteractionHandler\(/g)).toEqual(allowedLegacyHandlerFiles);
         });

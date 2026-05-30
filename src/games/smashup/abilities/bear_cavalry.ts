@@ -69,6 +69,7 @@ type BearCavalryGeneralIvanPromptContext = BearCavalryPromptContext & {
 
 type BearCavalryHighGroundPromptContext = BearCavalryPromptContext & {
     ongoingUid: string;
+    ongoingOwnerId: string;
     minionUid: string;
     minionDefId: string;
     baseIndex: number;
@@ -140,6 +141,8 @@ export function registerBearCavalryAbilities(): void {
     registerAbility('bear_cavalry_bear_cavalry_pod', 'onPlay', bearCavalryBearCavalryPodAbility);
     // 幼熊斥候 POD：响应式消灭
     registerTrigger('bear_cavalry_cub_scout_pod', 'onMinionMoved', bearCavalryCubScoutPodTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
     // 黑熊擒抱 POD：全局最弱消灭（与原版相同，已在上方注册）
     // 你们已经完蛋 POD：降低临界点并提供 +2 力量
@@ -147,6 +150,8 @@ export function registerBearCavalryAbilities(): void {
     // 黑熊口粮 POD：压制天赋 + 回合开始自毁
     registerAbility('bear_cavalry_bear_necessities_pod', 'talent', bearCavalryBearNecessitiesPodTalent);
     registerTrigger('bear_cavalry_bear_necessities_pod', 'onTurnStart', bearCavalryBearNecessitiesPodTurnStart, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
     // 你们都是美食 POD: 批量移动（与原版相同，已在上方注册）
     // 与熊同行 POD: 移动 + 压制能力
@@ -174,6 +179,7 @@ export function registerBearCavalryAbilities(): void {
     });
     // 制高点 POD：响应式消灭并抽牌
     registerTrigger('bear_cavalry_high_ground_pod', 'onMinionMoved', bearCavalryHighGroundPodTrigger, {
+        playerContext: 'sourceController',
     });
 }
 
@@ -200,7 +206,8 @@ function collectBearNecessitiesTargets(state: AbilityContext['state'], playerId:
                 });
             }
             for (const a of m.attachedActions) {
-                if (a.ownerId !== playerId) {
+                const attachedControllerId = a.metadata?.sourceControllerId ?? a.ownerId;
+                if (attachedControllerId !== playerId) {
                     const def = getCardDef(a.defId);
                     const name = def?.name ?? a.defId;
                     actionTargets.push({ uid: a.uid, defId: a.defId, ownerId: a.ownerId, label: `[行动] ${name}` });
@@ -209,7 +216,8 @@ function collectBearNecessitiesTargets(state: AbilityContext['state'], playerId:
         }
 
         for (const o of base.ongoingActions) {
-            if (o.ownerId !== playerId) {
+            const ongoingControllerId = o.metadata?.sourceControllerId ?? o.ownerId;
+            if (ongoingControllerId !== playerId) {
                 const def = getCardDef(o.defId);
                 const name = def?.name ?? o.defId;
                 actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: `[行动] ${name} @ ${baseName}` });
@@ -319,21 +327,19 @@ const bearCavalryGeneralIvanPodPromptProgram = createPromptProgram<BearCavalryGe
     onResolve: ({ context, state, value, timestamp }) => {
         const action = (value as { action?: 'yes' | 'no' } | undefined)?.action;
         if (!action) return { events: [] };
-
-        const currentLimit = state.core.specialLimitUsed?.[context.limitKey] ?? [];
-        const nextState = {
-            ...state,
-            core: {
-                ...state.core,
-                specialLimitUsed: {
-                    ...(state.core.specialLimitUsed ?? {}),
-                    [context.limitKey]: [...currentLimit, 0],
-                },
+        const limitUsedEvent: SmashUpEvent = {
+            type: SU_EVENTS.SPECIAL_LIMIT_USED,
+            payload: {
+                playerId: context.playerId,
+                baseIndex: 0,
+                limitGroup: context.limitKey,
+                abilityDefId: 'bear_cavalry_general_ivan_pod',
             },
+            timestamp,
         };
 
         if (action !== 'yes') {
-            return { events: [], matchState: nextState };
+            return { events: [limitUsedEvent] };
         }
 
         const base = state.core.bases[context.baseIndex];
@@ -343,7 +349,7 @@ const bearCavalryGeneralIvanPodPromptProgram = createPromptProgram<BearCavalryGe
                 .map(minion => addTempPower(minion.uid, context.baseIndex, 1, 'bear_cavalry_general_ivan_pod', timestamp))
             : [];
 
-        return { events, matchState: nextState };
+        return { events: [limitUsedEvent, ...events] };
     },
 });
 
@@ -366,7 +372,12 @@ const bearCavalryHighGroundPodPromptProgram = createPromptProgram<BearCavalryHig
 
         const events: SmashUpEvent[] = [{
             type: SU_EVENTS.ONGOING_DETACHED,
-            payload: { cardUid: context.ongoingUid, defId: 'bear_cavalry_high_ground_pod', ownerId: playerId, reason: 'bear_cavalry_high_ground_pod' },
+            payload: {
+                cardUid: context.ongoingUid,
+                defId: 'bear_cavalry_high_ground_pod',
+                ownerId: context.ongoingOwnerId,
+                reason: 'bear_cavalry_high_ground_pod',
+            },
             timestamp,
         } as OngoingDetachedEvent];
 
@@ -541,7 +552,7 @@ function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
         const def = getCardDef(c.defId) as MinionCardDef | undefined;
         const name = def?.name ?? c.defId;
         const power = def?.power ?? 0;
-        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'hand' as const, displayMode: 'card' as const };
+        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, ownerId: c.owner, power }, _source: 'hand' as const, displayMode: 'card' as const };
     });
     const interaction = createSimpleChoice(
         `bear_cavalry_commission_choose_minion_${ctx.now}`, ctx.playerId,
@@ -562,8 +573,11 @@ function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
 /** 伊万将军保护检查：你控制的所有随从（含伊万自身）不能被消灭 */
 function bearCavalryGeneralIvanChecker(ctx: ProtectionCheckContext): boolean {
     for (const base of ctx.state.bases) {
-        const ivan = base.minions.find(m => matchesDefId(m.defId, 'bear_cavalry_general_ivan'));
-        if (ivan && ivan.controller === ctx.targetMinion.controller) {
+        const hasMatchingIvan = base.minions.some(
+            minion => matchesDefId(minion.defId, 'bear_cavalry_general_ivan')
+                && minion.controller === ctx.targetMinion.controller,
+        );
+        if (hasMatchingIvan) {
             // 原版文本：Your minions cannot be destroyed.
             // FAQ 指明不区分来源，因此同控制者的所有随从（包括伊万自己）一律保护
             return true;
@@ -577,8 +591,11 @@ function bearCavalryGeneralIvanChecker(ctx: ProtectionCheckContext): boolean {
 function bearCavalryGeneralIvanPodProtection(ctx: ProtectionCheckContext): boolean {
     // 检查是否有伊万将军 POD 在场
     for (const base of ctx.state.bases) {
-        const ivan = base.minions.find(m => m.defId === 'bear_cavalry_general_ivan_pod');
-        if (ivan && ivan.controller === ctx.targetMinion.controller) {
+        const hasMatchingIvan = base.minions.some(
+            minion => minion.defId === 'bear_cavalry_general_ivan_pod'
+                && minion.controller === ctx.targetMinion.controller,
+        );
+        if (hasMatchingIvan) {
             // 保护同控制者的所有随从（包括伊万自己）
             // POD 文本：Your minions cannot be destroyed.（不区分来源）
             return true;
@@ -608,53 +625,59 @@ function bearCavalryGeneralIvanPodTrigger(ctx: TriggerContext): SmashUpEvent[] |
     if (!movedMinion || movedToBaseIndex === -1) return events;
     
     // 找到所有场上的伊万将军 POD
+    let currentMatchState = ctx.matchState;
     for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex++) {
         const base = ctx.state.bases[baseIndex];
-        const ivan = base.minions.find(m => m.defId === 'bear_cavalry_general_ivan_pod');
-        if (!ivan) continue;
-        
-        // 检查是否是其他玩家移动的随从
-        if (movedMinion.controller === ivan.controller) continue;
+        const ivans = base.minions.filter(m => m.defId === 'bear_cavalry_general_ivan_pod');
+        if (!ivans.length) continue;
 
-        // “there”：移动到的基地上必须有伊万控制者的随从，否则触发也不会产生效果
-        const movedToBase = ctx.state.bases[movedToBaseIndex];
-        const hasMyMinionThere = movedToBase?.minions.some(m => m.controller === ivan.controller) ?? false;
-        if (!hasMyMinionThere) continue;
-        
-        // 检查是否已经在本回合使用过（每回合限一次）
-        const limitKey = `bear_cavalry_general_ivan_pod_${ivan.controller}`;
-        if (ctx.state.specialLimitUsed?.[limitKey]?.length) continue;
-        
-        // 去重检查：检查交互队列中是否已存在相同的确认交互
-        if (ctx.matchState) {
-            const queue = ctx.matchState.sys.interaction.queue;
-            const current = ctx.matchState.sys.interaction.current;
-            const allInteractions = current ? [current, ...queue] : queue;
+        for (const ivan of ivans) {
+            // 检查是否是其他玩家移动的随从
+            if (movedMinion.controller === ivan.controller) continue;
+
+            // “there”：移动到的基地上必须有伊万控制者的随从，否则触发也不会产生效果
+            const movedToBase = ctx.state.bases[movedToBaseIndex];
+            const hasMyMinionThere = movedToBase?.minions.some(m => m.controller === ivan.controller) ?? false;
+            if (!hasMyMinionThere) continue;
             
-            const existingInteraction = allInteractions.find(
-                (i: any) => i.data?.sourceId === 'bear_cavalry_general_ivan_pod_trigger' &&
-                            i.data?.ivanController === ivan.controller &&
-                            i.data?.turnNumber === ctx.state.turnNumber
-            );
+            // 检查是否已经在本回合使用过（每回合限一次）
+            const limitKey = `bear_cavalry_general_ivan_pod_${ivan.controller}`;
+            if (ctx.state.specialLimitUsed?.[limitKey]?.length) continue;
             
-            if (existingInteraction) {
-                continue; // 已存在相同的交互，跳过（去重）
+            // 去重检查：检查交互队列中是否已存在相同的确认交互
+            if (currentMatchState) {
+                const queue = currentMatchState.sys.interaction.queue;
+                const current = currentMatchState.sys.interaction.current;
+                const allInteractions = current ? [current, ...queue] : queue;
+
+                const existingInteraction = allInteractions.find(
+                    (i: any) => i.data?.sourceId === 'bear_cavalry_general_ivan_pod_trigger' &&
+                                i.data?.ivanController === ivan.controller &&
+                                i.data?.turnNumber === ctx.state.turnNumber
+                );
+
+                if (existingInteraction) {
+                    continue; // 已存在相同的交互，跳过（去重）
+                }
             }
+
+            if (!currentMatchState) return events;
+            const result = executeAbilityProgram(
+                bearCavalryGeneralIvanPodPromptProgram,
+                createBearCavalryPromptContext(currentMatchState, ivan.controller, ctx.now, {
+                    baseIndex: movedToBaseIndex,
+                    ivanController: ivan.controller,
+                    limitKey,
+                }) satisfies BearCavalryGeneralIvanPromptContext,
+            );
+            events.push(...result.events);
+            currentMatchState = result.matchState ?? currentMatchState;
         }
-        
-        if (!ctx.matchState) return events;
-        const result = executeAbilityProgram(
-            bearCavalryGeneralIvanPodPromptProgram,
-            createBearCavalryPromptContext(ctx.matchState, ivan.controller, ctx.now, {
-                baseIndex: movedToBaseIndex,
-                ivanController: ivan.controller,
-                limitKey,
-            }) satisfies BearCavalryGeneralIvanPromptContext,
-        );
-        return { events: [...events, ...result.events], matchState: result.matchState };
     }
     
-    return events;
+    return currentMatchState && currentMatchState !== ctx.matchState
+        ? { events, matchState: currentMatchState }
+        : events;
 }
 
 /** 极地突击队员保护检查：基地上唯一己方随从时不收回可消灭 */
@@ -713,7 +736,8 @@ function bearCavalrySuperiorityChecker(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
     return base.ongoingActions.some(
-        a => matchesDefId(a.defId, 'bear_cavalry_superiority') && a.ownerId === ctx.targetMinion.controller
+        a => matchesDefId(a.defId, 'bear_cavalry_superiority')
+            && ((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === ctx.targetMinion.controller
     );
 }
 
@@ -727,7 +751,7 @@ function bearCavalrySuperiorityPodProtection(ctx: ProtectionCheckContext): boole
     if (!base) return false;
     return base.ongoingActions.some(
         a => a.defId === 'bear_cavalry_superiority_pod' &&
-             a.ownerId === ctx.targetMinion.controller &&
+             (((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === ctx.targetMinion.controller) &&
              a.talentUsed === true &&
              (a.metadata as any)?.superiorityProtect === true
     );
@@ -778,6 +802,7 @@ function bearCavalryCubScoutTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!movedMinion) return events;
 
     for (const scout of destBase.minions) {
+        if (ctx.sourceCardUid && scout.uid !== ctx.sourceCardUid) continue;
         if (!matchesDefId(scout.defId, 'bear_cavalry_cub_scout')) continue;
         if (scout.controller === movedMinion.controller) continue;
         const scoutPower = getMinionPower(ctx.state, scout, destBaseIndex);
@@ -788,7 +813,7 @@ function bearCavalryCubScoutTrigger(ctx: TriggerContext): SmashUpEvent[] {
                 movedMinion.defId,
                 destBaseIndex,
                 movedMinion.owner,
-                undefined,
+                scout.controller,
                 'bear_cavalry_cub_scout',
                 ctx.now,
             ));
@@ -818,7 +843,8 @@ function bearCavalryCubScoutPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { 
         
         const existingInteraction = allInteractions.find(
             (i: any) => i.data?.sourceId === 'bear_cavalry_cub_scout_pod_destroy' &&
-                        i.data?.minionUid === ctx.triggerMinionUid
+                        i.data?.minionUid === ctx.triggerMinionUid &&
+                        (!ctx.sourceCardUid || i.data?.scoutUid === ctx.sourceCardUid)
         );
         
         if (existingInteraction) {
@@ -841,6 +867,7 @@ function bearCavalryCubScoutPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { 
     
     // 找到幼熊斥候
     for (const scout of destBase.minions) {
+        if (ctx.sourceCardUid && scout.uid !== ctx.sourceCardUid) continue;
         if (scout.defId !== 'bear_cavalry_cub_scout_pod') continue;
         if (scout.controller === movedMinion.controller) continue;
 
@@ -909,17 +936,19 @@ function bearCavalryHighGroundTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!movedMinion) return events;
 
     for (const ongoing of destBase.ongoingActions) {
+        if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) continue;
         if (!matchesDefId(ongoing.defId, 'bear_cavalry_high_ground')) continue;
-        if (ongoing.ownerId === movedMinion.controller) continue;
-        const ownerHasMinion = destBase.minions.some(m => m.controller === ongoing.ownerId);
-        if (!ownerHasMinion) continue;
+        const ongoingControllerId = (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
+        if (ongoingControllerId === movedMinion.controller) continue;
+        const controllerHasMinion = destBase.minions.some(m => m.controller === ongoingControllerId);
+        if (!controllerHasMinion) continue;
         events.push(
             destroyMinion(
                 movedMinion.uid,
                 movedMinion.defId,
                 destBaseIndex,
                 movedMinion.owner,
-                ongoing.ownerId,
+                ongoingControllerId,
                 'bear_cavalry_high_ground',
                 ctx.now,
             ),
@@ -950,10 +979,12 @@ function bearCavalryHighGroundPodTrigger(ctx: TriggerContext): SmashUpEvent[] | 
     
     // 找到制高点 POD
     for (const ongoing of destBase.ongoingActions) {
+        if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) continue;
         if (ongoing.defId !== 'bear_cavalry_high_ground_pod') continue;
-        if (ongoing.ownerId === movedMinion.controller) continue;
+        const ongoingControllerId = (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
+        if (ongoingControllerId === movedMinion.controller) continue;
 
-        const ownerHasMinion = destBase.minions.some(m => m.controller === ongoing.ownerId);
+        const ownerHasMinion = destBase.minions.some(m => m.controller === ongoingControllerId);
         if (!ownerHasMinion) continue;
 
         // 无 matchState：自动选择“destroy”分支
@@ -975,7 +1006,7 @@ function bearCavalryHighGroundPodTrigger(ctx: TriggerContext): SmashUpEvent[] | 
                     movedMinion.defId,
                     destBaseIndex,
                     movedMinion.owner,
-                    ongoing.ownerId,
+                    ongoingControllerId,
                     'bear_cavalry_high_ground_pod',
                     ctx.now,
                 ),
@@ -1002,8 +1033,9 @@ function bearCavalryHighGroundPodTrigger(ctx: TriggerContext): SmashUpEvent[] | 
 
         const result = executeAbilityProgram(
             bearCavalryHighGroundPodPromptProgram,
-            createBearCavalryPromptContext(ctx.matchState, ongoing.ownerId, ctx.now, {
+            createBearCavalryPromptContext(ctx.matchState, ongoingControllerId, ctx.now, {
                 ongoingUid: ongoing.uid,
+                ongoingOwnerId: ongoing.ownerId,
                 minionUid: movedMinion.uid,
                 minionDefId: movedMinion.defId,
                 baseIndex: destBaseIndex,
@@ -1225,7 +1257,8 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
         const baseDef = getBaseDef(base.defId);
         const baseName = baseDef?.name ?? `基地 ${i + 1}`;
         for (const o of base.ongoingActions) {
-            if (o.ownerId !== ctx.playerId) {
+            const ongoingControllerId = o.metadata?.sourceControllerId ?? o.ownerId;
+            if (ongoingControllerId !== ctx.playerId) {
                 const def = getCardDef(o.defId);
                 const name = def?.name ?? o.defId;
                 actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: `[行动] ${name} @ ${baseName}` });
@@ -1233,7 +1266,8 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
         }
         for (const m of base.minions) {
             for (const a of m.attachedActions) {
-                if (a.ownerId !== ctx.playerId) {
+                const attachedControllerId = a.metadata?.sourceControllerId ?? a.ownerId;
+                if (attachedControllerId !== ctx.playerId) {
                     const def = getCardDef(a.defId);
                     const name = def?.name ?? a.defId;
                     actionTargets.push({ uid: a.uid, defId: a.defId, ownerId: a.ownerId, label: `[行动] ${name}` });
@@ -1286,6 +1320,25 @@ function bearCavalryBearNecessitiesPodTalent(ctx: AbilityContext): AbilityResult
 
 /** 黑熊口粮 POD 回合开始触发器：自毁 */
 function bearCavalryBearNecessitiesPodTurnStart(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.sourceCardUid) {
+        for (const base of ctx.state.bases) {
+            const card = base.ongoingActions.find((ongoing) =>
+                ongoing.uid === ctx.sourceCardUid
+                && ongoing.defId === 'bear_cavalry_bear_necessities_pod'
+                && ongoing.talentUsed === true,
+            );
+            if (!card) continue;
+            const controllerId = ((card.metadata?.sourceControllerId as PlayerId | undefined) ?? card.ownerId);
+            if (controllerId !== ctx.playerId) return [];
+            return [{
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: { cardUid: card.uid, defId: card.defId, ownerId: card.ownerId, reason: 'bear_cavalry_bear_necessities_pod' },
+                timestamp: ctx.now,
+            } as OngoingDetachedEvent];
+        }
+        return [];
+    }
+
     const events: SmashUpEvent[] = [];
     
     // 检查是否是卡牌拥有者的回合
@@ -1295,7 +1348,7 @@ function bearCavalryBearNecessitiesPodTurnStart(ctx: TriggerContext): SmashUpEve
     for (const base of ctx.state.bases) {
         const cards = base.ongoingActions.filter(
             a => a.defId === 'bear_cavalry_bear_necessities_pod'
-                && a.ownerId === ctx.playerId
+                && (((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === ctx.playerId)
                 && a.talentUsed === true
         );
         for (const card of cards) {
@@ -1381,7 +1434,7 @@ export function registerBearCavalryInteractionHandlers(): void {
 
     // 委任第一步：选择手牌随从后→选择目标基地
     registerInteractionHandler('bear_cavalry_commission_choose_minion', (state, playerId, value, iData, _random, timestamp) => {
-        const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
+        const { cardUid, defId, ownerId, power } = value as { cardUid: string; defId: string; ownerId?: string; power: number };
         const isPod = (iData as any)?.isPod === true;
         const baseCandidates = state.core.bases.map((b, i) => {
             const baseDef = getBaseDef(b.defId);
@@ -1394,7 +1447,7 @@ export function registerBearCavalryInteractionHandlers(): void {
                 type: SU_EVENTS.MINION_PLAYED,
                 // 委任属于“授予额外随从额度 + 消耗该额度打出随从”
                 // 因此此处应消耗出牌额度（由 grantExtraMinion 提前增加 minionLimit），不能标记为 consumesNormalLimit=false
-                payload: { playerId, cardUid, defId, baseIndex, baseDefId: state.core.bases[baseIndex].defId, power },
+                payload: { playerId, cardUid, defId, ownerId, baseIndex, baseDefId: state.core.bases[baseIndex].defId, power },
                 timestamp,
             };
             // 检查该基地是否有对手随从可移动（保护检查在 buildMinionTargetOptions 中）
@@ -1446,7 +1499,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         return {
             state: queueInteraction(state, {
                 ...next,
-                data: { ...next.data, continuationContext: { cardUid, defId, power }, isPod },
+                data: { ...next.data, continuationContext: { cardUid, defId, ownerId, power }, isPod },
             }),
             events: [],
         };
@@ -1455,12 +1508,12 @@ export function registerBearCavalryInteractionHandlers(): void {
     // 委任第二步：选择基地后打出随从并进入移动步骤
     registerInteractionHandler('bear_cavalry_commission_choose_base', (state, playerId, value, iData, _random, timestamp) => {
         const { baseIndex } = value as { baseIndex: number };
-        const ctx = (iData as any)?.continuationContext as { cardUid: string; defId: string; power: number };
+        const ctx = (iData as any)?.continuationContext as { cardUid: string; defId: string; ownerId?: string; power: number };
         const isPod = (iData as any)?.isPod === true;
         if (!ctx) return undefined;
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid: ctx.cardUid, defId: ctx.defId, baseIndex, baseDefId: state.core.bases[baseIndex].defId, power: ctx.power },
+            payload: { playerId, cardUid: ctx.cardUid, defId: ctx.defId, ownerId: ctx.ownerId, baseIndex, baseDefId: state.core.bases[baseIndex].defId, power: ctx.power },
             timestamp,
         };
         // 检查该基地是否有对手随从可移动（保护检查在 buildMinionTargetOptions 中）

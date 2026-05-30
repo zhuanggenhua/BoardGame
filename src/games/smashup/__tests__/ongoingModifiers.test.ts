@@ -184,6 +184,33 @@ describe('持续力量修正基础设施', () => {
         expect(movedTemptress).toBeTruthy();
         expect(getEffectivePower(moved, movedTemptress!, 1)).toBe(6);
     });
+
+    it('当前玩家把对手随从移动到基地时，应按当前玩家维度记录 bearing_down_pod 的对手移动状态', () => {
+        const enemy = makeMinion('enemy-1', 'test_minion', '1', 4, { powerModifier: 0 });
+        const mover = makeMinion('mover-1', 'test_minion', '0', 4, { powerModifier: 0 });
+        const state = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                { defId: 'base_a', minions: [enemy], ongoingActions: [] },
+                { defId: 'base_b', minions: [mover], ongoingActions: [] },
+            ],
+        });
+
+        const moved = reduce(state, {
+            type: SU_EVENTS.MINION_MOVED,
+            payload: {
+                minionUid: 'enemy-1',
+                minionDefId: 'test_minion',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                reason: 'test_move',
+            },
+        });
+
+        expect(moved.movedToBasesThisTurn?.[1]?.['0']).toBe(true);
+        expect(moved.movedToBasesThisTurn?.[1]?.['1']).toBeUndefined();
+    });
 });
 
 describe('suppressed source modifiers', () => {
@@ -259,6 +286,82 @@ describe('suppressed source modifiers', () => {
 
         expect(getPlayerEffectivePowerOnBase(state, base, 0, '1')).toBe(4);
         expect(getTotalEffectivePowerOnBase(state, base, 0)).toBe(6);
+    });
+});
+
+describe('steampunk_steam_man borrowed action controller seam', () => {
+    it('borrowed 基地 ongoing 应按控制者而不是真实 owner 给 steampunk_steam_man +1 力量', () => {
+        const steamMan = makeMinion('steam-1', 'steampunk_steam_man', '0', 3, { powerModifier: 0, powerCounters: 0 });
+        const base = {
+            defId: 'base_a',
+            minions: [steamMan],
+            ongoingActions: [{
+                uid: 'borrowed-base-action',
+                defId: 'test_action',
+                ownerId: '1',
+                metadata: { sourceControllerId: '0' },
+            } as any],
+        };
+        const state = makeState({ bases: [base] });
+
+        expect(getEffectivePower(state, steamMan, 0)).toBe(4);
+    });
+
+    it('borrowed 附着行动应按控制者而不是真实 owner 给 steampunk_steam_man +1 力量', () => {
+        const host = makeMinion('host-1', 'test_minion', '1', 3, {
+            powerModifier: 0,
+            attachedActions: [{
+                uid: 'borrowed-attached-action',
+                defId: 'test_action',
+                ownerId: '1',
+                metadata: { sourceControllerId: '0' },
+            } as any],
+        });
+        const steamMan = makeMinion('steam-1', 'steampunk_steam_man', '0', 3, { powerModifier: 0, powerCounters: 0 });
+        const base = {
+            defId: 'base_a',
+            minions: [steamMan, host],
+            ongoingActions: [],
+        };
+        const state = makeState({ bases: [base] });
+
+        expect(getEffectivePower(state, steamMan, 0)).toBe(4);
+    });
+});
+
+describe('fairies_daisy_chain borrowed action controller seam', () => {
+    it('borrowed 雏菊花环应按控制者而不是真实 owner 给宿主 +2 力量', () => {
+        const host = makeMinion('host-1', 'test_minion', '0', 3, {
+            powerModifier: 0,
+            attachedActions: [{
+                uid: 'borrowed-daisy-plus',
+                defId: 'fairies_daisy_chain',
+                ownerId: '1',
+                metadata: { sourceControllerId: '0' },
+            } as any],
+        });
+        const state = makeState({
+            bases: [{ defId: 'base_a', minions: [host], ongoingActions: [] }],
+        });
+
+        expect(getEffectivePower(state, host, 0)).toBe(5);
+    });
+
+    it('控制权不在宿主玩家手里的 borrowed 雏菊花环应给宿主 -2 力量', () => {
+        const host = makeMinion('host-1', 'test_minion', '0', 3, {
+            powerModifier: 0,
+            attachedActions: [{
+                uid: 'borrowed-daisy-minus',
+                defId: 'fairies_daisy_chain',
+                ownerId: '0',
+                metadata: { sourceControllerId: '1' },
+            } as any],
+        });
+        const state = makeState({
+            bases: [{ defId: 'base_a', minions: [host], ongoingActions: [] }],
+        });
+
+        expect(getEffectivePower(state, host, 0)).toBe(1);
     });
 });
 
@@ -679,6 +782,33 @@ describe('registerOngoingPowerModifier 通用叠加', () => {
             const state = makeState({ bases: [base] });
             expect(getEffectivePower(state, m1, 0)).toBe(0); // max(0, 1-3)
         });
+
+        it('borrowed 睡眠孢子应按控制者而不是真实 owner 压低对手随从', () => {
+            const enemy = makeMinion('enemy-1', 'test_a', '1', 5, { powerModifier: 0 });
+            const ally = makeMinion('ally-1', 'test_b', '0', 4, { powerModifier: 0 });
+            const baseCore = makeState({
+                bases: [{
+                    defId: 'base_a',
+                    minions: [ally, enemy],
+                    ongoingActions: [],
+                }],
+            });
+            const state = reduce(baseCore, {
+                type: SU_EVENTS.ONGOING_ATTACHED,
+                payload: {
+                    cardUid: 'borrowed-spores-a',
+                    defId: 'killer_plant_sleep_spores',
+                    ownerId: '1',
+                    sourcePlayerId: '0',
+                    targetType: 'base',
+                    targetBaseIndex: 0,
+                },
+                timestamp: 1,
+            } as any);
+
+            expect(getEffectivePower(state, state.bases[0].minions[0], 0)).toBe(4);
+            expect(getEffectivePower(state, state.bases[0].minions[1], 0)).toBe(4);
+        });
     });
 
     // --- ownerMinions：旋转弹头发射器 ---
@@ -717,6 +847,33 @@ describe('registerOngoingPowerModifier 通用叠加', () => {
             };
             const state = makeState({ bases: [base] });
             expect(getEffectivePower(state, enemy, 0)).toBe(3);
+        });
+
+        it('borrowed 旋转弹头发射器应按控制者而不是真实 owner 给控制者随从 +2', () => {
+            const mine = makeMinion('m1', 'test_a', '0', 3, { powerModifier: 0 });
+            const enemy = makeMinion('e1', 'test_b', '1', 4, { powerModifier: 0 });
+            const baseCore = makeState({
+                bases: [{
+                    defId: 'base_a',
+                    minions: [mine, enemy],
+                    ongoingActions: [],
+                }],
+            });
+            const state = reduce(baseCore, {
+                type: SU_EVENTS.ONGOING_ATTACHED,
+                payload: {
+                    cardUid: 'borrowed-rotary-a',
+                    defId: 'steampunk_rotary_slug_thrower',
+                    ownerId: '1',
+                    sourcePlayerId: '0',
+                    targetType: 'base',
+                    targetBaseIndex: 0,
+                },
+                timestamp: 1,
+            } as any);
+
+            expect(getEffectivePower(state, state.bases[0].minions[0], 0)).toBe(5);
+            expect(getEffectivePower(state, state.bases[0].minions[1], 0)).toBe(4);
         });
     });
 
@@ -767,6 +924,32 @@ describe('registerOngoingPowerModifier 通用叠加', () => {
             expect(getEffectivePower(state, enemy, 0)).toBe(3);
             // 玩家 0 没有随从，所以蒸汽机车不生效
             expect(getPlayerEffectivePowerOnBase(state, base, 0, '0')).toBe(0);
+        });
+
+        it('borrowed steampunk_aggromotive 应按控制者而不是真实 owner 给基地总力量 +5', () => {
+            const mine = makeMinion('m1', 'test_a', '0', 2, { powerModifier: 0 });
+            const baseCore = makeState({
+                bases: [{
+                    defId: 'base_a',
+                    minions: [mine],
+                    ongoingActions: [],
+                }],
+            });
+            const state = reduce(baseCore, {
+                type: SU_EVENTS.ONGOING_ATTACHED,
+                payload: {
+                    cardUid: 'agg-borrowed-a',
+                    defId: 'steampunk_aggromotive',
+                    ownerId: '1',
+                    sourcePlayerId: '0',
+                    targetType: 'base',
+                    targetBaseIndex: 0,
+                },
+                timestamp: 1,
+            } as any);
+
+            expect(getPlayerEffectivePowerOnBase(state, state.bases[0], 0, '0')).toBe(7);
+            expect(getPlayerEffectivePowerOnBase(state, state.bases[0], 0, '1')).toBe(0);
         });
     });
 

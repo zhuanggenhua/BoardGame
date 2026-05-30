@@ -577,6 +577,146 @@ describe('Feature: incremental-state-sync', () => {
       client.disconnect();
     });
 
+    it('manual resync on connected socket should emit sync immediately', () => {
+      const onDebugEvent = vi.fn();
+      const client = new GameTransportClient({
+        server: '',
+        matchID: 'test-match',
+        playerID: '0',
+        credentials: 'test-cred',
+        onDebugEvent,
+      });
+
+      client.connect();
+      mockSocket.simulateEvent('connect');
+      mockSocket.clearEmitted();
+
+      client.resync();
+
+      expect(mockSocket.findEmitted('sync')).toEqual([
+        {
+          event: 'sync',
+          args: ['test-match', '0', 'test-cred'],
+        },
+      ]);
+      expect(onDebugEvent).toHaveBeenCalledWith(expect.objectContaining({
+        stage: 'sync-requested',
+        reason: 'manual-resync',
+      }));
+
+      client.disconnect();
+    });
+
+    it('manual resync on disconnected socket should request reconnect instead of emitting sync', () => {
+      const onDebugEvent = vi.fn();
+      const client = new GameTransportClient({
+        server: '',
+        matchID: 'test-match',
+        playerID: '0',
+        credentials: 'test-cred',
+        onDebugEvent,
+      });
+
+      client.connect();
+      mockSocket.simulateEvent('connect');
+      mockSocket.clearEmitted();
+      mockSocket.connected = false;
+
+      client.resync();
+
+      expect(mockSocket.findEmitted('sync')).toEqual([]);
+      expect(mockSocket.connected).toBe(true);
+      expect(onDebugEvent).toHaveBeenCalledWith(expect.objectContaining({
+        stage: 'reconnect-requested',
+        reason: 'manual-resync-disconnected',
+      }));
+
+      client.disconnect();
+    });
+
+    it('applies compare-roll interaction patches on contestant baseline without forcing resync', () => {
+      const onStateUpdate = vi.fn();
+      const { client } = createConnectedClient({ onStateUpdate });
+
+      const compareRollBaseState = {
+        core: {
+          currentPlayer: '0',
+          padding: Array.from({ length: 160 }, (_value, index) => `pad-${index}`),
+        },
+        sys: {
+          phase: 'main',
+          turnNumber: 1,
+          interaction: {
+            current: {
+              id: 'compare-roll-visible-base',
+              kind: 'compare-roll-choice',
+              playerId: '0',
+              data: {
+                title: '对比掷骰',
+                sourceId: 'duel-base',
+                contestants: [
+                  { playerId: '0', label: 'P0', roll: 6 },
+                  { playerId: '1', label: 'P1', roll: 2 },
+                ],
+                options: [
+                  { id: 'resolve', label: '继续', value: { kind: 'confirm' } },
+                ],
+              },
+            },
+            queue: [],
+            isBlocked: true,
+          },
+        },
+      };
+      const compareRollNextState = {
+        core: {
+          currentPlayer: '0',
+          padding: Array.from({ length: 160 }, (_value, index) => `pad-${index}`),
+        },
+        sys: {
+          phase: 'main',
+          turnNumber: 1,
+          interaction: {
+            current: {
+              id: 'compare-roll-visible-next',
+              kind: 'compare-roll-choice',
+              playerId: '0',
+              data: {
+                title: '第二次对比掷骰',
+                sourceId: 'duel-next',
+                contestants: [
+                  { playerId: '0', label: 'P0', roll: 1 },
+                  { playerId: '1', label: 'P1', roll: 5 },
+                ],
+                options: [
+                  { id: 'resolve-next', label: '继续', value: { kind: 'confirm-next' } },
+                ],
+              },
+            },
+            queue: [],
+            isBlocked: true,
+          },
+        },
+      };
+
+      simulateSync(compareRollBaseState, [{ id: 0 }, { id: 1 }], 0);
+      onStateUpdate.mockClear();
+      mockSocket.clearEmitted();
+
+      const diff = computeDiff(compareRollBaseState, compareRollNextState, Infinity);
+      expect(diff.type).toBe('patch');
+      expect(diff.patches).toBeDefined();
+      expect(diff.patches!.some((patch) => patch.path?.startsWith('/sys/interaction/current/'))).toBe(true);
+
+      simulatePatch(diff.patches!, { stateID: 1, randomCursor: 0 }, [{ id: 0 }, { id: 1 }]);
+
+      expect(onStateUpdate).toHaveBeenCalledTimes(1);
+      expect(client.latestState).toEqual(compareRollNextState);
+      expect(mockSocket.findEmitted('sync').length).toBe(0);
+
+      client.disconnect();
+    });
+
     /**
      * 需求 8.2：batch:confirmed 返回全量状态
      *

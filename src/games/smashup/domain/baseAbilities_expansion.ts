@@ -340,9 +340,10 @@ export function registerExpansionBaseAbilities(): void {
         const playedMinion = ctx.minionUid ? base?.minions.find(m => m.uid === ctx.minionUid) : undefined;
         const ownerId = playedMinion?.owner ?? ctx.playerId;
 
-        // Infiltrate：只让拥有者自己忽略（不影响其他玩家）
+        // Infiltrate：按行动控制者忽略基地能力，不能被 borrowed 牌的真实 owner 串线。
+        const playedControllerId = playedMinion?.controller ?? ctx.playerId;
         const ignoredByOwner = base?.ongoingActions?.some(o =>
-            o.ownerId === ownerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === playedControllerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignoredByOwner) return { events: [] };
 
@@ -377,9 +378,9 @@ export function registerExpansionBaseAbilities(): void {
         canTrigger: (ctx) => {
             const base = ctx.state.bases[ctx.baseIndex];
             const playedMinion = ctx.minionUid ? base?.minions.find(m => m.uid === ctx.minionUid) : undefined;
-            const ownerId = playedMinion?.owner ?? ctx.playerId;
+            const playedControllerId = playedMinion?.controller ?? ctx.playerId;
             const ignoredByOwner = base?.ongoingActions?.some(o =>
-                o.ownerId === ownerId && o.defId === 'ninja_infiltrate',
+                ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === playedControllerId && o.defId === 'ninja_infiltrate',
             ) ?? false;
             return !ignoredByOwner && Object.values(ctx.state.players).some(player => player.discard.length > 0);
         },
@@ -502,7 +503,9 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        mandatory: false,
+        // 整条 revealed-base 效果必须执行；“可选”应由每位玩家自己的 skip 选项承接，
+        // 不能让当前反应玩家一次跳过所有玩家的移动资格。
+        mandatory: true,
     });
 
     // ── 神秘花园（Secret Garden）──────────────────────────────
@@ -744,15 +747,16 @@ export function registerExpansionBaseAbilities(): void {
         // 随从在九命之屋本身被消灭→不触发（只拦截其他基地）
         if (baseIndex === houseBaseIndex) return [];
 
-        // 查找被消灭随从的拥有者
+        // 九命之屋文本里的 “your minion” 看控制者，不看真实 owner。
         const minion = state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
         const ownerId = minion?.owner ?? trigCtx.playerId;
+        const controllerId = minion?.controller ?? trigCtx.controllerId ?? trigCtx.playerId;
 
         // 创建玩家选择交互：移动到九命之屋 or 正常消灭
         if (!trigCtx.matchState) return [];
         const interaction = createSimpleChoice(
             `nine_lives_${triggerMinionUid}_${trigCtx.now}`,
-            ownerId,
+            controllerId,
             '九命之屋：是否将随从移动到九命之屋？',
             [
                 {
@@ -775,6 +779,7 @@ export function registerExpansionBaseAbilities(): void {
                     fromBaseIndex: baseIndex,
                     houseBaseIndex,
                     ownerId,
+                    controllerId,
                     destroyerId: trigCtx.destroyerId,
                 },
             },
@@ -809,9 +814,9 @@ export function registerExpansionBaseAbilities(): void {
         if (eggIndex === -1) return false;
         if (ctx.targetBaseIndex !== eggIndex) return false;
         const eggBase = ctx.state.bases[eggIndex];
-        // Infiltrate：该随从控制者若选择忽略，则其随从不再受保护
+        // Infiltrate：该随从控制者若选择忽略，则其随从不再受保护。
         const ignored = eggBase.ongoingActions?.some(o =>
-            o.ownerId === ctx.targetMinion.controller && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === ctx.targetMinion.controller && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return false;
         // 仅“+1 power counters”（力量指示物）提供保护
@@ -890,18 +895,21 @@ export function registerExpansionBaseAbilities(): void {
 
         return { events: [], matchState: ms };
     }, {
-        mandatory: false,
+        // 整条 revealed-base 效果必须执行；“可选”应由每位玩家自己的 skip 选项承接，
+        // 不能让当前反应玩家一次跳过所有玩家的移动资格。
+        mandatory: true,
     });
 
     // ── 牧场（The Pasture）──────────────────────────────────
     // "每回合玩家第一次移动一个随从到这里后，移动另一基地的一个随从到这。"
     // 通过 onMinionMoved 扩展时机触发，在 processMoveTriggers 中调用
     registerExtendedBase('base_the_pasture', 'onMinionMoved', (ctx) => {
-        // 检查是否为本回合该玩家首次移动到此基地
-        // processMoveTriggers 在 execute 返回前调用，reducer 尚未处理 MINION_MOVED 事件
-        // 所以 moveCount === 0 表示这是首次移动
+        // 检查是否为本回合该玩家首次移动到此基地。
+        // 直接调用时仍是移动前现场；queued onMinionMoved 消费时已经 reduce 了本次 MINION_MOVED。
         const moveCount = ctx.state.minionsMovedToBaseThisTurn?.[ctx.playerId]?.[ctx.baseIndex] ?? 0;
-        if (moveCount > 0) return { events: [] };
+        const isQueuedMoveFrame = ctx.sourceEventId?.startsWith('minion-moved:') === true;
+        const alreadyMovedBeforeThisFrame = isQueuedMoveFrame ? moveCount > 1 : moveCount > 0;
+        if (alreadyMovedBeforeThisFrame) return { events: [] };
 
         if (!ctx.matchState) return { events: [] };
 
@@ -987,6 +995,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (selected.skip) return { state, events: [] };
         const ctx = getContinuationContext<{ targetBaseIndex: number }>(iData);
         if (!ctx || !selected.cardUid || !selected.defId) return { state, events: [] };
+        const trueOwnerId = state.core.players[playerId]?.discard.find(card => card.uid === selected.cardUid)?.owner ?? playerId;
         return {
             state,
             events: buildBuryCardEvents({
@@ -996,7 +1005,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 cardUid: selected.cardUid,
                 defId: selected.defId,
                 baseIndex: ctx.targetBaseIndex,
-                trueOwnerId: playerId,
+                trueOwnerId,
                 buriedFrom: 'discard',
                 reason: 'base_ossuary',
                 random,
@@ -1109,6 +1118,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     type: SU_EVENTS.CARD_BOXED,
                     payload: {
                         playerId,
+                        ownerId: boxedCard.owner,
                         cardUid: boxedCard.uid,
                         defId: boxedCard.defId,
                         from: 'hand',
@@ -1147,7 +1157,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
             return {
                 id: `card-${i}`,
                 label: def?.name ?? c.defId,
-                value: { cardUid: c.uid, defId: c.defId, ownerId: targetPlayerId },
+                value: { cardUid: c.uid, defId: c.defId, ownerId: c.owner, sourcePlayerId: targetPlayerId },
                 _source: 'discard' as const,
                 displayMode: 'card' as const,
             };
@@ -1170,7 +1180,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
 
     // 印斯茅斯基地第二步：选择卡牌后，放入牌库底
     registerInteractionHandler('base_innsmouth_base_choose_card', (state, _playerId, value, _iData, _random, timestamp) => {
-        const selected = value as { skip?: boolean; cardUid?: string; defId?: string; ownerId?: string };
+        const selected = value as { skip?: boolean; cardUid?: string; defId?: string; ownerId?: string; sourcePlayerId?: string };
         if (selected.skip) return { state, events: [] };
         return {
             state,
@@ -1178,6 +1188,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 cardUid: selected.cardUid!,
                 defId: selected.defId!,
                 ownerId: selected.ownerId!,
+                sourcePlayerId: selected.sourcePlayerId,
                 reason: '印斯茅斯基地：弃牌堆卡放入牌库底',
                 now: timestamp,
                 expectedLocation: 'discard',
@@ -1225,12 +1236,12 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         const player = state.core.players[playerId];
         if (!player || !selected.cardUid || !selected.defId) return { state, events: [] };
-        const cardInDeck = player.deck.some(card =>
+        const selectedCard = player.deck.find(card =>
             card.uid === selected.cardUid
             && card.defId === selected.defId
             && card.type === 'minion',
         );
-        if (!cardInDeck) return { state, events: [] };
+        if (!selectedCard) return { state, events: [] };
         const power = selected.power ?? (getMinionDef(selected.defId!)?.power ?? 0);
         if (isScoringSessionAwaitingDeferredResolution(state)) {
             const replacementBaseDefId = getDeferredReplacementBaseDefId(state, iData);
@@ -1240,6 +1251,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 playerId,
                 cardUid: selected.cardUid,
                 defId: selected.defId,
+                ownerId: selectedCard.owner,
                 baseIndex: ctx.baseIndex,
                 targetBaseDefId: replacementBaseDefId,
                 power,
@@ -1261,6 +1273,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 baseDefId: replacementBaseDefId,
                 power,
                 fromDeck: true,
+                ownerId: selectedCard.owner,
                 consumesNormalLimit: false,
             },
             timestamp,
@@ -1377,6 +1390,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         const fromBaseIndex = selected.fromBaseIndex ?? ctx?.fromBaseIndex;
         const houseBaseIndex = selected.houseBaseIndex ?? ctx?.houseBaseIndex;
         const ownerId = selected.ownerId ?? ctx?.ownerId ?? playerId;
+        const controllerId = selected.controllerId ?? ctx?.controllerId ?? playerId;
         const destroyerId = selected.destroyerId ?? ctx?.destroyerId;
 
         if (!minionUid || !minionDefId || fromBaseIndex === undefined) return { state, events: [] };
@@ -1403,6 +1417,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     minionDefId,
                     fromBaseIndex,
                     ownerId,
+                    controllerId,
                     destroyerId,
                     reason: '九命之屋：玩家选择不拯救',
                 },

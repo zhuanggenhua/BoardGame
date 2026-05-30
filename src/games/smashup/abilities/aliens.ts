@@ -954,7 +954,7 @@ const alienTerraformPlayMinionPromptProgram = createPromptProgram<
             const selectedTitan = state.core.titans?.find((titan) =>
                 titan.uid === selected.titanUid
                 && titan.defId === selected.defId
-                && titan.ownerId === playerId
+                && titan.controllerId === playerId
                 && titan.location.zone === 'setaside',
             );
             if (!selectedTitan || !canControllerPlayTitan(state.core, playerId, selectedTitan.uid)) {
@@ -996,9 +996,11 @@ const alienTerraformPlayMinionPromptProgram = createPromptProgram<
                         playerId,
                         cardUid: selectedCard.uid,
                         defId: selectedCard.defId,
+                        ownerId: selectedCard.owner,
                         baseIndex: context.selectedBaseIndex,
                         baseDefId: context.newBaseDefId,
                         power: def?.power ?? 0,
+                        reason: 'alien_terraform',
                     },
                     timestamp,
                 } as MinionPlayedEvent,
@@ -1184,7 +1186,7 @@ const alienDisintegratorPromptProgram = createPromptProgram<
             autoResolveIfSingle: false,
         },
     ),
-    onResolve: ({ state, value, timestamp }) => {
+    onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as AlienMinionChoice | undefined;
         const baseIndex = selected?.baseIndex;
         const minionUid = selected?.minionUid;
@@ -1200,7 +1202,13 @@ const alienDisintegratorPromptProgram = createPromptProgram<
             matchState: state,
             events: [{
                 type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-                payload: { cardUid: target.uid, defId: target.defId, ownerId: target.owner, reason: 'alien_disintegrator' },
+                payload: {
+                    cardUid: target.uid,
+                    defId: target.defId,
+                    ownerId: target.owner,
+                    ...(target.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                    reason: 'alien_disintegrator',
+                },
                 timestamp,
             } as CardToDeckBottomEvent],
         };
@@ -1227,7 +1235,13 @@ const alienDisintegratorProgram = createBranchProgram<
             return {
                 events: [{
                     type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-                    payload: { cardUid: minion.uid, defId: minion.defId, ownerId: minion.owner, reason: 'alien_disintegrator' },
+                    payload: {
+                        cardUid: minion.uid,
+                        defId: minion.defId,
+                        ownerId: minion.owner,
+                        ...(minion.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                        reason: 'alien_disintegrator',
+                    },
                     timestamp: context.now,
                 } as CardToDeckBottomEvent],
             };
@@ -1634,6 +1648,7 @@ function buildCropCirclesReturnEvents(
                 minionDefId: m.defId,
                 fromBaseIndex: baseIndex,
                 toPlayerId: m.owner,
+                sourcePlayerId,
                 reason: 'alien_crop_circles',
             },
             timestamp,

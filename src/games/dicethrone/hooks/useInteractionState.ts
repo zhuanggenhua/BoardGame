@@ -65,6 +65,34 @@ const INITIAL_STATE: LocalInteractionState = {
     selectedPlayers: [],
 };
 
+function buildInteractionResetSignature(pendingInteraction?: InteractionDescriptor): string {
+    if (!pendingInteraction) return 'none';
+
+    return JSON.stringify({
+        id: pendingInteraction.id,
+        playerId: pendingInteraction.playerId,
+        sourceCardId: pendingInteraction.sourceCardId,
+        type: pendingInteraction.type,
+        titleKey: pendingInteraction.titleKey,
+        selectCount: pendingInteraction.selectCount,
+        selected: pendingInteraction.selected,
+        skipAbilityReselection: pendingInteraction.skipAbilityReselection,
+        targetPlayerIds: pendingInteraction.targetPlayerIds,
+        dieModifyConfig: pendingInteraction.dieModifyConfig,
+        transferConfig: pendingInteraction.transferConfig,
+        tokenGrantConfig: pendingInteraction.tokenGrantConfig,
+        tokenGrantConfigs: pendingInteraction.tokenGrantConfigs,
+        statusGrantConfig: pendingInteraction.statusGrantConfig,
+        statusGrantConfigs: pendingInteraction.statusGrantConfigs,
+        resolveCustomActionId: pendingInteraction.resolveCustomActionId,
+        diceOwnerId: pendingInteraction.diceOwnerId,
+        targetOpponentDice: pendingInteraction.targetOpponentDice,
+        allowedDieIds: pendingInteraction.allowedDieIds,
+        completedDieIds: pendingInteraction.completedDieIds,
+        requiresTargetWithStatus: pendingInteraction.requiresTargetWithStatus,
+    });
+}
+
 /**
  * 管理交互状态的 Hook
  * 
@@ -73,8 +101,9 @@ const INITIAL_STATE: LocalInteractionState = {
  */
 export function useInteractionState(pendingInteraction?: InteractionDescriptor) {
     const [localState, setLocalState] = useState<LocalInteractionState>(INITIAL_STATE);
+    const interactionResetSignature = buildInteractionResetSignature(pendingInteraction);
 
-    // 当 pendingInteraction 变化时自动重置状态
+    // 当交互语义变化时自动重置状态，避免同 id 下候选/上下文漂移时残留旧选择
     useEffect(() => {
         let cancelled = false;
         queueMicrotask(() => {
@@ -85,7 +114,7 @@ export function useInteractionState(pendingInteraction?: InteractionDescriptor) 
         return () => {
             cancelled = true;
         };
-    }, [pendingInteraction?.id]);
+    }, [interactionResetSignature]);
 
     /**
      * 选择骰子（支持单选和多选）

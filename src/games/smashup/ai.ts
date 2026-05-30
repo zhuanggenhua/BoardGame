@@ -265,8 +265,15 @@ const canAdvancePhase = (state: SmashUpState, playerId: PlayerId): boolean => {
     if (state.sys.interaction?.isBlocked === true) return false;
     if (getSmashUpReactionWindowPresentation(state)) return false;
     if (hasBlockingLegacyResponseWindow(state)) return false;
-    const responseWindow = state.sys.responseWindow?.current as { sourceId?: unknown } | undefined;
-    if (responseWindow && responseWindow.sourceId !== 'smashup_reaction_choose') return false;
+    const responseWindow = state.sys.responseWindow?.current as {
+        sourceId?: unknown;
+        responderQueue?: unknown[];
+    } | undefined;
+    const hasLiveLegacyResponders = Array.isArray(responseWindow?.responderQueue)
+        && responseWindow.responderQueue.length > 0;
+    if (responseWindow && responseWindow.sourceId !== 'smashup_reaction_choose' && hasLiveLegacyResponders) {
+        return false;
+    }
     if (state.sys.phase === 'scoreBases' && hasPendingScoreBasesSpecialActivation(state, playerId)) {
         return false;
     }
@@ -754,7 +761,9 @@ const relativeUtilityByActionIdCache = new WeakMap<AiDecisionContext, Map<string
 const shouldApplySmashUpRelativeUtility = (context: AiDecisionContext): boolean => {
     if (context.responseWindow) return false;
     const state = context.visibleState as SmashUpState;
-    return !state.sys.responseWindow?.current;
+    if (getSmashUpReactionWindowPresentation(state)) return false;
+    if (hasBlockingLegacyResponseWindow(state)) return false;
+    return true;
 };
 
 const buildRelativeUtilityByActionId = (context: AiDecisionContext): Map<string, number> => {
@@ -1095,10 +1104,14 @@ const appendAction = (
 };
 
 const buildSimpleChoicePayload = (
+    _sourceId: string | undefined,
     interactionId: string,
     optionIds: string[],
     multi: PromptMultiConfig | undefined,
 ): Record<string, unknown> => {
+    if (optionIds.length === 0) {
+        return { interactionId, optionIds: [] };
+    }
     if (optionIds.length <= 1 && !multi) {
         return { interactionId, optionId: optionIds[0] };
     }
@@ -1192,7 +1205,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
                 label: '不选择任何项',
                 commands: [{
                     type: 'SYS_INTERACTION_RESPOND',
-                    payload: { interactionId: current.id, optionIds: [] },
+                    payload: buildSimpleChoicePayload(data.sourceId, current.id, [], data.multi),
                 }],
             aiHints: [OPTIONAL_SKIP_AI_HINT],
             metadata: {
@@ -1214,7 +1227,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
                 label: '取消交互（无可用选项）',
                 commands: [{
                     type: 'SYS_INTERACTION_CANCEL',
-                    payload: { interactionId: current.id, reason: 'empty-options' },
+                    payload: {},
                 }],
                 aiHints: [OPTIONAL_SKIP_AI_HINT],
                 metadata: {
@@ -1244,7 +1257,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
                 label: combination.map((option) => option.label ?? option.id).join(' + ') || `交互多选 ${index + 1}`,
                 commands: [{
                     type: 'SYS_INTERACTION_RESPOND',
-                    payload: buildSimpleChoicePayload(current.id, optionIds, data.multi),
+                    payload: buildSimpleChoicePayload(data.sourceId, current.id, optionIds, data.multi),
                 }],
                 aiHints,
                 metadata: {
@@ -1268,7 +1281,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
             label: option.label ?? `交互选择 ${index + 1}`,
             commands: [{
                 type: 'SYS_INTERACTION_RESPOND',
-                payload: buildSimpleChoicePayload(current.id, [option.id], data.multi),
+                payload: buildSimpleChoicePayload(data.sourceId, current.id, [option.id], data.multi),
             }],
             aiHints,
             metadata: {
@@ -1518,7 +1531,10 @@ const buildTalentActions = (state: SmashUpState, playerId: PlayerId): AiLegalAct
         }
 
         for (const ongoing of base.ongoingActions) {
-            if (ongoing.ownerId !== playerId) continue;
+            const ongoingControllerId =
+                (ongoing.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                ?? ongoing.ownerId;
+            if (ongoingControllerId !== playerId) continue;
             appendAction(actions, state, playerId, {
                 actionId: createAiLegalActionId('use-talent', 'ongoing', ongoing.uid, baseIndex),
                 kind: 'use-talent',
@@ -1538,7 +1554,10 @@ const buildTalentActions = (state: SmashUpState, playerId: PlayerId): AiLegalAct
 
         for (const minion of base.minions) {
             for (const attached of minion.attachedActions) {
-                if (attached.ownerId !== playerId) continue;
+                const attachedControllerId =
+                    (attached.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                    ?? attached.ownerId;
+                if (attachedControllerId !== playerId) continue;
                 appendAction(actions, state, playerId, {
                     actionId: createAiLegalActionId('use-talent', 'attached', attached.uid, baseIndex),
                     kind: 'use-talent',
@@ -1699,7 +1718,6 @@ const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): Ai
     const reactionWindow = getSmashUpReactionWindowPresentation(state);
     if (reactionWindow) {
         if (reactionWindow.activePlayerId !== playerId) return null;
-
         const actions: AiLegalAction[] = [{
             actionId: createAiLegalActionId('response-pass', reactionWindow.windowType, playerId),
             kind: 'response-pass',
@@ -1727,9 +1745,10 @@ const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): Ai
 
     const currentResponderId = responseWindow.responderQueue?.[responseWindow.currentResponderIndex ?? 0];
     if (currentResponderId !== playerId) return null;
+    const windowType = responseWindow.windowType ?? 'response';
 
     const actions: AiLegalAction[] = [{
-        actionId: createAiLegalActionId('response-pass', responseWindow.windowType, playerId),
+        actionId: createAiLegalActionId('response-pass', windowType, playerId),
         kind: 'response-pass',
         label: '跳过响应',
         commands: [{
@@ -1737,7 +1756,7 @@ const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): Ai
             payload: {},
         }],
         metadata: {
-            windowType: responseWindow.windowType,
+            windowType,
         },
     }];
 

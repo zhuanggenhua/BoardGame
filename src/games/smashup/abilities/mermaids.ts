@@ -36,7 +36,7 @@ import { createFootprint, createPromptDslProgram } from '../domain/effectDsl';
 type MinionChoice = { minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean };
 type BaseChoice = { baseIndex?: number; skip?: boolean };
 type ModeChoice = { mode?: 'move' | 'control'; skip?: boolean };
-type HandMinionChoice = { cardUid?: string; defId?: string; power?: number; skip?: boolean };
+type HandMinionChoice = { cardUid?: string; defId?: string; ownerId?: PlayerId; power?: number; skip?: boolean };
 
 type CharmerMoveContinuation = {
     charmerUid: string;
@@ -215,7 +215,7 @@ function buildHandMinionOptions(state: SmashUpCore, playerId: PlayerId, maxPower
             return {
                 id: `hand-${playerId}-${index}`,
                 label: `${def?.name ?? card.defId} (力量 ${power})`,
-                value: { cardUid: card.uid, defId: card.defId, power },
+                value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner, power },
                 _source: 'hand' as const,
                 displayMode: 'card' as const,
             };
@@ -245,6 +245,7 @@ function buildMoveOngoingEvents(
     cardUid: string,
     defId: string,
     ownerId: PlayerId,
+    sourcePlayerId: PlayerId,
     targetBaseIndex: number,
     reason: string,
     timestamp: number,
@@ -267,6 +268,7 @@ function buildMoveOngoingEvents(
                 cardUid,
                 defId,
                 ownerId,
+                ...(ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
                 targetType: 'base',
                 targetBaseIndex,
                 ...(snapshot?.metadata ? { metadata: snapshot.metadata } : {}),
@@ -275,6 +277,21 @@ function buildMoveOngoingEvents(
             timestamp,
         } as OngoingAttachedEvent,
     ];
+}
+
+function findOngoingOwnerOnBases(
+    state: SmashUpCore,
+    cardUid: string,
+    defId: string,
+    fallbackPlayerId: PlayerId,
+): PlayerId {
+    for (const base of state.bases) {
+        const ongoing = base.ongoingActions.find(action => action.uid === cardUid && action.defId === defId);
+        if (ongoing) {
+            return ongoing.ownerId;
+        }
+    }
+    return fallbackPlayerId;
 }
 
 function getMermaidsCharmerCandidates(
@@ -678,6 +695,7 @@ const mermaidsOngoingMovePromptProgram = createPromptProgram<MermaidsOngoingMove
                 context.cardUid,
                 context.defId,
                 context.ownerId,
+                context.playerId,
                 selected.baseIndex,
                 context.reason,
                 timestamp,
@@ -699,6 +717,12 @@ const mermaidsUltimateSongHandPromptProgram = createPromptProgram<MermaidsUltima
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as HandMinionChoice;
         if (!selected.cardUid || !selected.defId) return { events: [] };
+        const selectedCard = state.core.players[context.forcedPlayerId]?.hand.find(card =>
+            card.uid === selected.cardUid
+            && card.defId === selected.defId
+            && card.type === 'minion',
+        );
+        if (!selectedCard) return { events: [] };
 
         const playedEvent: SmashUpEvent = {
             type: SU_EVENTS.MINION_PLAYED,
@@ -706,11 +730,13 @@ const mermaidsUltimateSongHandPromptProgram = createPromptProgram<MermaidsUltima
                 playerId: context.forcedPlayerId,
                 cardUid: selected.cardUid,
                 defId: selected.defId,
+                ownerId: selectedCard.owner,
                 baseIndex: context.targetBaseIndex,
                 baseDefId: state.core.bases[context.targetBaseIndex]?.defId,
                 power: selected.power ?? 0,
                 consumesNormalLimit: false,
                 skipOnPlayAbility: true,
+                reason: 'mermaids_ultimate_song',
             },
             timestamp,
         };
@@ -1062,12 +1088,13 @@ function mermaidsBecalmedShoresTalent(ctx: AbilityContext): AbilityResult {
     if (baseTargets.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
+    const ownerId = findOngoingOwnerOnBases(ctx.state, ctx.cardUid, ctx.defId, ctx.playerId);
     const result = executeAbilityProgram(
         mermaidsOngoingMovePromptProgram,
         createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             cardUid: ctx.cardUid,
             defId: ctx.defId,
-            ownerId: ctx.playerId,
+            ownerId,
             fromBaseIndex: ctx.baseIndex,
             reason: 'mermaids_becalmed_shores',
             title: '安静的海岸：把这张牌移到另一个基地',
@@ -1148,12 +1175,13 @@ function mermaidsShipwreckCoveAfterScoring(ctx: TriggerContext): AbilityResult {
         return { events: [] };
     }
     if (!ctx.matchState) return { events: [] };
+    const ownerId = findOngoingOwnerOnBases(ctx.state, ctx.sourceCardUid, 'mermaids_shipwreck_cove', ctx.sourceControllerId);
     return executeAbilityProgram(
         mermaidsOngoingMovePromptProgram,
         createMermaidsPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
             cardUid: ctx.sourceCardUid,
             defId: 'mermaids_shipwreck_cove',
-            ownerId: ctx.sourceControllerId,
+            ownerId,
             fromBaseIndex: ctx.sourceBaseIndex,
             reason: 'mermaids_shipwreck_cove',
             title: '沉船湾：你可以把这张牌移到另一个基地',
@@ -1166,12 +1194,21 @@ function mermaidsShipwreckCoveAfterScoring(ctx: TriggerContext): AbilityResult {
 function mermaidsDesertIslandOnTurnStart(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || !ctx.sourceControllerId) return [];
     if (ctx.playerId !== ctx.sourceControllerId) return [];
+    const ownerId = (() => {
+        for (const base of ctx.state.bases) {
+            for (const minion of base.minions) {
+                const attached = minion.attachedActions.find(action => action.uid === ctx.sourceCardUid);
+                if (attached) return attached.ownerId;
+            }
+        }
+        return ctx.sourceControllerId;
+    })();
     return [{
         type: SU_EVENTS.ONGOING_DETACHED,
         payload: {
             cardUid: ctx.sourceCardUid,
             defId: 'mermaids_desert_island',
-            ownerId: ctx.sourceControllerId,
+            ownerId,
             reason: 'mermaids_desert_island',
         },
         timestamp: ctx.now,
@@ -1198,6 +1235,7 @@ export function registerMermaidsAbilities(): void {
     });
     registerTrigger('mermaids_desert_island', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
 }

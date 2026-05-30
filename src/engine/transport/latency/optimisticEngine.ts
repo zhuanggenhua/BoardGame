@@ -185,6 +185,41 @@ function isCoreStateEqual(
     return JSON.stringify(left) === JSON.stringify(right);
 }
 
+function clampRenderedInteractionToAuthoritativeSeatView<TCore>(
+    renderedState: MatchState<TCore>,
+    authoritativeState: MatchState<unknown>,
+): MatchState<TCore> {
+    const authoritativeInteraction = authoritativeState.sys?.interaction as
+        | { current?: unknown; queue?: unknown; isBlocked?: unknown }
+        | undefined;
+    const renderedInteraction = renderedState.sys?.interaction as
+        | { current?: unknown; queue?: unknown; isBlocked?: unknown }
+        | undefined;
+
+    if (!renderedInteraction?.current) return renderedState;
+    if (authoritativeInteraction?.current != null) return renderedState;
+    if (authoritativeInteraction?.isBlocked === true) return renderedState;
+
+    return {
+        ...renderedState,
+        sys: {
+            ...renderedState.sys,
+            interaction: {
+                ...(renderedInteraction ?? {}),
+                ...(authoritativeInteraction ?? {}),
+                current: undefined,
+            },
+        },
+    };
+}
+
+function cloneMatchStateForPrediction<TCore>(state: MatchState<TCore>): MatchState<TCore> {
+    if (typeof structuredClone === 'function') {
+        return structuredClone(state);
+    }
+    return JSON.parse(JSON.stringify(state)) as MatchState<TCore>;
+}
+
 // ============================================================================
 // 工厂函数实现
 // ============================================================================
@@ -447,7 +482,7 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
 
                 const result = executePipeline(
                     pipelineConfig,
-                    currentState,
+                    cloneMatchStateForPrediction(currentState),
                     command,
                     localRandom,
                     playerIds,
@@ -527,7 +562,7 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
 
                 const result = executePipeline(
                     pipelineConfig,
-                    currentState,
+                    cloneMatchStateForPrediction(currentState),
                     command,
                     randomToUse,
                     playerIds,
@@ -603,7 +638,7 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
         reconcile(serverState: MatchState<unknown>, meta?: { stateID?: number; lastCommandPlayerId?: string; randomCursor?: number }): ReconcileResult {
             if (pendingCommands.length === 0) {
                 // 无 pending 命令，直接使用确认状态，重置水位线
-                confirmedState = serverState;
+                confirmedState = cloneMatchStateForPrediction(serverState);
                 if (meta?.stateID !== undefined) {
                     confirmedStateID = meta.stateID;
                 }
@@ -621,7 +656,10 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 // 清除未预测命令屏障：服务端确认状态已包含所有命令的效果
                 unpredictedBarrier = false;
                 return {
-                    stateToRender: serverState,
+                    stateToRender: clampRenderedInteractionToAuthoritativeSeatView(
+                        cloneMatchStateForPrediction(serverState),
+                        serverState,
+                    ),
                     didRollback: false,
                     optimisticEventWatermark: null,
                 };
@@ -657,6 +695,7 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
 
             const firstPending = pendingCommands[0];
             let firstCommandSettledByMeta = false;
+            let stalePrefixCountByStateAdvance = 0;
             if (
                 settledPrefixCountByCoreMatch === 0 &&
                 meta?.stateID !== undefined &&
@@ -688,13 +727,26 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                         { serverStateID: meta.stateID, lastCommandPlayer: meta.lastCommandPlayerId, pendingPlayer: firstPending.playerId },
                     );
                 }
+
+                // 若服务端已推进到更高 stateID，但更早的本地 pending 仍未被确认，
+                // 说明客户端已经错过了这条命令对应的权威广播。
+                // 继续 replay 只会把本地私有/乐观态残留在错误客户端上。
+                for (let i = 0; i < pendingCommands.length; i += 1) {
+                    const pending = pendingCommands[i];
+                    if (pending.predictedStateID === undefined || pending.predictedStateID >= meta.stateID) break;
+                    const pendingCoreMatches = isCoreStateEqual(pending.predictedState.core, serverState.core);
+                    const pendingPlayerMatches = meta.lastCommandPlayerId === undefined
+                        || meta.lastCommandPlayerId === pending.playerId;
+                    if (pendingCoreMatches || pendingPlayerMatches) break;
+                    stalePrefixCountByStateAdvance = i + 1;
+                }
             } else if (settledPrefixCountByCoreMatch === 0) {
                 // Fallback: JSON.stringify 深度比较
                 firstCommandConfirmed =
                     isCoreStateEqual(firstPending.predictedState.core, serverState.core);
             }
 
-            confirmedState = serverState;
+            confirmedState = cloneMatchStateForPrediction(serverState);
             if (meta?.stateID !== undefined) {
                 confirmedStateID = meta.stateID;
             }
@@ -714,6 +766,8 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 // - coreMatch=false：本地预测错误，但服务端 stateID / playerId 已表明这条命令被权威执行
                 // 两种情况都必须消费掉这条 pending，避免在权威状态上重复回放同一命令。
                 commandsToReplay = pendingCommands.slice(1);
+            } else if (settledPrefixCountByCoreMatch === 0 && stalePrefixCountByStateAdvance > 0) {
+                commandsToReplay = pendingCommands.slice(stalePrefixCountByStateAdvance);
             }
 
             const replayed = replayPending(baseForReplay, commandsToReplay);
@@ -737,7 +791,7 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
                 optimisticEventWatermark = null;
                 waitConfirmWatermark = null;
                 return {
-                    stateToRender: serverState,
+                    stateToRender: clampRenderedInteractionToAuthoritativeSeatView(serverState, serverState),
                     didRollback: !firstCommandConfirmed,
                     optimisticEventWatermark: watermark,
                 };
@@ -749,7 +803,7 @@ export function createOptimisticEngine(config: OptimisticEngineConfig): Optimist
             unpredictedBarrier = false;
             const latestPredicted = pendingCommands[pendingCommands.length - 1].predictedState;
             return {
-                stateToRender: latestPredicted,
+                stateToRender: clampRenderedInteractionToAuthoritativeSeatView(latestPredicted, serverState),
                 didRollback: false,
                 optimisticEventWatermark: null,
             };

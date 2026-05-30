@@ -1,25 +1,27 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
-    resolveOnPlay,
     requireOnPlay,
+    resolveOnPlay,
     resolveSpecial,
     type AbilityContext,
 } from './abilityRegistry';
 import { getCardDef } from '../data/cards';
 import { reduce } from './reduce';
-import type { ActionCardDef, SmashUpCore, SmashUpEvent } from './types';
+import type { ActionCardDef, FusionCardDef, SmashUpCore, SmashUpEvent } from './types';
 
 function getPlayedActionExecutor(defId: string) {
-    const def = getCardDef(defId) as ActionCardDef | undefined;
-    if (!def || def.type !== 'action') {
+    const def = getCardDef(defId) as ActionCardDef | FusionCardDef | undefined;
+    if (!def) {
         return requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
     }
 
-    if (def.subtype === 'ongoing') {
+    const subtype = def.type === 'fusion' ? def.actionSubtype : def.subtype;
+
+    if (subtype === 'ongoing') {
         return resolveOnPlay(defId) ?? null;
     }
 
-    if (def.subtype === 'special') {
+    if (subtype === 'special') {
         return resolveSpecial(defId)
             ?? requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
     }
@@ -62,6 +64,13 @@ export function appendResolvedActionAbility(params: {
         simCore = reduce(simCore, evt);
     }
 
+    if (!executor) {
+        return {
+            state: params.state,
+            events: params.events,
+        };
+    }
+
     const abilityCtx: AbilityContext = {
         state: simCore,
         matchState: { ...params.state, core: simCore },
@@ -72,7 +81,7 @@ export function appendResolvedActionAbility(params: {
         targetMinionUid: params.targetMinionUid,
         random: params.random,
         now: params.timestamp,
-        handSizeAfterPlay: params.handSizeAfterPlay,
+        handSizeAfterPlay: params.handSizeAfterPlay ?? (simCore.players[params.playerId]?.hand.length ?? 0),
     };
     const result = executor(abilityCtx);
     params.events.push(...result.events);

@@ -22,20 +22,20 @@
         }
       }
     },
-    "base/compressed/shayu": {
+    "base/compressed/yuanhou": {
       "variants": {
         "webp": {
-          "sha256": "b07ca572651496a2f3490c43472e26e4e496817abc1ce807ffc012b0853c976f",
-          "bytes": 416934,
+          "sha256": "220cbe4472d819376d280c4e9b62b6cb792fd70a6a113d70b2a3825147d220b7",
+          "bytes": 321544,
           "mime": "image/webp"
         }
       }
     },
-    "base/shayu": {
+    "base/yuanhou": {
       "variants": {
         "png": {
-          "sha256": "bce7b42d41111d454117c40b32efad6e13ae512d3f03980757793ca1e6ebd607",
-          "bytes": 17007487,
+          "sha256": "3fa3dc9dafc50279272829e229a3c12993c11588e549b3b8d30e363f4776aafc",
+          "bytes": 16968513,
           "mime": "image/png"
         }
       }
@@ -49,11 +49,11 @@
         }
       }
     },
-    "cards/compressed/shayu": {
+    "cards/compressed/yuanhou": {
       "variants": {
         "webp": {
-          "sha256": "50af42a5d52a46eb3caa23bdb8df01b7c4d21fb26fe22fbf381269d4cc61c63d",
-          "bytes": 899018,
+          "sha256": "c32bbf6f88f3f7c952d07fa8f573d82aea72daa422861894dfc1df857bf76492",
+          "bytes": 1018858,
           "mime": "image/webp"
         }
       }
@@ -67,11 +67,11 @@
         }
       }
     },
-    "cards/shayu": {
+    "cards/yuanhou": {
       "variants": {
         "png": {
-          "sha256": "2b8146e44fbd1e7eb79115e848f20ef30d323b8dbb924ab462b8432e64110fac",
-          "bytes": 42559123,
+          "sha256": "ae666d1c8d215b7dc339cdba062dfc1c397d221daa13dcc752e26cc33ef2b334",
+          "bytes": 44486175,
           "mime": "image/png"
         }
       }

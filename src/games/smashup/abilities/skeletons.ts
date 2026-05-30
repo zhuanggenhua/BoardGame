@@ -40,6 +40,33 @@ function getHandCards(state: SmashUpCore, playerId: PlayerId): CardInstance[] {
     return state.players[playerId]?.hand ?? [];
 }
 
+function getHandCardOwner(state: SmashUpCore, playerId: PlayerId, cardUid: string): PlayerId {
+    return getHandCards(state, playerId).find(card => card.uid === cardUid)?.owner ?? playerId;
+}
+
+function getBuryChoiceTrueOwner(state: SmashUpCore, playerId: PlayerId, choice: CardChoice): PlayerId {
+    if (!choice.cardUid) return playerId;
+    if (choice.buriedFrom === 'hand') {
+        return getHandCardOwner(state, playerId, choice.cardUid);
+    }
+    if (choice.buriedFrom === 'discard') {
+        return state.players[playerId]?.discard.find(card => card.uid === choice.cardUid)?.owner ?? playerId;
+    }
+    if (choice.buriedFrom === 'play') {
+        for (const base of state.bases) {
+            const minion = base.minions.find(card => card.uid === choice.cardUid);
+            if (minion) return minion.owner;
+            const ongoing = (base.ongoingActions ?? []).find(card => card.uid === choice.cardUid);
+            if (ongoing) return ongoing.ownerId;
+            for (const host of base.minions) {
+                const attached = (host.attachedActions ?? []).find(card => card.uid === choice.cardUid);
+                if (attached) return attached.ownerId;
+            }
+        }
+    }
+    return playerId;
+}
+
 function getDiscardMinions(state: SmashUpCore, playerId: PlayerId, maxPower?: number): CardInstance[] {
     const discard = state.players[playerId]?.discard ?? [];
     return discard.filter(card => card.type === 'minion' && (maxPower === undefined || isLowPowerMinionDefId(card.defId, maxPower)));
@@ -93,13 +120,14 @@ function getBaseOptions(state: SmashUpCore) {
 }
 
 function buildDiscardBuryEvents(state: SmashUpCore, playerId: PlayerId, cardUid: string, defId: string, baseIndex: number, random: TriggerContext['random'], now: number) {
+    const trueOwnerId = state.players[playerId]?.discard.find(card => card.uid === cardUid)?.owner ?? playerId;
     return buildBuryCardEvents({
         core: state,
         playerId,
         cardUid,
         defId,
         baseIndex,
-        trueOwnerId: playerId,
+        trueOwnerId,
         buriedFrom: 'discard',
         reason: 'skeletons_bury_from_discard',
         random,
@@ -328,7 +356,7 @@ function skeletonsGravestonesOnUncovered(ctx: TriggerContext): AbilityResult {
 }
 
 function skeletonsGravestonesAfterScoring(ctx: TriggerContext): AbilityResult {
-    if (!ctx.matchState || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return { events: [] };
+    if (!ctx.matchState || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId || !ctx.sourceCardUid) return { events: [] };
     const interaction = createSimpleChoice(
         `skeletons_gravestones_after_scoring_${ctx.now}`,
         ctx.sourceControllerId,
@@ -336,7 +364,7 @@ function skeletonsGravestonesAfterScoring(ctx: TriggerContext): AbilityResult {
         buildBaseTargetOptions(getBaseOptions(ctx.state).filter(base => base.baseIndex !== ctx.sourceBaseIndex), ctx.state),
         { sourceId: 'skeletons_gravestones_after_scoring', targetType: 'base' },
     );
-    (interaction.data as any).continuationContext = { sourceBaseIndex: ctx.sourceBaseIndex };
+    (interaction.data as any).continuationContext = { sourceBaseIndex: ctx.sourceBaseIndex, sourceCardUid: ctx.sourceCardUid };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -467,7 +495,7 @@ const handleSkeletonsReturnedOne: InteractionHandler = (state, playerId, value, 
     const selected = value as CardChoice;
     const continuation = data?.continuationContext as { targetBaseIndex?: number } | undefined;
     if (selected.skip || !selected.cardUid || !selected.defId || continuation?.targetBaseIndex === undefined) return { state, events: [] };
-    return { state, events: buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: selected.cardUid, defId: selected.defId, baseIndex: continuation.targetBaseIndex, trueOwnerId: playerId, buriedFrom: selected.buriedFrom ?? 'hand', reason: 'skeletons_returned_one', random, now }) };
+    return { state, events: buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: selected.cardUid, defId: selected.defId, baseIndex: continuation.targetBaseIndex, trueOwnerId: getBuryChoiceTrueOwner(state.core, playerId, selected), buriedFrom: selected.buriedFrom ?? 'hand', reason: 'skeletons_returned_one', random, now }) };
 };
 
 const handleSkeletonsReturnedOneUncover: InteractionHandler = (state, playerId, value, _data, random, now) => {
@@ -551,7 +579,7 @@ const handleSkeletonsLordOfBonesBury: InteractionHandler = (state, playerId, val
     const selected = value as CardChoice;
     const continuation = data?.continuationContext as { targetBaseIndex?: number } | undefined;
     if (selected.skip || !selected.cardUid || !selected.defId || continuation?.targetBaseIndex === undefined) return { state, events: [] };
-    return { state, events: buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: selected.cardUid, defId: selected.defId, baseIndex: continuation.targetBaseIndex, trueOwnerId: playerId, buriedFrom: 'hand', reason: 'skeletons_lord_of_bones', random, now }) };
+    return { state, events: buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: selected.cardUid, defId: selected.defId, baseIndex: continuation.targetBaseIndex, trueOwnerId: getHandCardOwner(state.core, playerId, selected.cardUid), buriedFrom: 'hand', reason: 'skeletons_lord_of_bones', random, now }) };
 };
 
 const handleSkeletonsLordOfBonesUncover: InteractionHandler = (state, playerId, value, _data, random, now) => {
@@ -598,7 +626,7 @@ const handleSkeletonsGraveGoodsBury: InteractionHandler = (state, playerId, valu
     const selected = value as CardChoice;
     const continuation = data?.continuationContext as { targetBaseIndex?: number } | undefined;
     if (!selected.cardUid || !selected.defId || continuation?.targetBaseIndex === undefined) return { state, events: [] };
-    const firstEvents = buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: selected.cardUid, defId: selected.defId, baseIndex: continuation.targetBaseIndex, trueOwnerId: playerId, buriedFrom: 'hand', reason: 'skeletons_grave_goods', random: _random, now });
+    const firstEvents = buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: selected.cardUid, defId: selected.defId, baseIndex: continuation.targetBaseIndex, trueOwnerId: getHandCardOwner(state.core, playerId, selected.cardUid), buriedFrom: 'hand', reason: 'skeletons_grave_goods', random: _random, now });
     let nextState = state;
     for (const event of firstEvents) {
         nextState = { ...nextState, core: reduce(nextState.core, event) };
@@ -655,7 +683,7 @@ const handleSkeletonsGraveGoodsBonusBase: InteractionHandler = (state, playerId,
         state,
         events: [
             discardEvent,
-            ...buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: continuation.buryCardUid, defId: continuation.buryDefId, baseIndex: selected.baseIndex, trueOwnerId: playerId, buriedFrom: 'hand', reason: 'skeletons_grave_goods_bonus', random, now }),
+            ...buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: continuation.buryCardUid, defId: continuation.buryDefId, baseIndex: selected.baseIndex, trueOwnerId: getHandCardOwner(state.core, playerId, continuation.buryCardUid), buriedFrom: 'hand', reason: 'skeletons_grave_goods_bonus', random, now }),
         ],
     };
 };
@@ -800,11 +828,30 @@ const handleSkeletonsGravestonesCounter: InteractionHandler = (state, _playerId,
 
 const handleSkeletonsGravestonesAfterScoring: InteractionHandler = (state, playerId, value, data, random, now) => {
     const selected = value as BaseChoice;
-    const continuation = data?.continuationContext as { sourceBaseIndex?: number } | undefined;
+    const continuation = data?.continuationContext as { sourceBaseIndex?: number; sourceCardUid?: string } | undefined;
     if (selected.baseIndex === undefined || continuation?.sourceBaseIndex === undefined) return { state, events: [] };
-    const actionCard = state.core.bases[continuation.sourceBaseIndex]?.ongoingActions.find(action => action.defId === 'skeletons_gravestones' && action.ownerId === playerId);
+    const actionCard = state.core.bases[continuation.sourceBaseIndex]?.ongoingActions.find(action =>
+        action.uid === continuation.sourceCardUid
+        && action.defId === 'skeletons_gravestones'
+        && ((action.metadata?.sourceControllerId ?? action.ownerId) === playerId),
+    );
     if (!actionCard) return { state, events: [] };
-    return { state, events: buildBuryCardEvents({ core: state.core, matchState: state, playerId, cardUid: actionCard.uid, defId: actionCard.defId, baseIndex: selected.baseIndex, trueOwnerId: playerId, buriedFrom: 'play', reason: 'skeletons_gravestones', random, now }) };
+    return {
+        state,
+        events: buildBuryCardEvents({
+            core: state.core,
+            matchState: state,
+            playerId,
+            cardUid: actionCard.uid,
+            defId: actionCard.defId,
+            baseIndex: selected.baseIndex,
+            trueOwnerId: actionCard.ownerId,
+            buriedFrom: 'play',
+            reason: 'skeletons_gravestones',
+            random,
+            now,
+        }),
+    };
 };
 
 const handleSkeletonsGraveyardCounter: InteractionHandler = (state, _playerId, value, data, _random, now) => {

@@ -89,6 +89,7 @@ type AttachedActionState = {
 
 type FairiesEnchantmentContinuation = {
     baseIndex: number;
+    attachedCardUid?: string;
     selectedBranchIds?: Array<'plus' | 'minus'>;
     allowBoth?: boolean;
 };
@@ -184,6 +185,7 @@ function findAttachedActionState(
 
 function buildTransferAttachedActionEvents(
     attached: AttachedActionState,
+    sourcePlayerId: PlayerId,
     targetBaseIndex: number,
     targetMinionUid: string,
     reason: string,
@@ -206,6 +208,7 @@ function buildTransferAttachedActionEvents(
                 cardUid: attached.cardUid,
                 defId: attached.defId,
                 ownerId: attached.ownerId,
+                ...(attached.ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
                 targetType: 'minion',
                 targetBaseIndex,
                 targetMinionUid,
@@ -339,10 +342,10 @@ function buildPlayfulTricksActionOptions(state: SmashUpCore) {
     return options;
 }
 
-function getOwnedSetAsideSpiritOfTheForest(state: SmashUpCore, playerId: PlayerId) {
+function getControlledSetAsideSpiritOfTheForest(state: SmashUpCore, playerId: PlayerId) {
     return (state.titans ?? []).find((titan) =>
         titan.defId === 'fairies_spirit_of_the_forest'
-        && titan.ownerId === playerId
+        && titan.controllerId === playerId
         && titan.location.zone === 'setaside',
     );
 }
@@ -534,6 +537,7 @@ function createTransferSelfAbilityProgram(
             return {
                 events: buildTransferAttachedActionEvents(
                     liveAttached,
+                    context.playerId,
                     selected.baseIndex,
                     selected.minionUid,
                     reason,
@@ -702,6 +706,7 @@ const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, S
         return {
             events: buildTransferAttachedActionEvents(
                 attached,
+                context.playerId,
                 context.targetBaseIndex,
                 context.targetMinionUid,
                 'fairies_tinx',
@@ -759,7 +764,8 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
         if (branchIds.length === 0) return { events: [] };
 
         const attached = state.core.bases[context.baseIndex]?.ongoingActions.find(action =>
-            action.ownerId === playerId && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
+            action.uid === context.attachedCardUid
+            && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
         );
         if (!attached) return { events: [] };
         const spirit = branchIds.length > 1 ? getAvailableSpiritOfTheForestOrTitan(state.core, playerId) : undefined;
@@ -769,6 +775,8 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
         if (fairiesEnchantmentMode !== 'plus' && fairiesEnchantmentMode !== 'minus' && fairiesEnchantmentMode !== 'both') {
             return { events: [] };
         }
+        const sourcePlayerId = (attached.metadata?.sourcePlayerId as PlayerId | undefined)
+            ?? (attached.metadata?.sourceControllerId as PlayerId | undefined);
 
         return {
             events: [
@@ -778,6 +786,7 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
                         cardUid: attached.uid,
                         defId: attached.defId,
                         ownerId: attached.ownerId,
+                        ...(sourcePlayerId && sourcePlayerId !== attached.ownerId ? { sourcePlayerId } : {}),
                         targetType: 'base',
                         targetBaseIndex: context.baseIndex,
                         metadata: { fairiesEnchantmentMode },
@@ -866,7 +875,7 @@ const fairiesPlayfulTricksSpiritBasePromptProgram = createPromptProgram<FairiesP
         }
         const titan = state.core.titans?.find((candidate) =>
             candidate.uid === context.titanUid
-            && candidate.ownerId === playerId
+            && candidate.controllerId === playerId
             && candidate.location.zone === 'setaside',
         );
         if (!titan || !canControllerPlayTitan(state.core, playerId, titan.uid)) return { events: [] };
@@ -1067,7 +1076,7 @@ function fairiesMagicAcorns(ctx: AbilityContext): AbilityResult {
 
 function fairiesPlayfulTricks(ctx: AbilityContext): AbilityResult {
     const actionOptions = buildPlayfulTricksActionOptions(ctx.state);
-    const setAsideSpirit = getOwnedSetAsideSpiritOfTheForest(ctx.state, ctx.playerId);
+    const setAsideSpirit = getControlledSetAsideSpiritOfTheForest(ctx.state, ctx.playerId);
     const canPlaySpirit = !!setAsideSpirit && !getTitanByController(ctx.state, ctx.playerId);
 
     if (!canPlaySpirit) {
@@ -1118,6 +1127,7 @@ const fairiesEnchantmentProgram = createEffectProgram<AbilityContext, SmashUpCor
             playerId: ctx.playerId,
             now: ctx.now,
             baseIndex: ctx.baseIndex,
+            attachedCardUid: ctx.cardUid,
             allowBoth: !!upgrade,
         } satisfies FairiesEnchantmentContinuation & FairiesPromptContext,
         nextProgram: fairiesEnchantmentPromptProgram,
@@ -1162,7 +1172,7 @@ function fairiesLadybugProtectionChecker(ctx: ProtectionCheckContext): boolean {
 function fairiesMagicWardRestrictionChecker(ctx: RestrictionCheckContext): boolean {
     return ctx.state.bases[ctx.baseIndex]?.ongoingActions.some(action =>
         (action.defId === 'fairies_magic_ward' || action.defId === 'fairies_magic_ward_pod')
-        && action.ownerId !== ctx.playerId,
+        && ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) !== ctx.playerId,
     ) ?? false;
 }
 

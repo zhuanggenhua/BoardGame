@@ -139,6 +139,7 @@ function shuffleCardIntoDeck(
     random: AbilityContext['random'] | TriggerContext['random'],
     now: number,
     reason: string,
+    sourcePlayerId?: PlayerId,
 ): SmashUpEvent[] {
     const player = core.players[playerId];
     if (!player) return [];
@@ -157,6 +158,7 @@ function shuffleCardIntoDeck(
             cardUid,
             defId,
             ownerId: playerId,
+            ...(sourcePlayerId !== undefined && sourcePlayerId !== playerId ? { sourcePlayerId } : {}),
             reason,
             now,
             expectedLocation: 'any',
@@ -166,6 +168,7 @@ function shuffleCardIntoDeck(
             payload: {
                 playerId,
                 deckUids: shuffled.map(card => card.uid),
+                ...(sourcePlayerId !== undefined && sourcePlayerId !== playerId ? { sourcePlayerId } : {}),
             },
             timestamp: now,
         } as SmashUpEvent,
@@ -191,13 +194,14 @@ function buildPrincessesDiscardCardOptions(
 }
 
 function princessesHappilyEverAfter(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
-    if (ctx.rankings?.some(ranking => ranking.playerId === ctx.playerId && ranking.vp > 0) !== true) {
+    const scoringOwnerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.rankings?.some(ranking => ranking.playerId === scoringOwnerId && ranking.vp > 0) !== true) {
         return [];
     }
     return [{
         type: SU_EVENTS.VP_AWARDED,
         payload: {
-            playerId: ctx.playerId,
+            playerId: scoringOwnerId,
             amount: 1,
             reason: 'princesses_happily_ever_after',
         },
@@ -206,21 +210,26 @@ function princessesHappilyEverAfter(ctx: TriggerContext): TriggerResult | SmashU
 }
 
 function princessesWoodlandHelpers(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    const helperControllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.playerId !== helperControllerId) return [];
     if (!ctx.matchState) return [];
     const cardUid = parseActionCardUid(ctx.sourceEventId);
     if (!cardUid) return [];
 
-    const player = ctx.state.players[ctx.playerId];
-    const card = player?.discard.find(entry => entry.uid === cardUid);
-    if (!player || !card || card.type !== 'action') return [];
+    const discardOwnerEntry = Object.entries(ctx.state.players).find(([, player]) =>
+        player.discard.some(entry => entry.uid === cardUid && entry.type === 'action'),
+    );
+    const discardOwnerId = discardOwnerEntry?.[0] as PlayerId | undefined;
+    const card = discardOwnerEntry?.[1].discard.find(entry => entry.uid === cardUid);
+    if (!discardOwnerId || !card || card.type !== 'action') return [];
 
     const result = executeAbilityProgram(princessesWoodlandHelpersPromptProgram, {
         matchState: ctx.matchState,
-        playerId: ctx.playerId,
+        playerId: helperControllerId,
         now: ctx.now,
         cardUid,
         defId: card.defId,
-        ownerId: ctx.playerId,
+        ownerId: discardOwnerId,
         cardName: getCardDef(card.defId)?.name ?? card.defId,
     } satisfies PrincessesWoodlandHelpersPromptContext);
     return {
@@ -248,20 +257,28 @@ function princessesSleepingBeautyOnDiscarded(ctx: TriggerContext): TriggerResult
     if (ctx.triggerMinionDefId !== 'princesses_sleeping_beauty' && ctx.triggerMinionDefId !== 'princesses_sleeping_beauty_pod') {
         return [];
     }
-    const ownerId = ctx.triggerMinion?.owner ?? ctx.playerId;
-    const player = ctx.state.players[ownerId];
-    const card = player?.discard.find(entry => entry.uid === ctx.triggerMinionUid && entry.defId === ctx.triggerMinionDefId);
-    if (!card || !ctx.triggerMinionUid) return [];
+    if (!ctx.triggerMinionUid || !ctx.triggerMinionDefId) return [];
+    const discardEntry = Object.entries(ctx.state.players).find(([, player]) =>
+        player.discard.some(card => card.uid === ctx.triggerMinionUid && card.defId === ctx.triggerMinionDefId),
+    );
+    const discardSourcePlayerId = discardEntry?.[0] as PlayerId | undefined;
+    const discardCard = discardEntry?.[1].discard.find(card =>
+        card.uid === ctx.triggerMinionUid && card.defId === ctx.triggerMinionDefId,
+    );
+    const ownerId = ctx.triggerMinion?.owner
+        ?? discardCard?.owner
+        ?? ctx.playerId;
 
-    const shuffled = ctx.random.shuffle([...player.deck, card]);
-    return [{
-        type: SU_EVENTS.DECK_REORDERED,
-        payload: {
-            playerId: ownerId,
-            deckUids: shuffled.map(entry => entry.uid),
-        },
-        timestamp: ctx.now,
-    } as SmashUpEvent];
+    return shuffleCardIntoDeck(
+        ctx.state,
+        ownerId,
+        ctx.triggerMinionUid,
+        ctx.triggerMinionDefId,
+        ctx.random,
+        ctx.now,
+        'princesses_sleeping_beauty',
+        discardSourcePlayerId,
+    );
 }
 
 function princessesHeirloomInterceptor(_state: SmashUpCore, event: SmashUpEvent): SmashUpEvent | null | undefined {
@@ -289,7 +306,8 @@ function princessesMarieDeGraw(ctx: AbilityContext): AbilityResult {
             ...buildValidatedCardToDeckBottomEvents(ctx.state, {
                 cardUid: peeked.card.uid,
                 defId: peeked.card.defId,
-                ownerId: ctx.playerId,
+                ownerId: peeked.card.owner,
+                ...(peeked.card.owner !== ctx.playerId ? { sourcePlayerId: ctx.playerId } : {}),
                 reason: 'princesses_marie_degraw',
                 now: ctx.now,
                 expectedLocation: 'deck',
@@ -596,26 +614,52 @@ function resolvePrincessesDirectToDvdSequelSelection(
         return { matchState: state, events: [] };
     }
 
-    const shuffledDeck = random.shuffle([...player.deck, card]);
-    const events: SmashUpEvent[] = [{
-        type: SU_EVENTS.DECK_REORDERED,
-        payload: {
-            playerId,
-            deckUids: shuffledDeck.map(entry => entry.uid),
-        },
-        timestamp,
-    } as DeckReorderedEvent];
-    const drawCard = shuffledDeck[0];
-    if (drawCard) {
-        events.push({
-            type: SU_EVENTS.CARDS_DRAWN,
+    const ownerId = card.owner;
+    const owner = state.core.players[ownerId];
+    if (!owner) {
+        return { matchState: state, events: [] };
+    }
+
+    const shuffledDeck = random.shuffle([
+        ...owner.deck.filter(entry => entry.uid !== card.uid),
+        { ...card, owner: ownerId },
+    ]);
+    const events: SmashUpEvent[] = [
+        ...buildValidatedCardToDeckBottomEvents(state.core, {
+            cardUid: card.uid,
+            defId: card.defId,
+            ownerId,
+            ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            reason: 'princesses_direct_to_dvd_sequel',
+            now: timestamp,
+            expectedLocation: 'discard',
+        }),
+        {
+            type: SU_EVENTS.DECK_REORDERED,
             payload: {
-                playerId,
-                count: 1,
-                cardUids: [drawCard.uid],
+                playerId: ownerId,
+                deckUids: shuffledDeck.map(entry => entry.uid),
+                ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
             },
             timestamp,
-        } as CardsDrawnEvent);
+        } as DeckReorderedEvent,
+    ];
+
+    if (ownerId === playerId) {
+        const drawCard = shuffledDeck[0];
+        if (drawCard) {
+            events.push({
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: {
+                    playerId,
+                    count: 1,
+                    cardUids: [drawCard.uid],
+                },
+                timestamp,
+            } as CardsDrawnEvent);
+        }
+    } else {
+        events.push(...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp));
     }
     return { matchState: state, events };
 }

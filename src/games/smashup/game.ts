@@ -18,7 +18,14 @@ import {
 } from '../../engine';
 import { createGameEngine } from '../../engine/adapter';
 import { SmashUpDomain, SU_COMMANDS, type SmashUpCommand, type SmashUpCore, type SmashUpEvent } from './domain';
-import { canCardBePlayedInResponseWindow, isCardActionLike, isCardMinionLike } from './domain/utils';
+import { getMinionLikePower } from './data/cards';
+import { isOperationRestricted } from './domain/ongoingEffects';
+import {
+    canCardBePlayedInResponseWindow,
+    getResponseWindowPlayableBaseIndicesForCard,
+    isCardActionLike,
+    isCardMinionLike,
+} from './domain/utils';
 import { getActionPlayRestrictionError, getMinionPlayRestrictionError } from './domain/playLegality';
 import { smashUpFlowHooks } from './domain/index';
 import { initAllAbilities } from './abilities';
@@ -79,16 +86,62 @@ const systems: EngineSystem<SmashUpCore>[] = [
             // 检查响应窗口可打出的行动卡
             const hasRespondableAction = !actionRestrictionError && player.hand.some(c => {
                 if (!isCardActionLike(c)) return false;
-                return canCardBePlayedInResponseWindow(core, c, windowType);
+                if (!canCardBePlayedInResponseWindow(core, c, windowType)) return false;
+                const baseIndices = getResponseWindowPlayableBaseIndicesForCard(core, c.defId, windowType);
+                if (baseIndices.length === 0) return true;
+                return baseIndices.some(baseIndex => !isOperationRestricted(core, baseIndex, playerId, 'play_action', {
+                    cardUid: c.uid,
+                    activationWindow: windowType,
+                }));
             });
             
             // 检查 beforeScoringPlayable 随从（如影舞者）- 只在 meFirst 窗口可用
             const hasBeforeScoringMinion = windowType === 'meFirst' && !minionRestrictionError && player.hand.some(c => {
                 if (!isCardMinionLike(c)) return false;
-                return canCardBePlayedInResponseWindow(core, c, windowType);
+                if (!canCardBePlayedInResponseWindow(core, c, windowType)) return false;
+                const basePower = getMinionLikePower(c.defId) ?? 0;
+                return getResponseWindowPlayableBaseIndicesForCard(core, c.defId, windowType).some(baseIndex =>
+                    !isOperationRestricted(core, baseIndex, playerId, 'play_minion', {
+                        minionDefId: c.defId,
+                        basePower,
+                        usesBaseLimitedMinionQuota: false,
+                        cardUid: c.uid,
+                        fromDiscard: false,
+                        activationWindow: windowType,
+                    }),
+                );
             });
-            
-            return hasRespondableAction || hasBeforeScoringMinion;
+
+            const responseProbeState = {
+                core,
+                sys: {
+                    phase: 'scoreBases',
+                    interaction: { current: undefined, queue: [] },
+                    responseWindow: {
+                        current: {
+                            id: `smashup_response_content_probe_${windowType}_${playerId}`,
+                            windowType,
+                            sourceId: 'smashup_reaction_choose',
+                            responderQueue: [playerId],
+                            currentResponderIndex: 0,
+                            passedPlayers: [],
+                        },
+                    },
+                },
+            };
+
+            const hasBoardSpecial = core.bases.some((base, baseIndex) =>
+                base.minions.some(minion =>
+                    minion.controller === playerId
+                    && SmashUpDomain.validate(responseProbeState as any, {
+                        type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                        playerId,
+                        payload: { minionUid: minion.uid, baseIndex },
+                    } as any).valid,
+                ),
+            );
+
+            return hasRespondableAction || hasBeforeScoringMinion || hasBoardSpecial;
         },
     }),
     createTutorialSystem(),

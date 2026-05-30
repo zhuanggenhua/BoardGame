@@ -246,6 +246,69 @@ describe('盘旋机器人链式打出', () => {
         expect(playOption.value.defId).toBe('robot_zapbot');
     });
 
+    it('从牌库顶打出 borrowed 随从时，应保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [
+                        { uid: 'hoverbot-1', defId: 'robot_hoverbot', type: 'minion', owner: '0' },
+                    ],
+                    deck: [
+                        { uid: 'borrowed-zapbot', defId: 'robot_zapbot', type: 'minion', owner: '1' },
+                    ],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['robots', 'wizards'] as [string, string],
+                    minionsPlayedPerBase: {},
+                    sameNameMinionDefId: null,
+                },
+                '1': {
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['pirates', 'ninjas'] as [string, string],
+                    minionsPlayedPerBase: {},
+                    sameNameMinionDefId: null,
+                },
+            },
+        });
+
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => ({ core, sys: { ...createInitialSystemState(PLAYER_IDS, systems), phase: 'playCards' } }),
+        });
+
+        const result = runner.run({
+            name: '盘旋机器人打出牌库顶 borrowed 随从',
+            commands: [
+                { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'hoverbot-1', baseIndex: 0 } },
+                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: 'play' } },
+            ] as any[],
+        });
+
+        expect(result.steps[0]?.success).toBe(true);
+        expect(result.steps[1]?.success).toBe(true);
+
+        const borrowed = result.finalState.core.bases[0].minions.find(m => m.uid === 'borrowed-zapbot');
+        expect(borrowed?.controller).toBe('0');
+        expect(borrowed?.owner).toBe('1');
+        expect(result.finalState.core.players['0'].deck).toEqual([]);
+        expect(result.finalState.core.players['1'].deck).toEqual([]);
+    });
+
     it('应该阻止打出已经不在牌库顶的卡', () => {
         // 这个测试验证交互解决器的校验逻辑
         // 场景：第一个盘旋看到 hoverbot-2，但在响应交互前 hoverbot-2 被移除

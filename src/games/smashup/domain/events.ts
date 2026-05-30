@@ -75,6 +75,7 @@ export const SU_EVENTS = defineEvents({
   
   'su:turn_started': { audio: 'immediate', sound: TURN_NOTIFY_KEY },
   'su:turn_ended': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
+  'su:extra_turn_queued': 'silent',
   
   'su:base_replaced': { audio: 'immediate', sound: UPDATE_CHIME_KEY },  // 基地替换（本地 AnimatePresence 过渡）
   'su:deck_reshuffled': { audio: 'immediate', sound: CARD_SHUFFLE_KEY },
@@ -167,6 +168,7 @@ export const SU_EVENT_TYPES = {
   BURIED_CARDS_DISCARDED_WITH_BASE: SU_EVENTS['su:buried_cards_discarded_with_base'].type,
   TURN_STARTED: SU_EVENTS['su:turn_started'].type,
   TURN_ENDED: SU_EVENTS['su:turn_ended'].type,
+  EXTRA_TURN_QUEUED: SU_EVENTS['su:extra_turn_queued'].type,
   BASE_REPLACED: SU_EVENTS['su:base_replaced'].type,
   DECK_RESHUFFLED: SU_EVENTS['su:deck_reshuffled'].type,
   DECK_REORDERED: SU_EVENTS['su:deck_reordered'].type,

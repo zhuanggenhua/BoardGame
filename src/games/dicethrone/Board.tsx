@@ -48,7 +48,7 @@ import { useCurrentChoice, useCurrentDefenderChoice, useDiceThroneState } from '
 import { INTERACTION_COMMANDS, asCompareRollChoice } from '../../engine/systems/InteractionSystem';
 import { diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands, type DiceModifyStep, type DiceSelectStep } from './domain/systems';
 // 引擎层 Hooks
-import { useSpectatorMoves, useEventStreamCursor } from '../../engine';
+import { useSpectatorMoves } from '../../engine';
 // 游戏特定 Hooks
 import { useInteractionState } from './hooks/useInteractionState';
 import { useAnimationEffects } from './hooks/useAnimationEffects';
@@ -72,6 +72,7 @@ import { LayoutSaveButton } from './ui/LayoutSaveButton';
 import { useAutoSkipSelection } from './hooks/useAutoSkipSelection';
 import { useAttackShowcase } from './hooks/useAttackShowcase';
 import { AttackShowcaseOverlay } from './ui/AttackShowcaseOverlay';
+import { useDieRerollAnimationConsumer } from './hooks/useDieRerollAnimationConsumer';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
 import { getAutoResponseEnabled } from './ui/AutoResponseToggle';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
@@ -409,29 +410,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         })
     ), [G.pendingBonusDiceSettlement, rawG.sys.interaction, rawG.sys.responseWindow, rootPid]);
 
-    // 监听 DIE_REROLLED 事件触发骰子重投动画
-    const { consumeNew: consumeDieRerolled } = useEventStreamCursor({ 
-        entries: rawG.sys.eventStream?.entries ?? [] 
+    useDieRerollAnimationConsumer({
+        eventStreamEntries: rawG.sys.eventStream?.entries ?? [],
+        setRerollingDiceIds,
     });
-    
-    React.useEffect(() => {
-        const { entries: newEntries } = consumeDieRerolled();
-        if (newEntries.length === 0) return;
-
-        // 收集所有重投的骰子 ID
-        const rerolledDiceIds: number[] = [];
-        for (const entry of newEntries) {
-            const event = entry.event as { type: string; payload?: { dieId?: number } };
-            if (event.type === 'DIE_REROLLED' && typeof event.payload?.dieId === 'number') {
-                rerolledDiceIds.push(event.payload.dieId);
-            }
-        }
-
-        if (rerolledDiceIds.length > 0) {
-            setRerollingDiceIds(rerolledDiceIds);
-            setTimeout(() => setRerollingDiceIds([]), 600);
-        }
-    }, [rawG.sys.eventStream?.entries, consumeDieRerolled, setRerollingDiceIds]);
 
     // 追踪已激活的攻击修正卡
     const { activeModifiers } = useActiveModifiers({

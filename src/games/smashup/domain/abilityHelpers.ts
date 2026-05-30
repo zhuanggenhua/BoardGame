@@ -222,10 +222,11 @@ export function destroyMinion(
     reason: string,
     now: number,
     sourceKind?: 'action' | 'nonAction',
+    controllerId?: PlayerId,
 ): MinionDestroyedEvent {
     return {
         type: SU_EVENTS.MINION_DESTROYED,
-        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason, sourceKind } as MinionDestroyedEvent['payload'],
+        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, controllerId, destroyerId, reason, sourceKind } as MinionDestroyedEvent['payload'],
         timestamp: now,
     };
 }
@@ -294,7 +295,7 @@ export function getSetAsideTitansPlayableAs(
 ): TitanState[] {
     if (getTitanByController(state, playerId)) return [];
     return getAllTitans(state).filter((titan) => {
-        if (titan.ownerId !== playerId || titan.location.zone !== 'setaside') return false;
+        if (titan.controllerId !== playerId || titan.location.zone !== 'setaside') return false;
         const titanDef = getTitanDef(titan.defId);
         return !!titanDef?.playAsKinds?.includes(playKind);
     });
@@ -452,6 +453,7 @@ export function buildValidatedDestroyEvents(
             params.reason,
             params.now,
             params.sourceKind,
+            minion.controller,
         ),
     ];
 }
@@ -491,6 +493,7 @@ export function buildValidatedCardToDeckBottomEvents(
         cardUid: string;
         defId: string;
         ownerId: PlayerId;
+        sourcePlayerId?: PlayerId;
         reason: string;
         now: number;
         expectedLocation?: 'discard' | 'hand' | 'deck' | 'bases' | 'any';
@@ -499,28 +502,31 @@ export function buildValidatedCardToDeckBottomEvents(
     const core = 'core' in state ? state.core : state;
     const owner = core.players[params.ownerId];
     if (!owner) return [];
+    const sourcePlayer = params.sourcePlayerId ? core.players[params.sourcePlayerId] : undefined;
 
     const exists = (() => {
         switch (params.expectedLocation ?? 'any') {
             case 'discard':
-                return owner.discard.some(card => card.uid === params.cardUid);
+                return (sourcePlayer ?? owner).discard.some(card => card.uid === params.cardUid);
             case 'hand':
-                return owner.hand.some(card => card.uid === params.cardUid);
+                return (sourcePlayer ?? owner).hand.some(card => card.uid === params.cardUid);
             case 'deck':
-                return owner.deck.some(card => card.uid === params.cardUid);
+                return (sourcePlayer ?? owner).deck.some(card => card.uid === params.cardUid);
             case 'bases':
                 return core.bases.some(
                     base => base.minions.some(minion => minion.uid === params.cardUid)
-                        || base.ongoingActions.some(action => action.uid === params.cardUid),
+                        || base.ongoingActions.some(action => action.uid === params.cardUid)
+                        || base.minions.some(minion => minion.attachedActions.some(action => action.uid === params.cardUid)),
                 );
             case 'any':
             default:
-                return owner.hand.some(card => card.uid === params.cardUid)
-                    || owner.deck.some(card => card.uid === params.cardUid)
-                    || owner.discard.some(card => card.uid === params.cardUid)
+                return (sourcePlayer ?? owner).hand.some(card => card.uid === params.cardUid)
+                    || (sourcePlayer ?? owner).deck.some(card => card.uid === params.cardUid)
+                    || (sourcePlayer ?? owner).discard.some(card => card.uid === params.cardUid)
                     || core.bases.some(
                         base => base.minions.some(minion => minion.uid === params.cardUid)
-                            || base.ongoingActions.some(action => action.uid === params.cardUid),
+                            || base.ongoingActions.some(action => action.uid === params.cardUid)
+                            || base.minions.some(minion => minion.attachedActions.some(action => action.uid === params.cardUid)),
                     );
         }
     })();
@@ -534,6 +540,7 @@ export function buildValidatedCardToDeckBottomEvents(
             defId: params.defId,
             ownerId: params.ownerId,
             reason: params.reason,
+            ...(params.sourcePlayerId !== undefined ? { sourcePlayerId: params.sourcePlayerId } : {}),
         },
         timestamp: params.now,
     }];
@@ -856,24 +863,55 @@ export function peekDeckTop(
     const player = state.players[playerId];
     if (!player) return undefined;
 
+    const splitDiscardByOwnerForDeckRebuild = (
+        discardCards: CardInstance[],
+    ): { sourceCards: CardInstance[]; ownerDeckEvents: DeckReorderedEvent[] } => {
+        const sourceCards: CardInstance[] = [];
+        const borrowedByOwner = new Map<PlayerId, CardInstance[]>();
+
+        for (const card of discardCards) {
+            if (card.owner !== playerId && state.players[card.owner]) {
+                borrowedByOwner.set(card.owner, [...(borrowedByOwner.get(card.owner) ?? []), card]);
+                continue;
+            }
+            sourceCards.push(card);
+        }
+
+        return {
+            sourceCards,
+            ownerDeckEvents: Array.from(borrowedByOwner.entries()).map(([ownerId, cards]) => ({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ownerId,
+                    sourcePlayerId: playerId,
+                    deckUids: [...state.players[ownerId].deck.map(card => card.uid), ...cards.map(card => card.uid)],
+                },
+                timestamp: now,
+            }) as DeckReorderedEvent),
+        };
+    };
+
     // 规则：当需要 look/reveal/search/draw 而牌库为空时，将弃牌堆洗入牌库并继续。
     // peekDeckTop 不消耗牌库顶，只在必要时重排牌库顺序（DECK_REORDERED）。
     const events: SmashUpEvent[] = [];
     if (player.deck.length === 0) {
         if (player.discard.length === 0) return undefined;
         const shuffled = random.shuffle([...player.discard]);
+        const { sourceCards, ownerDeckEvents } = splitDiscardByOwnerForDeckRebuild(shuffled);
+        events.push(...ownerDeckEvents);
+        if (sourceCards.length === 0) return undefined;
         events.push({
             type: SU_EVENTS.DECK_REORDERED,
             payload: {
                 playerId,
-                deckUids: shuffled.map(c => c.uid),
+                deckUids: sourceCards.map(c => c.uid),
             },
             timestamp: now,
         } as DeckReorderedEvent);
         // 注意：此处不直接修改 state；由 reducer 根据 DECK_REORDERED 更新 deck/discard 后，
         // 才会在后续流程中体现为“弃牌堆洗回牌库”。
-        // 为了本次 peek 能返回正确的 card，我们用模拟的 shuffled[0]。
-        const card = shuffled[0];
+        // 为了本次 peek 能返回正确的 card，我们用模拟的 sourceCards[0]。
+        const card = sourceCards[0];
         events.push(inspectDeck(playerId, inspectorPlayerId, 1, reason, now));
         if (revealTo === 'none') {
             return { card, events };
@@ -1034,6 +1072,7 @@ export function grantExtraMinion(
     options?: {
         sameNameOnly?: boolean;
         sameNameDefId?: string;
+        specificCardUid?: string;
         powerMax?: number;
         playTiming?: 'banked' | 'immediate';
         consumePendingMinionPlayEffectOnSkip?: boolean;
@@ -1048,6 +1087,7 @@ export function grantExtraMinion(
             ...(options?.powerMax !== undefined ? { powerMax: options.powerMax } : {}),
             ...(options?.sameNameOnly ? { sameNameOnly: true } : {}),
             ...(options?.sameNameDefId ? { sameNameDefId: options.sameNameDefId } : {}),
+            ...(options?.specificCardUid ? { specificCardUid: options.specificCardUid } : {}),
             ...(options?.consumePendingMinionPlayEffectOnSkip ? { consumePendingMinionPlayEffectOnSkip: true } : {}),
         },
         timestamp: now,
@@ -1063,6 +1103,8 @@ export function grantExtraAction(
     options?: {
         playTiming?: 'banked' | 'immediate';
         restrictToBase?: number;
+        restrictToMinionUid?: string;
+        specialActionWindow?: 'meFirst' | 'afterScoring';
         restrictToCardUid?: string;
         restrictToCardDefId?: string;
     },
@@ -1076,6 +1118,8 @@ export function grantExtraAction(
             reason,
             ...(options?.playTiming ? { playTiming: options.playTiming } : {}),
             ...(options?.restrictToBase !== undefined ? { restrictToBase: options.restrictToBase } : {}),
+            ...(options?.restrictToMinionUid ? { restrictToMinionUid: options.restrictToMinionUid } : {}),
+            ...(options?.specialActionWindow ? { specialActionWindow: options.specialActionWindow } : {}),
             ...(options?.restrictToCardUid ? { restrictToCardUid: options.restrictToCardUid } : {}),
             ...(options?.restrictToCardDefId ? { restrictToCardDefId: options.restrictToCardDefId } : {}),
         },

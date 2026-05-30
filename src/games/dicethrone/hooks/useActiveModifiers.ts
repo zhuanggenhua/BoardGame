@@ -22,6 +22,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { EventStreamEntry } from '../../../engine/types';
+import { useEventStreamRollback } from '../../../engine/hooks/EventStreamRollbackContext';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { findHeroCard } from '../heroes';
 
@@ -118,11 +119,24 @@ function scanActiveModifiers(entries: EventStreamEntry[]): ActiveModifier[] {
 export function useActiveModifiers(config: UseActiveModifiersConfig) {
     const { eventStreamEntries } = config;
     const [modifiers, setModifiers] = useState<ActiveModifier[]>([]);
+    const rollback = useEventStreamRollback();
     // 手动管理游标：记录上次处理的最大事件 ID
     const lastSeenIdRef = useRef<number>(-1);
     const isFirstMountRef = useRef(true);
+    const lastRollbackSeqRef = useRef<number>(rollback.seq);
 
     console.log('[useActiveModifiers] Hook 被调用，isFirstMount:', isFirstMountRef.current, 'totalEntries:', eventStreamEntries.length);
+
+    useEffect(() => {
+        if (rollback.seq === lastRollbackSeqRef.current) {
+            return;
+        }
+
+        lastRollbackSeqRef.current = rollback.seq;
+        console.log('[useActiveModifiers] 检测到 optimistic rollback 信号，清空当前修正卡并重置游标:', rollback);
+        setModifiers([]);
+        lastSeenIdRef.current = rollback.watermark ?? -1;
+    }, [rollback]);
 
     useEffect(() => {
         const curLen = eventStreamEntries.length;

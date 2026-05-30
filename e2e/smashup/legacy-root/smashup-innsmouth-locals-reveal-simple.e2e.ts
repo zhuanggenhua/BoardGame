@@ -71,7 +71,7 @@ test.describe('印斯茅斯"本地人"展示功能（简化版）', () => {
         expect(revealVisible).toBe(true);
 
         // 8. 验证展示的卡牌数量（应该是 3 张）
-        const cardCount = await page.locator('[data-testid="reveal-overlay"] [data-card-preview]').count();
+        const cardCount = await page.locator('[data-testid="reveal-overlay"] [data-testid="reveal-card"]').count();
         expect(cardCount).toBe(3);
 
         // 9. 截图：展示 UI

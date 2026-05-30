@@ -39,7 +39,7 @@
 ## 未覆盖风险
 
 - `Argonaut` 当前已用 E2E 覆盖 Mythic Greeks 内 Odysseus/Heracles/Spartan action-trigger 代表链；跨派系所有 `onActionPlayed` 能力的组合爆炸仍建议后续参数化审计工厂，不作为本轮新机制 E2E 缺口。
-- `Jason` 与简单 Favor 行动仍按 L1/L2 覆盖，不逐卡单独 E2E。
+- `Jason` 已补真实入口 E2E（见 Argonaut 代表链截图）；简单 Favor 行动仍按 L1/L2 覆盖，不逐卡单独 E2E。
 
 ## 2026-05-10 E2E 补充观察
 

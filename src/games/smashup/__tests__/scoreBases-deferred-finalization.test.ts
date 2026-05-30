@@ -21,7 +21,15 @@ import type { SmashUpCommand } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { SmashUpDomain, smashUpSystemsForTest } from '../game';
-import { appendScoringFrameDeferredPayload, createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
+import {
+    appendScoringFrameDeferredPayload,
+    buildPendingPostScoringActionEvents,
+    consumeScoringFrameDeferredPayload,
+    createScoringBaseRef,
+    createScoringSession,
+    replaceDeferredPostScoringReplacementBase,
+    setScoringSession,
+} from '../domain/scoringSession';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { getScoringSession } from '../domain/scoringSession';
 import { defaultTestRandom } from './testRunner';
@@ -502,6 +510,205 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         ]);
         expect(emittedEvents?.some(event => event.type === SU_EVENTS.BASE_CLEARED)).toBe(false);
         expect(emittedEvents?.some(event => event.type === SU_EVENTS.BASE_REPLACED)).toBe(false);
+    });
+
+    it('改写 deferred replacement base 时，也应同步改写待补发 deferredActions 的 targetBaseDefId', () => {
+        let state = wrapState(makeCore({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_temple_of_goju'),
+                makeBase('base_secret_garden'),
+                makeBase('base_tar_pits_pod', {
+                    minions: [makeMinion('runner', '0', 3, 'pirate_first_mate_pod')],
+                }),
+            ],
+            baseDeck: ['base_faceless_city'],
+        }));
+
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_temple_of_goju' },
+                timestamp: 2360,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_temple_of_goju',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2360,
+            },
+        ], [{
+            kind: 'moveMinionToReplacementBase',
+            minionUid: 'runner',
+            minionDefId: 'pirate_first_mate_pod',
+            fromBaseIndex: 2,
+            toBaseIndex: 1,
+            targetBaseDefId: 'base_secret_garden',
+            reason: '托尔图加：亚军移动随从到替换基地',
+        }]);
+
+        const replacedState = replaceDeferredPostScoringReplacementBase(state, 'base_faceless_city');
+        const consumed = consumeScoringFrameDeferredPayload(replacedState);
+        const replacementEvent = consumed.deferredEvents.find(event => event.type === SU_EVENTS.BASE_REPLACED);
+        const movedAction = consumed.deferredActions[0];
+
+        expect((replacementEvent?.payload as { newBaseDefId?: string } | undefined)?.newBaseDefId).toBe('base_faceless_city');
+        expect(movedAction).toMatchObject({
+            kind: 'moveMinionToReplacementBase',
+            targetBaseDefId: 'base_faceless_city',
+        });
+
+        const emittedEvents = buildPendingPostScoringActionEvents(consumed.state, consumed.deferredActions, 2361);
+        expect(emittedEvents).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_MOVED,
+                payload: expect.objectContaining({
+                    minionUid: 'runner',
+                    fromBaseIndex: 2,
+                    toBaseDefId: 'base_faceless_city',
+                }),
+            }),
+        ]);
+    });
+
+    it('改写 deferred replacement base 时，也应同步改写待补发 playMinionOnReplacementBase 的 targetBaseDefId', () => {
+        let state = wrapState(makeCore({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-minion-a', 'alien_collector', 'minion')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_greenhouse'),
+                makeBase('base_secret_garden'),
+            ],
+            baseDeck: ['base_faceless_city'],
+        }));
+
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
+                timestamp: 2362,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_greenhouse',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2362,
+            },
+        ], [{
+            kind: 'playMinionOnReplacementBase',
+            playerId: '0',
+            cardUid: 'deck-minion-a',
+            defId: 'alien_collector',
+            baseIndex: 1,
+            targetBaseDefId: 'base_secret_garden',
+            power: 4,
+        }]);
+
+        const replacedState = replaceDeferredPostScoringReplacementBase(state, 'base_faceless_city');
+        const consumed = consumeScoringFrameDeferredPayload(replacedState);
+        const playedAction = consumed.deferredActions[0];
+
+        expect(playedAction).toMatchObject({
+            kind: 'playMinionOnReplacementBase',
+            targetBaseDefId: 'base_faceless_city',
+        });
+
+        const emittedEvents = buildPendingPostScoringActionEvents(consumed.state, consumed.deferredActions, 2363);
+        expect(emittedEvents).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_PLAYED,
+                payload: expect.objectContaining({
+                    cardUid: 'deck-minion-a',
+                    baseDefId: 'base_faceless_city',
+                    fromDeck: true,
+                    consumesNormalLimit: false,
+                }),
+            }),
+        ]);
+    });
+
+    it('改写 deferred replacement base 时，也应同步改写待补发 playTitanOnReplacementBase 的 targetBaseDefId', () => {
+        let state = wrapState(makeCore({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_portal_room'),
+                makeBase('base_secret_garden'),
+            ],
+            titans: [{
+                uid: 'titan-a',
+                defId: 'time_travelers_time_box',
+                faction: 'time_travelers',
+                ownerId: '0',
+                controllerId: '0',
+                location: { zone: 'setaside' as const },
+                powerCounters: 0,
+                talentUsed: false,
+            } as any],
+            baseDeck: ['base_faceless_city'],
+        }));
+
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_portal_room' },
+                timestamp: 2364,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_portal_room',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2364,
+            },
+        ], [{
+            kind: 'playTitanOnReplacementBase',
+            titanUid: 'titan-a',
+            defId: 'time_travelers_time_box',
+            ownerId: '0',
+            controllerId: '0',
+            baseIndex: 1,
+            targetBaseDefId: 'base_secret_garden',
+            reason: 'portal_room_replacement_titan',
+        }]);
+
+        const replacedState = replaceDeferredPostScoringReplacementBase(state, 'base_faceless_city');
+        const consumed = consumeScoringFrameDeferredPayload(replacedState);
+        const playedAction = consumed.deferredActions[0];
+
+        expect(playedAction).toMatchObject({
+            kind: 'playTitanOnReplacementBase',
+            targetBaseDefId: 'base_faceless_city',
+        });
+
+        const emittedEvents = buildPendingPostScoringActionEvents(consumed.state, consumed.deferredActions, 2365);
+        expect(emittedEvents).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.TITAN_PLAYED,
+                payload: expect.objectContaining({
+                    titanUid: 'titan-a',
+                    baseDefId: 'base_faceless_city',
+                    reason: 'portal_room_replacement_titan',
+                }),
+            }),
+        ]);
     });
 
     it('海盗湾最后一步若随从已暂离来源基地但仍处于延迟清场链，应继续发出移动事件', () => {

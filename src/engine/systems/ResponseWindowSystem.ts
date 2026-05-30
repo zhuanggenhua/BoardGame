@@ -220,6 +220,20 @@ export function createResponseWindow(
     };
 }
 
+function cloneResponseWindowCurrent(
+    currentWindow: ResponseWindowState['current'],
+): ResponseWindowState['current'] {
+    if (!currentWindow) {
+        return undefined;
+    }
+
+    return {
+        ...currentWindow,
+        responderQueue: [...currentWindow.responderQueue],
+        passedPlayers: [...currentWindow.passedPlayers],
+    };
+}
+
 /**
  * 获取当前响应者 ID
  */
@@ -1092,7 +1106,7 @@ export function createResponseWindowSystem<TCore>(
 
             return {
                 responseWindow: {
-                    current: currentWindow,
+                    current: cloneResponseWindowCurrent(currentWindow),
                 },
             };
         },

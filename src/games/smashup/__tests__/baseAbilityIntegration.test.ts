@@ -347,6 +347,38 @@ describe('base_castle_blood: 打出随从放指示物', () => {
         const { events } = triggerBaseAbility('base_castle_blood', 'onMinionPlayed', ctx);
         expect(events.length).toBe(0);
     });
+
+    it('borrowed Infiltrate 由控制者控制时，应阻止 Castle Blood 给控制者打出的随从放指示物', () => {
+        const ctx: BaseAbilityContext = {
+            state: {
+                bases: [{
+                    defId: 'base_castle_blood',
+                    minions: [
+                        { uid: 'm_me', defId: 'd1', controller: '0', owner: '0', basePower: 2, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_op', defId: 'd2', controller: '1', owner: '1', basePower: 5, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+                }],
+                players: {
+                    '0': { id: '0', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
+                    '1': { id: '1', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
+                },
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 100,
+            } as unknown as SmashUpCore,
+            baseIndex: 0,
+            baseDefId: 'base_castle_blood',
+            playerId: '0',
+            minionUid: 'm_me',
+            now: 1001,
+        };
+
+        const { events } = triggerBaseAbility('base_castle_blood', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(0);
+    });
 });
 
 // ============================================================================

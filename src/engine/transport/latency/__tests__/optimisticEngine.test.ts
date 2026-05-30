@@ -46,6 +46,9 @@ type TimestampReplayEvent =
     | GameEvent<'ACTION_LIMIT_SET', { value: number; grantedAt: number }>
     | GameEvent<'ACTION_PLAYED', { nextActionsPlayed: number }>;
 
+type PromptReplayCommand = Command<'PROMPT_OTHER', unknown>;
+type PromptReplayEvent = GameEvent<'PROMPT_OTHER_OPENED', { playerId: string }>;
+
 /** 创建测试用 MatchState */
 function createTestState(value: number, nextEventId = 1): MatchState<CounterCore> {
     return {
@@ -90,6 +93,43 @@ function createTimestampReplayState(
             schemaVersion: 1,
             undo: { snapshots: [], maxSnapshots: 0 },
             interaction: { queue: [], current: undefined },
+            log: { entries: [], maxEntries: 100 },
+            eventStream: {
+                entries: [],
+                maxEntries: 100,
+                nextId: nextEventId,
+            },
+            actionLog: { entries: [], maxEntries: 100 },
+            rematch: { votes: {}, ready: false },
+            responseWindow: {},
+            tutorial: {
+                active: false,
+                manifestId: null,
+                stepIndex: 0,
+                steps: [],
+                step: null,
+            },
+            turnNumber: 1,
+            phase: 'main',
+        },
+    };
+}
+
+function createPromptReplayState(
+    value: number,
+    interaction?: Partial<{ current: unknown; isBlocked: boolean; queue: unknown[] }>,
+    nextEventId = 1,
+): MatchState<CounterCore> {
+    return {
+        core: { value },
+        sys: {
+            schemaVersion: 1,
+            undo: { snapshots: [], maxSnapshots: 0 },
+            interaction: {
+                queue: interaction?.queue ?? [],
+                current: interaction?.current,
+                isBlocked: interaction?.isBlocked ?? false,
+            },
             log: { entries: [], maxEntries: 100 },
             eventStream: {
                 entries: [],
@@ -201,6 +241,24 @@ const timestampReplayDomain: DomainCore<TimestampReplayCore, TimestampReplayComm
     },
 };
 
+const promptReplayDomain: DomainCore<CounterCore, PromptReplayCommand, PromptReplayEvent> = {
+    gameId: 'prompt-replay-test',
+    setup: () => ({ value: 0 }),
+    validate: () => ({ valid: true }),
+    execute: (_state, command) => {
+        if (command.type !== 'PROMPT_OTHER') return [];
+        return [{
+            type: 'PROMPT_OTHER_OPENED',
+            payload: { playerId: '1' },
+            timestamp: command.timestamp ?? 0,
+        }];
+    },
+    reduce: (state, event) => {
+        if (event.type !== 'PROMPT_OTHER_OPENED') return state;
+        return { value: state.value + 1 };
+    },
+};
+
 /** 测试用随机数生成器（固定值） */
 const fixedRandom: RandomFn = {
     random: () => 0.5,
@@ -226,6 +284,88 @@ function createTimestampReplayEngine() {
         commandDeterminism: {
             GRANT_BONUS_ACTION: 'deterministic',
             PLAY_ACTION: 'deterministic',
+        },
+        playerIds: ['0', '1'],
+        localRandom: fixedRandom,
+    });
+}
+
+function createPromptReplayEngine() {
+    const promptSystem: EngineSystem<CounterCore> = {
+        id: 'prompt-replay-system',
+        name: 'Prompt Replay System',
+        afterEvents: ({ state, events }) => {
+            const promptEvent = events.find((event) => event.type === 'PROMPT_OTHER_OPENED') as PromptReplayEvent | undefined;
+            if (!promptEvent) return;
+            return {
+                state: {
+                    ...state,
+                    sys: {
+                        ...state.sys,
+                        interaction: {
+                            ...(state.sys.interaction ?? {}),
+                            current: {
+                                id: `prompt-${promptEvent.timestamp}`,
+                                kind: 'simple-choice',
+                                playerId: (promptEvent.payload as { playerId: string }).playerId,
+                                title: '等待其他玩家',
+                                data: {
+                                    sourceId: 'prompt-other',
+                                    options: [{ id: 'only', label: 'Only', value: { id: 'only' } }],
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+        },
+    };
+
+    return createOptimisticEngine({
+        pipelineConfig: {
+            domain: promptReplayDomain,
+            systems: [promptSystem],
+        },
+        commandDeterminism: {
+            PROMPT_OTHER: 'deterministic',
+        },
+        playerIds: ['0', '1'],
+        localRandom: fixedRandom,
+    });
+}
+
+function createMutatingPromptReplayEngine() {
+    const mutatingPromptSystem: EngineSystem<CounterCore> = {
+        id: 'mutating-prompt-replay-system',
+        name: 'Mutating Prompt Replay System',
+        afterEvents: ({ state, events }) => {
+            const promptEvent = events.find((event) => event.type === 'PROMPT_OTHER_OPENED') as PromptReplayEvent | undefined;
+            if (!promptEvent) return;
+            (state.sys.interaction as {
+                current?: unknown;
+                isBlocked?: boolean;
+            }).current = {
+                id: `mutating-prompt-${promptEvent.timestamp}`,
+                kind: 'simple-choice',
+                playerId: (promptEvent.payload as { playerId: string }).playerId,
+                title: '等待其他玩家',
+                data: {
+                    sourceId: 'prompt-other',
+                    options: [{ id: 'only', label: 'Only', value: { id: 'only' } }],
+                },
+            };
+            (state.sys.interaction as { isBlocked?: boolean }).isBlocked = false;
+            return { state };
+        },
+    };
+
+    return createOptimisticEngine({
+        pipelineConfig: {
+            domain: promptReplayDomain,
+            systems: [mutatingPromptSystem],
+        },
+        commandDeterminism: {
+            PROMPT_OTHER: 'deterministic',
         },
         playerIds: ['0', '1'],
         localRandom: fixedRandom,
@@ -553,6 +693,63 @@ describe('OptimisticEngine 单元测试', () => {
 
         expect(engine.hasPendingCommands()).toBe(false);
         expect(engine.getCurrentState()).toBeNull();
+    });
+
+    it('收到更高 stateID 的对手权威状态时，必须丢弃已错过确认窗口的本地 stale pending', () => {
+        const engine = createTestEngine();
+        engine.reconcile(createTestState(0), { stateID: 0, lastCommandPlayerId: null, randomCursor: 0 });
+
+        const optimistic = engine.processCommand('INCREMENT', {}, '0');
+        expect((optimistic.stateToRender!.core as CounterCore).value).toBe(1);
+        expect(engine.hasPendingCommands()).toBe(true);
+
+        const authoritative = createTestState(50);
+        const result = engine.reconcile(authoritative, {
+            stateID: 2,
+            lastCommandPlayerId: '1',
+            randomCursor: 0,
+        });
+
+        expect(result.didRollback).toBe(true);
+        expect((result.stateToRender.core as CounterCore).value).toBe(50);
+        expect(engine.hasPendingCommands()).toBe(false);
+    });
+
+    it('权威 seat view 已完全收口时，必须清掉渲染态里滞留的 private prompt', () => {
+        const engine = createPromptReplayEngine();
+        engine.reconcile(createPromptReplayState(0), { stateID: 0, lastCommandPlayerId: null, randomCursor: 0 });
+
+        const optimistic = engine.processCommand('PROMPT_OTHER', {}, '0');
+        expect(optimistic.stateToRender?.sys.interaction.current).toBeTruthy();
+
+        const authoritativeClosed = createPromptReplayState(50, {
+            current: undefined,
+            isBlocked: false,
+            queue: [],
+        });
+        const result = engine.reconcile(authoritativeClosed, {
+            stateID: 2,
+            randomCursor: 0,
+        });
+
+        expect(result.stateToRender.sys.interaction.current).toBeUndefined();
+        expect(result.stateToRender.sys.interaction.isBlocked).toBe(false);
+    });
+
+    it('processCommand 不得污染上一帧 authoritative state 引用，即使 pipeline/系统原地改写了输入对象', () => {
+        const engine = createMutatingPromptReplayEngine();
+        const authoritative = createPromptReplayState(0, {
+            current: undefined,
+            isBlocked: false,
+            queue: [],
+        });
+
+        engine.reconcile(authoritative, { stateID: 0, lastCommandPlayerId: null, randomCursor: 0 });
+        const optimistic = engine.processCommand('PROMPT_OTHER', {}, '0');
+
+        expect(optimistic.stateToRender?.sys.interaction.current).toBeTruthy();
+        expect(authoritative.sys.interaction.current).toBeUndefined();
+        expect(authoritative.sys.interaction.isBlocked).toBe(false);
     });
 
     it('replayPending 重放 pending 命令时必须保留原始 timestamp，避免依赖时间戳的后续命令失效', () => {

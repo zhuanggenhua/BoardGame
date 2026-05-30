@@ -337,6 +337,48 @@ describe('MongoStorage 行为', () => {
         findOneSpy.mockRestore();
     });
 
+    it('setMetadata 后文档顶层 updatedAt 也应前进，避免 freshness 仍停在旧值', async () => {
+        await mongoStorage.createMatch('match-set-metadata-refresh', buildCreateData('user:metadata-owner'));
+
+        const Match = mongoose.model('Match');
+        const beforeDoc = await Match.findOne({ matchID: 'match-set-metadata-refresh' }).lean<{
+            updatedAt?: Date;
+            metadata?: MatchMetadata | null;
+        } | null>();
+        expect(beforeDoc?.updatedAt).toBeInstanceOf(Date);
+        const beforeMetadata = beforeDoc?.metadata as MatchMetadata;
+        expect(beforeMetadata).toBeTruthy();
+
+        await new Promise((resolve) => setTimeout(resolve, 15));
+
+        const nextMetadata: MatchMetadata = {
+            ...beforeMetadata,
+            players: {
+                ...beforeMetadata.players,
+                0: {
+                    ...(beforeMetadata.players['0'] ?? {}),
+                    name: 'Alice',
+                    credentials: 'cred-a',
+                    isConnected: true,
+                },
+            },
+            updatedAt: Date.now(),
+        };
+
+        await mongoStorage.setMetadata('match-set-metadata-refresh', nextMetadata);
+
+        const afterDoc = await Match.findOne({ matchID: 'match-set-metadata-refresh' }).lean<{
+            updatedAt?: Date;
+            metadata?: MatchMetadata | null;
+        } | null>();
+        expect(afterDoc?.metadata?.players['0']).toMatchObject({
+            name: 'Alice',
+            credentials: 'cred-a',
+            isConnected: true,
+        });
+        expect((afterDoc?.updatedAt?.getTime() ?? 0)).toBeGreaterThan(beforeDoc?.updatedAt?.getTime() ?? 0);
+    });
+
     it('不同 ownerKey 允许创建多个房间', async () => {
         await mongoStorage.createMatch('match-1', buildCreateData('user:1'));
         await expect(mongoStorage.createMatch('match-2', buildCreateData('user:2')))

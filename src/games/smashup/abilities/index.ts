@@ -43,6 +43,7 @@ import { registerPrincessesAbilities } from './princesses';
 import { registerSharksAbilities } from './sharks';
 import { registerTornadosAbilities } from './tornados';
 import { registerMythicGreeksAbilities } from './mythic_greeks';
+import { registerYuanhouAbilities } from './yuanhou';
 import { registerIttyCrittersAbilities } from './itty_critters';
 import { registerKaijuAbilities, registerKaijuInteractionHandlers } from './kaiju';
 import { registerMagicalGirlsAbilities, registerMagicalGirlsInteractionHandlers } from './magical_girls';
@@ -151,6 +152,7 @@ export function initAllAbilities(): void {
     registerSharksAbilities();
     registerTornadosAbilities();
     registerMythicGreeksAbilities();
+    registerYuanhouAbilities();
     registerIttyCrittersAbilities();
     registerKaijuAbilities();
     registerKaijuInteractionHandlers();

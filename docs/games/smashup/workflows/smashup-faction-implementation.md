@@ -57,6 +57,24 @@
    - 若两张卡/两个基地只是 `id/名称/文案/数值/目标枚举/筛选参数` 不同，而真实入口、validator、handler、resolver、reaction/queue 与清理链完全一致，才允许复用同一条 L3/L4 代表链
    - 只要多出额外子句、不同阶段、不同可选/强制语义、不同后续触发或不同拒绝路径，就必须分开补对象级证据
 
+6. 抽样发现问题后必须回到全量矩阵
+   - 如果抽样审计在已宣称“全面 / 收口”的批次里发现 HIGH/CRITICAL、语义反转、ID 漂移、注册不触发或测试仍沿旧语义，原完成结论立即失效。
+   - 后续不能再用“抽样修完了”作为批次完成依据，必须先建立全量对象清单，再把每张卡 / 每个基地拆成 effect atom（效果原子）矩阵。
+   - 全量矩阵每行至少覆盖：牌面或规则原文、原子语义、语义限定词、静态字段、注册入口、validator/canActivate、handler/trigger/reducer、UI/交互出口、测试证据、当前 L0-L4 层级和残余范围。
+   - 只要矩阵里仍有对象没有展开 effect atom，或 effect atom 没有链路结论，就只能写“仍在全量重审”，不能写“全面审计完成”。
+
+7. effect atom 是 Smash Up 全链路重审的最小单位
+   - 一张卡若包含“选择目标 -> 摧毁 -> 额外打出 -> 洗牌”，至少拆成目标选择、摧毁、额外打出、洗牌/重排四个 effect atom；不能用一行卡牌结论覆盖全部效果。
+   - 一个 effect atom 必须从自然语言语义走到最终权威状态：描述限定词 -> 静态字段 -> command/validator -> handler/reducer/trigger -> UI/交互出口 -> 测试/证据。
+   - 语义限定词必须显式写出：你的/任意/其他玩家、至多/恰好/任意数量、可以/必须、代替/然后/直到回合结束、任意顺序/洗牌/放顶/放底。
+   - 若测试断言沿用了错误语义，测试本身就是 finding，必须同步修正；禁止用“测试通过”覆盖语义错审。
+
+8. 共享合同可以复用，但必须 dirty/clean 可追溯
+   - 对 `queueDeckMinionSearch`、`grantExtraMinion`、`buildValidatedDestroyEvents`、`deckReordered`、reaction session、ongoing power modifier、base afterScoring 等共享路径，应建立 shared-contract 证据。
+   - 每个 effect atom 行必须写明引用的 shared-contract、传入参数、上下文携带字段和独有风险；不得只写“复用共享 helper”。
+   - shared-contract 变更后，所有引用它的 effect atom 必须标 `dirty`，并按影响面重审；只有本地参数和共享合同都重新核过，才能改回 `clean`。
+   - “不用重复审计”的唯一合法方式是引用同一 shared-contract 的当前签名：合同 ID、关键函数/字段、dirty 条件、最后测试证据必须在 evidence 中可反查；本 effect atom 的本地限定词仍要单独核对。若本地限定词不同（例如 `immediate` vs `this turn`、`same name` vs 任意随从、`owner` vs `controller`），不能沿用旧结论。
+
 ### 1. 一次只做一个派系
 
 批量任务也必须按单派系闭环推进：
@@ -119,7 +137,7 @@ Smash Up 派系对象在重审 / 重录 / 补证时，默认按以下层级验�
   - 从真实打牌 / 真实触发 / 真实天赋入口进入，不靠“prompt 预打开”的注入型捷径收口
 - **L4 流程态与权威状态**
   - 强制补看 `finalState / triggerQueue / reaction session`
-  - 只要链路涉及 reaction / afterScoring / beforeScoring / uncover / discard special / ongoing talent，就必须至少抽样到这一层
+  - 只要 effect atom 链路涉及 reaction / afterScoring / beforeScoring / uncover / discard special / ongoing talent，就必须按该 effect atom 补到这一层，不能只抽样同类对象
 
 规则：
 
@@ -128,6 +146,32 @@ Smash Up 派系对象在重审 / 重录 / 补证时，默认按以下层级验�
 - 只有 L3+L4 补齐，才允许把单对象升级为“对象级正路径 L3/L4 证据”；
 - 缺 L4 时，不得因为 E2E 通过就默认流程完整。
 - L3/L4 的复用只允许发生在“共享链路完全同构，仅配置不同”的对象之间；否则即使入口类型相似，也必须单独做对象级 L3/L4。
+
+### 2.4 Smash Up 联机 E2E phase 门禁（强制）
+
+多人局 / 多客户端 E2E 里，只要链路会把当前回合推进到**未连接页面的下一位玩家**，就不能把 `phase === 'playCards'` 当成默认正确结论。
+
+必须先区分两类语义：
+
+1. **玩法/队列语义**
+   - 例如当前玩家是否已切到正确的 `currentPlayerIndex`
+   - `activeExtraTurn` / `pendingExtraTurns` / `triggerQueue` / `interaction.current` 是否已按规则清空或推进
+2. **联机可见停点语义**
+   - 若下一位玩家没有真实连接页面，服务端停在 `startTurn` 可能是正常稳定点
+   - 这不等于玩法回退，也不等于“额外回合没收口”
+
+因此，多客户端 E2E 断言 phase 时必须遵守：
+
+- 若下一位玩家已连接并完成 `startTurn` 自动链，可断言进入 `playCards`
+- 若下一位玩家未连接，默认先断言：
+  - `currentPlayerIndex` 正确
+  - `sys.phase` 至少停在符合该链路的稳定点（常见为 `startTurn`）
+  - 该对象对应的 `interaction.current / responseWindow.current / activeExtraTurn / pendingExtraTurns` 已满足规则收口
+- 禁止把与当前 effect atom 无关的抽牌/洗牌/弃牌副作用一并塞进“回合切换是否正确”的主断言里
+
+典型例子：
+
+- `Portal Room` 三人局只有两页在线时，赢家额外回合结束后若服务端已回到 `currentPlayerIndex=2` 且 `activeExtraTurn==null`，`phase='startTurn'` 可以是正常联机停点；不得误报为 extra-turn queue 回退。
 
 ### 3. 先复用共享机制，再补共享缺口
 
@@ -266,7 +310,7 @@ Smash Up 派系对象在重审 / 重录 / 补证时，默认按以下层级验�
 
 ### 5.2 reaction session 抽样门禁（强制）
 
-以下对象默认必须补看 `reaction session`，不能只看最终状态：
+以下 effect atom 默认必须补看 `reaction session`，不能只看最终状态：
 
 - beforeScoring / afterScoring
 - 挖掘后继续触发的持续效果
@@ -276,7 +320,7 @@ Smash Up 派系对象在重审 / 重录 / 补证时，默认按以下层级验�
 只要真实入口里出现 `smashup_reaction_choose`：
 
 - 必须在 evidence 文档中单独截图或单独写明
-- 必须把它记入当前对象的 L4 结论
+- 必须把它记入当前 effect atom 的 L4 结论
 - 不得继续沿用“单测观察面”替代浏览器真入口真相
 
 ### 6. 批量任务最后再做统一审计

@@ -10,10 +10,17 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import {
     registerBaseAbility,
+    registerActiveBaseAbility,
+    registerExtended,
+    registerPodBaseAbilityAliases,
     triggerBaseAbility,
     triggerAllBaseAbilities,
     hasBaseAbility,
+    hasActiveBaseAbility,
     clearBaseAbilityRegistry,
+    getActiveBaseAbilityOptions,
+    getBaseAbilityExecutor,
+    getExtendedBaseAbilityExecutor,
     getBaseAbilityRegistrySize,
 } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
@@ -145,6 +152,47 @@ describe('基地能力注册表', () => {
 
         triggerAllBaseAbilities('onTurnStart', state, '0', 1000);
         expect(triggered).toEqual([0, 1]);
+    });
+
+    it('POD 基地在已显式覆写一个普通时机时，仍应继承基础版其它时机', () => {
+        const baseOnTurnStart = vi.fn(() => ({ events: [] }));
+        const baseAfterScoring = vi.fn(() => ({ events: [] }));
+        const podOnTurnStart = vi.fn(() => ({ events: [] }));
+
+        registerBaseAbility('base_alias_source', 'onTurnStart', baseOnTurnStart, emptyBaseOptions);
+        registerBaseAbility('base_alias_source', 'afterScoring', baseAfterScoring, emptyBaseOptions);
+        registerBaseAbility('base_alias_source_pod', 'onTurnStart', podOnTurnStart, emptyBaseOptions);
+
+        registerPodBaseAbilityAliases();
+
+        expect(getBaseAbilityExecutor('base_alias_source_pod', 'onTurnStart')).toBe(podOnTurnStart);
+        expect(getBaseAbilityExecutor('base_alias_source_pod', 'afterScoring')).toBe(baseAfterScoring);
+    });
+
+    it('POD 基地在已显式覆写一个扩展时机时，仍应继承基础版其它扩展时机', () => {
+        const baseOnReveal = vi.fn(() => ({ events: [] }));
+        const baseOnDestroy = vi.fn(() => ({ events: [] }));
+        const podOnReveal = vi.fn(() => ({ events: [] }));
+
+        registerExtended('base_extended_alias', 'onBaseRevealed', baseOnReveal);
+        registerExtended('base_extended_alias', 'onMinionDestroyed', baseOnDestroy);
+        registerExtended('base_extended_alias_pod', 'onBaseRevealed', podOnReveal);
+
+        registerPodBaseAbilityAliases();
+
+        expect(getExtendedBaseAbilityExecutor('base_extended_alias_pod', 'onBaseRevealed')).toBe(podOnReveal);
+        expect(getExtendedBaseAbilityExecutor('base_extended_alias_pod', 'onMinionDestroyed')).toBe(baseOnDestroy);
+    });
+
+    it('POD 基地未显式注册主动能力时，应继承基础版主动能力', () => {
+        registerActiveBaseAbility('base_active_alias', () => ({ events: [] }), {
+            oncePerTurn: true,
+        });
+
+        registerPodBaseAbilityAliases();
+
+        expect(hasActiveBaseAbility('base_active_alias_pod')).toBe(true);
+        expect(getActiveBaseAbilityOptions('base_active_alias_pod')?.oncePerTurn).toBe(true);
     });
 });
 

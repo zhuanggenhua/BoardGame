@@ -140,7 +140,9 @@ async function apiPost<T = unknown>(url: string, body: unknown, extraHeaders?: R
 async function apiGet<T = unknown>(url: string): Promise<T> {
     let response: Response;
     try {
-        response = await fetch(url);
+        response = await fetch(url, {
+            cache: 'no-store',
+        });
     } catch (error) {
         console.error('[matchApi] GET fetch failed', {
             url,

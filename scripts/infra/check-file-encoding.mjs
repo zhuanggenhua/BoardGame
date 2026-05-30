@@ -102,6 +102,20 @@ const WARNING_RULES = [
         message: 'contains repeated question marks',
         test: (text) => /\?{4,}/.test(text),
     },
+    {
+        id: 'likely-mojibake',
+        message: 'contains likely mojibake fragments',
+        test: (text) => countDistinctMojibakeMarkers(text) >= 2,
+    },
+];
+
+const MOJIBAKE_MARKERS = [
+    '\u95c2\u4f79',
+    '\u6fe0\u7898\u69c5',
+    '\u95c1\u8bf2',
+    '\u5a75\u72ae',
+    '\u934b\u20ac',
+    '\u9866',
 ];
 
 function normalizeRelativePath(value) {
@@ -113,6 +127,16 @@ function hasUtf8Bom(buffer) {
         && buffer[0] === UTF8_BOM[0]
         && buffer[1] === UTF8_BOM[1]
         && buffer[2] === UTF8_BOM[2];
+}
+
+export function countDistinctMojibakeMarkers(text) {
+    let count = 0;
+    for (const marker of MOJIBAKE_MARKERS) {
+        if (text.includes(marker)) {
+            count += 1;
+        }
+    }
+    return count;
 }
 
 function isTextLikeFile(relativePath) {
@@ -250,7 +274,7 @@ export function listCandidateFiles(explicitPaths) {
     return Array.from(new Set(DEFAULT_ROOTS.flatMap(expandInputPath))).sort();
 }
 
-function detectWarnings(text) {
+export function detectWarnings(text) {
     return WARNING_RULES.filter(rule => rule.test(text));
 }
 

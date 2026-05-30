@@ -58,14 +58,14 @@ type GreekBasePromptContext = PromptContext & {
 };
 
 type HadesContext = PromptContext & { cards: Array<{ cardUid: string; defId: string; label: string }> };
-type PoseidonContext = PromptContext & { cards: Array<{ cardUid: string; defId: string; label: string }> };
-type DionysusTopContext = PromptContext & { cardUid: string; defId: string };
-type DionysusMinionContext = PromptContext & { targets: MinionTarget[]; cardUid: string; defId: string };
-type AthenaRevealedCard = Pick<CardInstance, 'uid' | 'defId' | 'type'>;
+type PoseidonContext = PromptContext & { cards: Array<{ cardUid: string; defId: string; ownerId: string; label: string }> };
+type DionysusTopContext = PromptContext & { cardUid: string; defId: string; ownerId: string };
+type DionysusMinionContext = PromptContext & { targets: MinionTarget[]; cardUid: string; defId: string; ownerId: string };
+type AthenaRevealedCard = Pick<CardInstance, 'uid' | 'defId' | 'type' | 'owner'>;
 type AthenaPickContext = PromptContext & { revealed: AthenaRevealedCard[] };
 type AthenaOrderContext = PromptContext & {
-    remaining: Array<{ uid: string; defId: string }>;
-    ordered: Array<{ uid: string; defId: string }>;
+    remaining: Array<{ uid: string; defId: string; owner: string }>;
+    ordered: Array<{ uid: string; defId: string; owner: string }>;
 };
 
 function metadataTurnUsed(uid: string, baseIndex: number, key: string, turnNumber: number, now: number): MinionMetadataUpdatedEvent {
@@ -78,6 +78,18 @@ function metadataTurnUsed(uid: string, baseIndex: number, key: string, turnNumbe
 
 function ownMinionTargets(state: SmashUpCore, playerId: string): MinionTarget[] {
     return collectMinionTargets(state, minion => minion.controller === playerId);
+}
+
+function findCardOwnerAcrossPlayerZones(state: SmashUpCore, cardUid: string, defId: string, fallbackPlayerId: string): string {
+    for (const player of Object.values(state.players)) {
+        const inHand = player.hand.find(card => card.uid === cardUid && card.defId === defId);
+        if (inHand) return inHand.owner;
+        const inDiscard = player.discard.find(card => card.uid === cardUid && card.defId === defId);
+        if (inDiscard) return inDiscard.owner;
+        const inDeck = player.deck.find(card => card.uid === cardUid && card.defId === defId);
+        if (inDeck) return inDeck.owner;
+    }
+    return fallbackPlayerId;
 }
 
 function buildAthenaCardOptions(cards: Array<{ uid: string; defId: string }>) {
@@ -103,19 +115,46 @@ function buildAthenaRevealEvents(
     const events: SmashUpEvent[] = [];
 
     if (deckSim.length < 5 && player.discard.length > 0) {
-        deckSim = [...deckSim, ...random.shuffle([...player.discard])];
-        events.push({
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: {
-                playerId,
-                deckUids: deckSim.map(card => card.uid),
-            },
-            timestamp: now,
-        } as DeckReorderedEvent);
+        const shuffledDiscard = random.shuffle([...player.discard]);
+        const sourceDiscardCards: CardInstance[] = [];
+        const borrowedByOwner = new Map<PlayerId, CardInstance[]>();
+        for (const card of shuffledDiscard) {
+            if (card.owner === playerId || !state.players[card.owner]) {
+                sourceDiscardCards.push(card);
+                continue;
+            }
+            borrowedByOwner.set(card.owner, [...(borrowedByOwner.get(card.owner) ?? []), card]);
+        }
+
+        for (const [ownerId, cards] of borrowedByOwner) {
+            const owner = state.players[ownerId];
+            if (!owner) continue;
+            events.push({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ownerId,
+                    deckUids: [...owner.deck.map(card => card.uid), ...cards.map(card => card.uid)],
+                    sourcePlayerId: playerId,
+                },
+                timestamp: now,
+            } as DeckReorderedEvent);
+        }
+
+        deckSim = [...deckSim, ...sourceDiscardCards];
+        if (sourceDiscardCards.length > 0) {
+            events.push({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId,
+                    deckUids: deckSim.map(card => card.uid),
+                },
+                timestamp: now,
+            } as DeckReorderedEvent);
+        }
     }
 
     for (const card of deckSim.slice(0, 5)) {
-        revealed.push({ uid: card.uid, defId: card.defId, type: card.type });
+        revealed.push({ uid: card.uid, defId: card.defId, type: card.type, owner: card.owner });
     }
 
     if (revealed.length === 0) return { events, revealed };
@@ -289,6 +328,7 @@ function favorOfDionysus(ctx: AbilityContext): AbilityResult {
     const targets = ctx.targetMinionUid
         ? collectMinionTargets(ctx.state, minion => minion.uid === ctx.targetMinionUid && minion.controller === ctx.playerId)
         : ownMinionTargets(ctx.state, ctx.playerId);
+    const ownerId = findCardOwnerAcrossPlayerZones(ctx.state, ctx.cardUid, ctx.defId, ctx.playerId);
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     if (targets.length === 1) {
         const target = targets[0];
@@ -298,6 +338,7 @@ function favorOfDionysus(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
             cardUid: ctx.cardUid,
             defId: ctx.defId,
+            ownerId,
         });
         return {
             events: [
@@ -314,6 +355,7 @@ function favorOfDionysus(ctx: AbilityContext): AbilityResult {
         targets,
         cardUid: ctx.cardUid,
         defId: ctx.defId,
+        ownerId,
     }));
 }
 
@@ -374,7 +416,8 @@ const dionysusTopPromptProgram = createPromptProgram<DionysusTopContext, SmashUp
                 payload: {
                     cardUid: context.cardUid,
                     defId: context.defId,
-                    ownerId: context.playerId,
+                    ownerId: context.ownerId,
+                    ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                     reason: 'mythic_greeks_favor_of_dionysus',
                 },
                 timestamp,
@@ -426,7 +469,8 @@ const athenaOrderPromptProgram = createPromptProgram<AthenaOrderContext, SmashUp
                     payload: {
                         cardUid: allCards[index].uid,
                         defId: allCards[index].defId,
-                        ownerId: context.playerId,
+                        ownerId: allCards[index].owner,
+                        ...(allCards[index].owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                         reason: 'mythic_greeks_favor_of_athena',
                     },
                     timestamp,
@@ -479,7 +523,7 @@ const athenaPickPromptProgram = createPromptProgram<AthenaPickContext, SmashUpCo
 
         const remaining = context.revealed
             .filter(card => card.uid !== picked?.uid)
-            .map(card => ({ uid: card.uid, defId: card.defId }));
+            .map(card => ({ uid: card.uid, defId: card.defId, owner: card.owner }));
         if (remaining.length <= 1) return { events };
         return {
             events,
@@ -521,7 +565,7 @@ function favorOfAthena(ctx: AbilityContext): AbilityResult {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
-        remaining: result.revealed.map(card => ({ uid: card.uid, defId: card.defId })),
+        remaining: result.revealed.map(card => ({ uid: card.uid, defId: card.defId, owner: card.owner })),
         ordered: [],
     });
     return runtimeToAbilityResult({
@@ -542,7 +586,7 @@ function favorOfPoseidon(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const cards = player.discard
         .filter(card => card.uid !== ctx.cardUid)
-        .map(card => ({ cardUid: card.uid, defId: card.defId, label: getCardDef(card.defId)?.name ?? card.defId }));
+        .map(card => ({ cardUid: card.uid, defId: card.defId, ownerId: card.owner, label: getCardDef(card.defId)?.name ?? card.defId }));
     if (cards.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
     return runtimeToAbilityResult(executeAbilityProgram(poseidonPromptProgram, {
         matchState: ctx.matchState,
@@ -577,12 +621,28 @@ const poseidonPromptProgram = createPromptProgram<PoseidonContext, SmashUpCore, 
         if (selectedUids.size === 0) return { events: [] };
         const player = state.core.players[context.playerId];
         const selectedCards = player.discard.filter(card => selectedUids.has(card.uid));
-        const shuffled = random.shuffle(selectedCards);
-        return { events: [{
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: { playerId: context.playerId, deckUids: [...shuffled.map(card => card.uid), ...player.deck.map(card => card.uid)] },
-            timestamp,
-        } as DeckReorderedEvent] };
+        const cardsByOwner = new Map<string, CardInstance[]>();
+        for (const card of selectedCards) {
+            const ownerCards = cardsByOwner.get(card.owner) ?? [];
+            ownerCards.push(card);
+            cardsByOwner.set(card.owner, ownerCards);
+        }
+        const events: DeckReorderedEvent[] = [];
+        for (const [ownerId, cards] of cardsByOwner) {
+            const owner = state.core.players[ownerId];
+            if (!owner) continue;
+            const shuffled = random.shuffle(cards);
+            events.push({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ownerId,
+                    deckUids: [...shuffled.map(card => card.uid), ...owner.deck.map(card => card.uid)],
+                    ...(ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                },
+                timestamp,
+            } as DeckReorderedEvent);
+        }
+        return { events };
     },
 });
 

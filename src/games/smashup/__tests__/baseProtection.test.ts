@@ -425,4 +425,75 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
         const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(1);
     });
+
+    it('borrowed 随从被消灭时，九命之屋的拯救 prompt 应交给当前控制者而不是真实 owner', () => {
+        const houseBase = makeBase('base_house_of_nine_lives');
+        const borrowedMinion: MinionOnBase = {
+            ...makeMinion('borrowed-m1', '0', 3),
+            owner: '1',
+        };
+        const otherBase = makeBase('other_base', {
+            minions: [borrowedMinion],
+        });
+        const core = makeState({ bases: [houseBase, otherBase] });
+        const ms: MatchState<SmashUpCore> = {
+            core,
+            sys: { interaction: { queue: [] } } as any,
+        };
+
+        const destroyEvent: MinionDestroyedEvent = {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'borrowed-m1',
+                minionDefId: 'd1',
+                fromBaseIndex: 1,
+                ownerId: '1',
+                controllerId: '0',
+                destroyerId: '1',
+                reason: 'borrowed-destroy',
+            },
+            timestamp: 1001,
+        };
+
+        const result = processDestroyTriggers([destroyEvent], ms, '1', dummyRandom, 1001);
+        const interaction = result.matchState?.sys.interaction.current as any;
+        expect(interaction).toBeDefined();
+        expect(interaction?.data?.sourceId).toBe('base_nine_lives_intercept');
+        expect(interaction?.playerId).toBe('0');
+        expect(interaction?.data?.continuationContext?.ownerId).toBe('1');
+        expect(interaction?.data?.continuationContext?.destroyerId).toBe('1');
+    });
+
+    it('borrowed 随从选择不拯救时，九命之屋恢复的 MINION_DESTROYED 仍应保留 controllerId', () => {
+        const handler = getInteractionHandler('base_nine_lives_intercept');
+        expect(handler).toBeDefined();
+        const core = makeState({ bases: [makeBase('base_house_of_nine_lives'), makeBase('other')] });
+        const ms: MatchState<SmashUpCore> = {
+            core,
+            sys: { interaction: { queue: [] } } as any,
+        };
+        const result = handler!(ms, '0', {
+            move: false,
+            minionUid: 'borrowed-m1',
+            minionDefId: 'd1',
+            fromBaseIndex: 1,
+            ownerId: '1',
+            controllerId: '0',
+            destroyerId: '1',
+        }, undefined, dummyRandom, 1002);
+
+        expect(result).toBeDefined();
+        expect(result!.events).toHaveLength(1);
+        expect(result!.events[0]).toEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({
+                minionUid: 'borrowed-m1',
+                fromBaseIndex: 1,
+                ownerId: '1',
+                controllerId: '0',
+                destroyerId: '1',
+                reason: '九命之屋：玩家选择不拯救',
+            }),
+        }));
+    });
 });

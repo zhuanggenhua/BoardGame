@@ -2,12 +2,12 @@
  * 大杀四方 - 非阻塞卡牌展示浮层
  *
  * 通过 EventStream 消费 REVEAL_HAND / REVEAL_DECK_TOP 事件，
- * 以特写队列形式展示卡牌，点击关闭，不阻塞游戏操作。
+ * 以特写队列形式展示卡牌，通过最小必要控件关闭，不阻塞游戏操作。
  *
  * 与旧的阻塞式 pendingReveal 不同：
  * - 纯客户端行为，不需要服务端确认
  * - 不阻塞其他玩家操作
- * - 点击任意位置关闭
+ * - 不抢整屏点击；只保留最小关闭控件
  * - 自动 15 秒后消失
  */
 
@@ -16,10 +16,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
+import { useEventStreamRollback } from '../../../engine/hooks/EventStreamRollbackContext';
 import { getCardDef, getBaseDef, resolveCardName } from '../data/cards';
 import { CardMagnifyOverlay, type CardMagnifyTarget } from './CardMagnifyOverlay';
 import type { EventStreamEntry, PlayerId } from '../../../engine/types';
 import { SU_EVENTS } from '../domain/types';
+import { GameButton } from './GameButton';
 
 // ============================================================================
 // 类型
@@ -35,10 +37,17 @@ interface RevealItem {
     timestamp: number;
 }
 
+export interface RevealSuppressionRule {
+    sourceId: string;
+    reason: string;
+    cardUids: string[];
+}
+
 interface RevealOverlayProps {
     entries: EventStreamEntry[];
     currentPlayerId: PlayerId | null;
     playerNames?: Record<string, string>;
+    suppressionRules?: RevealSuppressionRule[];
 }
 
 const AUTO_DISMISS_MS = 15_000;
@@ -53,40 +62,127 @@ function cardFrameStyle(widthVw: number, aspectRatio = CARD_ASPECT_RATIO): React
     };
 }
 
+const REORDER_PROMPT_REASON_BY_SOURCE_ID: Record<string, string> = {
+    super_spies_spy_reorder: 'super_spies_spy',
+    super_spies_for_my_eyes_only_reorder: 'super_spies_for_my_eyes_only',
+    base_isis_swingin_pad_reorder: 'base_isis_swingin_pad',
+};
+
+function extractCardUids(items: unknown): string[] {
+    if (!Array.isArray(items)) return [];
+    return items.flatMap((item) => {
+        if (!item || typeof item !== 'object') return [];
+        const uid = typeof (item as { uid?: unknown }).uid === 'string'
+            ? (item as { uid: string }).uid
+            : undefined;
+        return uid ? [uid] : [];
+    });
+}
+
+function extractOperativeRevealCardUids(prompt: Record<string, unknown>): string[] {
+    const revealedByPlayer = prompt.revealedByPlayer;
+    if (revealedByPlayer && typeof revealedByPlayer === 'object' && !Array.isArray(revealedByPlayer)) {
+        const cardUids = Object.values(revealedByPlayer).flatMap((value) =>
+            Array.isArray(value) ? value.filter((uid): uid is string => typeof uid === 'string') : [],
+        );
+        if (cardUids.length > 0) {
+            return [...new Set(cardUids)];
+        }
+    }
+
+    const options = Array.isArray(prompt.options) ? prompt.options : [];
+    const optionCardUids = options.flatMap((option) => {
+        if (!option || typeof option !== 'object') return [];
+        const value = (option as { value?: unknown }).value;
+        if (!value || typeof value !== 'object') return [];
+        const cardUid = typeof (value as { cardUid?: unknown }).cardUid === 'string'
+            ? (value as { cardUid: string }).cardUid
+            : undefined;
+        return cardUid ? [cardUid] : [];
+    });
+    return [...new Set(optionCardUids)];
+}
+
+export function resolveRevealSuppressionRules(activePrompt: unknown, isPromptOwnedByCurrentPlayer: boolean): RevealSuppressionRule[] {
+    if (!isPromptOwnedByCurrentPlayer || !activePrompt || typeof activePrompt !== 'object') {
+        return [];
+    }
+
+    const prompt = activePrompt as Record<string, unknown>;
+    const sourceId = typeof prompt.sourceId === 'string' ? prompt.sourceId : undefined;
+    if (!sourceId) return [];
+
+    if (sourceId === 'super_spies_operative_top_bottom') {
+        const cardUids = extractOperativeRevealCardUids(prompt);
+        return cardUids.length > 0
+            ? [{ sourceId, reason: 'super_spies_operative', cardUids }]
+            : [];
+    }
+
+    const reason = REORDER_PROMPT_REASON_BY_SOURCE_ID[sourceId];
+    if (!reason) return [];
+
+    const cardUids = extractCardUids((prompt as { inspectedCards?: unknown }).inspectedCards);
+    return cardUids.length > 0
+        ? [{ sourceId, reason, cardUids }]
+        : [];
+}
+
+export function shouldSuppressRevealItem(item: RevealItem, suppressionRules: RevealSuppressionRule[]): boolean {
+    if (suppressionRules.length === 0 || item.cards.length === 0) return false;
+    return suppressionRules.some((rule) => {
+        if (rule.reason !== item.reason || rule.cardUids.length === 0) {
+            return false;
+        }
+        const cardUidSet = new Set(rule.cardUids);
+        return item.cards.every((card) => cardUidSet.has(card.uid));
+    });
+}
+
 // ============================================================================
 // 组件
 // ============================================================================
 
-export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealOverlayProps) {
+export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressionRules = [] }: RevealOverlayProps) {
     const { t } = useTranslation('game-smashup');
     const [queue, setQueue] = useState<RevealItem[]>([]);
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastSeenIdRef = useRef<number>(-1);
+    const rollback = useEventStreamRollback();
+    const lastRollbackSeqRef = useRef<number>(rollback.seq);
 
     const TRIGGER_EVENTS = useMemo(() => new Set([
         SU_EVENTS.REVEAL_HAND,
         SU_EVENTS.REVEAL_DECK_TOP,
     ]), []);
 
+    useEffect(() => {
+        if (rollback.seq === lastRollbackSeqRef.current) {
+            return;
+        }
+
+        lastRollbackSeqRef.current = rollback.seq;
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+        setQueue([]);
+        setMagnifyTarget(null);
+        lastSeenIdRef.current = rollback.watermark ?? -1;
+    }, [rollback.seq, rollback.watermark]);
+
     // 消费新事件
     // 注意：展示 UI 需要显示历史的展示事件，所以不跳过历史事件
     // 不使用 useEventStreamCursor（它会跳过历史事件），直接管理游标
     useEffect(() => {
-        let cancelled = false;
         // 检测 Undo 回退：最大 ID 回退时重置队列和游标
         if (entries.length > 0) {
             const maxId = entries[entries.length - 1].id;
             if (maxId < lastSeenIdRef.current) {
-                queueMicrotask(() => {
-                    if (!cancelled) {
-                        setQueue([]);
-                    }
-                });
+                setQueue([]);
                 lastSeenIdRef.current = maxId;
-                return () => {
-                    cancelled = true;
-                };
+                return;
             }
         }
 
@@ -138,19 +234,17 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealO
         }
 
         if (newItems.length > 0) {
-            queueMicrotask(() => {
-                if (!cancelled) {
-                    setQueue(prev => [...prev, ...newItems].slice(-5));
-                }
-            });
+            setQueue(prev => [...prev, ...newItems].slice(-5));
         }
-        return () => {
-            cancelled = true;
-        };
     }, [entries, currentPlayerId, TRIGGER_EVENTS]);
 
+    const visibleQueue = useMemo(
+        () => queue.filter((item) => !shouldSuppressRevealItem(item, suppressionRules)),
+        [queue, suppressionRules],
+    );
+    const current = visibleQueue[0];
+
     // 自动消失定时器
-    const current = queue[0];
     useEffect(() => {
         if (!current) return;
         const currentId = current.id;
@@ -167,8 +261,9 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealO
             setMagnifyTarget(null);
             return;
         }
-        setQueue(prev => prev.slice(1));
-    }, [magnifyTarget]);
+        if (!current) return;
+        setQueue(prev => prev.filter(item => item.id !== current.id));
+    }, [current, magnifyTarget]);
 
     if (!current) return null;
 
@@ -183,22 +278,21 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealO
         <AnimatePresence mode="wait">
             <motion.div
                 key={current.id}
-                className="fixed inset-0 flex flex-col items-center justify-center cursor-pointer"
+                className="fixed inset-0 flex flex-col items-center justify-center pointer-events-none"
                 style={{ zIndex: UI_Z_INDEX.overlayRaised }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                onClick={handleDismiss}
                 data-interaction-allow
                 data-testid="reveal-overlay"
             >
                 {/* 半透明背景（不完全遮挡） */}
-                <div className="absolute inset-0 bg-black/30" />
+                <div className="absolute inset-0 bg-black/30 pointer-events-none" />
 
                 {/* 标题 */}
                 <motion.h2
-                    className="relative text-2xl font-black text-amber-100 uppercase tracking-tight mb-6 drop-shadow-lg"
+                    className="relative mb-6 text-2xl font-black text-amber-100 uppercase tracking-tight drop-shadow-lg"
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.1 }}
@@ -209,11 +303,10 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealO
                 {/* 卡牌展示区 */}
                 {current.cards.length > 0 && (
                     <motion.div
-                        className="relative flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-4"
+                        className="relative flex max-w-[90vw] gap-4 overflow-x-auto px-8 py-4 pointer-events-auto"
                         initial={{ y: 40, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.15, type: 'spring', stiffness: 300, damping: 25 }}
-                        onClick={e => e.stopPropagation()}
                     >
                         {current.cards.map((card, idx) => {
                             const def = getCardDef(card.defId);
@@ -231,8 +324,7 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealO
                                     animate={{ y: 0, opacity: 1 }}
                                     transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
                                     className="flex-shrink-0 flex flex-col items-center gap-1.5 group relative cursor-pointer"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
+                                    onClick={() => {
                                         setMagnifyTarget({ defId: card.defId, type: isBase ? 'base' : (def?.type ?? 'action') });
                                     }}
                                 >
@@ -259,33 +351,43 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealO
                     </motion.div>
                 )}
 
-                {/* 点击提示 + 队列指示 */}
                 <motion.div
-                    className="relative mt-5 text-white/50 text-sm pointer-events-none"
+                    className="relative mt-5 flex flex-col items-center gap-3 pointer-events-auto"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 }}
                 >
-                    {queue.length > 1
-                        ? t('ui.reveal_queue_hint', {
-                            count: queue.length,
-                            defaultValue: '{{count}} 条展示待查看 · 点击继续',
-                        })
-                        : t('ui.reveal_dismiss_hint', { defaultValue: '点击任意位置关闭' })}
-                </motion.div>
+                    <GameButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleDismiss}
+                        data-testid="reveal-dismiss-btn"
+                    >
+                        {t('ui.close', { defaultValue: '关闭' })}
+                    </GameButton>
 
-                {/* 队列指示器 */}
-                {queue.length > 1 && (
-                    <div className="relative mt-3 flex gap-1.5">
-                        {queue.map((item, idx) => (
-                            <div
-                                key={item.id}
-                                className={`w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-white scale-125' : 'bg-white/40'
-                                    }`}
-                            />
-                        ))}
+                    <div className="text-sm text-white/50 pointer-events-none">
+                        {visibleQueue.length > 1
+                            ? t('ui.reveal_queue_hint', {
+                                count: visibleQueue.length,
+                                defaultValue: '{{count}} 条展示待查看 · 关闭后继续',
+                            })
+                            : t('ui.reveal_dismiss_hint', { defaultValue: '关闭后可继续操作' })}
                     </div>
-                )}
+
+                    {/* 队列指示器 */}
+                    {visibleQueue.length > 1 && (
+                        <div className="flex gap-1.5 pointer-events-none">
+                            {visibleQueue.map((item, idx) => (
+                                <div
+                                    key={item.id}
+                                    className={`w-2 h-2 rounded-full transition-all ${idx === 0 ? 'bg-white scale-125' : 'bg-white/40'
+                                        }`}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </motion.div>
 
                 {/* 卡牌放大镜 */}
                 <CardMagnifyOverlay target={magnifyTarget} onClose={() => setMagnifyTarget(null)} />

@@ -18,6 +18,8 @@ import { initAllAbilities } from '../abilities';
 import { getCardDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { makeCard, makeMatchState, makePlayer, makeState } from './helpers';
+import { defaultTestRandom, runCommand } from './testRunner';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -51,6 +53,34 @@ const DRAFT_COMMANDS: SmashUpCommand[] = [
 // ============================================================================
 
 describe('Property 8: 标准行动卡生命周期', () => {
+    it('直接打出被他人拥有的标准行动时，应从当前玩家手牌移除并进入其拥有者弃牌堆', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('summon', 'wizard_summon', 'action', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'summon' },
+        }, defaultTestRandom);
+
+        expect(result.success).toBe(true);
+        const actionPlayed = result.events.find(event => event.type === SU_EVENTS.ACTION_PLAYED) as any;
+        expect(actionPlayed?.payload?.ownerId).toBe('1');
+        const finalCore = result.finalState.core;
+        expect(finalCore.players['0'].hand.some(card => card.uid === 'summon')).toBe(false);
+        expect(finalCore.players['0'].discard.some(card => card.uid === 'summon')).toBe(false);
+        expect(finalCore.players['1'].discard).toContainEqual(
+            expect.objectContaining({ uid: 'summon', defId: 'wizard_summon', owner: '1' }),
+        );
+    });
+
     it('打出标准行动卡后从手牌移入弃牌堆', () => {
         const runner = createRunner();
         const result = runner.run({ name: '选秀', commands: DRAFT_COMMANDS });

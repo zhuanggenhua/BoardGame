@@ -291,10 +291,30 @@ export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
 
         const target = this.matchStorage.get(matchID);
         if (target === 'mongo') {
-            return await this.mongo.fetch(matchID, opts);
+            const mongoResult = await this.mongo.fetch(matchID, opts);
+            if (hasFetchResult(mongoResult, opts)) {
+                return mongoResult;
+            }
+            this.matchStorage.delete(matchID);
+            const memoryResult = this.memory.fetch(matchID, opts);
+            if (hasFetchResult(memoryResult, opts)) {
+                this.matchStorage.set(matchID, 'memory');
+                return memoryResult;
+            }
+            return mongoResult;
         }
         if (target === 'memory') {
-            return this.memory.fetch(matchID, opts);
+            const memoryResult = this.memory.fetch(matchID, opts);
+            if (hasFetchResult(memoryResult, opts)) {
+                return memoryResult;
+            }
+            this.matchStorage.delete(matchID);
+            const mongoResult = await this.mongo.fetch(matchID, opts);
+            if (hasFetchResult(mongoResult, opts)) {
+                this.matchStorage.set(matchID, 'mongo');
+                return mongoResult;
+            }
+            return memoryResult;
         }
 
         const mongoResult = await this.mongo.fetch(matchID, opts);
@@ -319,10 +339,28 @@ export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
 
         const target = this.matchStorage.get(matchID);
         if (target === 'mongo') {
-            return await this.mongo.fetchAuthMetadata(matchID);
+            const mongoMetadata = await this.mongo.fetchAuthMetadata(matchID);
+            if (mongoMetadata) {
+                return mongoMetadata;
+            }
+            this.matchStorage.delete(matchID);
+            const memoryMetadata = this.memory.fetchAuthMetadata(matchID);
+            if (memoryMetadata) {
+                this.matchStorage.set(matchID, 'memory');
+            }
+            return memoryMetadata;
         }
         if (target === 'memory') {
-            return this.memory.fetchAuthMetadata(matchID);
+            const memoryMetadata = this.memory.fetchAuthMetadata(matchID);
+            if (memoryMetadata) {
+                return memoryMetadata;
+            }
+            this.matchStorage.delete(matchID);
+            const mongoMetadata = await this.mongo.fetchAuthMetadata(matchID);
+            if (mongoMetadata) {
+                this.matchStorage.set(matchID, 'mongo');
+            }
+            return mongoMetadata;
         }
 
         const mongoMetadata = await this.mongo.fetchAuthMetadata(matchID);
@@ -393,6 +431,7 @@ export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
 
             if (now - disconnectedSince >= graceMs) {
                 this.wipeMemoryMatch(matchID);
+                this.matchStorage.delete(matchID);
                 cleanedMemory += 1;
             }
         }
@@ -427,7 +466,19 @@ export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
 
     private async resolveStorageForMatch(matchID: string): Promise<StorageTarget | null> {
         const cached = this.matchStorage.get(matchID);
-        if (cached) return cached;
+        if (cached === 'memory') {
+            const memoryCheck = this.memory.fetch(matchID, { metadata: true });
+            if (memoryCheck?.metadata) {
+                return 'memory';
+            }
+            this.matchStorage.delete(matchID);
+        } else if (cached === 'mongo') {
+            const mongoCheck = await this.mongo.fetch(matchID, { metadata: true });
+            if (mongoCheck?.metadata) {
+                return 'mongo';
+            }
+            this.matchStorage.delete(matchID);
+        }
 
         if (!this.persistentEnabled) {
             const memoryCheck = this.memory.fetch(matchID, { metadata: true });

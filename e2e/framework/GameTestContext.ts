@@ -1222,11 +1222,6 @@ export class GameTestContext {
 
         // 4. 如果需要选择目标随从，点击随从
         if (options?.targetMinionUid) {
-            if (options.targetBaseIndex === undefined && await isCardStillInHand()) {
-                await this.page.click(`[data-card-uid="${cardUid}"]`);
-                await this.page.waitForTimeout(300);
-            }
-
             const interactionOption = await this.page.evaluate((targetMinionUid) => {
                 const harness = (window as any).__BG_TEST_HARNESS__;
                 const state = harness?.state?.get?.();
@@ -1365,9 +1360,9 @@ export class GameTestContext {
         }, optionId);
 
         if (optionMeta?.existsInCurrentInteraction && optionMeta?.interactionPlayerId) {
-            await this.page.evaluate(({ id, playerId }) => {
+            await this.page.evaluate(async ({ id, playerId }) => {
                 const harness = (window as any).__BG_TEST_HARNESS__;
-                harness.command.dispatch({
+                await harness.command.dispatch({
                     type: 'SYS_INTERACTION_RESPOND',
                     playerId,
                     payload: { optionId: id },
@@ -1414,7 +1409,7 @@ export class GameTestContext {
             throw new Error(`Interaction option ${optionId} not found`);
         }
 
-        await this.page.evaluate((id) => {
+        await this.page.evaluate(async (id) => {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness?.state?.get?.();
             const interaction = state?.sys?.interaction?.current;
@@ -1425,7 +1420,7 @@ export class GameTestContext {
                 throw new Error(`Interaction option ${id} not found in current interaction`);
             }
 
-            harness.command.dispatch({
+            await harness.command.dispatch({
                 type: 'SYS_INTERACTION_RESPOND',
                 playerId: interaction.playerId,
                 payload: { optionId: id },
@@ -1576,7 +1571,7 @@ export class GameTestContext {
      * 多人 E2E 若只打开一个页面，可用它代替另一个玩家的 PASS。
      */
     async passResponseWindow(playerId?: string): Promise<void> {
-        await this.page.evaluate((explicitPlayerId) => {
+        await this.page.evaluate(async (explicitPlayerId) => {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness?.state?.get?.();
             const responseWindow = state?.sys?.responseWindow?.current;
@@ -1590,7 +1585,7 @@ export class GameTestContext {
                 throw new Error('Response window responder not found');
             }
 
-            harness.command.dispatch({
+            await harness.command.dispatch({
                 type: 'RESPONSE_PASS',
                 playerId: responderId,
                 payload: undefined,

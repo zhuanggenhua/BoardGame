@@ -121,6 +121,18 @@ type GhostSpiritDiscardContext = GhostPromptContext & {
     requiredCount: number;
 };
 
+function findCardOwnerAcrossPlayerZones(state: SmashUpCore, cardUid: string, defId: string, fallbackPlayerId: string): string {
+    for (const player of Object.values(state.players)) {
+        const inHand = player.hand.find(card => card.uid === cardUid && card.defId === defId);
+        if (inHand) return inHand.owner;
+        const inDiscard = player.discard.find(card => card.uid === cardUid && card.defId === defId);
+        if (inDiscard) return inDiscard.owner;
+        const inDeck = player.deck.find(card => card.uid === cardUid && card.defId === defId);
+        if (inDeck) return inDeck.owner;
+    }
+    return fallbackPlayerId;
+}
+
 type GhostSpiritConfirmContext = GhostPromptContext & {
     minionUid: string;
     baseIndex: number;
@@ -134,6 +146,7 @@ type GhostTheDeadRiseContext = GhostPromptContext & {
 type GhostDeadRiseCandidate = {
     cardUid: string;
     defId: string;
+    ownerId: PlayerId;
     power: number;
     label: string;
 };
@@ -146,6 +159,7 @@ type GhostTheDeadRisePlayContext = GhostPromptContext & {
 type GhostTheDeadRiseBaseContext = GhostPromptContext & {
     cardUid: string;
     defId: string;
+    ownerId: PlayerId;
     power: number;
 };
 
@@ -165,7 +179,7 @@ type GhostBaseChoiceValue = { baseIndex: number; baseDefId?: string };
 type GhostSpiritChoiceValue = { minionUid?: string; baseIndex?: number; defId?: string; __cancel__?: true };
 type GhostConfirmChoiceValue = { confirm?: boolean };
 type GhostAcrossChoiceValue = { defId?: string; __cancel__?: true };
-type GhostDeadRisePlayChoiceValue = { cardUid?: string; defId?: string; power?: number; baseIndex?: number; skip?: true };
+type GhostDeadRisePlayChoiceValue = { cardUid?: string; defId?: string; ownerId?: PlayerId; power?: number; baseIndex?: number; skip?: true };
 
 function attachOptionsGenerator<T>(
     interaction: InteractionDescriptor<T>,
@@ -305,6 +319,7 @@ function buildGhostDeadRiseCandidatesFromCards(
             return {
                 cardUid: card.uid,
                 defId: card.defId,
+                ownerId: card.owner,
                 power,
                 label: `${def?.name ?? card.defId} (力量 ${power})`,
             };
@@ -318,7 +333,7 @@ function buildGhostDeadRisePlayOptions(
         ...eligible.map((card, index) => ({
             id: `card-${index}`,
             label: card.label,
-            value: { cardUid: card.cardUid, defId: card.defId, power: card.power },
+            value: { cardUid: card.cardUid, defId: card.defId, ownerId: card.ownerId, power: card.power },
             displayMode: 'card' as const,
         })),
         {
@@ -703,6 +718,7 @@ const ghostTheDeadRiseBasePromptProgram = createPromptProgram<GhostTheDeadRiseBa
                     playerId,
                     cardUid: context.cardUid,
                     defId: context.defId,
+                    ownerId: context.ownerId,
                     baseIndex: choice.baseIndex,
                     baseDefId: state.core.bases[choice.baseIndex]?.defId,
                     power: context.power,
@@ -774,6 +790,7 @@ const ghostTheDeadRisePlayPromptProgram = createPromptProgram<GhostTheDeadRisePl
                         playerId,
                         cardUid: selected.cardUid,
                         defId: selected.defId,
+                        ownerId: selected.ownerId,
                         baseIndex,
                         baseDefId: state.core.bases[baseIndex]?.defId,
                         power: selected.power,
@@ -798,10 +815,11 @@ const ghostTheDeadRisePlayPromptProgram = createPromptProgram<GhostTheDeadRisePl
                 matchState: state,
                 playerId,
                 now: timestamp,
-                cardUid: selected.cardUid,
-                defId: selected.defId,
-                power: selected.power,
-            },
+                    cardUid: selected.cardUid,
+                    defId: selected.defId,
+                    ownerId: selected.ownerId,
+                    power: selected.power,
+                },
             nextProgram: ghostTheDeadRiseBasePromptProgram,
         };
     },
@@ -926,6 +944,7 @@ const ghostAcrossTheDivideProgram = createBranchProgram<GhostAcrossTheDivideCont
 function ghostMakeContactPod(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const handAfterPlay = ctx.handSizeAfterPlay ?? player.hand.filter(c => c.uid !== ctx.cardUid).length;
+    const ownerId = findCardOwnerAcrossPlayerZones(ctx.state, ctx.cardUid, ctx.defId, ctx.playerId);
     // 行动卡打出后仍有手牌则自毁
     if (handAfterPlay > 0) {
         const detachEvt: OngoingDetachedEvent = {
@@ -933,7 +952,7 @@ function ghostMakeContactPod(ctx: AbilityContext): AbilityResult {
             payload: {
                 cardUid: ctx.cardUid,
                 defId: ctx.defId,
-                ownerId: ctx.playerId,
+                ownerId,
                 reason: 'ghost_make_contact_pod_has_hand',
             },
             timestamp: ctx.now,

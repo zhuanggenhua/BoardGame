@@ -281,9 +281,13 @@ export function registerCthulhuAbilities(): void {
     // === ongoing 效果注册 ===
     // 克苏鲁祭坛：打出随从时额外打出一张战术?
     registerTrigger('cthulhu_altar', 'onMinionPlayed', cthulhuAltarTrigger, {
+        sourceScope: 'triggerBase',
+        canTrigger: isCthulhuAltarEligibleForMinionPlayed,
+        playerContext: 'sourceController',
     });
     // 深化目标：回合结束时条件获VP
     registerTrigger('cthulhu_furthering_the_cause', 'onTurnEnd', cthulhuFurtheringTheCauseTrigger, {
+        playerContext: 'sourceController',
     });
     // 天选之人：基地计分前抽疑狂卡?2力量
     registerTrigger('cthulhu_chosen', 'beforeScoring', cthulhuChosenBeforeScoringPerInstance, {
@@ -292,6 +296,8 @@ export function registerCthulhuAbilities(): void {
     });
     // 完成仪式：回合开始时清场并换基地
     registerTrigger('cthulhu_complete_the_ritual', 'onTurnStart', cthulhuCompleteTheRitualTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
 }
 
@@ -331,11 +337,19 @@ const cthulhuRecruitByForcePromptProgram = createPromptProgram<CthulhuPromptCont
             .filter((card): card is typeof player.discard[number] => !!card);
         if (selectedFromDiscard.length === 0) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: [...selectedFromDiscard, ...player.deck].map(card => card.uid) },
-                timestamp,
-            }],
+            events: [...selectedFromDiscard]
+                .reverse()
+                .map(card => ({
+                    type: SU_EVENTS.CARD_TO_DECK_TOP,
+                    payload: {
+                        cardUid: card.uid,
+                        defId: card.defId,
+                        ownerId: card.owner,
+                        sourcePlayerId: playerId,
+                        reason: 'cthulhu_recruit_by_force',
+                    },
+                    timestamp,
+                })),
         };
     },
 });
@@ -392,13 +406,30 @@ const cthulhuItBeginsAgainPromptProgram = createPromptProgram<CthulhuItBeginsAga
             card => selectedSet.has(card.uid) && card.uid !== context.sourceCardUid,
         );
         if (actionsFromDiscard.length === 0) return { events: [] };
+        const actionsByOwner = new Map<PlayerId, typeof actionsFromDiscard>();
+        for (const card of actionsFromDiscard) {
+            const ownerCards = actionsByOwner.get(card.owner) ?? [];
+            ownerCards.push(card);
+            actionsByOwner.set(card.owner, ownerCards);
+        }
         const shuffled = random.shuffle([...player.deck, ...actionsFromDiscard]);
         return {
-            events: [{
-                type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: shuffled.map(card => card.uid) },
-                timestamp,
-            }],
+            events: actionsByOwner.size <= 1 && actionsByOwner.has(playerId)
+                ? [{
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: { playerId, deckUids: shuffled.map(card => card.uid) },
+                    timestamp,
+                }]
+                : Array.from(actionsByOwner.entries()).map(([ownerId, ownerCards]) => ({
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: {
+                        playerId: ownerId,
+                        sourcePlayerId: playerId,
+                        deckUids: random.shuffle([...(state.core.players[ownerId]?.deck ?? []), ...ownerCards])
+                            .map(card => card.uid),
+                    },
+                    timestamp,
+                })),
         };
     },
 });
@@ -605,10 +636,20 @@ function cthulhuCompleteTheRitualTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
+        const controllerId = ctx.sourceControllerId ?? ctx.playerId;
         const ritual = base.ongoingActions.find(
-            a => matchesDefId(a.defId, 'cthulhu_complete_the_ritual') && a.ownerId === ctx.playerId
+            a => matchesDefId(a.defId, 'cthulhu_complete_the_ritual') && a.uid === ctx.sourceCardUid
         );
-        if (!ritual) continue;
+        if (!ritual) {
+            const fallbackRitual = base.ongoingActions.find(
+                a => matchesDefId(a.defId, 'cthulhu_complete_the_ritual') && getCthulhuOngoingControllerId(a) === controllerId
+            );
+            if (!fallbackRitual) continue;
+        }
+        const resolvedRitual = ritual ?? base.ongoingActions.find(
+            a => matchesDefId(a.defId, 'cthulhu_complete_the_ritual') && getCthulhuOngoingControllerId(a) === controllerId
+        );
+        if (!resolvedRitual) continue;
 
         // 1. 将所有随从放回拥有者牌库底；普通随从的附着行动也一并放底
         for (const m of base.minions) {
@@ -618,6 +659,7 @@ function cthulhuCompleteTheRitualTrigger(ctx: TriggerContext): SmashUpEvent[] {
                     cardUid: m.uid,
                     defId: m.defId,
                     ownerId: m.owner,
+                    ...(m.owner !== controllerId ? { sourcePlayerId: controllerId } : {}),
                     reason: 'cthulhu_complete_the_ritual',
                 },
                 timestamp: ctx.now,
@@ -631,6 +673,7 @@ function cthulhuCompleteTheRitualTrigger(ctx: TriggerContext): SmashUpEvent[] {
                         cardUid: a.uid,
                         defId: a.defId,
                         ownerId: a.ownerId,
+                        ...(a.ownerId !== controllerId ? { sourcePlayerId: controllerId } : {}),
                         reason: 'cthulhu_complete_the_ritual',
                     },
                     timestamp: ctx.now,
@@ -646,6 +689,7 @@ function cthulhuCompleteTheRitualTrigger(ctx: TriggerContext): SmashUpEvent[] {
                     cardUid: ongoing.uid,
                     defId: ongoing.defId,
                     ownerId: ongoing.ownerId,
+                    ...(ongoing.ownerId !== controllerId ? { sourcePlayerId: controllerId } : {}),
                     reason: 'cthulhu_complete_the_ritual',
                 },
                 timestamp: ctx.now,
@@ -804,9 +848,29 @@ function cthulhuChosenBeforeScoringPerInstance(ctx: TriggerContext): TriggerResu
 // ongoing 效果触发器?
 // ============================================================================
 
+function getCthulhuOngoingControllerId(ongoing: { ownerId: PlayerId; metadata?: { sourceControllerId?: PlayerId } }): PlayerId {
+    return ongoing.metadata?.sourceControllerId ?? ongoing.ownerId;
+}
+
 /** 克苏鲁祭坛触发：打出随从时额外打出一张战术?*/
+function isCthulhuAltarEligibleForMinionPlayed(ctx: TriggerContext): boolean {
+    const baseIndex = ctx.baseIndex;
+    if (baseIndex === undefined) return false;
+    const base = ctx.state.bases[baseIndex];
+    if (!base) return false;
+    const usedUids = ctx.state.turnUsedOngoingUids ?? [];
+    return base.ongoingActions.some(ongoing => {
+        if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) return false;
+        if (!matchesDefId(ongoing.defId, 'cthulhu_altar')) return false;
+        const controllerId = getCthulhuOngoingControllerId(ongoing);
+        if (controllerId !== ctx.playerId) return false;
+        return !ongoing.defId.endsWith('_pod') || !usedUids.includes(ongoing.uid);
+    });
+}
+
 function cthulhuAltarTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
+    if (!isCthulhuAltarEligibleForMinionPlayed(ctx)) return events;
     const baseIndex = ctx.baseIndex;
     if (baseIndex === undefined) return events;
     const base = ctx.state.bases[baseIndex];
@@ -817,8 +881,10 @@ function cthulhuAltarTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const newUsedUids = [...usedUids];
 
     for (const ongoing of base.ongoingActions) {
+        if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) continue;
         if (!matchesDefId(ongoing.defId, 'cthulhu_altar')) continue;
-        if (ongoing.ownerId !== ctx.playerId) continue;
+        const controllerId = getCthulhuOngoingControllerId(ongoing);
+        if (controllerId !== ctx.playerId) continue;
 
         const isPod = ongoing.defId.endsWith('_pod');
         if (isPod && usedUids.includes(ongoing.uid)) continue;
@@ -844,15 +910,17 @@ function cthulhuFurtheringTheCauseTrigger(ctx: TriggerContext): SmashUpEvent[] {
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
         for (const ongoing of base.ongoingActions) {
+            if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) continue;
             if (!matchesDefId(ongoing.defId, 'cthulhu_furthering_the_cause')) continue;
+            const controllerId = getCthulhuOngoingControllerId(ongoing);
             // 检查本回合是否有对手随从在此基地被消灭
             const hasDestroyedOpponent = destroyed.some(
-                d => d.baseIndex === i && d.owner !== ongoing.ownerId
+                d => d.baseIndex === i && (d.controller ?? d.owner) !== controllerId
             );
             if (hasDestroyedOpponent) {
                 events.push({
                     type: SU_EVENTS.VP_AWARDED,
-                    payload: { playerId: ongoing.ownerId, amount: 1, reason: 'cthulhu_furthering_the_cause' },
+                    payload: { playerId: controllerId, amount: 1, reason: 'cthulhu_furthering_the_cause' },
                     timestamp: ctx.now,
                 } as VpAwardedEvent);
             }
@@ -972,10 +1040,16 @@ const cthulhuServitorPromptProgram = createPromptProgram<CthulhuPromptContext, S
         const player = state.core.players[playerId];
         const actionCard = player?.discard.find(card => card.uid === cardUid && card.type === 'action');
         if (!actionCard) return { events: [] };
+        const ownerId = actionCard.owner;
+        const ownerDeck = state.core.players[ownerId]?.deck ?? [];
         return {
             events: [{
                 type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: [actionCard.uid, ...player.deck.map(card => card.uid)] },
+                payload: {
+                    playerId: ownerId,
+                    deckUids: [actionCard.uid, ...ownerDeck.map(card => card.uid)],
+                    ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+                },
                 timestamp,
             }],
         };
