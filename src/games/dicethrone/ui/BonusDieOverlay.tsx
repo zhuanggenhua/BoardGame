@@ -119,6 +119,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
         }
         return resolveBonusDieText(summaryEffectKey, { t, i18n }, summaryEffectParams);
     }, [summaryEffectKey, summaryEffectParams, i18n, t]);
+    const shouldHidePerDieEffectText = Boolean(summaryEffectText);
     const hasForceAutoClose = typeof forceAutoCloseDelay === 'number' && forceAutoCloseDelay > 0;
     const isManualCloseOnly = manualCloseOnly === true && !hasForceAutoClose;
     const resolvedAutoCloseDelay = hasForceAutoClose
@@ -302,7 +303,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                                         presentationKey={diePresentationKey}
                                         characterId={characterId}
                                         compact={!isSingleDieRerollSpotlight}
-                                        hideEffectText={!isSingleDieRerollSpotlight && bonusDice.length > 1}
+                                        hideEffectText={shouldHidePerDieEffectText || (!isSingleDieRerollSpotlight && bonusDice.length > 1)}
                                     />
                                     {canSelectDieToReroll && (
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">

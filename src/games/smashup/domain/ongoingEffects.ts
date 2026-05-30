@@ -100,6 +100,7 @@ export type TriggerTiming =
     | 'onBuriedCardUncovered' // 闂佺硶鏅涢鍫ュ箠瀹ュ鍋嬬€光偓閸愮偓钑夌紓鍌氱墣椤曆呮閹达箑绫?
     | 'onBaseRevealed'     // 闂佺硶鏅涢幖顐耿鐎靛摜绀勯悹鍥ㄥ絻濮?闂佸搫娲︾€笛冪暦閺屻儱瑙﹂幖绮光偓鍐叉辈闂侀潻濡囩亸銊ф濞嗘挸绠ラ柍杞拌兌濞兼棃鏌涢埡浣规儓婵犫偓鐎靛憡鍠嗛柨鏇楀亾鐟滄澘鍊块弫?
     | 'onMinionDestroyed'  // 闂傚倸鎳庣换瀣垝閻樺灚鍋栨い鎰剁悼鍟搁梺璇叉禋閸樿棄顪?
+    | 'onCardDestroyed'
     | 'onMinionMoved'      // 闂傚倸鎳庣换瀣垝閻樺灚鍋栨い鎰╀紗閳哄懎绀夐柕濠忛檮椤?
     | 'onCardReturnedToHand' // 闂佸憡顨愮槐鏇熸櫠濠靛洨顩烽幖绮瑰墲缁ㄦ艾鈽夐幘绛规敾闁搞劊鍔岄锝夊礃椤忓嫷鏉洪梺鍓插亜濡粎鎹㈠鈧畷妤呭Ψ閿曗偓椤や線鏌ｅΔ鈧張顒€顪?
     | 'onDeckInspected'    // 闂佺粯顨呴懟顖滆姳鏉堚晜鍋栨い鎰剁悼閸欌偓闂?/ 闁诲繒鍋炲ú婊堝Φ?/ 濠碘槅鍋€閸嬫挾绱掓笟鍨仾婵?
@@ -165,8 +166,16 @@ export interface TriggerContext {
     triggerMinionUid?: string;
     /** 触发相关随从 defId */
     triggerMinionDefId?: string;
-    /** 消灭者（仅 onMinionDestroyed） */
+    /** 消灭者（仅 onMinionDestroyed / onCardDestroyed） */
     destroyerId?: PlayerId;
+    /** 被消灭的在场行动牌 UID（仅 onCardDestroyed） */
+    triggerCardUid?: string;
+    /** 被消灭的在场行动牌 defId（仅 onCardDestroyed） */
+    triggerCardDefId?: string;
+    /** 被消灭的在场行动牌拥有者（仅 onCardDestroyed） */
+    triggerCardOwnerId?: PlayerId;
+    /** 被消灭的卡牌类别（仅 onCardDestroyed） */
+    triggerCardKind?: 'ongoing' | 'attached_action';
     /** 事件原因 */
     reason?: string;
     /** 影响类型（仅 onMinionAffected） */
@@ -470,6 +479,10 @@ function createTriggerInstance(
         triggerMinionDefId: ctx.triggerMinionDefId,
         triggerMinionPower: (ctx as any).triggerMinionPower,
         destroyerId: ctx.destroyerId,
+        triggerCardUid: ctx.triggerCardUid,
+        triggerCardDefId: ctx.triggerCardDefId,
+        triggerCardOwnerId: ctx.triggerCardOwnerId,
+        triggerCardKind: ctx.triggerCardKind,
         reason: ctx.reason,
         affectType: ctx.affectType,
         counterChangeKind: ctx.counterChangeKind,

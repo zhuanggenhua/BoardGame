@@ -4,10 +4,12 @@ import { SU_EVENTS, type SmashUpEvent, type TitanState } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import {
     FIXED_RANDOM,
+    applyEvents,
     getOptionalSimpleChoicePrompt,
     getPromptOption,
     getPromptPlayerId,
     getReactionPromptOptionBySourceDefId,
+    resolveAffectedMinions,
     getSimpleChoicePrompt,
     makeBase,
     makeCard,
@@ -15,10 +17,10 @@ import {
     makeMinion,
     makePlayer,
     makeState,
-    maybeResolveReactionQueue,
     resolveDestroyedMinions,
     respondCommand,
 } from './helpers';
+import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { runCommand } from './testRunner';
 
 beforeEach(() => {
@@ -227,5 +229,61 @@ describe('Invisible Ninja 持续触发回归', () => {
 
         const currentInteraction = getSimpleChoicePrompt(reactionState, 'titan_ninjas_invisible_ninja_ongoing');
         expect(getPromptPlayerId(currentInteraction)).toBe('0');
+    });
+
+    it('自己消灭对手持续行动牌时，隐形忍者也应触发抽牌', () => {
+        const matchState = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('draw-b', 'ghosts_spectre', 'minion', '0'),
+                        makeCard('draw-c', 'sharks_mako', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            bases: [
+                makeBase(),
+                makeBase({
+                    ongoingActions: [{ uid: 'enemy-ongoing', defId: 'bear_cavalry_superiority', ownerId: '1' } as any],
+                }),
+            ],
+            titans: [{
+                uid: 't-invisible-ninja-live',
+                defId: 'ninjas_invisible_ninja',
+                faction: SMASHUP_FACTION_IDS.NINJAS,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } satisfies TitanState],
+        }));
+
+        const processed = resolveAffectedMinions(matchState, '0', [{
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: {
+                cardUid: 'enemy-ongoing',
+                defId: 'bear_cavalry_superiority',
+                ownerId: '1',
+                reason: 'test_destroy_enemy_ongoing',
+                sourcePlayerId: '0',
+            },
+            timestamp: 401,
+        } satisfies SmashUpEvent], FIXED_RANDOM, 401);
+
+        const queuedState = processed.matchState ?? matchState;
+        const reactionState = {
+            ...queuedState,
+            core: applyEvents(queuedState.core, processed.events),
+        };
+        const finalState = resolveInvisibleNinjaTrigger(reactionState);
+
+        expect(finalState.core.players['0'].hand).toHaveLength(1);
+        expect(finalState.core.players['0'].deck).toHaveLength(2);
     });
 });

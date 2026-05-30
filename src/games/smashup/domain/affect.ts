@@ -42,6 +42,10 @@ export interface AffectRecord {
     protectionTargetMinion?: MinionOnBase;
     triggerMinionUid?: string;
     triggerMinionDefId?: string;
+    triggerCardUid?: string;
+    triggerCardDefId?: string;
+    triggerCardOwnerId?: PlayerId;
+    triggerCardKind?: Extract<AffectTargetKind, 'ongoing' | 'attached_action'>;
     counterChangeKind?: 'added' | 'removed';
     counterDelta?: number;
 }
@@ -158,6 +162,10 @@ function buildInPlayCardAffectRecord(
         sourceDefId: source.sourceDefId,
         sourceControllerId: source.sourceControllerId,
         sourceBaseIndex: source.sourceBaseIndex,
+        triggerCardUid: lookup.targetKind === 'ongoing' ? lookup.ongoing.uid : lookup.action.uid,
+        triggerCardDefId: lookup.targetKind === 'ongoing' ? lookup.ongoing.defId : lookup.action.defId,
+        triggerCardOwnerId: lookup.targetKind === 'ongoing' ? lookup.ongoing.ownerId : lookup.action.ownerId,
+        triggerCardKind: lookup.targetKind,
     };
 }
 

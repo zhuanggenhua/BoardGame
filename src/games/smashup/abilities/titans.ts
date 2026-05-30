@@ -3053,12 +3053,16 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
     const titan = getControlledTitanOnBase(ctx.state, 'ninjas_invisible_ninja', controllerId);
     if (!titan || !ctx.matchState) return [];
 
-    const destroyAnotherPlayersCard =
+    const destroyAnotherPlayersMinion =
         ctx.destroyerId === controllerId
         && !!ctx.triggerMinion
         && ctx.triggerMinion.owner !== controllerId;
-    const returnedOwnMinion = !!ctx.triggerMinionUid;
-    if (!destroyAnotherPlayersCard && !returnedOwnMinion) {
+    const destroyAnotherPlayersCard =
+        ctx.destroyerId === controllerId
+        && !!ctx.triggerCardUid
+        && ctx.triggerCardOwnerId !== controllerId;
+    const returnedOwnMinion = ctx.timing === 'onCardReturnedToHand' && !!ctx.triggerMinionUid;
+    if (!destroyAnotherPlayersMinion && !destroyAnotherPlayersCard && !returnedOwnMinion) {
         return [];
     }
 
@@ -3576,6 +3580,11 @@ export function registerTitanAbilities(): void {
         global: true,
     });
     registerTrigger('ninjas_invisible_ninja', 'onMinionDestroyed', invisibleNinjaTriggered, {
+        optional: true,
+        baseScoped: false,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('ninjas_invisible_ninja', 'onCardDestroyed', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',

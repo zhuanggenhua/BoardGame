@@ -718,6 +718,10 @@ function executeQueuedTrigger(
         triggerMinionDefId: trigger.triggerMinionDefId,
         triggerMinionPower: trigger.triggerMinionPower,
         destroyerId: trigger.destroyerId,
+        triggerCardUid: trigger.triggerCardUid,
+        triggerCardDefId: trigger.triggerCardDefId,
+        triggerCardOwnerId: trigger.triggerCardOwnerId,
+        triggerCardKind: trigger.triggerCardKind,
         triggerMinion: trigger.lkiMinion
             ? {
                 uid: trigger.lkiMinion.uid,

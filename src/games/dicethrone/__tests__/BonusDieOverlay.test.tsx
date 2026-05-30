@@ -359,6 +359,30 @@ describe('BonusDieOverlay', () => {
         expect(onReroll).toHaveBeenCalledWith(0);
     });
 
+    it('单骰有汇总文案时应只显示一句描述，不重复渲染每骰文案', async () => {
+        vi.useFakeTimers();
+
+        render(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                bonusDice={[
+                    { index: 0, value: 1, face: 'fist', effectKey: 'bonusDie.effect.watchOut.bow', effectParams: { value: 1 } },
+                ]}
+                canReroll={false}
+                displayOnly
+                summaryEffectKey="bonusDie.effect.watchOut.bow"
+                summaryEffectParams={{ value: 1 }}
+            />
+        );
+
+        await act(async () => {
+            vi.advanceTimersByTime(1200);
+        });
+
+        expect(screen.getAllByText('弓🏹：伤害+2')).toHaveLength(1);
+    });
+
     it('多骰重掷后只应让被选中的那颗骰子播放重投动画', async () => {
         vi.useFakeTimers();
 

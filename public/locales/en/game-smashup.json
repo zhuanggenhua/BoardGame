@@ -1449,7 +1449,7 @@
     },
     "ninjas_invisible_ninja": {
       "name": "Invisible Ninja",
-      "effectText": "Special: If this titan was not in play at the start of your turn, you may discard a card to play it on a base where you have a minion. Ongoing: At the start of your turn, you may destroy this titan to play an extra minion of power 3 or less. Ongoing: After you destroy another player's minion or return one of your minions to your hand, look at the top two cards of your deck and draw one."
+      "effectText": "Special: On your turn, if this titan was not in play at the start of your turn, you may discard a card to play this titan at a base where you have a minion. Ongoing: At the start of your turn, you may destroy this titan to play an extra minion of power 3 or less. Ongoing: Once per turn, after you destroy another player's card or return one of your minions to your hand, you may look at the top two cards of your deck, draw one, and shuffle the other into your deck."
     },
     "killer_plants_killer_kudzu": {
       "name": "Killer Kudzu",

@@ -1791,6 +1791,39 @@ export function processAffectTriggers(
                 controllerId: record.triggerMinion!.controller,
             }));
         for (const [recordIndex, record] of affectRecords.entries()) {
+            if (
+                record.affectType === 'destroy'
+                && record.triggerCardUid
+                && record.triggerCardDefId
+                && record.triggerCardOwnerId
+                && record.triggerCardKind
+                && record.baseIndex !== undefined
+            ) {
+                const sourceEventId = `card-destroyed:${event.type}:${record.triggerCardUid}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
+                const frameId = `card-destroyed-frame:${event.type}:${record.triggerCardUid}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
+
+                const queued = collectTriggers(core, 'onCardDestroyed', {
+                    state: core,
+                    matchState: ms ?? state,
+                    playerId: record.triggerCardOwnerId,
+                    baseIndex: record.baseIndex,
+                    frameId,
+                    sourceEventId,
+                    sourceCardUid: record.sourceCardUid,
+                    sourceBaseIndex: record.sourceBaseIndex,
+                    sourceControllerId: record.sourceControllerId,
+                    triggerCardUid: record.triggerCardUid,
+                    triggerCardDefId: record.triggerCardDefId,
+                    triggerCardOwnerId: record.triggerCardOwnerId,
+                    triggerCardKind: record.triggerCardKind,
+                    destroyerId: record.sourcePlayerId ?? playerId,
+                    reason: record.reason,
+                    random,
+                    now,
+                });
+                if (queued) extraEvents.push(queued);
+            }
+
             if (!record.countsForOnMinionAffected || !record.triggerMinion || record.baseIndex === undefined) continue;
             const sourceEventId = `minion-affected:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
             const frameId = `minion-affected-frame:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;

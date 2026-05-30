@@ -1,3 +1,6 @@
+> 2026-05-30 更正说明：
+> 当时文档中把隐形忍者（`ninjas_invisible_ninja`）描述成“消灭对手随从后触发抽牌”，该结论现已被正式英文卡图推翻。正式卡图是“每回合一次，消灭另一名玩家的一张卡，或将自己一个随从返回手牌后触发”；详见 `evidence/smashup/smashup-feedback-6a1a888c-invisible-ninja-card-destroy-trigger-2026-05-30.md`。本文档其余两条（Toll Bay / Shipwreck Cove）结论仍有效。
+
 # SmashUp 线上反馈收口（69eb8173 / 69eb8447 / 69eb84a9）
 
 ## 范围

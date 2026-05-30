@@ -606,8 +606,12 @@ export interface TriggerInstance {
     triggerMinionUid?: string;
     triggerMinionDefId?: string;
     triggerMinionPower?: number;
-    /** destroyer (for onMinionDestroyed "after you destroy" checks) */
+    /** destroyer (for onMinionDestroyed / onCardDestroyed "after you destroy" checks) */
     destroyerId?: PlayerId;
+    triggerCardUid?: string;
+    triggerCardDefId?: string;
+    triggerCardOwnerId?: PlayerId;
+    triggerCardKind?: 'ongoing' | 'attached_action';
     reason?: string;
     affectType?: import('./ongoingEffects').AffectType;
     counterChangeKind?: 'added' | 'removed';
