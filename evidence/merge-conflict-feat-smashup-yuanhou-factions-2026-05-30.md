@@ -3,7 +3,7 @@
 ## 1. 背景
 - base: `main`
 - head: `feat/smashup-yuanhou-factions`
-- 当前状态: `MERGE_HEAD` 存在，说明本次仍是未提交的 merge 收口
+- 合并触发状态: 当时 `MERGE_HEAD` 存在，本次在 `main` 上完成未提交 merge 的最终收口
 - 目标: 把猿猴四派系及其依赖改动完整合入 `main`，解决冲突后删除旧分支与旧 worktree
 
 ## 2. 本次确认处理的高风险文件
