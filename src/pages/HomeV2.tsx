@@ -19,6 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { getGuestName, getOrCreateGuestId } from '../hooks/match/ownerIdentity';
 import { useGamePopularityRanking } from '../hooks/useGamePopularityRanking';
+import { useLobbyStats } from '../hooks/useLobbyStats';
 
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
 const HOME_V2_OVERVIEW_BACKGROUND = `${HOME_V2_ASSET_ROOT}/book-catalog-wide/1.png`;
@@ -75,6 +76,7 @@ export const HomeV2 = () => {
         height: typeof window === 'undefined' ? 0 : window.innerHeight,
     }));
     const gamePopularityById = useGamePopularityRanking();
+    const { mostPopularGameId } = useLobbyStats();
 
     React.useEffect(() => {
         const syncViewport = () => {
@@ -316,6 +318,7 @@ export const HomeV2 = () => {
                 <LobbyDirectory.OverviewSpread
                     games={overviewGames}
                     popularityByGameId={gamePopularityById}
+                    mostPopularGameId={mostPopularGameId}
                     activeCategory={category}
                     onCategoryChange={onCategorySelect}
                     onGameClick={handleGameOpen}
