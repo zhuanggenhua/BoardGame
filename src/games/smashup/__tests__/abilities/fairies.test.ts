@@ -145,7 +145,143 @@ describe('Fairies abilities', () => {
         expect(resolved.finalState.core.players['0'].minionLimit).toBe(2);
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy-1')).toBe(false);
         expect(resolved.finalState.core.players['1'].hand.some(card => card.uid === 'enemy-1')).toBe(true);
-        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBe(1);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn)
+            .toBe(resolved.finalState.core.turnNumber);
+    });
+
+    it('埋葬妖精牌不会被丛林之灵误判为打出，只有翻开时才会触发额外 OR 分支', () => {
+        const core = makeState({
+            turnNumber: 1,
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('titania-1', 'fairies_titania', 'minion', '0')],
+                    factions: ['fairies', 'ancient_egyptians'] as any,
+                }),
+                '1': makePlayer('1'),
+            },
+            titans: [{
+                uid: 'spirit-1',
+                defId: 'fairies_spirit_of_the_forest',
+                faction: 'fairies',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+            bases: [makeBase({
+                defId: 'base_pyramids',
+                minions: [makeMinion('enemy-1', 'robot_microbot_alpha', '1', 1, { owner: '1', powerModifier: 0 })],
+                ongoingActions: [],
+            })],
+        });
+
+        const activated = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_BASE_ABILITY, playerId: '0', payload: { baseIndex: 0 } } as any,
+            defaultTestRandom,
+        );
+        const buryPrompt = getSimpleChoicePrompt(activated.finalState, 'base_pyramids');
+        const buryOption = getPromptOption(buryPrompt, entry => entry.value?.cardUid === 'titania-1', 'bury titania option');
+
+        const buried = respondToPrompt(activated.finalState, buryOption.id, '0', defaultTestRandom);
+
+        expect(buried.success).toBe(true);
+        expect(buried.finalState.core.bases[0].buriedCards?.some(card => card.uid === 'titania-1')).toBe(true);
+        expect(buried.finalState.core.bases[0].minions.some(minion => minion.uid === 'titania-1')).toBe(false);
+        expect(buried.finalState.core.players['0'].hand.some(card => card.uid === 'titania-1')).toBe(false);
+        expect(buried.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
+        expectNoPrompt(buried.finalState);
+
+        const startTurnState = makeMatchState({
+            ...buried.finalState.core,
+            currentPlayerIndex: 1,
+        });
+        const enter = runCommand(
+            startTurnState,
+            { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 200 } as any,
+            defaultTestRandom,
+        );
+        const uncoverPrompt = getSimpleChoicePrompt(enter.finalState, 'bury_uncover_start_turn');
+        const uncoverOption = getPromptOption(uncoverPrompt, entry => entry.value?.cardUid === 'titania-1', 'buried titania option');
+
+        const uncovered = respondToPrompt(enter.finalState, uncoverOption.id, '0', defaultTestRandom);
+        const titaniaPrompt = getSimpleChoicePrompt(uncovered.finalState, 'fairies_titania');
+        const returnOption = getPromptOption(titaniaPrompt, entry => entry.value?.branchId === 'return_minion', 'return branch');
+
+        const choseReturnBranch = respondToPrompt(uncovered.finalState, returnOption.id, '0', defaultTestRandom);
+        const targetPrompt = getSimpleChoicePrompt(choseReturnBranch.finalState, 'fairies_titania_return_minion');
+        const targetOption = getPromptOption(targetPrompt, entry => entry.value?.minionUid === 'enemy-1', 'return target');
+
+        const choseTarget = respondToPrompt(choseReturnBranch.finalState, targetOption.id, '0', defaultTestRandom);
+        const followUpPrompt = getSimpleChoicePrompt(choseTarget.finalState, 'fairies_titania');
+        const followUpExtraMinion = getPromptOption(followUpPrompt, entry => entry.value?.branchId === 'extra_minion', 'follow-up extra minion');
+
+        getPromptOption(followUpPrompt, entry => entry.value?.skip === true, 'skip option');
+        expect(getPromptOptions(followUpPrompt).find(entry => entry.value?.branchId === 'return_minion')).toBeUndefined();
+        expect(choseTarget.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
+
+        const resolved = respondToPrompt(choseTarget.finalState, followUpExtraMinion.id, '0', defaultTestRandom);
+
+        expectNoPrompt(resolved.finalState);
+        expect(resolved.finalState.core.players['0'].minionLimit).toBe(2);
+        expect(resolved.finalState.core.players['1'].hand.some(card => card.uid === 'enemy-1')).toBe(true);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn)
+            .toBe(resolved.finalState.core.turnNumber);
+    });
+
+    it('埋骨堂把 Puck 从弃牌堆埋葬到基地时，不应触发 Puck 或丛林之灵的打出分支', () => {
+        const core = makeState({
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    deck: [],
+                    discard: [makeCard('puck-1', 'fairies_puck', 'minion', '0')],
+                    factions: ['fairies', 'skeletons'] as any,
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('enemy-hand-1', 'robot_microbot_alpha', 'minion', '1')],
+                }),
+            },
+            titans: [{
+                uid: 'spirit-1',
+                defId: 'fairies_spirit_of_the_forest',
+                faction: 'fairies',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+            bases: [makeBase({
+                defId: 'base_ossuary',
+                minions: [],
+                ongoingActions: [],
+            })],
+        });
+
+        const triggered = triggerBaseAbilityWithMS('base_ossuary', 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            baseDefId: 'base_ossuary',
+            baseIndex: 0,
+            playerId: '0',
+            now: 1000,
+        } as any);
+
+        const prompt = getSimpleChoicePrompt(triggered.matchState!, 'base_ossuary');
+        const buryOption = getPromptOption(prompt, entry => entry.value?.cardUid === 'puck-1', 'ossuary puck option');
+        const buried = respondToPrompt(triggered.matchState!, buryOption.id, '0', defaultTestRandom);
+
+        expect(buried.success).toBe(true);
+        expect(buried.events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
+        expect(buried.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+        expect(buried.finalState.core.bases[0].buriedCards?.some(card => card.uid === 'puck-1')).toBe(true);
+        expect(buried.finalState.core.players['0'].discard.some(card => card.uid === 'puck-1')).toBe(false);
+        expect(buried.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
+        expectNoPrompt(buried.finalState);
     });
 
     it('fairies_titania 的第二个 OR 分支必须等待同 frame 的插队交互先结清', () => {

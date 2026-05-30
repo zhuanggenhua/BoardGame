@@ -146,10 +146,7 @@ const COUNTERMEASURES: AbilityDef = {
     sfxKey: ZHANSHUJIA_SFX_COMMAND,
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 4 },
     effects: [
-        {
-            description: '防御掷 4 骰：军刀/旗帜造成反击伤害，勋章防止伤害并获得战术优势。精确防御结算待机制收口。',
-            timing: 'withDamage',
-        },
+        custom('zhanshujia-countermeasures-defense', '防御掷 4 骰：每组 2 军刀造成 1 伤害；每个旗帜防止 1 伤害；每个勋章获得 1 战术优势。', 'withDamage'),
     ],
 };
 

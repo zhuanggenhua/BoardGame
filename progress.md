@@ -6462,3 +6462,103 @@
   - `npx vitest run src/games/dicethrone/ui/__tests__/InteractionOverlay.test.tsx src/games/dicethrone/__tests__/useInteractionState.test.tsx`：2 files / 31 tests passed。
   - `npx tsc --noEmit --pretty false`：通过。
   - `npx eslint <本轮 selectHandCard 相关文件>`：0 errors，保留既有 warnings。
+
+## 2026-05-30 18:35
+
+- 基于咒缚海盗玩家板图面补咒缚被动确定子句：
+  - 咒缚海盗自己的 `phaseStart/upkeep` 被动现在通过 `cursed-pirate-cursed-upkeep-self-damage` 造成 4 点 direct + unblockable 自伤。
+  - 未实现“对手在其进攻投掷阶段未造成一次攻击则施加火药桶”，因为这需要新增每名对手 offensiveRoll 是否造成攻击的回合级追踪合同，不能用当前 `lastResolvedAttackDamage` 猜。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 12 tests passed。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 17 tests passed。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npx eslint src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/heroes/cursed_pirate/abilities.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors。
+
+## 2026-05-30 18:47
+
+- 继续补两个防御 resolver：
+  - 战术家反制措施现在按当前防御骰面计数：每组 2 军刀造成 1 反击伤害；每个旗帜生成 1 点防伤；每个勋章获得 1 战术优势。
+  - 咒缚海盗你还嫩了点现在按当前防御骰面计数：每个弯刀造成 1 反击伤害；每个战利品获得 1CP；每个骷髅生成 2 点防伤；若弯刀和骷髅同时存在，对攻击者施加 1 诅咒金币。
+- 同步更新战术家 / 咒缚海盗录入核对、当前 evidence、`task_plan.md` 和 `findings.md`，移除“防御 resolver 未实现”的旧口径。
+- 仍未收口：
+  - 火药桶完整投骰、爆炸、转交、重叠爆炸。
+  - 无情诅咒“至多两名对手施加火药桶”。
+  - 英雄专属手牌逐卡录入、审计、真实入口 E2E、资源上传与远端 HEAD 回查。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 19 tests passed。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npx eslint src/games/dicethrone/domain/customActions/zhanshujia.ts src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/heroes/zhanshujia/abilities.ts src/games/dicethrone/heroes/cursed_pirate/abilities.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors。
+
+## 2026-05-30 18:55
+
+- 补诅咒金币“海盗可选择不获得金币”的共享入口：
+  - 新增 `domain/statusEvents.ts` 统一构建状态施加事件。
+  - 目标为咒缚海盗本人且状态为诅咒金币时，生成“获得 / 不获得”选择；接受后按动态上限施加，拒绝后层数不变。
+  - 普通 `grantStatus`、条件/default `grantStatus`、奖励骰状态施加、咒缚海盗 custom resolver 与 `selectPlayer` 交互授予状态均走该 helper，避免只修单入口。
+- 仍未收口：
+  - 火药桶完整投骰、爆炸、转交、重叠爆炸。
+  - 无情诅咒“至多两名对手施加火药桶”。
+  - 英雄专属手牌逐卡录入、对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
+- 验证结果：
+  - `npx eslint src/games/dicethrone/domain/statusEvents.ts src/games/dicethrone/domain/effects.ts src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/domain/execute.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 14 tests passed。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 19 tests passed。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npm run i18n:check`：通过，仅保留既有 3 条 warning。
+
+## 2026-05-30 19:13
+
+- 补咒缚“对手在其进攻投掷阶段未发起攻击则施加火药桶”的 L2 机制：
+  - `ATTACK_INITIATED` 在 core 记录 `offensiveRollAttackMadeThisTurn[playerId] = true`，并在回合切换时清理。
+  - `offensiveRoll` 阶段末如果活跃玩家是咒缚海盗的对手，且本回合未发起攻击，则对该玩家施加火药桶。
+  - 新增正向测试：对手未发起攻击离开进攻投掷阶段时获得火药桶。
+  - 新增否定测试：对手已发起攻击时不重复施加火药桶。
+- 仍未收口：
+  - 火药桶完整投骰、爆炸、转交、重叠爆炸。
+  - 无情诅咒“至多两名对手施加火药桶”。
+  - 英雄专属手牌逐卡录入、对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 16 tests passed。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 21 tests passed。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npx eslint src/games/dicethrone/domain/core-types.ts src/games/dicethrone/domain/reduceCombat.ts src/games/dicethrone/domain/reducer.ts src/games/dicethrone/domain/flowHooks.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors，`flowHooks.ts` 保留既有 warnings。
+
+## 2026-05-30 19:36
+
+- 补无情诅咒“对至多两名对手施加火药桶”的 L2 机制：
+  - `merciless-curse` 不再直接自动施加火药桶，而是通过 `cursed-pirate-merciless-curse-powder-keg-targets` 创建可跳过的选择。
+  - 4 人 2v2 下只列咒缚海盗敌队两名对手，不列队友；选择两名对手后分别施加火药桶，选择跳过则不施加。
+  - 新增正向测试：4 人 2v2 选择两名对手后，两名对手获得火药桶，队友不获得。
+  - 新增否定测试：选择跳过后不会施加火药桶。
+- 仍未收口：
+  - 火药桶完整投骰、爆炸、转交、重叠爆炸。
+  - 英雄专属手牌逐卡录入、对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 18 tests passed。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 23 tests passed。
+  - `npx eslint src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/heroes/cursed_pirate/abilities.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npm run i18n:check`：通过，仅保留既有 3 条 warning。
+
+## 2026-05-30 19:45
+
+- 基于咒缚海盗提示板补火药桶（图面“炸药桶”）完整 L2 机制：
+  - 持有者进入维持阶段时投 1 骰，并产生 `BONUS_DIE_ROLLED` 特写事件。
+  - 1-2 时爆炸：移除火药桶，造成 3 点 direct + unblockable 独立伤害。
+  - 3-5 时无事发生：不移除、不伤害。
+  - 6 时创建 `choices.powderKegTransfer` 选择，持有者可按图面“任意玩家”选择目标；选择自己时保持原状态，选择其他玩家时移除原桶并转交给目标。
+  - 新收到火药桶的玩家若已有火药桶，先让原桶爆炸，再施加新桶，最终仍保留 1 层。
+- 同步更新：
+  - `src/games/dicethrone/rule/咒缚海盗真相源表.md`
+  - `src/games/dicethrone/rule/咒缚海盗录入核对.md`
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-intake-progress-2026-05-30.md`
+  - `task_plan.md`
+  - `findings.md`
+- 仍未收口：
+  - 英雄专属手牌逐卡录入、对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 22 tests passed。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 27 tests passed。
+  - `npx eslint src/games/dicethrone/domain/statusEvents.ts src/games/dicethrone/domain/flowHooks.ts src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors，`flowHooks.ts` 保留既有 warnings。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npm run i18n:check`：通过，仅保留既有 3 条 warning。

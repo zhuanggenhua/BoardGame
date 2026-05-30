@@ -660,6 +660,11 @@ export interface DiceThroneCore {
      */
     offensiveRollAttemptsThisTurn?: number;
     /**
+     * 本回合哪些玩家已在 offensiveRoll 发起过攻击。
+     * 用于咒缚海盗“对手未造成一次攻击则施加火药桶”的阶段末判定。
+     */
+    offensiveRollAttackMadeThisTurn?: Record<PlayerId, true>;
+    /**
      * 树精树灵主动效果每回合每种限用一次。
      * key: playerId -> tokenId -> true。
      */

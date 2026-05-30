@@ -51,6 +51,7 @@ import { getPlayerPassiveAbilities, isPassiveActionUsable } from './passiveAbili
 import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
 import { getCustomActionHandler } from './effects';
+import { buildStatusAppliedOrChoiceEvents } from './statusEvents';
 import {
     hasAfterRollConfirmedWindowBeenHandled,
     buildAfterRollConfirmedSignature,
@@ -62,17 +63,6 @@ import {
 
 const resolveTimestamp = (command?: DiceThroneCommand): number => {
     return typeof command?.timestamp === 'number' ? command.timestamp : 0;
-};
-
-const resolveStatusNewTotal = (
-    state: DiceThroneCore,
-    targetPlayerId: PlayerId,
-    statusId: string,
-    amount: number,
-): number => {
-    const currentStacks = state.players[targetPlayerId]?.statusEffects[statusId] ?? 0;
-    const maxStacks = getTokenStackLimit(state, targetPlayerId, statusId);
-    return Math.min(currentStacks + amount, maxStacks);
 };
 
 const playerHasAbility = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): boolean => {
@@ -778,13 +768,14 @@ export function execute(
                         timestamp,
                     } as StatusRemovedEvent);
                     // 给目标玩家添加状态
-                    const toStacks = toPlayer.statusEffects[statusId] ?? 0;
-                    events.push({
-                        type: 'STATUS_APPLIED',
-                        payload: { targetId: toPlayerId, statusId, stacks: fromStacks, newTotal: toStacks + fromStacks },
+                    events.push(...buildStatusAppliedOrChoiceEvents({
+                        state,
+                        targetId: toPlayerId,
+                        statusId,
+                        stacks: fromStacks,
                         sourceCommandType: command.type,
                         timestamp,
-                    } as DiceThroneEvent);
+                    }));
                 } else if (fromTokens > 0) {
                     // 移除源玩家的 token
                     events.push({
@@ -952,18 +943,15 @@ export function execute(
                     }
 
                     for (const [configIndex, statusConfig] of statusConfigs.entries()) {
-                        events.push({
-                            type: 'STATUS_APPLIED',
-                            payload: {
-                                targetId: targetPlayerId,
-                                statusId: statusConfig.statusId,
-                                stacks: statusConfig.amount,
-                                newTotal: resolveStatusNewTotal(state, targetPlayerId, statusConfig.statusId, statusConfig.amount),
-                                sourceAbilityId: interaction.sourceCardId,
-                            },
+                        events.push(...buildStatusAppliedOrChoiceEvents({
+                            state,
+                            targetId: targetPlayerId,
+                            statusId: statusConfig.statusId,
+                            stacks: statusConfig.amount,
+                            sourceAbilityId: interaction.sourceCardId,
                             sourceCommandType: command.type,
                             timestamp: timestamp + playerIndex * 10 + tokenConfigs.length + configIndex,
-                        } as DiceThroneEvent);
+                        }));
                     }
                     continue;
                 }

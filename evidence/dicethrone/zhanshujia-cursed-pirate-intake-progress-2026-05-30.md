@@ -2,7 +2,7 @@
 
 ## 结论
 
-本轮完成两名新英雄的 L1 静态接入与一批 L2 机制结算，不是完整交付。按 `add-new-faction` workflow，审计、英雄专属手牌逐卡录入、火药桶、防御精确 resolver、真实入口 E2E、资源上传和远端 HEAD 回查仍未完成，因此不能宣称两个英雄“已完成”。
+本轮完成两名新英雄的 L1 静态接入与一批 L2 机制结算，不是完整交付。按 `add-new-faction` workflow，审计、英雄专属手牌逐卡录入、真实入口 E2E、资源上传和远端 HEAD 回查仍未完成，因此不能宣称两个英雄“已完成”。
 
 ## 批次矩阵
 
@@ -18,8 +18,8 @@
 | 规则文档 | `src/games/dicethrone/rule/战术家真相源表.md`、`战术家录入核对.md`、`战术家卡牌录入核对.md`、`咒缚海盗真相源表.md`、`咒缚海盗录入核对.md`、`咒缚海盗卡牌录入核对.md` |
 | 资源本地生成 | `public/assets/i18n/zh-CN/dicethrone/images/zhanshujia/compressed/*.webp`、`public/assets/i18n/zh-CN/dicethrone/images/cursed/compressed/*.webp` |
 | 状态图集 | `status-icons-atlas.json/png/webp`，战术家 frame `tactical_advantage/bind`；咒缚海盗 frame `wither/parley/powder_keg/cursed_coin` |
-| 静态代码 | `heroes/zhanshujia/*`、`heroes/cursed_pirate/*`、`domain/ids.ts`、`domain/core-types.ts`、`domain/characters.ts`、`domain/index.ts`、`heroes/index.ts`、`ui/cardAtlas.ts`、`ui/assets.ts`、`criticalImageResolver.ts` |
-| 测试 | `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts`，5 tests passed；`src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`，当前 11 tests passed；组合 2 files / 16 tests passed |
+| 静态代码 | `heroes/zhanshujia/*`、`heroes/cursed_pirate/*`、`domain/statusEvents.ts`、`domain/ids.ts`、`domain/core-types.ts`、`domain/characters.ts`、`domain/index.ts`、`heroes/index.ts`、`ui/cardAtlas.ts`、`ui/assets.ts`、`criticalImageResolver.ts` |
+| 测试 | `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts`，5 tests passed；`src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`，当前 22 tests passed；组合 2 files / 27 tests passed |
 | manifest | `node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN --id dicethrone` 已执行；`--validate --root public/assets/i18n/zh-CN --id dicethrone` 通过 |
 
 ## 验证命令
@@ -32,8 +32,14 @@
 | `npm run i18n:check` | 无 missing key；保留 3 条既有 warning |
 | `npx tsc --noEmit --pretty false` | 通过 |
 | `node scripts/assets/generate_asset_manifests.js --validate --root public/assets/i18n/zh-CN --id dicethrone` | 通过 |
-| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 1 file / 11 tests passed |
-| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 2 files / 16 tests passed |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 1 file / 22 tests passed |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 2 files / 27 tests passed |
+| `npx eslint src/games/dicethrone/domain/customActions/zhanshujia.ts src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/heroes/zhanshujia/abilities.ts src/games/dicethrone/heroes/cursed_pirate/abilities.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 0 errors |
+| `npx eslint src/games/dicethrone/domain/statusEvents.ts src/games/dicethrone/domain/effects.ts src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/domain/execute.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 0 errors |
+| `npx eslint src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/heroes/cursed_pirate/abilities.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 0 errors |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 1 file / 22 tests passed |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 2 files / 27 tests passed |
+| `npx eslint src/games/dicethrone/domain/statusEvents.ts src/games/dicethrone/domain/flowHooks.ts src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 0 errors；`flowHooks.ts` 保留既有 warnings |
 
 ## 未覆盖风险
 
@@ -41,17 +47,19 @@
 | --- | --- |
 | 战术优势 | L2 已覆盖获得 CP、重掷、抽牌、施加锁定、获得守护、转移状态入口；真实 UI/E2E 仍未覆盖 |
 | 紧缚 | L2 已覆盖额外投掷 1CP 门禁、CP 不足拒绝、进攻投掷阶段结束移除；真实 UI/E2E 仍未覆盖 |
-| 战术家防御 | 反制措施的军刀/旗帜/勋章逐骰结算未实现 |
+| 战术家防御 | L2 已覆盖反制措施：每组 2 军刀造成 1 反击伤害、每个旗帜防止 1 伤害、每个勋章获得 1 战术优势；真实入口/E2E 仍未覆盖 |
 | 战争贩子 | L2 已覆盖奖励骰分支与攻击收口后额外进攻投掷阶段；真实入口/E2E 仍未覆盖 |
 | 制胜高地 | L2 已覆盖锁定、紧缚、战术优势上限提升 1、补至新上限与 12 伤害；真实入口/E2E 仍未覆盖 |
-| 诅咒金币 | L2 已覆盖自身/他人差异上限、维持伤害、不可移动/移除；“海盗可选择不获得金币”仍未实现 |
-| 灵魂突刺 | L2 已覆盖 5/7/9 伤害与三同值施加火药桶；火药桶重叠爆炸仍归入火药桶 pending |
-| 火药桶 | 维持投骰、爆炸、转交、重叠立即爆炸未实现 |
+| 诅咒金币 | L2 已覆盖自身/他人差异上限、维持伤害、不可移动/移除、海盗可选择获得/不获得；真实入口/E2E 仍未覆盖 |
+| 咒缚 | L2 已覆盖自己维持阶段受到 4 点不可防止伤害、对手进攻投掷阶段未发起攻击则施加火药桶；真实入口/E2E 仍未覆盖 |
+| 灵魂突刺 | L2 已覆盖 5/7/9 伤害与三同值施加火药桶；若目标已有火药桶，会触发原桶爆炸并保留新桶 |
+| 火药桶 | L2 已覆盖维持投骰、1-2 爆炸移除并造成 3 点独立不可防御伤害、3-5 无事发生、6 转交、重复获得时原桶立即爆炸并保留新桶；真实入口/E2E 仍未覆盖 |
 | 凋零 | L2 已覆盖来源侧攻击伤害 -1/层；真实入口/E2E 仍未覆盖 |
 | 休战 | L2 已覆盖阻止攻击伤害、直接伤害不受影响、阶段结束移除；真实入口/E2E 仍未覆盖 |
 | 深海潜行 | L2 已覆盖偷取 1CP、对手自选弃 1 张手牌、施加凋零与 8 伤害；真实入口/E2E 仍未覆盖 |
 | 死亡印记 | L2 已覆盖先获得 2CP、弯刀不可防御伤害、战利品抽牌、骷髅施加诅咒金币；真实入口/E2E 仍未覆盖 |
 | 亡灵之爪 | L2 已覆盖 8 点不可防御主伤害和按所有对手诅咒金币层数造成直接伤害；真实入口/E2E 仍未覆盖 |
-| 咒缚海盗防御 | 你还嫩了点逐骰结算未实现 |
+| 咒缚海盗防御 | L2 已覆盖你还嫩了点：每个弯刀反击 1、每个战利品获得 1CP、每个骷髅防止 2 伤害、弯刀+骷髅施加诅咒金币；真实入口/E2E 仍未覆盖 |
+| 无情诅咒 | L2 已覆盖可跳过的至多两名对手火药桶选择、4 人 2v2 不列队友、选择两名对手后分别施加火药桶；真实入口/E2E 仍未覆盖 |
 | 英雄专属手牌 | 尚未裁完整单卡与逐卡录入，当前只接通通用牌 |
 | E2E / 上传 | 未运行真实入口 E2E，未执行资源上传和远端 HEAD 回查 |

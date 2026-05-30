@@ -18,7 +18,6 @@ import type {
     DiceThroneEvent,
     DamageDealtEvent,
     HealAppliedEvent,
-    StatusAppliedEvent,
     StatusRemovedEvent,
     TokenGrantedEvent,
     ChoiceRequestedEvent,
@@ -35,6 +34,7 @@ import type {
 } from './types';
 import { CP_MAX } from './types';
 import { buildDrawEvents } from './deckEvents';
+import { buildStatusAppliedOrChoiceEvents } from './statusEvents';
 import {
     shouldOpenTokenResponse,
     createPendingDamage,
@@ -684,26 +684,17 @@ function resolveEffectAction(
 
         case 'grantStatus': {
             if (!action.statusId) break;
-            const target = state.players[targetId];
-            const currentStacks = target?.statusEffects[action.statusId] ?? 0;
-            const maxStacks = getTokenStackLimit(state, targetId, action.statusId);
             const stacksToAdd = action.value ?? 1;
-            const newTotal = Math.min(currentStacks + stacksToAdd, maxStacks);
-
-            const event: StatusAppliedEvent = {
-                type: 'STATUS_APPLIED',
-                payload: {
-                    targetId,
-                    statusId: action.statusId,
-                    stacks: stacksToAdd,
-                    newTotal,
-                    sourceAbilityId,
-                },
+            events.push(...buildStatusAppliedOrChoiceEvents({
+                state,
+                targetId,
+                statusId: action.statusId,
+                stacks: stacksToAdd,
+                sourceAbilityId,
                 sourceCommandType: 'ABILITY_EFFECT',
                 timestamp,
                 sfxKey,
-            };
-            events.push(event);
+            }));
             break;
         }
 
@@ -1062,25 +1053,16 @@ function resolveConditionalEffect(
             actualTargetId = isDebuff ? ctx.defenderId : ctx.attackerId;
         }
         
-        const targetPlayer = state.players[actualTargetId];
-        const currentStacks = targetPlayer?.statusEffects[statusId] ?? 0;
-        const maxStacks = getTokenStackLimit(state, actualTargetId, statusId);
-        const newTotal = Math.min(currentStacks + value, maxStacks);
-
-        const event: StatusAppliedEvent = {
-            type: 'STATUS_APPLIED',
-            payload: {
-                targetId: actualTargetId,
-                statusId,
-                stacks: value,
-                newTotal,
-                sourceAbilityId,
-            },
+        events.push(...buildStatusAppliedOrChoiceEvents({
+            state,
+            targetId: actualTargetId,
+            statusId,
+            stacks: value,
+            sourceAbilityId,
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
             sfxKey,
-        };
-        events.push(event);
+        }));
     }
 
     // 处理 grantToken
@@ -1281,17 +1263,16 @@ function resolveDefaultEffect(
             const def = state.tokenDefinitions.find(e => e.id === statusId);
             actualTargetId = def?.category === 'debuff' ? ctx.defenderId : ctx.attackerId;
         }
-        const targetPlayer = state.players[actualTargetId];
-        const currentStacks = targetPlayer?.statusEffects[statusId] ?? 0;
-        const maxStacks = getTokenStackLimit(state, actualTargetId, statusId);
-        const newTotal = Math.min(currentStacks + value, maxStacks);
-        events.push({
-            type: 'STATUS_APPLIED',
-            payload: { targetId: actualTargetId, statusId, stacks: value, newTotal, sourceAbilityId },
+        events.push(...buildStatusAppliedOrChoiceEvents({
+            state,
+            targetId: actualTargetId,
+            statusId,
+            stacks: value,
+            sourceAbilityId,
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
             sfxKey,
-        } as StatusAppliedEvent);
+        }));
     }
 
     return events;

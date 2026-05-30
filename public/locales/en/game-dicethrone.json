@@ -622,6 +622,14 @@
       "taiji": "Taiji: Gain 2 Taiji Tokens",
       "lotus": "Lotus: Choose Evasive or Purify",
       "gainCp": "Gain {{cp}} CP",
+      "powderKeg": {
+        "1": "Powder Keg: explodes",
+        "2": "Powder Keg: explodes",
+        "3": "Powder Keg: nothing happens",
+        "4": "Powder Keg: nothing happens",
+        "5": "Powder Keg: nothing happens",
+        "6": "Powder Keg: may be passed"
+      },
       "enlightenmentLotus": "Lotus! Gain 2 Taiji + Evasive + Purify",
       "enlightenmentOther": "Draw 1 card",
       "ninjaGoingForward": "Going Forward: this die counts toward total damage",
@@ -995,7 +1003,21 @@
       "deal3": "Deal 3 undefendable damage",
       "preventHalf": "Prevent half of the incoming damage"
     },
-    "critOrAccuracy": "Choose to gain Crit or Accuracy",
+    "cursedCoinGain": {
+      "title": "Gain Cursed Coin?",
+      "accept": "Gain Cursed Coin",
+      "decline": "Decline"
+    },
+      "mercilessCursePowderKeg": {
+        "title": "Choose up to two opponents to gain Powder Keg",
+        "apply": "Apply to {{targets}}",
+        "skip": "Do not apply Powder Keg"
+      },
+      "powderKegTransfer": {
+        "title": "Powder Keg: choose who receives it",
+        "give": "Give to {{target}}"
+      },
+      "critOrAccuracy": "Choose to gain Crit or Accuracy",
     "ninjaNinjutsu": {
       "title": "Ninjutsu 6 result",
       "poison": "+2 damage and apply Delayed Poison",

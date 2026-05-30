@@ -546,26 +546,6 @@ export const OverviewSpread = ({
                         style={asAbsoluteStyle(rect)}
                         onClick={() => onGameClick(game.id)}
                     >
-                        {isMostPopularGame ? (
-                            <div
-                                data-testid={`home-v2-hot-badge-${game.id}`}
-                                className="absolute z-10 bg-red-500 text-white rounded-full shadow-lg animate-pulse"
-                                style={{
-                                    top: scaled(4),
-                                    right: scaled(4),
-                                    width: scaled(24),
-                                    height: scaled(24),
-                                    padding: scaled(4),
-                                }}
-                                aria-label="热门"
-                            >
-                                <Flame
-                                    aria-hidden="true"
-                                    fill="currentColor"
-                                    style={{ width: '100%', height: '100%' }}
-                                />
-                            </div>
-                        ) : null}
                         <div
                             className="relative flex h-full w-full bg-transparent transition-colors duration-150 group-hover:bg-[rgba(238,220,184,0.16)]"
                             style={{
@@ -582,6 +562,26 @@ export const OverviewSpread = ({
                                     borderRadius: scaled(4),
                                 }}
                             >
+                                {isMostPopularGame ? (
+                                    <div
+                                        data-testid={`home-v2-hot-badge-${game.id}`}
+                                        className="absolute z-10 bg-red-500 text-white rounded-full shadow-lg animate-pulse"
+                                        style={{
+                                            top: scaled(4),
+                                            right: scaled(4),
+                                            width: scaled(24),
+                                            height: scaled(24),
+                                            padding: scaled(4),
+                                        }}
+                                        aria-label="热门"
+                                    >
+                                        <Flame
+                                            aria-hidden="true"
+                                            fill="currentColor"
+                                            style={{ width: '100%', height: '100%' }}
+                                        />
+                                    </div>
+                                ) : null}
                                 <HomeCatalogThumbnail game={game} />
                             </div>
 

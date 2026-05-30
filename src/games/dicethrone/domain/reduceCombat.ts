@@ -361,6 +361,10 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
             attackModifierBonusDamage: queuedAttackModifierBonusDamage,
         },
         lastResolvedAttackDamage: undefined,
+        offensiveRollAttackMadeThisTurn: {
+            ...(state.offensiveRollAttackMadeThisTurn ?? {}),
+            [attackerId]: true,
+        },
     };
 };
 

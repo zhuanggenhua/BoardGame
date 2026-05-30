@@ -1,16 +1,18 @@
 import type {
     CpChangedEvent,
+    DamageDealtEvent,
     DiceThroneEvent,
     ExtraAttackTriggeredEvent,
+    PreventDamageEvent,
     StatusAppliedEvent,
     TokenLimitChangedEvent,
     TokenGrantedEvent,
 } from '../types';
 import { registerCustomActionHandler, type CustomActionContext } from '../effects';
-import { STATUS_IDS, TOKEN_IDS } from '../ids';
+import { STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
-import { getTokenStackLimit } from '../rules';
+import { getActiveDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
 
 function gainCpWithTacticalAdvantage({
     attackerId,
@@ -147,6 +149,76 @@ function triggerWarMongerExtraOffensiveRoll({
     } as ExtraAttackTriggeredEvent];
 }
 
+function resolveCountermeasuresDefense({
+    ctx,
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    const faceCounts = getActiveDice(state).reduce((counts, die) => {
+        const face = getPlayerDieFace(state, attackerId, die.value);
+        if (face) counts[face] = (counts[face] ?? 0) + 1;
+        return counts;
+    }, {} as Record<string, number>);
+
+    const sabrePairs = Math.floor((faceCounts[ZHANSHUJIA_DICE_FACE_IDS.SABRE] ?? 0) / 2);
+    const bannerCount = faceCounts[ZHANSHUJIA_DICE_FACE_IDS.BANNER] ?? 0;
+    const medalCount = faceCounts[ZHANSHUJIA_DICE_FACE_IDS.MEDAL] ?? 0;
+    const events: DiceThroneEvent[] = [];
+
+    if (sabrePairs > 0) {
+        const targetId = ctx.defenderId;
+        const target = state.players[targetId];
+        const amount = sabrePairs;
+        events.push({
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId,
+                amount,
+                actualDamage: Math.min(amount, target?.resources[RESOURCE_IDS.HP] ?? 0),
+                sourceAbilityId,
+                damageScope: 'direct',
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as DamageDealtEvent);
+    }
+
+    if (bannerCount > 0) {
+        events.push({
+            type: 'PREVENT_DAMAGE',
+            payload: {
+                targetId: attackerId,
+                amount: bannerCount,
+                sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 1,
+        } as PreventDamageEvent);
+    }
+
+    if (medalCount > 0) {
+        const currentAmount = state.players[attackerId]?.tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? 0;
+        const maxStacks = getTokenStackLimit(state, attackerId, TOKEN_IDS.TACTICAL_ADVANTAGE);
+        const newTotal = Math.min(currentAmount + medalCount, maxStacks);
+        events.push({
+            type: 'TOKEN_GRANTED',
+            payload: {
+                targetId: attackerId,
+                tokenId: TOKEN_IDS.TACTICAL_ADVANTAGE,
+                amount: Math.max(0, newTotal - currentAmount),
+                newTotal,
+                sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 2,
+        } as TokenGrantedEvent);
+    }
+
+    return events;
+}
+
 export function registerZhanshujiaCustomActions(): void {
     registerCustomActionHandler('zhanshujia-tactical-advantage-gain-cp', gainCpWithTacticalAdvantage, {
         categories: ['resource', 'passive'],
@@ -162,5 +234,8 @@ export function registerZhanshujiaCustomActions(): void {
     });
     registerCustomActionHandler('zhanshujia-war-monger-extra-offensive-roll', triggerWarMongerExtraOffensiveRoll, {
         categories: ['other'],
+    });
+    registerCustomActionHandler('zhanshujia-countermeasures-defense', resolveCountermeasuresDefense, {
+        categories: ['damage', 'defense', 'token'],
     });
 }

@@ -32,6 +32,7 @@ import {
     hasRespondableContent,
     getNextPhase,
     getNextPlayerId,
+    getOpponents,
     getPlayerDieFace,
     getResponderQueue,
     getRollerId,
@@ -55,9 +56,21 @@ import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from './choiceEffects';
 import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
+import {
+    POWDER_KEG_TRANSFER_CHOICE_ID,
+    POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
+    buildPowderKegExplosionEvents,
+    buildStatusAppliedOrChoiceEvents,
+    getPowderKegTransferTargetIds,
+} from './statusEvents';
 
 const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
 const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
+
+const formatSeatLabel = (playerId: string): string => {
+    const seatNumber = Number.parseInt(playerId, 10) + 1;
+    return Number.isFinite(seatNumber) ? `P${seatNumber}` : playerId;
+};
 
 registerChoiceEffectHandler(TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID, ({ state, playerId, sourceAbilityId }) => {
     if (sourceAbilityId !== TOKEN_IDS.TREANT_DIVINE) return undefined;
@@ -574,6 +587,90 @@ function resolvePostAttackFollowUp(
     return { events, overrideNextPhase: 'main2' };
 }
 
+function resolveCursedPirateNoAttackPowderKegEvents(
+    core: DiceThroneCore,
+    commandType: string,
+    timestamp: number,
+): DiceThroneEvent[] {
+    const activePlayerId = core.activePlayerId;
+    if (!core.players[activePlayerId]) return [];
+    if (core.offensiveRollAttackMadeThisTurn?.[activePlayerId]) return [];
+
+    const hasOpposingCursedPirate = getOpponents(core, activePlayerId)
+        .some(playerId => core.players[playerId]?.characterId === 'cursed_pirate');
+    if (!hasOpposingCursedPirate) return [];
+
+    return buildStatusAppliedOrChoiceEvents({
+        state: core,
+        targetId: activePlayerId,
+        statusId: STATUS_IDS.POWDER_KEG,
+        stacks: 1,
+        sourceAbilityId: 'cursed',
+        sourceCommandType: commandType,
+        timestamp,
+    });
+}
+
+function resolvePowderKegUpkeepEvents(
+    core: DiceThroneCore,
+    playerId: string,
+    commandType: string,
+    timestamp: number,
+    random: RandomFn,
+): DiceThroneEvent[] {
+    const player = core.players[playerId];
+    if (!player || (player.statusEffects[STATUS_IDS.POWDER_KEG] ?? 0) <= 0) return [];
+
+    const value = random.d(6);
+    const events: DiceThroneEvent[] = [{
+        type: 'BONUS_DIE_ROLLED',
+        payload: {
+            value,
+            face: String(value),
+            playerId,
+            targetPlayerId: playerId,
+            effectKey: `bonusDie.effect.powderKeg.${value}`,
+        },
+        sourceCommandType: commandType,
+        timestamp,
+    } as DiceThroneEvent];
+
+    if (value <= 2) {
+        events.push(...buildPowderKegExplosionEvents({
+            state: core,
+            targetId: playerId,
+            sourceAbilityId: POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
+            sourceCommandType: commandType,
+            timestamp: timestamp + 0.01,
+        }));
+        return events;
+    }
+
+    if (value === 6) {
+        const targetIds = getPowderKegTransferTargetIds(core, playerId);
+        if (targetIds.length === 0) return events;
+
+        events.push({
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId,
+                sourceAbilityId: POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
+                titleKey: 'choices.powderKegTransfer.title',
+                options: targetIds.map((targetId, index) => ({
+                    value: index,
+                    customId: POWDER_KEG_TRANSFER_CHOICE_ID,
+                    labelKey: 'choices.powderKegTransfer.give',
+                    labelParams: { target: formatSeatLabel(targetId) },
+                })),
+            },
+            sourceCommandType: commandType,
+            timestamp: timestamp + 0.01,
+        } as ChoiceRequestedEvent);
+    }
+
+    return events;
+}
+
 export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
     initialPhase: 'setup',
 
@@ -996,6 +1093,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
             }
             // 额外攻击可能先把首次攻击的 afterAttackResolved 窗口延后到空壳 offensiveRoll 之后。
+            events.push(...resolveCursedPirateNoAttackPowderKegEvents(core, command.type, timestamp));
             return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
         }
 
@@ -1686,6 +1784,15 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     });
                     events.push(...damageCalc.toEvents());
                 }
+
+                // 4. 炸药桶 (powder_keg) — 维持阶段投 1 骰，1-2 爆炸，6 可转交。
+                events.push(...resolvePowderKegUpkeepEvents(
+                    phaseEnterCore,
+                    activeId,
+                    command.type,
+                    timestamp + 0.02,
+                    random,
+                ));
             }
         }
 

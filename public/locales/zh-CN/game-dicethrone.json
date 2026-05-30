@@ -655,6 +655,14 @@
       "taiji": "太极: 获得 2 个太极标记",
       "lotus": "莲花: 选择获得闪避或净化",
       "gainCp": "获得 {{cp}} CP",
+      "powderKeg": {
+        "1": "火药桶：爆炸",
+        "2": "火药桶：爆炸",
+        "3": "火药桶：无事发生",
+        "4": "火药桶：无事发生",
+        "5": "火药桶：无事发生",
+        "6": "火药桶：可转交"
+      },
       "enlightenmentLotus": "莲花！获得 2太极 + 闪避 + 净化",
       "enlightenmentOther": "抽 1 张牌",
       "ninjaGoingForward": "一往无前：本骰计入总伤害",
@@ -1028,7 +1036,21 @@
       "deal3": "造成 3 点不可防御伤害",
       "preventHalf": "抵挡 1/2 进攻伤害"
     },
-    "critOrAccuracy": "选择获得暴击或精准标记",
+    "cursedCoinGain": {
+      "title": "是否获得诅咒金币？",
+      "accept": "获得诅咒金币",
+      "decline": "不获得"
+    },
+      "mercilessCursePowderKeg": {
+        "title": "选择至多两名对手获得火药桶",
+        "apply": "施加给 {{targets}}",
+        "skip": "不施加火药桶"
+      },
+      "powderKegTransfer": {
+        "title": "火药桶：选择转交目标",
+        "give": "转交给 {{target}}"
+      },
+      "critOrAccuracy": "选择获得暴击或精准标记",
     "ninjaNinjutsu": {
       "title": "忍术 6 点效果",
       "poison": "伤害 +2，并施加慢性中毒",

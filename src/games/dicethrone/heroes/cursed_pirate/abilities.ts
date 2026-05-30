@@ -63,7 +63,7 @@ const MARKED_FOR_DEATH: AbilityDef = {
     effects: [
         custom('gain-cp', '获得 2CP。', { params: { amount: 2 } }),
         {
-            description: '投 4 骰；弯刀造成不可防御伤害，战利品抽牌，骷髅施加诅咒金币。不可防御分支待机制收口。',
+            description: '投 4 骰；弯刀造成不可防御伤害，战利品抽牌，骷髅施加诅咒金币。',
             action: {
                 type: 'rollDie',
                 target: 'self',
@@ -86,8 +86,9 @@ const CURSED: AbilityDef = {
     description: abilityText('cursed', 'description'),
     trigger: { type: 'phaseStart', phase: 'upkeep' },
     effects: [
+        custom('cursed-pirate-cursed-upkeep-self-damage', '维持阶段受 4 点不可减少/防止伤害。', { timing: 'immediate' }),
         {
-            description: '维持阶段受 4 点不可减少/防止伤害；未造成攻击的对手获得火药桶。完整被动待机制收口。',
+            description: '如果一名对手在其进攻投掷阶段未造成一次攻击，则对该对手施加火药桶。该回合级追踪待机制收口。',
         },
     ],
 };
@@ -168,10 +169,7 @@ const STILL_WET_BEHIND_EARS: AbilityDef = {
     sfxKey: CURSED_PIRATE_SFX_SLASH,
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 5 },
     effects: [
-        {
-            description: '防御掷 5 骰：弯刀反击、战利品获得、骷髅防止伤害；弯刀+骷髅施加诅咒金币。精确防御结算待机制收口。',
-            timing: 'withDamage',
-        },
+        custom('cursed-pirate-still-wet-behind-ears-defense', '防御掷 5 骰：每个弯刀造成 1 伤害；每个战利品获得 1CP；每个骷髅防止 2 伤害；若投出弯刀和骷髅，施加诅咒金币。', { timing: 'withDamage' }),
     ],
 };
 
@@ -188,7 +186,7 @@ const MERCILESS_CURSE: AbilityDef = {
         grantStatus(STATUS_IDS.PARLEY, '对手获得休战。'),
         grantStatus(STATUS_IDS.CURSED_COIN, '对手获得诅咒金币。'),
         grantStatus(STATUS_IDS.WITHER, '对手获得凋零。'),
-        grantStatus(STATUS_IDS.POWDER_KEG, '对至多两名对手施加火药桶；当前先对主要对手施加，2v2 额外目标待机制收口。'),
+        custom('cursed-pirate-merciless-curse-powder-keg-targets', '对至多两名对手施加火药桶。', { timing: 'preDefense' }),
     ],
 };
 

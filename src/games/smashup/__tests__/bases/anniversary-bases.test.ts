@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
+    expectNoPrompt,
     initAllAbilities,
     makeMatchState,
     makeMinion,
@@ -125,6 +126,55 @@ describe('10th Anniversary bases', () => {
         expect(resolved.success).toBe(true);
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
+    });
+
+    it('base_ossuary 埋葬仆从时不应误触发滑稽巨人的“打出随从后弃牌”效果', () => {
+        const core = makeState({
+            bases: [makeBase('base_ossuary')],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'hand-1', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' }],
+                    discard: [{ uid: 'minion-1', defId: 'fairies_puck', type: 'minion', owner: '0' }],
+                }),
+                '1': makePlayer('1'),
+            },
+            titans: [{
+                uid: 'giant-1',
+                defId: 'tricksters_big_funny_giant',
+                faction: SMASHUP_FACTION_IDS.TRICKSTERS,
+                ownerId: '1',
+                controllerId: '1',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+        } as any);
+
+        const result = triggerBaseAbilityWithMS('base_ossuary', 'onTurnStart', makeCtx({
+            state: core,
+            baseDefId: 'base_ossuary',
+            baseIndex: 0,
+        }));
+
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        expect(getPromptSourceId(interactions[0])).toBe('base_ossuary');
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            (option: any) => option.value?.cardUid === 'minion-1',
+            'Ossuary bury option under Big Funny Giant',
+            '0',
+            { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['hand-1']);
+        expect(resolved.finalState.core.bases[0].buriedCards?.some(card => card.uid === 'minion-1')).toBe(true);
+        expectNoPrompt(resolved.finalState);
     });
 
     it('base_arena 在此基地首次打出随从后，应提供额外行动或抽牌交互', () => {
