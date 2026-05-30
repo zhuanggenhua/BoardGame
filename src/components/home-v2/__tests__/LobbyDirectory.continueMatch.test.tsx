@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { describe, expect, it, vi } from 'vitest';
-import { OverviewSpread, type HomeV2ContinueMatch } from '../LobbyDirectory';
+import { OverviewSpread, sortGamesForLobbyDirectory, type HomeV2ContinueMatch } from '../LobbyDirectory';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -34,6 +34,18 @@ const baseGames = [{
     playerOptions: [2],
     icon: 'XO',
 }];
+
+const buildGame = (id: string) => ({
+    id,
+    type: 'game',
+    enabled: true,
+    titleKey: `games.${id}.title`,
+    descriptionKey: `games.${id}.description`,
+    playersKey: `games.${id}.players`,
+    category: 'abstract',
+    playerOptions: [2],
+    icon: id,
+});
 
 function renderOverview(continueMatch: HomeV2ContinueMatch | null, onDestroyContinueMatch = vi.fn()) {
     return render(createElement(OverviewSpread, {
@@ -79,5 +91,39 @@ describe('HomeV2 Overview continue match actions', () => {
         });
 
         expect(screen.queryByTestId('home-v2-continue-destroy-button')).not.toBeInTheDocument();
+    });
+});
+
+describe('HomeV2 Overview game ordering', () => {
+    it('无热度数据时回退到固定精选顺序', () => {
+        const ordered = sortGamesForLobbyDirectory([
+            buildGame('tictactoe'),
+            buildGame('smashup'),
+            buildGame('cardia'),
+        ], 'all');
+
+        expect(ordered.map((game) => game.id)).toEqual(['cardia', 'smashup', 'tictactoe']);
+    });
+
+    it('有总时长数据时按热度降序排序，并对 gameId 大小写不敏感', () => {
+        render(createElement(OverviewSpread, {
+            games: [
+                buildGame('cardia'),
+                buildGame('smashup'),
+                buildGame('tictactoe'),
+            ],
+            popularityByGameId: {
+                TICTACTOE: 7200,
+                smashup: 3600,
+            },
+            activeCategory: 'all',
+            onCategoryChange: vi.fn(),
+            onGameClick: vi.fn(),
+        }));
+
+        const renderedGameIds = Array.from(document.querySelectorAll<HTMLElement>('[data-game-id]'))
+            .map((element) => element.dataset.gameId);
+
+        expect(renderedGameIds).toEqual(['tictactoe', 'smashup', 'cardia']);
     });
 });

@@ -46,6 +46,7 @@ import { getAiSeatIds, resolveSeatPlayerDisplayName } from './src/engine/ai';
 import type { GameEngineConfig } from './src/engine/transport/server';
 import type { ClaimSeatMetadataInput, MatchMetadata, MatchStorage } from './src/engine/transport/storage';
 import { resolveMatchStatus } from './src/engine/transport/storage';
+import { buildSmashUpPublicRoomSummary } from './src/games/smashup/roomSetup';
 import logger, { gameLogger } from './server/logger';
 import { createTrainingDataRecorderFromEnv } from './server/trainingDataRecorder';
 import { requestLogger, errorHandler } from './server/middleware/logging';
@@ -1311,6 +1312,9 @@ interface LobbyMatch {
     ownerKey?: string;
     ownerType?: 'user' | 'guest';
     isLocked?: boolean;
+    publicSetupSummary?: {
+        enabledExpansions?: string[];
+    };
     gameover?: boolean;
     /** 房间状态（waiting/playing/finished/abandoned） */
     status?: string;
@@ -1363,8 +1367,9 @@ const buildLobbyMatch = (
     matchID: string,
     metadata: MatchMetadata,
 ): LobbyMatch => {
+    const normalizedGameName = normalizeGameName(metadata.gameName);
     const setupDataRecord = metadata.setupData && typeof metadata.setupData === 'object' && !Array.isArray(metadata.setupData)
-        ? metadata.setupData as { seatControllers?: Record<string, unknown> }
+        ? metadata.setupData as Record<string, unknown> & { seatControllers?: Record<string, unknown> }
         : undefined;
     const seatControllers = setupDataRecord?.seatControllers;
     const players = Object.entries(metadata.players).map(([id, data]) => ({
@@ -1376,12 +1381,9 @@ const buildLobbyMatch = (
         }),
         isConnected: data.isConnected,
     }));
-    const setupData = metadata.setupData as {
-        ownerKey?: string;
-        ownerType?: 'user' | 'guest';
-        roomName?: string;
-        password?: string;
-    } | undefined;
+    const publicSetupSummary = normalizedGameName === 'smashup'
+        ? buildSmashUpPublicRoomSummary(setupDataRecord)
+        : undefined;
     return {
         matchID,
         gameName: metadata.gameName,
@@ -1389,10 +1391,13 @@ const buildLobbyMatch = (
         totalSeats: players.length,
         createdAt: metadata.createdAt,
         updatedAt: metadata.updatedAt,
-        roomName: setupData?.roomName,
-        ownerKey: setupData?.ownerKey,
-        ownerType: setupData?.ownerType,
-        isLocked: !!setupData?.password,
+        roomName: typeof setupDataRecord?.roomName === 'string' ? setupDataRecord.roomName : undefined,
+        ownerKey: typeof setupDataRecord?.ownerKey === 'string' ? setupDataRecord.ownerKey : undefined,
+        ownerType: setupDataRecord?.ownerType === 'user' || setupDataRecord?.ownerType === 'guest'
+            ? setupDataRecord.ownerType
+            : undefined,
+        isLocked: typeof setupDataRecord?.password === 'string' && setupDataRecord.password.length > 0,
+        publicSetupSummary,
         gameover: !!metadata.gameover,
         status: resolveMatchStatus(metadata),
     };

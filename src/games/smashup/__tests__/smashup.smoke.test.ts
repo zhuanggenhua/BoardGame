@@ -300,6 +300,27 @@ describe('smashup', () => {
         });
     });
 
+    it('余牌查询默认关闭', () => {
+        const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
+            setupSelections: {
+                expansions: ['titans', 'diy'],
+            },
+        });
+
+        expect(state.deckQueryEnabled).toBe(false);
+    });
+
+    it('余牌查询开启后进入运行时状态', () => {
+        const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
+            setupSelections: {
+                expansions: ['titans', 'diy'],
+                deckQuery: 'on',
+            },
+        });
+
+        expect(state.deckQueryEnabled).toBe(true);
+    });
+
     it('4 人房间开启 2v2 后按团队模式初始化座位与规则', () => {
         const runner = createRunner(['0', '1', '2', '3'], {
             teamMode: '2v2',

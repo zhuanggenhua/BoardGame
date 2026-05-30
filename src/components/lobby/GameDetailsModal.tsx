@@ -434,6 +434,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 ownerKey: m.ownerKey,
                 ownerType: m.ownerType,
                 isLocked: m.isLocked,
+                publicSetupSummary: m.publicSetupSummary,
             }));
             setRooms(roomList);
             setIsLobbyLoading(false);
@@ -2131,6 +2132,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         {activeTab === 'lobby' && (
                             <RoomList
                                 roomItems={roomItems}
+                                gameTranslationNamespace={`game-${normalizedGameId}`}
                                 activeMatch={activeMatch}
                                 isActionLoading={isLoading || isPreparingCreateRoom}
                                 isLobbyLoading={isLobbyLoading}

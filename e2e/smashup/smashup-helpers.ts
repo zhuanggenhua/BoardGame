@@ -147,7 +147,14 @@ export const createRoom = async (page: Page): Promise<string | null> => {
 };
 
 export const waitForFactionSelection = async (page: Page, timeout = 20000) => {
-    await expect(page.locator('h1').filter({ hasText: /Draft Your Factions|选择你的派系/i })).toBeVisible({ timeout });
+    const title = page.locator('h1').filter({ hasText: /Draft Your Factions|选择你的派系/i });
+    const selectionShell = page.locator('[data-tutorial-id="su-faction-select"]');
+    await expect.poll(async () => {
+        if (await title.count()) {
+            return await title.first().isVisible().catch(() => false);
+        }
+        return await selectionShell.first().isVisible().catch(() => false);
+    }, { timeout }).toBe(true);
 };
 
 export const openFactionCard = async (page: Page, index: number) => {

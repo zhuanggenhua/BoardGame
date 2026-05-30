@@ -4393,6 +4393,11 @@
       "titans": "泰坦",
       "diy": "DIY"
     },
+    "deckQuery": {
+      "label": "余牌查询",
+      "off": "关闭",
+      "on": "开启"
+    },
     "teamMode": {
       "label": "对局模式",
       "off": "标准自由混战",

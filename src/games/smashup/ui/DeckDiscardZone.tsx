@@ -20,6 +20,7 @@ function cardHeight(width: string): string {
 
 type Props = {
     deckCount: number;
+    deckQueryEnabled?: boolean;
     deckCards?: CardInstance[];
     deckFactions?: readonly string[];
     madnessSupplyCount?: number;
@@ -54,6 +55,7 @@ type Props = {
 
 export const DeckDiscardZone: React.FC<Props> = ({
     deckCount,
+    deckQueryEnabled = false,
     deckCards = [],
     deckFactions = [],
     madnessSupplyCount,
@@ -176,13 +178,13 @@ export const DeckDiscardZone: React.FC<Props> = ({
     }, [deckCards, orderedDeckDefIds, t]);
 
     const displayDeckCardsData = useMemo(() => {
-        if (!showDeck) return undefined;
+        if (!deckQueryEnabled || !showDeck) return undefined;
         return {
             title: `${t('ui.deck', { defaultValue: '牌库' })} (${deckCount})`,
             cards: deckDisplayCards,
             onClose: handleCloseDeck,
         };
-    }, [deckCount, deckDisplayCards, handleCloseDeck, showDeck, t]);
+    }, [deckCount, deckDisplayCards, deckQueryEnabled, handleCloseDeck, showDeck, t]);
 
     const displayCardsData = useMemo(() => {
         if (!showDiscard || discard.length === 0) return undefined;
@@ -262,11 +264,11 @@ export const DeckDiscardZone: React.FC<Props> = ({
             <div className="flex items-end gap-3 pointer-events-auto">
                 {/* 牌库 - 左侧 */}
                 <div
-                    className="flex flex-col items-center group cursor-pointer"
+                    className={`flex flex-col items-center group ${deckQueryEnabled && deckDisplayCards.length > 0 ? 'cursor-pointer' : 'cursor-default'}`}
                     data-testid="su-deck-stack"
                     data-deck-toggle
                     onClick={() => {
-                        if (deckDisplayCards.length === 0) return;
+                        if (!deckQueryEnabled || deckDisplayCards.length === 0) return;
                         setShowDiscard(false);
                         setShowDeck(prev => !prev);
                     }}
@@ -304,11 +306,16 @@ export const DeckDiscardZone: React.FC<Props> = ({
                         <div className="absolute inset-0 bg-slate-700 rounded-sm border border-slate-600 shadow-sm translate-x-1 -translate-y-1 rotate-1" />
                         <div className="absolute inset-0 bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2">
                             <CardPreview previewRef={SMASHUP_CARD_BACK} className="w-full h-full" />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                <div className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg">
-                                    <span className="text-white font-black font-mono text-base">{deckCount}</span>
+                            {deckQueryEnabled && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                    <div
+                                        className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg"
+                                        data-testid="su-deck-count-badge"
+                                    >
+                                        <span className="text-white font-black font-mono text-base">{deckCount}</span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                     <div

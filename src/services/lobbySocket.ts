@@ -59,6 +59,9 @@ export interface LobbyMatch {
     ownerKey?: string;
     ownerType?: 'user' | 'guest';
     isLocked?: boolean;
+    publicSetupSummary?: {
+        enabledExpansions?: string[];
+    };
 }
 
 type LobbyGameId = string;

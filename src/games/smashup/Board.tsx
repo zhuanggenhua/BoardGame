@@ -3611,6 +3611,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         {/* NEW: Deck & Discard Zone */}
                         <DeckDiscardZone
                             deckCount={isAlternateView ? (displayedDeckPlayer?.deck.length ?? 0) : (myPlayer?.deck.length ?? 0)}
+                            deckQueryEnabled={core.deckQueryEnabled === true}
                             deckCards={isAlternateView ? (displayedDeckPlayer?.deck ?? []) : (myPlayer?.deck ?? [])}
                             deckFactions={isAlternateView ? (displayedDeckPlayer?.factions ?? []) : (myPlayer?.factions ?? [])}
                             madnessSupplyCount={core.madnessDeck !== undefined ? core.madnessDeck.length : undefined}

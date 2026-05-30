@@ -38,6 +38,7 @@ describe('DeckDiscardZone 牌库查看', () => {
         render(
             <DeckDiscardZone
                 deckCount={5}
+                deckQueryEnabled
                 deckCards={[
                     { uid: 'deck-1', defId: 'pirate_first_mate', type: 'minion', owner: '0' },
                     { uid: 'deck-2', defId: 'alien_scout', type: 'minion', owner: '0' },
@@ -70,5 +71,32 @@ describe('DeckDiscardZone 牌库查看', () => {
             { uid: 'deck-alien_scout', defId: 'alien_scout', count: 2 },
             { uid: 'deck-pirate_first_mate', defId: 'pirate_first_mate', count: 2 },
         ]);
+    });
+
+    it('余牌查询关闭时不显示精确数量，也不能打开牌库详情', async () => {
+        render(
+            <DeckDiscardZone
+                deckCount={5}
+                deckQueryEnabled={false}
+                deckCards={[
+                    { uid: 'deck-1', defId: 'pirate_first_mate', type: 'minion', owner: '0' },
+                    { uid: 'deck-2', defId: 'alien_scout', type: 'minion', owner: '0' },
+                ]}
+                deckFactions={['aliens', 'pirates']}
+                discard={[]}
+                isMyTurn
+                dispatch={vi.fn()}
+                playerID="0"
+            />,
+        );
+
+        expect(screen.queryByTestId('su-deck-count-badge')).toBeNull();
+
+        fireEvent.click(screen.getByTestId('su-deck-stack'));
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('mock-prompt-overlay')).toBeNull();
+        });
+        expect(latestPromptOverlayProps).toBeNull();
     });
 });

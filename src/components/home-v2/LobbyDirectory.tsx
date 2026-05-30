@@ -213,6 +213,42 @@ function matchesActiveCategory(game: Pick<GameConfig, 'category' | 'tags' | 'typ
     return game.type === 'game' && (game.category === activeCategory || game.tags?.includes(activeCategory));
 }
 
+function resolveGamePopularity(gameId: string, popularityByGameId: Record<string, number>) {
+    return popularityByGameId[gameId.toLowerCase()] ?? 0;
+}
+
+export function sortGamesForLobbyDirectory(
+    games: GameConfig[],
+    activeCategory: LobbyCategory,
+    popularityByGameId: Record<string, number> = {},
+) {
+    const priorityById = new Map(FEATURED_GAME_ORDER.map((gameId, index) => [gameId, index]));
+    const originalIndexById = new Map(games.map((game, index) => [game.id, index]));
+    const normalizedPopularityByGameId = Object.fromEntries(
+        Object.entries(popularityByGameId).map(([gameId, duration]) => [gameId.toLowerCase(), duration]),
+    );
+
+    return games
+        .filter((game) => matchesActiveCategory(game, activeCategory))
+        .slice()
+        .sort((left, right) => {
+            const leftPopularity = resolveGamePopularity(left.id, normalizedPopularityByGameId);
+            const rightPopularity = resolveGamePopularity(right.id, normalizedPopularityByGameId);
+            if (leftPopularity !== rightPopularity) {
+                return rightPopularity - leftPopularity;
+            }
+
+            const leftPriority = priorityById.get(left.id) ?? Number.MAX_SAFE_INTEGER;
+            const rightPriority = priorityById.get(right.id) ?? Number.MAX_SAFE_INTEGER;
+            if (leftPriority !== rightPriority) {
+                return leftPriority - rightPriority;
+            }
+
+            return (originalIndexById.get(left.id) ?? Number.MAX_SAFE_INTEGER)
+                - (originalIndexById.get(right.id) ?? Number.MAX_SAFE_INTEGER);
+        });
+}
+
 function renderBadge(
     badgeKey: string,
     index: number,
@@ -273,6 +309,7 @@ function HomeCatalogThumbnail({ game }: { game: GameConfig }) {
 
 export interface OverviewSpreadProps {
     games: GameConfig[];
+    popularityByGameId?: Record<string, number>;
     activeCategory: LobbyCategory;
     onCategoryChange: (category: LobbyCategory) => void;
     onGameClick: (id: string) => void;
@@ -284,6 +321,7 @@ export interface OverviewSpreadProps {
 
 export const OverviewSpread = ({
     games,
+    popularityByGameId = {},
     activeCategory,
     onCategoryChange,
     onGameClick,
@@ -299,21 +337,8 @@ export const OverviewSpread = ({
     const languageMenuRef = React.useRef<HTMLDivElement>(null);
 
     const orderedGames = React.useMemo(
-        () => {
-            const priorityById = new Map(FEATURED_GAME_ORDER.map((gameId, index) => [gameId, index]));
-            return games
-                .filter((game) => matchesActiveCategory(game, activeCategory))
-                .slice()
-                .sort((left, right) => {
-                    const leftPriority = priorityById.get(left.id) ?? Number.MAX_SAFE_INTEGER;
-                    const rightPriority = priorityById.get(right.id) ?? Number.MAX_SAFE_INTEGER;
-                    if (leftPriority !== rightPriority) {
-                        return leftPriority - rightPriority;
-                    }
-                    return games.indexOf(left) - games.indexOf(right);
-                });
-        },
-        [activeCategory, games],
+        () => sortGamesForLobbyDirectory(games, activeCategory, popularityByGameId),
+        [activeCategory, games, popularityByGameId],
     );
     const totalPages = Math.max(1, Math.ceil(orderedGames.length / PAGE_SIZE));
     const visibleEntries = React.useMemo(
@@ -755,6 +780,7 @@ export const OverviewSpread = ({
 
 export interface OverviewProps {
     games: GameConfig[];
+    popularityByGameId?: Record<string, number>;
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
@@ -762,12 +788,13 @@ export interface OverviewProps {
     onDestroyContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Overview = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: OverviewProps) => (
-    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
+export const Overview = ({ games, popularityByGameId, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: OverviewProps) => (
+    <OverviewSpread games={games} popularityByGameId={popularityByGameId} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
 );
 
 export interface LeftProps {
     games: GameConfig[];
+    popularityByGameId?: Record<string, number>;
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
@@ -775,12 +802,13 @@ export interface LeftProps {
     onDestroyContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Left = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: LeftProps) => (
-    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
+export const Left = ({ games, popularityByGameId, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: LeftProps) => (
+    <OverviewSpread games={games} popularityByGameId={popularityByGameId} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
 );
 
 export interface RightProps {
     games: GameConfig[];
+    popularityByGameId?: Record<string, number>;
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
@@ -788,8 +816,8 @@ export interface RightProps {
     onDestroyContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Right = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: RightProps) => (
-    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
+export const Right = ({ games, popularityByGameId, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: RightProps) => (
+    <OverviewSpread games={games} popularityByGameId={popularityByGameId} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
 );
 
 export const LobbyDirectory = {

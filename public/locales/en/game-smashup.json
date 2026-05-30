@@ -8,6 +8,11 @@
       "titans": "Titans",
       "diy": "DIY"
     },
+    "deckQuery": {
+      "label": "Deck Query",
+      "off": "Off",
+      "on": "On"
+    },
     "teamMode": {
       "label": "Match Mode",
       "off": "Free-for-All",

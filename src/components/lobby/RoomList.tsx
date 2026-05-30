@@ -4,6 +4,7 @@ import type { RoomItem, ActiveMatchInfo } from './roomActions';
 
 interface RoomListProps {
     roomItems: RoomItem[];
+    gameTranslationNamespace?: string;
     activeMatch: ActiveMatchInfo | null;
     isActionLoading: boolean;
     isLobbyLoading: boolean;
@@ -17,6 +18,7 @@ interface RoomListProps {
 
 export const RoomList = ({
     roomItems,
+    gameTranslationNamespace,
     activeMatch,
     isActionLoading,
     isLobbyLoading,
@@ -27,7 +29,26 @@ export const RoomList = ({
     onOpenCreateRoom,
     onSpectate,
 }: RoomListProps) => {
-    const { t } = useTranslation('lobby');
+    const { t } = useTranslation(gameTranslationNamespace ? ['lobby', gameTranslationNamespace] : ['lobby']);
+    const resolveExpansionLabel = (gameName: string | undefined, expansionId: string) => {
+        const normalizedGameName = gameName?.trim().toLowerCase();
+        if (normalizedGameName !== 'smashup') {
+            return expansionId;
+        }
+        if (expansionId === 'titans') {
+            return t('setup.expansions.titans', {
+                ns: 'game-smashup',
+                defaultValue: expansionId,
+            });
+        }
+        if (expansionId === 'diy') {
+            return t('setup.expansions.diy', {
+                ns: 'game-smashup',
+                defaultValue: expansionId,
+            });
+        }
+        return expansionId;
+    };
 
     return (
         <>
@@ -146,6 +167,25 @@ export const RoomList = ({
                                             <div className="text-[10px] text-parchment-light-text mt-0.5">
                                                 {seatLabels.join(t('rooms.seatSeparator'))}
                                             </div>
+                                            {room.publicSetupSummary?.enabledExpansions && room.publicSetupSummary.enabledExpansions.length > 0 && (
+                                                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                                    <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-parchment-light-text/85">
+                                                        {t('rooms.enabledExpansions')}
+                                                    </span>
+                                                    {room.publicSetupSummary.enabledExpansions.map((expansionId) => {
+                                                        const label = resolveExpansionLabel(room.gameName, expansionId);
+                                                        return (
+                                                            <span
+                                                                key={expansionId}
+                                                                data-testid={`room-expansion-tag-${room.matchID}-${expansionId}`}
+                                                                className="inline-flex min-w-[2.4rem] items-center justify-center rounded-full border border-parchment-card-border/35 bg-parchment-base-bg/60 px-2 py-0.5 text-[9px] font-bold tracking-[0.08em] text-parchment-base-text"
+                                                            >
+                                                                {label}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </>
                                     );
                                 })()}

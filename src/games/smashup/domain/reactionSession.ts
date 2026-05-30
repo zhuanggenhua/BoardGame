@@ -304,6 +304,37 @@ function getSessionFrameTriggers(state: MatchState<SmashUpCore>, frameId: string
     return (state.core.triggerQueue ?? []).filter(trigger => (trigger.frameId ?? trigger.id) === frameId);
 }
 
+function consumeSessionFrameTriggers(
+    state: MatchState<SmashUpCore>,
+    frameId: string,
+    now: number,
+): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
+    const frameTriggers = getSessionFrameTriggers(state, frameId);
+    if (frameTriggers.length === 0) {
+        return { state, events: [] };
+    }
+
+    let nextCore = state.core;
+    const events: SmashUpEvent[] = [];
+    for (const trigger of frameTriggers) {
+        const consumed: TriggerConsumedEvent = {
+            type: SU_EVENTS.TRIGGER_CONSUMED,
+            payload: { triggerId: trigger.id },
+            timestamp: now,
+        };
+        events.push(consumed);
+        nextCore = reduce(nextCore, consumed as unknown as SmashUpEvent);
+    }
+
+    return {
+        state: {
+            ...state,
+            core: nextCore,
+        },
+        events,
+    };
+}
+
 function getTriggerResolutionClass(trigger: TriggerInstance): 'mandatory' | 'optional' {
     return trigger.resolutionClass ?? (trigger.mandatory ? 'mandatory' : 'optional');
 }
@@ -924,21 +955,30 @@ function autoAdvanceOptionalWithoutChoices(
     state: MatchState<SmashUpCore>,
     session: SmashUpReactionSession,
     now: number,
-): MatchState<SmashUpCore> {
+): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     let currentState = state;
     let currentSession = session;
     const playerCount = currentState.core.turnOrder.length;
+    const emittedEvents: SmashUpEvent[] = [];
 
     while (true) {
         const options = buildReactionOptions(currentState, currentSession, now);
         const nonPassOptions = options.filter(option => option.id !== 'pass');
         if (nonPassOptions.length > 0) {
-            return setSmashUpReactionSession(currentState, currentSession);
+            return {
+                state: setSmashUpReactionSession(currentState, currentSession),
+                events: emittedEvents,
+            };
         }
 
         const nextPassCount = currentSession.consecutivePasses + 1;
         if (nextPassCount >= playerCount) {
-            return completeResolutionFrame(clearSmashUpReactionSession(currentState), currentSession.frameId);
+            const consumed = consumeSessionFrameTriggers(currentState, currentSession.frameId, now);
+            emittedEvents.push(...consumed.events);
+            return {
+                state: completeResolutionFrame(clearSmashUpReactionSession(consumed.state), currentSession.frameId),
+                events: emittedEvents,
+            };
         }
 
         currentSession = {
@@ -1016,11 +1056,18 @@ export function advanceSmashUpReactionSession(
     }
 
     if (session.phase === 'optional') {
-        currentState = autoAdvanceOptionalWithoutChoices(currentState, session, now);
+        const autoAdvanced = autoAdvanceOptionalWithoutChoices(currentState, session, now);
+        currentState = autoAdvanced.state;
+        emittedEvents.push(...autoAdvanced.events);
         session = getSmashUpReactionSession(currentState);
         if (!session) {
             const resumed = continueSuspendedReactionIfNeeded(currentState, random, now);
-            if (resumed) return resumed;
+            if (resumed) {
+                return {
+                    state: resumed.state,
+                    events: [...emittedEvents, ...resumed.events],
+                };
+            }
 
             // 若刚结束的 session 属于“空 frame”（例如 resumed session 的 frameId 已无匹配 trigger），
             // 但队列里还有其他 frame 的 pending triggers，则在同一次调用里直接启动下一帧。
@@ -1058,14 +1105,21 @@ export function advanceSmashUpReactionSession(
             };
     }
     if (session.phase === 'optional' && nonPassOptions.length === 0) {
-        const autoAdvancedState = autoAdvanceOptionalWithoutChoices(currentState, session, now);
+        const autoAdvanced = autoAdvanceOptionalWithoutChoices(currentState, session, now);
+        const autoAdvancedState = autoAdvanced.state;
+        emittedEvents.push(...autoAdvanced.events);
         const autoAdvancedSession = getSmashUpReactionSession(autoAdvancedState);
         if (!autoAdvancedSession) {
             const resumed = continueSuspendedReactionIfNeeded(autoAdvancedState, random, now);
-            return resumed ?? {
-                state: autoAdvancedState,
-                events: emittedEvents,
-            };
+            return resumed
+                ? {
+                    state: resumed.state,
+                    events: [...emittedEvents, ...resumed.events],
+                }
+                : {
+                    state: autoAdvancedState,
+                    events: emittedEvents,
+                };
         }
         currentState = autoAdvancedState;
         session = autoAdvancedSession;
@@ -1105,9 +1159,18 @@ export function resolveSmashUpReactionChoice(
     if (liveValue.kind === 'pass') {
         const nextPassCount = session.consecutivePasses + 1;
         if (nextPassCount >= state.core.turnOrder.length) {
-            const clearedState = completeResolutionFrame(clearSmashUpReactionSession(state), session.frameId);
+            const consumed = consumeSessionFrameTriggers(state, session.frameId, now);
+            const clearedState = completeResolutionFrame(clearSmashUpReactionSession(consumed.state), session.frameId);
             const resumed = continueSuspendedReactionIfNeeded(clearedState, random, now);
-            return resumed ?? { state: clearedState, events: [] };
+            return resumed
+                ? {
+                    state: resumed.state,
+                    events: [...consumed.events, ...resumed.events],
+                }
+                : {
+                    state: clearedState,
+                    events: consumed.events,
+                };
         }
         const advancedState = setSmashUpReactionSession(state, {
             ...session,

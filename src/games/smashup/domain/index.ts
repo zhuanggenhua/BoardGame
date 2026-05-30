@@ -99,6 +99,10 @@ import {
     type SmashUpScoringBaseRef,
 } from './scoringSession';
 import { getActiveResolutionFrame } from '../../../engine/systems/resolutionStack';
+import {
+    readSmashUpDeckQueryEnabled,
+    readSmashUpEnabledExpansions,
+} from '../roomSetup';
 
 // ============================================================================
 
@@ -1045,29 +1049,8 @@ function processImmediateStartTurnMinionTriggers(
 // Setup
 // ============================================================================
 
-const DEFAULT_SMASHUP_EXPANSIONS = ['titans', 'diy'];
-
 function isAiSeatControllerType(type: unknown): boolean {
     return type === 'local-ai' || type === 'remote-ai';
-}
-
-function readEnabledExpansions(setupData?: Record<string, unknown>): string[] {
-    if (Array.isArray(setupData?.expansions)) {
-        return setupData.expansions.filter((value): value is string => typeof value === 'string');
-    }
-
-    const setupSelections = setupData?.setupSelections;
-    if (
-        setupSelections
-        && typeof setupSelections === 'object'
-        && !Array.isArray(setupSelections)
-        && Array.isArray((setupSelections as Record<string, unknown>).expansions)
-    ) {
-        return ((setupSelections as Record<string, unknown>).expansions as unknown[])
-            .filter((value): value is string => typeof value === 'string');
-    }
-
-    return [...DEFAULT_SMASHUP_EXPANSIONS];
 }
 
 function getSetupBaseDefIds(enabledExpansions: readonly string[]): string[] {
@@ -1079,7 +1062,8 @@ function getSetupBaseDefIds(enabledExpansions: readonly string[]): string[] {
 
 function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {
     const nextUid = 1;
-    const enabledExpansions = readEnabledExpansions(setupData);
+    const enabledExpansions = readSmashUpEnabledExpansions(setupData);
+    const deckQueryEnabled = readSmashUpDeckQueryEnabled(setupData);
     const seatOrder = [...playerIds];
     const teamMode = readSmashUpTeamMode(setupData, playerIds.length);
 
@@ -1162,6 +1146,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         bases: activeBases,
         titans: [],
         enabledExpansions,
+        deckQueryEnabled,
         baseDeck,
         baseDiscard: [],
         triggerQueue: undefined,

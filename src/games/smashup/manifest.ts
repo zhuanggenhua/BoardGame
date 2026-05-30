@@ -25,6 +25,15 @@ const entry: GameManifestEntry = {
             ],
             default: ['titans', 'diy'],
         },
+        deckQuery: {
+            type: 'select',
+            labelKey: 'games.smashup.setup.deckQuery.label',
+            options: [
+                { value: 'off', labelKey: 'games.smashup.setup.deckQuery.off' },
+                { value: 'on', labelKey: 'games.smashup.setup.deckQuery.on' },
+            ],
+            default: 'off',
+        },
         teamMode: {
             type: 'select',
             labelKey: 'games.smashup.setup.teamMode.label',

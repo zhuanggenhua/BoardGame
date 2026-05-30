@@ -17,6 +17,9 @@ async function openDeckViewScene(
         openTestGame: (gameId: string, query?: Record<string, unknown>, timeout?: number) => Promise<void>;
         setupScene: (config: unknown) => Promise<void>;
     },
+    options?: {
+        deckQueryEnabled?: boolean;
+    },
 ) {
     await warmSmashUpTestRoute(page);
     await game.openTestGame('smashup', {}, 60000);
@@ -41,7 +44,11 @@ async function openDeckViewScene(
         player1: {
             factions: ['ninjas', 'dinosaurs'],
             hand: [],
-            deck: [],
+            deck: [
+                { uid: 'opp-deck-ninja-a', defId: 'ninja_shinobi', type: 'minion', owner: '1' },
+                { uid: 'opp-deck-dino-a', defId: 'dinosaur_king_rex', type: 'minion', owner: '1' },
+                { uid: 'opp-deck-ninja-b', defId: 'ninja_shinobi', type: 'minion', owner: '1' },
+            ],
             discard: [],
             minionsPlayed: 0,
             minionLimit: 1,
@@ -54,16 +61,36 @@ async function openDeckViewScene(
         ],
         currentPlayer: '0',
         phase: 'playCards',
+        extra: {
+            core: {
+                deckQueryEnabled: options?.deckQueryEnabled ?? false,
+            },
+        },
     });
 
     await expect(page.getByTestId('su-deck-stack')).toBeVisible({ timeout: 10000 });
 }
 
 test.describe('SmashUp 牌库查看', () => {
-    test('点击牌库后应按固定顺序展示剩余卡牌并显示聚合数量', async ({ page, game }, testInfo) => {
+    test('余牌查询关闭时不显示精确数量，也不能点开牌库详情', async ({ page, game }, testInfo) => {
         test.setTimeout(120000);
-        await openDeckViewScene(page, game);
+        await openDeckViewScene(page, game, { deckQueryEnabled: false });
 
+        await expect(page.getByTestId('su-deck-count-badge')).toHaveCount(0);
+
+        await page.getByTestId('su-deck-stack').click();
+
+        const deckPanel = page.locator('[data-card-view-panel]');
+        await expect(deckPanel).toHaveCount(0);
+
+        await game.screenshot('smashup-deck-view-disabled', testInfo);
+    });
+
+    test('余牌查询开启后应按固定顺序展示剩余卡牌并显示聚合数量', async ({ page, game }, testInfo) => {
+        test.setTimeout(120000);
+        await openDeckViewScene(page, game, { deckQueryEnabled: true });
+
+        await expect(page.getByTestId('su-deck-count-badge')).toBeVisible({ timeout: 5000 });
         await page.getByTestId('su-deck-stack').click();
 
         const deckPanel = page.locator('[data-card-view-panel]');
@@ -85,5 +112,34 @@ test.describe('SmashUp 牌库查看', () => {
         await expect(deckPanel.locator('[data-card-uid="deck-alien_invader"] [data-card-count]')).toHaveCount(0);
 
         await game.screenshot('smashup-deck-view-grouped', testInfo);
+    });
+
+    test('余牌查询开启后切到对手视角也能查看对方牌库', async ({ page, game }, testInfo) => {
+        test.setTimeout(120000);
+        await openDeckViewScene(page, game, { deckQueryEnabled: true });
+
+        await page.getByTestId('su-score-vp-1').click();
+        await expect(page.getByText('对手视角')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByTestId('su-deck-count-badge')).toHaveText('3');
+
+        await page.getByTestId('su-deck-stack').click();
+
+        const deckPanel = page.locator('[data-card-view-panel]');
+        await expect(deckPanel).toBeVisible({ timeout: 5000 });
+        await expect(deckPanel.getByText('牌库 (3)')).toBeVisible({ timeout: 5000 });
+
+        const orderedDefIds = await deckPanel.locator('[data-card-def-id]').evaluateAll((nodes) =>
+            nodes.map((node) => node.getAttribute('data-card-def-id')),
+        );
+
+        expect(orderedDefIds).toEqual([
+            'ninja_shinobi',
+            'dinosaur_king_rex',
+        ]);
+
+        await expect(deckPanel.locator('[data-card-uid="deck-ninja_shinobi"] [data-card-count]')).toHaveText('×2');
+        await expect(deckPanel.locator('[data-card-uid="deck-dinosaur_king_rex"] [data-card-count]')).toHaveCount(0);
+
+        await game.screenshot('smashup-deck-view-opponent-grouped', testInfo);
     });
 });

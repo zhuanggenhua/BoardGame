@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { getGuestName, getOrCreateGuestId } from '../hooks/match/ownerIdentity';
+import { useGamePopularityRanking } from '../hooks/useGamePopularityRanking';
 
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
 const HOME_V2_OVERVIEW_BACKGROUND = `${HOME_V2_ASSET_ROOT}/book-catalog-wide/1.png`;
@@ -73,6 +74,7 @@ export const HomeV2 = () => {
         width: typeof window === 'undefined' ? 0 : window.innerWidth,
         height: typeof window === 'undefined' ? 0 : window.innerHeight,
     }));
+    const gamePopularityById = useGamePopularityRanking();
 
     React.useEffect(() => {
         const syncViewport = () => {
@@ -313,6 +315,7 @@ export const HomeV2 = () => {
             <div className="absolute inset-0 z-10" data-scene-slot="overview_spread_body">
                 <LobbyDirectory.OverviewSpread
                     games={overviewGames}
+                    popularityByGameId={gamePopularityById}
                     activeCategory={category}
                     onCategoryChange={onCategorySelect}
                     onGameClick={handleGameOpen}
@@ -330,7 +333,7 @@ export const HomeV2 = () => {
                 />
             </div>
         </div>
-    ), [continueMatch, handleContinueMatch, handleGameOpen, handleOpenAuthModal, overviewGames, overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
+    ), [continueMatch, gamePopularityById, handleContinueMatch, handleGameOpen, handleOpenAuthModal, overviewGames, overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
 
     const renderCurrentOverviewStage = React.useCallback(
         ({ includeTestId = true }: { includeTestId?: boolean } = {}) => renderOverviewStageForCategory(

@@ -56,6 +56,7 @@ import {
     type UISceneNodeMovePosition,
 } from '../ui-scene';
 import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
+import { useGamePopularityRanking } from '../hooks/useGamePopularityRanking';
 
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
 const HOME_V2_BOOK_DESK = `${HOME_V2_ASSET_ROOT}/book-desk/compressed/1.webp`;
@@ -225,6 +226,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
         width: typeof window === 'undefined' ? 0 : window.innerWidth,
         height: typeof window === 'undefined' ? 0 : window.innerHeight,
     }));
+    const gamePopularityById = useGamePopularityRanking();
     const [sceneState, setSceneState] = React.useState<HomeV2SceneState>('open');
     const [activeTab, setActiveTab] = React.useState<HomeV2TabId>('lobby');
     const [selectedGameId, setSelectedGameId] = React.useState<string | null>(null);
@@ -1267,12 +1269,13 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
             <div className="absolute inset-0 z-10" data-scene-slot="overview_spread_body">
                 <LobbyDirectory.OverviewSpread
                     games={overviewGames}
+                    popularityByGameId={gamePopularityById}
                     onGameClick={handleGameOpen}
                     onAccountClick={handleOpenAuthModal}
                 />
             </div>
         </div>
-    ), [handleGameOpen, handleOpenAuthModal, overviewGames, overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
+    ), [gamePopularityById, handleGameOpen, handleOpenAuthModal, overviewGames, overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
 
     const renderOverviewFlipStage = React.useCallback(({ includeTestId = true }: { includeTestId?: boolean } = {}) => (
         <div
@@ -1342,6 +1345,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
             slots.overview_spread_body = (
                 <LobbyDirectory.OverviewSpread
                     games={overviewGames}
+                    popularityByGameId={gamePopularityById}
                     onGameClick={handleGameOpen}
                     onAccountClick={handleOpenAuthModal}
                 />
@@ -1372,7 +1376,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
         }
 
         return slots;
-    }, [activeTab, authMode, handleBackToOverview, handleGameOpen, handleOpenAuthModal, overviewGames, sceneState, selectedGame]);
+    }, [activeTab, authMode, gamePopularityById, handleBackToOverview, handleGameOpen, handleOpenAuthModal, overviewGames, sceneState, selectedGame]);
 
     const stage = (
         <div className="relative flex h-full items-center justify-center overflow-hidden">

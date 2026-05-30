@@ -696,6 +696,8 @@ export interface SmashUpCore {
     titans?: TitanState[];
     /** 房间创建时启用的扩展集合 */
     enabledExpansions?: string[];
+    /** 是否允许查看牌库精确余牌与详情 */
+    deckQueryEnabled?: boolean;
     /** 基地牌库（defId 列表） */
     baseDeck: string[];
     /** 基地弃牌堆（defId 列表）。当基地牌库用尽时，会将弃牌堆洗回牌库继续补充。 */

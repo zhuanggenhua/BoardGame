@@ -203,6 +203,7 @@
     "empty": "暂无活跃房间",
     "matchTitle": "对局 #{{id}}",
     "mine": "我的",
+    "enabledExpansions": "扩展",
     "seatSeparator": " / ",
     "emptySlot": "空位",
     "ownerMustReconnect": "这是您创建的房间，请重连进入",
