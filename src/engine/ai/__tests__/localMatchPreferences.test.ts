@@ -24,10 +24,10 @@ const smashupManifest: GameManifestEntry = {
             labelKey: 'games.smashup.setup.expansions.label',
             options: [
                 { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
-                { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
                 { value: 'deckQuery', labelKey: 'games.smashup.setup.deckQuery.label' },
+                { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
             ],
-            default: ['titans', 'diy', 'deckQuery'],
+            default: ['titans', 'deckQuery', 'diy'],
         },
     },
     ai: {
@@ -77,7 +77,7 @@ describe('localMatchPreferences create-room sanitization', () => {
         const normalized = createDefaultLocalMatchPreferences(smashupManifest);
 
         expect(normalized.setupSelections).toEqual({
-            expansions: ['titans', 'diy', 'deckQuery'],
+            expansions: ['titans', 'deckQuery', 'diy'],
         });
     });
 

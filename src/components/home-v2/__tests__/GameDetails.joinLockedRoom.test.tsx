@@ -43,7 +43,13 @@ let mockOwnerActiveMatch: null | {
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string, options?: Record<string, unknown>) => options?.defaultValue ?? key,
+        t: (key: string, options?: Record<string, unknown>) => {
+            if (key === 'setup.expansions.titans') return '泰坦';
+            if (key === 'setup.expansions.diy') return 'DIY';
+            if (key === 'setup.deckQuery.label') return '余牌查询';
+            if (key === 'lobby:rooms.enabledExpansions' || key === 'rooms.enabledExpansions') return '扩展';
+            return options?.defaultValue ?? key;
+        },
         i18n: { language: 'zh-CN' },
     }),
 }));
@@ -141,6 +147,8 @@ vi.mock('../../common/PasswordField', () => ({
         value,
         onChange,
         toggleButtonTestId,
+        toggleButtonClassName: _toggleButtonClassName,
+        iconSize: _iconSize,
         ...props
     }: {
         value: string;
@@ -249,7 +257,7 @@ describe('HomeV2 GameDetails locked room join', () => {
         });
     });
 
-    it('Android 原生运行时 package-managed 游戏会显示资源下载入口并触发安装请求', async () => {
+    it('Android 原生运行时 package-managed 游戏会显示圆球下载入口，并在展开卡片后触发安装请求', async () => {
         packageMocks.nativeAndroidRuntime = true;
         packageMocks.hookResult = {
             isPackageManaged: true,
@@ -282,8 +290,48 @@ describe('HomeV2 GameDetails locked room join', () => {
         }));
 
         fireEvent.click(await screen.findByTestId('home-v2-mobile-package-toggle'));
+        expect(packageMocks.requestInstall).not.toHaveBeenCalled();
+        expect(await screen.findByTestId('game-details-mobile-package-card')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('packageManager.installAction'));
 
         expect(packageMocks.requestInstall).toHaveBeenCalledTimes(1);
+    });
+
+    it('房间账本会显示已开启的扩展摘要', async () => {
+        mockMatches = [{
+            matchID: 'match-smashup-1',
+            players: [
+                { id: 0, name: '房主' },
+                { id: 1, name: undefined },
+            ],
+            totalSeats: 2,
+            gameName: 'smashup',
+            roomName: '扩展房间',
+            ownerKey: 'owner-2',
+            ownerType: 'guest',
+            isLocked: false,
+            publicSetupSummary: {
+                enabledExpansions: ['titans', 'diy', 'deckQuery'],
+            },
+        }];
+
+        render(createElement(GameDetailsRight, {
+            game: {
+                id: 'smashup',
+                type: 'game',
+                enabled: true,
+                titleKey: 'games.smashup.title',
+                descriptionKey: 'games.smashup.description',
+                category: 'card',
+                playersKey: 'games.smashup.players',
+                icon: 'SU',
+                playerOptions: [2, 4],
+            },
+        }));
+
+        expect(await screen.findByTestId('home-v2-room-expansion-summary-match-smashup-1'))
+            .toHaveTextContent('扩展：泰坦 / DIY / 余牌查询');
     });
 
     it('当前房主房间会显示独立销毁入口，并在确认后调用销毁接口与隐藏房间行', async () => {

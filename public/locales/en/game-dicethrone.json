@@ -140,6 +140,37 @@
       "description": [
         "Incoming damage +2. Persistent."
       ]
+    },
+    "bind": {
+      "name": "Bind",
+      "description": [
+        "Each additional roll attempt costs 1 CP; remove at the end of the Offensive Roll Phase."
+      ]
+    },
+    "cursed_coin": {
+      "name": "Cursed Coin",
+      "description": [
+        "During Upkeep, take 1 damage for each Cursed Coin.",
+        "Cursed Pirate may refuse gained coins; coins cannot be moved or removed."
+      ]
+    },
+    "powder_keg": {
+      "name": "Powder Keg",
+      "description": [
+        "During Upkeep, roll 1 die: 1-2 explodes for 3 undefendable damage; 6 may pass it to any player."
+      ]
+    },
+    "wither": {
+      "name": "Wither",
+      "description": [
+        "When dealing damage through the Offensive Roll Phase, reduce that damage by 1 per Wither. Persistent, limit 2."
+      ]
+    },
+    "parley": {
+      "name": "Parley",
+      "description": [
+        "The holder cannot deal damage through the Offensive Roll Phase; remove at the end of that phase."
+      ]
     }
   },
   "confirmRemoveKnockdown": {
@@ -311,6 +342,13 @@
       "description": [
         "Limit 1. Before receiving damage, spend it and roll 1 die; on 1-3, prevent that damage."
       ]
+    },
+    "tactical_advantage": {
+      "name": "Tactical Advantage",
+      "description": [
+        "Limit 5. Spend 1 to reroll 1 die; spend 3 to draw 1 or inflict Targeted; spend 4 to gain Protect or transfer a status.",
+        "The full multi-option active effect is still in progress."
+      ]
     }
   },
   "actionLog": {
@@ -453,7 +491,9 @@
     "gunslinger": "Gunslinger",
     "samurai": "Samurai",
     "treant": "Treant",
-    "ninja": "Ninja"
+    "ninja": "Ninja",
+    "zhanshujia": "Tactician",
+    "cursed_pirate": "Cursed Pirate"
   },
   "imageAlt": {
     "deck": "Deck",
@@ -551,7 +591,13 @@
       "spirit": "Spirit",
       "ninja_katana": "Ninja Blade",
       "shuriken": "Shuriken",
-      "mask": "Mask"
+      "mask": "Mask",
+      "sabre": "Sabre",
+      "banner": "Banner",
+      "medal": "Medal",
+      "cutlass": "Cutlass",
+      "loot": "Loot",
+      "skull": "Skull"
     }
   },
   "bonusDie": {
@@ -718,7 +764,13 @@
       "ninjaNinjutsu": "Ninjutsu: rolled {{value}}.",
       "ninjaNinjutsuResult": "Ninjutsu adds +{{bonusDamage}} damage.",
       "ninjaDojoMask": "Dojo: Mask, gain Smoke Bomb and 2 Ninjutsu",
-      "ninjaDojoOther": "Dojo: otherwise draw 1"
+      "ninjaDojoOther": "Dojo: otherwise draw 1",
+      "zhanshujiaWarMongerSabre": "War Monger: Sabre deals 5 damage",
+      "zhanshujiaWarMongerBanner": "War Monger: Banner gains 4 Tactical Advantage",
+      "zhanshujiaWarMongerMedal": "War Monger: Medal draws 1 card",
+      "cursedPirateMarkedCutlass": "Marked for Death: Cutlass deals 2 undefendable damage",
+      "cursedPirateMarkedLoot": "Marked for Death: Loot draws 1 card",
+      "cursedPirateMarkedSkull": "Marked for Death: Skull inflicts Cursed Coin"
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
@@ -893,7 +945,13 @@
       "dash": "Dash",
       "ninja_katana": "Ninja Blade",
       "shuriken": "Shuriken",
-      "mask": "Mask"
+      "mask": "Mask",
+      "sabre": "Sabre",
+      "banner": "Banner",
+      "medal": "Medal",
+      "cutlass": "Cutlass",
+      "loot": "Loot",
+      "skull": "Skull"
     },
     "trigger": {
       "generic": "variant condition",
@@ -2455,6 +2513,78 @@
     "ninja-assassinate": {
       "name": "Assassinate",
       "description": "Ultimate: apply Delayed Poison, gain Smoke Bomb, and deal 10 damage."
+    },
+    "sabre-thrust": {
+      "name": "Sabre Thrust",
+      "description": "3/4/5 Sabres deal 4/5/6 damage."
+    },
+    "carpet-bombing": {
+      "name": "Carpet Bombing",
+      "description": "2 Sabres + 2 Medals: gain Tactical Advantage, then deal 2 collateral damage to all opponents."
+    },
+    "war-monger": {
+      "name": "War Monger",
+      "description": "1 Sabre + 3 Banners: gain Tactical Advantage and roll 1 die; Sabre deals 5, Banner gains 4 Tactical Advantage, Medal draws 1. The extra Offensive Roll Phase is still in progress."
+    },
+    "drum-movement": {
+      "name": "Drum Movement",
+      "description": "3 Sabres + 2 Medals: inflict Bind and deal 7 damage."
+    },
+    "flanking": {
+      "name": "Flanking",
+      "description": "Small Straight: gain Tactical Advantage, then deal 6 damage."
+    },
+    "expand-battlefield": {
+      "name": "Expand Battlefield",
+      "description": "Large Straight: gain 2 Tactical Advantage, inflict Bind, then deal 9 damage."
+    },
+    "strategic-shift": {
+      "name": "Strategic Shift",
+      "description": "4 Medals: gain 5 Tactical Advantage, then deal 5 undefendable damage."
+    },
+    "countermeasures": {
+      "name": "Countermeasures",
+      "description": "Defensive roll 4 dice; Sabres/Banners counterattack, Medals prevent damage and gain Tactical Advantage. Exact defense resolution is still in progress."
+    },
+    "high-ground": {
+      "name": "High Ground",
+      "description": "Ultimate: inflict Targeted and Bind; increase Tactical Advantage limit by 1, then gain to the limit and deal 12 damage. Limit increase is still in progress."
+    },
+    "soul-stab": {
+      "name": "Soul Stab",
+      "description": "3/4/5 Cutlasses deal 5/7/9 damage; if you rolled three matching numbers, inflict Powder Keg. Matching-number branch is still in progress."
+    },
+    "marked-for-death": {
+      "name": "Marked for Death",
+      "description": "3 Loot: roll 4 dice; Cutlasses deal undefendable damage, Loot draws cards, Skulls inflict Cursed Coin."
+    },
+    "cursed": {
+      "name": "Cursed",
+      "description": "Passive: during Upkeep, take 4 damage that cannot be reduced or prevented; opponents who dealt no attack get Powder Keg. Full passive is still in progress."
+    },
+    "deep-sea-dive": {
+      "name": "Deep Sea Dive",
+      "description": "1 Cutlass + 2 Loot + 1 Skull: steal CP, discard, inflict Wither, then deal 8 damage. Steal/discard interaction is still in progress."
+    },
+    "breath-of-death": {
+      "name": "Breath of Death",
+      "description": "Small Straight inflicts Wither and Powder Keg, then deals 7; Large Straight inflicts Wither and Powder Keg, then deals 10."
+    },
+    "soul-command": {
+      "name": "Soul Command",
+      "description": "4 Skulls: inflict Parley, Powder Keg, and Wither, then deal 8 undefendable damage."
+    },
+    "undead-claw": {
+      "name": "Undead Claw",
+      "description": "1 Cutlass + 3 Skulls: deal 8 undefendable damage; all opponents take 1 damage per Cursed Coin they have. Coin damage is still in progress."
+    },
+    "still-wet-behind-ears": {
+      "name": "Still Wet Behind the Ears",
+      "description": "Defensive roll 5 dice; Cutlasses counterattack, Loot gains CP, Skulls prevent damage; Cutlass+Skull inflicts Cursed Coin. Exact defense resolution is still in progress."
+    },
+    "merciless-curse": {
+      "name": "Merciless Curse",
+      "description": "Ultimate: deal 13, inflict Parley, Cursed Coin, and Wither; inflict Powder Keg on up to two opponents. Extra target handling is still in progress."
     }
   },
   "cards": {
@@ -3188,6 +3318,21 @@
     "name": "Life Sap",
     "rollHealShort": "Heal",
     "rollHeal": "Roll to heal half"
+  },
+  "zhanshujiaTacticalAdvantage": {
+    "name": "Tactical Advantage",
+    "cpShort": "+1 CP",
+    "cp": "Spend 1 Tactical Advantage to gain 1 CP",
+    "rerollShort": "Reroll",
+    "reroll": "Spend 1 Tactical Advantage to reroll 1 die",
+    "drawShort": "Draw",
+    "draw": "Spend 3 Tactical Advantage to draw 1 card",
+    "targetedShort": "Targeted",
+    "targeted": "Spend 3 Tactical Advantage to inflict 1 Targeted on the opponent",
+    "protectShort": "Protect",
+    "protect": "Spend 4 Tactical Advantage to gain 1 Protect",
+    "transferShort": "Transfer",
+    "transfer": "Spend 4 Tactical Advantage to transfer 1 status effect"
   }
   },
   "cardSpotlight": {

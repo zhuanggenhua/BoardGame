@@ -208,6 +208,14 @@ const validateRollDice = (
         return fail('roll_limit_reached');
     }
 
+    if (phase === 'offensiveRoll') {
+        const bindStacks = state.players[rollerId]?.statusEffects[STATUS_IDS.BIND] ?? 0;
+        const currentCp = state.players[rollerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+        if (bindStacks > 0 && state.rollCount > 0 && currentCp < 1) {
+            return fail('not_enough_cp');
+        }
+    }
+
     // 防御阶段必须先选择防御技能才能掷骰（规则 §3.6 步骤 2→3）
     if (phase === 'defensiveRoll' && state.pendingAttack && !state.pendingAttack.defenseAbilityId) {
         return fail('defense_ability_not_selected');

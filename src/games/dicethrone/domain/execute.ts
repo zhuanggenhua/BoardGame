@@ -43,7 +43,7 @@ import { applyEvents } from './utils';
 import { reduce } from './reducer';
 import type { InteractionDescriptor as PendingInteraction } from './core-types';
 
-import { DICETHRONE_COMMANDS } from './ids';
+import { DICETHRONE_COMMANDS, STATUS_IDS } from './ids';
 import { CHARACTER_DATA_MAP } from './characters';
 import { executeCardCommand } from './executeCards';
 import { executeTokenCommand } from './executeTokens';
@@ -71,8 +71,7 @@ const resolveStatusNewTotal = (
     amount: number,
 ): number => {
     const currentStacks = state.players[targetPlayerId]?.statusEffects[statusId] ?? 0;
-    const def = (state.tokenDefinitions ?? []).find(entry => entry.id === statusId);
-    const maxStacks = def?.stackLimit || 99;
+    const maxStacks = getTokenStackLimit(state, targetPlayerId, statusId);
     return Math.min(currentStacks + amount, maxStacks);
 };
 
@@ -175,6 +174,26 @@ export function execute(
     switch (command.type) {
         case 'ROLL_DICE': {
             const rollerId = getRollerId(state, phase);
+            const bindStacks = state.players[rollerId]?.statusEffects[STATUS_IDS.BIND] ?? 0;
+            const isBindExtraOffensiveRoll = phase === 'offensiveRoll' && bindStacks > 0 && state.rollCount > 0;
+            if (isBindExtraOffensiveRoll) {
+                const currentCp = state.players[rollerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+                if (currentCp < 1) {
+                    break;
+                }
+                events.push({
+                    type: 'CP_CHANGED',
+                    payload: {
+                        playerId: rollerId,
+                        delta: -1,
+                        newValue: currentCp - 1,
+                        sourceAbilityId: STATUS_IDS.BIND,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                });
+            }
+
             const results: number[] = [];
             // 教程模式：骰子固定为 1（fist），确保教程流程中技能匹配
             // randomPolicy.values:[6] 控制其他随机（如悟道卡 rollDie → lotus）

@@ -5,8 +5,12 @@ import { buildLocalizedImageSet, getAssetsBaseUrl, getLocalizedImageUrls } from 
 import { createScopedLogger } from '../../../lib/logger';
 import { getDiceDefinition, getDieFaceByValue } from '../domain/diceRegistry';
 
+const CHARACTER_ASSET_DIR: Record<string, string> = {
+    cursed_pirate: 'cursed',
+};
+
 const getCharacterAssetBase = (charId: string = 'monk') => (
-    `dicethrone/images/${charId}`
+    `dicethrone/images/${CHARACTER_ASSET_DIR[charId] ?? charId}`
 );
 const diceAssetsLogger = createScopedLogger('dicethrone:dice-assets');
 

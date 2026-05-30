@@ -21,7 +21,7 @@ import type {
 } from './types';
 import { HAND_LIMIT, PHASE_ORDER } from './types';
 import { RESOURCE_IDS } from './resources';
-import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS, NINJA_DICE_FACE_IDS } from './ids';
+import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS, NINJA_DICE_FACE_IDS } from './ids';
 import { getDieFaceByValue } from './diceRegistry';
 import { CHARACTER_DATA_MAP } from './characters';
 import { playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
@@ -135,6 +135,11 @@ export const getMaxDuplicateValueCount = (dice: Die[]): number => {
  */
 export const getTokenStackLimit = (state: DiceThroneCore, playerId: PlayerId, tokenId: string): number => {
     const player = state.players[playerId];
+
+    if (tokenId === STATUS_IDS.CURSED_COIN) {
+        return player?.characterId === 'cursed_pirate' ? 5 : 3;
+    }
+
     const override = player?.tokenStackLimits?.[tokenId];
     if (typeof override === 'number') {
         return override === 0 ? Infinity : override;

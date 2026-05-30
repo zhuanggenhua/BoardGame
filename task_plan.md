@@ -1,3 +1,49 @@
+# Task Plan: DiceThrone 战术家与咒缚海盗新增英雄接入（2026-05-30）
+
+> 当前正式计划入口。下方 `TDD 行为 seam 与测试结构重构` 及更早内容均为历史上下文，不作为本轮任务入口。
+
+## Goal
+
+遵循 `.windsurf/skills/add-new-faction/SKILL.md` 与 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`，把 DiceThrone 新英雄战术家（`zhanshujia`）与咒缚海盗（`cursed_pirate`，素材目录 `cursed`）从本地素材接入到可验证的角色数据、资源链、规则文档、机制实现、审计 evidence 与真实入口 E2E。若遇到必须人工裁定的图面/规则不确定项，立即停止 goal 并汇报阻塞点。
+
+## Constraints
+
+- 不创建、切换、删除分支或 worktree。
+- 不回滚或整理当前工作区其它未提交改动；本轮只定向修改 DiceThrone 新英雄、资源、文档、测试和 evidence。
+- 图片优先于 Wiki；图面看不清或素材语义无法唯一裁定时停止，不猜。
+- 战术家的锁定与守护复用既有 `STATUS_IDS.TARGETED` 和 `TOKEN_IDS.PROTECT`，不新增同义状态。
+- 不覆盖 DiceThrone 既有共享头像、卡牌 atlas 或其它老英雄资源合同；新英雄素材不一致时按英雄分流。
+- 新英雄未完整完成前保留 `implementation_in_progress` 徽标，不宣称全流程完成。
+
+## Batch Matrix
+
+| heroId | 中文名 | 素材目录 | 数据录入 | 资源链 | 机制实现 | 审计 | E2E | 状态 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `zhanshujia` | 战术家 | `public/assets/i18n/zh-CN/dicethrone/images/zhanshujia` | `in_progress` | `in_progress` | `in_progress` | `pending` | `pending` | `in_progress` |
+| `cursed_pirate` | 咒缚海盗 | `public/assets/i18n/zh-CN/dicethrone/images/cursed` | `in_progress` | `in_progress` | `in_progress` | `pending` | `pending` | `in_progress` |
+
+## Phases
+
+- [x] S0 锁定范围与计划：确认素材目录、代码 ID、共享 token 复用口径、旧任务不混写。
+- [x] S1 建立规则文档：为两个英雄补真相源表、录入核对、卡牌录入核对、玩家板图面合同。
+- [x] S2 资源链接入：生成正式英文运行时资源、状态图集、卡牌 atlas JSON，重建 manifest。
+- [x] S3 静态英雄接入：新增英雄目录、骰面、Token、能力、卡牌、i18n、注册表、关键图片 resolver。
+- [ ] S4 机制实现：逐子句实现战术优势/紧缚/诅咒金币/火药桶/凋零/休战及面板技能。当前战术优势、紧缚、制胜高地、战争贩子额外进攻投掷阶段、灵魂突刺三同值火药桶、深海潜行偷 CP、死亡印记 2CP 与弯刀不可防御伤害、亡灵之爪金币伤害、诅咒金币、凋零、休战已补 L2 机制；火药桶、防御精确 resolver、深海潜行弃牌交互、专属手牌仍未收口。
+- [ ] S5 测试与审计：补静态注册、资源、机制行为测试，写 evidence，跑相关验证。当前已新增机制单测，审计 evidence / E2E 仍未完成。
+- [ ] S6 端到端与上传：真实在线双玩家 E2E、截图核验、资源上传、代表 URL HEAD 回查。
+
+## Current Notes
+
+- 2026-05-30 16:48:43：已确认 active goal 为本批次；现有 `task_plan.md` 未记录本批次关键词，旧计划视为历史上下文。
+- 2026-05-30 16:48:43：已确认素材目录存在；战术家状态图只有战术优势、紧缚；咒缚海盗状态图包含凋零、休战、炸药、诅咒金币。
+- 2026-05-30 16:48:43：代码注册点包括 `domain/core-types.ts`、`domain/ids.ts`、`domain/characters.ts`、`domain/index.ts`、`heroes/index.ts`、`ui/cardAtlas.ts`、`criticalImageResolver.ts`、`public/locales/*/game-dicethrone.json`。
+- 2026-05-30 17:20：已完成本地正式资源生成、状态图集生成、manifest 增量生成与 DiceThrone 范围 manifest 校验。
+- 2026-05-30 17:20：已完成两个英雄 L1 静态接入与部分 L2 基础技能结算；复杂机制、英雄专属手牌逐卡录入、审计、E2E、上传仍未完成。
+- 2026-05-30 17:48：已补战术优势 6 个主动动作、紧缚额外进攻投掷 CP 门禁与阶段清理、诅咒金币差异上限/不可移除/维持伤害、凋零攻击伤害减值、休战阻止攻击伤害与阶段清理，并新增机制测试。
+- 2026-05-30 18:00：继续补制胜高地战术优势上限+补满、死亡印记先获得 2CP、亡灵之爪按诅咒金币层数造成直接伤害；火药桶仍因爆炸伤害数值与转交选择语义未有足够证据，未猜测实现。
+- 2026-05-30 18:05：继续补灵魂突刺三同值施加火药桶、深海潜行偷取 1CP；火药桶重叠爆炸与深海潜行弃牌交互仍待后续机制。
+- 2026-05-30 18:15：继续补死亡印记弯刀分支为独立不可防御伤害，补战争贩子攻击收口后触发额外进攻投掷阶段；深海潜行弃牌因缺少现成手牌选择交互仍未实现。
+
 # Task Plan: TDD 行为 seam 与测试结构重构（2026-05-16）
 
 > 当前正式计划入口。下方旧计划均为历史上下文，不作为本轮任务入口。

@@ -4393,3 +4393,51 @@
 - 所以后续如果再把 `Operative` 写成“根状态只承认单页主链和两层空选端点，多客户端非当前视角仍主要在 evidence 或长期 JSON”，那已经不是当前真相；更准确的表述应是：
   - `super_spies_operative.choose_players_to_reveal` / `bottom_any_revealed_cards` 现在已经同时承认单页主链、两层 `0` 勾选端点，以及 2P owner-only 双层 prompt 页归属；
   - 当前剩余边界只应继续保留 `>2` 玩家更广 turnOrder/UI 与 shared transport，而不是再把双人联机这条对象级主链挂回 residual。
+# Findings: DiceThrone 战术家与咒缚海盗新增英雄接入（2026-05-30）
+
+## 2026-05-30 16:48:43
+
+- 本轮使用项目 `add-new-faction` workflow，并按 DiceThrone 专用 `dicethrone-hero-intake` 执行；完整完成口径包含数据录入、资源链、机制、审计、E2E、上传与远端回查。
+- 当前工作区有大量非本轮未提交改动，必须定向编辑 DiceThrone 新英雄相关文件，不做回滚、清理或全局整理。
+- 本批次新英雄为战术家（`zhanshujia`）与咒缚海盗（建议代码 ID `cursed_pirate`，素材目录 `cursed`）。
+- 素材目录已存在：`public/assets/i18n/zh-CN/dicethrone/images/zhanshujia/` 与 `public/assets/i18n/zh-CN/dicethrone/images/cursed/`。
+- 战术家状态图只包含 `战术优势.png`、`紧缚.png`；用户已说明锁定/守护是既有 token，需复用 `STATUS_IDS.TARGETED` 与 `TOKEN_IDS.PROTECT`，不能新增同义 token。
+- 咒缚海盗状态图包含 `凋零.png`、`休战.png`、`炸药.png`、`诅咒金币.png`；图面称呼中“炸药桶/火药桶”需要以主图和提示板核对后统一文案。
+- 现有 DiceThrone 英雄注册点包括：`src/games/dicethrone/domain/core-types.ts`、`src/games/dicethrone/domain/ids.ts`、`src/games/dicethrone/domain/characters.ts`、`src/games/dicethrone/domain/index.ts`、`src/games/dicethrone/heroes/index.ts`、`src/games/dicethrone/ui/cardAtlas.ts`、`src/games/dicethrone/criticalImageResolver.ts`、`public/locales/{zh-CN,en}/game-dicethrone.json`。
+- `src/games/dicethrone/ui/assets.ts` 旧头像索引已有 `cursed_pirate: 8`，但这不代表咒缚海盗已完成接入；不得覆盖老头像共享合同。
+
+## 2026-05-30 17:20
+
+- 咒缚海盗代码 ID 使用 `cursed_pirate`，素材目录通过 `CHARACTER_ASSET_DIR` / `CHARACTER_DIR_MAP` 映射到 `cursed`；卡图 atlas 注册、关键图片预加载、玩家板/提示板/骰子都必须走这个分流，不能创建 `images/cursed_pirate` 并复制第二套素材。
+- 战术家新增状态图集只包含 `tactical_advantage` 与 `bind`；锁定/守护继续复用旧定义和旧图标。
+- 咒缚海盗状态图集 frameId 使用 `wither`、`parley`、`powder_keg`、`cursed_coin`；源文件 `炸药.png` 在运行时统一命名为火药桶 / `powder_keg`。
+- 当前英雄专属手牌未录入，两个英雄 `cards.ts` 仅接入通用牌。继续推进前必须先裁完整单卡，不能凭整张 `手牌.png` 或 slot 猜测牌名/费用/升级目标。
+- 当前机制是 L1/L2 混合：基础骰面触发、简单伤害、简单施加状态可运行；战术优势多选、紧缚成本/移除、诅咒金币差异上限/不可移除/维持伤害、火药桶投骰/转交/重叠爆炸、凋零伤害修正、休战阻止伤害、防御技能精确 resolver 都未收口。
+
+## 2026-05-30 17:48
+
+- 战术优势已从“被动入口部分”推进到 L2 机制：6 个主动动作均有执行路径与单测证据。锁定继续复用 `STATUS_IDS.TARGETED`，守护继续复用 `TOKEN_IDS.PROTECT`，转移状态复用既有 `transfer-status` 交互。
+- 紧缚的真实合同应拆成两条：额外进攻投掷前的 1CP 门禁，以及进攻掷骰阶段退出清理。当前两条均已接入并由机制测试覆盖。
+- 诅咒金币的差异上限必须通过 `getTokenStackLimit(state, playerId, STATUS_IDS.CURSED_COIN)` 读取，不能只看 token 定义上的 `stackLimit: 5`；普通 `grantStatus`、条件/default grantStatus、reducer 上限裁剪均应走这条动态上限。
+- 诅咒金币的 `removable: false` 同时意味着 `REMOVE_STATUS` 不移除、`TRANSFER_STATUS` 不转移；当前 execute 层测试已覆盖。
+- 凋零不是目标侧受伤修正，而是伤害来源身上的出伤修正；因此伤害计算管线需要收集 source player 的 `onDamageDealt` 状态，并只在攻击伤害语义下生效。
+- 休战只阻止持有者通过进攻投掷阶段造成的攻击伤害，不应阻止直接伤害；阶段退出清理与阻伤是两条独立机制，均需保留测试证据。
+- 仍不得宣称两个英雄完成：火药桶完整投骰/爆炸/转交/重叠爆炸、防御 resolver、专属手牌逐卡录入、E2E、上传和远端回查仍是未完成门禁。
+
+## 2026-05-30 18:00
+
+- 制胜高地的“上限提升 1”和“获得至上限”不能用固定 `grantToken(5)` 表达；必须先写入玩家自身的 `tokenStackLimits[TACTICAL_ADVANTAGE]`，再按新上限补足当前 token 数。
+- 死亡印记的“先获得 2CP”可以复用通用 `gain-cp` custom action，已作为独立 preDefense 效果落地；但弯刀分支的“不可防御伤害”仍不能由当前 `bonusDamage` 证明，必须继续保留为 pending。
+- 亡灵之爪的诅咒金币附加伤害不是固定 1 点，而是按每名对手身上的诅咒金币层数分别计算；当前实现已改为 custom action 对所有对手按层数发 `damageScope: direct` 的 `DAMAGE_DEALT`。
+- 火药桶不应因为其它咒缚海盗机制已补而顺手实现：当前图文/核对文档仍缺爆炸伤害数值和 6 点转交选择细节，按“图片优先，不猜数值”规则继续保留未实现。
+
+## 2026-05-30 18:05
+
+- 灵魂突刺的“三同值施加火药桶”可以独立实现，但这不等于火药桶机制已完成。当前实现只负责在满足三同值时授予火药桶；若目标已有火药桶时应如何爆炸，仍归属火药桶重叠爆炸 pending 项。
+- 深海潜行的“偷取 1CP”和“对手弃 1”必须拆开验收：偷 CP 是确定资源转移，已 L2；弃牌需要手牌候选/选择或自动弃牌规则，当前没有足够交互实现，继续 pending。
+
+## 2026-05-30 18:15
+
+- 死亡印记的弯刀分支不能继续用 `bonusDamage` 混入普通攻击修正，因为这样无法证明“不可防御伤害”语义。当前已给 `rollDie` 条件分支补 `unblockableDamage`，直接产出带 `unblockable: true` 的 `DAMAGE_DEALT`，让每个弯刀面独立造成 2 点不可防御攻击伤害。
+- 战争贩子的“立即额外进攻投掷阶段”与晕眩的额外攻击阶段流转同构，但来源不是状态。当前已通过 `zhanshujia-war-monger-extra-offensive-roll` 产出 `EXTRA_ATTACK_TRIGGERED`，并让 `resolvePostAttackFollowUp` 识别已有额外进攻事件后把下一阶段改回 `offensiveRoll`。
+- 深海潜行弃牌不能在没有交互合同时硬写成随机弃牌。现有 DiceThrone `dt:card-interaction` 只支持 `selectDie/modifyDie/selectPlayer/selectStatus/selectTargetStatus`，没有从目标玩家手牌选择并弃置的正式入口；因此“对手弃 1”仍应保留 pending，等补手牌选择交互或确认随机弃牌规则后再实现。

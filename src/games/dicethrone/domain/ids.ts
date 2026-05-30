@@ -35,8 +35,23 @@ export const STATUS_IDS = {
     /** 锁定（月精灵） */
     TARGETED: 'targeted',
 
+    /** 战术家：紧缚 */
+    BIND: 'bind',
+
     /** 中毒（影贼） */
     POISON: 'poison',
+
+    /** 咒缚海盗：诅咒金币 */
+    CURSED_COIN: 'cursed_coin',
+
+    /** 咒缚海盗：火药桶 */
+    POWDER_KEG: 'powder_keg',
+
+    /** 咒缚海盗：凋零 */
+    WITHER: 'wither',
+
+    /** 咒缚海盗：休战 */
+    PARLEY: 'parley',
 } as const;
 
 export type StatusId = (typeof STATUS_IDS)[keyof typeof STATUS_IDS];
@@ -87,6 +102,10 @@ export const TOKEN_IDS = {
 
     /** 赏金（枪手） */
     BOUNTY: 'bounty',
+
+    /** 战术家：战术优势 */
+    TACTICAL_ADVANTAGE: 'tactical_advantage',
+
     HONOR: 'honor',
     SHAME: 'shame',
     SAMURAI_RETRIBUTION: 'samurai_retribution',
@@ -208,6 +227,22 @@ export const NINJA_DICE_FACE_IDS = {
 
 export type NinjaDiceFaceId = (typeof NINJA_DICE_FACE_IDS)[keyof typeof NINJA_DICE_FACE_IDS];
 
+export const ZHANSHUJIA_DICE_FACE_IDS = {
+    SABRE: 'sabre',
+    BANNER: 'banner',
+    MEDAL: 'medal',
+} as const;
+
+export type ZhanshujiaDiceFaceId = (typeof ZHANSHUJIA_DICE_FACE_IDS)[keyof typeof ZHANSHUJIA_DICE_FACE_IDS];
+
+export const CURSED_PIRATE_DICE_FACE_IDS = {
+    CUTLASS: 'cutlass',
+    LOOT: 'loot',
+    SKULL: 'skull',
+} as const;
+
+export type CursedPirateDiceFaceId = (typeof CURSED_PIRATE_DICE_FACE_IDS)[keyof typeof CURSED_PIRATE_DICE_FACE_IDS];
+
 // ============================================================================
 // 骰面 ID（影贼）
 // ============================================================================
@@ -275,6 +310,8 @@ export const DICETHRONE_CARD_ATLAS_IDS = {
     SAMURAI: 'dicethrone:samurai-cards',
     TREANT: 'dicethrone:treant-cards',
     NINJA: 'dicethrone:ninja-cards',
+    ZHANSHUJIA: 'dicethrone:zhanshujia-cards',
+    CURSED_PIRATE: 'dicethrone:cursed_pirate-cards',
 } as const;
 
 export const DICETHRONE_HAND_CARD_ATLAS_IDS = {
@@ -293,4 +330,6 @@ export const DICETHRONE_STATUS_ATLAS_IDS = {
     SAMURAI: 'dicethrone:samurai-status',
     TREANT: 'dicethrone:treant-status',
     NINJA: 'dicethrone:ninja-status',
+    ZHANSHUJIA: 'dicethrone:zhanshujia-status',
+    CURSED_PIRATE: 'dicethrone:cursed_pirate-status',
 } as const;

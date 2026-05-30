@@ -18,6 +18,8 @@ import { GUNSLINGER_ABILITIES, GUNSLINGER_TOKENS, GUNSLINGER_INITIAL_TOKENS, get
 import { SAMURAI_ABILITIES, SAMURAI_TOKENS, SAMURAI_INITIAL_TOKENS, getSamuraiStartingDeck } from '../heroes/samurai';
 import { TREANT_ABILITIES, TREANT_TOKENS, TREANT_INITIAL_TOKENS, TREANT_PASSIVE_ABILITIES, getTreantStartingDeck } from '../heroes/treant';
 import { NINJA_ABILITIES, NINJA_TOKENS, NINJA_INITIAL_TOKENS, getNinjaStartingDeck } from '../heroes/ninja';
+import { ZHANSHUJIA_ABILITIES, ZHANSHUJIA_TOKENS, ZHANSHUJIA_INITIAL_TOKENS, ZHANSHUJIA_PASSIVE_ABILITIES, getZhanshujiaStartingDeck } from '../heroes/zhanshujia';
+import { CURSED_PIRATE_ABILITIES, CURSED_PIRATE_TOKENS, CURSED_PIRATE_INITIAL_TOKENS, getCursedPirateStartingDeck } from '../heroes/cursed_pirate';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
@@ -250,6 +252,49 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         },
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.NINJA,
         statusAtlasPath: 'dicethrone/images/ninja/status-icons-atlas.json',
+    },
+    zhanshujia: {
+        id: 'zhanshujia',
+        abilities: ZHANSHUJIA_ABILITIES,
+        tokens: ZHANSHUJIA_TOKENS,
+        initialTokens: ZHANSHUJIA_INITIAL_TOKENS,
+        diceDefinitionId: 'zhanshujia-dice',
+        getStartingDeck: getZhanshujiaStartingDeck,
+        initialAbilityLevels: {
+            'sabre-thrust': 1,
+            'carpet-bombing': 1,
+            'war-monger': 1,
+            'drum-movement': 1,
+            'flanking': 1,
+            'expand-battlefield': 1,
+            'strategic-shift': 1,
+            'countermeasures': 1,
+            'high-ground': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA,
+        statusAtlasPath: 'dicethrone/images/zhanshujia/status-icons-atlas.json',
+        passiveAbilities: ZHANSHUJIA_PASSIVE_ABILITIES,
+    },
+    cursed_pirate: {
+        id: 'cursed_pirate',
+        abilities: CURSED_PIRATE_ABILITIES,
+        tokens: CURSED_PIRATE_TOKENS,
+        initialTokens: CURSED_PIRATE_INITIAL_TOKENS,
+        diceDefinitionId: 'cursed_pirate-dice',
+        getStartingDeck: getCursedPirateStartingDeck,
+        initialAbilityLevels: {
+            'soul-stab': 1,
+            'marked-for-death': 1,
+            'cursed': 1,
+            'deep-sea-dive': 1,
+            'breath-of-death': 1,
+            'soul-command': 1,
+            'undead-claw': 1,
+            'still-wet-behind-ears': 1,
+            'merciless-curse': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.CURSED_PIRATE,
+        statusAtlasPath: 'dicethrone/images/cursed/status-icons-atlas.json',
     },
 };
 

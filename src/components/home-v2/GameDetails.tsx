@@ -39,6 +39,7 @@ import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
 import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageCard';
 import { GamePackageInstallConfirmModal } from '../lobby/GamePackageInstallConfirmModal';
+import { resolveRoomExpansionLabel } from '../lobby/roomActions';
 import { PasswordField } from '../common/PasswordField';
 import { HomeV2DangerConfirmModal } from '../common/overlays/HomeV2DangerConfirmModal';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
@@ -563,13 +564,23 @@ function getRoomSearchHaystack(
         roomName?: string;
         matchID: string;
         players: Array<{ name?: string }>;
+        gameName?: string;
+        publicSetupSummary?: {
+            enabledExpansions?: string[];
+        };
     },
     fallbackTitle: string,
+    t: HomeV2Translate,
 ) {
+    const enabledExpansionLabels = room.publicSetupSummary?.enabledExpansions?.map((expansionId) => (
+        resolveRoomExpansionLabel(t, room.gameName, expansionId)
+    )) ?? [];
+
     return [
         fallbackTitle,
         room.roomName ?? '',
         room.matchID,
+        ...enabledExpansionLabels,
         ...room.players.map((player) => player.name ?? ''),
     ].join(' ').toLowerCase();
 }
@@ -937,7 +948,7 @@ export const Right = ({ game }: RightProps) => {
         }
 
         const fallbackTitle = getRoomTitle(room.matchID, t, room.roomName);
-        return getRoomSearchHaystack(room, fallbackTitle).includes(normalizedRoomSearch);
+        return getRoomSearchHaystack(room, fallbackTitle, t).includes(normalizedRoomSearch);
     }), [normalizedRoomSearch, roomPreviewItems, t]);
 
     const ownerActiveRoom = React.useMemo(() => {
@@ -1135,52 +1146,10 @@ export const Right = ({ game }: RightProps) => {
         t,
     ]);
     const MobilePackageToggleIcon = mobilePackageToggleMeta.icon;
-    const mobilePackageToggleText = React.useMemo(() => {
-        if (isAppUpdateRequiredForMobileGame) {
-            return t('packageManager.homeV2UpdateAppShort', { defaultValue: '更新App' });
-        }
-
-        switch (mobilePackageCardDisplayState.status) {
-            case 'queued':
-            case 'manifest':
-            case 'downloading':
-            case 'verifying':
-                return t('packageManager.homeV2DownloadingShort', { defaultValue: '下载中' });
-            case 'failed':
-                return t('packageManager.homeV2RetryShort', { defaultValue: '重试' });
-            case 'installed':
-                return t('packageManager.homeV2InstalledShort', { defaultValue: '已就绪' });
-            case 'not-installed':
-            default:
-                return isCompactLandscape
-                    ? t('packageManager.homeV2InstallCompactShort', { defaultValue: '下载包' })
-                    : t('packageManager.homeV2InstallShort', { defaultValue: '下载资源' });
-        }
-    }, [
-        isAppUpdateRequiredForMobileGame,
-        isCompactLandscape,
-        mobilePackageCardDisplayState.status,
-        t,
-    ]);
 
     const handleMobilePackageToggleClick = React.useCallback(() => {
-        const status = mobilePackageCardDisplayState.status;
-        if (status === 'queued' || status === 'manifest' || status === 'downloading' || status === 'verifying' || status === 'installed') {
-            setIsMobilePackageCardExpanded((current) => !current);
-            return;
-        }
-
-        if (status === 'failed') {
-            handleRetryPackageInstall();
-            return;
-        }
-
-        handleOpenMobilePackageInstall();
-    }, [
-        handleOpenMobilePackageInstall,
-        handleRetryPackageInstall,
-        mobilePackageCardDisplayState.status,
-    ]);
+        setIsMobilePackageCardExpanded((current) => !current);
+    }, []);
 
     React.useEffect(() => {
         if (!gameId || activeTab !== 'leaderboard') {
@@ -1669,19 +1638,18 @@ export const Right = ({ game }: RightProps) => {
                 aria-expanded={isMobilePackageCardExpanded}
                 aria-label={mobilePackageToggleMeta.label}
                 title={mobilePackageToggleMeta.label}
-                disabled={isAppUpdateRequiredForMobileGame}
                 className={[
-                    'pointer-events-auto inline-flex items-center justify-center gap-[6px] rounded-[2px] border font-bold shadow-[0_1px_2px_rgba(63,38,20,0.12)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/24 disabled:cursor-not-allowed disabled:opacity-70',
-                    isCompactLandscape ? 'h-[31px] min-w-[74px] px-[8px] text-[10px] tracking-[0.04em]' : 'h-[48px] min-w-[126px] px-[18px] text-[clamp(15px,1vw,18px)] tracking-[0.05em]',
+                    'pointer-events-auto absolute bottom-0 left-0 inline-flex items-center justify-center rounded-full border shadow-[0_10px_24px_rgba(63,38,20,0.18)] backdrop-blur-sm transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/24',
+                    isCompactLandscape ? 'h-9 w-9' : 'h-11 w-11',
                     mobilePackageToggleMeta.buttonClassName,
+                    isMobilePackageCardExpanded ? 'pointer-events-none scale-90 opacity-0' : 'scale-100 opacity-100',
                 ].join(' ')}
             >
                 <MobilePackageToggleIcon
                     aria-hidden="true"
-                    className={`${isCompactLandscape ? 'h-[13px] w-[13px]' : 'h-[18px] w-[18px]'} shrink-0 ${mobilePackageToggleMeta.iconClassName}`}
+                    className={`${isCompactLandscape ? 'h-[14px] w-[14px]' : 'h-[18px] w-[18px]'} shrink-0 ${mobilePackageToggleMeta.iconClassName}`}
                     strokeWidth={2.2}
                 />
-                <span className="whitespace-nowrap leading-none">{mobilePackageToggleText}</span>
                 {mobilePackageCardDisplayState.status === 'installed' ? (
                     <span data-testid="home-v2-mobile-package-version-badge" className="sr-only">
                         {mobilePackageToggleMeta.label}
@@ -1690,7 +1658,7 @@ export const Right = ({ game }: RightProps) => {
             </button>
 
             {isMobilePackageCardExpanded ? (
-                <div className={`pointer-events-auto absolute left-0 origin-bottom-left ${isCompactLandscape ? 'bottom-[38px] w-[min(13.75rem,calc(100vw-3.5rem))]' : 'bottom-[60px] w-[19rem]'}`}>
+                <div className={`pointer-events-auto absolute bottom-0 left-0 origin-bottom-left ${isCompactLandscape ? 'w-[min(13.75rem,calc(100vw-3.5rem))]' : 'w-[19rem]'}`}>
                     <GameDetailsMobilePackageCard
                         gameName={gameDisplayName}
                         state={mobilePackageCardDisplayState}
@@ -1856,6 +1824,12 @@ export const Right = ({ game }: RightProps) => {
                                             const playerCount = room.players.filter((player) => Boolean(player.name)).length;
                                             const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
                                             const roomState = getRoomStateSummary(room, t);
+                                            const enabledExpansionLabels = room.publicSetupSummary?.enabledExpansions?.map((expansionId) => (
+                                                resolveRoomExpansionLabel(t, room.gameName, expansionId)
+                                            )) ?? [];
+                                            const roomExpansionSummary = enabledExpansionLabels.length > 0
+                                                ? `${t('lobby:rooms.enabledExpansions', { defaultValue: '扩展' })}：${enabledExpansionLabels.join(' / ')}`
+                                                : '';
                                             const actionLabel = roomState.key === 'locked'
                                                 ? t('lobby:homeV2.lockedRoomLabel')
                                                 : roomState.key === 'full'
@@ -1893,8 +1867,18 @@ export const Right = ({ game }: RightProps) => {
                                                                     {getRoomTitle(room.matchID, t, room.roomName)}
                                                                 </div>
                                                                 <div className={`${isCompactLandscape ? 'mt-[1px] text-[7.7px]' : 'mt-[5px] text-[clamp(12px,0.9vw,14px)]'} truncate leading-[1.2] text-[#5e3d27]`}>
-                                                                    {getRoomSeatLine(room, t)}
+                                                                    {isCompactLandscape && roomExpansionSummary
+                                                                        ? `${getRoomSeatLine(room, t)} · ${roomExpansionSummary}`
+                                                                        : getRoomSeatLine(room, t)}
                                                                 </div>
+                                                                {!isCompactLandscape && roomExpansionSummary ? (
+                                                                    <div
+                                                                        data-testid={`home-v2-room-expansion-summary-${room.matchID}`}
+                                                                        className="mt-[6px] truncate text-[clamp(10px,0.74vw,11px)] leading-[1.2] text-[#7b5a40]"
+                                                                    >
+                                                                        {roomExpansionSummary}
+                                                                    </div>
+                                                                ) : null}
                                                             </div>
                                                         </div>
                                                         <div className={`${isCompactLandscape ? 'text-[11px]' : 'text-[clamp(20px,1.36vw,24px)]'} flex h-full items-center justify-center text-center font-semibold text-[#2f1b10]`} style={{ borderLeft: '1px solid rgba(105,66,37,0.26)' }}>

@@ -12,6 +12,7 @@ import type { AbilityEffect, EffectTiming, EffectResolutionContext } from './com
 import { combatAbilityManager } from './combatAbility';
 import { getActiveDice, getFaceCounts, getOpponents, getPlayerDieFace, getTokenStackLimit } from './rules';
 import { RESOURCE_IDS } from './resources';
+import { STATUS_IDS } from './ids';
 import type {
     DiceThroneCore,
     DiceThroneEvent,
@@ -522,6 +523,12 @@ function resolveEffectAction(
 
     switch (action.type) {
         case 'damage': {
+            const isAttackDamage = (action.damageScope ?? 'attack') === 'attack';
+            const parleyStacks = state.players[attackerId]?.statusEffects[STATUS_IDS.PARLEY] ?? 0;
+            if (isAttackDamage && parleyStacks > 0) {
+                break;
+            }
+
             // target: 'all' → 对所有玩家（含自己）; 'allOpponents' → 当前玩家的真实敌方集合
             const damageTargets = action.target === 'all'
                 ? Object.keys(state.players)
@@ -679,8 +686,7 @@ function resolveEffectAction(
             if (!action.statusId) break;
             const target = state.players[targetId];
             const currentStacks = target?.statusEffects[action.statusId] ?? 0;
-            const def = state.tokenDefinitions.find(e => e.id === action.statusId);
-            const maxStacks = def?.stackLimit || 99;
+            const maxStacks = getTokenStackLimit(state, targetId, action.statusId);
             const stacksToAdd = action.value ?? 1;
             const newTotal = Math.min(currentStacks + stacksToAdd, maxStacks);
 
@@ -1021,6 +1027,25 @@ function resolveConditionalEffect(
         ctx.accumulatedBonusDamage = (ctx.accumulatedBonusDamage ?? 0) + effect.bonusDamage;
     }
 
+    if (effect.unblockableDamage && effect.unblockableDamage > 0) {
+        const targetPlayer = state.players[ctx.defenderId];
+        const targetHp = targetPlayer?.resources[RESOURCE_IDS.HP] ?? 0;
+        events.push({
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: ctx.defenderId,
+                amount: effect.unblockableDamage,
+                actualDamage: Math.min(effect.unblockableDamage, targetHp),
+                sourceAbilityId,
+                damageScope: 'attack',
+                unblockable: true,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+            sfxKey,
+        } as DamageDealtEvent);
+    }
+
     // 处理 grantStatus
     if (effect.grantStatus) {
         const { statusId, value, target: targetSpec } = effect.grantStatus;
@@ -1039,8 +1064,7 @@ function resolveConditionalEffect(
         
         const targetPlayer = state.players[actualTargetId];
         const currentStacks = targetPlayer?.statusEffects[statusId] ?? 0;
-        const def = state.tokenDefinitions.find(e => e.id === statusId);
-        const maxStacks = def?.stackLimit || 99;
+        const maxStacks = getTokenStackLimit(state, actualTargetId, statusId);
         const newTotal = Math.min(currentStacks + value, maxStacks);
 
         const event: StatusAppliedEvent = {
@@ -1259,8 +1283,7 @@ function resolveDefaultEffect(
         }
         const targetPlayer = state.players[actualTargetId];
         const currentStacks = targetPlayer?.statusEffects[statusId] ?? 0;
-        const def = state.tokenDefinitions.find(e => e.id === statusId);
-        const maxStacks = def?.stackLimit || 99;
+        const maxStacks = getTokenStackLimit(state, actualTargetId, statusId);
         const newTotal = Math.min(currentStacks + value, maxStacks);
         events.push({
             type: 'STATUS_APPLIED',

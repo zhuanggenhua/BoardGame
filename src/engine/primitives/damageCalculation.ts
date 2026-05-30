@@ -245,6 +245,7 @@ export class DamageCalculation {
       this.collectTokenModifiers();
     }
     if (this.config.autoCollectStatus !== false) {
+      this.collectSourceStatusModifiers();
       this.collectStatusModifiers();
     }
     // 护盾默认不收集（由 reducer 统一消耗，避免双重扣减）
@@ -295,6 +296,58 @@ export class DamageCalculation {
         source: tokenId,
         description: `Token: ${tokenDef.name || tokenId}`,
       });
+    });
+  }
+
+  /**
+   * 收集伤害来源身上的出伤修正状态。
+   *
+   * DiceThrone 的“凋零”这类效果挂在攻击者身上，修正的是该玩家造成的攻击伤害，
+   * 不能走目标侧 onDamageReceived 收集逻辑。
+   */
+  private collectSourceStatusModifiers(): void {
+    if (this.config.damageScope === 'direct') return;
+
+    const { source, target } = this.config;
+    if (source.playerId === target.playerId) return;
+
+    const coreState = this.getCoreState();
+    const sourcePlayer = coreState?.players?.[source.playerId];
+    if (!sourcePlayer?.statusEffects) return;
+
+    const tokenDefs = coreState?.tokenDefinitions || [];
+    Object.entries(sourcePlayer.statusEffects).forEach(([statusId, stacks]) => {
+      if (typeof stacks !== 'number' || stacks <= 0) return;
+
+      const statusDef = tokenDefs.find((t: any) => t.id === statusId);
+      if (statusDef?.passiveTrigger?.timing !== 'onDamageDealt') return;
+
+      const scope = statusDef.passiveTrigger.damageTriggerScope ?? 'anyDamage';
+      if (scope === 'opponentAttackDamage') {
+        const pendingAttack = coreState?.pendingAttack;
+        if (pendingAttack) {
+          if (
+            pendingAttack.attackerId !== source.playerId
+            || pendingAttack.defenderId !== target.playerId
+          ) {
+            return;
+          }
+        }
+      }
+
+      for (const action of statusDef.passiveTrigger.actions || []) {
+        if (action.type !== 'modifyStat' || typeof action.value !== 'number') continue;
+        const value = action.value * stacks;
+        if (value === 0) continue;
+        this.modifierStack = addModifier(this.modifierStack, {
+          id: `source-status-${statusId}-passive`,
+          type: 'flat',
+          value,
+          priority: 18,
+          source: statusId,
+          description: `Status: ${statusDef.name || statusId}`,
+        });
+      }
     });
   }
   

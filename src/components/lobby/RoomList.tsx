@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import type { RoomItem, ActiveMatchInfo } from './roomActions';
+import { resolveRoomExpansionLabel, type RoomItem, type ActiveMatchInfo } from './roomActions';
 
 interface RoomListProps {
     roomItems: RoomItem[];
@@ -30,31 +30,6 @@ export const RoomList = ({
     onSpectate,
 }: RoomListProps) => {
     const { t } = useTranslation(gameTranslationNamespace ? ['lobby', gameTranslationNamespace] : ['lobby']);
-    const resolveExpansionLabel = (gameName: string | undefined, expansionId: string) => {
-        const normalizedGameName = gameName?.trim().toLowerCase();
-        if (normalizedGameName !== 'smashup') {
-            return expansionId;
-        }
-        if (expansionId === 'titans') {
-            return t('setup.expansions.titans', {
-                ns: 'game-smashup',
-                defaultValue: expansionId,
-            });
-        }
-        if (expansionId === 'diy') {
-            return t('setup.expansions.diy', {
-                ns: 'game-smashup',
-                defaultValue: expansionId,
-            });
-        }
-        if (expansionId === 'deckQuery') {
-            return t('setup.deckQuery.label', {
-                ns: 'game-smashup',
-                defaultValue: expansionId,
-            });
-        }
-        return expansionId;
-    };
 
     return (
         <>
@@ -179,7 +154,7 @@ export const RoomList = ({
                                                         {t('rooms.enabledExpansions')}
                                                     </span>
                                                     {room.publicSetupSummary.enabledExpansions.map((expansionId) => {
-                                                        const label = resolveExpansionLabel(room.gameName, expansionId);
+                                                        const label = resolveRoomExpansionLabel(t, room.gameName, expansionId);
                                                         return (
                                                             <span
                                                                 key={expansionId}

@@ -12,6 +12,14 @@ describe('SmashUp 房间设置解析', () => {
         expect(readSmashUpEnabledExpansions()).toEqual(['titans', 'diy']);
     });
 
+    it('扩展读取会按固定顺序归一化，保持 DIY 在最后', () => {
+        expect(readSmashUpEnabledExpansions({
+            setupSelections: {
+                expansions: ['diy', 'titans', 'deckQuery'],
+            },
+        })).toEqual(['titans', 'diy']);
+    });
+
     it('优先读取 setupSelections 中的扩展配置', () => {
         expect(readSmashUpEnabledExpansions({
             setupSelections: {
@@ -48,10 +56,10 @@ describe('SmashUp 房间设置解析', () => {
             password: '1234',
             ownerKey: 'guest:owner',
             setupSelections: {
-                expansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
+                expansions: ['diy', 'titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
             },
         })).toEqual({
-            enabledExpansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
+            enabledExpansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE, 'diy'],
         });
     });
 });

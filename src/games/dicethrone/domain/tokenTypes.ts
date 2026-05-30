@@ -151,6 +151,8 @@ export interface ChoiceOption {
 export interface RollDieConditionalEffect {
     face: string;
     bonusDamage?: number;
+    /** 直接造成一段不可防御伤害，不并入后续普通伤害动作 */
+    unblockableDamage?: number;
     heal?: number;
     cp?: number;
     /** 抽牌数量 */

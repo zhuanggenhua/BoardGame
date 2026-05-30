@@ -560,6 +560,11 @@ function resolvePostAttackFollowUp(
         return { events, overrideNextPhase: 'offensiveRoll' };
     }
 
+    const existingExtraAttack = events.find(e => e.type === 'EXTRA_ATTACK_TRIGGERED');
+    if (existingExtraAttack) {
+        return { events, overrideNextPhase: 'offensiveRoll' };
+    }
+
     const afterAttackWindow = checkAfterAttackResponseWindow(core, events, commandType, timestamp, phase);
     if (afterAttackWindow) {
         events.push(afterAttackWindow);
@@ -769,6 +774,34 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         timestamp: timestamp + 0.001,
                     } as DamageDealtEvent);
                 }
+            }
+
+            const bindStacks = activePlayer?.statusEffects[STATUS_IDS.BIND] ?? 0;
+            if (bindStacks > 0) {
+                events.push({
+                    type: 'STATUS_REMOVED',
+                    payload: {
+                        targetId: core.activePlayerId,
+                        statusId: STATUS_IDS.BIND,
+                        stacks: bindStacks,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as StatusRemovedEvent);
+            }
+
+            const parleyStacks = activePlayer?.statusEffects[STATUS_IDS.PARLEY] ?? 0;
+            if (parleyStacks > 0) {
+                events.push({
+                    type: 'STATUS_REMOVED',
+                    payload: {
+                        targetId: core.activePlayerId,
+                        statusId: STATUS_IDS.PARLEY,
+                        stacks: parleyStacks,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as StatusRemovedEvent);
             }
 
             if (core.pendingAttack) {
@@ -1638,6 +1671,20 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     const damageEvents = damageCalc.toEvents();
                     events.push(...damageEvents);
                     // 持续效果：毒液层数不自动减少，只能通过净化等手段移除
+                }
+
+                // 3. 诅咒金币 (cursed_coin) — 每层在维持阶段造成 1 点伤害，不自动移除层数
+                const cursedCoinStacks = player.statusEffects[STATUS_IDS.CURSED_COIN] ?? 0;
+                if (cursedCoinStacks > 0) {
+                    const damageCalc = createDamageCalculation({
+                        source: { playerId: 'system', abilityId: 'upkeep-cursed-coin' },
+                        target: { playerId: activeId },
+                        baseDamage: cursedCoinStacks,
+                        damageScope: 'direct',
+                        state: phaseEnterCore,
+                        timestamp,
+                    });
+                    events.push(...damageCalc.toEvents());
                 }
             }
         }

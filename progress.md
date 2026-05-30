@@ -6376,3 +6376,74 @@
     - 第二层 0 勾选展示牌。
   - 当前对象级真相已经显式承认：双人联机下两层 prompt 都只归行动玩家页面，Guest 页既不会拿到第一层玩家选择 prompt，也不会拿到第二层 `top/bottom` prompt；Host 在第二层只选 Guest 顶牌后，只会改 Guest 牌库而不会误改 Host 牌库。
   - 后续队列不应再把 `Operative` 误记成“当前只有单页主链与空选端点已回根状态，多客户端页归属仍只在 evidence 里”；当前根状态已明确承认这条 2P owner-only 双层 prompt 主链。
+# Progress: DiceThrone 战术家与咒缚海盗新增英雄接入（2026-05-30）
+
+## 2026-05-30 16:48:43
+
+- 接管 active goal：新增 DiceThrone 战术家与咒缚海盗，遇到需人工裁定项立即停止 goal。
+- 已读取根 `AGENTS.md`、项目 `add-new-faction` skill、DiceThrone hero intake workflow、数据录入与资源链关键规则。
+- 已核对 `git status --short`：工作区存在大量非本轮改动，后续只做定向改动，不回滚不整理。
+- 已检查现有计划文件：未找到本批次关键词；已在 `task_plan.md` 顶部建立本轮正式计划入口，并保留旧计划为历史。
+- 已读取 DiceThrone 现有英雄模板与注册点：`treant`/`ninja` 新规格、`domain/characters.ts`、`domain/ids.ts`、`domain/index.ts`、`ui/cardAtlas.ts`、`criticalImageResolver.ts`、`ui/assets.ts`。
+
+## 2026-05-30 17:20
+
+- 为战术家与咒缚海盗生成英文运行时源文件与压缩资源：`player-board`、`tip`、`ability-cards`、`dice`、`status-icons-atlas`。
+- 新增 `ability-cards-zhanshujia.atlas.json`、`ability-cards-cursed_pirate.atlas.json`，复用树精/忍者 1910x4348 -> 900x2048 的 5x8 物理卡网格合同。
+- 新增英雄目录 `src/games/dicethrone/heroes/zhanshujia/` 与 `src/games/dicethrone/heroes/cursed_pirate/`，接入骰面、Token/状态、面板能力、通用牌、注册表、关键图片 resolver、卡图 atlas。
+- 新增规则核对文档 6 份，明确英雄专属手牌、复杂状态机制、防御精确结算、E2E、上传仍未收口。
+- 新增静态 intake 测试 `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts`，5 tests passed。
+- 验证结果：JSON parse OK；定向 ESLint 0 errors（`characters.ts` 既有 2 warnings）；`i18n:check` 无 missing key，仅 3 条既有 warning；`npx tsc --noEmit --pretty false` OK；DiceThrone manifest validate OK。
+- 误触记录：`npm run assets:validate -- --root ...` 走到全量/错误参数入口，命中无关 SmashUp `pretty_pretty.webp` hash/bytes 不一致；随后用 `node scripts/assets/generate_asset_manifests.js --validate --root public/assets/i18n/zh-CN --id dicethrone` 定向验证通过。
+
+## 2026-05-30 17:48
+
+- 机制实现继续推进到 L2：
+  - 战术优势 6 个主动动作已接入：1 个得 1CP、1 个重掷 1 骰、3 个抽 1、3 个施加锁定、4 个获得守护、4 个打开转移状态交互。
+  - 紧缚已接入进攻掷骰阶段额外投掷每次消耗 1CP；CP 不足时验证失败且不投骰；进攻掷骰阶段退出时移除。
+  - 诅咒金币已接入咒缚海盗本人上限 5 / 其他角色上限 3、不可移除/不可转移、维持阶段每层 1 伤害。
+  - 凋零已接入伤害来源侧 `onDamageDealt` 修正，只减少持有者对对手造成的攻击伤害，不影响直接伤害。
+  - 休战已接入攻击伤害阻止与进攻掷骰阶段退出清理；直接伤害不受休战阻止。
+- 新增机制测试 `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`，覆盖上述机制和战术优势复用锁定/守护/转移入口。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 12 tests passed。
+  - `node -e "JSON.parse(...zh-CN...); JSON.parse(...en...)"`：OK。
+  - `npx eslint <本轮 DiceThrone TS 文件>`：0 errors，38 warnings（既有 `any` / unused warning）。
+  - `npm run i18n:check`：通过，仍有 3 条既有 warning（`GameDetails.tsx`、`titans.ts`、`HomeV2.tsx`）。
+- 未收口范围不变：火药桶投骰/爆炸/转交/重叠爆炸、两个英雄防御精确 resolver、英雄专属手牌逐卡录入、审计 evidence、真实入口 E2E、资源上传与远端 HEAD 回查。
+
+## 2026-05-30 18:00
+
+- 继续推进无需人工裁定的面板机制：
+  - 战术家制胜高地已接入“战术优势上限提升 1，并获得至新上限”，通过 `zhanshujia-high-ground-cap-up-and-fill` 生成 `TOKEN_LIMIT_CHANGED` 与 `TOKEN_GRANTED`。
+  - 咒缚海盗死亡印记已接入结算前获得 2CP；弯刀不可防御伤害分支仍未收口。
+  - 咒缚海盗亡灵之爪已接入所有对手按诅咒金币层数受到直接伤害。
+- 火药桶继续保持未实现：当前文档只证明维持阶段投骰、1-2 爆炸、6 转交、重叠立即爆炸，但缺少爆炸伤害数值和转交选择细节，不能猜。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 9 tests passed。
+
+## 2026-05-30 18:05
+
+- 继续补咒缚海盗 L2 机制：
+  - 灵魂突刺的三个分支已在 postDamage 检查当前进攻骰最大重复值，若存在 3 个相同骰值则施加火药桶。
+  - 深海潜行已接入偷取 1CP：对手 CP > 0 时扣 1，自己获得 1（自己 CP 仍受上限约束），并保留既有凋零/8 伤害。
+- 仍未收口：
+  - 火药桶重叠立即爆炸仍未实现，因为爆炸伤害数值和转交选择细节仍无足够证据。
+  - 深海潜行的“对手弃 1”仍未实现，需要补交互链。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 10 tests passed。
+
+## 2026-05-30 18:15
+
+- 继续推进无需猜图面数值的 L2 机制：
+  - 死亡印记弯刀奖励骰分支已从普通 `bonusDamage` 改为独立 `unblockableDamage`，每个弯刀面造成 2 点不可防御攻击伤害。
+  - 战争贩子已在攻击收口后通过 `EXTRA_ATTACK_TRIGGERED` 进入额外进攻投掷阶段，复用既有额外攻击阶段流转。
+  - `flowHooks` 已能识别非晕眩来源产生的额外进攻事件并把下一阶段改回 `offensiveRoll`。
+- 仍未收口：
+  - 深海潜行“对手弃 1”需要新增或复用手牌选择交互；现有 DiceThrone `dt:card-interaction` 仅支持骰子/玩家/状态选择，不直接支持从手牌选牌弃置，本轮未硬猜成随机弃牌。
+  - 火药桶完整机制、防御 resolver、专属手牌、审计、E2E、上传仍未完成。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 11 tests passed。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 16 tests passed。
+  - `npx eslint src/games/dicethrone/domain/tokenTypes.ts src/games/dicethrone/domain/effects.ts src/games/dicethrone/domain/customActions/zhanshujia.ts src/games/dicethrone/heroes/zhanshujia/abilities.ts src/games/dicethrone/heroes/cursed_pirate/abilities.ts src/games/dicethrone/domain/flowHooks.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors，`flowHooks.ts` 保留既有 warnings。
+  - `npx tsc --noEmit --pretty false`：通过。

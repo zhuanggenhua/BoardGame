@@ -31,6 +31,8 @@ import { gunslingerDiceDefinition } from '../heroes/gunslinger/diceConfig';
 import { samuraiDiceDefinition } from '../heroes/samurai/diceConfig';
 import { treantDiceDefinition } from '../heroes/treant/diceConfig';
 import { ninjaDiceDefinition } from '../heroes/ninja/diceConfig';
+import { zhanshujiaDiceDefinition } from '../heroes/zhanshujia/diceConfig';
+import { cursedPirateDiceDefinition } from '../heroes/cursed_pirate/diceConfig';
 
 // 注册 DiceThrone 游戏特定条件（骰子组合、顺子等）
 registerDiceThroneConditions();
@@ -46,6 +48,8 @@ registerDiceDefinition(gunslingerDiceDefinition);
 registerDiceDefinition(samuraiDiceDefinition);
 registerDiceDefinition(treantDiceDefinition);
 registerDiceDefinition(ninjaDiceDefinition);
+registerDiceDefinition(zhanshujiaDiceDefinition);
+registerDiceDefinition(cursedPirateDiceDefinition);
 monkResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 barbarianResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 pyromancerResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));

@@ -58,7 +58,7 @@ describe('RoomList 扩展摘要', () => {
                     isHost: false,
                     gameKey: 'smashup',
                     publicSetupSummary: {
-                        enabledExpansions: ['titans', 'diy', 'deckQuery'],
+                        enabledExpansions: ['titans', 'deckQuery', 'diy'],
                     },
                 },
             ],

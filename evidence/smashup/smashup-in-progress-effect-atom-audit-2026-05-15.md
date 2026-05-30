@@ -16986,18 +16986,16 @@
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "onActionPlayed trigger 仍应把 Fort Titanosaurus|onActionPlayed trigger 仍应把 Gorgodzolla|onActionPlayed trigger 仍应保留 Woodland Helpers|onActionPlayed trigger 仍应保留 Odysseus|onActionPlayed trigger 仍应保留 Heracles|onActionPlayed trigger 仍应保留 Spartan|onActionPlayed trigger 仍应保留 Jason"` -> `1 file passed, 7 passed`
   - `PW_WORKERS=1 ... npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Time Walk-真实入口会抽两张、把本牌沉到底并授予本回合额外随从与额外行动额度"` -> `1 passed`
   - `PW_WORKERS=1 ... npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Secret Agent-真实入口会让行动玩家自己选择弃掉剩余手牌"` -> `1 passed`
-  - `yuanhouFactionAbilities.test.ts` 当前整文件复跑状态：红灯已从 `8` 降到 `6`
+  - 2026-05-30 在 `main` 上复核：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 256 passed`
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `1 file passed, 149 passed`
+    - `PW_WORKERS=1 ... npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "时间旅行者-Time Walk-真实入口会抽两张、把本牌沉到底并授予本回合额外随从与额外行动额度"` -> `1 passed`
+    - `PW_WORKERS=1 ... npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "超级间谍-Secret Agent-真实入口会让行动玩家自己选择弃掉剩余手牌"` -> `1 passed`
+    - 中途曾出现一次 `Secret Agent + Time Walk` 合跑时的 Vite `optimized dependencies changed. reloading` 运行环境抖动；随后 `Secret Agent` 单跑转绿，故不将该次失败记为玩法红灯。
 - 当前残余：
-  - `变形者：细胞结合复制未显式适配的 Stasis Field 时不应隐式代理基地压制或回合开始自毁`
-  - `变形者基地：生体培养缸在 Me First 随从响应窗口也禁止同名随从打到这里`
-  - `超级间谍：鼹鼠在真实计分窗口应把同基地的 Going Bananas 暴露为额外行动并继续基地目标链`
-  - `超级间谍：鼹鼠在真实计分窗口放弃额外行动后必须正常收口，且 Primate Park 只会正常清场不会把随从回手`
-  - `时间旅行者：虫洞后全员让过会消费未选择的传送门室触发并收口`
-  - `时间旅行者：虫洞空选时应让所有己方随从按正常计分清场进入弃牌堆`
+  - 无。2026-05-25 此处记录的 6 条旧红灯（`Stasis Field` copied seam、`生体培养缸` Me First 限制、`鼹鼠 + Going Bananas` 两条真实计分链、`虫洞` 两条真实计分链）已在 `main` 上随整文件复跑转绿。
 - 未覆盖风险：
-  - 当前只能证明 `Secret Agent` 的共享真链修复、focused 行为测试与当前玩家视角下的浏览器 scoped L3 已闭合；不外推整个 Super Spies、所有 `onActionPlayed` consumer 或多人非当前视角页都已收口。
-  - `Time Walk` 当前 scoped L3 只覆盖当前玩家单页真实入口，不外推其它 grant-extra-play caller、其它 draw-two/self-bottom caller，或整个 Time Travelers 已完成。
-  - `yuanhouFactionAbilities.test.ts` 仍剩 6 条红灯，不能把本轮进展误写成总任务完成。
+  - 本节只说明“猿猴四派系这条旧收口线”在 `main` 上已闭合；不外推整个 SmashUp 全量审计、其它未纳入本节的 shared seam，或仓库中无关的其它任务也已完成。
 
 ## 2026-05-25 `borrowed world_champs_bewitched` 宿主回手 true-owner provenance seam 收口
 

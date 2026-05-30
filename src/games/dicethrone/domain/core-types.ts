@@ -61,7 +61,13 @@ export type DieFace =
     | 'spirit'
     | 'ninja_katana'
     | 'shuriken'
-    | 'mask';
+    | 'mask'
+    | 'sabre'
+    | 'banner'
+    | 'medal'
+    | 'cutlass'
+    | 'loot'
+    | 'skull';
 
 // ============================================================================
 // 角色编目
@@ -78,6 +84,8 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'samurai',
     'treant',
     'ninja',
+    'zhanshujia',
+    'cursed_pirate',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -90,6 +98,13 @@ export interface CharacterDefinition {
     badges?: CharacterBadgeDef[];
 }
 
+const IMPLEMENTATION_IN_PROGRESS_BADGE: CharacterBadgeDef = {
+    id: 'implementation_in_progress',
+    labelKey: 'common:status_tags.under_construction',
+    tone: 'warning',
+    variant: 'disabled-overlay',
+};
+
 export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'monk', nameKey: 'characters.monk' },
     { id: 'barbarian', nameKey: 'characters.barbarian' },
@@ -101,6 +116,8 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'samurai', nameKey: 'characters.samurai' },
     { id: 'treant', nameKey: 'characters.treant' },
     { id: 'ninja', nameKey: 'characters.ninja' },
+    { id: 'zhanshujia', nameKey: 'characters.zhanshujia', badges: [IMPLEMENTATION_IN_PROGRESS_BADGE] },
+    { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate', badges: [IMPLEMENTATION_IN_PROGRESS_BADGE] },
 ];
 
 /**
