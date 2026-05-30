@@ -269,7 +269,8 @@ export type CardInteractionType =
     | 'modifyDie'
     | 'selectPlayer'
     | 'selectStatus'
-    | 'selectTargetStatus';
+    | 'selectTargetStatus'
+    | 'selectHandCard';
 
 /** 待处理的卡牌交互 */
 export interface InteractionDescriptor {

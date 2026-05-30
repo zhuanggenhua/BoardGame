@@ -36,6 +36,8 @@ export interface LocalInteractionState {
     selectedStatus?: { playerId: string; statusId: string };
     /** 已选择的玩家 ID 列表 */
     selectedPlayers: string[];
+    /** 已选择的手牌 ID 列表 */
+    selectedCardIds: string[];
 }
 
 /**
@@ -50,6 +52,8 @@ export interface InteractionHandlers {
     selectStatus: (playerId: string, statusId: string) => void;
     /** 选择玩家 */
     selectPlayer: (playerId: string) => void;
+    /** 选择手牌 */
+    selectHandCard: (cardId: string) => void;
     /** 重置状态 */
     reset: () => void;
 }
@@ -63,6 +67,7 @@ const INITIAL_STATE: LocalInteractionState = {
     totalAdjustment: 0,
     selectedStatus: undefined,
     selectedPlayers: [],
+    selectedCardIds: [],
 };
 
 function buildInteractionResetSignature(pendingInteraction?: InteractionDescriptor): string {
@@ -90,6 +95,7 @@ function buildInteractionResetSignature(pendingInteraction?: InteractionDescript
         allowedDieIds: pendingInteraction.allowedDieIds,
         completedDieIds: pendingInteraction.completedDieIds,
         requiresTargetWithStatus: pendingInteraction.requiresTargetWithStatus,
+        selectedCardIds: pendingInteraction.selectedCardIds,
     });
 }
 
@@ -210,6 +216,21 @@ export function useInteractionState(pendingInteraction?: InteractionDescriptor) 
     }, [pendingInteraction?.selectCount]);
 
     /**
+     * 选择手牌（用于由持有者自行弃牌的交互）
+     */
+    const selectHandCard = useCallback((cardId: string) => {
+        const maxSelectCount = pendingInteraction?.selectCount ?? 1;
+        setLocalState(prev => ({
+            ...prev,
+            selectedCardIds: prev.selectedCardIds.includes(cardId)
+                ? prev.selectedCardIds.filter(id => id !== cardId)
+                : (prev.selectedCardIds.length < maxSelectCount
+                    ? [...prev.selectedCardIds, cardId]
+                    : prev.selectedCardIds),
+        }));
+    }, [pendingInteraction?.selectCount]);
+
+    /**
      * 手动重置状态
      */
     const reset = useCallback(() => {
@@ -223,6 +244,7 @@ export function useInteractionState(pendingInteraction?: InteractionDescriptor) 
             modifyDie,
             selectStatus,
             selectPlayer,
+            selectHandCard,
             reset
         }
     };

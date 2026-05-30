@@ -549,7 +549,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     // 状态选择类交互 → 保持 dt:card-interaction
                     const isStatusType = pendingInteraction.type === 'selectStatus'
                         || pendingInteraction.type === 'selectPlayer'
-                        || pendingInteraction.type === 'selectTargetStatus';
+                        || pendingInteraction.type === 'selectTargetStatus'
+                        || pendingInteraction.type === 'selectHandCard';
 
                     if (isStatusType) {
                         const targetPlayerIds = pendingInteraction.targetPlayerIds || Object.keys(newState.core.players);
@@ -592,13 +593,15 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 // 注意：REMOVE_STATUS 移除所有状态时会生成多个 STATUS_REMOVED 事件，
                 // 使用 statusInteractionCompleted 标记防止重复 resolve
                 if (!statusInteractionCompleted && (dtEvent.type === 'STATUS_REMOVED' || dtEvent.type === 'TOKEN_CONSUMED'
-                    || dtEvent.type === 'STATUS_APPLIED' || dtEvent.type === 'TOKEN_GRANTED')) {
+                    || dtEvent.type === 'STATUS_APPLIED' || dtEvent.type === 'TOKEN_GRANTED'
+                    || dtEvent.type === 'CARD_DISCARDED')) {
                     const current = newState.sys.interaction.current;
                     if (current?.kind === 'dt:card-interaction') {
                         const interactionData = current.data as DtInteractionDescriptor;
                         const isStatusType = interactionData.type === 'selectStatus'
                             || interactionData.type === 'selectPlayer'
-                            || interactionData.type === 'selectTargetStatus';
+                            || interactionData.type === 'selectTargetStatus'
+                            || interactionData.type === 'selectHandCard';
                         if (isStatusType) {
                             statusInteractionCompleted = true;
                             // 状态交互完成：直接 resolve，不生成事件

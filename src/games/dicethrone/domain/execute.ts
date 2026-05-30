@@ -841,6 +841,40 @@ export function execute(
             }
 
             const interaction = currentInteraction.data as PendingInteraction;
+            if (interaction.type === 'selectHandCard') {
+                const { selectedCardIds = [] } = command.payload as { selectedCardIds?: string[] };
+                const player = state.players[interaction.playerId];
+                if (!player) break;
+
+                const handCardIds = new Set(player.hand.map(card => card.id));
+                const resolvedCardIds = Array.from(new Set(selectedCardIds.filter(cardId => handCardIds.has(cardId))))
+                    .slice(0, interaction.selectCount ?? 1);
+                for (const [cardIndex, cardId] of resolvedCardIds.entries()) {
+                    events.push({
+                        type: 'CARD_DISCARDED',
+                        payload: {
+                            playerId: interaction.playerId,
+                            cardId,
+                        },
+                        sourceCommandType: command.type,
+                        timestamp: timestamp + cardIndex,
+                    } as DiceThroneEvent);
+                }
+
+                if (resolvedCardIds.length > 0) {
+                    events.push({
+                        type: 'INTERACTION_COMPLETED',
+                        payload: {
+                            interactionId: currentInteraction.id,
+                            sourceCardId: interaction.sourceCardId ?? '',
+                        },
+                        sourceCommandType: command.type,
+                        timestamp: timestamp + resolvedCardIds.length + 1,
+                    } as DiceThroneEvent);
+                }
+                break;
+            }
+
             if (interaction.type !== 'selectPlayer') {
                 break;
             }

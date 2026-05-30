@@ -1172,6 +1172,26 @@ const buildInteractionActions = (
                 : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
         }
 
+        if (data.type === 'selectHandCard') {
+            const player = state.core.players[playerId];
+            const selectedCardId = player?.hand[0]?.id;
+            return selectedCardId
+                ? [{
+                    actionId: createAiLegalActionId('interaction', current.id, 'select-hand-card', selectedCardId),
+                    kind: 'interaction-choice',
+                    label: `弃置手牌 ${selectedCardId}`,
+                    commands: [{
+                        type: 'RESOLVE_INTERACTION',
+                        payload: { selectedCardIds: [selectedCardId] },
+                    }],
+                    metadata: {
+                        interactionId: current.id,
+                        selectedCardIds: [selectedCardId],
+                    },
+                }]
+                : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
+        }
+
         if (data.type === 'selectStatus') {
             const targetPlayerIds = (data.targetPlayerIds ?? Object.keys(state.core.players) as PlayerId[])
                 .filter((targetId) => !!state.core.players[targetId]);

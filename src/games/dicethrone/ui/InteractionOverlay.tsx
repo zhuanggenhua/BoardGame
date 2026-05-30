@@ -103,6 +103,8 @@ export interface InteractionOverlayProps {
     onSelectStatus: (playerId: PlayerId, statusId: string) => void;
     /** 选择玩家回调 */
     onSelectPlayer: (playerId: PlayerId) => void;
+    /** 选择手牌回调 */
+    onSelectHandCard: (cardId: string) => void;
     /** 确认交互 */
     onConfirm: () => void;
     /** 取消交互 */
@@ -123,6 +125,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     teamIdByPlayerId,
     onSelectStatus,
     onSelectPlayer,
+    onSelectHandCard,
     onConfirm,
     onCancel,
     statusIconAtlas,
@@ -146,6 +149,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const isStatusSelection = interactionType === 'selectStatus' || interactionType === 'selectTargetStatus';
     // 玩家选择模式（选择目标玩家：授予 token / 移除所有状态等）
     const isPlayerSelection = interactionType === 'selectPlayer';
+    // 手牌选择模式（由手牌持有者自行选择）
+    const isHandCardSelection = interactionType === 'selectHandCard';
     // 转移模式的第二阶段：选择目标玩家
     const isTransferTargetSelection = interactionType === 'selectTargetStatus' && interaction.transferConfig?.statusId;
     const shouldRenderStatusOwners = isStatusSelection && !isTransferTargetSelection;
@@ -227,6 +232,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
 
     const canConfirm = selectedItems.length >= interaction.selectCount
         || (isPlayerSelection && selectedItems.length > 0)
+        || (isHandCardSelection && selectedItems.length > 0)
         || (isTransferTargetSelection && selectedItems.length > 0);
 
     // Derived presence
@@ -445,6 +451,39 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                         </div>
                                     )}
                                 </PlayerCardShell>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* 手牌选择区域 */}
+                {isHandCardSelection && (
+                    <div className="flex flex-wrap gap-3 justify-center">
+                        {(players[interaction.playerId]?.hand ?? []).map(card => {
+                            const cardName = card.i18n?.[locale ?? 'zh-CN']?.name
+                                ?? card.i18n?.['zh-CN']?.name
+                                ?? card.name
+                                ?? card.id;
+                            const isSelected = selectedItems.includes(card.id);
+                            return (
+                                <button
+                                    key={card.id}
+                                    type="button"
+                                    data-testid={`dt-hand-card-option-${card.id}`}
+                                    data-selected={isSelected ? 'true' : 'false'}
+                                    onClick={() => onSelectHandCard(card.id)}
+                                    className={`
+                                        min-w-[180px] rounded-xl border-2 p-4 text-left transition-all duration-200
+                                        ${isSelected
+                                            ? 'border-amber-400 bg-amber-950/30 ring-2 ring-amber-300/80'
+                                            : 'border-slate-600 bg-slate-800/70 hover:border-amber-300 hover:bg-slate-700'}
+                                    `}
+                                >
+                                    <div className="text-sm font-bold text-slate-100">{cardName}</div>
+                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                                        {card.type} · {card.cpCost} CP
+                                    </div>
+                                </button>
                             );
                         })}
                     </div>

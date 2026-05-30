@@ -1,4 +1,4 @@
-import type { CpChangedEvent, DamageDealtEvent, DiceThroneEvent, StatusAppliedEvent } from '../types';
+import type { CpChangedEvent, DamageDealtEvent, DiceThroneEvent, InteractionRequestedEvent, PendingInteraction, StatusAppliedEvent } from '../types';
 import { registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { STATUS_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
@@ -107,6 +107,34 @@ function damageByCursedCoins({
     });
 }
 
+function requestOpponentDiscardOneCard({
+    targetId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    const target = state.players[targetId];
+    if (!target || target.hand.length === 0) return [];
+
+    const interaction: PendingInteraction = {
+        id: `${sourceAbilityId}-discard-${targetId}-${timestamp}`,
+        playerId: targetId,
+        sourceCardId: sourceAbilityId,
+        type: 'selectHandCard',
+        titleKey: 'interaction.selectHandCardToDiscard',
+        selectCount: 1,
+        selected: [],
+        targetPlayerIds: [targetId],
+    };
+
+    return [{
+        type: 'INTERACTION_REQUESTED',
+        payload: { interaction },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as InteractionRequestedEvent];
+}
+
 export function registerCursedPirateCustomActions(): void {
     registerCustomActionHandler('cursed-pirate-steal-one-cp', stealOneCp, {
         categories: ['resource'],
@@ -116,5 +144,9 @@ export function registerCursedPirateCustomActions(): void {
     });
     registerCustomActionHandler('cursed-pirate-damage-by-cursed-coins', damageByCursedCoins, {
         categories: ['damage'],
+    });
+    registerCustomActionHandler('cursed-pirate-request-opponent-discard-one-card', requestOpponentDiscardOneCard, {
+        categories: ['card', 'choice'],
+        requiresInteraction: true,
     });
 }

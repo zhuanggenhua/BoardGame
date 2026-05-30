@@ -1051,8 +1051,8 @@ const validateTransferStatus = (
 };
 
 const validateResolveInteraction = (
-    _state: DiceThroneCore,
-    _cmd: ResolveInteractionCommand,
+    state: DiceThroneCore,
+    cmd: ResolveInteractionCommand,
     playerId: PlayerId,
     pendingInteraction?: InteractionDescriptor,
 ): ValidationResult => {
@@ -1061,6 +1061,24 @@ const validateResolveInteraction = (
     }
     if (pendingInteraction.playerId !== playerId) {
         return fail('player_mismatch');
+    }
+    if (pendingInteraction.type === 'selectPlayer') {
+        return ok();
+    }
+    if (pendingInteraction.type === 'selectHandCard') {
+        const player = state.players[playerId];
+        if (!player) {
+            return fail('player_not_found');
+        }
+        const selectedCardIds = cmd.payload.selectedCardIds ?? [];
+        if (selectedCardIds.length < (pendingInteraction.selectCount ?? 1)) {
+            return fail('not_enough_cards_selected');
+        }
+        const handCardIds = new Set(player.hand.map(card => card.id));
+        if (selectedCardIds.some(cardId => !handCardIds.has(cardId))) {
+            return fail('card_not_in_hand');
+        }
+        return ok();
     }
     if (pendingInteraction.type !== 'selectPlayer') {
         return fail('invalid_interaction_type');

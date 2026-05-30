@@ -203,6 +203,7 @@ export interface ConfirmInteractionCommand extends Command<'CONFIRM_INTERACTION'
 export interface ResolveInteractionCommand extends Command<'RESOLVE_INTERACTION'> {
     payload: {
         selectedPlayerIds?: PlayerId[];
+        selectedCardIds?: string[];
     };
 }
 

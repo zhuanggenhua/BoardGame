@@ -101,8 +101,9 @@ const DEEP_SEA_DIVE: AbilityDef = {
     trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 1, [FACE.LOOT]: 2, [FACE.SKULL]: 1 } },
     effects: [
         custom('cursed-pirate-steal-one-cp', '偷取 1CP。', { target: 'opponent' }),
+        custom('cursed-pirate-request-opponent-discard-one-card', '对手选择并弃 1 张手牌。', { target: 'opponent' }),
         grantStatus(STATUS_IDS.WITHER, '对手获得凋零。'),
-        damage(8, '造成 8 点伤害。对手弃牌交互待机制收口。'),
+        damage(8, '造成 8 点伤害。'),
     ],
 };
 

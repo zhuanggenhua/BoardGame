@@ -1042,11 +1042,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||
         pendingInteraction.type === 'selectPlayer' ||
-        pendingInteraction.type === 'selectTargetStatus'
+        pendingInteraction.type === 'selectTargetStatus' ||
+        pendingInteraction.type === 'selectHandCard'
     );
 
     const handleSelectStatus = interactionHandlers.selectStatus;
     const handleSelectPlayer = interactionHandlers.selectPlayer;
+    const handleSelectHandCard = interactionHandlers.selectHandCard;
 
     const statusInteraction = React.useMemo(() => {
         if (!pendingInteraction || !isStatusInteraction) return pendingInteraction;
@@ -1070,6 +1072,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     ? localInteraction.selectedPlayers
                     : (interaction.selected ?? []);
             }
+            if (interaction.type === 'selectHandCard') {
+                return localInteraction.selectedCardIds.length > 0
+                    ? localInteraction.selectedCardIds
+                    : (interaction.selected ?? []);
+            }
             if (interaction.type === 'selectTargetStatus' && interaction.transferConfig?.statusId) {
                 return localInteraction.selectedPlayers.length > 0
                     ? localInteraction.selectedPlayers
@@ -1091,6 +1098,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         pendingInteraction,
         isStatusInteraction,
         localInteraction.selectedPlayers,
+        localInteraction.selectedCardIds,
         localInteraction.selectedStatus,
     ]);
 
@@ -1111,6 +1119,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             if (localInteraction.selectedPlayers.length > 0) {
                 engineMoves.resolveInteraction(localInteraction.selectedPlayers);
             }
+        } else if (activeInteraction.type === 'selectHandCard') {
+            if (localInteraction.selectedCardIds.length > 0) {
+                engineMoves.resolveInteraction([], localInteraction.selectedCardIds);
+            }
         } else if (activeInteraction.type === 'selectTargetStatus') {
             // 转移状态
             const transferConfig = activeInteraction.transferConfig;
@@ -1129,6 +1141,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }, [
         engineMoves,
         localInteraction.selectedPlayers,
+        localInteraction.selectedCardIds,
         localInteraction.selectedStatus,
         pendingInteraction,
         statusInteraction,
@@ -1187,6 +1200,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 teamIdByPlayerId={G.teamIdByPlayerId}
                 onSelectStatus={handleSelectStatus}
                 onSelectPlayer={handleSelectPlayer}
+                onSelectHandCard={handleSelectHandCard}
                 onConfirm={handleStatusInteractionConfirm}
                 onCancel={handleCancelInteraction}
                 statusIconAtlas={statusIconAtlas}
@@ -1201,6 +1215,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         handleCancelInteraction,
         handleStatusInteractionConfirm,
         handleSelectPlayer,
+        handleSelectHandCard,
         handleSelectStatus,
         locale,
         playerNames,
@@ -1403,7 +1418,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
 
     useSyncedModalStackEntry({
-        enabled: Boolean(isStatusInteraction && statusInteraction),
+        enabled: Boolean(isStatusInteraction && statusInteraction && (
+            statusInteraction?.type !== 'selectHandCard' || isInteractionOwner
+        )),
         entryId: 'dicethrone_status_interaction',
         entry: statusInteractionModalEntry,
     });
