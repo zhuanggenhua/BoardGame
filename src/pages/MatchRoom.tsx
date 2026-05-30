@@ -2474,7 +2474,6 @@ const OnlineGameHudBridge = ({
     isLoading?: boolean;
     seatControllers: Record<string, AiSeatController>;
 }) => {
-    const { t: tGame } = useTranslation('game');
     const { state, dispatch, matchPlayers, isConnected } = useGameClient();
     const hudPresence = useMemo(() => resolveOnlineHudPresence({
         fallbackPlayers,
