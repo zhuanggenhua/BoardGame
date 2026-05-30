@@ -437,7 +437,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(extraAttack?.payload.sourceStatusId).toBe('war-monger');
     });
 
-    it('灵魂突刺在 3 个相同骰值时施加火药桶，深海潜行偷取 1CP 并施加凋零', () => {
+    it('灵魂突刺在 3 个相同骰值时施加火药桶，深海潜行偷取 1CP 并让对手自选弃牌', () => {
         const soulStab = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         soulStab.core.rollDiceCount = 5;
         soulStab.core.dice = soulStab.core.dice.map((die, index) => ({
@@ -462,6 +462,8 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const dive = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         dive.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
         dive.core.players['1'].resources[RESOURCE_IDS.CP] = 3;
+        const discardedCardId = dive.core.players['1'].hand[0]?.id;
+        expect(discardedCardId).toBeDefined();
         events = resolveEffectsToEvents(
             getAbilityEffects(dive.core, '0', 'deep-sea-dive'),
             'preDefense',
@@ -480,5 +482,35 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(2);
         expect(next.players['1'].resources[RESOURCE_IDS.CP]).toBe(2);
         expect(next.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+
+        const discardInteraction = eventsOfType(events, 'INTERACTION_REQUESTED')[0]?.payload.interaction;
+        expect(discardInteraction?.type).toBe('selectHandCard');
+        expect(discardInteraction?.playerId).toBe('1');
+        expect(discardInteraction?.targetPlayerIds).toEqual(['1']);
+
+        const resolveEvents = execute({
+            ...dive,
+            sys: {
+                ...dive.sys,
+                interaction: {
+                    current: {
+                        id: `dt-interaction-${discardInteraction!.id}`,
+                        kind: 'dt:card-interaction',
+                        playerId: '1',
+                        data: {
+                            ...discardInteraction,
+                            sourceId: discardInteraction!.sourceCardId,
+                        },
+                    },
+                    queue: [],
+                },
+            },
+        } as any, command('RESOLVE_INTERACTION', '1', {
+            selectedCardIds: [discardedCardId],
+        }), fixedRandom);
+        const afterDiscard = applyEvents(dive.core, resolveEvents);
+        expect(afterDiscard.players['1'].hand.some(card => card.id === discardedCardId)).toBe(false);
+        expect(afterDiscard.players['1'].discard.some(card => card.id === discardedCardId)).toBe(true);
+        expect(eventsOfType(resolveEvents, 'CARD_DISCARDED')[0]?.payload.playerId).toBe('1');
     });
 });

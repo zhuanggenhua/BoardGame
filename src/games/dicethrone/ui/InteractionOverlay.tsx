@@ -104,7 +104,7 @@ export interface InteractionOverlayProps {
     /** 选择玩家回调 */
     onSelectPlayer: (playerId: PlayerId) => void;
     /** 选择手牌回调 */
-    onSelectHandCard: (cardId: string) => void;
+    onSelectHandCard?: (cardId: string) => void;
     /** 确认交互 */
     onConfirm: () => void;
     /** 取消交互 */
@@ -125,7 +125,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     teamIdByPlayerId,
     onSelectStatus,
     onSelectPlayer,
-    onSelectHandCard,
+    onSelectHandCard = () => undefined,
     onConfirm,
     onCancel,
     statusIconAtlas,
