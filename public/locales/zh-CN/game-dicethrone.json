@@ -914,9 +914,15 @@
       "pray": "祈祷",
       "katana": "武士刀",
       "rising_sun": "旭日",
+      "branch": "树枝",
+      "leaf": "树叶",
+      "spirit": "树灵",
       "bullet": "子弹",
       "bullseye": "靶心",
-      "dash": "冲刺"
+      "dash": "冲刺",
+      "ninja_katana": "忍刀",
+      "shuriken": "手里剑",
+      "mask": "面具"
     },
     "trigger": {
       "generic": "变体条件",

@@ -306,16 +306,14 @@ export const DeckDiscardZone: React.FC<Props> = ({
                         <div className="absolute inset-0 bg-slate-700 rounded-sm border border-slate-600 shadow-sm translate-x-1 -translate-y-1 rotate-1" />
                         <div className="absolute inset-0 bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2">
                             <CardPreview previewRef={SMASHUP_CARD_BACK} className="w-full h-full" />
-                            {deckQueryEnabled && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                    <div
-                                        className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg"
-                                        data-testid="su-deck-count-badge"
-                                    >
-                                        <span className="text-white font-black font-mono text-base">{deckCount}</span>
-                                    </div>
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div
+                                    className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg"
+                                    data-testid="su-deck-count-badge"
+                                >
+                                    <span className="text-white font-black font-mono text-base">{deckCount}</span>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                     <div

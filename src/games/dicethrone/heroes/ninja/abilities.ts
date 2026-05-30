@@ -105,14 +105,6 @@ export const GOING_FORWARD_2: AbilityDef = {
     description: abilityText('going-forward-2', 'description'),
     variants: [
         {
-            id: 'going-forward-2-bleed',
-            trigger: { type: 'diceSet', faces: { [FACE.SHURIKEN]: 3 } },
-            effects: [
-                customEffect('ninja-going-forward-bleed', 'opponent', '投掷 1 骰；造成等于投掷数值的真实伤害。'),
-            ],
-            priority: 0,
-        },
-        {
             id: 'going-forward-2-main',
             trigger: { type: 'diceSet', faces: { [FACE.SHURIKEN]: 4 } },
             effects: [
@@ -120,6 +112,14 @@ export const GOING_FORWARD_2: AbilityDef = {
                 damage(0, '按照投掷结果造成伤害。', { timing: 'withDamage' }),
             ],
             priority: 1,
+        },
+        {
+            id: 'going-forward-2-bleed',
+            trigger: { type: 'diceSet', faces: { [FACE.SHURIKEN]: 3 } },
+            effects: [
+                customEffect('ninja-going-forward-bleed', 'opponent', '投掷 1 骰；造成等于投掷数值的真实伤害。'),
+            ],
+            priority: 0,
         },
     ],
 };
@@ -168,16 +168,6 @@ export const SHADOW_STEP_2: AbilityDef = {
     description: abilityText('shadow-step-2', 'description'),
     variants: [
         {
-            id: 'shadow-step-2-strangle',
-            trigger: { type: 'diceSet', faces: { [FACE.MASK]: 3 } },
-            effects: [
-                grantToken('self', TOKEN_IDS.NINJUTSU, 3, '获得 3 个忍术。'),
-                grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, '对 1 名对手施加 2 个慢性中毒。'),
-                customEffect('ninja-nonattack-closeout', 'self', '此分支不造成攻击伤害，直接收口。'),
-            ],
-            priority: 0,
-        },
-        {
             id: 'shadow-step-2-main',
             trigger: { type: 'diceSet', faces: { [FACE.MASK]: 4 } },
             tags: ['unblockable'],
@@ -187,6 +177,16 @@ export const SHADOW_STEP_2: AbilityDef = {
                 damage(5, '造成 5 点不可防御伤害。', { unblockable: true }),
             ],
             priority: 1,
+        },
+        {
+            id: 'shadow-step-2-strangle',
+            trigger: { type: 'diceSet', faces: { [FACE.MASK]: 3 } },
+            effects: [
+                grantToken('self', TOKEN_IDS.NINJUTSU, 3, '获得 3 个忍术。'),
+                grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, '对 1 名对手施加 2 个慢性中毒。'),
+                customEffect('ninja-nonattack-closeout', 'self', '此分支不造成攻击伤害，直接收口。'),
+            ],
+            priority: 0,
         },
     ],
 };
@@ -283,16 +283,6 @@ export const SHADOW_FANG_2: AbilityDef = {
     description: abilityText('shadow-fang-2', 'description'),
     variants: [
         {
-            id: 'shadow-fang-2-deceive',
-            trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 2, [FACE.MASK]: 2 } },
-            tags: ['unblockable'],
-            effects: [
-                grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。'),
-                damage(2, '造成 2 点不可防御伤害。', { unblockable: true }),
-            ],
-            priority: 0,
-        },
-        {
             id: 'shadow-fang-2-main',
             trigger: { type: 'largeStraight' },
             effects: [
@@ -301,6 +291,16 @@ export const SHADOW_FANG_2: AbilityDef = {
                 damage(8, '造成 8 点伤害。'),
             ],
             priority: 1,
+        },
+        {
+            id: 'shadow-fang-2-deceive',
+            trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 2, [FACE.MASK]: 2 } },
+            tags: ['unblockable'],
+            effects: [
+                grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。'),
+                damage(2, '造成 2 点不可防御伤害。', { unblockable: true }),
+            ],
+            priority: 0,
         },
     ],
 };

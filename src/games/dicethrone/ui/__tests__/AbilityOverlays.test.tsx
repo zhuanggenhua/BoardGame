@@ -177,4 +177,24 @@ describe('AbilityOverlays', () => {
         expect(lightningSlot).toHaveAttribute('data-resolved-ability-id', 'shadow-step');
     });
 
+    it('Ninja v2 升级暗影步分支应仍落在暗影步槽且可点击', () => {
+        const onSelectAbility = vi.fn();
+        const { container } = renderAbilityOverlays({
+            characterId: 'ninja',
+            availableAbilityIds: ['shadow-step-2-main', 'shadow-step-2-strangle'],
+            canSelect: true,
+            onSelectAbility,
+            abilityLevels: { 'shadow-step': 2 },
+        });
+
+        const lightningSlot = container.querySelector('[data-ability-slot="lightning"]');
+        expect(lightningSlot).toHaveAttribute('data-base-ability-id', 'shadow-step');
+        expect(lightningSlot).toHaveAttribute('data-resolved-ability-id', 'shadow-step-2-main');
+        expect(lightningSlot).toHaveAttribute('data-can-click', 'true');
+
+        fireEvent.click(lightningSlot!);
+
+        expect(onSelectAbility).toHaveBeenCalledWith('shadow-step-2-main');
+    });
+
 });

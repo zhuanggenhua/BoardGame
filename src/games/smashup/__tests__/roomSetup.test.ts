@@ -4,6 +4,7 @@ import {
     buildSmashUpPublicRoomSummary,
     readSmashUpDeckQueryEnabled,
     readSmashUpEnabledExpansions,
+    SMASHUP_DECK_QUERY_SETUP_VALUE,
 } from '../roomSetup';
 
 describe('SmashUp 房间设置解析', () => {
@@ -26,16 +27,20 @@ describe('SmashUp 房间设置解析', () => {
                 deckQuery: 'on',
             },
         })).toBe(true);
+        expect(readSmashUpDeckQueryEnabled({
+            setupSelections: {
+                expansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
+            },
+        })).toBe(true);
     });
 
-    it('公开房间摘要只带扩展信息', () => {
+    it('公开房间摘要只带真正的扩展信息，不带余牌查询', () => {
         expect(buildSmashUpPublicRoomSummary({
             roomName: '不应泄露',
             password: '1234',
             ownerKey: 'guest:owner',
             setupSelections: {
-                expansions: ['titans'],
-                deckQuery: 'on',
+                expansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
             },
         })).toEqual({
             enabledExpansions: ['titans'],

@@ -313,8 +313,7 @@ describe('smashup', () => {
     it('余牌查询开启后进入运行时状态', () => {
         const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
             setupSelections: {
-                expansions: ['titans', 'diy'],
-                deckQuery: 'on',
+                expansions: ['titans', 'diy', 'deckQuery'],
             },
         });
 

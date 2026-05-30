@@ -10,7 +10,7 @@ import { resolveEffectsToEvents } from '../domain/effects';
 import { checkPlayCard, getAvailableAbilityIds } from '../domain/rules';
 import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
-import { BLINK_2 } from '../heroes/ninja/abilities';
+import { BLINK_2, GOING_FORWARD_2, SHADOW_FANG_2, SHADOW_STEP_2 } from '../heroes/ninja/abilities';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
@@ -75,6 +75,37 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
 
         expect(getAvailableAbilityIds(shadowState.core, '0', 'offensiveRoll')).toContain('shadow-step');
         expect(getAvailableAbilityIds(shadowState.core, '0', 'offensiveRoll')).not.toContain('smoke-screen');
+    });
+
+    it('Shadow Step II 在 4 个面具时应同时暴露 3 面具和 4 面具两个分支', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.activePlayerId = '0';
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].abilities = state.core.players['0'].abilities.map(ability => (
+            ability.id === 'shadow-step' ? SHADOW_STEP_2 : ability
+        ));
+        state.core.players['0'].abilityLevels['shadow-step'] = 2;
+        state.core.dice = [6, 6, 6, 6, 1].map(createNinjaDie);
+
+        expect(getAvailableAbilityIds(state.core, '0', 'offensiveRoll')).toEqual(
+            expect.arrayContaining(['shadow-step-2-main', 'shadow-step-2-strangle'])
+        );
+    });
+
+    it('同卡双分支升级技能应按卡面上方主技能在前、下方分支在后展示', () => {
+        expect(GOING_FORWARD_2.variants?.map(variant => variant.id)).toEqual([
+            'going-forward-2-main',
+            'going-forward-2-bleed',
+        ]);
+        expect(SHADOW_STEP_2.variants?.map(variant => variant.id)).toEqual([
+            'shadow-step-2-main',
+            'shadow-step-2-strangle',
+        ]);
+        expect(SHADOW_FANG_2.variants?.map(variant => variant.id)).toEqual([
+            'shadow-fang-2-main',
+            'shadow-fang-2-deceive',
+        ]);
     });
 
     it('Blink 基础版应按防御投已出的骰面结算固定反击与烟雾弹，而不是额外奖励骰累计', () => {

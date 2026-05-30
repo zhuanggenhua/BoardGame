@@ -13,6 +13,8 @@ import {
     collectManifestReferencesFromContent,
     collectStaticKeyReferencesFromContent,
     collectReferencesFromContent,
+    collectDiceThroneAbilityChoiceFaceLabelReferences,
+    collectMissingTranslations,
 } from '../../../scripts/verify/i18n-check';
 import {
     collectImplicitCandidateFiles,
@@ -557,6 +559,80 @@ describe('i18n 静态检查工具', () => {
             expect.objectContaining({
                 key: 'choices.confirm',
                 namespaces: ['game-smashup'],
+            }),
+        ]);
+    });
+});
+
+describe('DiceThrone ability choice face label scan', () => {
+    it('从技能触发条件收集分支选择需要的动态骰面文案 key', () => {
+        const refs = collectDiceThroneAbilityChoiceFaceLabelReferences({
+            ninja: {
+                abilities: [
+                    {
+                        id: 'shadow-step',
+                        name: 'abilities.shadow-step.name',
+                        type: 'offensive',
+                        variants: [
+                            {
+                                id: 'shadow-step-2-main',
+                                trigger: { type: 'diceSet', faces: { mask: 4 } },
+                                effects: [],
+                            },
+                            {
+                                id: 'death-blossom',
+                                trigger: { type: 'diceSet', faces: { ninja_katana: 3, shuriken: 2 } },
+                                effects: [],
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        expect(refs.map(ref => ref.key).sort()).toEqual([
+            'abilityChoice.faceLabel.mask',
+            'abilityChoice.faceLabel.ninja_katana',
+            'abilityChoice.faceLabel.shuriken',
+        ]);
+    });
+
+    it('缺少动态骰面文案时会进入 i18n 缺失 key 报告', () => {
+        const refs = collectDiceThroneAbilityChoiceFaceLabelReferences({
+            ninja: {
+                abilities: [
+                    {
+                        id: 'shadow-step',
+                        name: 'abilities.shadow-step.name',
+                        type: 'offensive',
+                        variants: [
+                            {
+                                id: 'shadow-step-2-main',
+                                trigger: { type: 'diceSet', faces: { mask: 4 } },
+                                effects: [],
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+        const missing = collectMissingTranslations(
+            refs,
+            {
+                'zh-CN': {
+                    'game-dicethrone': {
+                        abilityChoice: { faceLabel: {} },
+                    },
+                },
+            },
+            ['zh-CN'],
+        );
+
+        expect(missing).toEqual([
+            expect.objectContaining({
+                namespaces: ['game-dicethrone'],
+                key: 'abilityChoice.faceLabel.mask',
+                languages: ['zh-CN'],
             }),
         ]);
     });

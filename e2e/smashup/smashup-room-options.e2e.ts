@@ -44,14 +44,12 @@ test.describe('SmashUp 房间设置与大厅扩展摘要', () => {
 
         await openSmashUpCreateRoomModal(page);
 
-        const deckQuerySelect = page
-            .locator('label', { hasText: '余牌查询' })
-            .locator('xpath=..')
-            .locator('select');
-        await expect(deckQuerySelect).toHaveValue('off');
+        const deckQueryToggle = page.getByTestId('setup-option-toggle-expansions-deckQuery');
+        await expect(deckQueryToggle).toHaveAttribute('aria-pressed', 'false');
 
         await page.getByTestId('create-room-name-input').fill('余牌查询测试房');
-        await deckQuerySelect.selectOption('on');
+        await deckQueryToggle.click();
+        await expect(deckQueryToggle).toHaveAttribute('aria-pressed', 'true');
         await page.getByTestId('create-room-confirm-button').click();
 
         await expect(page).toHaveURL(/\/play\/smashup\/match\//, { timeout: 30_000 });
@@ -73,9 +71,9 @@ test.describe('SmashUp 房间设置与大厅扩展摘要', () => {
                 };
             };
         };
-        expect(matchPayload.setupData?.deckQuery).toBe('on');
-        expect(matchPayload.setupData?.setupSelections?.deckQuery).toBe('on');
-        expect(matchPayload.setupData?.setupSelections?.expansions ?? []).toEqual(['titans', 'diy']);
+        expect(matchPayload.setupData?.deckQuery).toBeUndefined();
+        expect(matchPayload.setupData?.setupSelections?.deckQuery).toBeUndefined();
+        expect(matchPayload.setupData?.setupSelections?.expansions ?? []).toEqual(['titans', 'diy', 'deckQuery']);
 
         const viewerContext = await browser.newContext({ baseURL });
         try {

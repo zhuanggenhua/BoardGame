@@ -73,7 +73,7 @@ describe('DeckDiscardZone 牌库查看', () => {
         ]);
     });
 
-    it('余牌查询关闭时不显示精确数量，也不能打开牌库详情', async () => {
+    it('余牌查询关闭时仍显示数量，但不能打开牌库详情', async () => {
         render(
             <DeckDiscardZone
                 deckCount={5}
@@ -90,7 +90,7 @@ describe('DeckDiscardZone 牌库查看', () => {
             />,
         );
 
-        expect(screen.queryByTestId('su-deck-count-badge')).toBeNull();
+        expect(screen.getByTestId('su-deck-count-badge')).toHaveTextContent('5');
 
         fireEvent.click(screen.getByTestId('su-deck-stack'));
 

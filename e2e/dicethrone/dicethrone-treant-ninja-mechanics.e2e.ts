@@ -2159,6 +2159,312 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
         }
     });
 
+    test('忍者升级一往无前后应在真实技能槽弹出分支并能选中刀尖舔血结算', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者升级一往无前后应在真实技能槽弹出分支并能选中刀尖舔血结算';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources);
+
+                players['1'] = {
+                    ...p1,
+                    resources: { ...resources, [RESOURCE_IDS.CP]: 5 },
+                    hand: [cloneNinjaCard('upgrade-going-forward-2')],
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'main1',
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                    responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
+                };
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            await expect(match.guestPage.locator('[data-testid="hand-area"] [data-card-id="upgrade-going-forward-2"]').first()).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '01-upgrade-going-forward-2-before-drag.png');
+
+            await dragHandCardToPlay(match.guestPage, 'upgrade-going-forward-2');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const resources = asRecord(p1.resources) as Record<string, number>;
+                const abilityLevels = asRecord(p1.abilityLevels) as Record<string, number>;
+                const hand = Array.isArray(p1.hand) ? p1.hand : [];
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    level: abilityLevels['going-forward'],
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 3, level: 2, handCount: 0 });
+            await screenshot(match.guestPage, testName, '02-upgrade-going-forward-2-after-play.png');
+
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const dice = Array.isArray(core.dice) ? [...core.dice] : [];
+                const values = [4, 4, 4, 4, 1];
+                const symbols = [
+                    NINJA_DICE_FACE_IDS.SHURIKEN,
+                    NINJA_DICE_FACE_IDS.SHURIKEN,
+                    NINJA_DICE_FACE_IDS.SHURIKEN,
+                    NINJA_DICE_FACE_IDS.SHURIKEN,
+                    NINJA_DICE_FACE_IDS.KATANA,
+                ];
+
+                for (let index = 0; index < values.length; index += 1) {
+                    dice[index] = {
+                        ...asRecord(dice[index]),
+                        id: index,
+                        value: values[index],
+                        symbol: symbols[index],
+                        ownerId: '1',
+                        isKept: false,
+                    };
+                }
+
+                players['0'] = {
+                    ...p0,
+                    resources: { ...asRecord(p0.resources), [RESOURCE_IDS.HP]: 30 },
+                };
+                players['1'] = {
+                    ...p1,
+                    tokens: { ...asRecord(p1.tokens), [TOKEN_IDS.NINJUTSU]: 0 },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    dice,
+                    activePlayerId: '1',
+                    phase: 'offensiveRoll',
+                    rollDiceCount: 5,
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'offensiveRoll',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                    responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
+                }, [4]);
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            await expect(match.guestPage.locator('[data-ability-slot="chi"]')).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await screenshot(match.guestPage, testName, '03-going-forward-2-slot-before-click.png');
+
+            await match.guestPage.locator('[data-ability-slot="chi"]').click();
+            await expect(match.guestPage.getByText('选择发动变体')).toBeVisible({ timeout: 10000 });
+            const variantButtons = match.guestPage.getByRole('button', { name: /一往无前 II/i });
+            await expect(variantButtons).toHaveCount(2, { timeout: 10000 });
+            await screenshot(match.guestPage, testName, '04-going-forward-2-ability-choice-modal.png');
+
+            await variantButtons.nth(1).click();
+            await expect(match.guestPage.getByText('选择发动变体')).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return pendingAttack.sourceAbilityId ?? null;
+            }, { timeout: 10000 }).toBe('going-forward-2-bleed');
+            await screenshot(match.guestPage, testName, '05-going-forward-2-bleed-selected.png');
+
+            const attackShowcaseContinue = match.guestPage.getByRole('button', { name: /^(继续|Continue)$/i }).first();
+            if (await attackShowcaseContinue.isVisible({ timeout: 1000 }).catch(() => false)) {
+                await attackShowcaseContinue.click();
+                await expect(attackShowcaseContinue).toBeHidden({ timeout: 10000 });
+            }
+            await clickAdvancePhase(match.guestPage, '1');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p0Resources = asRecord(p0.resources) as Record<string, number>;
+                return {
+                    opponentHp: p0Resources[RESOURCE_IDS.HP],
+                    pendingAttackOpen: Boolean(core.pendingAttack),
+                    pendingDamageOpen: Boolean(core.pendingDamage),
+                };
+            }, { timeout: 10000 }).toEqual({
+                opponentHp: 26,
+                pendingAttackOpen: false,
+                pendingDamageOpen: false,
+            });
+            await screenshot(match.guestPage, testName, '06-going-forward-2-after-bleed-resolve.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('忍者升级暗影步后 4 个面具应在真实技能槽弹出两个分支并可选中', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者升级暗影步后4个面具应在真实技能槽弹出两个分支并可选中';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources);
+
+                players['1'] = {
+                    ...p1,
+                    resources: { ...resources, [RESOURCE_IDS.CP]: 5 },
+                    hand: [cloneNinjaCard('upgrade-shadow-step-2')],
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'main1',
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                    responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
+                };
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            await expect(match.guestPage.locator('[data-testid="hand-area"] [data-card-id="upgrade-shadow-step-2"]').first()).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '01-upgrade-shadow-step-2-before-drag.png');
+
+            await dragHandCardToPlay(match.guestPage, 'upgrade-shadow-step-2');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const resources = asRecord(p1.resources) as Record<string, number>;
+                const abilityLevels = asRecord(p1.abilityLevels) as Record<string, number>;
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    level: abilityLevels['shadow-step'],
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 3, level: 2 });
+            await screenshot(match.guestPage, testName, '02-upgrade-shadow-step-2-after-play.png');
+
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const dice = Array.isArray(core.dice) ? [...core.dice] : [];
+                const values = [6, 6, 6, 6, 1];
+                const symbols = [
+                    NINJA_DICE_FACE_IDS.MASK,
+                    NINJA_DICE_FACE_IDS.MASK,
+                    NINJA_DICE_FACE_IDS.MASK,
+                    NINJA_DICE_FACE_IDS.MASK,
+                    NINJA_DICE_FACE_IDS.KATANA,
+                ];
+
+                for (let index = 0; index < values.length; index += 1) {
+                    dice[index] = {
+                        ...asRecord(dice[index]),
+                        id: index,
+                        value: values[index],
+                        symbol: symbols[index],
+                        ownerId: '1',
+                        isKept: false,
+                    };
+                }
+
+                players['0'] = {
+                    ...p0,
+                    resources: { ...asRecord(p0.resources), [RESOURCE_IDS.HP]: 30 },
+                    tokens: { ...asRecord(p0.tokens), [TOKEN_IDS.DELAYED_POISON]: 0 },
+                };
+                players['1'] = {
+                    ...p1,
+                    tokens: {
+                        ...asRecord(p1.tokens),
+                        [TOKEN_IDS.NINJUTSU]: 0,
+                        [TOKEN_IDS.SMOKE_BOMB]: 0,
+                    },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    dice,
+                    activePlayerId: '1',
+                    phase: 'offensiveRoll',
+                    rollDiceCount: 5,
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'offensiveRoll',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                    responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
+                };
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            await expect(match.guestPage.locator('[data-ability-slot="lightning"]')).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await screenshot(match.guestPage, testName, '03-shadow-step-2-slot-before-click.png');
+
+            await match.guestPage.locator('[data-ability-slot="lightning"]').click();
+            await expect(match.guestPage.getByText('选择发动变体')).toBeVisible({ timeout: 10000 });
+            const variantButtons = match.guestPage.getByRole('button', { name: /暗影步 II/i });
+            await expect(variantButtons).toHaveCount(2, { timeout: 10000 });
+            await screenshot(match.guestPage, testName, '04-shadow-step-2-ability-choice-modal.png');
+
+            await variantButtons.nth(1).click();
+            await expect(match.guestPage.getByText('选择发动变体')).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return pendingAttack.sourceAbilityId ?? null;
+            }, { timeout: 10000 }).toBe('shadow-step-2-strangle');
+            await screenshot(match.guestPage, testName, '05-shadow-step-2-strangle-selected.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
     test('忍者手里剑应通过真实手牌打出并在奖励骰收口后计入攻击修正', async ({ browser }, testInfo) => {
         test.setTimeout(150000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;

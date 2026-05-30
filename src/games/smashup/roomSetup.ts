@@ -1,4 +1,6 @@
 export const DEFAULT_SMASHUP_EXPANSIONS = ['titans', 'diy'] as const;
+export const SMASHUP_DECK_QUERY_SETUP_VALUE = 'deckQuery' as const;
+const SMASHUP_PUBLIC_EXPANSIONS = new Set<string>(DEFAULT_SMASHUP_EXPANSIONS);
 
 export interface SmashUpPublicRoomSummary {
     enabledExpansions: string[];
@@ -18,12 +20,16 @@ function readSetupSelectionValue(
 export function readSmashUpEnabledExpansions(setupData?: Record<string, unknown>): string[] {
     const topLevelExpansions = setupData?.expansions;
     if (Array.isArray(topLevelExpansions)) {
-        return topLevelExpansions.filter((value): value is string => typeof value === 'string');
+        return topLevelExpansions.filter(
+            (value): value is string => typeof value === 'string' && SMASHUP_PUBLIC_EXPANSIONS.has(value),
+        );
     }
 
     const selectedExpansions = readSetupSelectionValue(setupData, 'expansions');
     if (Array.isArray(selectedExpansions)) {
-        return selectedExpansions.filter((value): value is string => typeof value === 'string');
+        return selectedExpansions.filter(
+            (value): value is string => typeof value === 'string' && SMASHUP_PUBLIC_EXPANSIONS.has(value),
+        );
     }
 
     return [...DEFAULT_SMASHUP_EXPANSIONS];
@@ -38,7 +44,21 @@ export function readSmashUpDeckQueryEnabled(setupData?: Record<string, unknown>)
     }
 
     const selectedValue = readSetupSelectionValue(setupData, 'deckQuery');
-    return selectedValue === 'on';
+    if (selectedValue === 'on') {
+        return true;
+    }
+
+    const topLevelExpansions = setupData?.expansions;
+    if (Array.isArray(topLevelExpansions)) {
+        return topLevelExpansions.includes(SMASHUP_DECK_QUERY_SETUP_VALUE);
+    }
+
+    const selectedExpansions = readSetupSelectionValue(setupData, 'expansions');
+    if (Array.isArray(selectedExpansions)) {
+        return selectedExpansions.includes(SMASHUP_DECK_QUERY_SETUP_VALUE);
+    }
+
+    return false;
 }
 
 export function buildSmashUpPublicRoomSummary(

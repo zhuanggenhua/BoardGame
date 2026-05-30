@@ -881,9 +881,15 @@
       "pray": "Pray",
       "katana": "Katana",
       "rising_sun": "Rising Sun",
+      "branch": "Branch",
+      "leaf": "Leaf",
+      "spirit": "Spirit",
       "bullet": "Bullet",
       "bullseye": "Bullseye",
-      "dash": "Dash"
+      "dash": "Dash",
+      "ninja_katana": "Ninja Blade",
+      "shuriken": "Shuriken",
+      "mask": "Mask"
     },
     "trigger": {
       "generic": "variant condition",

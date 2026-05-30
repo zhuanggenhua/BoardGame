@@ -72,11 +72,12 @@ async function openDeckViewScene(
 }
 
 test.describe('SmashUp 牌库查看', () => {
-    test('余牌查询关闭时不显示精确数量，也不能点开牌库详情', async ({ page, game }, testInfo) => {
+    test('余牌查询关闭时仍显示数量，但不能点开牌库详情', async ({ page, game }, testInfo) => {
         test.setTimeout(120000);
         await openDeckViewScene(page, game, { deckQueryEnabled: false });
 
-        await expect(page.getByTestId('su-deck-count-badge')).toHaveCount(0);
+        await expect(page.getByTestId('su-deck-count-badge')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByTestId('su-deck-count-badge')).toHaveText('5');
 
         await page.getByTestId('su-deck-stack').click();
 

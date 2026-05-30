@@ -2,6 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { I18N_NAMESPACES, SUPPORTED_LANGUAGES } from '../../src/lib/i18n/types';
+import { HEROES_DATA } from '../../src/games/dicethrone/heroes';
+import type { AbilityDef } from '../../src/games/dicethrone/domain/combat';
+import type { TriggerCondition } from '../../src/games/dicethrone/domain/combat/conditions';
 
 type LocaleNamespace = Record<string, unknown>;
 
@@ -1755,6 +1758,53 @@ const createManifestReference = (
     source,
 });
 
+const collectDiceThroneTriggerFaceIds = (trigger: TriggerCondition | undefined): string[] => {
+    if (!trigger) return [];
+    if (trigger.type === 'diceSet') {
+        return Object.keys(trigger.faces);
+    }
+    if (trigger.type === 'allSymbolsPresent') {
+        return trigger.symbols;
+    }
+    if (trigger.type === 'composite') {
+        return trigger.conditions.flatMap((condition) =>
+            collectDiceThroneTriggerFaceIds(condition as TriggerCondition),
+        );
+    }
+    return [];
+};
+
+export const collectDiceThroneAbilityChoiceFaceLabelReferences = (
+    heroesData: Record<string, { abilities: AbilityDef[] }> = HEROES_DATA,
+): I18nReference[] => {
+    const refsByKey = new Map<string, I18nReference>();
+
+    for (const [heroId, hero] of Object.entries(heroesData)) {
+        for (const ability of hero.abilities) {
+            const triggers = [
+                ability.trigger,
+                ...(ability.variants ?? []).map((variant) => variant.trigger),
+            ];
+
+            for (const trigger of triggers) {
+                for (const faceId of collectDiceThroneTriggerFaceIds(trigger)) {
+                    const key = `abilityChoice.faceLabel.${faceId}`;
+                    if (refsByKey.has(key)) continue;
+                    refsByKey.set(key, {
+                        key,
+                        namespaces: ['game-dicethrone'],
+                        file: normalizeFilePath(path.join(ROOT_DIR, 'src', 'games', 'dicethrone', 'heroes', heroId)),
+                        line: 1,
+                        source: `dicethrone.abilityChoice.faceLabel:${heroId}`,
+                    });
+                }
+            }
+        }
+    }
+
+    return Array.from(refsByKey.values());
+};
+
 export const collectManifestReferencesFromContent = (
     content: string,
     filePath: string,
@@ -1947,28 +1997,15 @@ const getReferenceConcreteKeys = (
     });
 };
 
-const main = () => {
-    const { locales, namespaceFiles } = loadLocales();
-    const knownNamespaces = new Set([...namespaceFiles, ...I18N_NAMESPACES]);
-    const files = scanFilePaths(ROOT_DIR);
-
-    const references: I18nReference[] = [];
-    const warnings: I18nWarning[] = [];
-
-    for (const file of files) {
-        const content = fs.readFileSync(file, 'utf-8');
-        const result = collectReferencesFromContent(content, file, { defaultNamespace: DEFAULT_NAMESPACE, knownNamespaces });
-        references.push(...result.references);
-        references.push(...collectManifestReferencesFromContent(content, file, knownNamespaces));
-        references.push(...collectTutorialReferencesFromContent(content, file, knownNamespaces));
-        references.push(...collectStaticKeyReferencesFromContent(content, file, knownNamespaces));
-        warnings.push(...result.warnings);
-    }
-
+export const collectMissingTranslations = (
+    references: I18nReference[],
+    locales: LocalesByLanguage,
+    languages: readonly string[] = SUPPORTED_LANGUAGES,
+): MissingTranslation[] => {
     const missingMap = new Map<string, MissingTranslation>();
     for (const ref of references) {
         if (!ref.patternSegments) {
-            const missingLanguages = SUPPORTED_LANGUAGES.filter((lang) => {
+            const missingLanguages = languages.filter((lang) => {
                 const hasAny = ref.namespaces.some((namespace) => {
                     const localeData = locales[lang]?.[namespace];
                     if (!localeData) return false;
@@ -1995,7 +2032,7 @@ const main = () => {
         }
 
         const concreteKeysByLanguage = new Map<string, Set<string>>();
-        for (const language of SUPPORTED_LANGUAGES) {
+        for (const language of languages) {
             concreteKeysByLanguage.set(language, new Set(getReferenceConcreteKeys(ref, locales, language)));
         }
 
@@ -2011,13 +2048,13 @@ const main = () => {
             const id = `${namespacesKey}:${ref.key}`;
             const existing = missingMap.get(id);
             if (existing) {
-                existing.languages = Array.from(new Set([...existing.languages, ...SUPPORTED_LANGUAGES]));
+                existing.languages = Array.from(new Set([...existing.languages, ...languages]));
                 existing.refs.push(ref);
             } else {
                 missingMap.set(id, {
                     namespaces: ref.namespaces.slice().sort(),
                     key: ref.key,
-                    languages: [...SUPPORTED_LANGUAGES],
+                    languages: [...languages],
                     refs: [ref],
                 });
             }
@@ -2027,7 +2064,7 @@ const main = () => {
         for (const concreteKey of allConcreteKeys) {
             const [namespace, ...keyParts] = concreteKey.split(':');
             const key = keyParts.join(':');
-            const missingLanguages = SUPPORTED_LANGUAGES.filter((language) => !concreteKeysByLanguage.get(language)?.has(concreteKey));
+            const missingLanguages = languages.filter((language) => !concreteKeysByLanguage.get(language)?.has(concreteKey));
             if (missingLanguages.length === 0) continue;
             const id = `${namespace}:${key}`;
             const existing = missingMap.get(id);
@@ -2045,7 +2082,30 @@ const main = () => {
         }
     }
 
-    const missing = Array.from(missingMap.values());
+    return Array.from(missingMap.values());
+};
+
+const main = () => {
+    const { locales, namespaceFiles } = loadLocales();
+    const knownNamespaces = new Set([...namespaceFiles, ...I18N_NAMESPACES]);
+    const files = scanFilePaths(ROOT_DIR);
+
+    const references: I18nReference[] = [];
+    const warnings: I18nWarning[] = [];
+
+    for (const file of files) {
+        const content = fs.readFileSync(file, 'utf-8');
+        const result = collectReferencesFromContent(content, file, { defaultNamespace: DEFAULT_NAMESPACE, knownNamespaces });
+        references.push(...result.references);
+        references.push(...collectManifestReferencesFromContent(content, file, knownNamespaces));
+        references.push(...collectTutorialReferencesFromContent(content, file, knownNamespaces));
+        references.push(...collectStaticKeyReferencesFromContent(content, file, knownNamespaces));
+        warnings.push(...result.warnings);
+    }
+
+    references.push(...collectDiceThroneAbilityChoiceFaceLabelReferences());
+
+    const missing = collectMissingTranslations(references, locales);
     const blockingWarningTypes = new Set<I18nWarning['type']>([
         'raw-validation-error',
     ]);

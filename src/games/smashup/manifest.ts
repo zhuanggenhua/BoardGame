@@ -22,17 +22,9 @@ const entry: GameManifestEntry = {
             options: [
                 { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
                 { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
+                { value: 'deckQuery', labelKey: 'games.smashup.setup.deckQuery.label' },
             ],
             default: ['titans', 'diy'],
-        },
-        deckQuery: {
-            type: 'select',
-            labelKey: 'games.smashup.setup.deckQuery.label',
-            options: [
-                { value: 'off', labelKey: 'games.smashup.setup.deckQuery.off' },
-                { value: 'on', labelKey: 'games.smashup.setup.deckQuery.on' },
-            ],
-            default: 'off',
         },
         teamMode: {
             type: 'select',

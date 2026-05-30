@@ -109,6 +109,25 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         }
     });
 
+    it('同卡双分支升级技能应按卡面上方主技能在前、下方分支在后展示', () => {
+        expect(TEND_CARE_2.variants?.map(variant => variant.id)).toEqual([
+            'tend-care-2-main',
+            'tend-care-2-cultivate',
+        ]);
+        expect(VENGEFUL_VINES_2.variants?.map(variant => variant.id)).toEqual([
+            'vengeful-vines-2-main',
+            'vengeful-vines-2-pain',
+        ]);
+        expect(NATURE_TOUCH_2.variants?.map(variant => variant.id)).toEqual([
+            'nature-touch-2-main',
+            'nature-touch-2-mercy',
+        ]);
+        expect(WILD_GROWTH_2.variants?.map(variant => variant.id)).toEqual([
+            'wild-growth-2-main',
+            'wild-growth-2-dazzle',
+        ]);
+    });
+
     it('Rooted 防御应按树枝与树灵总数防止伤害，不再按树枝反击或逐骰发 token', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;

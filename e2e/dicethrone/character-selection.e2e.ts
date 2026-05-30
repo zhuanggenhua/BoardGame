@@ -448,11 +448,9 @@ test.describe('角色选择系统', () => {
         await withOnlineMatch(page, async (guestPage) => {
             await page.click('[data-character-id="treant"]');
             await expect(page.locator('[data-character-id="treant"]')).toContainText(/P1/i);
-            await expect(page.getByTestId('character-badge-treant-implementation_in_progress')).toContainText('实施中');
 
             await guestPage.click('[data-character-id="ninja"]');
             await expect(guestPage.locator('[data-character-id="ninja"]')).toContainText(/P2/i);
-            await expect(guestPage.getByTestId('character-badge-ninja-implementation_in_progress')).toContainText('实施中');
             await page.locator('[data-character-id="treant"]').screenshot({ path: treantCardEvidencePath });
             await guestPage.locator('[data-character-id="ninja"]').screenshot({ path: ninjaCardEvidencePath });
             await page.screenshot({ path: selectionEvidencePath, fullPage: false });

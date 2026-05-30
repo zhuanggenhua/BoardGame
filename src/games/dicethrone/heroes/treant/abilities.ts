@@ -139,14 +139,6 @@ export const TEND_CARE_2: AbilityDef = {
     description: abilityText('tend-care-2', 'description'),
     variants: [
         {
-            id: 'tend-care-2-cultivate',
-            trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 2, [FACE.SPIRIT]: 2 } },
-            effects: [
-                customEffect('treant-tend-care-2-cultivate', 'self', '养成 6 树灵。'),
-            ],
-            priority: 0,
-        },
-        {
             id: 'tend-care-2-main',
             trigger: { type: 'diceSet', faces: { [FACE.LEAF]: 2, [FACE.SPIRIT]: 2 } },
             effects: [
@@ -154,6 +146,14 @@ export const TEND_CARE_2: AbilityDef = {
                 tendCareResolve(4, '养成 4 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。'),
             ],
             priority: 1,
+        },
+        {
+            id: 'tend-care-2-cultivate',
+            trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 2, [FACE.SPIRIT]: 2 } },
+            effects: [
+                customEffect('treant-tend-care-2-cultivate', 'self', '养成 6 树灵。'),
+            ],
+            priority: 0,
         },
     ],
 };
@@ -177,14 +177,6 @@ export const VENGEFUL_VINES_2: AbilityDef = {
     description: abilityText('vengeful-vines-2', 'description'),
     variants: [
         {
-            id: 'vengeful-vines-2-pain',
-            trigger: { type: 'diceSet', faces: { [FACE.LEAF]: 3 } },
-            effects: [
-                customEffect('treant-vengeful-vines-2-pain', 'opponent', '每有 1 个树灵，造成 1 点真实伤害。'),
-            ],
-            priority: 0,
-        },
-        {
             id: 'vengeful-vines-2-main',
             trigger: { type: 'smallStraight' },
             effects: [
@@ -192,6 +184,14 @@ export const VENGEFUL_VINES_2: AbilityDef = {
                 damage(8, '造成 8 点伤害。'),
             ],
             priority: 1,
+        },
+        {
+            id: 'vengeful-vines-2-pain',
+            trigger: { type: 'diceSet', faces: { [FACE.LEAF]: 3 } },
+            effects: [
+                customEffect('treant-vengeful-vines-2-pain', 'opponent', '每有 1 个树灵，造成 1 点真实伤害。'),
+            ],
+            priority: 0,
         },
     ],
 };
@@ -216,14 +216,6 @@ export const NATURE_TOUCH_2: AbilityDef = {
     description: abilityText('nature-touch-2', 'description'),
     variants: [
         {
-            id: 'nature-touch-2-mercy',
-            trigger: { type: 'diceSet', faces: { [FACE.SPIRIT]: 3 } },
-            effects: [
-                customEffect('treant-nature-touch-2-mercy', 'self', '治疗 1；获得 1 CP；抽 1 张牌；养成 1 树灵。'),
-            ],
-            priority: 0,
-        },
-        {
             id: 'nature-touch-2-main',
             trigger: { type: 'diceSet', faces: { [FACE.SPIRIT]: 4 } },
             tags: ['unblockable'],
@@ -232,6 +224,14 @@ export const NATURE_TOUCH_2: AbilityDef = {
                 damage(6, '造成 6 点不可防御伤害。', { unblockable: true }),
             ],
             priority: 1,
+        },
+        {
+            id: 'nature-touch-2-mercy',
+            trigger: { type: 'diceSet', faces: { [FACE.SPIRIT]: 3 } },
+            effects: [
+                customEffect('treant-nature-touch-2-mercy', 'self', '治疗 1；获得 1 CP；抽 1 张牌；养成 1 树灵。'),
+            ],
+            priority: 0,
         },
     ],
 };
@@ -270,6 +270,15 @@ export const WILD_GROWTH_2: AbilityDef = {
     sfxKey: TREANT_SFX_GROWTH,
     variants: [
         {
+            id: 'wild-growth-2-main',
+            trigger: { type: 'largeStraight' },
+            effects: [
+                customEffect('treant-wild-growth-2-main', 'opponent', '造成 8 点伤害并投掷 5 骰；每个树枝 +1 伤害；若投出树叶，获得生命源泉；每个螺旋养成 1 次树灵。'),
+                damage(8, '造成 8 点伤害。'),
+            ],
+            priority: 1,
+        },
+        {
             id: 'wild-growth-2-dazzle',
             trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 2, [FACE.SPIRIT]: 2 } },
             tags: ['unblockable'],
@@ -278,15 +287,6 @@ export const WILD_GROWTH_2: AbilityDef = {
                 damage(4, '造成 4 点不可防御伤害。', { unblockable: true }),
             ],
             priority: 0,
-        },
-        {
-            id: 'wild-growth-2-main',
-            trigger: { type: 'largeStraight' },
-            effects: [
-                customEffect('treant-wild-growth-2-main', 'opponent', '造成 8 点伤害并投掷 5 骰；每个树枝 +1 伤害；若投出树叶，获得生命源泉；每个螺旋养成 1 次树灵。'),
-                damage(8, '造成 8 点伤害。'),
-            ],
-            priority: 1,
         },
     ],
 };
