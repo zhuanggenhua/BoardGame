@@ -284,6 +284,8 @@ export interface BonusDiceRollConfig {
      * 例：Wild West（荒野西部）在 Loaded 奖励骰确定后再额外 +1。
      */
     postSettleBonusDamageAdds?: Array<{ amount: number; sourceCardId?: string }>;
+    /** 自定义奖励骰收口处理器 ID（用于按骰面而非点数结算的技能） */
+    customResolutionId?: string;
     /** 可选：构建每颗奖励骰的 effectParams（用于文案插值/日志展示） */
     effectParamsBuilder?: (params: { value: number; index: number; face: DieFace }) => Record<string, string | number>;
 }
@@ -357,6 +359,7 @@ export function createBonusDiceWithReroll(
             attackBonusScale: config.attackBonusScale ?? 'raw',
             attackBonusSourceCardId: config.attackBonusSourceCardId,
             postSettleBonusDamageAdds: config.postSettleBonusDamageAdds,
+            customResolutionId: config.customResolutionId,
         };
         events.push({
             type: 'BONUS_DICE_REROLL_REQUESTED',

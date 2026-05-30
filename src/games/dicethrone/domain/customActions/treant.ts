@@ -34,6 +34,8 @@ const QUIET_CULTIVATION_CHOICE_ID = 'treant-quiet-cultivation-resolve';
 const NATURE_TOUCH_CULTIVATE_CHOICE_ID = 'treant-nature-touch-cultivate-resolve';
 const ROOTED_CHOICE_ID = 'treant-rooted-resolve';
 const FOREST_AWAKENS_CHOICE_ID = 'treant-forest-awakens-resolve';
+const TEND_CARE_2_CULTIVATE_CHOICE_ID = 'treant-tend-care-2-cultivate-resolve';
+const NATURE_TOUCH_2_MERCY_CHOICE_ID = 'treant-nature-touch-2-mercy-resolve';
 const DRINK_DEEP_CHOICE_ID = 'treant-card-drink-deep-resolve';
 const HARVEST_CHOICE_ID = 'treant-card-harvest-resolve';
 const DOWNPOUR_CHOICE_ID = 'treant-card-downpour-resolve';
@@ -47,9 +49,18 @@ const TEND_CARE_CHOICE_ID_BY_AMOUNT: Record<number, string> = {
     3: 'treant-tend-care-3-resolve',
     4: 'treant-tend-care-4-resolve',
 };
+const WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT: Record<number, string> = {
+    1: 'treant-wild-growth-2-cultivate-1-resolve',
+    2: 'treant-wild-growth-2-cultivate-2-resolve',
+    3: 'treant-wild-growth-2-cultivate-3-resolve',
+    4: 'treant-wild-growth-2-cultivate-4-resolve',
+    5: 'treant-wild-growth-2-cultivate-5-resolve',
+};
 const WILD_GROWTH_SOURCE_IDS = ['wild-growth'] as const;
+const WILD_GROWTH_2_MAIN_SOURCE_IDS = ['wild-growth-2-main'] as const;
 const SHATTERING_FIST_SOURCE_IDS = ['shattering-fist-3', 'shattering-fist-4', 'shattering-fist-5'] as const;
-const NATURE_TOUCH_SOURCE_IDS = ['nature-touch'] as const;
+const NATURE_TOUCH_SOURCE_IDS = ['nature-touch', 'nature-touch-2-main'] as const;
+const NATURE_TOUCH_2_MERCY_SOURCE_IDS = ['nature-touch-2-mercy'] as const;
 const SHATTERING_FIST_3_CULTIVATE_SOURCE_IDS = ['shattering-fist-3-3', 'shattering-fist-3-4', 'shattering-fist-3-5'] as const;
 const QUIET_CULTIVATION_SOURCE_IDS = ['quiet-cultivation'] as const;
 const ROOTED_SOURCE_IDS = ['rooted'] as const;
@@ -69,7 +80,9 @@ const CARD_CULTIVATE_ALLOWED_AMOUNTS_BY_SOURCE: Record<(typeof CARD_CULTIVATE_SO
     'treant-card-soulfire': [1, 2, 3],
     'treant-card-mother-tree': [4],
 };
-const TEND_CARE_SOURCE_IDS = ['tend-care'] as const;
+const TEND_CARE_SOURCE_IDS = ['tend-care', 'tend-care-2-main'] as const;
+const TEND_CARE_2_CULTIVATE_SOURCE_IDS = ['tend-care-2-cultivate'] as const;
+const VENGEFUL_VINES_2_PAIN_SOURCE_IDS = ['vengeful-vines-2-pain'] as const;
 const NATURE_TOUCH_CULTIVATE_AMOUNT = 2;
 const FOREST_AWAKENS_CULTIVATE_AMOUNT = 5;
 
@@ -397,7 +410,11 @@ function getTendCareCultivateAmount(action: CustomActionContext['action']): numb
 function getCurrentTendCareCultivateAmount(
     state: CustomActionContext['state'],
     playerId: string,
+    sourceAbilityId?: string,
 ): number | undefined {
+    if (sourceAbilityId === 'tend-care-2-main') return 4;
+    if (sourceAbilityId === 'tend-care') return 3;
+
     const effect = getPlayerAbilityEffects(state, playerId, 'tend-care').find(currentEffect => (
         currentEffect.action.type === 'custom'
         && currentEffect.action.customActionId === 'treant-tend-care-choice'
@@ -595,6 +612,18 @@ function buildCardCultivateChoices(ctx: CustomActionContext, amount: number): Ch
     }));
 }
 
+function buildGenericCultivateChoices(
+    ctx: CustomActionContext,
+    amount: number,
+    customId: string,
+): ChoiceRequestedEvent['payload']['options'] {
+    return enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), amount).map(outcome => ({
+        value: encodeSpiritCounts(outcome),
+        customId,
+        labelKey: getCultivateLabelKey(outcome),
+    }));
+}
+
 function bitCount(value: number): number {
     let count = 0;
     let remaining = Math.max(0, Math.floor(value));
@@ -679,6 +708,41 @@ function handleSaplingHealCp({ attackerId, sourceAbilityId, state, timestamp }: 
 function handleSaplingDraw({ attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
     return buildDrawEvents(state, attackerId, 1, random, 'ABILITY_EFFECT', timestamp, sourceAbilityId);
+}
+
+function closeoutNonAttackVariant(attackerId: string, timestamp: number): PendingAttackUpdatedEvent {
+    return {
+        type: 'PENDING_ATTACK_UPDATED',
+        payload: {
+            attackerId,
+            patch: { isDefendable: false },
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as PendingAttackUpdatedEvent;
+}
+
+function buildDirectDamageEvent(
+    state: CustomActionContext['state'],
+    sourceAbilityId: string,
+    targetId: string,
+    amount: number,
+    timestamp: number,
+): DamageDealtEvent {
+    const targetHp = state.players[targetId]?.resources[RESOURCE_IDS.HP] ?? 0;
+    return {
+        type: 'DAMAGE_DEALT',
+        payload: {
+            targetId,
+            amount,
+            actualDamage: Math.min(amount, targetHp),
+            sourceAbilityId,
+            unblockable: true,
+            damageScope: 'direct',
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as DamageDealtEvent;
 }
 
 function handleLifeSapUse({ attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
@@ -851,6 +915,188 @@ function handleForestAwakensChoice(ctx: CustomActionContext): DiceThroneEvent[] 
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp: ctx.timestamp,
     } as ChoiceRequestedEvent];
+}
+
+function handleTendCare2Cultivate(ctx: CustomActionContext): DiceThroneEvent[] {
+    const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), 6);
+    if (outcomes.length === 0) return [];
+    if (outcomes.length === 1) {
+        return buildSpiritTransitionEvents(ctx, outcomes[0]);
+    }
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantCultivate.title',
+            options: buildGenericCultivateChoices(ctx, 6, TEND_CARE_2_CULTIVATE_CHOICE_ID),
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleNatureTouch2Mercy(ctx: CustomActionContext): DiceThroneEvent[] {
+    if (!ctx.random) return [];
+    const events: DiceThroneEvent[] = [];
+    const currentHp = ctx.state.players[ctx.attackerId]?.resources[RESOURCE_IDS.HP] ?? 0;
+    events.push({
+        type: 'HEAL_APPLIED',
+        payload: {
+            targetId: ctx.attackerId,
+            amount: 1,
+            actualHealing: 1,
+            sourceAbilityId: ctx.sourceAbilityId,
+            oldValue: currentHp,
+            newValue: currentHp + 1,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as HealAppliedEvent);
+
+    const currentCp = ctx.state.players[ctx.attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+    events.push({
+        type: 'CP_CHANGED',
+        payload: {
+            playerId: ctx.attackerId,
+            delta: currentCp >= CP_MAX ? 0 : 1,
+            newValue: Math.min(currentCp + 1, CP_MAX),
+            sourceAbilityId: ctx.sourceAbilityId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp + 1,
+    } as CpChangedEvent);
+
+    events.push(...buildDrawEvents(ctx.state, ctx.attackerId, 1, ctx.random, 'ABILITY_EFFECT', ctx.timestamp + 2, ctx.sourceAbilityId));
+
+    const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), 1);
+    if (outcomes.length === 0) {
+        events.push(closeoutNonAttackVariant(ctx.attackerId, ctx.timestamp + 3));
+        return events;
+    }
+    if (outcomes.length === 1) {
+        events.push(...buildSpiritTransitionEvents(ctx, outcomes[0]));
+        events.push(closeoutNonAttackVariant(ctx.attackerId, ctx.timestamp + 4));
+        return events;
+    }
+
+    events.push({
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantCultivate.title',
+            options: buildGenericCultivateChoices(ctx, 1, NATURE_TOUCH_2_MERCY_CHOICE_ID),
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp + 3,
+    } as ChoiceRequestedEvent);
+    return events;
+}
+
+function handleVengefulVines2Pain(ctx: CustomActionContext): DiceThroneEvent[] {
+    const totalDamage = totalSpirits(getSpiritCounts(ctx));
+    const events: DiceThroneEvent[] = [];
+    if (ctx.targetId && totalDamage > 0) {
+        events.push(buildDirectDamageEvent(ctx.state, ctx.sourceAbilityId, ctx.targetId, totalDamage, ctx.timestamp));
+    }
+    events.push(closeoutNonAttackVariant(ctx.attackerId, ctx.timestamp + 1));
+    return events;
+}
+
+function handleWildGrowth2Main(ctx: CustomActionContext): DiceThroneEvent[] {
+    const { attackerId, sourceAbilityId, state, timestamp, random } = ctx;
+    if (!random) return [];
+
+    const rollDice: Array<{ index: number; value: number; face: string; effectKey: string; effectParams: Record<string, number> }> = [];
+    const events: DiceThroneEvent[] = [];
+    let branchCount = 0;
+    let leafCount = 0;
+    let spiritCount = 0;
+
+    for (let i = 0; i < 5; i += 1) {
+        const value = random.d(6);
+        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        if (face === TREANT_DICE_FACE_IDS.BRANCH) branchCount += 1;
+        if (face === TREANT_DICE_FACE_IDS.LEAF) leafCount += 1;
+        if (face === TREANT_DICE_FACE_IDS.SPIRIT) spiritCount += 1;
+        const effectKey = `bonusDie.effect.treantWildGrowth2.${face || 'other'}`;
+        const effectParams = { value, index: i };
+        rollDice.push({ index: i, value, face, effectKey, effectParams });
+        events.push({
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId: attackerId,
+                targetPlayerId: ctx.targetId,
+                effectKey,
+                effectParams,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + i,
+        } as BonusDieRolledEvent);
+    }
+
+    events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, ctx.targetId, rollDice, timestamp + 5, {
+        summaryEffectKey: 'bonusDie.effect.treantWildGrowth2.result',
+        summaryEffectParams: { branchCount, leafCount, spiritCount },
+    }));
+
+    if (branchCount > 0) {
+        events.push({
+            type: 'BONUS_DAMAGE_ADDED',
+            payload: {
+                playerId: attackerId,
+                amount: branchCount,
+                sourceCardId: sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 6,
+        } as BonusDamageAddedEvent);
+    }
+
+    if (leafCount > 0) {
+        const currentLifeSap = state.players[attackerId]?.tokens[TOKEN_IDS.LIFE_SAP] ?? 0;
+        const maxLifeSap = getTokenStackLimit(state, attackerId, TOKEN_IDS.LIFE_SAP);
+        events.push({
+            type: 'TOKEN_GRANTED',
+            payload: {
+                targetId: attackerId,
+                tokenId: TOKEN_IDS.LIFE_SAP,
+                amount: Math.max(0, Math.min(currentLifeSap + 1, maxLifeSap) - currentLifeSap),
+                newTotal: Math.min(currentLifeSap + 1, maxLifeSap),
+                sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 7,
+        } as TokenGrantedEvent);
+    }
+
+    if (spiritCount <= 0) return events;
+
+    const choiceId = WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[spiritCount];
+    if (!choiceId) return events;
+    const choiceOptions = buildGenericCultivateChoices(ctx, spiritCount, choiceId);
+    if (choiceOptions.length === 0) return events;
+    if (choiceOptions.length === 1) {
+        events.push(...buildSpiritTransitionEvents(ctx, decodeSpiritCounts(choiceOptions[0].value)));
+        return events;
+    }
+
+    events.push({
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: attackerId,
+            sourceAbilityId,
+            titleKey: 'choices.treantCultivate.title',
+            options: choiceOptions,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: timestamp + 8,
+    } as ChoiceRequestedEvent);
+    return events;
 }
 
 function handleCardCultivate(ctx: CustomActionContext): DiceThroneEvent[] {
@@ -1767,6 +2013,72 @@ registerChoiceEffectHandler(DOWNPOUR_CHOICE_ID, ({ state, playerId, value, sourc
     };
 });
 
+function resolveCultivateOnlyChoice(
+    expectedSourceIds: readonly string[],
+    amount: number,
+    opts?: { closeout?: boolean; bonusDamageBySpiritCount?: boolean },
+) {
+    return ({
+        state,
+        playerId,
+        value,
+        sourceAbilityId,
+    }: {
+        state: CustomActionContext['state'];
+        playerId: string;
+        value?: number;
+        sourceAbilityId?: string;
+    }) => {
+        const player = state.players[playerId];
+        if (!isExpectedChoiceSource(sourceAbilityId, expectedSourceIds)) return undefined;
+        if (!matchesCurrentChoiceSource(state, sourceAbilityId)) return undefined;
+        if (state.activePlayerId !== playerId) return undefined;
+        if (!player) return undefined;
+
+        const choice = decodeSpiritCounts(value);
+        const ctx: TreantSpiritContext = { attackerId: playerId, state };
+        const legalOutcomes = enumerateCultivateOutcomes(
+            getSpiritCounts(ctx),
+            getSpiritLimits(ctx),
+            amount,
+        );
+        const isLegal = legalOutcomes.some(outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice));
+        if (!isLegal) return undefined;
+
+        return {
+            players: {
+                ...state.players,
+                [playerId]: {
+                    ...player,
+                    tokens: {
+                        ...player.tokens,
+                        [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                        [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                        [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
+                    },
+                },
+            },
+            ...(opts?.bonusDamageBySpiritCount && state.pendingAttack ? {
+                pendingAttack: {
+                    ...state.pendingAttack,
+                    bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + totalSpirits(choice),
+                },
+            } : {}),
+            ...(opts?.closeout && state.pendingAttack ? {
+                pendingAttack: {
+                    ...(opts?.bonusDamageBySpiritCount
+                        ? {
+                            ...state.pendingAttack,
+                            bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + totalSpirits(choice),
+                        }
+                        : state.pendingAttack),
+                    isDefendable: false,
+                },
+            } : {}),
+        };
+    };
+}
+
 function resolveTendCareChoice(amount: number) {
     return ({
         state,
@@ -1784,7 +2096,7 @@ function resolveTendCareChoice(amount: number) {
         if (!matchesCurrentChoiceSource(state, sourceAbilityId)) return undefined;
         if (state.activePlayerId !== playerId) return undefined;
         if (!player) return undefined;
-        if (getCurrentTendCareCultivateAmount(state, playerId) !== amount) return undefined;
+        if (getCurrentTendCareCultivateAmount(state, playerId, sourceAbilityId) !== amount) return undefined;
 
         const choice = decodeTendCareChoice(value);
         const ctx: TreantSpiritContext = { attackerId: playerId, state };
@@ -1851,6 +2163,13 @@ registerChoiceEffectHandler(CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[3], resolveCardCu
 registerChoiceEffectHandler(CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[4], resolveCardCultivateChoice(4));
 registerChoiceEffectHandler(TEND_CARE_CHOICE_ID_BY_AMOUNT[3], resolveTendCareChoice(3));
 registerChoiceEffectHandler(TEND_CARE_CHOICE_ID_BY_AMOUNT[4], resolveTendCareChoice(4));
+registerChoiceEffectHandler(TEND_CARE_2_CULTIVATE_CHOICE_ID, resolveCultivateOnlyChoice(TEND_CARE_2_CULTIVATE_SOURCE_IDS, 6));
+registerChoiceEffectHandler(NATURE_TOUCH_2_MERCY_CHOICE_ID, resolveCultivateOnlyChoice(NATURE_TOUCH_2_MERCY_SOURCE_IDS, 1, { closeout: true }));
+registerChoiceEffectHandler(WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[1], resolveCultivateOnlyChoice(WILD_GROWTH_2_MAIN_SOURCE_IDS, 1));
+registerChoiceEffectHandler(WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[2], resolveCultivateOnlyChoice(WILD_GROWTH_2_MAIN_SOURCE_IDS, 2));
+registerChoiceEffectHandler(WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[3], resolveCultivateOnlyChoice(WILD_GROWTH_2_MAIN_SOURCE_IDS, 3));
+registerChoiceEffectHandler(WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[4], resolveCultivateOnlyChoice(WILD_GROWTH_2_MAIN_SOURCE_IDS, 4));
+registerChoiceEffectHandler(WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[5], resolveCultivateOnlyChoice(WILD_GROWTH_2_MAIN_SOURCE_IDS, 5));
 
 export function registerTreantCustomActions(): void {
     registerCustomActionHandler('treant-sapling-heal-cp', handleSaplingHealCp, { categories: ['resource', 'token'] });
@@ -1883,6 +2202,31 @@ export function registerTreantCustomActions(): void {
     registerCustomActionHandler('treant-forest-awakens-choice', handleForestAwakensChoice, {
         categories: ['choice', 'token'],
         requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-tend-care-2-cultivate', handleTendCare2Cultivate, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-nature-touch-2-mercy', handleNatureTouch2Mercy, {
+        categories: ['choice', 'resource', 'card', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-vengeful-vines-2-pain', handleVengefulVines2Pain, {
+        categories: ['damage', 'token'],
+        requiresSelectedDefender: true,
+        estimateDamage: (state, playerId) => {
+            const player = state.players?.[playerId] as { tokens?: Record<string, number> } | undefined;
+            const tokens = player?.tokens ?? {};
+            return (tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0)
+                + (tokens[TOKEN_IDS.TREANT_SAPLING] ?? 0)
+                + (tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0);
+        },
+    });
+    registerCustomActionHandler('treant-wild-growth-2-main', handleWildGrowth2Main, {
+        categories: ['dice', 'damage', 'token', 'choice'],
+        requiresInteraction: true,
+        requiresSelectedDefender: true,
+        estimateDamage: () => 8,
     });
     registerCustomActionHandler('treant-wild-growth-choice', handleWildGrowthChoice, {
         categories: ['choice', 'token'],

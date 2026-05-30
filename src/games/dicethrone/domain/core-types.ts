@@ -501,6 +501,8 @@ export interface PendingBonusDiceSettlement {
      * 例：Wild West（荒野西部）在 Loaded 奖励骰确定后再额外 +1。
      */
     postSettleBonusDamageAdds?: Array<{ amount: number; sourceCardId?: string }>;
+    /** 自定义奖励骰收口处理器 ID（用于非“点数总和即伤害”的特殊结算） */
+    customResolutionId?: string;
 }
 
 export interface HeroState {

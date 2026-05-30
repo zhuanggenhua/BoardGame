@@ -27,6 +27,7 @@ import {
 } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
 import { getCustomActionHandler } from './effects';
+import { getBonusDiceSettlementHandler } from './bonusDiceSettlement';
 import { applyEvents } from './utils';
 
 /**
@@ -409,9 +410,16 @@ export function executeTokenCommand(
                 break;
             }
             
-            // 计算最终伤害
-            const totalDamage = settlement.dice.reduce((sum, d) => sum + d.value, 0);
-            const thresholdTriggered = settlement.threshold ? totalDamage >= settlement.threshold : false;
+            // 计算最终伤害；特殊技能可覆盖“点数和即伤害”的默认收口。
+            const defaultTotalDamage = settlement.dice.reduce((sum, d) => sum + d.value, 0);
+            const settlementHandler = settlement.customResolutionId
+                ? getBonusDiceSettlementHandler(settlement.customResolutionId)
+                : undefined;
+            const settlementResult = settlementHandler?.({ state, settlement, timestamp });
+            const totalDamage = settlementResult?.totalDamage ?? defaultTotalDamage;
+            const thresholdTriggered = settlementResult?.thresholdTriggered
+                ?? (settlement.threshold ? totalDamage >= settlement.threshold : false);
+            const followupEvents = settlementResult?.followupEvents ?? [];
             
             // 发出 BONUS_DICE_SETTLED 事件
             // displayOnly 标记传递给 systems.ts，避免误 resolve 其他活跃交互
@@ -432,6 +440,7 @@ export function executeTokenCommand(
             
             // displayOnly 模式：仅展示骰子结果，伤害/状态已由 custom action 处理
             if (settlement.displayOnly) {
+                events.push(...followupEvents);
                 break;
             }
 
@@ -465,10 +474,12 @@ export function executeTokenCommand(
                         } as DiceThroneEvent);
                     }
                 }
+                events.push(...followupEvents);
                 break;
             }
 
             if (settlement.resolutionMode === 'none') {
+                events.push(...followupEvents);
                 break;
             }
 
@@ -507,6 +518,7 @@ export function executeTokenCommand(
                     timestamp,
                 } as StatusAppliedEvent);
             }
+            events.push(...followupEvents);
             break;
         }
     }
