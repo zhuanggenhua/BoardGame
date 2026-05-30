@@ -22,7 +22,6 @@ const DEATH_BLOSSOM_2_SETTLEMENT_ID = 'ninja-death-blossom-2';
 const NINJA_SMOKE_SCREEN_2_CHOICE_ID = 'ninja-smoke-screen-2-choice';
 const NINJA_SMOKE_SCREEN_KUJI_KIRI_CHOICE_ID = 'ninja-smoke-screen-kuji-kiri-choice';
 
-const SHADOW_STEP_2_STRANGLE_SOURCE_IDS = ['shadow-step-2-strangle'] as const;
 const SMOKE_SCREEN_2_MAIN_SOURCE_IDS = ['smoke-screen-2-main'] as const;
 const SMOKE_SCREEN_2_KUJI_KIRI_SOURCE_IDS = ['smoke-screen-2-kuji-kiri'] as const;
 

@@ -82,7 +82,6 @@ const CARD_CULTIVATE_ALLOWED_AMOUNTS_BY_SOURCE: Record<(typeof CARD_CULTIVATE_SO
 };
 const TEND_CARE_SOURCE_IDS = ['tend-care', 'tend-care-2-main'] as const;
 const TEND_CARE_2_CULTIVATE_SOURCE_IDS = ['tend-care-2-cultivate'] as const;
-const VENGEFUL_VINES_2_PAIN_SOURCE_IDS = ['vengeful-vines-2-pain'] as const;
 const NATURE_TOUCH_CULTIVATE_AMOUNT = 2;
 const FOREST_AWAKENS_CULTIVATE_AMOUNT = 5;
 
