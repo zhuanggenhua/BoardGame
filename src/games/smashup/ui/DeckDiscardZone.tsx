@@ -7,7 +7,7 @@ import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PromptOverlay } from './PromptOverlay';
 import { UI_Z_INDEX } from '../../../core';
 import { SMASHUP_CARD_BACK } from '../domain/ids';
-import { getTitanDef, resolveCardName } from '../data/cards';
+import { getCardDef, getFactionCards, getTitanDef, resolveCardName } from '../data/cards';
 import { MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from '../domain/types';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
 
@@ -20,6 +20,8 @@ function cardHeight(width: string): string {
 
 type Props = {
     deckCount: number;
+    deckCards?: CardInstance[];
+    deckFactions?: readonly string[];
     madnessSupplyCount?: number;
     discard: CardInstance[];
     isMyTurn: boolean;
@@ -52,6 +54,8 @@ type Props = {
 
 export const DeckDiscardZone: React.FC<Props> = ({
     deckCount,
+    deckCards = [],
+    deckFactions = [],
     madnessSupplyCount,
     discard,
     isMyTurn,
@@ -75,6 +79,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
     playerNames,
 }) => {
     const { t } = useTranslation('game-smashup');
+    const [showDeck, setShowDeck] = useState(false);
     const [showDiscard, setShowDiscard] = useState(false);
     const clampedMadnessSupplyCount = typeof madnessSupplyCount === 'number'
         ? Math.max(0, Math.min(MADNESS_DECK_SIZE, madnessSupplyCount))
@@ -92,6 +97,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
         if (autoOpenPanel && !prevAutoOpen.current) {
             queueMicrotask(() => {
                 if (!cancelled) {
+                    setShowDeck(false);
                     setShowDiscard(true);
                 }
             });
@@ -119,8 +125,64 @@ export const DeckDiscardZone: React.FC<Props> = ({
         onClosePanel?.();
     }, [onSelectCard, onClosePanel]);
 
+    const handleCloseDeck = useCallback(() => {
+        setShowDeck(false);
+    }, []);
+
     // portal 容器 ref，用于点击外部关闭检测
-    const portalRef = React.useRef<HTMLDivElement | null>(null);
+    const discardPortalRef = React.useRef<HTMLDivElement | null>(null);
+    const deckPortalRef = React.useRef<HTMLDivElement | null>(null);
+
+    const orderedDeckDefIds = useMemo(() => {
+        const orderedDefIds: string[] = [];
+        const seen = new Set<string>();
+        for (const factionId of deckFactions) {
+            for (const def of getFactionCards(factionId)) {
+                if (seen.has(def.id)) continue;
+                seen.add(def.id);
+                orderedDefIds.push(def.id);
+            }
+        }
+        return orderedDefIds;
+    }, [deckFactions]);
+
+    const deckDisplayCards = useMemo(() => {
+        const countByDefId = new Map<string, number>();
+        for (const card of deckCards) {
+            countByDefId.set(card.defId, (countByDefId.get(card.defId) ?? 0) + 1);
+        }
+
+        const orderedDefIds: string[] = [];
+        const seen = new Set<string>();
+        for (const defId of orderedDeckDefIds) {
+            if (!countByDefId.has(defId)) continue;
+            orderedDefIds.push(defId);
+            seen.add(defId);
+        }
+
+        const extraDefIds = Array.from(countByDefId.keys())
+            .filter((defId) => !seen.has(defId))
+            .sort((left, right) => {
+                const leftName = resolveCardName(getCardDef(left), t) || left;
+                const rightName = resolveCardName(getCardDef(right), t) || right;
+                return leftName.localeCompare(rightName, 'zh-Hans-CN');
+            });
+
+        return [...orderedDefIds, ...extraDefIds].map((defId) => ({
+            uid: `deck-${defId}`,
+            defId,
+            count: countByDefId.get(defId) ?? 0,
+        }));
+    }, [deckCards, orderedDeckDefIds, t]);
+
+    const displayDeckCardsData = useMemo(() => {
+        if (!showDeck) return undefined;
+        return {
+            title: `${t('ui.deck', { defaultValue: '牌库' })} (${deckCount})`,
+            cards: deckDisplayCards,
+            onClose: handleCloseDeck,
+        };
+    }, [deckCount, deckDisplayCards, handleCloseDeck, showDeck, t]);
 
     const displayCardsData = useMemo(() => {
         if (!showDiscard || discard.length === 0) return undefined;
@@ -142,19 +204,25 @@ export const DeckDiscardZone: React.FC<Props> = ({
 
     // 点击面板外部关闭弃牌堆查看（interaction 驱动时不关闭，因为用户需要点击基地）
     useEffect(() => {
-        if (!showDiscard) return;
+        if (!showDiscard && !showDeck) return;
         if (autoOpenPanel) return; // interaction 模式下不监听外部点击
         const handler = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             // 点击在弃牌堆查看面板内部（含 portal）、弃牌堆按钮、或放大镜遮罩上，不关闭
-            if (target.closest('[data-discard-view-panel]') || target.closest('[data-discard-toggle]') || target.closest('[data-interaction-allow]')) return;
+            if (
+                target.closest('[data-card-view-panel]')
+                || target.closest('[data-discard-toggle]')
+                || target.closest('[data-deck-toggle]')
+                || target.closest('[data-interaction-allow]')
+            ) return;
             // 额外检查 portal ref（防止 closest 在 portal 中失效）
-            if (portalRef.current?.contains(target)) return;
+            if (discardPortalRef.current?.contains(target) || deckPortalRef.current?.contains(target)) return;
+            setShowDeck(false);
             setShowDiscard(false);
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
-    }, [showDiscard, autoOpenPanel]);
+    }, [showDiscard, showDeck, autoOpenPanel]);
 
     const handleTitanClick = useCallback((titan: TitanState) => {
         if (activatableTitanUids?.has(titan.uid) && onSelectTitan) {
@@ -193,7 +261,16 @@ export const DeckDiscardZone: React.FC<Props> = ({
         >
             <div className="flex items-end gap-3 pointer-events-auto">
                 {/* 牌库 - 左侧 */}
-                <div className="flex flex-col items-center group" data-testid="su-deck-stack">
+                <div
+                    className="flex flex-col items-center group cursor-pointer"
+                    data-testid="su-deck-stack"
+                    data-deck-toggle
+                    onClick={() => {
+                        if (deckDisplayCards.length === 0) return;
+                        setShowDiscard(false);
+                        setShowDeck(prev => !prev);
+                    }}
+                >
                     <div
                         className="relative aspect-[0.714]"
                         style={{
@@ -235,7 +312,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                         </div>
                     </div>
                     <div
-                        className="mt-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-white font-bold uppercase tracking-wider flex items-center gap-1"
+                        className={`mt-2 px-2 py-0.5 rounded font-bold uppercase tracking-wider flex items-center gap-1 transition-colors ${showDeck ? 'bg-purple-700/85 text-purple-50' : 'bg-black/60 text-white group-hover:text-purple-300'}`}
                         style={{ minHeight: labelMinHeight, fontSize: labelFontSize }}
                     >
                         <Library size={10} /> {t('ui.deck')}
@@ -345,6 +422,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                 onClick={() => {
                     if (autoOpenPanel) return;
                     if (topCard && shouldBlockDiscardClick(topCard.uid)) return;
+                    setShowDeck(false);
                     setShowDiscard(prev => !prev);
                 }}
             >
@@ -411,13 +489,26 @@ export const DeckDiscardZone: React.FC<Props> = ({
 
             {/* 弃牌堆查看：复用 PromptOverlay 通用卡牌展示模式，Portal 到 body 避免被手牌区域 stacking context 遮挡 */}
             {displayCardsData && createPortal(
-                <div ref={portalRef}>
+                <div ref={discardPortalRef}>
                     <PromptOverlay
                         interaction={undefined}
                         dispatch={dispatch}
                         playerID={playerID}
                         playerNames={playerNames}
                         displayCards={displayCardsData}
+                    />
+                </div>,
+                document.body,
+            )}
+
+            {displayDeckCardsData && createPortal(
+                <div ref={deckPortalRef}>
+                    <PromptOverlay
+                        interaction={undefined}
+                        dispatch={dispatch}
+                        playerID={playerID}
+                        playerNames={playerNames}
+                        displayCards={displayDeckCardsData}
                     />
                 </div>,
                 document.body,

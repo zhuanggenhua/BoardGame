@@ -49,6 +49,24 @@ export const homeV2PaperCompactPrimaryButtonClassName = clsx(
     'hover:bg-[#113008] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-65',
 );
 
+export const homeV2PaperDangerPrimaryButtonClassName = clsx(
+    'cursor-pointer rounded-[3px] border border-[#a16f43]/76',
+    'bg-[linear-gradient(180deg,rgba(98,56,31,0.98)_0%,rgba(71,40,22,1)_100%)]',
+    'px-4 py-[11px] text-[15px] font-bold tracking-[0.12em] text-[#f3e0bf]',
+    'shadow-[0_8px_14px_rgba(50,29,16,0.18),inset_0_1px_0_rgba(255,240,206,0.16)] transition-colors',
+    'hover:bg-[linear-gradient(180deg,rgba(108,61,33,0.98)_0%,rgba(76,43,23,1)_100%)]',
+    'disabled:cursor-not-allowed disabled:opacity-65',
+);
+
+export const homeV2PaperCompactDangerPrimaryButtonClassName = clsx(
+    'cursor-pointer rounded-[3px] border border-[#a16f43]/76',
+    'bg-[linear-gradient(180deg,rgba(98,56,31,0.98)_0%,rgba(71,40,22,1)_100%)]',
+    'px-[8px] py-[4px] text-[7.8px] font-bold tracking-[0.08em] text-[#f3e0bf]',
+    'shadow-[0_8px_14px_rgba(50,29,16,0.18),inset_0_1px_0_rgba(255,240,206,0.16)] transition-colors',
+    'hover:bg-[linear-gradient(180deg,rgba(108,61,33,0.98)_0%,rgba(76,43,23,1)_100%)]',
+    'disabled:cursor-not-allowed disabled:opacity-65',
+);
+
 export const homeV2PaperSecondaryButtonClassName = clsx(
     'cursor-pointer rounded-[4px] border border-[#a67845] bg-[rgba(246,230,199,0.44)]',
     'px-4 py-[11px] text-[14px] font-semibold text-[#4c2e1a] transition-colors hover:bg-[rgba(240,212,164,0.70)]',

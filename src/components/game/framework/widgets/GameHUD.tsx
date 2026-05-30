@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUndo, useUndoStatus } from '../../../../contexts/UndoContext';
 import { UI_Z_INDEX, HudPortal } from '../../../../core';
 import { FabMenu, type FabAction } from '../../../system/FabMenu';
+import type { AiSeatController } from '../../../../engine/ai';
 import { UNDO_COMMANDS } from '../../../../engine';
 import { AudioControlSection } from './AudioControlSection';
 import { AboutModal } from '../../../system/AboutModal';
@@ -46,6 +47,7 @@ import { isNativeAndroidRuntime } from '../../../../lib/mobile/androidRuntime';
 import { OptimizedImage } from '../../../common/media/OptimizedImage';
 import { EmotePicker } from './EmotePicker';
 import { SeatEmoteOverlay } from './SeatEmoteOverlay';
+import { resolveMatchSeatSwapContext } from '../matchSeatSwap';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial' | 'test';
@@ -63,6 +65,7 @@ interface GameHUDProps {
         name?: string;
         isConnected?: boolean;
     }>;
+    seatControllers?: Record<string, AiSeatController>;
     onLeave?: () => void;
     onDestroy?: () => void;
     onForceExit?: () => void;
@@ -139,6 +142,7 @@ export const GameHUD = ({
     opponentName,
     opponentConnected,
     players,
+    seatControllers,
     onLeave,
     onDestroy,
     onForceExit,
@@ -225,6 +229,179 @@ export const GameHUD = ({
         });
         return map;
     }, [players]);
+
+    const effectiveHudPlayerId = myPlayerId ?? undoState?.playerID ?? null;
+    const seatSwapContext = useMemo(() => resolveMatchSeatSwapContext({
+        gameId: _gameId,
+        state: undoState?.G,
+        myPlayerId: effectiveHudPlayerId,
+        seatControllers,
+    }), [_gameId, effectiveHudPlayerId, seatControllers, undoState?.G]);
+
+    const internalSeatSwapContent = useMemo(() => {
+        if (!seatSwapContext || effectiveHudPlayerId == null || !undoState) {
+            return undefined;
+        }
+
+        const {
+            seatSwapMode,
+            seatingOrder,
+            seatControllerTypeByPlayerId,
+            pendingSeatSwapRequest,
+            requestSeatSwapCommandType,
+            respondSeatSwapCommandType,
+            cancelSeatSwapCommandType,
+        } = seatSwapContext;
+        const normalizedMyPlayerId = String(effectiveHudPlayerId);
+        const isSeatSwapPending = seatSwapMode === 'request' && Boolean(pendingSeatSwapRequest);
+        const isRequester = pendingSeatSwapRequest?.requesterId === normalizedMyPlayerId;
+        const isTarget = pendingSeatSwapRequest?.targetPlayerId === normalizedMyPlayerId;
+        const resolveSeatPlayerName = (playerId: string) => (
+            playerNameMap.get(playerId)
+            ?? t('hud.status.player', { id: playerId })
+        );
+        const seatHint = (() => {
+            if (seatSwapMode !== 'request' || !pendingSeatSwapRequest) {
+                return t('hud.seatSwap.hint');
+            }
+            if (isRequester) {
+                return t('hud.seatSwap.waiting', {
+                    player: resolveSeatPlayerName(pendingSeatSwapRequest.targetPlayerId),
+                });
+            }
+            if (isTarget) {
+                return t('hud.seatSwap.incoming', {
+                    player: resolveSeatPlayerName(pendingSeatSwapRequest.requesterId),
+                });
+            }
+            return t('hud.seatSwap.pendingOther', {
+                requester: resolveSeatPlayerName(pendingSeatSwapRequest.requesterId),
+                target: resolveSeatPlayerName(pendingSeatSwapRequest.targetPlayerId),
+            });
+        })();
+
+        return ({ closePanel }: { closePanel: () => void }) => (
+            <div className="space-y-3">
+                <div className="rounded-md border border-white/10 bg-white/5 p-3">
+                    <div className="text-xs font-bold text-white">{t('hud.actions.seatSwap')}</div>
+                    <div className="mt-1 text-[11px] text-white/60">{seatHint}</div>
+                </div>
+
+                <div className="space-y-2">
+                    {seatingOrder.map((seatPlayerId, seatIndex) => {
+                        const isSelfSeat = seatPlayerId === normalizedMyPlayerId;
+                        const isSeatRequester = pendingSeatSwapRequest?.requesterId === seatPlayerId;
+                        const isSeatTarget = pendingSeatSwapRequest?.targetPlayerId === seatPlayerId;
+                        const seatControllerType = seatControllerTypeByPlayerId[seatPlayerId];
+                        const isAiSeat = seatControllerType != null && seatControllerType !== 'human';
+                        const canRequestThisSeat = !isSelfSeat && !isSeatSwapPending;
+                        return (
+                            <button
+                                key={seatPlayerId}
+                                type="button"
+                                disabled={!canRequestThisSeat}
+                                onClick={() => {
+                                    if (!canRequestThisSeat) {
+                                        return;
+                                    }
+                                    undoState.dispatch(requestSeatSwapCommandType, { targetPlayerId: seatPlayerId });
+                                    closePanel();
+                                }}
+                                className={`w-full rounded-md border px-3 py-2 text-left transition-colors ${
+                                    canRequestThisSeat
+                                        ? 'border-white/12 bg-white/6 text-white/90 hover:bg-white/12'
+                                        : 'border-white/8 bg-white/4 text-white/45'
+                                }`}
+                                data-testid={`hud-seat-swap-seat-${seatPlayerId}`}
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 text-xs font-bold">
+                                            <span>{resolveSeatPlayerName(seatPlayerId)}</span>
+                                            {isSelfSeat ? (
+                                                <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] text-emerald-200">
+                                                    {t('hud.seatSwap.me')}
+                                                </span>
+                                            ) : null}
+                                            {isAiSeat ? (
+                                                <span className="rounded-full bg-sky-400/20 px-2 py-0.5 text-[10px] text-sky-100">
+                                                    {t('hud.seatSwap.aiBadge')}
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                        <div className="mt-1 text-[11px] text-white/55">
+                                            {t('hud.seatSwap.seatNumber', { seat: seatIndex + 1 })}
+                                        </div>
+                                    </div>
+                                    {isSeatRequester ? (
+                                        <span className="rounded-full bg-amber-400/20 px-2 py-1 text-[10px] font-bold text-amber-100">
+                                            {t('hud.seatSwap.requester')}
+                                        </span>
+                                    ) : null}
+                                    {isSeatTarget ? (
+                                        <span className="rounded-full bg-violet-400/20 px-2 py-1 text-[10px] font-bold text-violet-100">
+                                            {t('hud.seatSwap.target')}
+                                        </span>
+                                    ) : null}
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {seatSwapMode === 'request' && isTarget && (
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (respondSeatSwapCommandType) {
+                                    undoState.dispatch(respondSeatSwapCommandType, { approve: true });
+                                }
+                                closePanel();
+                            }}
+                            className="flex-1 rounded-md border border-emerald-500/45 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-500/28"
+                            data-testid="hud-seat-swap-approve"
+                        >
+                            {t('hud.seatSwap.approve')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (respondSeatSwapCommandType) {
+                                    undoState.dispatch(respondSeatSwapCommandType, { approve: false });
+                                }
+                                closePanel();
+                            }}
+                            className="flex-1 rounded-md border border-rose-500/45 bg-rose-500/15 px-3 py-2 text-xs font-bold text-rose-200 transition-colors hover:bg-rose-500/28"
+                            data-testid="hud-seat-swap-reject"
+                        >
+                            {t('hud.seatSwap.reject')}
+                        </button>
+                    </div>
+                )}
+
+                {seatSwapMode === 'request' && isRequester && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (cancelSeatSwapCommandType) {
+                                undoState.dispatch(cancelSeatSwapCommandType, {});
+                            }
+                            closePanel();
+                        }}
+                        className="w-full rounded-md border border-white/18 bg-white/8 px-3 py-2 text-xs font-bold text-white/85 transition-colors hover:bg-white/14"
+                        data-testid="hud-seat-swap-cancel"
+                    >
+                        {t('hud.seatSwap.cancel')}
+                    </button>
+                )}
+            </div>
+        );
+    }, [effectiveHudPlayerId, playerNameMap, seatSwapContext, t, undoState]);
+
+    const resolvedShowSeatSwap = showSeatSwap ?? Boolean(seatSwapContext);
+    const resolvedSeatSwapActionActive = seatSwapActionActive ?? Boolean(seatSwapContext?.pendingSeatSwapRequest);
+    const resolvedSeatSwapContent = seatSwapContent ?? internalSeatSwapContent;
 
     const getActionLogPlayerLabel = useCallback((playerId: string | number) => {
         const normalizedId = String(playerId);
@@ -1159,16 +1336,16 @@ export const GameHUD = ({
     }
 
     // 5.6 换位（位于操作日志与强制操作之间）
-    if (showSeatSwap && (seatSwapContent || onSeatSwapClick)) {
+    if (resolvedShowSeatSwap && (resolvedSeatSwapContent || onSeatSwapClick)) {
         items.push({
             id: 'seat-swap',
             icon: <ArrowLeftRight size={20} />,
             label: seatSwapActionLabel ?? t('hud.actions.seatSwap'),
             mobilePopoverVerticalAnchor: 'column',
-            active: seatSwapActionActive,
+            active: resolvedSeatSwapActionActive,
             color: seatSwapActionColor,
             onClick: onSeatSwapClick,
-            content: seatSwapContent,
+            content: resolvedSeatSwapContent,
         });
     }
 

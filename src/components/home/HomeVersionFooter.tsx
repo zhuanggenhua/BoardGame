@@ -239,7 +239,7 @@ export function HomeVersionFooter({
             type="button"
             data-testid={testId}
             onClick={handleVersionFooterClick}
-            className={`${positionMode} z-30 max-w-[min(72vw,20rem)] select-none text-[0.7rem] leading-none tracking-[0.08em] ${align === 'left' ? 'text-left' : 'text-right'} cursor-pointer md:text-[0.78rem] ${positionClassName}`}
+            className={`${positionMode} z-30 max-w-[min(72vw,20rem)] select-none text-[0.7rem] leading-none tracking-[0.08em] ${align === 'left' ? 'text-left' : 'text-right'} ${compact ? 'whitespace-nowrap' : ''} cursor-pointer md:text-[0.78rem] ${positionClassName}`}
             aria-label={shouldShowNativeAppVersion
                 ? otaEnabledForCurrentShell
                     ? otaVersionMismatch
@@ -253,7 +253,7 @@ export function HomeVersionFooter({
                 {shouldShowNativeAppVersion && (
                     <RefreshCw size={11} className={`shrink-0 ${isImmediateOtaActive ? 'animate-spin' : ''} ${iconColorClassName}`} />
                 )}
-                <span>{shouldShowNativeAppVersion ? `Bundle ${homeVersionLabel}` : homeVersionLabel}</span>
+                <span>{shouldShowNativeAppVersion && !compact ? `Bundle ${homeVersionLabel}` : homeVersionLabel}</span>
             </span>
             {!compact && shouldShowNativeAppVersion && (
                 <span className={`mt-1 block text-[0.58rem] tracking-[0.04em] md:text-[0.64rem] ${themeClasses.mutedText}`}>

@@ -77,6 +77,46 @@ export function validateDiscardMinionPlaySemantics(
     return { valid: true };
 }
 
+export function validateImmediateHandExtraMinionPlaySemantics(
+    core: SmashUpCore,
+    playerId: string,
+    params: {
+        cardUid: string;
+        baseIndex: number;
+    },
+): ValidationResult {
+    const restrictionError = getMinionPlayRestrictionError(core, playerId);
+    if (restrictionError) {
+        return { valid: false, error: restrictionError };
+    }
+
+    const player = core.players[playerId];
+    if (!player) return { valid: false, error: '玩家不存在' };
+
+    const { cardUid, baseIndex } = params;
+    if (baseIndex < 0 || baseIndex >= core.bases.length) {
+        return { valid: false, error: '无效的基地索引' };
+    }
+
+    const handCard = player.hand.find(card => card.uid === cardUid);
+    if (!handCard || !isCardMinionLike(handCard)) {
+        return { valid: false, error: '手牌中没有该随从' };
+    }
+
+    const basePower = getMinionLikePower(handCard.defId) ?? 0;
+    if (isOperationRestricted(core, baseIndex, playerId, 'play_minion', {
+        minionDefId: handCard.defId,
+        basePower,
+        usesBaseLimitedMinionQuota: false,
+        cardUid: handCard.uid,
+        fromDiscard: false,
+    })) {
+        return { valid: false, error: '该基地禁止打出该随从' };
+    }
+
+    return { valid: true };
+}
+
 export function validateDeckTopRegularMinionPlaySemantics(
     core: SmashUpCore,
     playerId: string,

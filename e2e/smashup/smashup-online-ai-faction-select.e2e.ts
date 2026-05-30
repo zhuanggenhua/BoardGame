@@ -13,6 +13,7 @@ import {
 } from '../helpers/common';
 import { waitForFactionDraft, waitForSmashUpUI } from '../helpers/smashup';
 import { getMatchState } from '../helpers/state-injection';
+import type { TestMatchAccess } from '../helpers/state-injection';
 
 type AutoAiSeatController = {
     type: 'local-ai';
@@ -149,6 +150,36 @@ async function readSelectionProgress(matchId: string, page: Page) {
     };
 }
 
+async function openFabPanel(page: Page, panelId: string, mainId = 'chat') {
+    const panel = page.getByTestId(`fab-panel-${panelId}`);
+    if (await panel.isVisible().catch(() => false)) {
+        return panel;
+    }
+
+    const panelButton = page.locator(`[data-fab-id="${panelId}"]`);
+    if (!await panelButton.isVisible().catch(() => false)) {
+        const mainButton = page.locator(`[data-fab-id="${mainId}"]`);
+        await expect(mainButton).toBeVisible({ timeout: 10000 });
+        await mainButton.click();
+    }
+
+    await expect(panelButton).toBeVisible({ timeout: 5000 });
+    await panelButton.click();
+    await expect(panel).toBeVisible({ timeout: 5000 });
+    return panel;
+}
+
+async function readSeatSwapState(matchId: string, access: TestMatchAccess) {
+    const state = await getMatchState(matchId, undefined, access);
+    return {
+        turnOrder: state.core?.turnOrder ?? [],
+        currentPlayerIndex: state.core?.currentPlayerIndex ?? null,
+        currentPlayerId: Array.isArray(state.core?.turnOrder)
+            ? state.core.turnOrder[state.core?.currentPlayerIndex ?? 0] ?? null
+            : null,
+    };
+}
+
 test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 playCards', async ({ browser }, testInfo) => {
     test.setTimeout(240000);
 
@@ -268,6 +299,102 @@ test('SmashUp 四人房 host + 3 AI 自动选派系应完整跑通并回到 play
                 finalShot,
             },
         }));
+    } finally {
+        await hostContext.close();
+    }
+});
+
+test('SmashUp 在线 AI 选派系共享 HUD 换位：应显示入口并与 AI 立即换位', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const hostContext = await browser.newContext({ baseURL });
+    const guestId = createGuestId('su-seat-swap');
+    await initContext(hostContext, {
+        storageKey: '__smashup_online_ai_hud_seat_swap',
+        skipImageGate: true,
+    });
+    await hostContext.addInitScript((id) => {
+        localStorage.setItem('guest_id', id);
+        sessionStorage.setItem('guest_id', id);
+        document.cookie = `bg_guest_id=${encodeURIComponent(id)}; path=/; SameSite=Lax`;
+    }, guestId);
+
+    const page = await hostContext.newPage();
+
+    try {
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        await waitForHomeGameList(page);
+        test.skip(!(await ensureGameServerAvailable(page)), '游戏服务器不可用');
+
+        const matchId = await createOnlineAiRoom({
+            page,
+            guestId,
+            numPlayers: 4,
+            seatControllers: {
+                '1': { type: 'local-ai', difficulty: 'expert' },
+                '2': { type: 'local-ai', difficulty: 'expert' },
+                '3': { type: 'local-ai', difficulty: 'expert' },
+            },
+        });
+
+        const hostCredentials = await claimSeatViaApi({
+            page,
+            matchId,
+            playerId: '0',
+            guestId,
+            playerName: 'SmashUp-SeatSwap-Host',
+        });
+        const hostAccess: TestMatchAccess = {
+            playerId: '0',
+            credentials: hostCredentials,
+        };
+        await seedMatchCredentials(hostContext, 'smashup', matchId, '0', hostCredentials);
+
+        await page.goto(`/play/smashup/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
+        await waitForFactionDraft(page);
+        await waitForAiSeatCredentials(page, matchId, ['1', '2', '3']);
+        await waitForOnlineAiSeatBridgeReady(page, '1');
+        await waitForOnlineAiSeatBridgeReady(page, '2');
+        await waitForOnlineAiSeatBridgeReady(page, '3');
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, page);
+            return {
+                phase: state.sys?.phase ?? null,
+                turnOrder: state.core?.turnOrder ?? [],
+                currentPlayerIndex: state.core?.currentPlayerIndex ?? null,
+            };
+        }, {
+            timeout: 20000,
+            message: '等待大杀四方在线 AI 选派系阶段稳定到可换位状态',
+        }).toEqual({
+            phase: 'factionSelect',
+            turnOrder: ['0', '1', '2', '3'],
+            currentPlayerIndex: 0,
+        });
+
+        await saveEvidenceScreenshot(page, testInfo, 'smashup-online-ai-seat-swap-entry');
+
+        const seatSwapPanel = await openFabPanel(page, 'seat-swap', 'chat');
+        await expect(seatSwapPanel).toBeVisible({ timeout: 5000 });
+        await expect(page.getByTestId('hud-seat-swap-seat-1')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('hud-seat-swap-seat-1').getByText(/^AI$/)).toBeVisible({ timeout: 5000 });
+        await saveEvidenceScreenshot(page, testInfo, 'smashup-online-ai-seat-swap-before-click');
+
+        await page.getByTestId('hud-seat-swap-seat-1').click();
+
+        await expect.poll(async () => readSeatSwapState(matchId, hostAccess), {
+            timeout: 10000,
+            message: '等待大杀四方共享 HUD 换位后座位顺序同步',
+        }).toEqual({
+            turnOrder: ['1', '0', '2', '3'],
+            currentPlayerIndex: 1,
+            currentPlayerId: '0',
+        });
+
+        await page.waitForTimeout(500);
+        await saveEvidenceScreenshot(page, testInfo, 'smashup-online-ai-seat-swap-after-click');
     } finally {
         await hostContext.close();
     }

@@ -318,7 +318,7 @@ describe('完整回合循环', () => {
                     ongoingActions: [{ uid: 'de1', defId: 'steampunk_difference_engine', ownerId: '1', talentUsed: false }],
                 }),
                 makeBase('base_saloon'),
-                makeBase('base_factory_436-1337'),
+                makeBase('base_the_factory'),
                 makeBase('base_longhouse'),
             ],
             titans: [
@@ -666,6 +666,32 @@ describe('完整回合循环', () => {
         const prompt = getFirstPrompt(resolved!.state);
         expect(getPromptSourceId(prompt)).toBe('base_mushroom_kingdom');
         expect(getPromptSourceId(prompt)).not.toBe('smashup_reaction_choose');
+
+        const skippedMushroomKingdom = respondToPromptOption(
+            resolved!.state,
+            option => option.value?.skip === true,
+            'Mushroom Kingdom skip option',
+            '0',
+            random,
+        );
+        expect(skippedMushroomKingdom.success, skippedMushroomKingdom.error).toBe(true);
+
+        const reactionPrompt = getFirstPrompt(skippedMushroomKingdom.finalState);
+        expect(getPromptSourceId(reactionPrompt)).toBe('smashup_reaction_choose');
+
+        const passedBridePrompt = respondToPromptOption(
+            skippedMushroomKingdom.finalState,
+            option => option.id === 'pass',
+            'Bride titan pass option',
+            '0',
+            random,
+        );
+        expect(passedBridePrompt.success, passedBridePrompt.error).toBe(true);
+        expectNoPrompt(passedBridePrompt.finalState);
+        expect((passedBridePrompt.finalState.core.triggerQueue ?? []).some(
+            trigger => trigger.sourceDefId === 'frankenstein_the_bride',
+        )).toBe(false);
+        expect(passedBridePrompt.finalState.sys.phase).toBe('playCards');
     });
 
     it('线上反馈 69feede0：场下巨狼之灵不应在回合开始入队询问触发', () => {

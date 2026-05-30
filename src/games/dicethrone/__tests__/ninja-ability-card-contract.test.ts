@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DiceThroneCore, DiceThroneEvent } from '../domain/types';
 import type { Die } from '../domain/types';
+import { execute } from '../domain/execute';
 import { reduce } from '../domain/reducer';
 import { RESOURCE_IDS } from '../domain/resources';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../domain/ids';
@@ -36,6 +37,13 @@ function createNinjaDie(value: number): Die {
 }
 
 describe('DiceThrone Ninja 能力与卡牌合同', () => {
+    const command = (type: string, playerId: string, payload: Record<string, unknown> = {}) => ({
+        type,
+        playerId,
+        payload,
+        timestamp: 100,
+    } as any);
+
     it('Ninja v2 面板槽位应按角色实图映射四个中间技能槽', () => {
         expect(getAbilitySlotIdForCharacter('ninja', 'poison-blade')).toBe('combo');
         expect(getAbilitySlotIdForCharacter('ninja', 'death-blossom')).toBe('sky');
@@ -126,6 +134,44 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
 
         expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(29);
         expect(next.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+    });
+
+    it('upgrade-blink-2 打出后应通过真实升级链替换防御技能并按 Blink II 结算', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.sys.phase = 'main1';
+        state.core.players['0'].hand = [
+            JSON.parse(JSON.stringify(NINJA_CARDS.find(card => card.id === 'upgrade-blink-2'))),
+        ];
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 3;
+
+        const upgradeEvents = execute(state, command('PLAY_CARD', '0', { cardId: 'upgrade-blink-2' }), createQueuedRandom([1]));
+        const upgradedCore = applyEvents(state.core, upgradeEvents);
+
+        expect(upgradedCore.players['0'].abilityLevels.blink).toBe(2);
+        expect(upgradedCore.players['0'].abilities.find(ability => ability.id === 'blink')).toMatchObject({
+            id: 'blink',
+            effects: BLINK_2.effects,
+        });
+
+        const defenseState = {
+            core: {
+                ...upgradedCore,
+                pendingAttack: {
+                    attackerId: '1',
+                    defenderId: '0',
+                    sourceAbilityId: 'shattering-fist',
+                    defenseAbilityId: 'blink',
+                    isDefendable: true,
+                    damage: 0,
+                },
+                dice: [1, 2, 4].map(createNinjaDie),
+            },
+            sys: { phase: 'defensiveRoll' },
+        };
+
+        const next = applyEvents(defenseState.core, resolveAttack(defenseState.core, createQueuedRandom([1]), undefined, 200));
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(46);
+        expect(next.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(0);
     });
 
     it('攻击被 Ninja 忍术改成不可防御后，不应再执行已挂载的防御技能', () => {

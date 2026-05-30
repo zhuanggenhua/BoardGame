@@ -7,6 +7,7 @@ type HandPromptLike = {
 } | null | undefined;
 
 type ButtonOverlayPromptLike = HandPromptLike & {
+    sourceId?: unknown;
     options?: Array<{ displayMode?: unknown }>;
 };
 
@@ -36,6 +37,9 @@ export function isSmashUpPromptOwnedByPlayer({
 }
 
 export function shouldForceSmashUpPromptOverlay(currentPrompt: ButtonOverlayPromptLike): boolean {
+    if (currentPrompt?.sourceId === 'multi_base_scoring') {
+        return true;
+    }
     const options = currentPrompt?.options;
     return Array.isArray(options) && options.length > 0 && options.every(option => option.displayMode === 'button');
 }

@@ -6,7 +6,15 @@ import {
     triggerBaseAbility,
     triggerBaseAbilityWithMS,
 } from './base-contract-helpers';
-import { getPromptHandlerData, getPromptPlayerId, getPromptSourceId } from '../helpers';
+import { SU_EVENTS } from '../../domain/types';
+import {
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    respondToPrompt,
+} from '../helpers';
 
 beforeAll(() => {
     initAllAbilities();
@@ -66,5 +74,44 @@ describe('base_wizard_academy 巫师学院 afterScoring', () => {
         });
 
         expect(result.events).toHaveLength(0);
+    });
+
+    it('先选择替换基地，再为剩余基地提供排序交互', () => {
+        const result = triggerBaseAbilityWithMS('base_wizard_academy', 'afterScoring', {
+            state: makeState({
+                bases: [{ defId: 'base_wizard_academy', minions: [], ongoingActions: [] }],
+                baseDeck: ['base_a', 'base_b', 'base_c', 'base_d'],
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_wizard_academy',
+            playerId: '0',
+            rankings: [{ playerId: '0', power: 5, vp: 3 }],
+            now: 0,
+        });
+
+        const firstPrompt = getInteractionsFromResult(result)[0];
+        const chooseReplacement = getPromptOptions(firstPrompt).find((option: any) => option.value?.defId === 'base_c');
+        expect(chooseReplacement).toBeDefined();
+
+        const pickedReplacement = respondToPrompt(result.matchState!, chooseReplacement.id, '0');
+        expect(pickedReplacement.success).toBe(true);
+
+        const orderPrompt = getFirstPrompt(pickedReplacement.finalState);
+        expect(getPromptSourceId(orderPrompt)).toBe('base_wizard_academy');
+        expect(getPromptOptions(orderPrompt).map((option: any) => option.value?.defId)).toEqual(
+            expect.arrayContaining(['base_a', 'base_b']),
+        );
+        expect(getPromptOptions(orderPrompt).map((option: any) => option.value?.defId)).not.toContain('base_c');
+
+        const chooseRemainingTop = getPromptOptions(orderPrompt).find((option: any) => option.value?.defId === 'base_b');
+        expect(chooseRemainingTop).toBeDefined();
+
+        const ordered = respondToPrompt(pickedReplacement.finalState, chooseRemainingTop.id, '0');
+        expect(ordered.success).toBe(true);
+
+        const reorderedEvent = ordered.events.find((event) => event.type === SU_EVENTS.BASE_DECK_REORDERED);
+        expect(reorderedEvent).toBeDefined();
+        expect((reorderedEvent as any).payload.topDefIds).toEqual(['base_c', 'base_b', 'base_a']);
+        expect(ordered.finalState.core.baseDeck.slice(0, 4)).toEqual(['base_c', 'base_b', 'base_a', 'base_d']);
     });
 });

@@ -780,27 +780,38 @@ test.describe('Lobby E2E', () => {
             const versionFooter = page.getByTestId('home-version-footer');
             await expect(versionFooter).toBeVisible({ timeout: 10000 });
             await expect(versionFooter).toContainText(/\d+\.\d+\.\d+/);
+            await expect(versionFooter).not.toContainText(/^Bundle /);
             await expect(versionFooter).not.toContainText(/^App /);
             await expect(versionFooter).not.toContainText(/^Latest /);
             await expect.poll(async () => {
                 const footerBox = await versionFooter.boundingBox();
                 const stageBox = await page.getByTestId('home-v2-book-stage').boundingBox();
-                if (!footerBox || !stageBox) {
+                const pageLabelBox = await page.getByTestId('home-v2-catalog-page-label').boundingBox();
+                const previousPageBox = await page.getByTestId('home-v2-catalog-prev-page').boundingBox();
+                if (!footerBox || !stageBox || !pageLabelBox || !previousPageBox) {
                     return 'missing';
                 }
 
-                const footerCenterX = footerBox.x + footerBox.width / 2;
+                const footerRight = footerBox.x + footerBox.width;
                 const footerCenterY = footerBox.y + footerBox.height / 2;
-                const isInLeftBottomCorner = footerBox.x >= stageBox.x + stageBox.width * 0.075
-                    && footerCenterX < stageBox.x + stageBox.width * 0.18
-                    && footerCenterY > stageBox.y + stageBox.height * 0.80
-                    && footerCenterY < stageBox.y + stageBox.height * 0.92
-                    && footerBox.y + footerBox.height <= stageBox.y + stageBox.height * 0.93;
-                return isInLeftBottomCorner ? 'left-bottom' : `x=${Math.round(footerCenterX)},y=${Math.round(footerCenterY)}`;
+                const pageLabelCenterY = pageLabelBox.y + pageLabelBox.height / 2;
+                const rowAligned = Math.abs(footerCenterY - pageLabelCenterY) <= stageBox.height * 0.022;
+                const staysInLeftCorner = footerBox.x >= stageBox.x + stageBox.width * 0.09
+                    && footerBox.x <= stageBox.x + stageBox.width * 0.18;
+                const staysBeforePagination = footerRight <= previousPageBox.x - stageBox.width * 0.05;
+                const staysInBottomBand = footerCenterY > stageBox.y + stageBox.height * 0.77
+                    && footerCenterY < stageBox.y + stageBox.height * 0.86;
+                return rowAligned && staysInLeftCorner && staysBeforePagination && staysInBottomBand
+                    ? 'left-bottom-same-row'
+                    : `footerRight=${Math.round(footerRight)} prevLeft=${Math.round(previousPageBox.x)} footerY=${Math.round(footerCenterY)} pageLabelY=${Math.round(pageLabelCenterY)}`;
             }, {
                 timeout: 10000,
-                message: 'Home V2 版本角标应位于书本左下角范围内',
-            }).toBe('left-bottom');
+                message: 'Home V2 版本角标应位于左页底部分页同一排，并保持在页码左侧',
+            }).toBe('left-bottom-same-row');
+            const versionFooterViewportPath = getEvidenceScreenshotPath(testInfo, 'home-v2-version-footer-visible');
+            await page.screenshot({ path: versionFooterViewportPath });
+            const versionFooterBookstagePath = getEvidenceScreenshotPath(testInfo, 'home-v2-version-footer-bookstage');
+            await page.getByTestId('home-v2-book-stage').screenshot({ path: versionFooterBookstagePath });
             await expect.poll(async () => {
                 const footerLine = await versionFooter.locator('span.inline-flex').first().evaluate((element) => {
                     const style = window.getComputedStyle(element);

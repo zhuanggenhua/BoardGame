@@ -349,10 +349,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         ? 'w-3 h-3 fill-amber-300 shrink-0 drop-shadow-[0_0_2px_rgba(252,211,77,0.6)]'
         : 'w-3.5 h-3.5 fill-amber-300 shrink-0 drop-shadow-[0_0_2px_rgba(252,211,77,0.6)]';
     const floatingHintClassName = isMobileViewport
-        ? 'absolute inset-x-0 flex justify-center pointer-events-none'
-        : 'fixed inset-x-0 flex justify-center pointer-events-none';
+        ? 'absolute inset-x-0 flex justify-center pointer-events-auto'
+        : 'fixed inset-x-0 flex justify-center pointer-events-auto';
     const floatingHintStyle = { zIndex: UI_Z_INDEX.hint, bottom: `${layout.floatingActionBottom}px` };
-    const battlefieldBottomInset = isNonEssentialUiHidden ? 0 : layout.handAreaHeight;
+    const battlefieldBottomInset = layout.handAreaHeight;
     const battlefieldBaseTopPadding = `max(${layout.boardPaddingTop}px, calc(${layoutInlineSize((layout.minionCardWidth / 0.714) - 0.6, layout)} + 4px))`;
     const topFloatingBannerClassName = isMobileViewport
         ? 'absolute inset-x-0 z-30 flex justify-center pointer-events-none'
@@ -3300,6 +3300,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
+                                        data-testid={opt.id === 'pass' ? 'su-titan-reaction-pass-button' : undefined}
                                         onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
@@ -3524,128 +3525,131 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     document.body,
                 )}
                 {/* 手牌区：z-60，在弃牌遮罩之上 */}
-                {
-                    myPlayer && !isNonEssentialUiHidden && (
-                        <div 
-                            className="absolute bottom-0 inset-x-0 z-60 pointer-events-none"
-                            style={{ height: `${layout.handAreaHeight}px` }}
-                        >
+                {myPlayer && (
+                    <>
+                        {!isNonEssentialUiHidden && (
+                            <div
+                                className="absolute bottom-0 inset-x-0 z-60 pointer-events-none"
+                                style={{ height: `${layout.handAreaHeight}px` }}
+                            >
+                                <HandArea
+                                    hand={isAlternateView ? (displayedDeckPlayer?.hand ?? []) : (myPlayer?.hand ?? [])}
+                                    selectedCardUid={selectedCardUid}
+                                    onCardSelect={handleCardClick}
+                                    compactLayout={isMobileViewport}
+                                    isDiscardMode={needDiscard || isDirectHandSelectPrompt}
+                                    discardSelection={discardSelection}
+                                    // 教学模式下，当不允许打出随从和行动时禁用手牌交互（摇头反馈）
+                                    disableInteraction={
+                                        shouldLockNormalHandInteraction ||
+                                        isTutorialActive &&
+                                        !isDirectHandSelectPrompt &&
+                                        !isTutorialCommandAllowed(SU_COMMANDS.PLAY_MINION) &&
+                                        !isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)
+                                    }
+                                    disabledCardUids={meFirstDisabledUids ?? handPromptDisabledUids ?? tutorialDisabledUids}
+                                    onCardView={handleViewCardDetail}
+                                    isOpponentView={isAlternateView}
+                                    interactionMode={handInteractionMode}
+                                    onResolveDropTarget={resolveHandDropTarget}
+                                    onCardDragPlay={handleCardDragPlay}
+                                    onDragStateChange={setHandDragPreview}
+                                />
+                            </div>
+                        )}
 
-                            <HandArea
-                                hand={isAlternateView ? (displayedDeckPlayer?.hand ?? []) : (myPlayer?.hand ?? [])}
-                                selectedCardUid={selectedCardUid}
-                                onCardSelect={handleCardClick}
-                                compactLayout={isMobileViewport}
-                                isDiscardMode={needDiscard || isDirectHandSelectPrompt}
-                                discardSelection={discardSelection}
-                                // 教学模式下，当不允许打出随从和行动时禁用手牌交互（摇头反馈）
-                                disableInteraction={
-                                    shouldLockNormalHandInteraction ||
-                                    isTutorialActive &&
-                                    !isDirectHandSelectPrompt &&
-                                    !isTutorialCommandAllowed(SU_COMMANDS.PLAY_MINION) &&
-                                    !isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)
-                                }
-                                disabledCardUids={meFirstDisabledUids ?? handPromptDisabledUids ?? tutorialDisabledUids}
-                                onCardView={handleViewCardDetail}
-                                isOpponentView={isAlternateView}
-                                interactionMode={handInteractionMode}
-                                onResolveDropTarget={resolveHandDropTarget}
-                                onCardDragPlay={handleCardDragPlay}
-                                onDragStateChange={setHandDragPreview}
-                            />
-
-                            {/* Fusion card playAs selector */}
-                            <AnimatePresence>
-                                {pendingFusionChoiceUid && (
+                        {/* Fusion card playAs selector */}
+                        <AnimatePresence>
+                            {pendingFusionChoiceUid && (
+                                <motion.div
+                                    className="fixed inset-0 flex items-center justify-center"
+                                    style={{ zIndex: UI_Z_INDEX.overlayRaised }}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    onClick={() => {
+                                        setPendingFusionChoiceUid(null);
+                                        setSelectedCardUid(null);
+                                        setSelectedCardMode(null);
+                                    }}
+                                >
+                                    <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
                                     <motion.div
-                                        className="fixed inset-0 flex items-center justify-center"
-                                        style={{ zIndex: UI_Z_INDEX.overlayRaised }}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        onClick={() => {
-                                            setPendingFusionChoiceUid(null);
-                                            setSelectedCardUid(null);
-                                            setSelectedCardMode(null);
-                                        }}
+                                        className="relative w-[92vw] max-w-[520px] rounded-lg border-2 border-amber-300/60 bg-[#f3f0e8] shadow-2xl p-4 pointer-events-auto"
+                                        initial={{ y: 16, scale: 0.98 }}
+                                        animate={{ y: 0, scale: 1 }}
+                                        exit={{ y: 10, scale: 0.98 }}
+                                        onClick={(e) => e.stopPropagation()}
                                     >
-                                        <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
-                                        <motion.div
-                                            className="relative w-[92vw] max-w-[520px] rounded-lg border-2 border-amber-300/60 bg-[#f3f0e8] shadow-2xl p-4 pointer-events-auto"
-                                            initial={{ y: 16, scale: 0.98 }}
-                                            animate={{ y: 0, scale: 1 }}
-                                            exit={{ y: 10, scale: 0.98 }}
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <div className="font-black text-slate-900 text-lg mb-3">
-                                                {t('ui.fusion_choose_playas', { defaultValue: '选择打出方式' })}
-                                            </div>
-                                            <div className="text-slate-700 text-sm mb-4">
-                                                {t('ui.fusion_choose_playas_desc', { defaultValue: '融合卡可以作为随从或战术打出。请选择本次打出的类型。' })}
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <SmashUpGameButton
-                                                    variant="primary"
-                                                    className="flex-1"
-                                                    onClick={() => confirmFusionPlayAs('minion')}
-                                                >
-                                                    {t('ui.play_as_minion', { defaultValue: '作为随从' })}
-                                                </SmashUpGameButton>
-                                                <SmashUpGameButton
-                                                    variant="secondary"
-                                                    className="flex-1"
-                                                    onClick={() => confirmFusionPlayAs('action')}
-                                                >
-                                                    {t('ui.play_as_action', { defaultValue: '作为战术' })}
-                                                </SmashUpGameButton>
-                                            </div>
-                                        </motion.div>
+                                        <div className="font-black text-slate-900 text-lg mb-3">
+                                            {t('ui.fusion_choose_playas', { defaultValue: '选择打出方式' })}
+                                        </div>
+                                        <div className="text-slate-700 text-sm mb-4">
+                                            {t('ui.fusion_choose_playas_desc', { defaultValue: '融合卡可以作为随从或战术打出。请选择本次打出的类型。' })}
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <SmashUpGameButton
+                                                variant="primary"
+                                                className="flex-1"
+                                                onClick={() => confirmFusionPlayAs('minion')}
+                                            >
+                                                {t('ui.play_as_minion', { defaultValue: '作为随从' })}
+                                            </SmashUpGameButton>
+                                            <SmashUpGameButton
+                                                variant="secondary"
+                                                className="flex-1"
+                                                onClick={() => confirmFusionPlayAs('action')}
+                                            >
+                                                {t('ui.play_as_action', { defaultValue: '作为战术' })}
+                                            </SmashUpGameButton>
+                                        </div>
                                     </motion.div>
-                                )}
-                            </AnimatePresence>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                            {/* NEW: Deck & Discard Zone */}
-                            <DeckDiscardZone
-                                deckCount={isAlternateView ? (displayedDeckPlayer?.deck.length ?? 0) : (myPlayer?.deck.length ?? 0)}
-                                madnessSupplyCount={core.madnessDeck !== undefined ? core.madnessDeck.length : undefined}
-                                discard={isAlternateView ? (displayedDeckPlayer?.discard ?? []) : (myPlayer?.discard ?? [])}
-                                compactLayout={isMobileViewport}
-                                isMyTurn={isMyTurn}
-                                hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt}
-                                autoOpenPanel={isDiscardMinionPrompt}
-                                playableCards={discardStripCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}
-                                selectedUid={discardStripSelectedUid}
-                                onSelectCard={setDiscardStripSelectedUid}
-                                selectHint={discardStripSelectedUid
-                                    ? (() => {
-                                        const selected = discardStripCards.find(card => card.uid === discardStripSelectedUid);
-                                        if (selected?.mode === 'activate_special') {
-                                            return t('ui.click_base_to_bury', { defaultValue: '点击基地埋葬这张牌' });
-                                        }
-                                        return t('ui.click_base_to_deploy', { defaultValue: '点击基地放置随从' });
-                                    })()
-                                    : undefined}
-                                onClosePanel={isDiscardMinionPrompt
-                                    ? (discardStripDoneOption
-                                        ? () => respondCurrentPrompt({ optionId: discardStripDoneOption!.id })
-                                        : () => cancelCurrentPrompt())
-                                    : () => { setDiscardStripSelectedUid(null); }
-                                }
-                                setAsideTitans={setAsideTitansForDisplay}
-                                activatableTitanUids={visibleActivatableTitanUids}
-                                reactionTitanUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
-                                selectedTitanUid={activeSelectedSetAsideTitanUid}
-                                onSelectTitan={handleSetAsideTitanSelect}
-                                onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
-                                onViewCard={handleViewCardDetail}
-                                dispatch={dispatch}
-                                playerID={playerID}
-                                playerNames={playerNames}
-                            />
-                        </div>
-                    )
-                }
+                        {/* NEW: Deck & Discard Zone */}
+                        <DeckDiscardZone
+                            deckCount={isAlternateView ? (displayedDeckPlayer?.deck.length ?? 0) : (myPlayer?.deck.length ?? 0)}
+                            deckCards={isAlternateView ? (displayedDeckPlayer?.deck ?? []) : (myPlayer?.deck ?? [])}
+                            deckFactions={isAlternateView ? (displayedDeckPlayer?.factions ?? []) : (myPlayer?.factions ?? [])}
+                            madnessSupplyCount={core.madnessDeck !== undefined ? core.madnessDeck.length : undefined}
+                            discard={isAlternateView ? (displayedDeckPlayer?.discard ?? []) : (myPlayer?.discard ?? [])}
+                            compactLayout={isMobileViewport}
+                            isMyTurn={isMyTurn}
+                            hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt}
+                            autoOpenPanel={isDiscardMinionPrompt}
+                            playableCards={discardStripCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}
+                            selectedUid={discardStripSelectedUid}
+                            onSelectCard={setDiscardStripSelectedUid}
+                            selectHint={discardStripSelectedUid
+                                ? (() => {
+                                    const selected = discardStripCards.find(card => card.uid === discardStripSelectedUid);
+                                    if (selected?.mode === 'activate_special') {
+                                        return t('ui.click_base_to_bury', { defaultValue: '点击基地埋葬这张牌' });
+                                    }
+                                    return t('ui.click_base_to_deploy', { defaultValue: '点击基地放置随从' });
+                                })()
+                                : undefined}
+                            onClosePanel={isDiscardMinionPrompt
+                                ? (discardStripDoneOption
+                                    ? () => respondCurrentPrompt({ optionId: discardStripDoneOption!.id })
+                                    : () => cancelCurrentPrompt())
+                                : () => { setDiscardStripSelectedUid(null); }
+                            }
+                            setAsideTitans={setAsideTitansForDisplay}
+                            activatableTitanUids={visibleActivatableTitanUids}
+                            reactionTitanUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
+                            selectedTitanUid={activeSelectedSetAsideTitanUid}
+                            onSelectTitan={handleSetAsideTitanSelect}
+                            onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
+                            onViewCard={handleViewCardDetail}
+                            dispatch={dispatch}
+                            playerID={playerID}
+                            playerNames={playerNames}
+                        />
+                    </>
+                )}
 
                 {/* FX 特效层 */}
                 <FxLayer

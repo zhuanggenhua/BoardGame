@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DiceThroneCore, DiceThroneEvent } from '../domain/types';
+import { execute } from '../domain/execute';
 import { reduce } from '../domain/reducer';
 import { RESOURCE_IDS } from '../domain/resources';
 import { TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../domain/ids';
@@ -28,6 +29,13 @@ const createTreantTeamMatchup = () => {
 };
 
 describe('DiceThrone Treant 能力与卡牌合同', () => {
+    const command = (type: string, playerId: string, payload: Record<string, unknown> = {}) => ({
+        type,
+        playerId,
+        payload,
+        timestamp: 100,
+    } as any);
+
     it('Treant v2 面板槽位应把 passive / defense 绑定到真实槽位', () => {
         expect(getAbilitySlotIdForCharacter('treant', 'quiet-cultivation')).toBe('sky');
         expect(getAbilitySlotIdForCharacter('treant', 'wild-growth')).toBe('lotus');
@@ -214,6 +222,44 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
         next = applyEvents(next, attackEvents);
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(48);
+    });
+
+    it('upgrade-rooted-2 打出后应通过真实升级链把防御入口切到 4 骰 rooted', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.sys.phase = 'main1';
+        state.core.players['0'].hand = [
+            JSON.parse(JSON.stringify(TREANT_CARDS.find(card => card.id === 'upgrade-rooted-2'))),
+        ];
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 3;
+
+        const upgradeEvents = execute(state, command('PLAY_CARD', '0', { cardId: 'upgrade-rooted-2' }), createQueuedRandom([1]));
+        const upgradedCore = applyEvents(state.core, upgradeEvents);
+
+        expect(upgradedCore.players['0'].abilityLevels.rooted).toBe(2);
+        expect(upgradedCore.players['0'].abilities.find(ability => ability.id === 'rooted')).toMatchObject({
+            id: 'rooted',
+            trigger: ROOTED_2.trigger,
+            effects: ROOTED_2.effects,
+        });
+
+        const selectState = {
+            core: {
+                ...upgradedCore,
+                pendingAttack: {
+                    attackerId: '1',
+                    defenderId: '0',
+                    sourceAbilityId: 'slash-3',
+                    isDefendable: true,
+                    damage: 0,
+                },
+                rollCount: 0,
+            },
+            sys: { phase: 'defensiveRoll' },
+        };
+        const selectedCore = applyEvents(selectState.core, execute(selectState, command('SELECT_ABILITY', '0', { abilityId: 'rooted' }), createQueuedRandom([1])));
+
+        expect(selectedCore.pendingAttack?.defenseAbilityId).toBe('rooted');
+        expect(selectedCore.rollDiceCount).toBe(4);
     });
 
     it('Rooted II 在 4 人模式下双树灵应允许任意玩家获得生命源泉', () => {

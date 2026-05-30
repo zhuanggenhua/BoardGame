@@ -77,7 +77,7 @@ function canUseSeatSwap(seatSwapMode: MatchSeatSwapMode, state: MatchState<unkno
     const sysPhase = state.sys?.phase;
     const corePhase = typeof coreRecord.phase === 'string' ? coreRecord.phase : null;
     const hasFactionSelectionState = isRecord(coreRecord.factionSelection) || isRecord(coreRecord.selectedFactions);
-    const isSetupNotStarted = coreRecord.hostStarted === false;
+    const isSetupNotStarted = coreRecord.hostStarted !== true;
 
     if (seatSwapMode === 'request') {
         return (

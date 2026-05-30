@@ -64,7 +64,7 @@ describe('base_ritual_site + pirate_first_mate afterScoring 链路', () => {
                 makeBase('base_secret_garden'),
                 makeBase('base_tar_pits'),
             ];
-            core.baseDeck = ['base_factory_436-1337'];
+            core.baseDeck = ['base_the_factory'];
             core.players['0'].hand = [];
             core.players['1'].hand = [];
         });
@@ -92,5 +92,66 @@ describe('base_ritual_site + pirate_first_mate afterScoring 链路', () => {
         expectNoPrompt(state);
         expect(state.core.bases[1].minions.map(minion => minion.uid)).toContain('mate1');
         expect(state.core.players['0'].deck.some(card => card.uid === 'mate1')).toBe(false);
+    });
+
+    it('仪式场所先结算后，多个大副不会在链路中途丢失后续移动交互', () => {
+        const runner = createRunner((core) => {
+            core.bases = [
+                makeBase('base_ritual_site', [
+                    makeMinion('mate1', 'pirate_first_mate', '0', 2),
+                    makeMinion('mate2', 'pirate_first_mate', '0', 2),
+                    makeMinion('ally1', 'alien_invader', '0', 14),
+                    makeMinion('enemy1', 'robot_zapbot', '1', 4),
+                ]),
+                makeBase('base_secret_garden'),
+                makeBase('base_tar_pits'),
+                makeBase('base_the_factory'),
+            ];
+            core.baseDeck = ['base_central_brain'];
+            core.players['0'].hand = [];
+            core.players['1'].hand = [];
+        });
+
+        const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advance.success).toBe(true);
+
+        const reactionPrompt = getReactionPrompt(runner.getState());
+        const ritualSiteTrigger = getReactionPromptOptionBySourceDefId(
+            runner.getState(),
+            reactionPrompt,
+            'base_ritual_site',
+        );
+        let state = resolveCurrentOption(runner, ritualSiteTrigger.id);
+
+        const firstReactionPrompt = getReactionPrompt(state);
+        const firstFirstMateTrigger = getReactionPromptOptionBySourceDefId(
+            state,
+            firstReactionPrompt,
+            'pirate_first_mate',
+        );
+        state = resolveCurrentOption(runner, firstFirstMateTrigger.id);
+
+        const firstPrompt = getSimpleChoicePrompt(state, 'pirate_first_mate_choose_base');
+        const firstMove = getPromptOption(
+            firstPrompt,
+            (option: any) => option.value?.baseDefId === 'base_secret_garden',
+            'first mate target base option #1',
+        );
+        state = resolveCurrentOption(runner, firstMove.id);
+
+        const secondPrompt = getSimpleChoicePrompt(state, 'pirate_first_mate_choose_base');
+        expect(secondPrompt).toBeDefined();
+        const secondMove = getPromptOption(
+            secondPrompt,
+            (option: any) => option.value?.baseDefId === 'base_tar_pits',
+            'first mate target base option #2',
+        );
+        state = resolveCurrentOption(runner, secondMove.id);
+
+        expectNoPrompt(state);
+        expect(state.core.bases[1].minions.map(minion => minion.uid)).toContain('mate1');
+        expect(state.core.bases[2].minions.map(minion => minion.uid)).toContain('mate2');
+        expect(state.core.players['0'].deck.some(card => card.uid === 'mate1')).toBe(false);
+        expect(state.core.players['0'].deck.some(card => card.uid === 'mate2')).toBe(false);
     });
 });

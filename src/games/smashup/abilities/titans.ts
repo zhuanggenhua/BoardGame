@@ -3287,15 +3287,14 @@ function hasTheBrideSecondEffectOption(
     state: AbilityContext['state'],
     playerId: string,
     firstKind: BrideEffectKind,
-    targetUid: string,
 ) {
     const otherKinds: BrideEffectKind[] = ['box', 'destroy', 'removeCounter'].filter(
         (kind): kind is BrideEffectKind => kind !== firstKind,
     );
     return otherKinds.some(kind => {
-        if (kind === 'box') return getTheBrideBoxTargets(state, playerId, targetUid).length > 0;
-        if (kind === 'destroy') return getTheBrideDestroyTargets(state, playerId, targetUid).length > 0;
-        return getTheBrideRemoveCounterTargets(state, playerId, targetUid).length > 0;
+        if (kind === 'box') return getTheBrideBoxTargets(state, playerId).length > 0;
+        if (kind === 'destroy') return getTheBrideDestroyTargets(state, playerId).length > 0;
+        return getTheBrideRemoveCounterTargets(state, playerId).length > 0;
     });
 }
 
@@ -3303,17 +3302,16 @@ function buildTheBrideStartBranchOptions(
     state: AbilityContext['state'],
     playerId: string,
     usedKinds: BrideEffectKind[],
-    excludedUid?: string,
 ) {
     const options: PromptOption<BrideStartBranchValue>[] = [];
     const requireSecondChoice = usedKinds.length === 0;
-    if (!usedKinds.includes('box') && buildTheBrideStartTargetOptions(state, playerId, 'box', excludedUid, requireSecondChoice).length > 0) {
+    if (!usedKinds.includes('box') && buildTheBrideStartTargetOptions(state, playerId, 'box', requireSecondChoice).length > 0) {
         options.push({ id: 'box', label: '放进盒中', labelKey: 'ui.titan_the_bride_effect_box', value: { kind: 'box' }, displayMode: 'button' });
     }
-    if (!usedKinds.includes('destroy') && buildTheBrideStartTargetOptions(state, playerId, 'destroy', excludedUid, requireSecondChoice).length > 0) {
+    if (!usedKinds.includes('destroy') && buildTheBrideStartTargetOptions(state, playerId, 'destroy', requireSecondChoice).length > 0) {
         options.push({ id: 'destroy', label: '消灭己方随从', labelKey: 'ui.titan_the_bride_effect_destroy', value: { kind: 'destroy' }, displayMode: 'button' });
     }
-    if (!usedKinds.includes('removeCounter') && buildTheBrideStartTargetOptions(state, playerId, 'removeCounter', excludedUid, requireSecondChoice).length > 0) {
+    if (!usedKinds.includes('removeCounter') && buildTheBrideStartTargetOptions(state, playerId, 'removeCounter', requireSecondChoice).length > 0) {
         options.push({ id: 'removeCounter', label: '移除 +1 指示物', labelKey: 'ui.titan_the_bride_effect_remove_counter', value: { kind: 'removeCounter' }, displayMode: 'button' });
     }
     if (usedKinds.length === 0) {
@@ -3329,17 +3327,16 @@ function buildTheBrideStartTargetOptions(
     state: AbilityContext['state'],
     playerId: string,
     kind: BrideEffectKind,
-    excludedUid?: string,
     requireSecondChoice = false,
 ) {
     const rawTargets = kind === 'box'
-        ? getTheBrideBoxTargets(state, playerId, excludedUid)
+        ? getTheBrideBoxTargets(state, playerId)
         : kind === 'destroy'
-            ? getTheBrideDestroyTargets(state, playerId, excludedUid)
-            : getTheBrideRemoveCounterTargets(state, playerId, excludedUid);
+            ? getTheBrideDestroyTargets(state, playerId)
+            : getTheBrideRemoveCounterTargets(state, playerId);
 
     return rawTargets
-        .filter(target => !requireSecondChoice || hasTheBrideSecondEffectOption(state, playerId, kind, target.uid))
+        .filter(target => !requireSecondChoice || hasTheBrideSecondEffectOption(state, playerId, kind))
         .map(target => ({
             id: `${kind}-${target.uid}`,
             label: target.label,
@@ -3411,7 +3408,6 @@ function theBrideOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUpEvent[
         titanUid: titan.uid,
         titanDefId: titan.defId,
         usedKinds: [] as BrideEffectKind[],
-        selectedTargetUids: [] as string[],
     };
 
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -4394,16 +4390,14 @@ export function registerTitanInteractionHandlers(): void {
                 titanUid?: string;
                 titanDefId?: string;
                 usedKinds?: BrideEffectKind[];
-                selectedTargetUids?: string[];
             };
         } | undefined)?.continuationContext;
         if (!selected?.kind || !continuation?.titanUid || !continuation.titanDefId) {
             return { state, events: [] };
         }
 
-        const excludedUid = continuation.selectedTargetUids?.[0];
         const requireSecondChoice = (continuation.usedKinds?.length ?? 0) === 0;
-        const options = buildTheBrideStartTargetOptions(state.core, playerId, selected.kind, excludedUid, requireSecondChoice);
+        const options = buildTheBrideStartTargetOptions(state.core, playerId, selected.kind, requireSecondChoice);
         if (options.length === 0) {
             return { state, events: [] };
         }
@@ -4424,7 +4418,6 @@ export function registerTitanInteractionHandlers(): void {
                 nextState.core,
                 playerId,
                 selected.kind,
-                excludedUid,
                 requireSecondChoice,
             );
 
@@ -4438,7 +4431,6 @@ export function registerTitanInteractionHandlers(): void {
                 titanUid?: string;
                 titanDefId?: string;
                 usedKinds?: BrideEffectKind[];
-                selectedTargetUids?: string[];
             };
         } | undefined)?.continuationContext;
         if (!selected?.kind || !selected.targetUid || !selected.defId || !continuation?.titanUid || !continuation.titanDefId) {
@@ -4454,14 +4446,13 @@ export function registerTitanInteractionHandlers(): void {
         }, timestamp);
 
         const usedKinds = [...(continuation.usedKinds ?? []), selected.kind];
-        const selectedTargetUids = [...(continuation.selectedTargetUids ?? []), selected.targetUid];
 
         if (usedKinds.length < 2) {
             const interaction = createSimpleChoice(
                 `titan_frankenstein_the_bride_start_choose_branch_${timestamp}`,
                 playerId,
                 'The Bride: choose the second effect',
-                buildTheBrideStartBranchOptions(state.core, playerId, usedKinds, selected.targetUid),
+                buildTheBrideStartBranchOptions(state.core, playerId, usedKinds),
                 {
                     sourceId: 'titan_frankenstein_the_bride_start_choose_branch',
                     targetType: 'generic',
@@ -4472,10 +4463,9 @@ export function registerTitanInteractionHandlers(): void {
                 titanUid: continuation.titanUid,
                 titanDefId: continuation.titanDefId,
                 usedKinds,
-                selectedTargetUids,
             };
             (interaction.data as { continuationContext?: unknown; optionsGenerator?: unknown }).optionsGenerator = (nextState: AbilityContext['matchState']) =>
-                buildTheBrideStartBranchOptions(nextState.core, playerId, usedKinds, selected.targetUid);
+                buildTheBrideStartBranchOptions(nextState.core, playerId, usedKinds);
             return { state: queueInteraction(state, interaction), events };
         }
 

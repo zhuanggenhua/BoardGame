@@ -20,7 +20,7 @@ import {
     waitForDiceThroneHarness,
     waitForGameBoard,
 } from '../helpers/dicethrone';
-import { TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../../src/games/dicethrone/domain/ids';
+import { NINJA_DICE_FACE_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import { NINJA_CARDS } from '../../src/games/dicethrone/heroes/ninja/cards';
 import { TREANT_CARDS } from '../../src/games/dicethrone/heroes/treant/cards';
@@ -539,7 +539,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
         const testName = '树精小顺子高亮应落在复仇枝蔓而不是被动槽';
 
         try {
-            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
                 const root = asRecord(state.G ?? state);
                 const core = asRecord(root.core);
                 const sys = asRecord(root.sys);
@@ -762,7 +762,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             }, { timeout: 10000 }).toEqual({ phase: 'defensiveRoll', divine: 1, poison: 1 });
             await screenshot(match.hostPage, testName, '03-divine-skip-keeps-debuff-and-token.png');
 
-            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
                 const root = asRecord(state.G ?? state);
                 const core = asRecord(root.core);
                 const sys = asRecord(root.sys);
@@ -923,13 +923,12 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     players,
                     activePlayerId: '1',
                     phase: 'defensiveRoll',
-                    rollCount: 1,
-                    rollConfirmed: true,
+                    rollCount: 0,
+                    rollConfirmed: false,
                     pendingAttack: {
                         attackerId: '1',
                         defenderId: '0',
                         sourceAbilityId: 'slash-3',
-                        defenseAbilityId: 'rooted',
                         isDefendable: true,
                         damage: 0,
                     },
@@ -1273,6 +1272,162 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 pendingBonusOpen: false,
             });
             await screenshot(match.hostPage, testName, '03-trample-after-closeout-bonus-damage-and-thorn.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('树精升级扎根后应在真实防御链路中发动 4 骰扎根 II', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '树精升级扎根后应在真实防御链路中发动4骰扎根II';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const resources = asRecord(p0.resources);
+                const tokens = asRecord(p0.tokens);
+
+                players['0'] = {
+                    ...p0,
+                    resources: { ...resources, [RESOURCE_IDS.CP]: 5, [RESOURCE_IDS.HP]: 50 },
+                    tokens: {
+                        ...tokens,
+                        [TOKEN_IDS.TREANT_SEEDLING]: 0,
+                        [TOKEN_IDS.TREANT_SAPLING]: 0,
+                        [TOKEN_IDS.TREANT_DIVINE]: 0,
+                        [TOKEN_IDS.LIFE_SAP]: 0,
+                    },
+                    hand: [cloneTreantCard('upgrade-rooted-2')],
+                    discard: [],
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '0',
+                    phase: 'main1',
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 0,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                };
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.hostPage);
+            await closeCardSpotlightIfOpen(match.hostPage);
+            await expect(match.hostPage.locator('[data-testid="hand-area"] [data-card-id="upgrade-rooted-2"]').first()).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '01-upgrade-rooted-2-before-drag.png');
+
+            await dragHandCardToPlay(match.hostPage, 'upgrade-rooted-2');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const resources = asRecord(p0.resources) as Record<string, number>;
+                const abilityLevels = asRecord(p0.abilityLevels) as Record<string, number>;
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    rootedLevel: abilityLevels.rooted,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 2, rootedLevel: 2 });
+            await screenshot(match.hostPage, testName, '02-upgrade-rooted-2-after-play.png');
+
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+
+                players['0'] = {
+                    ...p0,
+                    resources: { ...asRecord(p0.resources), [RESOURCE_IDS.HP]: 50 },
+                    tokens: {
+                        ...asRecord(p0.tokens),
+                        [TOKEN_IDS.TREANT_SEEDLING]: 0,
+                        [TOKEN_IDS.TREANT_SAPLING]: 0,
+                        [TOKEN_IDS.TREANT_DIVINE]: 0,
+                        [TOKEN_IDS.LIFE_SAP]: 0,
+                    },
+                };
+                players['1'] = {
+                    ...p1,
+                    resources: { ...asRecord(p1.resources), [RESOURCE_IDS.HP]: 30 },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'defensiveRoll',
+                    rollLimit: 1,
+                    rollDiceCount: 4,
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '1',
+                        defenderId: '0',
+                        sourceAbilityId: 'slash-3',
+                        defenseAbilityId: 'rooted',
+                        isDefendable: true,
+                        damage: 0,
+                    },
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'defensiveRoll',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                }, [4, 5, 1, 2]);
+                return state;
+            });
+            await screenshot(match.hostPage, testName, '03-rooted-2-before-defense-advance.png');
+
+            await expect.poll(async () => {
+                const root = await readHarnessState(match.hostPage);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                return {
+                    phase: sys.phase ?? core.phase,
+                    rollDiceCount: core.rollDiceCount,
+                    defenseAbilityId: asRecord(core.pendingAttack).defenseAbilityId,
+                };
+            }, { timeout: 10000 }).toEqual({ phase: 'defensiveRoll', rollDiceCount: 4, defenseAbilityId: 'rooted' });
+            await expect(match.hostPage.getByRole('button', { name: '开始防御' })).toBeVisible({ timeout: 10000 });
+            await match.hostPage.getByRole('button', { name: '开始防御' }).click();
+            await expect(match.hostPage.getByRole('button', { name: '开始防御' })).toBeHidden({ timeout: 10000 });
+            await clickAdvancePhase(match.hostPage, '0');
+            await expect(match.hostPage.getByText('扎根：选择额外效果')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '04-rooted-2-choice-modal-after-roll.png');
+
+            await match.hostPage.getByRole('button', { name: '养成后：幼种 1' }).click();
+            await expect(match.hostPage.getByText('扎根：选择额外效果')).toBeHidden({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '05-rooted-2-after-choice-selected.png');
+            await clickAdvancePhase(match.hostPage, '0');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const players = asRecordMap(core.players);
+                const treant = asRecord(players['0']);
+                const treantTokens = asRecord(treant.tokens) as Record<string, number>;
+                const treantResources = asRecord(treant.resources) as Record<string, number>;
+                return {
+                    hp: treantResources[RESOURCE_IDS.HP],
+                    seedling: treantTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                    lifeSap: treantTokens[TOKEN_IDS.LIFE_SAP] ?? 0,
+                };
+            }, { timeout: 10000 }).toEqual({ hp: 47, seedling: 1, lifeSap: 0 });
+            await screenshot(match.hostPage, testName, '06-rooted-2-after-resolve.png');
         } finally {
             await closeMatchContexts(match);
         }
@@ -2207,6 +2362,168 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 };
             }, { timeout: 10000 }).toEqual({ hp: 25, pendingDamageOpen: false });
             await screenshot(match.guestPage, testName, '04-escape-after-end-attack-damage-resolved.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('忍者升级闪现后应在真实防御链路中按 Blink II 结算', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者升级闪现后应在真实防御链路中按BlinkII结算';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources);
+                const tokens = asRecord(p1.tokens);
+
+                players['1'] = {
+                    ...p1,
+                    resources: { ...resources, [RESOURCE_IDS.CP]: 5, [RESOURCE_IDS.HP]: 50 },
+                    tokens: { ...tokens, [TOKEN_IDS.SMOKE_BOMB]: 0 },
+                    hand: [cloneNinjaCard('upgrade-blink-2')],
+                    discard: [],
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'main1',
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                    responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
+                };
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            await expect(match.guestPage.locator('[data-testid="hand-area"] [data-card-id="upgrade-blink-2"]').first()).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '01-upgrade-blink-2-before-drag.png');
+
+            await dragHandCardToPlay(match.guestPage, 'upgrade-blink-2');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const resources = asRecord(p1.resources) as Record<string, number>;
+                const abilityLevels = asRecord(p1.abilityLevels) as Record<string, number>;
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    blinkLevel: abilityLevels.blink,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 3, blinkLevel: 2 });
+            await screenshot(match.guestPage, testName, '02-upgrade-blink-2-after-play.png');
+
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const dice = Array.isArray(core.dice) ? [...core.dice] : [];
+
+                const blinkValues = [1, 4, 6];
+                const blinkSymbols = [
+                    NINJA_DICE_FACE_IDS.KATANA,
+                    NINJA_DICE_FACE_IDS.SHURIKEN,
+                    NINJA_DICE_FACE_IDS.MASK,
+                ];
+
+                for (let index = 0; index < blinkValues.length; index += 1) {
+                    dice[index] = {
+                        ...asRecord(dice[index]),
+                        id: index,
+                        value: blinkValues[index],
+                        symbol: blinkSymbols[index],
+                        ownerId: '1',
+                        isKept: false,
+                    };
+                }
+
+                players['0'] = {
+                    ...p0,
+                    resources: { ...asRecord(p0.resources), [RESOURCE_IDS.HP]: 30 },
+                };
+                players['1'] = {
+                    ...p1,
+                    tokens: { ...asRecord(p1.tokens), [TOKEN_IDS.SMOKE_BOMB]: 0 },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    dice,
+                    activePlayerId: '0',
+                    phase: 'defensiveRoll',
+                    rollLimit: 1,
+                    rollDiceCount: 3,
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '0',
+                        defenderId: '1',
+                        sourceAbilityId: 'shattering-fist',
+                        defenseAbilityId: 'blink',
+                        isDefendable: true,
+                        damage: 0,
+                    },
+                    pendingDamage: undefined,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'defensiveRoll',
+                    currentPlayerIndex: 0,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                }, []);
+                return state;
+            });
+            await screenshot(match.guestPage, testName, '03-blink-2-before-defense-advance.png');
+
+            await expect.poll(async () => {
+                const root = await readHarnessState(match.guestPage);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                return {
+                    phase: sys.phase ?? core.phase,
+                    rollDiceCount: core.rollDiceCount,
+                    defenseAbilityId: asRecord(core.pendingAttack).defenseAbilityId,
+                };
+            }, { timeout: 10000 }).toEqual({ phase: 'defensiveRoll', rollDiceCount: 3, defenseAbilityId: 'blink' });
+            await expect(match.guestPage.getByRole('button', { name: '开始防御' })).toBeVisible({ timeout: 10000 });
+            await match.guestPage.getByRole('button', { name: '开始防御' }).click();
+            await expect(match.guestPage.getByRole('button', { name: '开始防御' })).toBeHidden({ timeout: 10000 });
+            await clickAdvancePhase(match.guestPage, '1');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const p0Resources = asRecord(p0.resources) as Record<string, number>;
+                const p1Tokens = asRecord(p1.tokens) as Record<string, number>;
+                return {
+                    attackerHp: p0Resources[RESOURCE_IDS.HP],
+                    smokeBomb: p1Tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
+                    pendingAttack: Boolean(core.pendingAttack),
+                };
+            }, { timeout: 10000 }).toEqual({
+                attackerHp: 27,
+                smokeBomb: 0,
+                pendingAttack: false,
+            });
+            await screenshot(match.guestPage, testName, '04-blink-2-after-defense-resolve.png');
         } finally {
             await closeMatchContexts(match);
         }

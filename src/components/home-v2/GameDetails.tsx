@@ -40,6 +40,7 @@ import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
 import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageCard';
 import { GamePackageInstallConfirmModal } from '../lobby/GamePackageInstallConfirmModal';
 import { PasswordField } from '../common/PasswordField';
+import { HomeV2DangerConfirmModal } from '../common/overlays/HomeV2DangerConfirmModal';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
 import {
     homeV2PaperCompactHintClassName,
@@ -1626,66 +1627,24 @@ export const Right = ({ game }: RightProps) => {
         )
         : null;
 
-    const destroyRoomModal = activeTab === 'lobby' && pendingDestroyRoom && typeof document !== 'undefined'
-        ? createPortal(
-            <div
-                data-testid="home-v2-destroy-room-panel"
-                className="fixed inset-0 flex items-center justify-center bg-[rgba(18,13,9,0.56)] p-4 pointer-events-auto backdrop-blur-[2px]"
-                style={{ zIndex: UI_Z_INDEX.modalContent }}
-            >
-                <HomeV2PaperModalFrame
-                    title={t('lobby:confirm.destroy.title', { defaultValue: '销毁房间' })}
-                    dataTestId="home-v2-destroy-room-surface"
-                    surfaceClassName={`font-serif ${isCompactLandscape ? 'home-v2-paper-modal-compact w-[min(15.5rem,calc(100vw-1rem))]' : 'w-[min(31rem,calc(100vw-2rem))]'}`}
-                    surfaceStyle={{
-                        height: isCompactLandscape
-                            ? 'min(calc(var(--runtime-viewport-height, 100vh) - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 0.5rem), 11.25rem)'
-                            : undefined,
-                        maxHeight: isCompactLandscape
-                            ? undefined
-                            : 'min(calc(var(--runtime-viewport-height, 100vh) - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 2rem), 22rem)',
-                    }}
-                    headerClassName={isCompactLandscape ? 'px-[22px] pb-[9px] pt-[13px]' : 'px-7 pb-3 pt-6'}
-                    titleClassName={isCompactLandscape ? 'text-[11.8px] tracking-[0.075em]' : undefined}
-                    dividerClassName={isCompactLandscape ? 'mt-[7px] w-[72%] gap-1.5' : undefined}
-                >
-                    <div className={`relative z-10 flex flex-col items-center text-center ${isCompactLandscape ? 'gap-[8px] px-[22px] pb-[11px]' : 'gap-4 px-7 pb-6'}`}>
-                        <div className={`${isCompactLandscape ? 'max-w-[11.5rem] text-[8.2px] leading-[1.55]' : 'max-w-[23rem] text-[13px] leading-[1.7]'} text-[#5b3823]`}>
-                            {t('lobby:homeV2.confirm.destroyDescription', { defaultValue: '销毁后会立即关闭房间，所有玩家将被移出当前对局。' })}
-                        </div>
-                        <div className={`w-full rounded-[2px] border border-[#a5743c]/28 bg-[rgba(244,230,206,0.24)] font-semibold text-[#3f2616] ${isCompactLandscape ? 'max-w-[11.5rem] px-[8px] py-[6px] text-[8.6px]' : 'max-w-[20rem] px-3 py-2 text-[13px]'}`}>
-                            {getRoomTitle(pendingDestroyRoom.matchID, t, pendingDestroyRoom.roomName)}
-                        </div>
-                        <div className={`flex w-full items-center justify-center ${isCompactLandscape ? 'gap-[6px]' : 'gap-3'}`}>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (isDestroyingRoom) return;
-                                    setPendingDestroyRoom(null);
-                                }}
-                                data-testid="home-v2-destroy-room-cancel"
-                                className={`${passwordSecondaryButtonClassName} min-w-[6.75rem]`}
-                            >
-                                {t('common:button.cancel')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void handleDestroyRoomConfirm()}
-                                disabled={isDestroyingRoom}
-                                data-testid="home-v2-destroy-room-confirm"
-                                className={`min-w-[7.5rem] rounded-[3px] border border-[#a16f43]/76 bg-[linear-gradient(180deg,rgba(98,56,31,0.98)_0%,rgba(71,40,22,1)_100%)] font-bold text-[#f3e0bf] shadow-[0_8px_14px_rgba(50,29,16,0.18),inset_0_1px_0_rgba(255,240,206,0.16)] transition-colors hover:bg-[linear-gradient(180deg,rgba(108,61,33,0.98)_0%,rgba(76,43,23,1)_100%)] disabled:cursor-not-allowed disabled:opacity-65 ${isCompactLandscape ? 'px-[8px] py-[4px] text-[7.8px] tracking-[0.08em]' : 'px-4 py-[11px] text-[15px] tracking-[0.12em]'}`}
-                            >
-                                {isDestroyingRoom
-                                    ? t('common:button.processing', { defaultValue: '处理中' })
-                                    : t('lobby:actions.destroy', { defaultValue: '销毁' })}
-                            </button>
-                        </div>
-                    </div>
-                </HomeV2PaperModalFrame>
-            </div>,
-            document.body,
-        )
-        : null;
+    const destroyRoomModal = (
+        <HomeV2DangerConfirmModal
+            open={activeTab === 'lobby' && Boolean(pendingDestroyRoom)}
+            title={t('lobby:confirm.destroy.title', { defaultValue: '销毁房间' })}
+            description={t('lobby:homeV2.confirm.destroyDescription', { defaultValue: '销毁后会立即关闭房间，所有玩家将被移出当前对局。' })}
+            subject={pendingDestroyRoom ? getRoomTitle(pendingDestroyRoom.matchID, t, pendingDestroyRoom.roomName) : ''}
+            cancelLabel={t('common:button.cancel')}
+            confirmLabel={t('lobby:actions.destroy', { defaultValue: '销毁' })}
+            processingLabel={t('common:button.processing', { defaultValue: '处理中' })}
+            isProcessing={isDestroyingRoom}
+            onCancel={() => setPendingDestroyRoom(null)}
+            onConfirm={() => void handleDestroyRoomConfirm()}
+            panelTestId="home-v2-destroy-room-panel"
+            surfaceTestId="home-v2-destroy-room-surface"
+            confirmTestId="home-v2-destroy-room-confirm"
+            cancelTestId="home-v2-destroy-room-cancel"
+        />
+    );
 
     const hasVisibleRooms = filteredRoomPreviewItems.length > 0;
     const detailTabs: Array<{ id: HomeV2DetailTab; label: string; compactLabel: string }> = [

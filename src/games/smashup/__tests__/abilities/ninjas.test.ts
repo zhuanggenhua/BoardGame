@@ -631,6 +631,38 @@ describe('忍者 ongoing/special 能力', () => {
             expect(result.error).toContain('已打出过随从');
             expect(result.events).toHaveLength(0);
         });
+
+        it('被泛滥横行封锁时，仍会先回手，但额外打出的随从不能落到该基地', () => {
+            const state = makeNinjaOngoingState([
+                makeBase({
+                    minions: [makeNinjaOngoingMinion({ defId: 'ninja_acolyte', uid: 'ac-1', controller: '0' })],
+                    ongoingActions: [{ uid: 'overrun-1', defId: 'zombie_overrun', ownerId: '1' }],
+                }),
+            ]);
+            state.players['0'].hand = [makeCard('h3', 'test_minion_b', 'minion', '0')];
+
+            const activated = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { minionUid: 'ac-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+            expect(activated.success, activated.error).toBe(true);
+            expect(activated.finalState.core.players['0'].hand.some(card => card.uid === 'ac-1')).toBe(true);
+
+            const prompt = getFirstPrompt(activated.finalState);
+            const option = getPromptOption(
+                prompt,
+                candidate => candidate?.value?.cardUid === 'h3',
+                'Acolyte blocked extra-play option',
+            );
+            const resolved = respondToPrompt(activated.finalState, option.id, '0', defaultTestRandom);
+
+            expect(resolved.success, resolved.error).toBe(true);
+            expect(resolved.events.some((event: any) => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+            expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'h3')).toBe(false);
+            expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'h3')).toBe(true);
+            expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'ac-1')).toBe(true);
+        });
     });
 
     describe('ninja_hidden_ninja: 隐忍 special', () => {

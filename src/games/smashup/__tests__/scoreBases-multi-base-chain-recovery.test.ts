@@ -278,32 +278,23 @@ function assertPirateKingFirstMateChainResult(
     expect(finalState.sys.phase).toBe('playCards');
     expect(finalState.core.currentPlayerIndex).toBe(1);
 
-    // 当前实现下，该链路会完整走完“多基地计分 + beforeScoring/afterScoring 链式交互”：
+    // 当前实现下，该链路会完整走完“托尔图加计分 -> 大副移动 -> 丛林补计分”的链路：
     // - base_tortuga 计分：P0=4, P1=3
-    // - base_the_jungle 若未被锁定为可计分，则不会再追加得分
-    expect(finalState.core.players['0'].vp).toBe(4);
+    // - pirate_king 从丛林移走后，已在 scoreBases 进入时锁定的丛林仍会补计分：P0 再得 2
+    expect(finalState.core.players['0'].vp).toBe(6);
     expect(finalState.core.players['1'].vp).toBe(3);
     const baseIds = finalState.core.bases.map(base => base.defId);
     expect(baseIds[0]).toBe('base_central_brain');
+    expect(baseIds[1]).toBe('base_cave_of_shinies');
     expect(baseIds[2]).toBe('base_secret_garden');
-    expect(['base_cave_of_shinies', 'base_the_jungle']).toContain(baseIds[1]);
-    // With queued reaction ordering, some chains may move/remove the reserve minion earlier.
-    expect([[], ['reserve-p1']]).toContainEqual(finalState.core.bases[0].minions.map(minion => minion.uid));
-    // ScoreBases 结算后新翻开的基地默认应为空（除非链路未结算该基地）。
-    const base1 = finalState.core.bases[1];
-    if (base1.defId === 'base_cave_of_shinies') {
-        expect(base1.minions.map(minion => minion.uid)).toEqual([]);
-    } else {
-        expect(base1.minions.map(minion => minion.uid)).toEqual(expect.arrayContaining(['jungle-p0']));
-    }
+    expect(finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['reserve-p1']);
+    expect(finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual([]);
     // 大副交互在该链中固定选择 baseIndex=2（secret_garden）。
     const base2Uids = finalState.core.bases[2].minions.map(minion => minion.uid);
     expect(base2Uids).toContain('mate-0');
     const remainingMinionUids = finalState.core.bases.flatMap(base => base.minions.map(minion => minion.uid));
     expect(remainingMinionUids).not.toContain('king-0');
-    if (base1.defId === 'base_cave_of_shinies') {
-        expect(remainingMinionUids).not.toContain('jungle-p0');
-    }
+    expect(remainingMinionUids).not.toContain('jungle-p0');
     expect(remainingMinionUids).not.toContain('tortuga-p0');
 }
 

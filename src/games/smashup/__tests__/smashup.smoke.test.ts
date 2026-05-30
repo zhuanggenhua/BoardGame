@@ -3961,7 +3961,7 @@ describe('smashup', () => {
                 makeBase({ defId: 'base_the_homeworld' }),
                 makeBase({ defId: 'base_the_mothership' }),
             ],
-            baseDeck: ['base_factory_436-1337'],
+            baseDeck: ['base_the_factory'],
             titans: [{
                 uid: 't-rainboroc-setaside',
                 defId: 'itty_critters_rainboroc',
@@ -3997,7 +3997,7 @@ describe('smashup', () => {
                     payload: {
                         baseIndex: 0,
                         oldBaseDefId: core.bases[0].defId,
-                        newBaseDefId: 'base_factory_436-1337',
+                        newBaseDefId: 'base_the_factory',
                     },
                     timestamp: 85,
                 },
@@ -4054,7 +4054,7 @@ describe('smashup', () => {
             zone: 'base',
             baseIndex: 0,
         });
-        expect(finalCore.bases[0].defId).toBe('base_factory_436-1337');
+        expect(finalCore.bases[0].defId).toBe('base_the_factory');
     });
 
     it('彩虹鸟只会在每回合第一次你在这里打出战力 2 或更低的随从后获得 1 枚力量指示物', () => {
@@ -6316,7 +6316,7 @@ describe('smashup', () => {
                     minions: [makeMinion('pirate-on-score', 'pirate_first_mate', '0', 2)],
                 }),
                 makeBase('base_the_mothership'),
-                makeBase('base_factory_436-1337'),
+                makeBase('base_the_factory'),
             ],
             titans: [{
                 uid: 't-kraken-setaside',
@@ -6430,7 +6430,7 @@ describe('smashup', () => {
                 }),
                 makeBase('base_the_mothership'),
             ],
-            baseDeck: ['base_factory_436-1337'],
+            baseDeck: ['base_the_factory'],
             titans: [{
                 uid: 't-kraken-setaside',
                 defId: 'pirates_the_kraken',
@@ -6466,7 +6466,7 @@ describe('smashup', () => {
                     payload: {
                         baseIndex: 0,
                         oldBaseDefId: 'base_the_homeworld',
-                        newBaseDefId: 'base_factory_436-1337',
+                        newBaseDefId: 'base_the_factory',
                     },
                     timestamp: 75,
                 },
@@ -6524,7 +6524,7 @@ describe('smashup', () => {
         const kraken = (finalCore.titans ?? []).find(candidate => candidate.uid === 't-kraken-setaside');
 
         expect(kraken?.location).toMatchObject({ zone: 'base', baseIndex: 0 });
-        expect(finalCore.bases[0].defId).toBe('base_factory_436-1337');
+        expect(finalCore.bases[0].defId).toBe('base_the_factory');
     });
 
     it('活动泰坦静态契约与当前已接入范围保持一致', () => {

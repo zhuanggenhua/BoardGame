@@ -92,6 +92,63 @@ function resolveInvisibleNinjaTrigger(state: ReturnType<typeof makeMatchState>) 
 }
 
 describe('Invisible Ninja 持续触发回归', () => {
+    it('2v2 模式下队友消灭对手随从时，不应给隐形忍者弹出反应', () => {
+        const matchState = makeMatchState(makeState({
+            teamMode: '2v2',
+            seatOrder: ['0', '1', '2', '3'],
+            turnOrder: ['0', '1', '2', '3'],
+            currentPlayerIndex: 2,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('draw-a', 'robot_microbot_alpha', 'minion', '0'),
+                        makeCard('draw-b', 'ghosts_spectre', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+                '3': makePlayer('3'),
+            },
+            bases: [
+                makeBase(),
+                makeBase({
+                    minions: [
+                        makeMinion('enemy-a', 'pirate_first_mate', '1', 2),
+                    ],
+                }),
+            ],
+            titans: [{
+                uid: 't-invisible-ninja-team',
+                defId: 'ninjas_invisible_ninja',
+                faction: SMASHUP_FACTION_IDS.NINJAS,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            } satisfies TitanState],
+        }));
+
+        const processed = resolveDestroyedMinions(matchState, '2', [{
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'enemy-a',
+                minionDefId: 'pirate_first_mate',
+                fromBaseIndex: 1,
+                ownerId: '1',
+                destroyerId: '2',
+                reason: 'ally_destroy',
+            },
+            timestamp: 301,
+        } satisfies SmashUpEvent], FIXED_RANDOM, 301);
+
+        const queuedTrigger = (processed.matchState ?? matchState).core.triggerQueue?.find(
+            trigger => trigger.sourceDefId === 'ninjas_invisible_ninja',
+        );
+
+        expect(queuedTrigger).toBeUndefined();
+    });
+
     it('同一回合多次消灭对手卡牌时，每次都应再次触发抽牌', () => {
         const matchState = makeMatchState(createInvisibleNinjaState(), 'playCards', '0');
 

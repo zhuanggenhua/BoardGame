@@ -80,6 +80,58 @@ import { getSmashUpReactionWindowContext } from './reactionWindowState';
 // execute：命令 → 事件
 // ============================================================================
 
+const PREVENT_DESTROY_SOURCE_IDS = [
+    'base_nine_lives_intercept',
+    'giant_ant_drone_prevent_destroy',
+    'pirate_buccaneer_move',
+] as const;
+
+function getInteractionSourceId(interaction: MatchState<SmashUpCore>['sys']['interaction']['current']): string | undefined {
+    return (interaction?.data as { sourceId?: string } | undefined)?.sourceId;
+}
+
+function promotePreventDestroyInteraction(
+    matchState: MatchState<SmashUpCore> | undefined,
+): { matchState: MatchState<SmashUpCore> | undefined; hasPreventDestroyInteraction: boolean } {
+    if (!matchState) {
+        return { matchState, hasPreventDestroyInteraction: false };
+    }
+
+    const current = matchState.sys.interaction.current;
+    const queue = matchState.sys.interaction.queue ?? [];
+    const currentSourceId = getInteractionSourceId(current);
+    if (currentSourceId && PREVENT_DESTROY_SOURCE_IDS.includes(currentSourceId as typeof PREVENT_DESTROY_SOURCE_IDS[number])) {
+        return { matchState, hasPreventDestroyInteraction: true };
+    }
+
+    const preventIndex = queue.findIndex((interaction) => {
+        const sourceId = getInteractionSourceId(interaction);
+        return !!sourceId && PREVENT_DESTROY_SOURCE_IDS.includes(sourceId as typeof PREVENT_DESTROY_SOURCE_IDS[number]);
+    });
+    if (preventIndex === -1) {
+        return { matchState, hasPreventDestroyInteraction: false };
+    }
+
+    const preventInteraction = queue[preventIndex];
+    const remainingQueue = queue.filter((_, index) => index !== preventIndex);
+    const reorderedQueue = current ? [current, ...remainingQueue] : remainingQueue;
+
+    return {
+        hasPreventDestroyInteraction: true,
+        matchState: {
+            ...matchState,
+            sys: {
+                ...matchState.sys,
+                interaction: {
+                    ...matchState.sys.interaction,
+                    current: preventInteraction,
+                    queue: reorderedQueue,
+                },
+            },
+        },
+    };
+}
+
 function findTitanByUid(core: SmashUpCore, titanUid: string) {
     return (core.titans ?? []).find(titan => titan.uid === titanUid);
 }
@@ -1218,6 +1270,8 @@ export function processDestroyTriggers(
         }, { phase: 'replacement' });
         saveEvents.push(...ongoingDestroyEvents.events);
         if (ongoingDestroyEvents.matchState) ms = ongoingDestroyEvents.matchState;
+        const promotedPreventDestroy = promotePreventDestroyInteraction(ms);
+        ms = promotedPreventDestroy.matchState;
 
         // 检测"待拯救"模式：baseTrigger/ongoing 创建了新交互但未产生 MINION_RETURNED/MINION_MOVED
         // 典型场景：九命之屋创建玩家选择交互，暂缓消灭等待玩家决定
@@ -1236,18 +1290,9 @@ export function processDestroyTriggers(
         if (!hasSaveEvent && ms) {
             const interactionCountAfter =
                 (ms.sys.interaction.current ? 1 : 0) + ms.sys.interaction.queue.length;
-            if (interactionCountAfter > interactionCountBefore) {
-                // 检查新交互是否为"防止消灭"类交互（白名单）
-                // 排除：地窖等"给其他随从加指示物"的交互
-                const PREVENT_DESTROY_SOURCE_IDS = [
-                    'base_nine_lives_intercept',        // 九命之屋
-                    'giant_ant_drone_prevent_destroy',   // 雄蜂防止消灭
-                    'pirate_buccaneer_move',             // 海盗：被消灭时移动到其他基地
-                ];
-                const newInteraction = ms.sys.interaction.current ?? ms.sys.interaction.queue[ms.sys.interaction.queue.length - 1];
-                const sourceId = (newInteraction?.data as any)?.sourceId as string | undefined;
-                const isPreventDestroy = sourceId ? PREVENT_DESTROY_SOURCE_IDS.includes(sourceId) : false;
-                if (isPreventDestroy) {
+            const hasPreventDestroyInteraction = promotedPreventDestroy.hasPreventDestroyInteraction;
+            if (hasPreventDestroyInteraction || interactionCountAfter > interactionCountBefore) {
+                if (hasPreventDestroyInteraction) {
                     isPendingSave = true;
                     pendingSaveMinionUids.add(minionUid);
                 }

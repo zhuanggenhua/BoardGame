@@ -598,4 +598,122 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         expect(runner.getState().core.players['1'].hand.map(card => card.uid)).toContain('p1-discard-1');
     });
 
+    it('afterScoring 把随从移到新基地后若使其达标，应继续把新基地纳入本轮计分', () => {
+        const runner = createRunner((ids, random) => {
+            const core = SmashUpDomain.setup(ids, random);
+            const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.bases = [
+                {
+                    defId: 'base_the_jungle',
+                    minions: [
+                        makeMinion('mate-0', 'pirate_first_mate', '0', '0', 2, 0),
+                        makeMinion('ally-0', 'dino_king_rex', '0', '0', 10, 0),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_pirate_cove',
+                    minions: [
+                        makeMinion('target-a', 'alien_invader', '0', '0', 8, 0),
+                        makeMinion('target-b', 'robot_zapbot', '0', '0', 7, 0),
+                    ],
+                    ongoingActions: [],
+                },
+            ];
+            core.baseDeck = ['base_secret_garden', 'base_tar_pits'];
+            core.players['0'].hand = [];
+            core.players['1'].hand = [];
+
+            return { sys, core };
+        });
+
+        const eventLog: SmashUpEvent[] = [];
+        const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advance.success).toBe(true);
+        eventLog.push(...advance.events);
+
+        let firstMateChoice: ReturnType<typeof getCurrentChoice> | undefined;
+        for (let guard = 0; guard < 8; guard += 1) {
+            const state = runner.getState();
+            const choice = getCurrentChoice(state);
+            const session = getReactionSession(state);
+
+            if (choice?.sourceId === 'pirate_first_mate_choose_base') {
+                firstMateChoice = choice;
+                break;
+            }
+
+            if (choice?.sourceId === 'smashup_reaction_choose') {
+                const optionId = findQueuedTriggerOptionId(
+                    state,
+                    choice,
+                    'pirate_first_mate',
+                    '找不到大副的统一反应入口',
+                );
+                const resolved = runner.resolveInteraction(choice.playerId, { optionId });
+                expect(resolved.success).toBe(true);
+                eventLog.push(...resolved.events);
+                continue;
+            }
+
+            if (session?.responseWindowType === 'meFirst' && choice?.sourceId === 'smashup_reaction_choose') {
+                const pass = runner.resolveInteraction(choice.playerId, { optionId: 'pass' });
+                expect(pass.success).toBe(true);
+                eventLog.push(...pass.events);
+                continue;
+            }
+
+            throw new Error(`未能进入大副计分后移动交互: ${JSON.stringify({
+                phase: state.sys.phase,
+                interactionSourceId: choice?.sourceId ?? null,
+                responseWindowType: session?.responseWindowType ?? null,
+            })}`);
+        }
+
+        expect(firstMateChoice?.sourceId).toBe('pirate_first_mate_choose_base');
+        const moveMate = runner.resolveInteraction('0', {
+            optionId: findOptionId(
+                firstMateChoice!,
+                option => option.value?.baseIndex === 1,
+                '找不到大副移动到基地 1 的选项',
+            ),
+        });
+        expect(moveMate.success).toBe(true);
+        eventLog.push(...moveMate.events);
+
+        for (let guard = 0; guard < 4; guard += 1) {
+            const pendingChoice = getCurrentChoice(runner.getState());
+            if (!pendingChoice) {
+                break;
+            }
+
+            if (pendingChoice.sourceId === 'pirate_first_mate_choose_base') {
+                const skipMove = runner.resolveInteraction(pendingChoice.playerId, { optionId: 'skip' });
+                expect(skipMove.success).toBe(true);
+                eventLog.push(...skipMove.events);
+                continue;
+            }
+
+            if (pendingChoice.sourceId === 'smashup_reaction_choose') {
+                const pass = runner.resolveInteraction(pendingChoice.playerId, { optionId: 'pass' });
+                expect(pass.success).toBe(true);
+                eventLog.push(...pass.events);
+                continue;
+            }
+
+            throw new Error(`第二次计分后的交互未按预期收口: ${pendingChoice.sourceId}`);
+        }
+
+        const finalState = runner.getState();
+        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(2);
+        expect(finalState.core.players['0'].vp).toBe(5);
+        expect(finalState.core.bases[0].defId).toBe('base_secret_garden');
+        expect(finalState.core.bases[1].defId).toBe('base_tar_pits');
+        expect(['startTurn', 'playCards']).toContain(finalState.sys.phase);
+        expect(finalState.core.currentPlayerIndex).toBe(1);
+    });
+
 });

@@ -868,7 +868,7 @@ async function openRainborocPlayReplacementScene(game: any): Promise<void> {
             { defId: 'base_the_mothership', minions: [], ongoingActions: [] },
         ],
         extraCore: {
-            baseDeck: ['base_factory_436-1337'],
+            baseDeck: ['base_the_factory'],
             titans: [
                 {
                     uid: 'titan-rainboroc-setaside',
@@ -911,7 +911,7 @@ async function openRainborocPlayReplacementScene(game: any): Promise<void> {
                                     payload: {
                                         baseIndex: 0,
                                         oldBaseDefId: 'base_the_homeworld',
-                                        newBaseDefId: 'base_factory_436-1337',
+                                        newBaseDefId: 'base_the_factory',
                                     },
                                     timestamp: 91,
                                 },
@@ -1563,7 +1563,7 @@ async function openKrakenPlayReplacementScene(game: any): Promise<void> {
             { defId: 'base_the_mothership', minions: [], ongoingActions: [] },
         ],
         extraCore: {
-            baseDeck: ['base_factory_436-1337'],
+            baseDeck: ['base_the_factory'],
             titans: [
                 {
                     uid: 'titan-kraken-setaside',
@@ -1609,7 +1609,7 @@ async function openKrakenPlayReplacementScene(game: any): Promise<void> {
                                     payload: {
                                         baseIndex: 0,
                                         oldBaseDefId: 'base_the_homeworld',
-                                        newBaseDefId: 'base_factory_436-1337',
+                                        newBaseDefId: 'base_the_factory',
                                     },
                                     timestamp: 41,
                                 },
@@ -1647,7 +1647,7 @@ async function openKrakenRescueScene(game: any): Promise<void> {
             { defId: 'base_the_mothership', minions: [], ongoingActions: [] },
         ],
         extraCore: {
-            baseDeck: ['base_factory_436-1337'],
+            baseDeck: ['base_the_factory'],
             titans: [
                 {
                     uid: 'titan-kraken-on-score-base',
@@ -1694,7 +1694,7 @@ async function openKrakenRescueScene(game: any): Promise<void> {
                                     payload: {
                                         baseIndex: 0,
                                         oldBaseDefId: 'base_the_homeworld',
-                                        newBaseDefId: 'base_factory_436-1337',
+                                        newBaseDefId: 'base_the_factory',
                                     },
                                     timestamp: 51,
                                 },
@@ -2368,7 +2368,7 @@ test.describe('Smash Up - Alien Terraform', () => {
 
         const finalState = await game.getState();
         const kraken = finalState.core.titans.find((candidate: any) => candidate.uid === 'titan-kraken-setaside');
-        expect(finalState.core.bases[0].defId).toBe('base_factory_436-1337');
+        expect(finalState.core.bases[0].defId).toBe('base_the_factory');
         expect(kraken?.location).toMatchObject({ zone: 'base', baseIndex: 0 });
 
         await waitForLayoutSettle(page);
@@ -2391,7 +2391,7 @@ test.describe('Smash Up - Alien Terraform', () => {
         const rescuedMinion = finalState.core.bases[1].minions.find((candidate: any) => candidate.uid === 'kraken-save-pirate');
         const oldBaseMinion = finalState.core.bases[0].minions.find((candidate: any) => candidate.uid === 'kraken-save-pirate');
 
-        expect(finalState.core.bases[0].defId).toBe('base_factory_436-1337');
+        expect(finalState.core.bases[0].defId).toBe('base_the_factory');
         expect(oldBaseMinion).toBeUndefined();
         expect(rescuedMinion?.defId).toBe('pirate_first_mate');
 
@@ -2659,7 +2659,7 @@ test.describe('Smash Up - Alien Terraform', () => {
 
         const finalState = await game.getState();
         const rainboroc = finalState.core.titans.find((candidate: any) => candidate.uid === 'titan-rainboroc-setaside');
-        expect(finalState.core.bases[0].defId).toBe('base_factory_436-1337');
+        expect(finalState.core.bases[0].defId).toBe('base_the_factory');
         expect(rainboroc?.location).toMatchObject({ zone: 'base', baseIndex: 0 });
 
         await waitForLayoutSettle(page);

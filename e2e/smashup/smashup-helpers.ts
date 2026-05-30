@@ -349,7 +349,6 @@ export const setupTwoPlayerMatch = async (
 
     await seedMatchCredentials(hostContext, matchId, '0', hostCredentials);
     await hostPage.goto(`/play/smashup/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
-    await waitForFactionSelection(hostPage);
 
     const guestContext = await browser.newContext({ baseURL, ...(options?.contextOptions ?? {}) });
     
@@ -373,7 +372,10 @@ export const setupTwoPlayerMatch = async (
 
     await seedMatchCredentials(guestContext, matchId, '1', guestCredentials);
     await guestPage.goto(`/play/smashup/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
-    await waitForFactionSelection(guestPage);
+    await Promise.all([
+        waitForFactionSelection(hostPage),
+        waitForFactionSelection(guestPage),
+    ]);
 
     return { hostContext, guestContext, hostPage, guestPage, matchId };
 };

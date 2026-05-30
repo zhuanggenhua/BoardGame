@@ -892,6 +892,14 @@ describe('SmashUp Interaction targetType 审计', () => {
                 { displayMode: 'button' },
             ],
         })).toBe(true);
+        expect(shouldForceSmashUpPromptOverlay({
+            playerId: '0',
+            sourceId: 'multi_base_scoring',
+            options: [
+                { displayMode: 'card' },
+                { displayMode: 'card' },
+            ],
+        })).toBe(true);
 
         expect(resolveSmashUpHandPromptUiMode({
             currentPrompt: { playerId: '0', multi: undefined },

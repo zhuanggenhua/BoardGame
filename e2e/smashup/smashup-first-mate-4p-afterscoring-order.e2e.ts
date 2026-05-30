@@ -56,7 +56,7 @@ test.describe('SmashUp 4P First Mate afterScoring 顺序', () => {
         const expectedMates = ['mate-p0', 'mate-p1', 'mate-p2', 'mate-p3'];
         const destinationByPlayer: Record<string, string> = {
             '0': 'base_secret_garden',
-            '1': 'base_factory_436-1337',
+            '1': 'base_the_factory',
             '2': 'base_secret_garden',
             '3': 'base_central_brain',
         };
@@ -98,7 +98,7 @@ test.describe('SmashUp 4P First Mate afterScoring 顺序', () => {
                             ongoingActions: [],
                         },
                         {
-                            defId: 'base_factory_436-1337',
+                            defId: 'base_the_factory',
                             minions: [],
                             ongoingActions: [],
                         },

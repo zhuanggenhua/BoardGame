@@ -26,7 +26,7 @@ import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScro
 import { useToast } from '../../../contexts/ToastContext';
 import { isSmashUpPromptOwnedByPlayer } from './interactionMode';
 
-type DisplayCardItem = { uid: string; defId: string };
+type DisplayCardItem = { uid: string; defId: string; count?: number };
 
 type DisplayCardsBase = {
     title: string;
@@ -80,6 +80,13 @@ function cardFrameStyle(widthVw: number, aspectRatio = CARD_ASPECT_RATIO): React
     };
 }
 
+function baseGridCardFrameStyle(): React.CSSProperties {
+    return {
+        width: 'clamp(210px, 24vw, 320px)',
+        aspectRatio: `${BASE_CARD_ASPECT_RATIO} / 1`,
+    };
+}
+
 /** 从选项 value 中提取 defId（卡牌/随从/基地） */
 function extractDefId(value: unknown): string | undefined {
     if (!value || typeof value !== 'object') return undefined;
@@ -105,6 +112,10 @@ function isCardOption(option: { value: unknown; displayMode?: 'card' | 'button' 
     // 自动推断：value 中包含 defId/minionDefId 即为卡牌选项
     const defId = extractDefId(option.value);
     return !!defId;
+}
+
+function isBaseDefId(defId: string | undefined): boolean {
+    return !!defId && !!getBaseDef(defId);
 }
 
 /** 从 continuationContext 提取上下文卡牌预览 ref */
@@ -317,6 +328,13 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         return prompt.options.filter(opt => isCardOption(opt)).length;
     }, [prompt, hasOptions]);
     const useCardMode = cardOptionCount > 0;
+    const isBaseTargetPrompt = prompt?.targetType === 'base';
+    const allCardOptionsAreBases = useMemo(() => {
+        if (!prompt || !hasOptions) return false;
+        const cardOptions = prompt.options.filter(opt => isCardOption(opt));
+        return cardOptions.length > 0
+            && cardOptions.every(opt => isBaseTargetPrompt || isBaseDefId(extractDefId(opt.value)));
+    }, [prompt, hasOptions, isBaseTargetPrompt]);
 
     // 上下文卡图（牌库顶查看等场景）
     const contextPreviewRef = useMemo(() => prompt ? extractContextPreview(prompt) : undefined, [prompt]);
@@ -410,6 +428,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     if (displayCards) {
         const { selectedUid: selUid, onSelect: onSel } = displayCards;
         const playableUids = onSel ? displayCards.playableUids : undefined;
+        const useBaseGridLayout = displayCards.cards.length > 0
+            && displayCards.cards.every(card => isBaseDefId(card.defId));
 
         return (
             <AnimatePresence mode="wait">
@@ -423,6 +443,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                     style={{ zIndex: UI_Z_INDEX.overlay }}
                 >
                     <div 
+                        data-card-view-panel
                         data-discard-view-panel
                         className="bg-gradient-to-t from-black/90 via-black/75 to-transparent pt-8 pb-4 px-4"
                         onClick={(e) => e.stopPropagation()}
@@ -433,12 +454,22 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         </h2>
                         {/* py-3 给 ring 描边留出空间，避免被 overflow-x-auto 裁切 */}
                         {/* 注意：不能用 justify-center，flex + justify-center + overflow 会导致左侧内容不可达 */}
-                        <div ref={revealScrollRef} className="flex gap-4 overflow-x-auto max-w-[90vw] mx-auto px-4 py-3 smashup-h-scrollbar [&>*:first-child]:ml-auto [&>*:last-child]:mr-auto">
+                        <div
+                            ref={useBaseGridLayout ? undefined : revealScrollRef}
+                            data-testid={useBaseGridLayout ? 'display-base-grid' : 'display-card-strip'}
+                            className={
+                                useBaseGridLayout
+                                    ? 'grid grid-cols-2 gap-x-5 gap-y-6 max-h-[62vh] overflow-y-auto mx-auto px-4 py-3 justify-items-center'
+                                    : 'flex gap-4 overflow-x-auto max-w-[90vw] mx-auto px-4 py-3 smashup-h-scrollbar [&>*:first-child]:ml-auto [&>*:last-child]:mr-auto'
+                            }
+                            style={useBaseGridLayout ? { maxWidth: 'min(76vw, 760px)' } : undefined}
+                        >
                             {displayCards.cards.map((card, idx) => {
                                 const def = getCardDef(card.defId);
                                 const name = def ? resolveCardName(def, t) : card.defId;
                                 const isSel = card.uid === selUid;
                                 const isPlayable = !!(onSel && playableUids?.has(card.uid));
+                                const isBaseCard = isBaseDefId(card.defId);
                                 
                                 const handleCardClick = () => {
                                     if (isPlayable && onSel) {
@@ -467,12 +498,22 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                     : 'ring-2 ring-white/20 group-hover:ring-white/50 group-hover:shadow-2xl'
                                         }`}>
                                             <div className="rounded shadow-xl overflow-hidden">
-                                                <CardPreview
-                                                    previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId, cardUid: card.uid } }}
-                                                    className="bg-slate-900 rounded"
-                                                    style={cardFrameStyle(8.5)}
-                                                    alt={name}
-                                                />
+                                                <div className="relative">
+                                                    <CardPreview
+                                                        previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId, cardUid: card.uid } }}
+                                                        className="bg-slate-900 rounded"
+                                                        style={isBaseCard && useBaseGridLayout ? baseGridCardFrameStyle() : cardFrameStyle(8.5)}
+                                                        alt={name}
+                                                    />
+                                                    {typeof card.count === 'number' && card.count > 1 && (
+                                                        <div
+                                                            data-card-count={card.count}
+                                                            className="absolute top-1.5 right-1.5 z-30 min-w-[22px] h-[22px] px-1 bg-amber-500 border-2 border-white rounded-full flex items-center justify-center shadow-md"
+                                                        >
+                                                            <span className="text-white font-black text-[10px] leading-none">×{card.count}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                         <button
@@ -483,7 +524,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                             </svg>
                                         </button>
-                                        <span className={`text-xs font-bold max-w-[8.5vw] truncate text-center ${isSel ? 'text-amber-300' : 'text-white/80'}`}>
+                                        <span
+                                            className={`text-xs font-bold truncate text-center ${useBaseGridLayout ? '' : 'max-w-[8.5vw]'} ${isSel ? 'text-amber-300' : 'text-white/80'}`}
+                                            style={isBaseCard && useBaseGridLayout ? { maxWidth: 'clamp(210px, 24vw, 320px)' } : undefined}
+                                        >
                                             {name}
                                         </span>
                                     </motion.div>
@@ -777,9 +821,14 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
                     {isMyPrompt && (
                         <div 
-                            ref={cardScrollRef} 
-                            className="flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-6 smashup-h-scrollbar relative z-50"
-                            style={{ pointerEvents: 'auto' }}
+                            ref={allCardOptionsAreBases ? undefined : cardScrollRef}
+                            data-testid={allCardOptionsAreBases ? 'prompt-base-grid' : 'prompt-card-strip'}
+                            className={
+                                allCardOptionsAreBases
+                                    ? 'grid grid-cols-2 gap-x-5 gap-y-6 max-h-[62vh] overflow-y-auto px-4 py-6 mx-auto justify-items-center relative z-50'
+                                    : 'flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-6 smashup-h-scrollbar relative z-50'
+                            }
+                            style={allCardOptionsAreBases ? { pointerEvents: 'auto', maxWidth: 'min(76vw, 760px)' } : { pointerEvents: 'auto' }}
                         >
                             {cardOptions.map((option, idx) => {
                                 const defId = extractDefId(option.value);
@@ -787,9 +836,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 const previewRef = buildRendererPreviewRef(defId);
                                 const name = def ? resolveCardName(def, t) : option.label;
                                 const isSelected = selectedIds.includes(option.id);
-                                const isBase = !!getBaseDef(defId ?? '');
+                                const isBase = isBaseTargetPrompt || isBaseDefId(defId);
                                 // 基地使用场上基地尺寸 14vw，行动卡/随从使用手牌尺寸 8.5vw
-                                const cardStyle = isBase ? cardFrameStyle(14, BASE_CARD_ASPECT_RATIO) : cardFrameStyle(8.5);
+                                const cardStyle = isBase
+                                    ? (allCardOptionsAreBases ? baseGridCardFrameStyle() : cardFrameStyle(14, BASE_CARD_ASPECT_RATIO))
+                                    : cardFrameStyle(8.5);
 
                                 return (
                                     <motion.div
@@ -828,7 +879,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 </div>
                                             )}
                                         </div>
-                                        <div className={`mt-2 text-center text-xs font-bold truncate ${isBase ? 'max-w-[14vw]' : 'max-w-[8.5vw]'} ${isSelected ? 'text-amber-300' : 'text-white/80'}`}>
+                                        <div
+                                            className={`mt-2 text-center text-xs font-bold truncate ${isBase ? (allCardOptionsAreBases ? '' : 'max-w-[14vw]') : 'max-w-[8.5vw]'} ${isSelected ? 'text-amber-300' : 'text-white/80'}`}
+                                            style={isBase && allCardOptionsAreBases ? { maxWidth: 'clamp(210px, 24vw, 320px)' } : undefined}
+                                        >
                                             {name || option.label}
                                         </div>
                                         {isMulti && isSelected && (

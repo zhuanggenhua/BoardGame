@@ -129,7 +129,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
                 makeBase('base_secret_garden'),
                 makeBase('base_tar_pits'),
             ];
-            core.baseDeck = ['base_factory_436-1337'];
+            core.baseDeck = ['base_the_factory'];
             core.players['0'].hand = [];
             core.players['1'].hand = [];
         });
@@ -205,7 +205,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
                 ]),
                 makeBase('base_secret_garden'),
             ];
-            core.baseDeck = ['base_tar_pits', 'base_central_brain', 'base_factory_436-1337'];
+            core.baseDeck = ['base_tar_pits', 'base_central_brain', 'base_the_factory'];
             core.players['0'].hand = [];
             core.players['1'].hand = [];
         });
@@ -214,12 +214,20 @@ describe('afterScoring 链式传递与延迟清场', () => {
         expect(advance.success).toBe(true);
 
         const wizardAcademyPrompt = getSimpleChoicePrompt(runner.getState(), 'base_wizard_academy');
-        const keepCurrentTopOption = getPromptOption(
+        const chooseReplacementOption = getPromptOption(
             wizardAcademyPrompt,
-            (option: any) => option.value?.defId === 'base_tar_pits',
-            'wizard academy base deck option',
+            (option: any) => option.value?.defId === 'base_the_factory',
+            'wizard academy replacement option',
         );
-        let state = resolveCurrentOption(runner, keepCurrentTopOption.id);
+        let state = resolveCurrentOption(runner, chooseReplacementOption.id);
+
+        const reorderPrompt = getSimpleChoicePrompt(state, 'base_wizard_academy');
+        const chooseRemainingTopOption = getPromptOption(
+            reorderPrompt,
+            (option: any) => option.value?.defId === 'base_central_brain',
+            'wizard academy remaining order option',
+        );
+        state = resolveCurrentOption(runner, chooseRemainingTopOption.id);
 
         const scoutPrompt = getSimpleChoicePrompt(state, 'alien_scout_return');
         const returnScoutOption = getPromptOption(
@@ -231,7 +239,8 @@ describe('afterScoring 链式传递与延迟清场', () => {
 
         expectNoPrompt(state);
         expect(state.core.players['0'].hand.map(card => card.uid)).toContain('scout1');
+        expect(state.core.bases[0].defId).toBe('base_the_factory');
         expect(state.core.bases[0].minions).toHaveLength(0);
-        expect(state.core.baseDeck[0]).toBe('base_central_brain');
+        expect(state.core.baseDeck.slice(0, 2)).toEqual(['base_central_brain', 'base_tar_pits']);
     });
 });

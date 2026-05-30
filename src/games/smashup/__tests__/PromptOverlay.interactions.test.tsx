@@ -219,6 +219,8 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         };
 
         renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+        expect(screen.getByTestId('prompt-base-grid')).toHaveClass('grid', 'grid-cols-2');
+        expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(3);
 
         fireEvent.click(screen.getByTestId('prompt-card-1'));
 

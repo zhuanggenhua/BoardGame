@@ -191,6 +191,12 @@ function resolveSmashUpCardType(defId: string, explicitType?: SmashUpCardType): 
     return 'minion';
 }
 
+function assertValidSmashUpBaseDefId(defId: string, source: string): void {
+    if (!getBaseDef(defId)) {
+        throw new Error(`SmashUp 场景含有无效基地 defId: ${defId} @ ${source}`);
+    }
+}
+
 const DICE_THRONE_DEFAULT_CHARACTERS: Record<'0' | '1', SelectableCharacterId> = {
     '0': 'monk',
     '1': 'barbarian',
@@ -486,6 +492,30 @@ export class GameTestContext {
         let preparedConfig: SceneConfig = config;
         
         if (config.gameId === 'smashup') {
+            const validateBaseConfig = (baseConfig: SmashUpBaseSceneConfig | undefined, baseIndex: number) => {
+                if (!baseConfig) return;
+                if (baseConfig.defId) {
+                    assertValidSmashUpBaseDefId(baseConfig.defId, `bases[${baseIndex}].defId`);
+                }
+            };
+
+            const validateBaseDeckEntry = (defId: unknown, index: number, source: string) => {
+                if (typeof defId !== 'string') return;
+                assertValidSmashUpBaseDefId(defId, `${source}[${index}]`);
+            };
+
+            config.bases?.forEach(validateBaseConfig);
+
+            const extraCore = config.extra?.core as Record<string, unknown> | undefined;
+            const extraBaseDeck = extraCore?.baseDeck;
+            if (Array.isArray(extraBaseDeck)) {
+                extraBaseDeck.forEach((defId, index) => validateBaseDeckEntry(defId, index, 'extra.core.baseDeck'));
+            }
+            const extraBaseDiscard = extraCore?.baseDiscard;
+            if (Array.isArray(extraBaseDiscard)) {
+                extraBaseDiscard.forEach((defId, index) => validateBaseDeckEntry(defId, index, 'extra.core.baseDiscard'));
+            }
+
             // 1. 自动填充随从的 basePower（从卡牌定义读取）
             const autoFillMinionPower = (minion: SmashUpMinionSceneConfig): SmashUpMinionSceneConfig => {
                 if (minion.basePower !== undefined) return minion; // 已有值，不覆盖

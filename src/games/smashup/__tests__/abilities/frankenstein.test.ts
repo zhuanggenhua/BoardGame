@@ -286,6 +286,167 @@ describe('Frankenstein abilities', () => {
         expect(getPromptsBySourceId(currentState, 'frankenstein_body_shop_distribute')).toHaveLength(0);
     });
 
+    it('The Bride 第二个效果不应把第一个效果选中的同一随从强行排除', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['frankenstein', 'aliens'],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_the_factory',
+                minions: [{
+                    ...makeMinion('bride-target', 'frankenstein_igor', '0', 2),
+                    powerCounters: 1,
+                }],
+                ongoingActions: [],
+            }],
+            titans: [{
+                uid: 'bride-1',
+                defId: 'frankenstein_the_bride',
+                faction: 'frankenstein',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            }],
+        });
+
+        const triggerResult = fireTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 123,
+        });
+        const chooseFirstEffect = respondToPromptOption(
+            triggerResult.matchState!,
+            option => option.value?.kind === 'removeCounter',
+            'The Bride first remove-counter effect',
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseFirstEffect.success, chooseFirstEffect.error).toBe(true);
+
+        const chooseTarget = respondToPromptOption(
+            chooseFirstEffect.finalState,
+            option => option.value?.targetUid === 'bride-target',
+            'The Bride remove-counter target',
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseTarget.success, chooseTarget.error).toBe(true);
+
+        const secondEffectPrompt = getSimpleChoicePrompt(
+            chooseTarget.finalState,
+            'titan_frankenstein_the_bride_start_choose_branch',
+        );
+        expect(
+            getPromptOptions(secondEffectPrompt).some(option => option.value?.kind === 'destroy'),
+        ).toBe(true);
+    });
+
+    it('The Bride 先消灭海盗时，应先进入海盗移动替代并在移动后继续第二个效果', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['frankenstein', 'pirates'],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [{
+                        ...makeMinion('bucc', 'pirate_buccaneer', '0', 4),
+                        powerCounters: 1,
+                    }],
+                    ongoingActions: [],
+                },
+                { defId: 'base_b', minions: [], ongoingActions: [] },
+                { defId: 'base_c', minions: [], ongoingActions: [] },
+            ],
+            titans: [{
+                uid: 'bride-1',
+                defId: 'frankenstein_the_bride',
+                faction: 'frankenstein',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            }],
+        });
+
+        const triggerResult = fireTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 123,
+        });
+        const chooseDestroy = respondToPromptOption(
+            triggerResult.matchState!,
+            option => option.value?.kind === 'destroy',
+            'The Bride first destroy effect',
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseDestroy.success, chooseDestroy.error).toBe(true);
+
+        const destroyBuccaneer = respondToPromptOption(
+            chooseDestroy.finalState,
+            option => option.value?.targetUid === 'bucc',
+            'The Bride destroy pirate buccaneer',
+            '0',
+            defaultTestRandom,
+        );
+        expect(destroyBuccaneer.success, destroyBuccaneer.error).toBe(true);
+        expect(getPromptSourceId(getSimpleChoicePrompt(destroyBuccaneer.finalState, 'pirate_buccaneer_move'))).toBe('pirate_buccaneer_move');
+        expect(getPromptsBySourceId(destroyBuccaneer.finalState, 'titan_frankenstein_the_bride_start_choose_branch')).toHaveLength(1);
+        expect(destroyBuccaneer.finalState.core.bases[0].minions.some(minion => minion.uid === 'bucc')).toBe(true);
+        expect(destroyBuccaneer.finalState.core.players['0'].discard.some(card => card.uid === 'bucc')).toBe(false);
+
+        const moveBuccaneer = respondToPromptOption(
+            destroyBuccaneer.finalState,
+            option => option.value?.toBaseIndex === 1,
+            'move pirate buccaneer to base_b',
+            '0',
+            defaultTestRandom,
+        );
+        expect(moveBuccaneer.success, moveBuccaneer.error).toBe(true);
+        expect(moveBuccaneer.finalState.core.bases[1].minions.some(minion => minion.uid === 'bucc')).toBe(true);
+
+        const secondEffectPrompt = getSimpleChoicePrompt(
+            moveBuccaneer.finalState,
+            'titan_frankenstein_the_bride_start_choose_branch',
+        );
+        expect(
+            getPromptOptions(secondEffectPrompt).some(option => option.value?.kind === 'removeCounter'),
+        ).toBe(true);
+
+        const chooseRemoveCounter = respondToPromptOption(
+            moveBuccaneer.finalState,
+            option => option.value?.kind === 'removeCounter',
+            'The Bride second remove-counter effect',
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseRemoveCounter.success, chooseRemoveCounter.error).toBe(true);
+
+        const removeCounterPrompt = getSimpleChoicePrompt(
+            chooseRemoveCounter.finalState,
+            'titan_frankenstein_the_bride_start_choose_target',
+        );
+        expect(
+            getPromptOptions(removeCounterPrompt).some(
+                option => option.value?.targetUid === 'bucc' && option.value?.baseIndex === 1,
+            ),
+        ).toBe(true);
+    });
+
     it('frankenstein_german_engineering 在该基地打出随从后给该随从 +1 指示物', () => {
         const core = makeState({
             players: {

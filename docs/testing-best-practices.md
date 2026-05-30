@@ -97,10 +97,13 @@
 | 单个能力测试 | `runCommand` (testRunner.ts) | 简化的命令执行，自动包装 MatchState |
 | 基地能力测试 | `triggerBaseAbilityWithMS` (helpers.ts) | 自动注入 matchState |
 | 低层合同测试 | `invokeRegisteredAbilityContract` / `invokeRegisteredInteractionHandlerContract` / `invokeRegisteredRuntimePromptHandlerContract` | 显式锁能力注册表、prompt resolver、非法值、metadata 等底层合同 |
-| UI 集成测试 | Playwright E2E | 端到端验证 |
+| UI 集成测试 | Playwright E2E | 状态注入或真实链路的浏览器级验证 |
 
 ### 1.1 E2E 去重与分层
 
+- 本项目默认把 `E2E / 端到端` 理解为**基于状态注入的浏览器级验证**：允许使用 `GameTestContext.setupScene(...)` 构造场景，重点证明 UI 布局、入口可操作、交互组件和最终可见结果。
+- 只有用户**明确要求真实链路**时，才把 E2E 提升为“从真实玩法入口自然走到目标 prompt / 结算结果”的链路验证；这类用例标题、evidence 和汇报里都必须显式写 `真实链路`，不能和默认状态注入 E2E 混叫。
+- 如果测试直接 `patch`/注入某个 prompt、interaction 或阶段，只能表述成“状态注入 E2E / 状态注入布局验证 / 中间态验证”；不得把它写成“真实链路已验证”。
 - E2E 的目标是验证真实 UI 入口、交互链是否可操作、以及最终可见结果是否完整，不是把同一种交互模式在不同卡上重复铺满。
 - 同一种交互模式通常只保留 1 条代表性完整流程；只有当入口位置、控件形态、链路阶段、布局风险或跨系统协作明显不同，才新增第二条 E2E。
 - 一条合格的“完整流程 E2E”至少应覆盖：真实 UI 入口 → 中间交互步骤 → 结算完成，并包含最终态断言，以及 `resolved`/`after` 类证据截图之一。

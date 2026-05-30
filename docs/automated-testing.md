@@ -139,7 +139,7 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 | 框架 | 用途 |
 |------|------|
 | Vitest | 游戏领域层测试 + API 集成测试 |
-| Playwright | 端到端 UI 测试 |
+| Playwright | 浏览器级 E2E（默认状态注入；按需真实链路） |
 | GameTestRunner | 游戏领域层专用测试运行器（命令序列 → pipeline → 状态断言） |
 
 ### 引擎层审计工具（`src/engine/testing/`）
@@ -423,6 +423,8 @@ if (!result.success) {
 #### 4. 测试框架 API（强制使用）
 
 > **⚠️ 强制规定**：所有新的 E2E 测试必须使用 GameTestContext API。禁止使用旧的 helper 函数（`setupSmashUpOnlineMatch`、`readCoreState`、`applyCoreState` 等）。旧测试可以保留，但新测试必须用新框架。
+
+> **口径补充（强制）**：本项目默认把 `E2E / 端到端` 理解为**状态注入驱动的浏览器级验证**。也就是允许先用 `game.setupScene(...)` 构造场景，再验证 UI、交互和最终可见结果。只有用户明确要求“真实链路 / 从真实入口打出来”时，才额外要求从真实玩法入口自然走到目标状态；这类用例与 evidence 必须显式标注 `真实链路`。
 
 **GameTestContext**（`e2e/framework/GameTestContext.ts`）：
 

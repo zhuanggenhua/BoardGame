@@ -670,6 +670,16 @@ function buildFourPlayerMobileSceneWithTitan() {
                         talentUsed: false,
                         location: { zone: 'base', baseIndex: 0, enteredAt: scene.extra.core.turnNumber },
                     },
+                    {
+                        uid: 't-mobile-layout-rail',
+                        defId: 'dinosaurs_fort_titanosaurus',
+                        faction: 'dinosaurs',
+                        ownerId: '0',
+                        controllerId: '0',
+                        powerCounters: 0,
+                        talentUsed: false,
+                        location: { zone: 'setaside' },
+                    },
                 ],
             },
         },
@@ -954,12 +964,44 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await game.waitForInteraction('multi_base_scoring', 15000);
 
         await expect(page.getByText('选择先计分的基地')).toBeVisible();
+        const promptBaseGrid = page.getByTestId('prompt-base-grid');
+        await expect(promptBaseGrid).toBeVisible();
 
         const baseOptions = await getBaseOptions(game);
         expect(baseOptions).toHaveLength(3);
         expect(baseOptions.map((option: any) => option.baseDefId).sort()).toEqual([...INITIAL_BASE_IDS].sort());
 
+        const promptCards = page.locator('[data-testid^="prompt-card-"]');
+        await expect(promptCards).toHaveCount(3);
+        const [firstCardBox, secondCardBox, thirdCardBox] = await Promise.all([
+            promptCards.nth(0).boundingBox(),
+            promptCards.nth(1).boundingBox(),
+            promptCards.nth(2).boundingBox(),
+        ]);
+        expect(firstCardBox, '第一个基地卡片应提供布局坐标').not.toBeNull();
+        expect(secondCardBox, '第二个基地卡片应提供布局坐标').not.toBeNull();
+        expect(thirdCardBox, '第三个基地卡片应提供布局坐标').not.toBeNull();
+        expect(
+            Math.abs((firstCardBox?.y ?? 0) - (secondCardBox?.y ?? 0)),
+            '前两个基地应落在同一行',
+        ).toBeLessThan(12);
+        expect(
+            (secondCardBox?.x ?? 0) - (firstCardBox?.x ?? 0),
+            '第二个基地应排在第一行右侧',
+        ).toBeGreaterThan(120);
+        expect(
+            (thirdCardBox?.y ?? 0) - (firstCardBox?.y ?? 0),
+            '第三个基地应换到下一行',
+        ).toBeGreaterThan(80);
+
         await game.screenshot('01-four-player-multi-base-prompt', testInfo);
+        await saveEvidenceLocatorScreenshot(
+            page,
+            promptBaseGrid,
+            testInfo,
+            'smashup',
+            'smashup-four-player-multi-base-grid-two-per-row.png',
+        );
     });
 
     test('四人局五基地中三处同时计分会按选择顺序依次结算并更新四名玩家VP', async ({ page, game }, testInfo) => {
@@ -1168,6 +1210,7 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         const battlefieldZoomTarget = page.locator('[data-testid="su-battlefield-zoom-target"]');
         const deckStack = page.locator('[data-testid="su-deck-stack"]');
         const discardToggle = page.locator('[data-testid="su-discard-toggle"]');
+        const titanRail = page.locator('[data-testid="su-titan-rail"]');
         const endTurnButton = page.locator('[data-tutorial-id="su-end-turn-btn"]');
         const endTurnActionButton = page.locator('[data-testid="su-end-turn-action-button"]');
         const endTurnHints = page.locator('[data-testid="su-end-turn-hints"]');
@@ -1200,6 +1243,7 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect(handArea).toBeVisible({ timeout: 15000 });
         await expect(deckStack).toBeVisible({ timeout: 15000 });
         await expect(discardToggle).toBeVisible({ timeout: 15000 });
+        await expect(titanRail).toBeVisible({ timeout: 15000 });
         await expect(endTurnActionButton).toBeVisible({ timeout: 15000 });
         await expect(endTurnHints).toBeVisible({ timeout: 15000 });
         await expect(endTurnMinionQuota).toBeVisible({ timeout: 15000 });
@@ -1232,6 +1276,7 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expectLocatorInsideViewport(fifthBase, '第 5 个基地', viewport!.width, viewport!.height);
         await expectLocatorInsideViewport(deckStack, '牌库', viewport!.width, viewport!.height);
         await expectLocatorInsideViewport(discardToggle, '弃牌堆', viewport!.width, viewport!.height);
+        await expectLocatorInsideViewport(titanRail, '底部泰坦区', viewport!.width, viewport!.height);
         await expectLocatorInsideViewport(handCard, '手牌卡牌', viewport!.width, viewport!.height);
 
         await expectLocatorInsideViewport(endTurnButton, '结束回合按钮', viewport!.width, viewport!.height);
@@ -1292,6 +1337,10 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect(scoreboardPanel).toHaveCount(0);
         await expect(turnTracker).toHaveCount(0);
         await expect(handArea).toHaveCount(0);
+        await expect(deckStack).toBeVisible({ timeout: 5000 });
+        await expect(discardToggle).toBeVisible({ timeout: 5000 });
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
+        await expect(titanCard).toBeVisible({ timeout: 5000 });
         await expect(endTurnActionButton).toHaveCount(0);
         await expect(endTurnHints).toHaveCount(0);
         await expect(scoreboardVisibilityToggle).toBeVisible({ timeout: 5000 });
@@ -1305,6 +1354,7 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect(scoreboardPanel).toBeVisible({ timeout: 5000 });
         await expect(turnTracker).toBeVisible({ timeout: 5000 });
         await expect(handArea).toBeVisible({ timeout: 5000 });
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
         await expect(endTurnActionButton).toBeVisible({ timeout: 5000 });
         await expect(endTurnHints).toBeVisible({ timeout: 5000 });
         await page.waitForTimeout(260);
@@ -1546,6 +1596,7 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect(endTurnHints).toBeVisible({ timeout: 5000 });
         await expect(scoreboardPanel).toBeVisible({ timeout: 5000 });
         await expect(turnTracker).toBeVisible({ timeout: 5000 });
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
         await expect(scoreboardVisibilityToggle).toBeVisible({ timeout: 5000 });
         await expectLocatorInsideViewport(scoreboardVisibilityToggle, 'PC 记分板隐藏按钮', desktopViewport!.width, desktopViewport!.height);
 
@@ -1555,6 +1606,7 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect(scoreboardPanel).toHaveCount(0);
         await expect(turnTracker).toHaveCount(0);
         await expect(handArea).toHaveCount(0);
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
         await expect(scoreboardVisibilityToggle).toBeVisible({ timeout: 5000 });
 
         await scoreboardVisibilityToggle.click();
@@ -1563,10 +1615,14 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect(scoreboardPanel).toBeVisible({ timeout: 5000 });
         await expect(turnTracker).toBeVisible({ timeout: 5000 });
         await expect(handArea).toBeVisible({ timeout: 5000 });
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
         await game.screenshot('13-desktop-end-turn-restored', testInfo);
 
         await scoreboardVisibilityToggle.click();
         await expect(scoreboardPanel).toHaveCount(0);
+        await expect(turnTracker).toHaveCount(0);
+        await expect(endTurnActionButton).toHaveCount(0);
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
         await expect(scoreboardVisibilityToggle).toBeVisible({ timeout: 5000 });
 
         await scoreboardVisibilityToggle.click();

@@ -4,6 +4,7 @@ import {
     completeResolutionFrame,
     consumeResolutionFrameDeferredPayload,
     getResolutionFrameById,
+    setResolutionFrameDeferredPayload,
     upsertResolutionFrame,
 } from '../../../engine/systems/resolutionStack';
 import type {
@@ -300,6 +301,26 @@ export function appendScoringFrameDeferredPayload(
         return state;
     }
     return appendResolutionFrameDeferredPayload(state, session.frameId, payload);
+}
+
+export function updateDeferredPostScoringEvents(
+    state: MatchState<SmashUpCore>,
+    updater: (events: SerializedPostScoringEvent[]) => SerializedPostScoringEvent[],
+): MatchState<SmashUpCore> {
+    const session = getScoringSession(state);
+    if (!session) {
+        return state;
+    }
+
+    const currentEvents = getDeferredPostScoringEvents(state) ?? [];
+    const nextEvents = updater(currentEvents);
+    if (nextEvents === currentEvents) {
+        return state;
+    }
+
+    return setResolutionFrameDeferredPayload(state, session.frameId, {
+        deferredEvents: nextEvents,
+    });
 }
 
 export function buildPendingPostScoringActionEvents(

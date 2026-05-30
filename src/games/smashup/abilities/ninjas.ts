@@ -14,6 +14,7 @@ import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import { matchesDefId } from '../domain/utils';
 import type { MatchState, PlayerId } from '../../../engine/types';
+import { validateImmediateHandExtraMinionPlaySemantics } from '../domain/playLegality';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -568,6 +569,11 @@ const ninjaPlayFromHandPromptProgram = createPromptProgram<NinjaPlayFromHandProm
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const selected = value as { cardUid?: string; defId?: string; power?: number } | undefined;
         if (!selected?.cardUid || !selected.defId || selected.power === undefined) return { events: [] };
+        const playCheck = validateImmediateHandExtraMinionPlaySemantics(context.matchState.core, context.playerId, {
+            cardUid: selected.cardUid,
+            baseIndex: context.baseIndex,
+        });
+        if (!playCheck.valid) return { events: [] };
         return {
             events: [buildHandPlayEvents(context.playerId, context.baseIndex, selected.cardUid, selected.defId, selected.power, timestamp)],
         };

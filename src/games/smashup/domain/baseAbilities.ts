@@ -40,12 +40,16 @@ import {
 import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { registerExpansionBaseAbilities, registerExpansionBaseInteractionHandlers } from './baseAbilities_expansion';
 import { isBaseAbilitySuppressed } from './ongoingEffects';
-import { registerBaseAbilityAsQueuedTrigger } from './baseAbilityQueue';
+import { collectExtendedBaseAbilityTriggers, registerBaseAbilityAsQueuedTrigger } from './baseAbilityQueue';
 import { resolveLiveBaseIndex } from './utils';
 import {
     appendPendingPostScoringActions,
     getDeferredReplacementBaseDefId,
-    isScoringSessionAwaitingDeferredResolution } from './scoringSession';
+    isScoringSessionAwaitingDeferredResolution,
+    serializePostScoringEvents,
+    updateDeferredPostScoringEvents,
+} from './scoringSession';
+import { getCurrentPlayerId } from './types';
 
 // ============================================================================
 // 类型定义
@@ -127,6 +131,12 @@ export type ActiveBaseAbilityRegistrationOptions = {
 
 type PirateCoveSysState = MatchState<SmashUpCore>['sys'] & { _pirateCoveTriggered?: Set<number> };
 type HandCardChoiceValue = { cardUid: string; defId: string };
+type WizardAcademyContinuationContext = {
+    baseIndex: number;
+    topCards: string[];
+    replacementBaseDefId?: string;
+    step?: 'chooseReplacement' | 'orderRemaining';
+};
 
 function getContinuationContext<T>(
     interactionData: Record<string, unknown> | undefined,
@@ -152,6 +162,101 @@ function buildWizardAcademyOptions(
             id: `base-${index}`,
             label: def?.name ?? defId,
             value: { defId, index } };
+    });
+}
+
+function buildWizardAcademyPrompt(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    now: number,
+    title: string,
+    trackedTopCards: string[],
+    continuationContext: WizardAcademyContinuationContext,
+) {
+    const interaction = createSimpleChoice(
+        `base_wizard_academy_${continuationContext.step ?? 'chooseReplacement'}_${now}`,
+        playerId,
+        title,
+        buildWizardAcademyOptions(state, trackedTopCards),
+        { sourceId: 'base_wizard_academy', targetType: 'generic', responseValidationMode: 'live' },
+    );
+    (interaction.data as { optionsGenerator?: unknown }).optionsGenerator = (
+        nextState: { core: SmashUpCore },
+        interactionData: { continuationContext?: WizardAcademyContinuationContext } | undefined,
+    ) => buildWizardAcademyOptions(
+        nextState.core,
+        interactionData?.continuationContext?.topCards ?? trackedTopCards,
+    );
+    return {
+        ...interaction,
+        data: { ...interaction.data, continuationContext },
+    };
+}
+
+function rewriteWizardAcademyDeferredReplacement(
+    state: MatchState<SmashUpCore>,
+    baseIndex: number,
+    replacementBaseDefId: string,
+    timestamp: number,
+): MatchState<SmashUpCore> {
+    if (!isScoringSessionAwaitingDeferredResolution(state)) {
+        return state;
+    }
+
+    return updateDeferredPostScoringEvents(state, (deferredEvents) => {
+        if (deferredEvents.length === 0) {
+            return deferredEvents;
+        }
+
+        let hasReplacementEvent = false;
+        const withoutRevealTriggers = deferredEvents.filter((event) => {
+            if (event.type !== SU_EVENTS.TRIGGER_QUEUED) return true;
+            const triggers = (event.payload as { triggers?: Array<{ timing?: string; baseIndex?: number }> } | undefined)?.triggers;
+            return !Array.isArray(triggers) || !triggers.some((trigger) =>
+                trigger.timing === 'onBaseRevealed' && trigger.baseIndex === baseIndex,
+            );
+        });
+
+        const updatedEvents = withoutRevealTriggers.map((event) => {
+            if (event.type !== SU_EVENTS.BASE_REPLACED) {
+                return event;
+            }
+            hasReplacementEvent = true;
+            return {
+                ...event,
+                payload: {
+                    ...(event.payload as { baseIndex: number; oldBaseDefId: string; newBaseDefId: string }),
+                    newBaseDefId: replacementBaseDefId,
+                },
+            };
+        });
+
+        if (!hasReplacementEvent) {
+            return deferredEvents;
+        }
+
+        const replacementCore: SmashUpCore = {
+            ...state.core,
+            bases: state.core.bases.map((base, index) =>
+                index === baseIndex ? { ...base, defId: replacementBaseDefId } : base,
+            ),
+        };
+        const revealTrigger = collectExtendedBaseAbilityTriggers({
+            core: replacementCore,
+            timing: 'onBaseRevealed',
+            ownerPlayerId: getCurrentPlayerId(state.core),
+            baseIndex,
+            now: timestamp,
+        });
+
+        if (!revealTrigger) {
+            return updatedEvents;
+        }
+
+        return [
+            ...updatedEvents,
+            ...serializePostScoringEvents([revealTrigger as unknown as SmashUpEvent]),
+        ];
     });
 }
 
@@ -1369,7 +1474,6 @@ export function registerBaseAbilities(): void {
 
     // base_wizard_academy: 巫师学院
     // "在这个基地计分后，冠军查看基地牌库顶的3张牌。选择一张替换这个基地，然后以任意顺序将其余的放回"
-    // 简化实现：让冠军选择排列顺序，第一张将成为下次替换的基地
     registerBaseAbility('base_wizard_academy', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
@@ -1378,23 +1482,24 @@ export function registerBaseAbilities(): void {
         const topCount = Math.min(3, baseDeck.length);
         const topCards = baseDeck.slice(0, topCount);
         if (!ctx.matchState) return { events: [] };
-        const wizardAcademyTopCards = topCards.slice();
-        const interaction = createSimpleChoice(
-            `base_wizard_academy_${ctx.now}`,
-            winnerId,
-            '巫师学院：选择排列基地牌库顶的顺序',
-            buildWizardAcademyOptions(ctx.state, wizardAcademyTopCards),
-            { sourceId: 'base_wizard_academy', targetType: 'generic', responseValidationMode: 'live' },
-        );
-        (interaction.data as { optionsGenerator?: unknown }).optionsGenerator = (
-            nextState: { core: SmashUpCore },
-            interactionData: { continuationContext?: { topCards?: string[] } } | undefined,
-        ) => buildWizardAcademyOptions(nextState.core, interactionData?.continuationContext?.topCards ?? wizardAcademyTopCards);
         return {
             events: [],
-            matchState: queueInteraction(ctx.matchState, {
-                ...interaction,
-                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex, topCards: wizardAcademyTopCards } } }) };
+            matchState: queueInteraction(
+                ctx.matchState,
+                buildWizardAcademyPrompt(
+                    ctx.state,
+                    winnerId,
+                    ctx.now,
+                    '巫师学院：选择一个基地来替换这里',
+                    topCards,
+                    {
+                        baseIndex: ctx.baseIndex,
+                        topCards,
+                        step: 'chooseReplacement',
+                    },
+                ),
+            ),
+        };
     }, {
     });
 
@@ -1745,23 +1850,63 @@ export function registerBaseInteractionHandlers(): void {
             events: moveEvents };
     });
 
-    // 巫师学院：重排基地牌库顶
-    registerInteractionHandler('base_wizard_academy', (state, _playerId, value, iData, _random, timestamp) => {
+    // 巫师学院：先选替换基地，再决定剩余基地回牌库顶的顺序
+    registerInteractionHandler('base_wizard_academy', (state, playerId, value, iData, _random, timestamp) => {
         const selected = value as { defId: string; index: number };
-        const ctx = getContinuationContext<{ topCards: string[] }>(iData);
+        const ctx = getContinuationContext<WizardAcademyContinuationContext>(iData);
         if (!ctx?.topCards || ctx.topCards.length === 0) return { state, events: [] };
         const currentTopCards = getCurrentBaseDeckTopSnapshotDefIds(state.core, ctx.topCards);
         if (currentTopCards.length === 0) return { state, events: [] };
         const chosenDefId = currentTopCards.find((defId) => defId === selected.defId);
         if (!chosenDefId) return { state, events: [] };
-        const remaining = currentTopCards.filter(id => id !== chosenDefId);
-        const newOrder = [chosenDefId, ...remaining];
-        return { state, events: [{
-            type: SU_EVENTS.BASE_DECK_REORDERED,
-            payload: {
-                topDefIds: newOrder,
-                reason: '巫师学院：冠军重排基地牌库顶' },
-            timestamp } as BaseDeckReorderedEvent] };
+
+        if (ctx.step === 'orderRemaining') {
+            if (!ctx.replacementBaseDefId) return { state, events: [] };
+            const remaining = currentTopCards.filter((defId) => defId !== chosenDefId);
+            const newOrder = [ctx.replacementBaseDefId, chosenDefId, ...remaining];
+            return { state, events: [{
+                type: SU_EVENTS.BASE_DECK_REORDERED,
+                payload: {
+                    topDefIds: newOrder,
+                    reason: '巫师学院：冠军决定剩余基地顺序' },
+                timestamp } as BaseDeckReorderedEvent] };
+        }
+
+        const remaining = currentTopCards.filter((defId) => defId !== chosenDefId);
+        const updatedState = rewriteWizardAcademyDeferredReplacement(
+            state,
+            ctx.baseIndex,
+            chosenDefId,
+            timestamp,
+        );
+
+        if (remaining.length <= 1) {
+            return { state: updatedState, events: [{
+                type: SU_EVENTS.BASE_DECK_REORDERED,
+                payload: {
+                    topDefIds: [chosenDefId, ...remaining],
+                    reason: '巫师学院：冠军选择替换基地并整理剩余基地' },
+                timestamp } as BaseDeckReorderedEvent] };
+        }
+
+        const followup = buildWizardAcademyPrompt(
+            updatedState.core,
+            playerId,
+            timestamp,
+            '巫师学院：选择剩余基地放回牌库顶的顺序（先选的在最上面）',
+            remaining,
+            {
+                baseIndex: ctx.baseIndex,
+                topCards: remaining,
+                replacementBaseDefId: chosenDefId,
+                step: 'orderRemaining',
+            },
+        );
+
+        return {
+            state: queueInteraction(updatedState, followup),
+            events: [],
+        };
     });
 
     // 蘑菇王国：移动对手随从到蘑菇王国

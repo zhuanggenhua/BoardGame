@@ -360,7 +360,7 @@ describe('印斯茅斯 ongoing 能力', () => {
                     ongoingActions: [],
                 }),
                 makeBase({
-                    defId: 'base_factory_436_1337',
+                    defId: 'base_the_factory',
                     minions: [],
                     ongoingActions: [],
                 }),

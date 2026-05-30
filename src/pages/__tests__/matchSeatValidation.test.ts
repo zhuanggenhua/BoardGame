@@ -538,6 +538,36 @@ describe('resolveMatchSeatSwapContext', () => {
         expect(context?.cancelSeatSwapCommandType).toBeNull();
     });
 
+    it('大杀四方在线选派系阶段缺少 hostStarted 时，仍应解析共享换座上下文', () => {
+        const context = resolveMatchSeatSwapContext({
+            gameId: 'smashup',
+            myPlayerId: '0',
+            state: {
+                sys: { phase: 'factionSelect' },
+                core: {
+                    turnOrder: ['0', '1', '2', '3'],
+                    currentPlayerIndex: 0,
+                    factionSelection: {
+                        playerSelections: {
+                            '0': [],
+                            '1': [],
+                            '2': [],
+                            '3': [],
+                        },
+                    },
+                    players: { '0': {}, '1': {}, '2': {}, '3': {} },
+                },
+            } as MatchState<unknown>,
+        });
+
+        expect(context).toMatchObject({
+            seatSwapMode: 'instant',
+            seatingOrder: ['0', '1', '2', '3'],
+            pendingSeatSwapRequest: null,
+            requestSeatSwapCommandType: 'su:swap_seat',
+        });
+    });
+
     it('不在可换座阶段时应返回 null', () => {
         const context = resolveMatchSeatSwapContext({
             gameId: 'dicethrone',
@@ -4879,7 +4909,9 @@ describe('Home 活跃对局缺房确认', () => {
     it('宽限期确认成功后会重置确认标记，后续真正销毁时仍会再次确认并清理', async () => {
         const { rerender } = render(createElement(Home));
 
-        await screen.findByText('lobby:home.activeMatch.status');
+        await waitFor(() => {
+            expect(screen.getAllByText('lobby:home.activeMatch.status').length).toBeGreaterThan(0);
+        });
         expect(getMatchMock).toHaveBeenCalledTimes(1);
 
         lobbyPresenceState = {
@@ -4991,7 +5023,9 @@ describe('Home 活跃对局缺房确认', () => {
 
         const { rerender } = render(createElement(Home));
 
-        await screen.findByText('lobby:home.activeMatch.status');
+        await waitFor(() => {
+            expect(screen.getAllByText('lobby:home.activeMatch.status').length).toBeGreaterThan(0);
+        });
         expect(getMatchMock).toHaveBeenCalledTimes(1);
 
         lobbyPresenceState = {

@@ -90,6 +90,7 @@ import {
     createScoringSession,
     getRemainingScoringBaseRefs,
     getScoringSession,
+    isSameScoringBaseRef,
     markScoringBaseCompleted,
     resolveScoringBaseRefSlotIndex,
     serializePostScoringEvents,
@@ -236,6 +237,13 @@ function getLockedScoringBaseIndices(core: SmashUpCore): number[] {
     return getScoringEligibleBaseIndices(core);
 }
 
+function getLiveScoringEligibleBaseIndices(core: SmashUpCore): number[] {
+    return getScoringEligibleBaseIndices({
+        ...core,
+        scoringEligibleBaseIndices: undefined,
+    });
+}
+
 function ensureScoreBasesSession(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
     if (getScoringSession(state)) {
         return state;
@@ -245,6 +253,24 @@ function ensureScoreBasesSession(state: MatchState<SmashUpCore>): MatchState<Sma
         return state;
     }
     return setScoringSession(state, createScoringSession(state.core, lockedIndices));
+}
+
+function collectSupplementalScoringBaseRefs(state: MatchState<SmashUpCore>): SmashUpScoringBaseRef[] {
+    const session = getScoringSession(state);
+    if (!session) {
+        return [];
+    }
+
+    const knownRefs = [
+        ...session.lockedBaseRefs,
+        ...session.completedBaseRefs,
+        ...(session.currentBaseRef ? [session.currentBaseRef] : []),
+    ];
+
+    return getLiveScoringEligibleBaseIndices(state.core)
+        .map((slotIndex) => createScoringBaseRef(state.core, slotIndex))
+        .filter((ref): ref is SmashUpScoringBaseRef => !!ref)
+        .filter((ref) => !knownRefs.some((knownRef) => isSameScoringBaseRef(knownRef, ref)));
 }
 
 function buildMultiBaseScoringInteraction(
@@ -1294,11 +1320,30 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 || currentSession.currentStep === 'awaiting-response-window'
             )) {
                 const finalized = finalizeCurrentScoringBase(currentState, now);
-                return { events: finalized.events, updatedState: finalized.updatedState } as PhaseExitResult;
+                return {
+                    events: finalized.events,
+                    halt: true,
+                    updatedState: finalized.updatedState,
+                } as PhaseExitResult;
             }
 
             if (!currentSession.currentBaseRef) {
-                const remainingBaseRefs = getRemainingScoringBaseRefs(currentState);
+                let remainingBaseRefs = getRemainingScoringBaseRefs(currentState);
+
+                if (remainingBaseRefs.length === 0) {
+                    const supplementalBaseRefs = collectSupplementalScoringBaseRefs(currentState);
+                    if (supplementalBaseRefs.length > 0) {
+                        currentState = updateScoringSession(currentState, (session) => session
+                            ? {
+                                ...session,
+                                lockedBaseRefs: [...session.lockedBaseRefs, ...supplementalBaseRefs],
+                                currentStep: 'idle',
+                            }
+                            : session,
+                        );
+                        remainingBaseRefs = getRemainingScoringBaseRefs(currentState);
+                    }
+                }
 
                 if (remainingBaseRefs.length === 0) {
                     const cleanedState = clearScoringSession(currentState);

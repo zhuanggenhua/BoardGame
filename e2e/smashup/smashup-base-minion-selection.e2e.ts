@@ -10,6 +10,7 @@
  */
 
 import type { Page } from '@playwright/test';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { test, expect } from '../framework';
 import { waitForTestHarness } from '../helpers/common';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
@@ -137,6 +138,38 @@ function normalizeInjectedMatchState(matchId: string, state: any): any {
         phase: typeof next.core?.phase === 'string' ? next.core.phase : next.sys.phase,
     };
     return next;
+}
+
+async function getClientInteractionSnapshot(page: Page) {
+    return page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const current = state?.sys?.interaction?.current;
+        const options = Array.isArray(current?.data?.options) ? current.data.options : [];
+        return {
+            interactionId: current?.id ?? null,
+            sourceId: current?.data?.sourceId ?? null,
+            phase: state?.sys?.phase ?? null,
+            optionIds: options.map((option: any) => option?.id).filter((id: unknown) => typeof id === 'string'),
+        };
+    });
+}
+
+async function dispatchCurrentInteractionOption(page: Page, optionId: string) {
+    await page.evaluate((targetOptionId) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        const current = state?.sys?.interaction?.current;
+        if (!harness?.command?.dispatch || !current?.id) {
+            throw new Error('TestHarness command.dispatch or current interaction is unavailable');
+        }
+        harness.command.dispatch({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: {
+                interactionId: current.id,
+                optionId: targetOptionId,
+            },
+        });
+    }, optionId);
 }
 
 async function injectSteampunkTricksterPacketState(matchId: string, page: Page): Promise<void> {
@@ -1090,7 +1123,11 @@ async function drainPostResolutionFlow(
 const ONLINE_SELECTION_MATCHES: any[] = [];
 
 async function createOnlineSelectionMatch(browser: any, testInfo: any) {
-    const setup = await setupOnlineMatch(browser, testInfo.project.use.baseURL as string | undefined);
+    const setup = await setupOnlineMatch(
+        browser,
+        testInfo.project.use.baseURL as string | undefined,
+        { skipImageGate: true },
+    );
     if (!setup) return null;
 
     await completeFactionSelectionCustom(
@@ -1876,21 +1913,56 @@ test.describe('SmashUp Base/Minion Selection', () => {
         await expect(brideTitan).toBeVisible({ timeout: 8000 });
         await expect(hostPage.getByTestId('su-rail-titan-badge-own-bride-titan')).toContainText(/可触发|React/);
         await expect(hostPage.getByText(/选择一个反应动作|Choose a reaction/)).toHaveCount(0);
-        await expect(hostPage.getByRole('button', { name: /让过|Pass/ })).toBeVisible();
+        const passButton = hostPage.getByRole('button', { name: /让过|Pass/ });
+        await expect(passButton).toBeVisible();
+        const clientBeforeClick = await getClientInteractionSnapshot(hostPage);
+        const serverBeforeClick = await getMatchState(matchId, hostPage);
+        const serverBeforeClickSnapshot = {
+            interactionId: serverBeforeClick?.sys?.interaction?.current?.id ?? null,
+            sourceId: serverBeforeClick?.sys?.interaction?.current?.data?.sourceId ?? null,
+            phase: serverBeforeClick?.sys?.phase ?? null,
+            optionIds: Array.isArray(serverBeforeClick?.sys?.interaction?.current?.data?.options)
+                ? serverBeforeClick.sys.interaction.current.data.options
+                    .map((option: any) => option?.id)
+                    .filter((id: unknown) => typeof id === 'string')
+                : [],
+        };
+        expect(clientBeforeClick).toEqual(serverBeforeClickSnapshot);
 
-        const titanWindowShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-titan-click-window', {
-            filename: 'smashup-mushroom-own-bride-titan-click-window.png',
+        const titanWindowShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-pass-window', {
+            filename: 'smashup-mushroom-own-bride-pass-window.png',
         });
         await hostPage.screenshot({ path: titanWindowShot, fullPage: false });
 
-        await brideTitan.click({ force: true });
+        await passButton.click({ force: true });
+        const clientAfterUiClick = await getClientInteractionSnapshot(hostPage);
+        mkdirSync('temp', { recursive: true });
+        writeFileSync(
+            'temp/smashup-titan-pass-debug.json',
+            JSON.stringify({
+                clientBeforeClick,
+                serverBeforeClickSnapshot,
+                clientAfterUiClick,
+            }, null, 2),
+            'utf8',
+        );
         await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);
-            return state?.sys?.interaction?.current?.data?.sourceId ?? null;
-        }, { timeout: 8000 }).toBe('titan_frankenstein_the_bride_start_choose_branch');
+            return {
+                sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                brideStillQueued: Array.isArray(state?.core?.triggerQueue)
+                    ? state.core.triggerQueue.some((trigger: any) => trigger?.sourceDefId === 'frankenstein_the_bride')
+                    : false,
+                phase: state?.sys?.phase ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            sourceId: null,
+            brideStillQueued: false,
+            phase: 'playCards',
+        });
 
-        const brideBranchShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-branch-after-titan-click', {
-            filename: 'smashup-mushroom-own-bride-branch-after-titan-click.png',
+        const brideBranchShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-after-pass', {
+            filename: 'smashup-mushroom-own-bride-after-pass.png',
         });
         await hostPage.screenshot({ path: brideBranchShot, fullPage: false });
     });

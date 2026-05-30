@@ -124,6 +124,7 @@
 4. 任何多步交互必须有上下文携带字段；只靠“当前选中 / 第一个匹配 / 当前基地”的实现不得通过审计。
 5. 如果第一入口已经由命令 payload / UI 点击对象确定，handler 必须直接消费该入口；不得再创建同 targetType 的二次选择 prompt 让玩家重复选择同一入口对象。
 6. 只跑静态测试最多算 L1；只有行为测试证明最终权威状态变化才算 L2；只有真实入口 E2E + 看图证据才算 L3。
+7. 如果交互本身只是在改写 deferred event、post-scoring frame、response continuation、finalize payload、待补发事件或其他“收口后才真正生效”的中间态，那么看到 prompt、点掉 prompt、甚至看到局部临时状态变化，都不足以收口。必须继续证明：交互解决后 deferred/finalize 确实被消费，最终权威状态真的变化，且后续链没有被吞掉。像“替换基地 + 重排剩余基地 + 继续后续 afterScoring 交互”这种链，至少要覆盖 `prompt 出现 -> 玩家响应 -> finalize 消费 -> 最终状态 -> 后续链继续/收口`。
 
 
 ### 审计结论等级与证据分层（强制）
@@ -146,6 +147,7 @@
 - **L2 领域行为证据**：Vitest、GameTestRunner、smoke、能证明 reducer/trigger/阶段流转真实生效的行为测试。
 - **L3 真实玩法证据**：从真实入口触发的 E2E、手工复现截图、完整业务链观察；入口必须来自打牌、响应窗口、真实规则触发，而不是直接把 prompt 或 interaction 注进状态。
 - **L4 系统时序与治理证据**：beforeScoring / afterScoring / response window / trigger queue / reaction session / deferred event / base replace / once-per-turn / 自动推进 / 跨阶段交互等系统时序链路的真实入口验证；同时包括残余范围、共享根因归类、旧结论失效回写、汇总文档降级、替代旧 claim 的新回归证据。
+- **deferred/finalize 型交互一律按 L4 处理（强制）**：只要当前交互不会立刻直接改最终权威状态，而是先写入 deferred 队列、改写待补发事件、等待 frame 收口、等待 response/interaction 关闭后再 finalize，就不能停在“prompt 能出现 / 交互能点 / 中间 state 被改了”。必须补真实入口或等价代表链证据，证明收口后的最终权威状态和后续时序都正确。
 - **时序类 UI 异常的额外门禁（强制）**：若用户症状包含“弹窗半开后重开 / 一闪而过 / 动画没播 / 伤害已结算但浮字没出 / 同一交互像执行了两次”，L3 截图只能证明某一帧画面，不能单独证明生命周期正确；此时至少还要补 1 份机器可复查的时序证据（交互 id 轨迹、overlay 挂载/可见段统计、事件流到 DOM 消费日志、关键样式采样等）后，才可下“未复现 / 已修复 / 当前链路健康”的结论。
 
 #### 门禁关系

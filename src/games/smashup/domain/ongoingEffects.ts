@@ -576,6 +576,19 @@ function shouldSkipTriggerInstance(
         return ctx.moveToBaseIndex !== located.baseIndex;
     }
 
+    if (
+        entry.sourceDefId === 'ninjas_invisible_ninja'
+        && timing === 'onMinionDestroyed'
+    ) {
+        const controllerId = located.controllerId;
+        if (!controllerId || ctx.destroyerId !== controllerId || !ctx.triggerMinion) {
+            return true;
+        }
+        if (ctx.triggerMinion.owner === controllerId) {
+            return true;
+        }
+    }
+
     return entry.sourceDefId === 'explorers_very_large_boulder'
         && timing === 'onMinionMoved'
         && !!located.titanUid
