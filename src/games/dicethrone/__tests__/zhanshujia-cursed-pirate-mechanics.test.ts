@@ -14,6 +14,7 @@ import {
     cmd,
     createHeroMatchup,
     createNoResponseSetupWithEmptyHand,
+    getCardById,
     createQueuedRandom,
     createRunner,
     fixedRandom,
@@ -462,6 +463,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const dive = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         dive.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
         dive.core.players['1'].resources[RESOURCE_IDS.CP] = 3;
+        dive.core.players['1'].hand = [getCardById('card-flick')];
         const discardedCardId = dive.core.players['1'].hand[0]?.id;
         expect(discardedCardId).toBeDefined();
         events = resolveEffectsToEvents(

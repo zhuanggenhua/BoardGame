@@ -4441,3 +4441,9 @@
 - 死亡印记的弯刀分支不能继续用 `bonusDamage` 混入普通攻击修正，因为这样无法证明“不可防御伤害”语义。当前已给 `rollDie` 条件分支补 `unblockableDamage`，直接产出带 `unblockable: true` 的 `DAMAGE_DEALT`，让每个弯刀面独立造成 2 点不可防御攻击伤害。
 - 战争贩子的“立即额外进攻投掷阶段”与晕眩的额外攻击阶段流转同构，但来源不是状态。当前已通过 `zhanshujia-war-monger-extra-offensive-roll` 产出 `EXTRA_ATTACK_TRIGGERED`，并让 `resolvePostAttackFollowUp` 识别已有额外进攻事件后把下一阶段改回 `offensiveRoll`。
 - 深海潜行弃牌不能在没有交互合同时硬写成随机弃牌。现有 DiceThrone `dt:card-interaction` 只支持 `selectDie/modifyDie/selectPlayer/selectStatus/selectTargetStatus`，没有从目标玩家手牌选择并弃置的正式入口；因此“对手弃 1”仍应保留 pending，等补手牌选择交互或确认随机弃牌规则后再实现。
+
+## 2026-05-30 18:28
+
+- 深海潜行“对手弃 1”已按规则文本的控制权语义实现为目标玩家自选弃牌，而不是随机弃牌，也不是攻击方替对手选牌。新增 `selectHandCard` 只扩展 DiceThrone 既有 `dt:card-interaction` 最小分支，`RESOLVE_INTERACTION.selectedCardIds` 只允许交互所有者从自己手牌中选择。
+- 前端手牌弃置交互必须只给交互所有者显示；否则会把对手手牌选择权或可见信息泄露给攻击方。当前 Board 对 `selectHandCard` 加了 owner gate，Overlay 仅渲染 `interaction.playerId` 的手牌。
+- 这只收口深海潜行弃牌的 L2/L3 前置交互合同，不代表火药桶、咒缚被动、防御 resolver 或专属手牌完成。
