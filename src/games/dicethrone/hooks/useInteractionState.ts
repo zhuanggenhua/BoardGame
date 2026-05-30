@@ -95,7 +95,6 @@ function buildInteractionResetSignature(pendingInteraction?: InteractionDescript
         allowedDieIds: pendingInteraction.allowedDieIds,
         completedDieIds: pendingInteraction.completedDieIds,
         requiresTargetWithStatus: pendingInteraction.requiresTargetWithStatus,
-        selectedCardIds: pendingInteraction.selectedCardIds,
     });
 }
 
