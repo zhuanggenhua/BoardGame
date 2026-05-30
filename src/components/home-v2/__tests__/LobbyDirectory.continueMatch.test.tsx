@@ -127,4 +127,20 @@ describe('HomeV2 Overview game ordering', () => {
 
         expect(renderedGameIds).toEqual(['tictactoe', 'smashup', 'cardia']);
     });
+
+    it('会给当前在线最多的游戏显示经典同款热门标识', () => {
+        render(createElement(OverviewSpread, {
+            games: [
+                buildGame('cardia'),
+                buildGame('smashup'),
+            ],
+            mostPopularGameId: 'smashup',
+            activeCategory: 'all',
+            onCategoryChange: vi.fn(),
+            onGameClick: vi.fn(),
+        }));
+
+        expect(screen.getByTestId('home-v2-hot-badge-smashup')).toBeInTheDocument();
+        expect(screen.queryByTestId('home-v2-hot-badge-cardia')).not.toBeInTheDocument();
+    });
 });
