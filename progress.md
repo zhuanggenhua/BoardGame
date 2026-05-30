@@ -6447,3 +6447,18 @@
   - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 16 tests passed。
   - `npx eslint src/games/dicethrone/domain/tokenTypes.ts src/games/dicethrone/domain/effects.ts src/games/dicethrone/domain/customActions/zhanshujia.ts src/games/dicethrone/heroes/zhanshujia/abilities.ts src/games/dicethrone/heroes/cursed_pirate/abilities.ts src/games/dicethrone/domain/flowHooks.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors，`flowHooks.ts` 保留既有 warnings。
   - `npx tsc --noEmit --pretty false`：通过。
+
+## 2026-05-30 18:28
+
+- 继续补深海潜行“对手弃 1”机制，未采用随机弃牌：
+  - 新增 DiceThrone `selectHandCard` 交互类型与 `RESOLVE_INTERACTION.selectedCardIds`，只允许交互所有者从自己手牌里选择卡牌弃置。
+  - 咒缚海盗 `deep-sea-dive` 现在会为目标对手创建 `selectHandCard` 交互；目标无手牌时不创建交互。
+  - UI Overlay 增加手牌选项渲染，Board 对 `selectHandCard` 做 owner gate，避免非所有者看到/操作手牌选择；AI 兜底选择自己的首张手牌。
+- 仍未收口：
+  - 火药桶完整机制、防御 resolver、咒缚被动、专属手牌逐卡录入、审计、E2E、上传仍未完成。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 11 tests passed。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 16 tests passed。
+  - `npx vitest run src/games/dicethrone/ui/__tests__/InteractionOverlay.test.tsx src/games/dicethrone/__tests__/useInteractionState.test.tsx`：2 files / 31 tests passed。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npx eslint <本轮 selectHandCard 相关文件>`：0 errors，保留既有 warnings。
