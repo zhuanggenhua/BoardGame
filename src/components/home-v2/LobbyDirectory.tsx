@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Globe2, User, Users } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Flame, Globe2, User, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { GameConfig } from '../../config/games.config';
 import { useAuth } from '../../contexts/AuthContext';
@@ -257,6 +257,7 @@ function HomeCatalogThumbnail({ game }: { game: GameConfig }) {
 export interface OverviewSpreadProps {
     games: GameConfig[];
     popularityByGameId?: Record<string, number>;
+    mostPopularGameId?: string | null;
     activeCategory: LobbyCategory;
     onCategoryChange: (category: LobbyCategory) => void;
     onGameClick: (id: string) => void;
@@ -269,6 +270,7 @@ export interface OverviewSpreadProps {
 export const OverviewSpread = ({
     games,
     popularityByGameId = {},
+    mostPopularGameId,
     activeCategory,
     onCategoryChange,
     onGameClick,
@@ -526,6 +528,7 @@ export const OverviewSpread = ({
                 const name = resolveGameDisplayName(game, t, game.id);
                 const summary = buildHomepageSummary(game, t);
                 const playerLabelText = buildPlayerLabel(game, t);
+                const isMostPopularGame = Boolean(mostPopularGameId) && mostPopularGameId.toLowerCase() === game.id.toLowerCase();
                 const badgeKeys = resolveGameBadgeKeys(game).filter((badgeKey, index, allKeys) => {
                     const label = resolveBadgeLabel(badgeKey, t);
                     return allKeys.findIndex((candidate) => resolveBadgeLabel(candidate, t) === label) === index;
@@ -543,6 +546,26 @@ export const OverviewSpread = ({
                         style={asAbsoluteStyle(rect)}
                         onClick={() => onGameClick(game.id)}
                     >
+                        {isMostPopularGame ? (
+                            <div
+                                data-testid={`home-v2-hot-badge-${game.id}`}
+                                className="absolute z-10 bg-red-500 text-white rounded-full shadow-lg animate-pulse"
+                                style={{
+                                    top: scaled(4),
+                                    right: scaled(4),
+                                    width: scaled(24),
+                                    height: scaled(24),
+                                    padding: scaled(4),
+                                }}
+                                aria-label="热门"
+                            >
+                                <Flame
+                                    aria-hidden="true"
+                                    fill="currentColor"
+                                    style={{ width: '100%', height: '100%' }}
+                                />
+                            </div>
+                        ) : null}
                         <div
                             className="relative flex h-full w-full bg-transparent transition-colors duration-150 group-hover:bg-[rgba(238,220,184,0.16)]"
                             style={{
@@ -728,6 +751,7 @@ export const OverviewSpread = ({
 export interface OverviewProps {
     games: GameConfig[];
     popularityByGameId?: Record<string, number>;
+    mostPopularGameId?: string | null;
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
@@ -735,13 +759,14 @@ export interface OverviewProps {
     onDestroyContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Overview = ({ games, popularityByGameId, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: OverviewProps) => (
-    <OverviewSpread games={games} popularityByGameId={popularityByGameId} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
+export const Overview = ({ games, popularityByGameId, mostPopularGameId, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: OverviewProps) => (
+    <OverviewSpread games={games} popularityByGameId={popularityByGameId} mostPopularGameId={mostPopularGameId} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
 );
 
 export interface LeftProps {
     games: GameConfig[];
     popularityByGameId?: Record<string, number>;
+    mostPopularGameId?: string | null;
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
     continueMatch?: HomeV2ContinueMatch | null;
@@ -749,8 +774,8 @@ export interface LeftProps {
     onDestroyContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Left = ({ games, popularityByGameId, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: LeftProps) => (
-    <OverviewSpread games={games} popularityByGameId={popularityByGameId} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
+export const Left = ({ games, popularityByGameId, mostPopularGameId, onGameClick, onAccountClick, continueMatch, onContinueMatch, onDestroyContinueMatch }: LeftProps) => (
+    <OverviewSpread games={games} popularityByGameId={popularityByGameId} mostPopularGameId={mostPopularGameId} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} onDestroyContinueMatch={onDestroyContinueMatch} />
 );
 
 export interface RightProps {
