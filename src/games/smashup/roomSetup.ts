@@ -1,6 +1,7 @@
 export const DEFAULT_SMASHUP_EXPANSIONS = ['titans', 'diy'] as const;
 export const SMASHUP_DECK_QUERY_SETUP_VALUE = 'deckQuery' as const;
 const SMASHUP_PUBLIC_EXPANSIONS = new Set<string>(DEFAULT_SMASHUP_EXPANSIONS);
+const SMASHUP_PUBLIC_ROOM_TAGS = new Set<string>([...DEFAULT_SMASHUP_EXPANSIONS, SMASHUP_DECK_QUERY_SETUP_VALUE]);
 
 export interface SmashUpPublicRoomSummary {
     enabledExpansions: string[];
@@ -58,13 +59,31 @@ export function readSmashUpDeckQueryEnabled(setupData?: Record<string, unknown>)
         return selectedExpansions.includes(SMASHUP_DECK_QUERY_SETUP_VALUE);
     }
 
-    return false;
+    return true;
+}
+
+function readSmashUpPublicRoomTags(setupData?: Record<string, unknown>): string[] {
+    const topLevelExpansions = setupData?.expansions;
+    if (Array.isArray(topLevelExpansions)) {
+        return topLevelExpansions.filter(
+            (value): value is string => typeof value === 'string' && SMASHUP_PUBLIC_ROOM_TAGS.has(value),
+        );
+    }
+
+    const selectedExpansions = readSetupSelectionValue(setupData, 'expansions');
+    if (Array.isArray(selectedExpansions)) {
+        return selectedExpansions.filter(
+            (value): value is string => typeof value === 'string' && SMASHUP_PUBLIC_ROOM_TAGS.has(value),
+        );
+    }
+
+    return [...DEFAULT_SMASHUP_EXPANSIONS, SMASHUP_DECK_QUERY_SETUP_VALUE];
 }
 
 export function buildSmashUpPublicRoomSummary(
     setupData?: Record<string, unknown>,
 ): SmashUpPublicRoomSummary | undefined {
-    const enabledExpansions = readSmashUpEnabledExpansions(setupData);
+    const enabledExpansions = readSmashUpPublicRoomTags(setupData);
     if (enabledExpansions.length === 0) {
         return undefined;
     }

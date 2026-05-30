@@ -20,8 +20,11 @@ describe('SmashUp 房间设置解析', () => {
         })).toEqual(['titans']);
     });
 
-    it('余牌查询默认关闭，显式开启后返回 true', () => {
-        expect(readSmashUpDeckQueryEnabled()).toBe(false);
+    it('余牌查询默认开启，显式关闭时返回 false', () => {
+        expect(readSmashUpDeckQueryEnabled()).toBe(true);
+        expect(readSmashUpDeckQueryEnabled({
+            deckQuery: 'off',
+        })).toBe(false);
         expect(readSmashUpDeckQueryEnabled({
             setupSelections: {
                 deckQuery: 'on',
@@ -29,12 +32,17 @@ describe('SmashUp 房间设置解析', () => {
         })).toBe(true);
         expect(readSmashUpDeckQueryEnabled({
             setupSelections: {
+                expansions: ['titans', 'diy'],
+            },
+        })).toBe(false);
+        expect(readSmashUpDeckQueryEnabled({
+            setupSelections: {
                 expansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
             },
         })).toBe(true);
     });
 
-    it('公开房间摘要只带真正的扩展信息，不带余牌查询', () => {
+    it('公开房间摘要会带出余牌查询 tag，但不泄露无关私有字段', () => {
         expect(buildSmashUpPublicRoomSummary({
             roomName: '不应泄露',
             password: '1234',
@@ -43,7 +51,7 @@ describe('SmashUp 房间设置解析', () => {
                 expansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
             },
         })).toEqual({
-            enabledExpansions: ['titans'],
+            enabledExpansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
         });
     });
 });

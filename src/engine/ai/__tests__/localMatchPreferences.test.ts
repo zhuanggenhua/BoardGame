@@ -25,8 +25,9 @@ const smashupManifest: GameManifestEntry = {
             options: [
                 { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
                 { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
+                { value: 'deckQuery', labelKey: 'games.smashup.setup.deckQuery.label' },
             ],
-            default: ['titans', 'diy'],
+            default: ['titans', 'diy', 'deckQuery'],
         },
     },
     ai: {
@@ -72,11 +73,11 @@ describe('localMatchPreferences create-room sanitization', () => {
         });
     });
 
-    it('Smash Up 首次创建默认开启 diy 扩展', () => {
+    it('Smash Up 首次创建默认开启 diy 与余牌查询', () => {
         const normalized = createDefaultLocalMatchPreferences(smashupManifest);
 
         expect(normalized.setupSelections).toEqual({
-            expansions: ['titans', 'diy'],
+            expansions: ['titans', 'diy', 'deckQuery'],
         });
     });
 

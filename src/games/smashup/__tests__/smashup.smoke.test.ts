@@ -300,17 +300,7 @@ describe('smashup', () => {
         });
     });
 
-    it('余牌查询默认关闭', () => {
-        const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
-            setupSelections: {
-                expansions: ['titans', 'diy'],
-            },
-        });
-
-        expect(state.deckQueryEnabled).toBe(false);
-    });
-
-    it('余牌查询开启后进入运行时状态', () => {
+    it('余牌查询默认开启', () => {
         const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
             setupSelections: {
                 expansions: ['titans', 'diy', 'deckQuery'],
@@ -318,6 +308,16 @@ describe('smashup', () => {
         });
 
         expect(state.deckQueryEnabled).toBe(true);
+    });
+
+    it('余牌查询关闭后不会进入运行时状态', () => {
+        const state = SmashUpDomain.setup(['0', '1'], FIXED_RANDOM, {
+            setupSelections: {
+                expansions: ['titans', 'diy'],
+            },
+        });
+
+        expect(state.deckQueryEnabled).toBe(false);
     });
 
     it('4 人房间开启 2v2 后按团队模式初始化座位与规则', () => {

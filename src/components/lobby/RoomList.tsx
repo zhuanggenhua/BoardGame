@@ -47,6 +47,12 @@ export const RoomList = ({
                 defaultValue: expansionId,
             });
         }
+        if (expansionId === 'deckQuery') {
+            return t('setup.deckQuery.label', {
+                ns: 'game-smashup',
+                defaultValue: expansionId,
+            });
+        }
         return expansionId;
     };
 

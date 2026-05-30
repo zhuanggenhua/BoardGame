@@ -14,6 +14,7 @@ vi.mock('react-i18next', () => ({
             if (key === 'rooms.seatSeparator') return ' / ';
             if (key === 'setup.expansions.titans') return '泰坦';
             if (key === 'setup.expansions.diy') return 'DIY';
+            if (key === 'setup.deckQuery.label') return '余牌查询';
             return key;
         },
     }),
@@ -57,7 +58,7 @@ describe('RoomList 扩展摘要', () => {
                     isHost: false,
                     gameKey: 'smashup',
                     publicSetupSummary: {
-                        enabledExpansions: ['titans', 'diy'],
+                        enabledExpansions: ['titans', 'diy', 'deckQuery'],
                     },
                 },
             ],
@@ -66,5 +67,6 @@ describe('RoomList 扩展摘要', () => {
         expect(screen.getByText('扩展')).toBeInTheDocument();
         expect(screen.getByTestId('room-expansion-tag-room-1-titans')).toHaveTextContent('泰坦');
         expect(screen.getByTestId('room-expansion-tag-room-1-diy')).toHaveTextContent('DIY');
+        expect(screen.getByTestId('room-expansion-tag-room-1-deckQuery')).toHaveTextContent('余牌查询');
     });
 });

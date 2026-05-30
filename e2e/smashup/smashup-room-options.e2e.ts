@@ -35,7 +35,7 @@ async function openSmashUpCreateRoomModal(page: Page): Promise<void> {
 }
 
 test.describe('SmashUp 房间设置与大厅扩展摘要', () => {
-    test('余牌查询默认关闭，开启后会写入房间设置并在大厅显示完整扩展 tag', async ({ page, browser, baseURL }, testInfo) => {
+    test('余牌查询默认开启，并会在大厅显示完整扩展 tag', async ({ page, browser, baseURL }, testInfo) => {
         test.setTimeout(120_000);
 
         await setChineseLocale(page);
@@ -45,11 +45,9 @@ test.describe('SmashUp 房间设置与大厅扩展摘要', () => {
         await openSmashUpCreateRoomModal(page);
 
         const deckQueryToggle = page.getByTestId('setup-option-toggle-expansions-deckQuery');
-        await expect(deckQueryToggle).toHaveAttribute('aria-pressed', 'false');
+        await expect(deckQueryToggle).toHaveAttribute('aria-pressed', 'true');
 
         await page.getByTestId('create-room-name-input').fill('余牌查询测试房');
-        await deckQueryToggle.click();
-        await expect(deckQueryToggle).toHaveAttribute('aria-pressed', 'true');
         await page.getByTestId('create-room-confirm-button').click();
 
         await expect(page).toHaveURL(/\/play\/smashup\/match\//, { timeout: 30_000 });
@@ -90,6 +88,7 @@ test.describe('SmashUp 房间设置与大厅扩展摘要', () => {
             await expect(roomCard).toBeVisible({ timeout: 20_000 });
             await expect(viewerPage.getByTestId(`room-expansion-tag-${matchId}-titans`)).toHaveText('泰坦');
             await expect(viewerPage.getByTestId(`room-expansion-tag-${matchId}-diy`)).toHaveText('DIY');
+            await expect(viewerPage.getByTestId(`room-expansion-tag-${matchId}-deckQuery`)).toHaveText('余牌查询');
 
             await clearEvidenceScreenshotsForTest(testInfo);
             const screenshotPath = getEvidenceScreenshotPath(testInfo, 'room-options-summary', {

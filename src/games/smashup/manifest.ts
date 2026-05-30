@@ -24,7 +24,7 @@ const entry: GameManifestEntry = {
                 { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
                 { value: 'deckQuery', labelKey: 'games.smashup.setup.deckQuery.label' },
             ],
-            default: ['titans', 'diy'],
+            default: ['titans', 'diy', 'deckQuery'],
         },
         teamMode: {
             type: 'select',
