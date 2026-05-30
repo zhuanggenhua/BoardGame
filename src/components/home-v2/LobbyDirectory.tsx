@@ -5,6 +5,7 @@ import type { GameConfig } from '../../config/games.config';
 import { useAuth } from '../../contexts/AuthContext';
 import { LANGUAGE_OPTIONS } from '../../lib/i18n/types';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
+import { sortGamesForLobbyDirectory } from './lobbyDirectorySorting';
 
 export type LobbyCategory = 'all' | 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
 
@@ -52,14 +53,6 @@ const HOMEPAGE_CATALOG_LAYOUT: HomepageCatalogEntryMeta[] = [
     { rect: { left: '53.0%', top: '53.6%', width: '37.0%', height: '15.4%' } },
 ];
 
-const FEATURED_GAME_ORDER = [
-    'cardia',
-    'dicethrone',
-    'smashup',
-    'splendor',
-    'summonerwars',
-    'tictactoe',
-];
 const PAGE_SIZE = HOMEPAGE_CATALOG_LAYOUT.length;
 
 const ACCOUNT_RECT: PositionedRect = { left: '71.0%', top: '7.6%', width: '10.0%', height: '5.2%' };
@@ -201,52 +194,6 @@ function resolveBadgeLabel(
         default:
             return badgeKey;
     }
-}
-
-function matchesActiveCategory(game: Pick<GameConfig, 'category' | 'tags' | 'type'>, activeCategory: LobbyCategory) {
-    if (activeCategory === 'all') {
-        return game.type === 'game';
-    }
-    if (activeCategory === 'tools') {
-        return game.type === 'tool' || game.category === activeCategory || game.tags?.includes(activeCategory);
-    }
-    return game.type === 'game' && (game.category === activeCategory || game.tags?.includes(activeCategory));
-}
-
-function resolveGamePopularity(gameId: string, popularityByGameId: Record<string, number>) {
-    return popularityByGameId[gameId.toLowerCase()] ?? 0;
-}
-
-export function sortGamesForLobbyDirectory(
-    games: GameConfig[],
-    activeCategory: LobbyCategory,
-    popularityByGameId: Record<string, number> = {},
-) {
-    const priorityById = new Map(FEATURED_GAME_ORDER.map((gameId, index) => [gameId, index]));
-    const originalIndexById = new Map(games.map((game, index) => [game.id, index]));
-    const normalizedPopularityByGameId = Object.fromEntries(
-        Object.entries(popularityByGameId).map(([gameId, duration]) => [gameId.toLowerCase(), duration]),
-    );
-
-    return games
-        .filter((game) => matchesActiveCategory(game, activeCategory))
-        .slice()
-        .sort((left, right) => {
-            const leftPopularity = resolveGamePopularity(left.id, normalizedPopularityByGameId);
-            const rightPopularity = resolveGamePopularity(right.id, normalizedPopularityByGameId);
-            if (leftPopularity !== rightPopularity) {
-                return rightPopularity - leftPopularity;
-            }
-
-            const leftPriority = priorityById.get(left.id) ?? Number.MAX_SAFE_INTEGER;
-            const rightPriority = priorityById.get(right.id) ?? Number.MAX_SAFE_INTEGER;
-            if (leftPriority !== rightPriority) {
-                return leftPriority - rightPriority;
-            }
-
-            return (originalIndexById.get(left.id) ?? Number.MAX_SAFE_INTEGER)
-                - (originalIndexById.get(right.id) ?? Number.MAX_SAFE_INTEGER);
-        });
 }
 
 function renderBadge(

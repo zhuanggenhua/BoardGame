@@ -4,7 +4,8 @@ import { createElement } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { describe, expect, it, vi } from 'vitest';
-import { OverviewSpread, sortGamesForLobbyDirectory, type HomeV2ContinueMatch } from '../LobbyDirectory';
+import { OverviewSpread, type HomeV2ContinueMatch } from '../LobbyDirectory';
+import { sortGamesForLobbyDirectory } from '../lobbyDirectorySorting';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
