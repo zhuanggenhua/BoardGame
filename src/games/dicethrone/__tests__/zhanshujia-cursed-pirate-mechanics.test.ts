@@ -24,6 +24,7 @@ import {
     createRunner,
     fixedRandom,
     getSimpleChoicePrompt,
+    respondToPrompt,
     testSystems,
 } from './test-utils';
 import { INITIAL_HEALTH } from '../domain/types';
@@ -162,23 +163,6 @@ const requestPowderKegTransferChoice = () => {
         state: afterEvents.state as MatchState<DiceThroneCore>,
     };
 };
-
-const resolveSimpleChoice = (
-    state: MatchState<DiceThroneCore>,
-    optionId: string,
-    playerIds: PlayerId[] = ['0', '1', '2', '3'],
-) => executePipeline(
-    { domain: DiceThroneDomain, systems: testSystems },
-    state,
-    {
-        type: 'SYS_INTERACTION_RESPOND',
-        playerId: '0',
-        payload: { optionId },
-        timestamp: 101,
-    } as DiceThroneCommand,
-    fixedRandom,
-    playerIds,
-);
 
 describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
     it('诅咒金币按角色差异限制层数，且咒缚海盗可选择不获得金币', () => {
@@ -431,7 +415,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(self).toBeDefined();
         expect(target).toBeDefined();
 
-        const selfResult = resolveSimpleChoice(promptState, self!.id, ['0', '1']);
+        const selfResult = respondToPrompt(promptState, self!.id, '0', fixedRandom, ['0', '1']);
         expect(selfResult.success).toBe(true);
         expect(eventsOfType(selfResult.events as DiceThroneEvent[], 'STATUS_REMOVED')).toHaveLength(0);
         expect(selfResult.state.core.players['0'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
@@ -442,7 +426,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             option.value as { value?: number; labelParams?: { target?: string } }
         ).labelParams?.target === 'P2');
         expect(transferTarget).toBeDefined();
-        const result = resolveSimpleChoice(transferPromptState, transferTarget!.id, ['0', '1']);
+        const result = respondToPrompt(transferPromptState, transferTarget!.id, '0', fixedRandom, ['0', '1']);
         expect(result.success).toBe(true);
         expect(eventsOfType(result.events as DiceThroneEvent[], 'STATUS_REMOVED')[0]?.payload.targetId).toBe('0');
         expect(result.state.core.players['0'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
@@ -848,7 +832,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             option.value as { value?: number }
         ).value === 3);
         expect(bothOpponents).toBeDefined();
-        const result = resolveSimpleChoice(promptState, bothOpponents!.id);
+        const result = respondToPrompt(promptState, bothOpponents!.id);
         expect(result.success).toBe(true);
         expect(eventsOfType(result.events as DiceThroneEvent[], 'CHOICE_RESOLVED')).toHaveLength(1);
 
@@ -869,7 +853,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         ).value === 0);
         expect(skip).toBeDefined();
 
-        const result = resolveSimpleChoice(promptState, skip!.id);
+        const result = respondToPrompt(promptState, skip!.id);
         expect(result.success).toBe(true);
         expect(eventsOfType(result.events as DiceThroneEvent[], 'STATUS_APPLIED')
             .some(event => event.payload.statusId === STATUS_IDS.POWDER_KEG)).toBe(false);

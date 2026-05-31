@@ -102,6 +102,23 @@ export const getSimpleChoicePrompt = (
     return prompt;
 };
 
+export const respondToPrompt = (
+    state: MatchState<DiceThroneCore>,
+    optionId: string,
+    playerId: PlayerId = '0',
+    random: RandomFn = fixedRandom,
+    playerIds: PlayerId[] = Object.keys(state.core.players) as PlayerId[],
+) => executePipeline(
+    { domain: DiceThroneDomain, systems: testSystems },
+    state,
+    {
+        ...cmd(interactionRespondCommandType, playerId, { optionId }),
+        timestamp: Date.now(),
+    } as DiceThroneCommand,
+    random,
+    playerIds,
+);
+
 export const getCompareRollChoicePrompt = (
     state: MatchState<DiceThroneCore>,
     expectedSourceId?: string,
