@@ -102,6 +102,29 @@ export const getSimpleChoicePrompt = (
     return prompt;
 };
 
+export const getCardInteractionPrompt = (
+    state: MatchState<DiceThroneCore>,
+    expectedSourceId?: string,
+) => {
+    const current = state.sys.interaction.current as any;
+    if (!current || current.kind !== 'dt:card-interaction' || !current.data) {
+        throw new Error('Expected a card-interaction prompt, but none was active.');
+    }
+
+    const prompt = {
+        ...(current.data as InteractionDescriptor),
+        id: current.id,
+        playerId: current.playerId,
+        sourceId: current.data.sourceId ?? current.data.sourceCardId,
+    };
+
+    if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
+        throw new Error(`Expected card-interaction sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
+    }
+
+    return prompt;
+};
+
 export const respondToPrompt = (
     state: MatchState<DiceThroneCore>,
     optionId: string,

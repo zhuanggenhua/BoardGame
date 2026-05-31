@@ -23,6 +23,7 @@ import {
     createQueuedRandom,
     createRunner,
     fixedRandom,
+    getCardInteractionPrompt,
     getSimpleChoicePrompt,
     respondToPrompt,
     testSystems,
@@ -906,7 +907,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             throw new Error('地毯式轰炸 II 未创建 2 名不同对手选择交互');
         }
         const promptState = afterEvents.state as MatchState<DiceThroneCore>;
-        const interaction = promptState.sys.interaction.current?.data as any;
+        const interaction = getCardInteractionPrompt(promptState, 'carpet-bombing-2-main');
 
         expect(promptState.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
         expect(interaction).toMatchObject({
@@ -1026,7 +1027,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             throw new Error('战略防御未创建目标选择交互');
         }
         const promptState = afterEvents.state as MatchState<DiceThroneCore>;
-        const interaction = promptState.sys.interaction.current?.data as any;
+        const interaction = getCardInteractionPrompt(promptState, 'card-zhanshujia-strategic-defense');
         expect(interaction).toMatchObject({
             type: 'selectPlayer',
             sourceCardId: 'card-zhanshujia-strategic-defense',
