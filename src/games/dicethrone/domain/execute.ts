@@ -874,9 +874,9 @@ export function execute(
             const targetPlayerIds = interaction.targetPlayerIds ?? Object.keys(state.players);
             const resolvedPlayerIds = Array.from(new Set(
                 selectedPlayerIds.filter(playerId => targetPlayerIds.includes(playerId))
-            ));
+            )).slice(0, interaction.selectCount ?? 1);
 
-            if (resolvedPlayerIds.length === 0) {
+            if (resolvedPlayerIds.length < (interaction.minSelectCount ?? 1)) {
                 break;
             }
 

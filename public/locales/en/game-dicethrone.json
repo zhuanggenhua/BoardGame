@@ -776,8 +776,16 @@
       "zhanshujiaWarMongerSabre": "War Monger: Sabre deals 5 damage",
       "zhanshujiaWarMongerBanner": "War Monger: Banner gains 4 Tactical Advantage",
       "zhanshujiaWarMongerMedal": "War Monger: Medal draws 1 card",
+      "zhanshujiaWarMonger2Sabre": "War Monger II: Sabre deals 6 damage",
+      "zhanshujiaWarMonger2Banner": "War Monger II: Banner gains 3 Tactical Advantage",
+      "zhanshujiaWarMonger2Medal": "War Monger II: Medal draws 1 card and triggers an extra Offensive Roll Phase",
+      "zhanshujiaWarMonger2Other": "War Monger II: no extra effect",
       "zhanshujiaGainUpperHandMedal": "Gain the Upper Hand: Medal gains 4 Tactical Advantage",
       "zhanshujiaGainUpperHandOther": "Gain the Upper Hand: otherwise draw 1 card",
+      "zhanshujiaDisengageSabre": "Disengage: Sabre deals 2 damage",
+      "zhanshujiaDisengageBanner": "Disengage: Banner prevents 3 damage",
+      "zhanshujiaDisengageMedal": "Disengage: Medal gains Protect",
+      "zhanshujiaWarRoom": "War Room: gain {{amount}} Tactical Advantage",
       "cursedPirateMarkedCutlass": "Marked for Death: Cutlass deals 2 undefendable damage",
       "cursedPirateMarkedLoot": "Marked for Death: Loot draws 1 card",
       "cursedPirateMarkedSkull": "Marked for Death: Skull inflicts Cursed Coin",
@@ -1171,6 +1179,7 @@
     "modifyDie": "Modify die value",
     "selectStatus": "Select a status to remove",
     "selectPlayer": "Select a player",
+    "selectTwoDifferentOpponentsForCollateralDamage": "Select 2 different opponents",
     "selectTargetStatus": "Select a status to transfer",
     "transferSelectTarget": "Select transfer target player",
     "noStatus": "No status effects",
@@ -2548,33 +2557,69 @@
       "name": "Sabre Thrust",
       "description": "3/4/5 Sabres deal 4/5/6 damage."
     },
+    "sabre-thrust-2": {
+      "name": "Sabre Thrust II",
+      "description": "3/4/5 Sabres deal 5/6/7 damage; if you rolled three matching numbers, inflict Bind."
+    },
     "carpet-bombing": {
       "name": "Carpet Bombing",
       "description": "2 Sabres + 2 Medals: gain Tactical Advantage, then deal 2 collateral damage to all opponents."
+    },
+    "carpet-bombing-2": {
+      "name": "Carpet Bombing II",
+      "description": "2 Sabres + 2 Medals: gain 2 Tactical Advantage, then deal 2 collateral damage to two different opponents. Plan Strategy (4 Banners): gain 3 Tactical Advantage and draw 2 cards."
     },
     "war-monger": {
       "name": "War Monger",
       "description": "1 Sabre + 3 Banners: gain Tactical Advantage and roll 1 die; Sabre deals 5, Banner gains 4 Tactical Advantage, Medal draws 1. The extra Offensive Roll Phase is still in progress."
     },
+    "war-monger-2": {
+      "name": "War Monger II",
+      "description": "1 Sabre + 3 Banners: gain 2 Tactical Advantage and roll 1 die; Sabre deals 6, Banner gains 3 Tactical Advantage, Medal draws 1 and immediately grants an extra Offensive Roll Phase."
+    },
     "drum-movement": {
       "name": "Drum Movement",
       "description": "3 Sabres + 2 Medals: inflict Bind and deal 7 damage."
+    },
+    "drum-movement-2": {
+      "name": "Drum Movement II",
+      "description": "3 Sabres + 2 Medals: gain Tactical Advantage, inflict Bind, then deal 7 damage. Indirect Engagement (3 Sabres + Banner): gain 2 Tactical Advantage, then deal 2 undefendable damage."
     },
     "flanking": {
       "name": "Flanking",
       "description": "Small Straight: gain Tactical Advantage, then deal 6 damage."
     },
+    "flanking-2": {
+      "name": "Flanking II",
+      "description": "Small Straight: gain 2 Tactical Advantage, then deal 6 damage."
+    },
     "expand-battlefield": {
       "name": "Expand Battlefield",
       "description": "Large Straight: gain 2 Tactical Advantage, inflict Bind, then deal 9 damage."
+    },
+    "expand-battlefield-2": {
+      "name": "Expand Battlefield II",
+      "description": "Large Straight: gain 3 Tactical Advantage, inflict Bind, then deal 9 damage. Full Lockdown (Sabre + 2 Banners + Medal): draw 2 cards and inflict Bind on an opponent."
     },
     "strategic-shift": {
       "name": "Strategic Shift",
       "description": "4 Medals: gain 5 Tactical Advantage, then deal 5 undefendable damage."
     },
+    "strategic-shift-2": {
+      "name": "Strategic Shift II",
+      "description": "4 Medals: gain 5 Tactical Advantage, inflict Bind, then deal 5 undefendable damage. Early Recon (3 Medals): gain 5 Tactical Advantage."
+    },
     "countermeasures": {
       "name": "Countermeasures",
       "description": "Defensive roll 4 dice; Sabres/Banners counterattack, Medals prevent damage and gain Tactical Advantage. Exact defense resolution is still in progress."
+    },
+    "countermeasures-2": {
+      "name": "Countermeasures II",
+      "description": "Defensive roll 5 dice; each pair of Sabres deals 1 damage; prevent 1 damage per Banner; gain 1 Tactical Advantage per Medal."
+    },
+    "countermeasures-3": {
+      "name": "Countermeasures III",
+      "description": "Defensive roll 5 dice; each pair of Sabres deals 2 damage; prevent 1 damage per Banner; gain 1 Tactical Advantage per Medal."
     },
     "high-ground": {
       "name": "High Ground",

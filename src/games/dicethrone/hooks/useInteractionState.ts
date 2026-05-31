@@ -80,6 +80,7 @@ function buildInteractionResetSignature(pendingInteraction?: InteractionDescript
         type: pendingInteraction.type,
         titleKey: pendingInteraction.titleKey,
         selectCount: pendingInteraction.selectCount,
+        minSelectCount: pendingInteraction.minSelectCount,
         selected: pendingInteraction.selected,
         skipAbilityReselection: pendingInteraction.skipAbilityReselection,
         targetPlayerIds: pendingInteraction.targetPlayerIds,

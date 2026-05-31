@@ -416,6 +416,8 @@ describe('Property 7: 伤害类型处理', () => {
 // ============================================================================
 
 describe('Property 8: 状态效果叠加', () => {
+    const NON_REMOVABLE_DEBUFF_WHITELIST = [STATUS_IDS.CURSED_COIN].sort();
+
     it('所有 debuff 类 Token 都有 stackLimit 定义', () => {
         const debuffs = ALL_TOKEN_DEFINITIONS.filter(d => d.category === 'debuff');
         expect(debuffs.length).toBeGreaterThan(0);
@@ -445,6 +447,7 @@ describe('Property 8: 状态效果叠加', () => {
         expect(debuffs.length).toBeGreaterThan(0);
         const violations = debuffs
             .filter(def => def.passiveTrigger?.removable === false)
+            .filter(def => !NON_REMOVABLE_DEBUFF_WHITELIST.includes(def.id))
             .map(def => def.id);
         expect(violations).toEqual([]);
         expect(ALL_TOKEN_DEFINITIONS.find(def => def.id === TOKEN_IDS.BOUNTY)?.passiveTrigger?.removable).toBe(true);
@@ -455,7 +458,10 @@ describe('Property 8: 状态效果叠加', () => {
             .filter(def => def.passiveTrigger?.removable === false)
             .map(def => def.id)
             .sort();
-        expect(nonRemovableIds).toEqual([TOKEN_IDS.BLESSING_OF_DIVINITY]);
+        expect(nonRemovableIds).toEqual([
+            TOKEN_IDS.BLESSING_OF_DIVINITY,
+            ...NON_REMOVABLE_DEBUFF_WHITELIST,
+        ].sort());
     });
 
     it('getTokenStackLimit 正确解析 stackLimit=0 为无限', () => {

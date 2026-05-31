@@ -1,8 +1,20 @@
 import type { RandomFn } from '../../../../engine/types';
 import type { CardPreviewRef } from '../../../../core';
 import { COMMON_CARDS, injectCommonCardPreviewRefs, type CommonCardAtlasIndexMap } from '../../domain/commonCards';
-import { DICETHRONE_CARD_ATLAS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../../domain/ids';
+import { DICETHRONE_CARD_ATLAS_IDS, STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../../domain/ids';
 import type { AbilityCard } from '../../types';
+import type { AbilityDef, AbilityEffect } from '../../domain/combat';
+import {
+    CARPET_BOMBING_2,
+    COUNTERMEASURES_2,
+    COUNTERMEASURES_3,
+    DRUM_MOVEMENT_2,
+    EXPAND_BATTLEFIELD_2,
+    FLANKING_2,
+    SABRE_THRUST_2,
+    STRATEGIC_SHIFT_2,
+    WAR_MONGER_2,
+} from './abilities';
 
 const cardText = (id: string, field: 'name' | 'description') => `cards.${id}.${field}`;
 
@@ -12,6 +24,17 @@ const atlasPreview = (index: number): CardPreviewRef => ({
     type: 'atlas',
     atlasId: ZHANSHUJIA_CARD_ATLAS_ID,
     index,
+});
+
+const replaceAbility = (
+    targetAbilityId: string,
+    newAbilityDef: AbilityDef,
+    newAbilityLevel: number,
+    description: string,
+): AbilityEffect => ({
+    description,
+    action: { type: 'replaceAbility', target: 'self', targetAbilityId, newAbilityDef, newAbilityLevel },
+    timing: 'immediate',
 });
 
 const ZHANSHUJIA_COMMON_ATLAS_INDEX: CommonCardAtlasIndexMap = {
@@ -85,7 +108,21 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-zhanshujia-disengage', 'description'),
         previewRef: atlasPreview(19),
         sourceAtlasIndex: 19,
-        effects: [{ description: 'L1 录入：被攻击后投 1 骰，按军刀/旗帜/勋章结算。' }],
+        playCondition: { phase: 'defensiveRoll', requireIsRoller: true },
+        effects: [{
+            description: '被攻击后投 1 骰：军刀造成 2 伤害；旗帜防止 3 伤害；勋章获得守护。',
+            action: {
+                type: 'rollDie',
+                target: 'self',
+                diceCount: 1,
+                conditionalEffects: [
+                    { face: ZHANSHUJIA_DICE_FACE_IDS.SABRE, bonusDamage: 2, effectKey: 'bonusDie.effect.zhanshujiaDisengageSabre' },
+                    { face: ZHANSHUJIA_DICE_FACE_IDS.BANNER, grantDamageShield: { value: 3 }, effectKey: 'bonusDie.effect.zhanshujiaDisengageBanner' },
+                    { face: ZHANSHUJIA_DICE_FACE_IDS.MEDAL, grantToken: { tokenId: TOKEN_IDS.PROTECT, value: 1 }, effectKey: 'bonusDie.effect.zhanshujiaDisengageMedal' },
+                ],
+            },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-zhanshujia-tactical-retreat',
@@ -96,7 +133,19 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-zhanshujia-tactical-retreat', 'description'),
         previewRef: atlasPreview(20),
         sourceAtlasIndex: 20,
-        effects: [{ description: 'L1 录入：被攻击后施加紧缚并防止 3 伤害。' }],
+        playCondition: { phase: 'defensiveRoll', requireIsRoller: true },
+        effects: [
+            {
+                description: '对攻击你的对手施加紧缚。',
+                action: { type: 'grantStatus', target: 'opponent', statusId: STATUS_IDS.BIND, value: 1 },
+                timing: 'immediate',
+            },
+            {
+                description: '防止 3 即将受到的伤害。',
+                action: { type: 'grantDamageShield', target: 'self', shieldValue: 3 },
+                timing: 'immediate',
+            },
+        ],
     },
     {
         id: 'card-zhanshujia-war-room',
@@ -107,7 +156,11 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-zhanshujia-war-room', 'description'),
         previewRef: atlasPreview(21),
         sourceAtlasIndex: 21,
-        effects: [{ description: 'L1 录入：投 1 骰，获得投掷数值 1/2 向上取整的战术优势。' }],
+        effects: [{
+            description: '投 1 骰，获得投掷数值一半向上取整的战术优势。',
+            action: { type: 'custom', target: 'self', customActionId: 'zhanshujia-war-room-roll' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-zhanshujia-strategic-defense',
@@ -118,7 +171,11 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-zhanshujia-strategic-defense', 'description'),
         previewRef: atlasPreview(22),
         sourceAtlasIndex: 22,
-        effects: [{ description: 'L1 录入：选择 1 名玩家获得守护。' }],
+        effects: [{
+            description: '选择 1 名玩家获得守护。',
+            action: { type: 'custom', target: 'self', customActionId: 'zhanshujia-strategic-defense-select-player' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'upgrade-zhanshujia-countermeasures-3',
@@ -129,7 +186,7 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('upgrade-zhanshujia-countermeasures-3', 'description'),
         previewRef: atlasPreview(23),
         sourceAtlasIndex: 23,
-        effects: [{ description: 'L1 录入：升级反制措施至 III 级。' }],
+        effects: [replaceAbility('countermeasures', COUNTERMEASURES_3, 3, '升级反制措施至 III 级。')],
     },
     {
         id: 'upgrade-zhanshujia-countermeasures-2',
@@ -140,7 +197,7 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('upgrade-zhanshujia-countermeasures-2', 'description'),
         previewRef: atlasPreview(24),
         sourceAtlasIndex: 24,
-        effects: [{ description: 'L1 录入：升级反制措施至 II 级。' }],
+        effects: [replaceAbility('countermeasures', COUNTERMEASURES_2, 2, '升级反制措施至 II 级。')],
     },
     {
         id: 'upgrade-zhanshujia-strategic-shift-2',
@@ -151,7 +208,7 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('upgrade-zhanshujia-strategic-shift-2', 'description'),
         previewRef: atlasPreview(25),
         sourceAtlasIndex: 25,
-        effects: [{ description: 'L1 录入：升级战略转移至 II 级。' }],
+        effects: [replaceAbility('strategic-shift', STRATEGIC_SHIFT_2, 2, '升级战略转移至 II 级。')],
     },
     {
         id: 'upgrade-zhanshujia-expand-battlefield-2',
@@ -162,7 +219,7 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('upgrade-zhanshujia-expand-battlefield-2', 'description'),
         previewRef: atlasPreview(26),
         sourceAtlasIndex: 26,
-        effects: [{ description: 'L1 录入：升级开拓战场至 II 级。' }],
+        effects: [replaceAbility('expand-battlefield', EXPAND_BATTLEFIELD_2, 2, '升级开拓战场至 II 级。')],
     },
     {
         id: 'upgrade-zhanshujia-flanking-2',
@@ -173,7 +230,7 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('upgrade-zhanshujia-flanking-2', 'description'),
         previewRef: atlasPreview(27),
         sourceAtlasIndex: 27,
-        effects: [{ description: 'L1 录入：升级包夹侧翼至 II 级。' }],
+        effects: [replaceAbility('flanking', FLANKING_2, 2, '升级包夹侧翼至 II 级。')],
     },
     {
         id: 'upgrade-zhanshujia-drum-movement-2',
@@ -184,7 +241,7 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('upgrade-zhanshujia-drum-movement-2', 'description'),
         previewRef: atlasPreview(28),
         sourceAtlasIndex: 28,
-        effects: [{ description: 'L1 录入：升级摇鼓运动至 II 级。' }],
+        effects: [replaceAbility('drum-movement', DRUM_MOVEMENT_2, 2, '升级摇鼓运动至 II 级。')],
     },
     {
         id: 'upgrade-zhanshujia-carpet-bombing-2',
@@ -195,7 +252,7 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('upgrade-zhanshujia-carpet-bombing-2', 'description'),
         previewRef: atlasPreview(29),
         sourceAtlasIndex: 29,
-        effects: [{ description: 'L1 录入：升级地毯式轰炸至 II 级。' }],
+        effects: [replaceAbility('carpet-bombing', CARPET_BOMBING_2, 2, '升级地毯式轰炸至 II 级。')],
     },
     {
         id: 'upgrade-zhanshujia-war-monger-2',
@@ -206,7 +263,7 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('upgrade-zhanshujia-war-monger-2', 'description'),
         previewRef: atlasPreview(30),
         sourceAtlasIndex: 30,
-        effects: [{ description: 'L1 录入：升级战争贩子至 II 级。' }],
+        effects: [replaceAbility('war-monger', WAR_MONGER_2, 2, '升级战争贩子至 II 级。')],
     },
     {
         id: 'upgrade-zhanshujia-sabre-thrust-2',
@@ -217,7 +274,7 @@ const ZHANSHUJIA_HERO_CARDS: AbilityCard[] = [
         description: cardText('upgrade-zhanshujia-sabre-thrust-2', 'description'),
         previewRef: atlasPreview(31),
         sourceAtlasIndex: 31,
-        effects: [{ description: 'L1 录入：升级军刀突刺至 II 级。' }],
+        effects: [replaceAbility('sabre-thrust', SABRE_THRUST_2, 2, '升级军刀突刺至 II 级。')],
     },
 ];
 

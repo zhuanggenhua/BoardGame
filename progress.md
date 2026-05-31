@@ -6588,3 +6588,74 @@
   - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 28 tests passed。
   - `npm run i18n:check`：通过，仅保留既有 3 条 warning。
   - `npx eslint src/games/dicethrone/heroes/zhanshujia/cards.ts src/games/dicethrone/heroes/cursed_pirate/cards.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts`：0 errors。
+
+## 2026-05-31 09:23
+
+- 继续推进战术家专属手牌 L2，先收口升级牌替换链：
+  - 9 张战术家升级牌均已从 L1 描述改为真实 `replaceAbility`，目标均指向基础技能 ID，保留“一张物理升级牌替换一个基础技能，内部 variants 取最高”的共享合同。
+  - 新增升级能力定义：反制措施 II/III、战略转移 II、开拓战场 II、包夹侧翼 II、摇鼓运动 II、地毯式轰炸 II、战争贩子 II、军刀突刺 II。
+  - 扩展战术家 custom action：反制措施按升级参数调整军刀组伤害；军刀突刺 II 三同值施加紧缚；战争贩子 II 勋章分支抽 1 并触发额外进攻投掷阶段。
+- 新增机制测试覆盖：
+  - 9 张升级牌逐张产生 `ABILITY_REPLACED`、写入 `abilityLevels` 与 `upgradeCardByAbilityId`。
+  - 反制措施 III 防御掷 5 骰且每组 2 军刀造成 2 反击伤害。
+  - 军刀突刺 II 造成升级后伤害并在三同值时施加紧缚。
+  - 战争贩子 II 勋章分支抽牌并触发额外进攻投掷阶段。
+- 仍未收口：
+  - 战术家被攻击后响应牌、战略防御目标选择、地毯式轰炸 II 2v2 精确“两名不同对手”交互。
+  - 咒缚海盗复杂专属手牌、对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
+- 验证结果：
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 26 tests passed。
+  - JSON parse `public/locales/{zh-CN,en}/game-dicethrone.json`：通过。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 32 tests passed。
+  - `npm run i18n:check`：通过，仅保留既有 3 条 warning。
+  - `npx eslint src/games/dicethrone/heroes/zhanshujia/abilities.ts src/games/dicethrone/heroes/zhanshujia/cards.ts src/games/dicethrone/domain/customActions/zhanshujia.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors。
+  - 额外尝试 `npx vitest run --config vitest.config.audit.ts src/games/dicethrone/__tests__/ability-customaction-audit.test.ts`：29 passed / 1 failed；失败为既有 customAction 孤立列表审计，包含大量既有 `treant`/`ninja`/`cursed_pirate`/战术家注册项，不作为本轮收口绿灯。
+
+## 2026-05-31 09:38
+
+- 继续推进战术家专属行动牌 L2：
+  - `card-zhanshujia-disengage` 加入被攻击后出牌条件，投 1 骰后军刀造成 2、旗帜防止 3、勋章获得守护。
+  - `card-zhanshujia-tactical-retreat` 加入被攻击后出牌条件，对攻击者施加紧缚并给自己 3 点伤害护盾。
+  - `card-zhanshujia-war-room` 新增 `zhanshujia-war-room-roll`，按实际骰值 `ceil(value / 2)` 授予战术优势。
+  - `card-zhanshujia-strategic-defense` 新增任意玩家目标选择，选择后授予守护。
+- 同步文档与文案：
+  - `src/games/dicethrone/rule/战术家卡牌录入核对.md`
+  - `src/games/dicethrone/rule/战术家录入核对.md`
+  - `public/locales/{zh-CN,en}/game-dicethrone.json`
+- 仍未收口：
+  - 地毯式轰炸 II 在 2v2 中精确“两名不同对手”交互。
+  - 咒缚海盗复杂专属手牌 L2。
+  - 对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
+- 验证结果：
+  - JSON parse `public/locales/{zh-CN,en}/game-dicethrone.json`：通过。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 30 tests passed。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 36 tests passed。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npx eslint src/games/dicethrone/heroes/zhanshujia/cards.ts src/games/dicethrone/domain/customActions/zhanshujia.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors。
+  - `npm run i18n:check`：通过，仅保留既有 3 条 warning。
+
+## 2026-05-31 09:49
+
+- 继续推进战术家地毯式轰炸 / 地毯式轰炸 II 的多人目标语义：
+  - 新增 `minSelectCount` 交互门禁，支持“必须选满两名不同对手”而不破坏既有“至多 N 名 / 默认至少 1 名”的多选交互。
+  - 地毯式轰炸不再用 `allOpponents` 近似多人目标，改为 `zhanshujia-carpet-bombing-targets` 交互选择两名不同对手。
+  - 2v2 候选只包含敌队两名对手，不包含队友；每名目标各受到 2 点 direct 附属伤害，队伍共享 HP 由既有伤害管线扣减。
+  - 1v1 或合法对手不足 2 名时直接按现有对手结算，不强行创建无法满足的必选交互。
+- 同步文档与文案：
+  - `src/games/dicethrone/rule/战术家录入核对.md`
+  - `src/games/dicethrone/rule/战术家卡牌录入核对.md`
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-intake-progress-2026-05-30.md`
+  - `public/locales/{zh-CN,en}/game-dicethrone.json`
+  - `task_plan.md`
+- 仍未收口：
+  - 咒缚海盗复杂专属手牌 L2。
+  - 对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
+- 验证结果：
+  - JSON parse `public/locales/{zh-CN,en}/game-dicethrone.json`：通过。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：1 file / 31 tests passed。
+  - `npx vitest run src/games/dicethrone/ui/__tests__/InteractionOverlay.test.tsx`：1 file / 29 tests passed。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 37 tests passed。
+  - `npm run i18n:check`：通过，仅保留既有 3 条 warning。
+  - 定向 ESLint 覆盖本轮改动 TS/TSX 文件：0 errors。

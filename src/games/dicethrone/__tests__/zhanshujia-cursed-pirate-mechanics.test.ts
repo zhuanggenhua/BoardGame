@@ -11,9 +11,9 @@ import { validateCommand } from '../domain/commandValidation';
 import { getTokenStackLimit } from '../domain/rules';
 import { RESOURCE_IDS } from '../domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
-import type { CharacterId, DiceThroneCommand, DiceThroneCore, DiceThroneEvent } from '../domain/types';
+import type { CharacterId, DiceThroneCommand, DiceThroneCore, DiceThroneEvent, TurnPhase } from '../domain/types';
 import { initHeroState } from '../domain/characters';
-import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
+import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
     cmd,
@@ -77,11 +77,71 @@ const getAbilityVariantEffects = (core: DiceThroneCore, playerId: string, abilit
     return variant.effects;
 };
 
+const playZhanshujiaUpgrade = (cardId: string) => {
+    const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+    state.sys.phase = 'main1';
+    state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+    state.core.players['0'].hand = [getCardById(cardId)];
+
+    const events = execute(state, command('PLAY_CARD', '0', { cardId }), fixedRandom);
+    return {
+        events,
+        state: { ...state, core: applyEvents(state.core, events) } as MatchState<DiceThroneCore>,
+    };
+};
+
+const createZhanshujiaCardPlayState = (cardId: string, phase: TurnPhase = 'main1') => {
+    const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+    state.sys.phase = phase;
+    state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+    state.core.players['0'].hand = [getCardById(cardId)];
+    return state;
+};
+
+const createZhanshujiaDefenseCardPlayState = (cardId: string) => {
+    const state = createZhanshujiaCardPlayState(cardId, 'defensiveRoll');
+    state.core.activePlayerId = '1';
+    state.core.pendingAttack = {
+        attackerId: '1',
+        defenderId: '0',
+        sourceAbilityId: 'test-attack',
+        isDefendable: true,
+        defenseAbilityId: 'countermeasures',
+    } as any;
+    return state;
+};
+
 const createFourPlayerCursedPirateState = (): MatchState<DiceThroneCore> => {
     const playerIds: PlayerId[] = ['0', '1', '2', '3'];
     const heroByPlayer: Record<PlayerId, CharacterId> = {
         '0': 'cursed_pirate',
         '1': 'zhanshujia',
+        '2': 'monk',
+        '3': 'treant',
+    } as Record<PlayerId, CharacterId>;
+    const core = DiceThroneDomain.setup(playerIds, fixedRandom);
+
+    for (const playerId of playerIds) {
+        const characterId = heroByPlayer[playerId];
+        core.players[playerId] = initHeroState(playerId, characterId, fixedRandom);
+        core.selectedCharacters[playerId] = characterId;
+        core.readyPlayers[playerId] = true;
+        core.players[playerId].hand = [];
+    }
+    core.hostStarted = true;
+    core.activePlayerId = '0';
+
+    return {
+        core,
+        sys: createInitialSystemState(playerIds, testSystems, undefined),
+    };
+};
+
+const createFourPlayerZhanshujiaState = (): MatchState<DiceThroneCore> => {
+    const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+    const heroByPlayer: Record<PlayerId, CharacterId> = {
+        '0': 'zhanshujia',
+        '1': 'cursed_pirate',
         '2': 'monk',
         '3': 'treant',
     } as Record<PlayerId, CharacterId>;
@@ -685,6 +745,306 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             sourceId: 'countermeasures',
         });
         expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(1);
+    });
+
+    it('战术家专属升级牌替换对应基础技能并记录等级', () => {
+        const expectations = [
+            { cardId: 'upgrade-zhanshujia-countermeasures-3', targetAbilityId: 'countermeasures', level: 3 },
+            { cardId: 'upgrade-zhanshujia-countermeasures-2', targetAbilityId: 'countermeasures', level: 2 },
+            { cardId: 'upgrade-zhanshujia-strategic-shift-2', targetAbilityId: 'strategic-shift', level: 2 },
+            { cardId: 'upgrade-zhanshujia-expand-battlefield-2', targetAbilityId: 'expand-battlefield', level: 2 },
+            { cardId: 'upgrade-zhanshujia-flanking-2', targetAbilityId: 'flanking', level: 2 },
+            { cardId: 'upgrade-zhanshujia-drum-movement-2', targetAbilityId: 'drum-movement', level: 2 },
+            { cardId: 'upgrade-zhanshujia-carpet-bombing-2', targetAbilityId: 'carpet-bombing', level: 2 },
+            { cardId: 'upgrade-zhanshujia-war-monger-2', targetAbilityId: 'war-monger', level: 2 },
+            { cardId: 'upgrade-zhanshujia-sabre-thrust-2', targetAbilityId: 'sabre-thrust', level: 2 },
+        ];
+
+        for (const { cardId, targetAbilityId, level } of expectations) {
+            const { events, state } = playZhanshujiaUpgrade(cardId);
+            const replaced = eventsOfType(events, 'ABILITY_REPLACED')[0];
+
+            expect(replaced?.payload).toMatchObject({
+                playerId: '0',
+                oldAbilityId: targetAbilityId,
+                cardId,
+                newLevel: level,
+            });
+            expect(state.core.players['0'].abilityLevels[targetAbilityId]).toBe(level);
+            expect(state.core.players['0'].upgradeCardByAbilityId[targetAbilityId]).toMatchObject({ cardId });
+            expect(state.core.players['0'].abilities.some(ability => ability.id === targetAbilityId)).toBe(true);
+        }
+    });
+
+    it('战术家升级后的反制措施 III 使用 5 骰且每组军刀造成 2 反击伤害', () => {
+        const { state } = playZhanshujiaUpgrade('upgrade-zhanshujia-countermeasures-3');
+        state.core.rollDiceCount = 5;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            value: [1, 2, 4, 6, 6][index] ?? die.value,
+        }));
+        const ability = state.core.players['0'].abilities.find(entry => entry.id === 'countermeasures');
+        expect(ability?.trigger).toMatchObject({ type: 'phase', phaseId: 'defensiveRoll', diceCount: 5 });
+
+        const events = resolveEffectsToEvents(
+            getAbilityEffects(state.core, '0', 'countermeasures'),
+            'withDamage',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'countermeasures',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 100,
+                isDefensiveContext: true,
+            },
+            { random: fixedRandom },
+        );
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'DAMAGE_DEALT')[0]?.payload.amount).toBe(2);
+        expect(next.players['0'].damageShields?.[0]).toMatchObject({ value: 1, sourceId: 'countermeasures' });
+        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
+    });
+
+    it('战术家升级后的军刀突刺 II 提升伤害并在三同值时施加紧缚', () => {
+        const { state } = playZhanshujiaUpgrade('upgrade-zhanshujia-sabre-thrust-2');
+        state.core.rollDiceCount = 5;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            value: [1, 1, 1, 4, 5][index] ?? die.value,
+        }));
+
+        const preDefenseEvents = resolveEffectsToEvents(
+            getAbilityVariantEffects(state.core, '0', 'sabre-thrust', 'sabre-thrust-2-3'),
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'sabre-thrust-2-3',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: fixedRandom },
+        );
+        const afterBind = applyEvents(state.core, preDefenseEvents);
+        const damageEvents = resolveEffectsToEvents(
+            getAbilityVariantEffects(afterBind, '0', 'sabre-thrust', 'sabre-thrust-2-3'),
+            'withDamage',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'sabre-thrust-2-3',
+                state: afterBind,
+                damageDealt: 0,
+                timestamp: 101,
+            },
+            { random: fixedRandom },
+        );
+
+        expect(eventsOfType(preDefenseEvents, 'STATUS_APPLIED')[0]?.payload).toMatchObject({
+            targetId: '1',
+            statusId: STATUS_IDS.BIND,
+        });
+        expect(eventsOfType(damageEvents, 'DAMAGE_DEALT')[0]?.payload.amount).toBe(5);
+    });
+
+    it('战术家升级后的战争贩子 II 在勋章分支抽牌并触发额外进攻投掷阶段', () => {
+        const { state } = playZhanshujiaUpgrade('upgrade-zhanshujia-war-monger-2');
+        const handBefore = state.core.players['0'].hand.length;
+        const events = resolveEffectsToEvents(
+            getAbilityEffects(state.core, '0', 'war-monger'),
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'war-monger',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: createQueuedRandom([6]) },
+        );
+        const next = applyEvents(state.core, events);
+
+        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
+        expect(next.players['0'].hand.length).toBe(handBefore + 1);
+        expect(eventsOfType(events, 'EXTRA_ATTACK_TRIGGERED')[0]?.payload).toMatchObject({
+            attackerId: '0',
+            targetId: '1',
+            sourceStatusId: 'war-monger',
+        });
+    });
+
+    it('战术家地毯式轰炸 II 在 2v2 中必须选择两名不同对手造成附属伤害', () => {
+        const state = createFourPlayerZhanshujiaState();
+        const { state: upgradedState } = playZhanshujiaUpgrade('upgrade-zhanshujia-carpet-bombing-2');
+        const effects = getAbilityVariantEffects(upgradedState.core, '0', 'carpet-bombing', 'carpet-bombing-2-main');
+
+        const events = resolveEffectsToEvents(
+            effects,
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'carpet-bombing-2-main',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: fixedRandom },
+        );
+        const reducedCore = applyEvents(state.core, events);
+        const system = createDiceThroneEventSystem();
+        const afterEvents = system.afterEvents?.({
+            state: { ...state, core: reducedCore },
+            events,
+            random: fixedRandom,
+        } as any);
+        if (!afterEvents || Array.isArray(afterEvents) || !('state' in afterEvents)) {
+            throw new Error('地毯式轰炸 II 未创建 2 名不同对手选择交互');
+        }
+        const promptState = afterEvents.state as MatchState<DiceThroneCore>;
+        const interaction = promptState.sys.interaction.current?.data as any;
+
+        expect(promptState.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
+        expect(interaction).toMatchObject({
+            type: 'selectPlayer',
+            sourceCardId: 'carpet-bombing-2-main',
+            selectCount: 2,
+            minSelectCount: 2,
+            resolveCustomActionId: 'zhanshujia-carpet-bombing-target-damage',
+        });
+        expect(interaction.targetPlayerIds).toEqual(['1', '3']);
+
+        const singleTargetEvents = execute(promptState, command('RESOLVE_INTERACTION', '0', {
+            selectedPlayerIds: ['1'],
+        }), fixedRandom);
+        expect(eventsOfType(singleTargetEvents, 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(eventsOfType(singleTargetEvents, 'INTERACTION_COMPLETED')).toHaveLength(0);
+
+        const resolveEvents = execute(promptState, command('RESOLVE_INTERACTION', '0', {
+            selectedPlayerIds: ['1', '3'],
+        }), fixedRandom);
+        const next = applyEvents(promptState.core, resolveEvents);
+        const player2HpBefore = promptState.core.players['2'].resources[RESOURCE_IDS.HP] ?? 0;
+        const teamBHpBefore = promptState.core.teamHealth?.B ?? 0;
+        const damageTargets = eventsOfType(resolveEvents, 'DAMAGE_DEALT')
+            .filter(event => event.payload.sourceAbilityId === 'carpet-bombing-2-main')
+            .map(event => event.payload.targetId)
+            .sort();
+
+        expect(damageTargets).toEqual(['1', '3']);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(teamBHpBefore - 4);
+        expect(next.players['2'].resources[RESOURCE_IDS.HP]).toBe(player2HpBefore);
+        expect(next.players['3'].resources[RESOURCE_IDS.HP]).toBe(teamBHpBefore - 4);
+        expect(next.teamHealth?.B).toBe(teamBHpBefore - 4);
+    });
+
+    it('战术家脱战在被攻击后按军刀、旗帜、勋章分支结算', () => {
+        const sabreState = createZhanshujiaDefenseCardPlayState('card-zhanshujia-disengage');
+        const hpBefore = sabreState.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const sabreEvents = execute(sabreState, command('PLAY_CARD', '0', {
+            cardId: 'card-zhanshujia-disengage',
+        }), createQueuedRandom([1]));
+        const afterSabre = applyEvents(sabreState.core, sabreEvents);
+        expect(eventsOfType(sabreEvents, 'DAMAGE_DEALT')[0]?.payload).toMatchObject({
+            targetId: '1',
+            amount: 2,
+            sourceAbilityId: 'card-zhanshujia-disengage',
+        });
+        expect(afterSabre.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 2);
+
+        const bannerState = createZhanshujiaDefenseCardPlayState('card-zhanshujia-disengage');
+        const bannerEvents = execute(bannerState, command('PLAY_CARD', '0', {
+            cardId: 'card-zhanshujia-disengage',
+        }), createQueuedRandom([4]));
+        expect(eventsOfType(bannerEvents, 'DAMAGE_SHIELD_GRANTED')[0]?.payload).toMatchObject({
+            targetId: '0',
+            value: 3,
+            sourceId: 'card-zhanshujia-disengage',
+        });
+
+        const medalState = createZhanshujiaDefenseCardPlayState('card-zhanshujia-disengage');
+        const medalEvents = execute(medalState, command('PLAY_CARD', '0', {
+            cardId: 'card-zhanshujia-disengage',
+        }), createQueuedRandom([6]));
+        const afterMedal = applyEvents(medalState.core, medalEvents);
+        expect(afterMedal.players['0'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
+    });
+
+    it('战术家伴装撤退在被攻击后对攻击者施加紧缚并防止 3 伤害', () => {
+        const state = createZhanshujiaDefenseCardPlayState('card-zhanshujia-tactical-retreat');
+        const events = execute(state, command('PLAY_CARD', '0', {
+            cardId: 'card-zhanshujia-tactical-retreat',
+        }), fixedRandom);
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'STATUS_APPLIED')[0]?.payload).toMatchObject({
+            targetId: '1',
+            statusId: STATUS_IDS.BIND,
+            sourceAbilityId: 'card-zhanshujia-tactical-retreat',
+        });
+        expect(eventsOfType(events, 'DAMAGE_SHIELD_GRANTED')[0]?.payload).toMatchObject({
+            targetId: '0',
+            value: 3,
+            sourceId: 'card-zhanshujia-tactical-retreat',
+        });
+        expect(next.players['1'].statusEffects[STATUS_IDS.BIND]).toBe(1);
+        expect(next.players['0'].damageShields?.[0]).toMatchObject({ value: 3 });
+    });
+
+    it('战术家作战室按骰值一半向上取整获得战术优势', () => {
+        const state = createZhanshujiaCardPlayState('card-zhanshujia-war-room');
+        const events = execute(state, command('PLAY_CARD', '0', {
+            cardId: 'card-zhanshujia-war-room',
+        }), createQueuedRandom([5]));
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
+            value: 5,
+            face: 'banner',
+            effectKey: 'bonusDie.effect.zhanshujiaWarRoom',
+        });
+        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(3);
+    });
+
+    it('战术家战略防御选择任意玩家获得守护', () => {
+        const state = createZhanshujiaCardPlayState('card-zhanshujia-strategic-defense');
+        const playEvents = execute(state, command('PLAY_CARD', '0', {
+            cardId: 'card-zhanshujia-strategic-defense',
+        }), fixedRandom);
+        const reducedCore = applyEvents(state.core, playEvents);
+        const system = createDiceThroneEventSystem();
+        const afterEvents = system.afterEvents?.({
+            state: { ...state, core: reducedCore },
+            events: playEvents,
+            random: fixedRandom,
+        } as any);
+        if (!afterEvents || Array.isArray(afterEvents) || !('state' in afterEvents)) {
+            throw new Error('战略防御未创建目标选择交互');
+        }
+        const promptState = afterEvents.state as MatchState<DiceThroneCore>;
+        const interaction = promptState.sys.interaction.current?.data as any;
+        expect(interaction).toMatchObject({
+            type: 'selectPlayer',
+            sourceCardId: 'card-zhanshujia-strategic-defense',
+            tokenGrantConfig: { tokenId: TOKEN_IDS.PROTECT, amount: 1 },
+        });
+        expect(interaction.targetPlayerIds).toEqual(['0', '1']);
+
+        const resolveEvents = execute(promptState, command('RESOLVE_INTERACTION', '0', {
+            selectedPlayerIds: ['1'],
+        }), fixedRandom);
+        const next = applyEvents(promptState.core, resolveEvents);
+        expect(eventsOfType(resolveEvents, 'TOKEN_GRANTED')[0]?.payload).toMatchObject({
+            targetId: '1',
+            tokenId: TOKEN_IDS.PROTECT,
+            amount: 1,
+            sourceAbilityId: 'card-zhanshujia-strategic-defense',
+        });
+        expect(next.players['1'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
     });
 
     it('制胜高地提升战术优势上限 1 并补至新上限', () => {

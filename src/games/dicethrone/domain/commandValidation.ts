@@ -1063,6 +1063,15 @@ const validateResolveInteraction = (
         return fail('player_mismatch');
     }
     if (pendingInteraction.type === 'selectPlayer') {
+        const selectedPlayerIds = cmd.payload.selectedPlayerIds ?? [];
+        const targetPlayerIds = pendingInteraction.targetPlayerIds ?? Object.keys(state.players);
+        const resolvedPlayerIds = Array.from(new Set(
+            selectedPlayerIds.filter(playerId => targetPlayerIds.includes(playerId))
+        ));
+        const minSelectCount = pendingInteraction.minSelectCount ?? 1;
+        if (resolvedPlayerIds.length < minSelectCount) {
+            return fail('not_enough_players_selected');
+        }
         return ok();
     }
     if (pendingInteraction.type === 'selectHandCard') {

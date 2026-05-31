@@ -13,6 +13,8 @@ import { PYROMANCER_CARDS } from '../heroes/pyromancer/cards';
 import { SAMURAI_CARDS } from '../heroes/samurai/cards';
 import { SHADOW_THIEF_CARDS } from '../heroes/shadow_thief/cards';
 import { TREANT_CARDS } from '../heroes/treant/cards';
+import { ZHANSHUJIA_CARDS } from '../heroes/zhanshujia/cards';
+import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
 
 type AbilitySource = {
     heroId: SelectableCharacterId;
@@ -33,6 +35,8 @@ const HERO_CARDS: Record<SelectableCharacterId, AbilityCard[]> = {
     samurai: SAMURAI_CARDS,
     treant: TREANT_CARDS,
     ninja: NINJA_CARDS,
+    zhanshujia: ZHANSHUJIA_CARDS,
+    cursed_pirate: CURSED_PIRATE_CARDS,
 };
 
 const collectEffects = (ability: AbilityDef): AbilityEffect[] => [
@@ -47,7 +51,8 @@ const collectUpgradeAbilityDefs = (heroId: SelectableCharacterId): AbilitySource
             .filter((value): value is AbilityDef => {
                 if (!value || typeof value !== 'object') return false;
                 const candidate = value as Partial<AbilityDef>;
-                return typeof candidate.id === 'string' && Array.isArray(candidate.effects);
+                return typeof candidate.id === 'string'
+                    && (Array.isArray(candidate.effects) || Array.isArray(candidate.variants));
             })
             .map(ability => ({
                 heroId,

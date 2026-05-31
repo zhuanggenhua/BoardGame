@@ -280,6 +280,8 @@ export interface InteractionDescriptor {
     type: CardInteractionType;
     titleKey: string;
     selectCount: number;
+    /** 最少需要选择的数量；未设置时表示至少 1 个目标即可确认。 */
+    minSelectCount?: number;
     selected: string[];
     /** 为 true 时，重掷骰子不触发技能重选（用于保留已选攻击） */
     skipAbilityReselection?: boolean;

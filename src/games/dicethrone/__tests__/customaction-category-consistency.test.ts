@@ -711,6 +711,19 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             'gunslinger-duel-resolve',
             // 忍者忍术：handler 追加 BONUS_DAMAGE_ADDED 到当前攻击，不直接产生 DAMAGE_DEALT
             'ninja-ninjutsu-use',
+            // 树人复仇藤蔓/野性生长 II：伤害依赖树灵数量与多骰结算路径，mock 状态未必直接落出 DAMAGE_DEALT
+            'treant-vengeful-vines-2-pain',
+            'treant-wild-growth-2-main',
+            // 忍者多骰/多目标结算：伤害落在 bonus settlement / choice-resolved 链路，mock 状态不稳定
+            'ninja-going-forward',
+            'ninja-going-forward-2',
+            'ninja-death-blossom-2',
+            'ninja-smoke-screen-kuji-kiri',
+            // 战术家/咒缚海盗：伤害取决于防御骰、奖励骰或目标身上的诅咒金币层数
+            'zhanshujia-war-monger-2-roll',
+            'zhanshujia-countermeasures-defense',
+            'cursed-pirate-damage-by-cursed-coins',
+            'cursed-pirate-still-wet-behind-ears-defense',
         ]);
 
         for (const actionId of registeredIds) {

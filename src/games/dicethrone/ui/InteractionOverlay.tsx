@@ -230,10 +230,10 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
         };
     }, [interaction.transferConfig?.sourcePlayerId, interaction.transferConfig?.statusId, isTransferTargetSelection, players]);
 
-    const canConfirm = selectedItems.length >= interaction.selectCount
-        || (isPlayerSelection && selectedItems.length > 0)
-        || (isHandCardSelection && selectedItems.length > 0)
-        || (isTransferTargetSelection && selectedItems.length > 0);
+    const minSelectCount = interaction.minSelectCount ?? (
+        isPlayerSelection || isHandCardSelection || isTransferTargetSelection ? 1 : interaction.selectCount
+    );
+    const canConfirm = selectedItems.length >= minSelectCount;
 
     // Derived presence
     const isOpen = true; // Controlled by BoardOverlays

@@ -809,8 +809,16 @@
       "zhanshujiaWarMongerSabre": "战争贩子：军刀造成 5 点伤害",
       "zhanshujiaWarMongerBanner": "战争贩子：旗帜获得 4 战术优势",
       "zhanshujiaWarMongerMedal": "战争贩子：勋章抽 1 张牌",
+      "zhanshujiaWarMonger2Sabre": "战争贩子 II：军刀造成 6 点伤害",
+      "zhanshujiaWarMonger2Banner": "战争贩子 II：旗帜获得 3 战术优势",
+      "zhanshujiaWarMonger2Medal": "战争贩子 II：勋章抽 1 张牌并触发额外进攻投掷阶段",
+      "zhanshujiaWarMonger2Other": "战争贩子 II：无额外效果",
       "zhanshujiaGainUpperHandMedal": "占得上风：勋章获得 4 战术优势",
       "zhanshujiaGainUpperHandOther": "占得上风：否则抽 1 张牌",
+      "zhanshujiaDisengageSabre": "脱战：军刀造成 2 点伤害",
+      "zhanshujiaDisengageBanner": "脱战：旗帜防止 3 点伤害",
+      "zhanshujiaDisengageMedal": "脱战：勋章获得守护",
+      "zhanshujiaWarRoom": "作战室：获得 {{amount}} 战术优势",
       "cursedPirateMarkedCutlass": "死亡印记：弯刀造成 2 点不可防御伤害",
       "cursedPirateMarkedLoot": "死亡印记：战利品抽 1 张牌",
       "cursedPirateMarkedSkull": "死亡印记：骷髅施加诅咒金币",
@@ -1204,6 +1212,7 @@
     "modifyDie": "修改骰子数值",
     "selectStatus": "选择要移除的状态",
     "selectPlayer": "选择一名玩家",
+    "selectTwoDifferentOpponentsForCollateralDamage": "选择 2 名不同对手",
     "selectTargetStatus": "选择要转移的状态",
     "transferSelectTarget": "选择转移目标玩家",
     "noStatus": "没有状态效果",
@@ -2604,33 +2613,69 @@
       "name": "军刀突刺",
       "description": "3/4/5 军刀造成 4/5/6 点伤害。"
     },
+    "sabre-thrust-2": {
+      "name": "军刀突刺 II",
+      "description": "3/4/5 军刀造成 5/6/7 点伤害；若投出 3 个相同数字，施加紧缚。"
+    },
     "carpet-bombing": {
       "name": "地毯式轰炸",
       "description": "2 军刀 + 2 勋章：获得战术优势，然后对所有对手造成 2 点附属伤害。"
+    },
+    "carpet-bombing-2": {
+      "name": "地毯式轰炸 II",
+      "description": "2 军刀 + 2 勋章：获得 2 战术优势，然后对 2 名不同对手造成 2 点附属伤害。制定战略（4 旗帜）：获得 3 战术优势，抽 2 张牌。"
     },
     "war-monger": {
       "name": "战争贩子",
       "description": "1 军刀 + 3 旗帜：获得战术优势并投 1 骰；军刀造成 5，旗帜获得 4 战术优势，勋章抽 1。额外进攻投掷阶段仍在实施中。"
     },
+    "war-monger-2": {
+      "name": "战争贩子 II",
+      "description": "1 军刀 + 3 旗帜：获得 2 战术优势并投 1 骰；军刀造成 6，旗帜获得 3 战术优势，勋章抽 1 并立即进入额外进攻投掷阶段。"
+    },
     "drum-movement": {
       "name": "摇鼓运动",
       "description": "3 军刀 + 2 勋章：施加紧缚并造成 7 点伤害。"
+    },
+    "drum-movement-2": {
+      "name": "摇鼓运动 II",
+      "description": "3 军刀 + 2 勋章：获得战术优势，施加紧缚，然后造成 7 点伤害。间接接敌（3 军刀 + 旗帜）：获得 2 战术优势，然后造成 2 点不可防御伤害。"
     },
     "flanking": {
       "name": "包夹侧翼",
       "description": "小顺子：获得战术优势，然后造成 6 点伤害。"
     },
+    "flanking-2": {
+      "name": "包夹侧翼 II",
+      "description": "小顺子：获得 2 战术优势，然后造成 6 点伤害。"
+    },
     "expand-battlefield": {
       "name": "开拓战场",
       "description": "大顺子：获得 2 战术优势，施加紧缚，然后造成 9 点伤害。"
+    },
+    "expand-battlefield-2": {
+      "name": "开拓战场 II",
+      "description": "大顺子：获得 3 战术优势，施加紧缚，然后造成 9 点伤害。全面封锁（军刀 + 2 旗帜 + 勋章）：抽 2 张，对一名对手施加紧缚。"
     },
     "strategic-shift": {
       "name": "战略转移",
       "description": "4 勋章：获得 5 战术优势，然后造成 5 点不可防御伤害。"
     },
+    "strategic-shift-2": {
+      "name": "战略转移 II",
+      "description": "4 勋章：获得 5 战术优势，施加紧缚，然后造成 5 点不可防御伤害。前期侦察（3 勋章）：获得 5 战术优势。"
+    },
     "countermeasures": {
       "name": "反制措施",
       "description": "防御掷 4 骰；军刀/旗帜反击，勋章防止伤害并获得战术优势。精确防御结算仍在实施中。"
+    },
+    "countermeasures-2": {
+      "name": "反制措施 II",
+      "description": "防御掷 5 骰；每组 2 军刀造成 1 点伤害；每个旗帜防止 1 点伤害；每个勋章获得 1 战术优势。"
+    },
+    "countermeasures-3": {
+      "name": "反制措施 III",
+      "description": "防御掷 5 骰；每组 2 军刀造成 2 点伤害；每个旗帜防止 1 点伤害；每个勋章获得 1 战术优势。"
     },
     "high-ground": {
       "name": "制胜高地",
