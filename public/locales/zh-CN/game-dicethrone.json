@@ -809,9 +809,16 @@
       "zhanshujiaWarMongerSabre": "战争贩子：军刀造成 5 点伤害",
       "zhanshujiaWarMongerBanner": "战争贩子：旗帜获得 4 战术优势",
       "zhanshujiaWarMongerMedal": "战争贩子：勋章抽 1 张牌",
+      "zhanshujiaGainUpperHandMedal": "占得上风：勋章获得 4 战术优势",
+      "zhanshujiaGainUpperHandOther": "占得上风：否则抽 1 张牌",
       "cursedPirateMarkedCutlass": "死亡印记：弯刀造成 2 点不可防御伤害",
       "cursedPirateMarkedLoot": "死亡印记：战利品抽 1 张牌",
-      "cursedPirateMarkedSkull": "死亡印记：骷髅施加诅咒金币"
+      "cursedPirateMarkedSkull": "死亡印记：骷髅施加诅咒金币",
+      "cursedPirateWeighAnchorSkull": "起锚：骷髅施加休战",
+      "cursedPirateWeighAnchorOther": "起锚：否则抽 1 张牌",
+      "cursedPirateBlusterCutlass": "虚张声势：弯刀造成 2 点伤害",
+      "cursedPirateBlusterLoot": "虚张声势：战利品抽 2 张牌",
+      "cursedPirateBlusterSkull": "虚张声势：骷髅施加火药桶"
     },
     "selectToReroll": "点击骰子花费{{cost}}{{token}}重掷",
     "noTokenToReroll": "没有{{token}}标记可用于重掷",
@@ -2806,6 +2813,130 @@
     "card-contemplation-2": {
       "name": "冥想 II",
       "description": "3太极触发：获得6气，获得闪避和净化。禅武归一（2拳+2太极触发）：造成6伤害，然后获得2气。"
+    },
+    "card-zhanshujia-gain-the-upper-hand": {
+      "name": "占得上风！",
+      "description": "投掷1骰：如果投出勋章，获得4战术优势。否则抽取1张牌。"
+    },
+    "card-zhanshujia-ambush": {
+      "name": "埋伏！",
+      "description": "获得2战术优势。"
+    },
+    "card-zhanshujia-disengage": {
+      "name": "脱战！",
+      "description": "只能在被攻击后打出。投掷1骰：如果投出军刀，造成2伤害；如果投出旗帜，防止3伤害；如果投出勋章，获得守护。"
+    },
+    "card-zhanshujia-tactical-retreat": {
+      "name": "伴装撤退！",
+      "description": "只能在被攻击后打出。对攻击你的对手施加紧缚。防止3即将受到的伤害。"
+    },
+    "card-zhanshujia-war-room": {
+      "name": "作战室！",
+      "description": "投掷1骰：获得投掷数值1/2的战术优势（向上取整）。"
+    },
+    "card-zhanshujia-strategic-defense": {
+      "name": "战略防御！",
+      "description": "选择1名玩家获得守护。"
+    },
+    "upgrade-zhanshujia-countermeasures-3": {
+      "name": "反制措施 III",
+      "description": "防御投掷5骰。每投出1组军刀军刀，造成2伤害。防止1×旗帜伤害。获得1×勋章战术优势。"
+    },
+    "upgrade-zhanshujia-countermeasures-2": {
+      "name": "反制措施 II",
+      "description": "防御投掷5骰。每投出1组军刀军刀，造成1伤害。防止1×旗帜伤害。获得1×勋章战术优势。"
+    },
+    "upgrade-zhanshujia-strategic-shift-2": {
+      "name": "战略转移 II",
+      "description": "4勋章：获得5战术优势，施加紧缚，然后造成5不可防御伤害。前期侦察（3勋章）：获得5战术优势。"
+    },
+    "upgrade-zhanshujia-expand-battlefield-2": {
+      "name": "开拓战场 II",
+      "description": "大顺子：获得3战术优势，施加紧缚，然后造成9伤害。全面封锁（军刀+2旗帜+勋章）：抽取2张，对一名对手施加紧缚。"
+    },
+    "upgrade-zhanshujia-flanking-2": {
+      "name": "包夹侧翼 II",
+      "description": "小顺子：获得2战术优势，然后造成6伤害。"
+    },
+    "upgrade-zhanshujia-drum-movement-2": {
+      "name": "摇鼓运动 II",
+      "description": "3军刀+2勋章：获得战术优势，施加紧缚，然后造成7伤害。间接接敌（3军刀+旗帜）：获得2战术优势，然后造成2不可防御伤害。"
+    },
+    "upgrade-zhanshujia-carpet-bombing-2": {
+      "name": "地毯式轰炸 II",
+      "description": "2军刀+2勋章：获得2战术优势，然后对2名不同的对手造成2附属伤害。制定战略（4旗帜）：获得3战术优势，抽取2张卡牌。"
+    },
+    "upgrade-zhanshujia-war-monger-2": {
+      "name": "战争贩子 II",
+      "description": "1军刀+3旗帜：获得2战术优势并投掷1骰。若投出军刀，造成6伤害；若投出旗帜，获得3战术优势；若投出勋章，抽取1，然后立即再进行一个额外的进攻投掷阶段。"
+    },
+    "upgrade-zhanshujia-sabre-thrust-2": {
+      "name": "军刀突刺 II",
+      "description": "3/4/5军刀分别造成5/6/7伤害。如果投出3个相同数字，施加紧缚。"
+    },
+    "card-cursed-pirate-weigh-anchor": {
+      "name": "起锚！",
+      "description": "投掷1骰：如果投出骷髅，对一名对手施加休战。否则抽取1张牌。"
+    },
+    "card-cursed-pirate-curse-card": {
+      "name": "诅咒卡牌！",
+      "description": "选择以下其一：抽取1；或受到2伤害并抽取2；或受到4伤害并抽取3。"
+    },
+    "card-cursed-pirate-batten-down": {
+      "name": "封舱！",
+      "description": "弃掉你的所有手牌。然后抽取4张牌。"
+    },
+    "card-cursed-pirate-shark-bait": {
+      "name": "鲨鱼饵！",
+      "description": "攻击修正：增加2至你的攻击伤害。"
+    },
+    "card-cursed-pirate-flay": {
+      "name": "抽筋剥皮！",
+      "description": "攻击修正：投掷5骰。增加1×弯刀至总伤害中。如果至少有3伤害被加总，则施加火药桶。"
+    },
+    "card-cursed-pirate-ransom": {
+      "name": "赎金！",
+      "description": "选择你对手的一颗骰子。除非他/她支付你2CP，否则重掷该骰子。"
+    },
+    "card-cursed-pirate-bluster": {
+      "name": "虚张声势！",
+      "description": "投掷1骰：如果投出弯刀，对一名对手造成2伤害；如果投出战利品，抽取2；如果投出骷髅，对一名对手施加火药桶。"
+    },
+    "card-cursed-pirate-scurvy": {
+      "name": "坏血病！",
+      "description": "受到1伤害。然后对一名对手施加凋零。"
+    },
+    "card-cursed-pirate-pillage": {
+      "name": "强取豪夺！",
+      "description": "从一名对手处偷取1CP。"
+    },
+    "card-cursed-pirate-parley": {
+      "name": "停战协议！",
+      "description": "对一名对手施加休战。"
+    },
+    "card-cursed-pirate-crows-nest": {
+      "name": "瞭望台！",
+      "description": "选择一名对手并投掷1骰：如果投出弯刀，检查其手牌；如果投出战利品，他/她选择弃掉自己的1张牌；如果投出骷髅，他/她随机弃掉自己的1张牌。"
+    },
+    "card-cursed-pirate-hefty": {
+      "name": "干票大的！",
+      "description": "投掷2骰：如果投出战利品，抽取2并获得2CP。"
+    },
+    "card-cursed-pirate-pirates-life": {
+      "name": "海盗的一生！",
+      "description": "获得1诅咒金币。但如果你的面板处于“咒缚”面，则转而治疗3。"
+    },
+    "card-cursed-pirate-go-fish": {
+      "name": "送你们去喂鱼！",
+      "description": "对至多3名不同的对手施加火药桶。"
+    },
+    "card-cursed-pirate-give-me-some": {
+      "name": "给我点上！",
+      "description": "对一名对手施加火药桶。"
+    },
+    "card-cursed-pirate-sip": {
+      "name": "啜呼！",
+      "description": "对一名对手施加火药桶。该对手也可以选择不获得这个火药桶，而是投掷1骰：如果投出1-2，无事发生。如果投出3-6，他/她被施加火药桶和凋零。"
     },
     "card-just-this": {
       "name": "就这？",

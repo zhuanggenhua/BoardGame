@@ -776,9 +776,16 @@
       "zhanshujiaWarMongerSabre": "War Monger: Sabre deals 5 damage",
       "zhanshujiaWarMongerBanner": "War Monger: Banner gains 4 Tactical Advantage",
       "zhanshujiaWarMongerMedal": "War Monger: Medal draws 1 card",
+      "zhanshujiaGainUpperHandMedal": "Gain the Upper Hand: Medal gains 4 Tactical Advantage",
+      "zhanshujiaGainUpperHandOther": "Gain the Upper Hand: otherwise draw 1 card",
       "cursedPirateMarkedCutlass": "Marked for Death: Cutlass deals 2 undefendable damage",
       "cursedPirateMarkedLoot": "Marked for Death: Loot draws 1 card",
-      "cursedPirateMarkedSkull": "Marked for Death: Skull inflicts Cursed Coin"
+      "cursedPirateMarkedSkull": "Marked for Death: Skull inflicts Cursed Coin",
+      "cursedPirateWeighAnchorSkull": "Weigh Anchor: Skull inflicts Parley",
+      "cursedPirateWeighAnchorOther": "Weigh Anchor: otherwise draw 1 card",
+      "cursedPirateBlusterCutlass": "Bluster: Cutlass deals 2 damage",
+      "cursedPirateBlusterLoot": "Bluster: Loot draws 2 cards",
+      "cursedPirateBlusterSkull": "Bluster: Skull inflicts Powder Keg"
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
@@ -2730,6 +2737,130 @@
     "card-contemplation-2": {
       "name": "Contemplation II",
       "description": "3 Taiji: Gain 6 Chi, Evasive and Purify. Zen Combat (2 Fist + 2 Taiji): Deal 6 damage, gain 2 Chi."
+    },
+    "card-zhanshujia-gain-the-upper-hand": {
+      "name": "Gain the Upper Hand!",
+      "description": "Roll 1 die: if you roll Medal, gain 4 Tactical Advantage. Otherwise draw 1 card."
+    },
+    "card-zhanshujia-ambush": {
+      "name": "Ambush!",
+      "description": "Gain 2 Tactical Advantage."
+    },
+    "card-zhanshujia-disengage": {
+      "name": "Disengage!",
+      "description": "Only play after being attacked. Roll 1 die: Sabre deals 2 damage; Banner prevents 3 damage; Medal gains Protect."
+    },
+    "card-zhanshujia-tactical-retreat": {
+      "name": "Tactical Retreat!",
+      "description": "Only play after being attacked. Inflict Bind on the opponent attacking you. Prevent 3 incoming damage."
+    },
+    "card-zhanshujia-war-room": {
+      "name": "War Room!",
+      "description": "Roll 1 die: gain Tactical Advantage equal to half the value, rounded up."
+    },
+    "card-zhanshujia-strategic-defense": {
+      "name": "Strategic Defense!",
+      "description": "Choose 1 player to gain Protect."
+    },
+    "upgrade-zhanshujia-countermeasures-3": {
+      "name": "Countermeasures III",
+      "description": "Defensive roll 5 dice. For each pair of Sabres, deal 2 damage. Prevent 1× Banner damage. Gain 1× Medal Tactical Advantage."
+    },
+    "upgrade-zhanshujia-countermeasures-2": {
+      "name": "Countermeasures II",
+      "description": "Defensive roll 5 dice. For each pair of Sabres, deal 1 damage. Prevent 1× Banner damage. Gain 1× Medal Tactical Advantage."
+    },
+    "upgrade-zhanshujia-strategic-shift-2": {
+      "name": "Strategic Shift II",
+      "description": "4 Medal: Gain 5 Tactical Advantage, inflict Bind, then deal 5 undefendable damage. Recon (3 Medal): gain 5 Tactical Advantage."
+    },
+    "upgrade-zhanshujia-expand-battlefield-2": {
+      "name": "Expand Battlefield II",
+      "description": "Large Straight: gain 3 Tactical Advantage, inflict Bind, then deal 9 damage. Total Lockdown (Sabre + 2 Banner + Medal): draw 2 cards and inflict Bind on 1 opponent."
+    },
+    "upgrade-zhanshujia-flanking-2": {
+      "name": "Flanking II",
+      "description": "Small Straight: gain 2 Tactical Advantage, then deal 6 damage."
+    },
+    "upgrade-zhanshujia-drum-movement-2": {
+      "name": "Drum Movement II",
+      "description": "3 Sabre + 2 Medal: gain Tactical Advantage, inflict Bind, then deal 7 damage. Indirect Engagement (3 Sabre + Banner): gain 2 Tactical Advantage, then deal 2 undefendable damage."
+    },
+    "upgrade-zhanshujia-carpet-bombing-2": {
+      "name": "Carpet Bombing II",
+      "description": "2 Sabre + 2 Medal: gain 2 Tactical Advantage, then deal 2 collateral damage to 2 different opponents. Plan Strategy (4 Banner): gain 3 Tactical Advantage and draw 2 cards."
+    },
+    "upgrade-zhanshujia-war-monger-2": {
+      "name": "War Monger II",
+      "description": "1 Sabre + 3 Banner: gain 2 Tactical Advantage and roll 1 die. Sabre deals 6 damage; Banner gains 3 Tactical Advantage; Medal draws 1 card, then immediately take an extra offensive roll phase."
+    },
+    "upgrade-zhanshujia-sabre-thrust-2": {
+      "name": "Sabre Thrust II",
+      "description": "3/4/5 Sabres deal 5/6/7 damage. If you rolled 3 matching numbers, inflict Bind."
+    },
+    "card-cursed-pirate-weigh-anchor": {
+      "name": "Weigh Anchor!",
+      "description": "Roll 1 die: if you roll Skull, inflict Parley on 1 opponent. Otherwise draw 1 card."
+    },
+    "card-cursed-pirate-curse-card": {
+      "name": "Curse Card!",
+      "description": "Choose one: draw 1; or receive 2 damage and draw 2; or receive 4 damage and draw 3."
+    },
+    "card-cursed-pirate-batten-down": {
+      "name": "Batten Down!",
+      "description": "Discard all cards in your hand. Then draw 4 cards."
+    },
+    "card-cursed-pirate-shark-bait": {
+      "name": "Shark Bait!",
+      "description": "Attack modifier: add 2 to your attack damage."
+    },
+    "card-cursed-pirate-flay": {
+      "name": "Flay!",
+      "description": "Attack modifier: roll 5 dice. Add 1× Cutlass to the total damage. If at least 3 damage was added, inflict Powder Keg."
+    },
+    "card-cursed-pirate-ransom": {
+      "name": "Ransom!",
+      "description": "Choose one of your opponent's dice. Unless they pay you 2 CP, reroll that die."
+    },
+    "card-cursed-pirate-bluster": {
+      "name": "Bluster!",
+      "description": "Roll 1 die: Cutlass deals 2 damage to 1 opponent; Loot draws 2 cards; Skull inflicts Powder Keg on 1 opponent."
+    },
+    "card-cursed-pirate-scurvy": {
+      "name": "Scurvy!",
+      "description": "Receive 1 damage. Then inflict Wither on 1 opponent."
+    },
+    "card-cursed-pirate-pillage": {
+      "name": "Pillage!",
+      "description": "Steal 1 CP from 1 opponent."
+    },
+    "card-cursed-pirate-parley": {
+      "name": "Parley!",
+      "description": "Inflict Parley on 1 opponent."
+    },
+    "card-cursed-pirate-crows-nest": {
+      "name": "Crow's Nest!",
+      "description": "Choose 1 opponent and roll 1 die: Cutlass checks their hand; Loot makes them choose and discard 1 card; Skull makes them discard 1 random card."
+    },
+    "card-cursed-pirate-hefty": {
+      "name": "Hefty!",
+      "description": "Roll 2 dice: if you roll Loot, draw 2 and gain 2 CP."
+    },
+    "card-cursed-pirate-pirates-life": {
+      "name": "A Pirate's Life!",
+      "description": "Gain 1 Cursed Coin. But if your board is on the Cursed side, heal 3 instead."
+    },
+    "card-cursed-pirate-go-fish": {
+      "name": "Go Fish!",
+      "description": "Inflict Powder Keg on up to 3 different opponents."
+    },
+    "card-cursed-pirate-give-me-some": {
+      "name": "Give Me Some!",
+      "description": "Inflict Powder Keg on 1 opponent."
+    },
+    "card-cursed-pirate-sip": {
+      "name": "Sip!",
+      "description": "Inflict Powder Keg on 1 opponent. That opponent may choose not to gain it and instead roll 1 die: on 1-2 nothing happens; on 3-6 they gain Powder Keg and Wither."
     },
     "card-just-this": {
       "name": "Just This?",

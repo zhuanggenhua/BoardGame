@@ -19,6 +19,7 @@ import {
     makeMatchState,
     getSimpleChoicePrompt,
     getPromptOption,
+    getReactionPromptOptionBySourceDefId,
     respondToPrompt,
     respondCommand,
     expectNoPrompt,
@@ -669,6 +670,107 @@ describe('vampires_pod: Nightstalker POD', () => {
         expect(useTalent.success).toBe(true);
         expect(useTalent.events.some(e => e.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
         expect(useTalent.events.some(e => e.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(true);
+    });
+
+    it('destroying an in-play Fledgling should still let another copy in hand trigger and bury via the shared pipeline', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('fv-hand', 'vampire_fledgling_vampire_pod', 'minion', '0'),
+                        makeCard('gulp', 'vampire_big_gulp_pod', 'action', '0'),
+                    ],
+                    deck: [makeCard('draw-1', 'robot_microbot', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('fv-board', 'vampire_fledgling_vampire_pod', '0', 2),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_star_portal_pod',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const playBigGulp = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'gulp' } },
+            defaultTestRandom,
+        );
+        expect(playBigGulp.success).toBe(true);
+
+        const destroyPrompt = getSimpleChoicePrompt(playBigGulp.finalState, 'vampire_big_gulp_pod');
+        const fledglingOption = getPromptOption(
+            destroyPrompt,
+            option => option.value?.minionUid === 'fv-board',
+            'in-play Fledgling destroy option',
+        );
+
+        const afterDestroy = runCommand(
+            playBigGulp.finalState,
+            respondCommand(fledglingOption.id, '0'),
+            defaultTestRandom,
+        );
+        expect(afterDestroy.success).toBe(true);
+
+        const reactionPrompt = getSimpleChoicePrompt(afterDestroy.finalState, 'smashup_reaction_choose');
+        const reactionOption = getReactionPromptOptionBySourceDefId(
+            afterDestroy.finalState,
+            reactionPrompt,
+            'vampire_fledgling_vampire_pod',
+        );
+
+        const afterReaction = runCommand(
+            afterDestroy.finalState,
+            respondCommand(reactionOption.id, getPromptPlayerId(reactionPrompt)),
+            defaultTestRandom,
+        );
+        expect(afterReaction.success).toBe(true);
+
+        const sourcePrompt = getSimpleChoicePrompt(afterReaction.finalState, 'vampire_fledgling_vampire_pod_bury_source');
+        const handSourceOption = getPromptOption(
+            sourcePrompt,
+            option => option.value?.cardUid === 'fv-hand',
+            'hand Fledgling bury source',
+        );
+
+        const afterSource = runCommand(
+            afterReaction.finalState,
+            respondCommand(handSourceOption.id, '0'),
+            defaultTestRandom,
+        );
+        expect(afterSource.success).toBe(true);
+
+        const basePrompt = getSimpleChoicePrompt(afterSource.finalState, 'vampire_fledgling_vampire_pod_bury_base');
+        const starPortalOption = getPromptOption(
+            basePrompt,
+            option => option.value?.baseIndex === 1,
+            'Star Portal bury base',
+        );
+
+        const afterBury = runCommand(
+            afterSource.finalState,
+            respondCommand(starPortalOption.id, '0'),
+            defaultTestRandom,
+        );
+        expect(afterBury.success).toBe(true);
+        expect(afterBury.events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
+        expect(afterBury.events.some(event =>
+            event.type === SU_EVENTS.TRIGGER_QUEUED || event.type === SU_EVENTS.CARDS_DRAWN,
+        )).toBe(true);
+        expect(afterBury.finalState.core.bases[1].buriedCards?.some(card => card.uid === 'fv-hand')).toBe(true);
+        expect(afterBury.finalState.core.players['0'].hand.some(card => card.uid === 'fv-hand')).toBe(false);
     });
 });
 

@@ -198,10 +198,10 @@ describe('SmashUp baokemeng 四派系 intake 静态合同', () => {
         }
     });
 
-    it('四个 baokemeng 新派系在派系选择页标记为实施中', () => {
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.ITTY_CRITTERS)).toBe(true);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.KAIJU)).toBe(true);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.MAGICAL_GIRLS)).toBe(true);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.MEGA_TROOPERS)).toBe(true);
+    it('四个 baokemeng 派系已不再标记为实施中', () => {
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.ITTY_CRITTERS)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.KAIJU)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.MAGICAL_GIRLS)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.MEGA_TROOPERS)).toBe(false);
     });
 });

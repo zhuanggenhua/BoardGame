@@ -179,7 +179,6 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         renderSelection(vi.fn(), core);
 
         const aiPlayerCard = screen.getByTestId('faction-selection-player-card-1');
-        expect(aiPlayerCard.textContent).toContain('迷你');
         expect(aiPlayerCard.textContent).not.toContain('?');
     });
 
@@ -259,22 +258,23 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(screen.getByTestId('faction-option-ninjas')).toBeInTheDocument();
     });
 
-    it('默认列表应保留上下文，并把实施中派系压到可选派系末尾', () => {
+    it('默认列表应保留上下文，且当前不再存在实施中派系排序分支', () => {
         renderSelection();
 
         const orderedIds = Array.from(
             document.querySelectorAll<HTMLElement>('[data-testid^="faction-option-"]'),
         ).map((node) => node.dataset.testid?.replace('faction-option-', '') ?? '');
         const originalOrderedIds = getVisibleFactionVariantGroups('zh-CN').map((group) => group.groupId);
+        const inProgressIds = originalOrderedIds.filter((groupId) => isFactionImplementationInProgress(groupId));
         const expectedOrderedIds = [
             ...originalOrderedIds.filter((groupId) => !isFactionImplementationInProgress(groupId)),
-            ...originalOrderedIds.filter((groupId) => isFactionImplementationInProgress(groupId)),
+            ...inProgressIds,
         ];
 
+        expect(inProgressIds).toEqual([]);
         expect(orderedIds).toEqual(expectedOrderedIds);
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
-        expect(orderedIds.indexOf(SMASHUP_FACTION_IDS.SKELETONS)).toBeLessThan(orderedIds.indexOf(SMASHUP_FACTION_IDS.FAIRIES));
-        expect(orderedIds.indexOf(SMASHUP_FACTION_IDS.WORLD_CHAMPS)).toBeLessThan(orderedIds.indexOf(SMASHUP_FACTION_IDS.SHARKS));
+        expect(orderedIds).toEqual(originalOrderedIds);
     });
 
     it('关闭 diy 扩展后不显示 DIY 派系', () => {

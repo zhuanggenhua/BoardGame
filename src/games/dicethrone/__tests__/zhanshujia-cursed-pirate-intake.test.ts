@@ -86,6 +86,65 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
         }
     });
 
+    it('两名新英雄专属手牌已按单卡裁图完整录入 L1，并锁定专属通用牌索引', () => {
+        expect(ZHANSHUJIA_CARDS).toHaveLength(33);
+        expect(CURSED_PIRATE_CARDS).toHaveLength(34);
+
+        const zhanshujiaCustomCards = ZHANSHUJIA_CARDS.filter(card => card.sourceAtlasIndex !== undefined);
+        expect(zhanshujiaCustomCards.map(card => card.sourceAtlasIndex)).toEqual([
+            17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+        ]);
+        expect(zhanshujiaCustomCards.map(card => card.id)).toEqual([
+            'card-zhanshujia-gain-the-upper-hand',
+            'card-zhanshujia-ambush',
+            'card-zhanshujia-disengage',
+            'card-zhanshujia-tactical-retreat',
+            'card-zhanshujia-war-room',
+            'card-zhanshujia-strategic-defense',
+            'upgrade-zhanshujia-countermeasures-3',
+            'upgrade-zhanshujia-countermeasures-2',
+            'upgrade-zhanshujia-strategic-shift-2',
+            'upgrade-zhanshujia-expand-battlefield-2',
+            'upgrade-zhanshujia-flanking-2',
+            'upgrade-zhanshujia-drum-movement-2',
+            'upgrade-zhanshujia-carpet-bombing-2',
+            'upgrade-zhanshujia-war-monger-2',
+            'upgrade-zhanshujia-sabre-thrust-2',
+        ]);
+
+        const cursedCustomCards = CURSED_PIRATE_CARDS.filter(card => card.sourceAtlasIndex !== undefined);
+        expect(cursedCustomCards.map(card => card.sourceAtlasIndex)).toEqual([
+            17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+        ]);
+        expect(cursedCustomCards.map(card => card.id)).toEqual([
+            'card-cursed-pirate-weigh-anchor',
+            'card-cursed-pirate-curse-card',
+            'card-cursed-pirate-batten-down',
+            'card-cursed-pirate-shark-bait',
+            'card-cursed-pirate-flay',
+            'card-cursed-pirate-ransom',
+            'card-cursed-pirate-bluster',
+            'card-cursed-pirate-scurvy',
+            'card-cursed-pirate-pillage',
+            'card-cursed-pirate-parley',
+            'card-cursed-pirate-crows-nest',
+            'card-cursed-pirate-hefty',
+            'card-cursed-pirate-pirates-life',
+            'card-cursed-pirate-go-fish',
+            'card-cursed-pirate-give-me-some',
+            'card-cursed-pirate-sip',
+        ]);
+
+        expect(ZHANSHUJIA_CARDS.find(card => card.id === 'card-unexpected')?.previewRef).toMatchObject({
+            atlasId: DICETHRONE_CARD_ATLAS_IDS.ZHANSHUJIA,
+            index: 32,
+        });
+        expect(CURSED_PIRATE_CARDS.find(card => card.id === 'card-unexpected')?.previewRef).toMatchObject({
+            atlasId: DICETHRONE_CARD_ATLAS_IDS.CURSED_PIRATE,
+            index: 33,
+        });
+    });
+
     it('状态图集 JSON 覆盖新增 frameId，并复用既有锁定/守护 ID', () => {
         expect(CHARACTER_DATA_MAP.zhanshujia.statusAtlasId).toBe(DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA);
         expect(CHARACTER_DATA_MAP.cursed_pirate.statusAtlasId).toBe(DICETHRONE_STATUS_ATLAS_IDS.CURSED_PIRATE);

@@ -115,7 +115,7 @@ const YUANHOU_FACTIONS: YuanhouFactionCase[] = [
 function assertYuanhouCardPreview(def: CardDef, expectedIndex: number): void {
     expect(def.previewRef).toEqual({
         type: 'atlas',
-        atlasId: SMASHUP_ATLAS_IDS.CARDS10,
+        atlasId: SMASHUP_ATLAS_IDS.CARDS11,
         index: expectedIndex,
     });
 }
@@ -126,7 +126,7 @@ function assertYuanhouBasePreview(
 ): void {
     expect(def.previewRef).toEqual({
         type: 'atlas',
-        atlasId: SMASHUP_ATLAS_IDS.BASE8,
+        atlasId: SMASHUP_ATLAS_IDS.BASE9,
         index: expected.index,
     });
     expect(def.breakpoint).toBe(expected.breakpoint);
@@ -134,7 +134,7 @@ function assertYuanhouBasePreview(
 }
 
 describe('SmashUp yuanhou 四派系 intake 静态合同', () => {
-    it.each(YUANHOU_FACTIONS)('$factionId 卡牌数量、拷贝数与 cards10 图集索引正确', (fixture) => {
+    it.each(YUANHOU_FACTIONS)('$factionId 卡牌数量、拷贝数与 cards11 图集索引正确', (fixture) => {
         const defs = getFactionCards(fixture.factionId);
 
         expect(defs).toHaveLength(fixture.expectedCardCount);
@@ -147,7 +147,7 @@ describe('SmashUp yuanhou 四派系 intake 静态合同', () => {
         }
     });
 
-    it.each(YUANHOU_FACTIONS)('$factionId 基地数量、数值与 base8 图集索引正确', (fixture) => {
+    it.each(YUANHOU_FACTIONS)('$factionId 基地数量、数值与 base9 图集索引正确', (fixture) => {
         const baseIds = getBaseDefIdsForFactions([fixture.factionId]).sort();
         const expectedBaseIds = Object.keys(fixture.expectedBases).sort();
 
@@ -161,10 +161,10 @@ describe('SmashUp yuanhou 四派系 intake 静态合同', () => {
         }
     });
 
-    it('四个 yuanhou 新派系在派系选择页标记为实施中', () => {
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.SHAPESHIFTERS)).toBe(true);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.CYBORG_APES)).toBe(true);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.SUPER_SPIES)).toBe(true);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.TIME_TRAVELERS)).toBe(true);
+    it('四个 yuanhou 派系已不再标记为实施中', () => {
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.SHAPESHIFTERS)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.CYBORG_APES)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.SUPER_SPIES)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.TIME_TRAVELERS)).toBe(false);
     });
 });

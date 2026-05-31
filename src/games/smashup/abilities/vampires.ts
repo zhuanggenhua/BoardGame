@@ -30,6 +30,7 @@ import type { MinionPlayedEvent } from '../domain/types';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { matchesDefId } from '../domain/utils';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import { buildBuryCardEvents } from '../domain/bury';
 import { reduce } from '../domain/reduce';
 import {
     createEffectProgram,
@@ -395,12 +396,8 @@ function registerVampirePodOngoingEffects(): void {
 
     // Fledgling Vampire POD: after you destroy another minion, you may bury this card from hand or discard on any base.
     registerTrigger('vampire_fledgling_vampire_pod', 'onMinionDestroyed', (ctx: TriggerContext) => {
-        const { state, destroyerId, triggerMinionUid, now } = ctx;
+        const { state, destroyerId, now } = ctx;
         if (!destroyerId) return [];
-        // "another minion" => don't trigger if the destroyed minion itself is a Fledgling in play
-        if (triggerMinionUid && state.bases.some(b => b.minions.some(m => m.uid === triggerMinionUid && m.defId === 'vampire_fledgling_vampire_pod'))) {
-            return [];
-        }
         const p = state.players[destroyerId];
         if (!p) return [];
         const inHand = p.hand.filter(c => c.defId === 'vampire_fledgling_vampire_pod');
@@ -1189,23 +1186,23 @@ const vampireFledglingPodBuryBasePromptProgram = createPromptProgram<VampireFled
         ),
         { sourceId: 'vampire_fledgling_vampire_pod_bury_base', targetType: 'base' },
     ),
-    onResolve: ({ context, value, playerId, timestamp }) => {
+    onResolve: ({ context, value, playerId, random, timestamp }) => {
         const selected = value as { baseIndex?: number } | undefined;
         if (selected?.baseIndex === undefined) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.CARD_BURIED,
-                payload: {
-                    playerId,
-                    cardUid: context.cardUid,
-                    defId: 'vampire_fledgling_vampire_pod',
-                    baseIndex: selected.baseIndex,
-                    trueOwnerId: context.trueOwnerId,
-                    buriedFrom: context.fromDiscard ? 'discard' : 'hand',
-                    reason: 'vampire_fledgling_vampire_pod',
-                } as any,
-                timestamp,
-            } as SmashUpEvent],
+            events: buildBuryCardEvents({
+                core: context.matchState.core,
+                matchState: context.matchState,
+                playerId,
+                cardUid: context.cardUid,
+                defId: 'vampire_fledgling_vampire_pod',
+                baseIndex: selected.baseIndex,
+                trueOwnerId: context.trueOwnerId,
+                buriedFrom: context.fromDiscard ? 'discard' : 'hand',
+                reason: 'vampire_fledgling_vampire_pod',
+                random,
+                now: timestamp,
+            }),
         };
     },
 });

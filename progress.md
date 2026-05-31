@@ -6562,3 +6562,29 @@
   - `npx eslint src/games/dicethrone/domain/statusEvents.ts src/games/dicethrone/domain/flowHooks.ts src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：0 errors，`flowHooks.ts` 保留既有 warnings。
   - `npx tsc --noEmit --pretty false`：通过。
   - `npm run i18n:check`：通过，仅保留既有 3 条 warning。
+
+## 2026-05-30 22:46
+
+- 按完整单卡裁图完成两名新英雄专属手牌 L1 录入：
+  - 临时裁图已落在 `temp/dicethrone-intake/zhanshujia/hand-cards/` 与 `temp/dicethrone-intake/cursed_pirate/hand-cards/`，并生成 contact sheet。
+  - 战术家录入 slot 17-31 共 15 张专属牌，咒缚海盗录入 slot 17-32 共 16 张专属牌。
+  - 同步 `src/games/dicethrone/heroes/zhanshujia/cards.ts`、`src/games/dicethrone/heroes/cursed_pirate/cards.ts` 与中英文 i18n。
+  - 修正新英雄通用牌索引：战术家 `card-unexpected` 为 slot 32，咒缚海盗 `card-unexpected` 为 slot 33，不再沿用树精/忍者 slot 37。
+- 同步文档：
+  - `src/games/dicethrone/rule/战术家真相源表.md`
+  - `src/games/dicethrone/rule/战术家卡牌录入核对.md`
+  - `src/games/dicethrone/rule/咒缚海盗真相源表.md`
+  - `src/games/dicethrone/rule/咒缚海盗卡牌录入核对.md`
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-intake-progress-2026-05-30.md`
+  - `task_plan.md`
+- 仍未收口：
+  - 战术家复合升级替换、被攻击后响应牌、目标选择牌等专属手牌 L2。
+  - 咒缚海盗选择类、对手支付、手牌查看/弃牌、翻面条件、至多三名目标等专属手牌 L2。
+  - 对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
+- 验证结果：
+  - JSON parse `public/locales/{zh-CN,en}/game-dicethrone.json`：通过。
+  - `npx tsc --noEmit --pretty false`：通过。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts`：1 file / 6 tests passed。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`：2 files / 28 tests passed。
+  - `npm run i18n:check`：通过，仅保留既有 3 条 warning。
+  - `npx eslint src/games/dicethrone/heroes/zhanshujia/cards.ts src/games/dicethrone/heroes/cursed_pirate/cards.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts`：0 errors。

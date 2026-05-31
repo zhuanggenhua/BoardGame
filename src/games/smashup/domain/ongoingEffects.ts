@@ -1981,12 +1981,14 @@ function selectGlobalTriggerSourceLocation(
             && timing !== 'onTurnEnd'
         ) || isTurnBoundarySourceControllerEligible(entry, timing, candidate, playerId)
     ) && (!isEligible || isEligible(candidate));
-    const located = preferredUids.length > 0
+    const preferredLocated = preferredUids.length > 0
         ? locatedSources.find(candidate =>
             preferredUids.includes(candidate.uid ?? '')
             && isCandidateEligible(candidate),
         )
-        : selectSpecificSourceLocation(locatedSources, ctx, isCandidateEligible);
+        : undefined;
+    const located = preferredLocated
+        ?? selectSpecificSourceLocation(locatedSources, ctx, isCandidateEligible);
     if (located) return located;
     if (entry.playerContext !== 'sourceController' && entry.playerContext !== 'sourceHostController') {
         return {};
