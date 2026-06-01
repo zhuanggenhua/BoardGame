@@ -148,7 +148,7 @@ ssh admin@8.148.71.102 'docker inspect boardgame-web --format ''{{ index .Config
 - 生产当前 revision 已覆盖本次 SmashUp 修复提交 `c5f583b0`。
 - 当前证据可以证明“代码已 push + 镜像已构建 + 生产已部署到包含该修复的 revision”，不再停留在“仅本地已修”。
 
-### 生产反馈池复核
+### 生产反馈池复核（回写前）
 
 再次执行：
 
@@ -172,6 +172,40 @@ Get-Content -Raw temp/query-nightly-feedback-20260512.js | ssh admin@8.148.71.10
   - **生产已部署到包含修复的 revision**
   - **反馈状态仍未回写**
 
+### 正式状态回写与最终复核
+
+正式回写路径：
+
+- 使用文档中的正式接口：`PATCH /admin/feedback/:id/status`
+- 不走 Mongo 直写
+- 生产环境通过现有 `admin` 用户与容器内 `JWT_SECRET` 签发 Bearer token 后调用接口
+
+回写目标：
+
+- `6a1b101c5620a1b85df669f1`
+- `6a1b0ffd5620a1b85df669ef`
+
+回写结果：
+
+- 正式接口返回 `200`
+- 返回体中的反馈 `status` 已更新为 `resolved`
+
+最终再次执行：
+
+```powershell
+Get-Content -Raw temp/query-nightly-feedback-20260512.js | ssh admin@8.148.71.102 "docker exec -i boardgame-mongodb mongosh boardgame --quiet"
+```
+
+结果：
+
+- `count: 0`
+- `docs: []`
+
+说明：
+
+- 当前生产库中，用户反馈视角的 `open/in_progress` 已清零
+- 这两条 SmashUp 反馈已经通过正式 admin API 完成状态回写
+
 ## 结论
 
 - 当前生产 open 的 2 条 SmashUp 反馈，已经在本地按共享根因修到同一条底层合同：
@@ -181,13 +215,13 @@ Get-Content -Raw temp/query-nightly-feedback-20260512.js | ssh admin@8.148.71.10
 - 本轮可以声明：
   - **这 2 条反馈的共享代码缺口，本地已修**
   - **“为什么审计没查出来”这一点，已补成通用审计维度 D55**
+  - **修复已 push、已部署、已通过正式接口回写状态**
+  - **当前生产用户反馈池 `open/in_progress` 为 0**
 
 ## 当前边界
 
-- 本文档**不能**声明：
-  - 生产反馈状态已关闭
+- 本文档**仍不能**声明：
   - SmashUp 所有 afterScoring / scoreBases shared contract 已经全面审完
 - 当前仍需单独声明的事实：
   - 这里只证明了当前 open 反馈指向的 `scoreBases -> ACTIVATE_SPECIAL` 共享合同
-  - 当前已补到“代码已上线”的生产证据，但**未补到反馈状态回写**
   - 其他 `responseWindow / reactionSession / AI gate` 兄弟链路，仍应继续按 D55 口径扩审，而不能借本条反馈外推“100 游戏全部收口”
