@@ -7,10 +7,17 @@
 - 资源链已经闭合：上传前 `assets:check` 发现 24 个本轮 DiceThrone 新资源缺远端，随后 `assets:upload` 成功上传；两名英雄的玩家板、提示板、手牌图、骰子、状态图集以及 Common 背景/头像远端 HEAD 均为 200。
 - 真实入口双玩家 E2E 已通过：战术家和咒缚海盗可在真实在线选角入口被两名玩家选择，并能进入对局；截图证明双方玩家板、提示板、HUD、骰区与代表手牌 atlas 可见。
 - 历史上确实有过整份 `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 在同一轮托管 isolated runtime 下 `26 passed (11.3m)` 的记录，但这已经不能当当前结论复述。最新整文件回归没有形成“当前全绿”证据：最新一次整跑在最前两条开局/选角用例就被 online room / frontend runtime 不稳定拦住，现象包括 `page.goto ... waitUntil "commit" timeout`、`chrome-error://chromewebdata/`、`localStorage/sessionStorage Access is denied`，随后 26 条全部 `skipped`，并伴随前端服务异常退出 `code=3221226505`。
+- 本轮已新增 `scripts/infra/diagnose-dicethrone-room-entry.ts`，把环境反馈环收窄到 `create -> join -> seed -> goto room -> wait character selection`。它已经证明：当前 isolated single-worker DiceThrone 诊断并不只是 `Board.tsx` 首取慢，而是会在真正进房前随机撞启动期 OOM。
+- 上述最小探针在两种 runtime 下都已打到可复述的环境证据：
+  - `bundle` runtime：`vite-with-logging` 前端进程异常退出，同时 `bundle-runner e2e-game-single` 在启动期 `Fatal JavaScript out of memory`。
+  - `tsx` runtime：Vite 与游戏服务分别出现 `Zone Allocation failed - process out of memory`。
+  - 因此当前不能再把 DiceThrone 验证噪音单纯表述成“房间冷启动慢”或“只是一条用例 flake”。
+- `waitForFrontendAssets(hostPage, 30000)` 在 DiceThrone setup 里现在只能算 best-effort 诊断，不能当硬门禁：即使 runtime manager 已把 `/__ready`、`/@vite/client`、`/src/main.tsx` 纳入健康检查，Playwright `page.request.get('/@vite/client')` 仍可能单独挂死 30 秒；这能证明环境不稳，但不能直接推出后续业务链一定失败。
 - 新增的 `占得上风 / 起锚` 对象级真实入口都已单跑通过：前者通过循环重置最小主阶段手牌场景直到命中勋章分支，确认战术优势从 `0 -> 4`；后者同样命中骷髅分支，确认对目标真实写入 `休战 1`。这两条不再适合继续留在“独立对象待补”里。
 - 当前能确认的新通过证据是三条 `咒缚` 对象链都已单跑收口：`咒缚` 维持阶段自伤、对手未发起攻击时施加火药桶、火药桶维持阶段爆炸链均已通过真实入口定点 E2E。
 - `火药桶` upkeep 代表链当前不再依赖 `primeHarnessRandomQueue(...)`。新的结论是：online 服的 upkeep bonus die 不能稳定受前端 harness 随机队列控制，所以用例改成真实入口重置场景重试，直到命中 `1-2` 爆炸分支。
 - 当前稳定红已从旧 `紧缚 / 火药桶` 切换成旧防御链：`真实防御阶段入口应展示并结算反制措施与你还嫩了点` 最新单跑仍停在 `defensiveRoll`，`pendingAttack` 未清，因此不能把 2026-05-31 的那次通过继续当作“当前已绿”。
+- 对 `反制措施 / 你还嫩了点` 的静态复核结果目前没有推翻“测试命令玩家错误是首个真实修点”这一判断：`rules.ts` 的 `canAdvancePhase(defensiveRoll)`、`flowHooks.ts` 的 `defensiveRoll` 退出逻辑，以及现有 mechanics tests 都表明 `setupDefenseEvidenceScenario(...)` 的 direct `defensiveRoll + pendingAttack + rollConfirmed` 注入结构在合同上仍是自洽的；在新的运行时证据出现前，不能静态判定它本身就是下一层根因。
 - `run-e2e-single.mjs` 当前必须串行跑。同一轮并行定点 run 会稳定撞 `.tmp/e2e-preflight-cache.json` 的 `EBUSY`，这属于验证基础设施边界，不应误记成业务对象红灯。
 - E2E 截图前等待图片真实加载完成是必要门禁。本轮上传前曾暴露“DOM 存在但图片未从远端加载完成”的空面板风险；`waitForBoardImageReady` 将证据从“元素出现”提升到“图片已加载且可见”。
 - 咒缚海盗当前唯一接入的玩家板素材是咒缚面；`HeroState.playerBoardFace='cursed'` 作为最小运行时合同后，海盗的一生咒缚面治疗 3 已有 L2 证据，普通面获得 1 诅咒金币分支也保留测试。
