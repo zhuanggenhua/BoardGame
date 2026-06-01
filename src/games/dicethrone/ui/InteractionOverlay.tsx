@@ -131,7 +131,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     statusIconAtlas,
     locale,
 }) => {
-    const { t } = useTranslation('game-dicethrone');
+    const { t, i18n } = useTranslation('game-dicethrone');
     const interactionType = interaction.type;
     const selectedItems = interaction.selected ?? [];
     const targetPlayerIds = interaction.targetPlayerIds ?? Object.keys(players);
@@ -460,10 +460,15 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                 {isHandCardSelection && (
                     <div className="flex flex-wrap gap-3 justify-center">
                         {(players[interaction.playerId]?.hand ?? []).map(card => {
-                            const cardName = card.i18n?.[locale ?? 'zh-CN']?.name
+                            const rawCardName = card.i18n?.[locale ?? 'zh-CN']?.name
                                 ?? card.i18n?.['zh-CN']?.name
                                 ?? card.name
                                 ?? card.id;
+                            const cardName = typeof rawCardName === 'string'
+                                && rawCardName.startsWith('cards.')
+                                && i18n.exists(rawCardName, { ns: 'game-dicethrone' })
+                                ? t(rawCardName)
+                                : rawCardName;
                             const isSelected = selectedItems.includes(card.id);
                             return (
                                 <button
