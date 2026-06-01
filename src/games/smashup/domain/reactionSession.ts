@@ -8,15 +8,13 @@ import {
     upsertResolutionFrame,
 } from '../../../engine/systems/resolutionStack';
 import { getCardDef, getBaseDef } from '../data/cards';
-import { getScoringEligibleBaseIndices } from './ongoingModifiers';
-import { validate } from './commands';
+import { validate, getManualSpecialScoringBaseIndices } from './commands';
 import { execute } from './reducer';
 import { reduce } from './reduce';
 import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
 import { executeTriggerProgramExecutor } from './triggerExecutors';
 import { partitionMandatoryReactionOrderingComponents } from './reactionOrdering';
 import {
-    getCurrentScoringBaseIndex,
     getDeferredReplacementBaseDefIdFromBaseDeckReorderEvents,
     replaceDeferredPostScoringReplacementBase,
 } from './scoringSession';
@@ -498,20 +496,7 @@ function buildPlayableCardOptions(
     const player = state.core.players[playerId];
     if (!player) return [];
 
-    const scoringEligibleBaseIndices = getScoringEligibleBaseIndices(state.core);
-    const eligibleBaseIndices = session.responseWindowType === 'afterScoring'
-        ? (
-            (() => {
-                const currentScoringBaseIndex = getCurrentScoringBaseIndex(state);
-                if (currentScoringBaseIndex === undefined) {
-                    return [];
-                }
-                return scoringEligibleBaseIndices.includes(currentScoringBaseIndex)
-                    ? [currentScoringBaseIndex]
-                    : [];
-            })()
-        )
-        : scoringEligibleBaseIndices;
+    const eligibleBaseIndices = getManualSpecialScoringBaseIndices(state);
     const probeState = buildProbeState(state, session, playerId, now);
     const options: ReactionOption[] = [];
 

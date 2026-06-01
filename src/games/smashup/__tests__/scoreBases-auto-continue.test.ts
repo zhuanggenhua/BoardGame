@@ -1709,6 +1709,108 @@ describe('scoreBases 阶段自动推进', () => {
         expect(options.filter((option) => option.value.kind === 'pass')).toHaveLength(1);
     });
 
+    it('afterScoring 当前结算基地即使已不在 eligible 列表，live reaction 仍应暴露其 special', () => {
+        registerGameAiRuntime(smashUpAiRuntime);
+        initAllAbilities();
+
+        const initialState = {
+            core: makeMinimalCore({
+                currentPlayerIndex: 1,
+                players: {
+                    '0': {
+                        id: '0',
+                        factionIds: ['robot'],
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                    '1': {
+                        id: '1',
+                        factionIds: ['wizard'],
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                },
+                bases: [
+                    makeBase('base_wizard_academy', [{
+                        uid: 'pink-1',
+                        defId: 'mega_troopers_pink_trooper',
+                        owner: '1',
+                        controller: '1',
+                        basePower: 3,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        talentUsed: false,
+                        attachedActions: [],
+                    }]),
+                    makeBase('base_pirate_cove', [makeMinion('0', 'robot_hoverbot', 3)]),
+                ],
+                scoringEligibleBaseIndices: [1],
+            }),
+            sys: {
+                phase: 'scoreBases',
+                interaction: { current: undefined, queue: [] },
+                responseWindow: {
+                    current: {
+                        id: 'reaction-window-current-base-not-eligible',
+                        windowType: 'afterScoring',
+                        sourceId: 'smashup_reaction_choose',
+                        responderQueue: ['0', '1'],
+                        currentResponderIndex: 1,
+                        passedPlayers: [],
+                    },
+                    history: [],
+                },
+                eventStream: { nextId: 1 },
+            } as any,
+        } as MatchState<SmashUpCore>;
+        const baseRef = createScoringBaseRef(initialState.core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造 current-base-not-eligible reaction 的 scoring base ref');
+        }
+        const scoringState = setScoringSession(initialState, {
+            ...createScoringSession(initialState.core, [0, 1]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-response-window',
+        });
+        const state = startSmashUpReactionSession(scoringState, {
+            frameId: 'current-base-not-eligible-reaction',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '1',
+            currentPlayerId: '1',
+            consecutivePasses: 0,
+            responseWindowType: 'afterScoring',
+        });
+
+        const session = getSmashUpReactionSession(state);
+        expect(session).toBeDefined();
+
+        const options = buildReactionOptions(state, session!, 7);
+        const specialOptions = options.filter((option) =>
+            option.value.kind === 'activate_special'
+            && option.value.minionUid === 'pink-1',
+        );
+
+        expect(specialOptions).toHaveLength(1);
+        expect(specialOptions[0]?.value.baseIndex).toBe(0);
+        expect(
+            specialOptions.some((option) => option.value.baseIndex === 1),
+        ).toBe(false);
+    });
+
     it('wizards_arcane_protector 已进场后，afterScoring live 反应不应继续暴露其 special', async () => {
         registerArcaneProtectorSpecialForTests();
 
@@ -1808,6 +1910,117 @@ describe('scoreBases 阶段自动推进', () => {
 
         expect(resolution?.playerId).toBe('1');
         expect(resolution?.action.kind).toBe('response-pass');
+    });
+
+    it('afterScoring live session 丢失镜像 responseWindow 后，AI 仍不应误暴露 advance-phase', () => {
+        registerGameAiRuntime(smashUpAiRuntime);
+        initAllAbilities();
+
+        const initialState = {
+            core: makeMinimalCore({
+                currentPlayerIndex: 1,
+                players: {
+                    '0': {
+                        id: '0',
+                        factionIds: ['robot'],
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                    '1': {
+                        id: '1',
+                        factionIds: ['wizard'],
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                },
+                bases: [
+                    makeBase('base_wizard_academy', [{
+                        uid: 'pink-1',
+                        defId: 'mega_troopers_pink_trooper',
+                        owner: '1',
+                        controller: '1',
+                        basePower: 3,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        talentUsed: false,
+                        attachedActions: [],
+                    }]),
+                    makeBase('base_pirate_cove', [makeMinion('0', 'robot_hoverbot', 3)]),
+                ],
+                scoringEligibleBaseIndices: [1],
+            }),
+            sys: {
+                phase: 'scoreBases',
+                interaction: { current: undefined, queue: [] },
+                responseWindow: {
+                    current: {
+                        id: 'reaction-window-missing-mirror',
+                        windowType: 'afterScoring',
+                        sourceId: 'smashup_reaction_choose',
+                        responderQueue: ['0', '1'],
+                        currentResponderIndex: 1,
+                        passedPlayers: [],
+                    },
+                    history: [],
+                },
+                eventStream: { nextId: 1 },
+            } as any,
+        } as MatchState<SmashUpCore>;
+        const baseRef = createScoringBaseRef(initialState.core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造 missing-mirror reaction 的 scoring base ref');
+        }
+        const scoringState = setScoringSession(initialState, {
+            ...createScoringSession(initialState.core, [0, 1]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-response-window',
+        });
+        const sessionState = startSmashUpReactionSession(scoringState, {
+            frameId: 'missing-mirror-reaction',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '1',
+            currentPlayerId: '1',
+            consecutivePasses: 0,
+            responseWindowType: 'afterScoring',
+        });
+        const state = {
+            ...sessionState,
+            sys: {
+                ...sessionState.sys,
+                interaction: { current: undefined, queue: [] },
+                responseWindow: { current: undefined, history: [] },
+            },
+        } as MatchState<SmashUpCore>;
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '1',
+            state: state as any,
+        });
+
+        expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(false);
+        const specialAction = legalActions.find((action) =>
+            action.kind === 'activate-special'
+            && (action.metadata as { minionUid?: string }).minionUid === 'pink-1',
+        );
+        expect(specialAction).toBeDefined();
+        expect((specialAction?.metadata as { baseIndex?: number; scoringBase?: boolean })).toMatchObject({
+            baseIndex: 0,
+            scoringBase: true,
+        });
     });
 
     it('AI 在计分阶段仅存在 playCards-only 泰坦 special 时应暴露 advance-phase', () => {

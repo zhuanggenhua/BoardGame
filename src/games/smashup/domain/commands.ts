@@ -93,6 +93,49 @@ function getAfterScoringSourceBaseIndex(state: MatchState<SmashUpCore>): number 
     return typeof reactionWindow.sourceBaseIndex === 'number' ? reactionWindow.sourceBaseIndex : undefined;
 }
 
+export function getManualSpecialScoringBaseIndices(
+    state: MatchState<SmashUpCore>,
+): number[] {
+    if (state.sys.phase !== 'scoreBases') {
+        return [];
+    }
+
+    const afterScoringSourceBaseIndex = getAfterScoringSourceBaseIndex(state);
+    if (afterScoringSourceBaseIndex !== undefined) {
+        return [afterScoringSourceBaseIndex];
+    }
+
+    return getScoringEligibleBaseIndices(state.core);
+}
+
+function validateManualSpecialScoringBase(
+    state: MatchState<SmashUpCore>,
+    baseIndex: number,
+): ValidationResult | undefined {
+    if (state.sys.phase !== 'scoreBases') {
+        return undefined;
+    }
+
+    const afterScoringSourceBaseIndex = getAfterScoringSourceBaseIndex(state);
+    if (afterScoringSourceBaseIndex !== undefined) {
+        if (baseIndex !== afterScoringSourceBaseIndex) {
+            return { valid: false, error: 'afterScoring 只能选择当前正在结算的基地' };
+        }
+        return undefined;
+    }
+
+    const eligibleIndices = getManualSpecialScoringBaseIndices(state);
+    if (!eligibleIndices.includes(baseIndex)) {
+        return { valid: false, error: '只能在达到临界点的基地上激活计分前特殊能力' };
+    }
+
+    if (hasBlockingLegacyResponseWindow(state)) {
+        return { valid: false, error: 'Me First! 响应窗口仍在进行中' };
+    }
+
+    return undefined;
+}
+
 function resolveTitanAbilityLabel(kind: TitanAbilityKind): string {
     switch (kind) {
         case 'special':
@@ -979,17 +1022,9 @@ export function validate(
                 if (!titanValidation.valid) {
                     return titanValidation;
                 }
-                if (phase === 'scoreBases') {
-                    if (
-                        afterScoringSourceBaseIndex !== undefined
-                        && spBaseIndex !== afterScoringSourceBaseIndex
-                    ) {
-                        return { valid: false, error: 'afterScoring 只能选择当前正在结算的基地' };
-                    }
-                    const eligibleIndices = getScoringEligibleBaseIndices(core);
-                    if (!eligibleIndices.includes(spBaseIndex)) {
-                        return { valid: false, error: '鍙兘鍦ㄨ揪鍒颁复鐣岀偣鐨勫熀鍦颁笂婵€娲昏鍒嗗墠鐗规畩鑳藉姏' };
-                    }
+                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex);
+                if (scoringBaseValidation) {
+                    return scoringBaseValidation;
                 }
                 return { valid: true };
             }
@@ -999,20 +1034,9 @@ export function validate(
             if (spMinion.controller !== command.playerId) {
                 return { valid: false, error: '只能激活自己控制的随从的特殊能力' };
             }
-            if (phase === 'scoreBases') {
-                if (
-                    afterScoringSourceBaseIndex !== undefined
-                    && spBaseIndex !== afterScoringSourceBaseIndex
-                ) {
-                    return { valid: false, error: 'afterScoring 只能选择当前正在结算的基地' };
-                }
-                const eligibleIndices = getScoringEligibleBaseIndices(core);
-                if (!eligibleIndices.includes(spBaseIndex)) {
-                    return { valid: false, error: '只能在达到临界点的基地上激活计分前特殊能力' };
-                }
-                if (hasBlockingLegacyResponseWindow(state)) {
-                    return { valid: false, error: 'Me First! 响应窗口仍在进行中' };
-                }
+            const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex);
+            if (scoringBaseValidation) {
+                return scoringBaseValidation;
             }
             const specialAvailability = getManualSpecialAvailability(spMinion.defId, {
                 zone: 'board',

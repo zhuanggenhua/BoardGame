@@ -19290,3 +19290,49 @@
   - 这格只证明基础版 `Cub Scout` 的 direct `onMinionMoved -> MINION_DESTROYED` 现在会写对 `destroyerId`。
   - 不外推 `cub_scout_pod`、`High Ground`、`Superiority`、`Bear Necessities`、其它 `onMinionMoved` destroy producer，或整个 Bear Cavalry family 都已收口。
   - 下一格若继续沿主线推进，应回到仍未证明的 `same-location same-def first-match contamination` inventory，而不是复读这轮刚补掉的 `Cub Scout.destroyerId`。
+
+## 2026-06-01 `scoreBases -> ACTIVATE_SPECIAL` shared consumer seam
+
+- 审计范围：
+  - [src/games/smashup/domain/commands.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/domain/commands.ts)
+  - [src/games/smashup/domain/reactionSession.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/domain/reactionSession.ts)
+  - [src/games/smashup/ai.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/ai.ts)
+  - [src/games/smashup/__tests__/commandsValidation.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/commandsValidation.test.ts)
+  - [src/games/smashup/__tests__/scoreBases-auto-continue.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/scoreBases-auto-continue.test.ts)
+  - [src/games/smashup/__tests__/afterscoring-response-window-execution.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/afterscoring-response-window-execution.test.ts)
+- 权威来源：
+  - 生产库 2026-06-01 当前 open 用户反馈只剩 2 条，且都指向 SmashUp 计分窗口 special：
+    - `6a1b101c5620a1b85df669f1`：`所有的特殊能力，计分时候为啥开不了`
+    - `6a1b0ffd5620a1b85df669ef`：`特殊能力为什么用不了？`
+  - 这不是对象级个例，也不是 `Return to the Sea / We Are The Champions` 单卡 executor 问题，而是 `scoreBases -> ACTIVATE_SPECIAL` 共享合同在多消费者之间不一致。
+- 逐效果原子结论：
+  - 旧结论不足点不在“validator 没有定义”，而在 **只打到了 validator**：
+    - `commands.validate(ACTIVATE_SPECIAL)` 已能表达 `afterScoring 只能选当前正在结算的基地`
+    - 但 `reactionSession.buildReactionOptions()` 和 `ai.hasPendingScoreBasesSpecialActivation()/buildSpecialActions()` 仍直接读 `getScoringEligibleBaseIndices(state.core)`
+  - 因此旧审计会出现假绿：
+    - 命令层已经合法，live reaction 仍没有 `activate_special`
+    - validator 已放行，AI / auto-advance 仍可能误给 `advance-phase`
+  - 本轮最小修复不是继续给单卡加补丁，而是抽共享 helper：
+    - `getManualSpecialScoringBaseIndices(state)`
+    - `afterScoring` 时只认 `currentScoringBase`
+    - 其余计分窗口才认 `getScoringEligibleBaseIndices(core)`
+  - 然后把 3 层消费者统一到同一份真相：
+    - `commands.validate(...)`
+    - `reactionSession.buildPlayableCardOptions()/buildReactionOptions()`
+    - `ai.hasPendingScoreBasesSpecialActivation()/buildSpecialActions()`
+  - 新增 focused gates：
+    - `afterScoring 响应窗口仍应放行当前结算基地上的计分后 special，即使该基地已不在达标列表`
+    - `afterScoring 当前结算基地即使已不在 eligible 列表，live reaction 仍应暴露其 special`
+    - `afterScoring live session 丢失镜像 responseWindow 后，AI 仍不应误暴露 advance-phase`
+  - 因此这轮实际闭合的是 **共享合同多消费者一致性**，不是把 SmashUp 全部 afterScoring family 一起宣告收口。
+- 命中的审计维度：
+  - D5 / D50 / D51
+  - 2026-06-01 新增 D55：共享合同多消费者一致性
+- 已验证测试/证据：
+  - `Get-Content -Raw temp/query-nightly-feedback-20260512.js | ssh admin@8.148.71.102 "docker exec -i boardgame-mongodb mongosh boardgame --quiet"` -> `count: 2`，当前 open 仍只剩上述两条 SmashUp 用户反馈
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/scoreBases-auto-continue.test.ts src/games/smashup/__tests__/commandsValidation.test.ts src/games/smashup/__tests__/afterscoring-response-window-execution.test.ts --configLoader native` -> 命令通过
+  - `npm run typecheck` -> 通过
+- 未覆盖风险：
+  - 这格只证明当前 open 反馈指向的 `scoreBases -> ACTIVATE_SPECIAL` 共享合同，已经在 validator / reaction / AI 三层重新对齐。
+  - 不外推所有 `responseWindow`、所有 `smashup_reaction_choose`、所有 `scoreBases` 兄弟 gate、或所有游戏的同类多消费者合同都已自动闭合。
+  - 后续若继续沿 shared seam 扩审，应优先 grep “同一 helper 被 validator 修过，但 UI/reaction/AI/auto-advance 仍旁路读取旧字段”的家族，而不是把这次 2 条 open 反馈误报成 SmashUp 全量收口。

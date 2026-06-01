@@ -37,7 +37,7 @@ import {
     normalizeFactionSelectionId,
     SMASHUP_FACTION_IDS,
 } from './domain/ids';
-import { validate } from './domain/commands';
+import { getManualSpecialScoringBaseIndices, validate } from './domain/commands';
 import { getCardDefActivatableAbilities, hasCardActivatableAbility } from './domain/activationMetadata';
 import { resolveLiveSmashUpReactionChoice } from './domain/reactionSession';
 import { getSmashUpReactionWindowPresentation, hasBlockingLegacyResponseWindow } from './domain/reactionWindowState';
@@ -234,7 +234,7 @@ const createCommand = (playerId: PlayerId, type: string, payload: unknown = {}):
 const hasPendingScoreBasesSpecialActivation = (state: SmashUpState, playerId: PlayerId): boolean => {
     if (state.sys.phase !== 'scoreBases') return false;
 
-    const eligibleIndices = getScoringEligibleBaseIndices(state.core);
+    const eligibleIndices = getManualSpecialScoringBaseIndices(state);
     for (const baseIndex of eligibleIndices) {
         const base = state.core.bases[baseIndex];
         if (!base) continue;
@@ -1588,6 +1588,7 @@ const buildSpecialActions = (
     const actions: AiLegalAction[] = [];
     const includeMinions = options?.includeMinions ?? true;
     const includeTitans = options?.includeTitans ?? true;
+    const manualScoringBaseIndices = new Set(getManualSpecialScoringBaseIndices(state));
 
     state.core.bases.forEach((base, baseIndex) => {
         if (includeMinions) {
@@ -1605,7 +1606,7 @@ const buildSpecialActions = (
                         baseIndex,
                         minionUid: minion.uid,
                         defId: minion.defId,
-                        scoringBase: getScoringEligibleBaseIndices(state.core).includes(baseIndex),
+                        scoringBase: manualScoringBaseIndices.has(baseIndex),
                     },
                 });
             }
@@ -1626,7 +1627,7 @@ const buildSpecialActions = (
                         titanUid: titan.uid,
                         defId: titan.defId,
                         sourceType: 'titan',
-                        scoringBase: getScoringEligibleBaseIndices(state.core).includes(baseIndex),
+                        scoringBase: manualScoringBaseIndices.has(baseIndex),
                     },
                 });
             }

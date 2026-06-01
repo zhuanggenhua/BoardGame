@@ -465,6 +465,81 @@ describe('SmashUp command validation', () => {
         });
     });
 
+    it('afterScoring 响应窗口仍应放行当前结算基地上的计分后 special，即使该基地已不在达标列表', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [makeMinion('pink-1', 'mega_troopers_pink_trooper', '0', 3)],
+                }),
+                makeBase({ defId: 'base_b' }),
+            ],
+            scoringEligibleBaseIndices: [1],
+            currentPlayerIndex: 0,
+        });
+        const ms = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-after:0:test',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'afterScoring',
+        });
+
+        const result = validate(ms, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'pink-1', baseIndex: 0 },
+        } as any);
+
+        expect(result).toEqual({ valid: true });
+    });
+
+    it('afterScoring 响应窗口中的计分后 special 不能改指向其他基地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'base_a' }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [makeMinion('pink-1', 'mega_troopers_pink_trooper', '0', 3)],
+                }),
+            ],
+            scoringEligibleBaseIndices: [0, 1],
+            currentPlayerIndex: 0,
+        });
+        const ms = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-after:0:test',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'afterScoring',
+        });
+
+        const result = validate(ms, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'pink-1', baseIndex: 1 },
+        } as any);
+
+        expect(result).toEqual({
+            valid: false,
+            error: 'afterScoring 只能选择当前正在结算的基地',
+        });
+    });
+
     it('ignores orphaned responseWindow state without a frame-backed reaction session', () => {
         registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
         const core = makeState({
