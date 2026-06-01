@@ -102,6 +102,26 @@
 - 是否需要降级旧 summary：
 - 若链路涉及 reaction / deferred / finalize / afterScoring / beforeScoring：必须补 `finalState / triggerQueue / reaction session` 或等价权威状态证据。
 
+### 6.1 生产反馈收口证据分层（生产反馈默认强制）
+
+若本文档对应的是**线上/生产反馈**，则必须把以下状态分层写清，禁止混成一句“已修好”：
+
+1. `本地已修`
+   - 代码/测试/evidence 已覆盖本地根因。
+2. `已推送`
+   - 对应 commit 已进入远端分支，给出 commit SHA / push 证据。
+3. `已部署`
+   - 生产容器或生产 bundle 已跑到目标 revision，给出 deployed revision / health check / 访问探活证据。
+4. `已回写状态`
+   - 生产 `feedbacks` 文档或管理后台状态已从 `open/in_progress` 改为 `resolved/closed`，给出回写前后证据。
+
+最低要求：
+
+- 若只有 `本地已修`，结论最多写 `本地验收完成`，不得写 `线上已收口`。
+- 若已部署但未回写状态，必须明确写 `代码已上线，但反馈状态仍未回写`。
+- 若回写状态依赖用户授权或人工操作，必须在“当前边界”里单列，禁止把缺少回写证据的条目写成已闭环。
+- 对外汇报时，至少给出：目标 commit / 生产 revision / health check / 当前反馈状态 这四项中的实际证据。
+
 ## 7. 禁止假阳性检查
 
 - 是否误用“选择页 / 横幅 / 静态展示 E2E”充当玩法收口：

@@ -109,6 +109,69 @@ npm run typecheck
   - 无 error
   - 仅保留这些文件中既有 `no-explicit-any` warning
 
+## 2026-06-02 线上部署与实况复核
+
+### 推送与镜像
+
+- 已推送 `main`
+  - SmashUp 共享修复提交：`c5f583b0`
+  - 后续为清 `pre-push i18n` blocker 的最小提交：`4095a7b4`
+- GitHub Actions
+  - workflow：`Build & Push Docker Images`
+  - run：`399`
+  - `head_sha`：`4095a7b4c8b90239e8b9bbb292d09bb3f3a72d16`
+  - 结论：`success`
+
+### 生产部署
+
+执行：
+
+```powershell
+ssh admin@8.148.71.102 "cd /home/admin/BoardGame && bash scripts/deploy/deploy-image.sh update"
+```
+
+部署后复核：
+
+```powershell
+ssh admin@8.148.71.102 'docker inspect boardgame-web --format ''{{ index .Config.Labels "org.opencontainers.image.revision" }}''; docker inspect boardgame-game-server --format ''{{ index .Config.Labels "org.opencontainers.image.revision" }}''; curl -sS http://127.0.0.1/health; printf ''\n''; curl -I -sS http://127.0.0.1/ | head -n 1'
+```
+
+结果：
+
+- `boardgame-web` revision：`4095a7b4c8b90239e8b9bbb292d09bb3f3a72d16`
+- `boardgame-game-server` revision：`4095a7b4c8b90239e8b9bbb292d09bb3f3a72d16`
+- `GET /health`：`{"status":"ok", ...}`
+- 首页探活：`HTTP/1.1 200 OK`
+
+说明：
+
+- 生产当前 revision 已覆盖本次 SmashUp 修复提交 `c5f583b0`。
+- 当前证据可以证明“代码已 push + 镜像已构建 + 生产已部署到包含该修复的 revision”，不再停留在“仅本地已修”。
+
+### 生产反馈池复核
+
+再次执行：
+
+```powershell
+Get-Content -Raw temp/query-nightly-feedback-20260512.js | ssh admin@8.148.71.102 "docker exec -i boardgame-mongodb mongosh boardgame --quiet"
+```
+
+结果：
+
+- `count: 2`
+- 当前 `open/in_progress` 仍只剩：
+  - `6a1b101c5620a1b85df669f1`：`所有的特殊能力，计分时候为啥开不了`
+  - `6a1b0ffd5620a1b85df669ef`：`特殊能力为什么用不了？`
+
+说明：
+
+- 这两条反馈当前仍是 **状态未回写**，不是“线上还跑在旧代码”。
+- 本文档到这里的真实结论是：
+  - **共享代码缺口已修**
+  - **修复已 push**
+  - **生产已部署到包含修复的 revision**
+  - **反馈状态仍未回写**
+
 ## 结论
 
 - 当前生产 open 的 2 条 SmashUp 反馈，已经在本地按共享根因修到同一条底层合同：
@@ -122,9 +185,9 @@ npm run typecheck
 ## 当前边界
 
 - 本文档**不能**声明：
-  - 线上已部署
   - 生产反馈状态已关闭
   - SmashUp 所有 afterScoring / scoreBases shared contract 已经全面审完
 - 当前仍需单独声明的事实：
   - 这里只证明了当前 open 反馈指向的 `scoreBases -> ACTIVATE_SPECIAL` 共享合同
+  - 当前已补到“代码已上线”的生产证据，但**未补到反馈状态回写**
   - 其他 `responseWindow / reactionSession / AI gate` 兄弟链路，仍应继续按 D55 口径扩审，而不能借本条反馈外推“100 游戏全部收口”
