@@ -17,6 +17,9 @@ import { TREANT_NINJA_COMMON_ATLAS_INDEX } from '../domain/commonCards';
 import { ZHANSHUJIA_CARDS } from '../heroes/zhanshujia/cards';
 import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
 import { _testExports as criticalImages } from '../criticalImageResolver';
+import { getAbilitySlotIdForCharacter } from '../ui/abilitySlotMapping';
+import { HERO_CARDS_MAP, getSlotAbilityId } from '../ui/abilityOverlayHelpers';
+import { getPlayerBoardLayoutVersion } from '../ui/abilitySlotLayout';
 
 const assetRoot = (...parts: string[]) => join(
     process.cwd(),
@@ -143,6 +146,21 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
             atlasId: DICETHRONE_CARD_ATLAS_IDS.CURSED_PIRATE,
             index: 33,
         });
+    });
+
+    it('玩家板技能槽映射覆盖两名新英雄，保证面板能力可作为真实 UI 入口', () => {
+        expect(getPlayerBoardLayoutVersion('zhanshujia')).toBe('v2');
+        expect(getPlayerBoardLayoutVersion('cursed_pirate')).toBe('v2');
+        expect(HERO_CARDS_MAP.zhanshujia).toBe(ZHANSHUJIA_CARDS);
+        expect(HERO_CARDS_MAP.cursed_pirate).toBe(CURSED_PIRATE_CARDS);
+
+        expect(getSlotAbilityId('zhanshujia', 'fist')).toBe('sabre-thrust');
+        expect(getSlotAbilityId('zhanshujia', 'meditate')).toBe('countermeasures');
+        expect(getSlotAbilityId('cursed_pirate', 'lotus')).toBe('deep-sea-dive');
+        expect(getSlotAbilityId('cursed_pirate', 'meditate')).toBe('still-wet-behind-ears');
+
+        expect(getAbilitySlotIdForCharacter('zhanshujia', 'carpet-bombing-2-main')).toBe('chi');
+        expect(getAbilitySlotIdForCharacter('cursed_pirate', 'deep-sea-dive')).toBe('lotus');
     });
 
     it('状态图集 JSON 覆盖新增 frameId，并复用既有锁定/守护 ID', () => {

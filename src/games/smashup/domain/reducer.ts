@@ -30,6 +30,7 @@ import type {
     SmashUpCommand,
     SmashUpCore,
     SmashUpEvent,
+    ActionCounteredEvent,
     MinionPlayedEvent,
     CardsDiscardedEvent,
     FactionSelectedEvent,
@@ -76,6 +77,11 @@ import { canPlayFromDiscard } from './discardPlayability';
 import { reduce } from './reduce';
 import { buildAffectRecords, type AffectRecord } from './affect';
 import { buildActionPlayedEvent } from './actionPlayEvent';
+import {
+    createPendingActionResolution,
+    maybeQueueActionCounterWindow,
+    resolvePendingActionExecution,
+} from './actionCounter';
 import { getSmashUpReactionWindowContext } from './reactionWindowState';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 
@@ -260,34 +266,8 @@ function executeCommand(
                 ? player.discard.find(c => c.uid === command.payload.cardUid)
                 : player.hand.find(c => c.uid === command.payload.cardUid))!;
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
-            const reactionWindow = getSmashUpReactionWindowContext(workingState);
             const events: SmashUpEvent[] = [];
             let updatedState: MatchState<SmashUpCore> | undefined;
-            const targetBaseIndex = command.payload.targetBaseIndex ?? 0;
-
-            const runActionExecutor = (
-                executor: ReturnType<typeof resolveOnPlay> | ReturnType<typeof resolveSpecial>,
-                baseIndex: number,
-            ) => {
-                if (!executor) return;
-                const ctx: AbilityContext = {
-                    state: workingState.core,
-                    matchState: workingState,
-                    playerId: command.playerId,
-                    cardUid: card.uid,
-                    defId: card.defId,
-                    baseIndex,
-                    targetBaseIndex: command.payload.targetBaseIndex,
-                    targetMinionUid: command.payload.targetMinionUid,
-                    random,
-                    now,
-                };
-                const result = executor(ctx);
-                events.push(...result.events);
-                if (result.matchState) {
-                    updatedState = result.matchState;
-                }
-            };
 
             const event = buildActionPlayedEvent({
                 playerId: command.playerId,
@@ -302,69 +282,26 @@ function executeCommand(
             });
             events.push(event);
 
-            const subtype = (def as any)?.type === 'fusion'
-                ? (def as FusionCardDef).actionSubtype
-                : (def as ActionCardDef | undefined)?.subtype;
+            const pendingResolution = createPendingActionResolution({
+                playerId: command.playerId,
+                cardUid: card.uid,
+                defId: card.defId,
+                ownerId: card.owner,
+                targetBaseIndex: command.payload.targetBaseIndex,
+                targetMinionUid: command.payload.targetMinionUid,
+                fromDiscard,
+                now,
+            });
+            const counterWindowState = maybeQueueActionCounterWindow(workingState, pendingResolution, now);
+            if (counterWindowState) {
+                updatedState = counterWindowState;
+                return { events, updatedState };
+            }
 
-            if (subtype === 'ongoing') {
-                // 持续行动卡：附着到目标
-                const attachEvt: OngoingAttachedEvent = {
-                    type: SU_EVENTS.ONGOING_ATTACHED,
-                    payload: {
-                        cardUid: card.uid,
-                        defId: card.defId,
-                        ownerId: card.owner,
-                        sourcePlayerId: command.playerId,
-                        targetType: command.payload.targetMinionUid ? 'minion' : 'base',
-                        targetBaseIndex: targetBaseIndex,
-                        targetMinionUid: command.payload.targetMinionUid,
-                    },
-                    timestamp: now,
-                };
-                events.push(attachEvt);
-                // ongoing 卡的 onPlay 能力（如 block_the_path 阻挡路径）
-                runActionExecutor(resolveOnPlay(card.defId), targetBaseIndex);
-            } else {
-                // standard / special 行动卡：执行效果
-                const isSpecial = subtype === 'special';
-                
-                if (isSpecial) {
-                    if (!def) {
-                        throw new Error(`[SmashUp] ${card.defId} 缺少 action/fusion 定义，无法执行 special 打牌`);
-                    }
-                    const specialTiming = getActionLikeResponseWindowTiming(def as ActionCardDef | FusionCardDef);
-                    if (!specialTiming) {
-                        throw new Error(`[SmashUp] ${card.defId} 作为手牌 special 打出时缺少可执行的显式 response window timing`);
-                    }
-                    if (specialTiming === 'beforeScoring') {
-                        // beforeScoring：立即执行（当前行为）
-                        runActionExecutor(resolveSpecial(card.defId) ?? resolveOnPlay(card.defId), targetBaseIndex);
-                    } else if (specialTiming === 'afterScoring') {
-                        // afterScoring：检查是否在响应窗口中
-                        const isInAfterScoringWindow = reactionWindow?.windowType === 'afterScoring';
-                        
-                        if (isInAfterScoringWindow) {
-                            // 在 afterScoring 响应窗口中：立即执行
-                            runActionExecutor(resolveSpecial(card.defId) ?? resolveOnPlay(card.defId), targetBaseIndex);
-                        } else {
-                            // 不在响应窗口中：生成 ARMED 事件，延迟到基地计分后执行
-                            const armedEvt: SpecialAfterScoringArmedEvent = {
-                                type: SU_EVENTS.SPECIAL_AFTER_SCORING_ARMED,
-                                payload: {
-                                    sourceDefId: card.defId,
-                                    playerId: command.playerId,
-                                    baseIndex: targetBaseIndex,
-                                    cardUid: card.uid,
-                                },
-                                timestamp: now,
-                            };
-                            events.push(armedEvt);
-                        }
-                    }
-                } else {
-                    // Standard 行动卡：执行 onPlay 效果
-                    runActionExecutor(resolveOnPlay(card.defId), targetBaseIndex);
-                }
+            const resolution = resolvePendingActionExecution(workingState, pendingResolution, random, now);
+            events.push(...resolution.events);
+            if (resolution.state !== workingState) {
+                updatedState = resolution.state;
             }
 
             // 基地能力触发：onActionPlayed（如工坊：额外打出一张战术）
@@ -718,7 +655,13 @@ function executeCommand(
         }
 
         case SU_COMMANDS.ACTIVATE_SPECIAL: {
-            const { minionUid: spUid, titanUid: spTitanUid, discardCardUid: spDiscardUid, baseIndex: spIdx } = command.payload;
+            const {
+                minionUid: spUid,
+                titanUid: spTitanUid,
+                discardCardUid: spDiscardUid,
+                handCardUid: spHandUid,
+                baseIndex: spIdx,
+            } = command.payload;
             const spBase = core.bases[spIdx];
             if (spTitanUid) {
                 const titan = findTitanByUid(core, spTitanUid);
@@ -757,6 +700,30 @@ function executeCommand(
                     playerId: command.playerId,
                     cardUid: spDiscardUid,
                     defId: discardCard.defId,
+                    baseIndex: spIdx,
+                    random,
+                    now,
+                };
+                const result = executor(ctx);
+                if (result.matchState) {
+                    return { events: result.events, updatedState: result.matchState };
+                }
+                return { events: result.events };
+            }
+            if (spHandUid) {
+                const player = core.players[command.playerId];
+                const handCard = player?.hand.find(card => card.uid === spHandUid);
+                if (!handCard) return { events: [] };
+
+                const executor = resolveSpecial(handCard.defId);
+                if (!executor) return { events: [] };
+
+                const ctx: AbilityContext = {
+                    state: core,
+                    matchState: state,
+                    playerId: command.playerId,
+                    cardUid: spHandUid,
+                    defId: handCard.defId,
                     baseIndex: spIdx,
                     random,
                     now,
@@ -877,21 +844,27 @@ export function filterProtectedDestroyEvents(
         // 对于 reason='base_*' 的事件，把 source 视为“目标自己”，从而不会触发
         // “只有对手才会被拦截”的保护（如 deep_roots / elder_thing 等）。
         const effectiveSource = de.payload.reason?.startsWith('base_') ? minion.controller : rawSource;
-        // 检查 destroy 保护和 action 保护
-        if (isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'destroy')) continue;
-        // 只有当来源是行动/融合牌时才判定 action 保护
         const actionRecord = buildAffectRecords(workingCore, e, rawSource).find(record =>
             record.targetKind === 'minion'
             && record.triggerMinionUid === minionUid
             && isActionAffectRecord(record),
         );
+        // 检查 destroy 保护和 action 保护
+        if (isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'destroy', {
+            sourceKind: actionRecord ? 'action' : 'nonAction',
+        })) continue;
+        // 只有当来源是行动/融合牌时才判定 action 保护
         const actionSourcePlayerId = actionRecord
             ? resolveProtectionSourcePlayerId(workingCore, actionRecord) ?? rawSource
             : undefined;
         const actionProtected = actionSourcePlayerId
-            ? isMinionProtected(workingCore, minion, fromBaseIndex, actionSourcePlayerId, 'action')
+            ? isMinionProtected(workingCore, minion, fromBaseIndex, actionSourcePlayerId, 'action', {
+                sourceKind: 'action',
+            })
             : false;
-        const affectProtected = isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'affect');
+        const affectProtected = isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'affect', {
+            sourceKind: actionRecord ? 'action' : 'nonAction',
+        });
         if (actionProtected || affectProtected) {
             // 消耗型保护：发射自毁事件
             const protType = actionProtected ? 'action' : 'affect';
@@ -1125,7 +1098,9 @@ function resolveBlockedProtectionType(
     }
 
     for (const protectionType of orderedChecks) {
-        if (isMinionProtected(core, targetMinion, record.baseIndex, effectiveSourcePlayerId, protectionType)) {
+        if (isMinionProtected(core, targetMinion, record.baseIndex, effectiveSourcePlayerId, protectionType, {
+            sourceKind: isActionAffectRecord(record) ? 'action' : 'nonAction',
+        })) {
             return protectionType;
         }
     }
@@ -1714,20 +1689,26 @@ export function filterProtectedMoveEvents(
             continue;
         }
         const effectiveSource = me.payload.reason?.startsWith('base_') ? minion.controller : sourcePlayerId;
-        if (isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'move')) continue;
-        // 检查 'action' 和 'affect' 两种广义保护类型（与 filterProtectedDestroyEvents 对齐）
         const actionRecord = buildAffectRecords(workingCore, e, sourcePlayerId).find(record =>
             record.targetKind === 'minion'
             && record.triggerMinionUid === minionUid
             && isActionAffectRecord(record),
         );
+        if (isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'move', {
+            sourceKind: actionRecord ? 'action' : 'nonAction',
+        })) continue;
+        // 检查 'action' 和 'affect' 两种广义保护类型（与 filterProtectedDestroyEvents 对齐）
         const actionSourcePlayerId = actionRecord
             ? resolveProtectionSourcePlayerId(workingCore, actionRecord) ?? sourcePlayerId
             : undefined;
         const actionProtected = actionSourcePlayerId
-            ? isMinionProtected(workingCore, minion, fromBaseIndex, actionSourcePlayerId, 'action')
+            ? isMinionProtected(workingCore, minion, fromBaseIndex, actionSourcePlayerId, 'action', {
+                sourceKind: 'action',
+            })
             : false;
-        const affectProtected = isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'affect');
+        const affectProtected = isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'affect', {
+            sourceKind: actionRecord ? 'action' : 'nonAction',
+        });
         if (actionProtected || affectProtected) {
             // 消耗型保护：发射自毁事件
             const protType = actionProtected ? 'action' : 'affect';
@@ -1803,6 +1784,15 @@ export function processMoveTriggers(
     const core = state.core;
     // 保护检查：过滤掉受 move 保护的随从的移动事件
     const filteredEvents = filterProtectedMoveEvents(events, core, playerId);
+    const moveBatchUidsByBatchId = new Map<string, string[]>();
+    for (const event of filteredEvents) {
+        if (event.type !== SU_EVENTS.MINION_MOVED) continue;
+        const batchId = event.payload.batchId;
+        if (!batchId) continue;
+        const list = moveBatchUidsByBatchId.get(batchId) ?? [];
+        list.push(event.payload.minionUid);
+        moveBatchUidsByBatchId.set(batchId, list);
+    }
 
     const moveEvents = filteredEvents.filter(
         e => e.type === SU_EVENTS.MINION_MOVED
@@ -1820,6 +1810,9 @@ export function processMoveTriggers(
         }
         const me = event as MinionMovedEvent;
         const { minionUid, minionDefId, fromBaseIndex, toBaseIndex, reason } = me.payload;
+        const simultaneousMoveBatchMinionUids = me.payload.batchId
+            ? moveBatchUidsByBatchId.get(me.payload.batchId)
+            : undefined;
         const advancedCore = reduce(coreBeforeMove, me);
         const advancedMatchState = { ...stateBeforeMove, core: advancedCore };
         const sourceEventId = `minion-moved:${minionUid}:${fromBaseIndex}:${toBaseIndex}:${now}`;
@@ -1837,6 +1830,7 @@ export function processMoveTriggers(
             moveToBaseIndex: toBaseIndex,
             triggerMinionUid: minionUid,
             triggerMinionDefId: minionDefId,
+            simultaneousMoveBatchMinionUids,
             random,
             now,
         });
@@ -1855,6 +1849,7 @@ export function processMoveTriggers(
                 moveToBaseIndex: toBaseIndex,
                 triggerMinionUid: minionUid,
                 triggerMinionDefId: minionDefId,
+                simultaneousMoveBatchMinionUids,
                 random,
                 now,
             });
@@ -1878,6 +1873,7 @@ export function processMoveTriggers(
                 reason,
                 frameId,
                 sourceEventId,
+                simultaneousMoveBatchMinionUids,
                 now,
             });
             if (queuedBase) {

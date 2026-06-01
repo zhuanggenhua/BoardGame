@@ -81,14 +81,14 @@
 | `time_travelers_time_is_fleeting` | after scoring 从基地弃牌堆选择新基地代替翻基地。 | special afterScoring；`BASE_DECK_REORDERED`。 | base discard choice。 | L2 | Pass。 |
 | `time_travelers_into_the_time_slip` | 将场上的一张牌返回拥有者手牌。 | onPlay；`CARD_TRANSFERRED` 支持 minion / base ongoing / attached action；prompt data 记录 `allowedCardUids`。 | field card choice；handler 只接受本次 prompt 候选集合。 | L2 | 旧 Pass 未证明 attached action 和 handler 候选集防伪造；已补 base ongoing、attached action 与 forged late live card 回归。 |
 | `time_travelers_1_21_gigawatts` | 选择行动或随从，把弃牌堆中该类全部洗回牌库。 | onPlay；card type choice + deck reorder。 | type choice interaction。 | L2 | Pass。 |
-| `time_travelers_do_over` | 使己方随从回手，可再额外打同名随从。 | `playNeedsMinion:self`；return + same-name immediate extra。 | minion target -> same-name prompt/skip。 | L2 | 2026-05-15 追加：旧 Pass 未证明普通随从额度仍可用时 same-name prompt 不会误放行非同名；已在 `extraPlay.ts` 候选生成和执行前双层复核，并补伪造非同名 option 测试。 |
+| `time_travelers_do_over` | 使己方随从回手，可再额外打同名随从。 | `playNeedsMinion:self`；return + same-name immediate extra。 | minion target -> same-name prompt/skip。 | L2 | 旧 Pass 还漏审了 “play it again” 是否被错误锁回原基地。2026-06-01 已修为 returned-card 只锁 `sameNameDefId + specificCardUid`，不锁原 `baseIndex`，并补“返回后可改打另一基地”回归。 |
 | `time_travelers_jumper` | 从基地进弃牌堆时可以回手。 | `registerTrigger(...optional:true, globalZones:['discard'])`；玩家选择 trigger 后才 recover。 | `smashup_reaction_choose` optional trigger / pass。 | L2 / scoped L3 | 旧“自动 recover”结论失效；已覆盖 pass 保留弃牌堆和选择 trigger 回手；新增多客户端 E2E 证明 controller=P1 看到 reaction，owner=P0 最终回手。 |
 | `time_travelers_stasis_field` | 基地不能计分，拥有者回合开始摧毁本行动。 | base ability suppression + onTurnStart detach。 | 自动。 | L2 | Pass。 |
 | `time_travelers_time_raider` | 天赋：弃牌堆选一张放牌库底。 | talent；discard choice + bottom。 | discard choice interaction。 | L2 | Pass。 |
 | `time_travelers_time_walk` | 本回合可额外打 1 随从和 1 行动，抽 2，本卡改放牌库底。 | onPlay；banked this-turn grants + draw + bottom。 | 自动 grants，不创建 immediate prompt。 | L2 | 2026-05-15 追加：旧 Pass 把 `this turn` 错审为立即出牌；已改为普通本回合额度，测试断言无 immediate prompt、`minionLimit/actionLimit` +1、抽 2、本卡进牌库底。 |
 | `time_travelers_repeater_perfect` | 进场：弃牌堆选行动放牌库顶。 | minion onPlay；discard action choice。 | discard action choice。 | L2 | Pass。 |
 | `time_travelers_wormhole` | after scoring：将你在这里的随从洗回牌库代替进弃牌堆。 | special afterScoring；移入牌库后 shuffle。 | special base target。 | L2 | Pass。测试证明不是固定放底。 |
-| `time_travelers_doctor_when` | 进场：可以返回另一己方随从；若返回，可以再将其作为额外随从打出。 | minion onPlay；`time_travelers_doctor_when_choose` 含 skip；handler 拒绝自身伪造；return 后授予 same-name immediate extra。 | own minion choice / skip -> immediate extra minion prompt。 | L2 | 旧“有候选就强制返回”结论失效；已补 skip 与伪造自身测试。 |
+| `time_travelers_doctor_when` | 进场：可以返回另一己方随从；若返回，可以再将其作为额外随从打出。 | minion onPlay；`time_travelers_doctor_when_choose` 含 skip；handler 拒绝自身伪造；return 后授予 same-name immediate extra。 | own minion choice / skip -> immediate extra minion prompt。 | L2 | 旧“有候选就强制返回”结论已失效；此外 2026-06-01 继续回写：旧审计还漏了 returned-card extra minion 被错误锁回原基地，现已改为允许重打到任意合法基地，并补另一基地回归。 |
 | `base_the_nexus` | 赢家可从基地弃牌堆选择一个基地代替抽新基地。 | afterScoring base ability；`base_the_nexus_choose`。 | winner base discard choice。 | L2 | Pass。 |
 | `base_portal_room` | 赢家可在当前回合后进行额外回合。 | afterScoring base ability；`EXTRA_TURN_QUEUED` + `pendingExtraTurns` / `activeExtraTurn`。 | optional base reaction。 | L2 / scoped L3 | 旧 Pass 降级：当时只直调 executor 证明额外回合队列，没有覆盖 queued optional 选择权归属；2026-05-15 已修复 base ability queue 支持 `ownerPlayerId`，并证明赢家非当前玩家时由赢家 pass/accept；新增多客户端 E2E 证明只有赢家页面能点“传送门”，接受后才在当前回合结束后启动额外回合。 |
 
@@ -130,11 +130,11 @@
 | `time_travelers_time_is_fleeting` | after scoring -> 从基地弃牌堆选基地置顶代替翻新基地 | 基地弃牌堆基地 | `time_travelers_time_is_fleeting_choose.baseDefId` | shared base discard | exact 1 | `baseDefId/reason` | L2 | Pass。 |
 | `time_travelers_into_the_time_slip` | 选择场上的一张牌 -> 返回拥有者手牌 | 场上牌 | `time_travelers_into_the_time_slip_choose.cardUid` | any in-play card | exact 1 | `allowedCardUids/cardUid/type/ownerId/baseIndex`，handler 复核本次候选集合 | L2 | Pass，覆盖基地持续行动、附着行动和伪造晚加入场上牌拒绝。 |
 | `time_travelers_1_21_gigawatts` | 选择行动或随从 -> 弃牌堆该类全部洗回牌库 | 类型按钮 | `time_travelers_1_21_gigawatts_choose.cardType` | self discard | choose one type | `cardType` | L2 | Pass。 |
-| `time_travelers_do_over` | 选己方随从回手 -> 可额外打同名随从 | 己方随从 | `PLAY_ACTION.targetMinionUid` | self minion | exact 1 | `sameNameDefId/baseIndex` | L2 | Pass。 |
+| `time_travelers_do_over` | 选己方随从回手 -> 可额外打同名随从到任意合法基地 | 己方随从 | `PLAY_ACTION.targetMinionUid` | self minion | exact 1 | `sameNameDefId/specificCardUid`，不锁原 `baseIndex` | L2 | 旧 interaction 口径把 `again` 误审成“回原基地重打”；2026-06-01 已修正并补“返回 `Jumper` 后改打到另一基地”回归。 |
 | `time_travelers_time_raider` | 天赋 -> 弃牌堆选一张牌放牌库底 | 弃牌堆牌 | `time_travelers_time_raider_choose.cardUid` | self discard | exact 1 | `cardUid/reason` | L2 | Pass。 |
 | `time_travelers_repeater_perfect` | 进场 -> 弃牌堆选行动放牌库顶 | 弃牌堆行动 | `time_travelers_repeater_perfect_choose.cardUid` | self discard | exact 1 | `cardUid/reason` | L2 | Pass。 |
 | `time_travelers_wormhole` | after scoring -> 选这里己方随从洗回牌库代替弃牌 | 己方随从 | special target payload | self at scoring base | optional exact 1 | `minionUid/baseIndex` | L2 | Pass，测试证明洗牌而非固定放底。 |
-| `time_travelers_doctor_when` | 进场 -> 可跳过或选另一己方随从回手 -> 若回手则可额外打同名随从 | skip 或己方随从 | `time_travelers_doctor_when_choose.skip/minionUid` | self minion；not self Doctor | optional exact 0/1 | `doctorUid/sameNameDefId/baseIndex` | L2 | 已修复 `may`，并拒绝 forged self。 |
+| `time_travelers_doctor_when` | 进场 -> 可跳过或选另一己方随从回手 -> 若回手则可额外打同名随从到任意合法基地 | skip 或己方随从 | `time_travelers_doctor_when_choose.skip/minionUid` | self minion；not self Doctor | optional exact 0/1 | `doctorUid/sameNameDefId/specificCardUid`，不锁原 `baseIndex` | L2 | 已修复 `may`，并拒绝 forged self；2026-06-01 继续锁定 returned minion 不会被错误限制在原基地重打。 |
 | `base_the_nexus` | after scoring -> 赢家可选基地弃牌堆基地置顶 | 基地弃牌堆基地或 skip | `base_the_nexus_choose.baseDefId/skip` | winner choice | optional exact 1 | `baseDefId` | L2 | Pass。 |
 | `base_portal_room` | after scoring -> 赢家可排入额外回合 | base reaction choice | base ability command / skip | winner | optional | `winnerId/returnToPlayerIndex` | L2 / scoped L3 | 2026-05-15 重审修复：queued optional trigger owner 曾默认当前回合玩家，现通过 `BaseAbilityRegistrationOptions.ownerPlayerId` 指向 rankings winner；测试覆盖赢家 P1 pass 不排队、accept 排队；2026-05-17 再补多客户端真实入口，证明 only winner page gets the choice. |
 
@@ -226,3 +226,17 @@
 - 本次可以声明：56 个 yuanhou 对象已有对象级 rollup，且 `time_travelers_jumper` / `base_portal_room` 已补多客户端真实入口 scoped L3；对象级重审中发现的 HIGH/CRITICAL 语义错误均已修复或降级为明确边界。
 - 本次不能声明：56 个 yuanhou 对象已经完成 effect atom 级全量审计。后续必须以 `smashup-in-progress-effect-atom-audit-2026-05-15.md` 的 atom inventory 为准继续核销。
 - 本次不能声明：`Copycat` / `Cellular Bonding` 已经支持任意跨派系 onPlay / special / trigger 的完全动态复制 runtime。当前只证明已实现的代表性代理链路；若未来要把这两张牌升级为完整动态复制，需要另开专项机制，而不能复用本证据冒充已完成。
+
+## 2026-06-01 回写：`从头来过 / 时间博士` 旧审计结论失效
+
+- **旧结论是什么**：
+  - `time_travelers_do_over` 旧条目只把风险写成“same-name prompt 不应误放行非同名”。
+  - `time_travelers_doctor_when` 旧条目只把风险写成“may/skip 与 forged self”。
+  - 交互入口矩阵还把两者 continuation 记成了 `sameNameDefId/baseIndex` 与 `doctorUid/sameNameDefId/baseIndex`。
+- **为何失效**：旧审计把 `play it again / returned card` 只审成“同名 + 指定卡”语义，漏掉了另一个高风险限定词 `again` 不等于“回原基地再打一次”。实现当时把 returned minion 的 immediate extra 绑定到原 `baseIndex`，导致从基地回手后不能改打到别的合法基地。
+- **新增证据**：
+  - [src/games/smashup/abilities/yuanhou.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/yuanhou.ts:1341)：`time_travelers_doctor_when` / `time_travelers_do_over` 改为 `grantExtraMinion(..., undefined, { sameNameDefId, specificCardUid })`，去掉原基地绑定。
+  - [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:7462)：新增“时间旅行者：从头来过允许把刚返回的随从重新打到另一基地”。
+  - [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts:11481)：新增“时间旅行者：时间博士允许把刚返回的随从重新打到另一基地”。
+  - 验证：`npx vitest run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --config vitest.config.ts -t "从头来过|时间博士"`。
+- **新结论**：这两张时间旅行者牌现在都按 returned-card extra minion 语义执行：只锁“刚回手的那张牌”，不锁“必须回原基地”。这次漏审命中 D1/D5/D18/D49：旧审计把对象语义拆得不够细，只证明了 specific-card / same-name，没有把“again 的空间约束”核到 handler 参数层。

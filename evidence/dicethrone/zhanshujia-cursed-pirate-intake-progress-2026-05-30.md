@@ -2,14 +2,14 @@
 
 ## 结论
 
-本轮完成两名新英雄的 L1 静态接入、英雄专属手牌 L1 逐卡录入与一批 L2 机制结算，不是完整交付。按 `add-new-faction` workflow，复杂专属手牌机制、审计、真实入口 E2E、资源上传和远端 HEAD 回查仍未完成，因此不能宣称两个英雄“已完成”。
+本轮完成两名新英雄的 L1 静态接入、英雄专属手牌 L1 逐卡录入、一批 L2 机制结算、真实入口双玩家 E2E、资源上传和远端 HEAD 回查，不是完整交付。战略防御、送你们去喂鱼、手牌选择、瞭望台弯刀/战利品/骷髅三分支、作战室奖励骰展示、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、战术家反制措施防御阶段入口、你还嫩了点防御阶段入口，以及深海潜行完整真实攻击入口都已补代表性真实入口交互截图链；其余复杂交互仍未逐项 L3/L4，因此不能宣称两个英雄“已完成”。
 
 ## 批次矩阵
 
 | heroId | 数据录入 | 资源链 | 机制实现 | 审计 | E2E | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `zhanshujia` | `in_progress` | `in_progress` | `in_progress` | `pending` | `pending` | L1/L2 部分接入 |
-| `cursed_pirate` | `in_progress` | `in_progress` | `in_progress` | `pending` | `pending` | L1/L2 部分接入 |
+| `zhanshujia` | `in_progress` | `passed` | `in_progress` | `in_progress` | `passed` | L1/L2 部分接入，真实入口与资源链已通过 |
+| `cursed_pirate` | `in_progress` | `passed` | `in_progress` | `in_progress` | `passed` | L1/L2 部分接入，海盗的一生当前素材咒缚面分支已补 |
 
 ## 已完成证据
 
@@ -20,8 +20,10 @@
 | 状态图集 | `status-icons-atlas.json/png/webp`，战术家 frame `tactical_advantage/bind`；咒缚海盗 frame `wither/parley/powder_keg/cursed_coin` |
 | 静态代码 | `heroes/zhanshujia/*`、`heroes/cursed_pirate/*`、`domain/statusEvents.ts`、`domain/ids.ts`、`domain/core-types.ts`、`domain/characters.ts`、`domain/index.ts`、`heroes/index.ts`、`ui/cardAtlas.ts`、`ui/assets.ts`、`criticalImageResolver.ts` |
 | 手牌 L1 录入 | `src/games/dicethrone/heroes/zhanshujia/cards.ts` 录入战术家 slot 17-31；`src/games/dicethrone/heroes/cursed_pirate/cards.ts` 录入咒缚海盗 slot 17-32；临时单卡裁图位于 `temp/dicethrone-intake/*/hand-cards/` |
-| 测试 | `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts`，当前 6 tests passed；`src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`，当前 31 tests passed；组合 2 files / 37 tests passed |
+| 测试 | `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts`，当前 7 tests passed；`src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`，当前 45 tests passed；组合验证 2 files / 52 tests passed |
 | manifest | `node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN --id dicethrone` 已执行；`--validate --root public/assets/i18n/zh-CN --id dicethrone` 通过 |
+| 真实入口 E2E | `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 已覆盖选角、开局玩家板/提示板/HUD、手牌 atlas、战略防御玩家选择、送你们去喂鱼火药桶选择、手牌选择与弃牌落点、瞭望台弯刀查看手牌、战利品目标自选弃牌、骷髅随机弃牌、作战室奖励骰展示与战术优势落点、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、反制措施防御阶段入口、你还嫩了点防御阶段入口、深海潜行真实攻击入口，以及战争贩子 II / 战争贩子 II 勋章专门链 / 抽筋剥皮 / 死亡印记奖励骰代表链；其中特定深海潜行、赎金、啜呼、战争贩子 II、战争贩子 II 勋章专门链、抽筋剥皮与死亡印记单用例均为 1 passed，整文件最近一次全量回归仍为 4 passed |
+| 远端资源 | `npm run assets:upload` 已上传 24 个本轮 DiceThrone 新资源；战术家与咒缚海盗 10 个代表 URL 及 Common 2 个依赖 URL HEAD 均为 200 |
 
 ## 验证命令
 
@@ -65,6 +67,68 @@
 | `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 2 files / 37 tests passed |
 | `npm run i18n:check` | 通过，仅保留既有 3 条 warning |
 | `npx eslint src/games/dicethrone/domain/core-types.ts src/games/dicethrone/hooks/useInteractionState.ts src/games/dicethrone/ui/InteractionOverlay.tsx src/games/dicethrone/domain/commandValidation.ts src/games/dicethrone/domain/execute.ts src/games/dicethrone/heroes/zhanshujia/abilities.ts src/games/dicethrone/domain/customActions/zhanshujia.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 0 errors |
+| JSON parse `public/locales/{zh-CN,en}/game-dicethrone.json` | 通过（2026-05-31 10:02） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 1 file / 37 tests passed |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 10:03） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 2 files / 43 tests passed |
+| `npm run i18n:check` | 通过，仅保留既有 3 条 warning |
+| `npx eslint src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/heroes/cursed_pirate/cards.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 0 errors |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 1 file / 38 tests passed |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 10:11） |
+| JSON parse `public/locales/{zh-CN,en}/game-dicethrone.json` | 通过（2026-05-31 10:34） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 1 file / 40 tests passed |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 10:34） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 2 files / 46 tests passed（2026-05-31 10:38） |
+| `npm run i18n:check` | 通过，仅保留既有 3 条 warning（2026-05-31 10:39） |
+| `npx eslint src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/heroes/cursed_pirate/cards.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 0 errors（2026-05-31 10:39） |
+| JSON parse `public/locales/{zh-CN,en}/game-dicethrone.json` | 通过（2026-05-31 10:39） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 10:40） |
+| `npx eslint e2e/helpers/dicethrone.ts e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 12:44） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 2 passed（2026-05-31 12:44） |
+| `npm run assets:check` | 上传前发现 24 个 DiceThrone 新资源缺远端（2026-05-31 12:37） |
+| `npm run assets:upload` | 上传 25，跳过 2025，失败 0；其中 24 个为本轮 DiceThrone 新资源，另 1 个为既有 SmashUp `pretty_pretty.webp` 远端差异（2026-05-31 12:39） |
+| 代表 URL HEAD 回查 | 战术家/咒缚海盗 `player-board.webp`、`tip.webp`、`ability-cards.webp`、`dice.webp`、`status-icons-atlas.webp` 均为 200；Common `background.webp`、`character-portraits.webp` 均为 200（2026-05-31 12:40） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 2 files / 48 tests passed（2026-05-31 13:15） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 13:15） |
+| `npm run i18n:check` | 通过，仅保留既有 3 条 warning（2026-05-31 13:15） |
+| `npx eslint e2e/helpers/dicethrone.ts e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts src/games/dicethrone/domain/core-types.ts src/games/dicethrone/domain/characters.ts src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 0 errors / 2 warnings（`characters.ts` 既有 `any`，2026-05-31 13:15） |
+| `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 13:38） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 3 passed（2026-05-31 13:38） |
+| `npx eslint src/games/dicethrone/ui/InteractionOverlay.tsx e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 14:07） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 14:07） |
+| `npx vitest run src/games/dicethrone/ui/__tests__/InteractionOverlay.test.tsx` | 1 file / 29 tests passed（2026-05-31 14:17；保留既有 missing_sfx stderr） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 3 passed（2026-05-31 14:12；截图 11 已复核为中文“作战室！”而非 raw i18n key） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 1 file / 42 tests passed（2026-05-31 14:29） |
+| `npx eslint src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/ui/ChoiceModal.tsx e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 14:29） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 14:31） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 3 passed（2026-05-31 14:36；截图 13 已复核为中文“作战室！、战略防御！”而非 raw `card-*` ID） |
+| `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 15:32） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 15:32） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 3 passed（2026-05-31 15:32；截图 15-17 覆盖瞭望台战利品/骷髅真实入口） |
+| `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 15:55） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 15:55） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 3 passed（2026-05-31 15:55；截图 18-19 覆盖作战室奖励骰展示与战术优势落点） |
+| `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 16:41） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-05-31 16:41） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实防御阶段入口应展示并结算反制措施与你还嫩了点"` | 1 passed（2026-05-31 16:31，截图 20-23 覆盖两条防御响应链） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 4 passed（2026-05-31 16:41，整文件回归） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "深海潜行"` | 通过（2026-06-01 07:57） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 1 file / 43 tests passed（2026-06-01 07:57） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts` | 1 file / 7 tests passed（2026-06-01 07:57） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 2 files / 50 tests passed（2026-06-01 07:57）；2 files / 52 tests passed（2026-06-01 11:35） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-06-01 07:57） |
+| `npx eslint src/games/dicethrone/domain/systems.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors / 5 warnings（`systems.ts` 既有 `any`，2026-06-01 07:57） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实进攻阶段入口应通过面板槽位选择并结算深海潜行前置链"` | 1 passed（2026-06-01 07:57，截图 24-26 覆盖深海潜行真实攻击入口） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-06-01 08:37） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算干票大的奖励骰分支"` | 1 passed（2026-06-01 08:37，截图 27-28 覆盖干票大的奖励骰代表链） |
+| `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-06-01 09:49） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-06-01 09:49） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算战争贩子 II 的奖励骰分支"` | 1 passed（2026-06-01 09:49，截图 29-30 覆盖战争贩子 II 奖励骰代表链） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应命中并保留战争贩子 II 勋章专门链的额外进攻阶段"` | 1 passed（2026-06-01 11:35，截图 35 覆盖战争贩子 II 勋章专门链） |
+| `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-06-01 10:17） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-06-01 10:17） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算抽筋剥皮的奖励骰分支"` | 1 passed（2026-06-01 10:17，截图 31-32 覆盖抽筋剥皮奖励骰代表链） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算死亡印记的奖励骰分支"` | 1 passed（2026-06-01 10:56，截图 33-34 覆盖死亡印记奖励骰代表链） |
 
 ## 未覆盖风险
 
@@ -72,10 +136,10 @@
 | --- | --- |
 | 战术优势 | L2 已覆盖获得 CP、重掷、抽牌、施加锁定、获得守护、转移状态入口；真实 UI/E2E 仍未覆盖 |
 | 紧缚 | L2 已覆盖额外投掷 1CP 门禁、CP 不足拒绝、进攻投掷阶段结束移除；真实 UI/E2E 仍未覆盖 |
-| 战术家防御 | L2 已覆盖反制措施：每组 2 军刀造成 1 反击伤害、每个旗帜防止 1 伤害、每个勋章获得 1 战术优势；真实入口/E2E 仍未覆盖 |
+| 战术家防御 | L2 已覆盖反制措施：每组 2 军刀造成 1 反击伤害、每个旗帜防止 1 伤害、每个勋章获得 1 战术优势；真实防御阶段入口已补反制措施代表 L3 |
 | 战术家升级牌 | L2 已覆盖 9 张升级牌的 `replaceAbility` 映射、能力等级与 `upgradeCardByAbilityId` 记录；代表分支覆盖反制措施 III、军刀突刺 II、战争贩子 II、地毯式轰炸 II 2v2 精确两名不同对手选择 |
-| 战术家专属行动牌 | L2 已覆盖脱战三分支、伴装撤退紧缚+防伤、作战室按骰值授予战术优势、战略防御任意玩家守护选择；真实入口/E2E 仍未覆盖 |
-| 战争贩子 | L2 已覆盖奖励骰分支与攻击收口后额外进攻投掷阶段；真实入口/E2E 仍未覆盖 |
+| 战术家专属行动牌 | L2 已覆盖脱战三分支、伴装撤退紧缚+防伤、作战室按骰值授予战术优势、战略防御任意玩家守护选择；战略防御与作战室奖励骰展示已补真实入口截图链，其余真实入口/E2E 仍未覆盖 |
+| 战争贩子 | L2 已覆盖奖励骰分支与攻击收口后额外进攻投掷阶段；战争贩子 II 奖励骰代表链与勋章专门链均已补真实入口截图，但战争贩子家族仍未穷尽所有复杂交互 UI 组合，暂不能按逐对象 L3/L4 全收口 |
 | 制胜高地 | L2 已覆盖锁定、紧缚、战术优势上限提升 1、补至新上限与 12 伤害；真实入口/E2E 仍未覆盖 |
 | 诅咒金币 | L2 已覆盖自身/他人差异上限、维持伤害、不可移动/移除、海盗可选择获得/不获得；真实入口/E2E 仍未覆盖 |
 | 咒缚 | L2 已覆盖自己维持阶段受到 4 点不可防止伤害、对手进攻投掷阶段未发起攻击则施加火药桶；真实入口/E2E 仍未覆盖 |
@@ -83,13 +147,13 @@
 | 火药桶 | L2 已覆盖维持投骰、1-2 爆炸移除并造成 3 点独立不可防御伤害、3-5 无事发生、6 转交、重复获得时原桶立即爆炸并保留新桶；真实入口/E2E 仍未覆盖 |
 | 凋零 | L2 已覆盖来源侧攻击伤害 -1/层；真实入口/E2E 仍未覆盖 |
 | 休战 | L2 已覆盖阻止攻击伤害、直接伤害不受影响、阶段结束移除；真实入口/E2E 仍未覆盖 |
-| 深海潜行 | L2 已覆盖偷取 1CP、对手自选弃 1 张手牌、施加凋零与 8 伤害；真实入口/E2E 仍未覆盖 |
-| 死亡印记 | L2 已覆盖先获得 2CP、弯刀不可防御伤害、战利品抽牌、骷髅施加诅咒金币；真实入口/E2E 仍未覆盖 |
+| 深海潜行 | L2 已覆盖偷取 1CP、对手自选弃 1 张手牌、施加凋零与 8 伤害；真实攻击入口截图 24-26 已证明通过面板槽位触发后，偷 CP、施加凋零、对手弃牌与弃牌落点整链成立 |
+| 死亡印记 | L2 已覆盖先获得 2CP、弯刀不可防御伤害、战利品抽牌、骷髅施加诅咒金币；真实入口奖励骰代表链已覆盖，且已修复多颗奖励骰同批累计 bug |
 | 亡灵之爪 | L2 已覆盖 8 点不可防御主伤害和按所有对手诅咒金币层数造成直接伤害；真实入口/E2E 仍未覆盖 |
-| 咒缚海盗防御 | L2 已覆盖你还嫩了点：每个弯刀反击 1、每个战利品获得 1CP、每个骷髅防止 2 伤害、弯刀+骷髅施加诅咒金币；真实入口/E2E 仍未覆盖 |
+| 咒缚海盗防御 | L2 已覆盖你还嫩了点：每个弯刀反击 1、每个战利品获得 1CP、每个骷髅防止 2 伤害、弯刀+骷髅施加诅咒金币；真实防御阶段入口已补代表 L3 |
 | 无情诅咒 | L2 已覆盖可跳过的至多两名对手火药桶选择、4 人 2v2 不列队友、选择两名对手后分别施加火药桶；真实入口/E2E 仍未覆盖 |
-| 英雄专属手牌 | L1 已完成逐卡录入与索引测试；战术家升级牌替换链、地毯式轰炸 II 两名不同对手交互与 4 张专属行动牌已推进到 L2；咒缚海盗选择类、对手支付、手牌查看/弃牌、翻面条件、至多三名目标等仍待 L2/L3 |
-| E2E / 上传 | 未运行真实入口 E2E，未执行资源上传和远端 HEAD 回查 |
+| 英雄专属手牌 | L1 已完成逐卡录入与索引测试；战术家升级牌替换链、地毯式轰炸 II 两名不同对手交互与 4 张专属行动牌已推进到 L2；咒缚海盗诅咒卡牌、封舱、抽筋剥皮、赎金、瞭望台、干票大的、送你们去喂鱼、啜呼已推进到 L2；送你们去喂鱼、瞭望台三分支、干票大的奖励骰代表链、抽筋剥皮奖励骰代表链与死亡印记奖励骰代表链已补真实入口截图；海盗的一生已按当前咒缚面素材合同治疗 3，普通面获得诅咒金币分支保留测试 |
+| E2E / 上传 | 真实入口双玩家 E2E、资源上传和远端 HEAD 回查已完成；战略防御、送你们去喂鱼、手牌选择、瞭望台三分支、作战室奖励骰展示、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、两条防御响应链与深海潜行完整攻击入口已有真实交互截图；其余复杂交互 UI 仍未逐项 L3/L4 |
 
 ## 手牌 L1 录入证据
 

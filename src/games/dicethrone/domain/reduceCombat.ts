@@ -508,6 +508,7 @@ export const handleExtraAttackTriggered: EventHandler<Extract<DiceThroneEvent, {
         extraAttackInProgress: {
             attackerId,
             originalActivePlayerId: state.activePlayerId,
+            phaseEntered: false,
         },
     };
 };

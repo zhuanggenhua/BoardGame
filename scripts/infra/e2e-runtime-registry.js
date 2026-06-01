@@ -10,6 +10,7 @@ const SHARED_RUNTIME_REGISTRY = 'runtime-registry.json';
 const REGISTRY_WRITE_RETRYABLE_CODES = new Set(['EBUSY', 'EPERM']);
 const REGISTRY_WRITE_RETRY_COUNT = 6;
 const REGISTRY_WRITE_RETRY_DELAY_MS = 50;
+const REGISTRY_LOCK_RETRYABLE_CODES = new Set(['EEXIST', 'EPERM', 'EBUSY']);
 const REGISTRY_LOCK_RETRY_COUNT = 120;
 const REGISTRY_LOCK_RETRY_DELAY_MS = 50;
 const REGISTRY_LOCK_STALE_MS = 30000;
@@ -432,7 +433,8 @@ function acquireSharedRegistryLock(cwd = process.cwd()) {
         }
       };
     } catch (error) {
-      if (error?.code !== 'EEXIST') {
+      const code = error?.code;
+      if (!code || !REGISTRY_LOCK_RETRYABLE_CODES.has(code)) {
         throw error;
       }
 

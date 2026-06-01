@@ -1120,6 +1120,9 @@ export const reduce = (
                         rollDiceCount: 5,
                         rollConfirmed: false,
                         pendingAttack: null,
+                        extraAttackInProgress: state.extraAttackInProgress
+                            ? { ...state.extraAttackInProgress, phaseEntered: true }
+                            : state.extraAttackInProgress,
                         dice: resetDiceArray(playerDice ?? state.dice, 5),
                     };
                 }

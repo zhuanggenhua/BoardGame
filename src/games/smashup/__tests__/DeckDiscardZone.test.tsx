@@ -48,6 +48,7 @@ describe('SmashUp DeckDiscardZone focused titan prompt', () => {
                         powerCounters: 0,
                         talentUsed: false,
                         location: { zone: 'setaside' },
+                        metadata: { timeBoxCounters: 4 },
                     } as any,
                 ]}
                 activatableTitanUids={new Set(['time-box-1'])}
@@ -64,6 +65,7 @@ describe('SmashUp DeckDiscardZone focused titan prompt', () => {
 
         expect(screen.getByTestId('su-titan-rail')).toBeInTheDocument();
         expect(screen.getByTestId('su-rail-titan-time-box-1')).toBeInTheDocument();
+        expect(screen.getByTestId('su-rail-titan-timebox-counter-time-box-1')).toHaveTextContent('4');
         expect(screen.getByTestId('su-rail-titan-badge-time-box-1')).toHaveTextContent('可触发');
         expect(screen.queryByTestId('su-deck-stack')).not.toBeInTheDocument();
         expect(screen.queryByTestId('su-discard-toggle')).not.toBeInTheDocument();

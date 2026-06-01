@@ -507,6 +507,11 @@ export interface HeroState {
     id: string;
     characterId: CharacterId;
     /**
+     * 部分英雄存在双面玩家板。当前仓库只接入咒缚海盗咒缚面素材，
+     * 因此该字段先作为英雄专属运行时合同，供卡牌效果判断当前面。
+     */
+    playerBoardFace?: 'normal' | 'cursed';
+    /**
      * 选角阶段的"初始牌库顺序"（仅用于保证回放确定性）
      * - 由 `SELECT_CHARACTER` 产生的 `CHARACTER_SELECTED.initialDeckCardIds` 写入
      * - `HERO_INITIALIZED` 时会消费该顺序来构建 `hand/deck`
@@ -640,6 +645,8 @@ export interface DiceThroneCore {
         attackerId: PlayerId;
         /** 原回合的活跃玩家（额外攻击结束后恢复） */
         originalActivePlayerId: PlayerId;
+        /** 是否已经真正进入过额外攻击的 offensiveRoll 阶段 */
+        phaseEntered?: boolean;
     };
     /**
      * 潜行获得回合追踪

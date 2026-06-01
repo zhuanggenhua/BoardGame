@@ -6370,8 +6370,8 @@
     "zh-CN/smashup/taitan/compressed/huluwawa_titan": {
       "variants": {
         "webp": {
-          "sha256": "3b171c8ef47af4a11dc93c651ff6825e7c07284ea4326437bac3c3f08d818fae",
-          "bytes": 262096,
+          "sha256": "f953a910f3a3a8e87993232cb6f5b77e24933c12c432e1e1482732ed5110a1ca",
+          "bytes": 73366,
           "mime": "image/webp"
         }
       }
@@ -6388,8 +6388,8 @@
     "zh-CN/smashup/taitan/huluwawa_titan": {
       "variants": {
         "png": {
-          "sha256": "ccbf162296b3ebcf62d3b050685e2761530e88e02e0e8e1ad1c75bb1531a29ad",
-          "bytes": 2591063,
+          "sha256": "f5dcea952d3086643d0dc464d06405ed13f7ed9d0d4cf73520c56b0f42b55221",
+          "bytes": 524227,
           "mime": "image/png"
         }
       }

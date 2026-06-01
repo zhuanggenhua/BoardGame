@@ -2,7 +2,7 @@
  * 烈焰术士 (Pyromancer) 专属 Custom Action 处理器
  */
 
-import { getActiveDice, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { getActiveDice, getAttackDiceFaceCounts, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
 import { RESOURCE_IDS } from '../resources';
 import { STATUS_IDS, TOKEN_IDS, PYROMANCER_DICE_FACE_IDS } from '../ids';
 import type {
@@ -45,8 +45,7 @@ const getBurnNewTotal = (ctx: CustomActionContext, targetId: string): number => 
  * 基础版和升级版共用此 handler
  */
 const resolveSoulBurn2FM = (ctx: CustomActionContext): DiceThroneEvent[] => {
-    const faces = ctx.state.pendingAttack?.attackDiceFaceCounts
-        ?? getFaceCounts(getActiveDice(ctx.state));
+    const faces = getAttackDiceFaceCounts(ctx.state);
     const fierySoulCount = faces[PYROMANCER_DICE_FACE_IDS.FIERY_SOUL] || 0;
     const amountToGain = 2 * fierySoulCount;
     if (amountToGain <= 0) return [];
@@ -73,9 +72,7 @@ const resolveSoulBurn2FM = (ctx: CustomActionContext): DiceThroneEvent[] => {
  */
 const resolveSoulBurnDamage = (ctx: CustomActionContext): DiceThroneEvent[] => {
     const events: DiceThroneEvent[] = [];
-    // 优先从 pendingAttack 快照读取攻击方骰面（防御阶段骰子已被覆盖）
-    const faces = ctx.state.pendingAttack?.attackDiceFaceCounts
-        ?? getFaceCounts(getActiveDice(ctx.state));
+    const faces = getAttackDiceFaceCounts(ctx.state);
     const dmg = faces[PYROMANCER_DICE_FACE_IDS.FIERY_SOUL] || 0;
     const defenderId = ctx.ctx.defenderId;
 
@@ -663,8 +660,8 @@ const resolveIncreaseFMLimit = (ctx: CustomActionContext): DiceThroneEvent[] => 
 // ============================================================================
 
 export function registerPyromancerCustomActions(): void {
-    registerCustomActionHandler('soul-burn-2-fm', resolveSoulBurn2FM, { categories: ['resource'] });
-    registerCustomActionHandler('soul-burn-damage', resolveSoulBurnDamage, { categories: ['damage'] });
+    registerCustomActionHandler('soul-burn-2-fm', resolveSoulBurn2FM, { categories: ['resource'], usesAttackDiceSnapshot: true });
+    registerCustomActionHandler('soul-burn-damage', resolveSoulBurnDamage, { categories: ['damage'], usesAttackDiceSnapshot: true });
 
     registerCustomActionHandler('fiery-combo-resolve', resolveFieryCombo, { categories: ['damage', 'resource'] });
     registerCustomActionHandler('fiery-combo-2-resolve', resolveFieryCombo2, { categories: ['damage'] });

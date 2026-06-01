@@ -277,4 +277,26 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(attachedAction?.style.width).toContain('--mobile-layout-inline-unit');
         expect(attachedAction?.style.height).toContain('--mobile-layout-inline-unit');
     });
+
+    it('时间盒子在场上时显示时间计数标记', () => {
+        renderBaseZone({
+            titans: [
+                {
+                    uid: 'time-box-live',
+                    defId: 'time_travelers_time_box',
+                    faction: 'time_travelers',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                    metadata: { timeBoxCounters: 5 },
+                },
+            ],
+        });
+
+        const counter = document.querySelector('[data-testid="su-base-titan-timebox-counter-time-box-live"]');
+        expect(counter).not.toBeNull();
+        expect(counter).toHaveTextContent('5');
+    });
 });

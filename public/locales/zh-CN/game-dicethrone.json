@@ -826,7 +826,17 @@
       "cursedPirateWeighAnchorOther": "起锚：否则抽 1 张牌",
       "cursedPirateBlusterCutlass": "虚张声势：弯刀造成 2 点伤害",
       "cursedPirateBlusterLoot": "虚张声势：战利品抽 2 张牌",
-      "cursedPirateBlusterSkull": "虚张声势：骷髅施加火药桶"
+      "cursedPirateBlusterSkull": "虚张声势：骷髅施加火药桶",
+      "cursedPirateFlayCutlass": "抽筋剥皮：弯刀增加 1 点攻击伤害",
+      "cursedPirateFlayOther": "抽筋剥皮：未增加伤害",
+      "cursedPirateCrowsNestCutlass": "瞭望台：弯刀查看手牌",
+      "cursedPirateCrowsNestLoot": "瞭望台：战利品由目标弃 1 张牌",
+      "cursedPirateCrowsNestSkull": "瞭望台：骷髅随机弃 1 张牌",
+      "cursedPirateCrowsNestOther": "瞭望台：未触发",
+      "cursedPirateHeftyLoot": "干票大的：战利品触发抽牌与 CP",
+      "cursedPirateHeftyOther": "干票大的：未触发",
+      "cursedPirateSipHit": "啜呼：3-6，获得火药桶和凋零",
+      "cursedPirateSipMiss": "啜呼：1-2，无事发生"
     },
     "selectToReroll": "点击骰子花费{{cost}}{{token}}重掷",
     "noTokenToReroll": "没有{{token}}标记可用于重掷",
@@ -1056,10 +1066,39 @@
       "accept": "获得诅咒金币",
       "decline": "不获得"
     },
+      "cursedPirateCurseCard": {
+        "title": "诅咒卡牌：选择结算效果",
+        "draw1": "抽 1 张牌",
+        "damage2Draw2": "受到 2 点伤害并抽 2 张牌",
+        "damage4Draw3": "受到 4 点伤害并抽 3 张牌"
+      },
+      "cursedPirateRansomDie": {
+        "title": "赎金：选择一颗对手骰子",
+        "choose": "骰子 {{die}}（当前 {{value}}）"
+      },
+      "cursedPirateRansomResolve": {
+        "title": "赎金：是否支付 2CP？",
+        "pay": "支付 2CP 给对手",
+        "reroll": "不支付，重掷骰子 {{die}}（当前 {{value}}）"
+      },
+      "cursedPirateCrowsNestView": {
+        "title": "瞭望台：查看手牌",
+        "confirm": "已查看 {{player}} 的手牌：{{cards}}"
+      },
       "mercilessCursePowderKeg": {
         "title": "选择至多两名对手获得火药桶",
         "apply": "施加给 {{targets}}",
         "skip": "不施加火药桶"
+      },
+      "cursedPirateGoFish": {
+        "title": "选择至多三名对手获得火药桶",
+        "apply": "施加给 {{targets}}",
+        "skip": "不施加火药桶"
+      },
+      "cursedPirateSip": {
+        "title": "啜呼：选择是否改为投骰",
+        "acceptPowderKeg": "获得火药桶",
+        "rollInstead": "不获得火药桶，改为投 1 骰"
       },
       "powderKegTransfer": {
         "title": "火药桶：选择转交目标",

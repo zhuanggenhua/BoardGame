@@ -43,6 +43,7 @@ import { useGlobalCursor } from '../core/cursor/useGlobalCursor';
 import { versionedPublicFileUrl } from '../lib/publicFileUrl';
 import { AudioManager } from '../lib/audio/AudioManager';
 import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
+import { reportClientAutoFeedbackOnce } from '../lib/feedback/clientAutoReport';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
 
@@ -74,6 +75,18 @@ class HomeModalErrorBoundary extends Component<HomeModalErrorBoundaryProps, Home
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('[Home] 游戏详情弹窗渲染失败，已回退到首页', error, errorInfo);
+        const signature = `home-modal-error-boundary:${error.name}:${error.message}`;
+        void reportClientAutoFeedbackOnce(signature, {
+            content: `[auto][home-modal-error-boundary] ${error.message || 'Home modal render error'}`,
+            autoReportKind: 'home-modal-render-error',
+            source: 'home-modal-error-boundary',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: error.name || 'Error',
+            errorMessage: error.message || 'Home modal render error',
+            errorSource: 'home.modal_error_boundary',
+            stack: [error.stack ?? '', errorInfo.componentStack ?? ''].filter(Boolean).join('\n'),
+        });
         this.props.onError();
     }
 

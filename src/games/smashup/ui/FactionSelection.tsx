@@ -98,6 +98,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         height: typeof window === 'undefined' ? 900 : window.innerHeight,
     }));
     const [factionSearch, setFactionSearch] = useState('');
+    const [selectionPreviewReady, setSelectionPreviewReady] = useState(() => (
+        typeof document !== 'undefined' && document.readyState === 'complete'
+    ));
 
     useEffect(() => {
         const updateViewportSize = () => {
@@ -115,6 +118,23 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             window.removeEventListener('orientationchange', updateViewportSize);
         };
     }, []);
+
+    useEffect(() => {
+        if (selectionPreviewReady || typeof window === 'undefined') return;
+        if (document.readyState === 'complete') {
+            setSelectionPreviewReady(true);
+            return;
+        }
+
+        const handleWindowLoad = () => {
+            setSelectionPreviewReady(true);
+        };
+
+        window.addEventListener('load', handleWindowLoad, { once: true });
+        return () => {
+            window.removeEventListener('load', handleWindowLoad);
+        };
+    }, [selectionPreviewReady]);
 
     const mySelections = useMemo(
         () => (playerID && selectionState ? selectionState.playerSelections[playerID] || [] : []),
@@ -471,10 +491,18 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                         }
                     `}>
                         <div className="w-full h-full bg-slate-100 overflow-hidden relative border border-slate-200">
-                            <CardPreview
-                                previewRef={coverCard ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: coverCard.id } } : undefined}
-                                className="w-full h-full"
-                            />
+                            {selectionPreviewReady ? (
+                                <CardPreview
+                                    previewRef={coverCard ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: coverCard.id } } : undefined}
+                                    className="w-full h-full"
+                                />
+                            ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.22),_rgba(15,23,42,0.9))]">
+                                    <div className="rounded-full border border-white/40 bg-black/25 p-3 text-white/90 shadow-lg">
+                                        <group.icon size={28} strokeWidth={2.25} style={{ color: group.color }} />
+                                    </div>
+                                </div>
+                            )}
 
                             {isTakenByOther && (
                                 <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-2 text-center z-30">

@@ -16,6 +16,7 @@ import {
     makeState,
     makeMatchState,
     getReactionPrompt,
+    getReactionPromptOptionBySourceDefId,
     getSimpleChoicePrompt,
     getPromptOption,
     getPromptOptions,
@@ -308,6 +309,131 @@ describe('Skeletons abilities', () => {
             defaultTestRandom,
         );
         expect(applied.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
+    });
+
+    it('skeletons_graveyard 挖出轮回者后，不能把刚翻出的自己立即重新埋葬', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{ uid: 'graveyard-1', defId: 'skeletons_graveyard', ownerId: '0', talentUsed: false }],
+                buriedCards: [
+                    { uid: 'returned-one', defId: 'skeletons_returned_one', trueOwnerId: '0', controllerId: '0', buriedFrom: 'hand' },
+                    { uid: 'other-buried', defId: 'robot_microbot_alpha', trueOwnerId: '0', controllerId: '0', buriedFrom: 'hand' },
+                ],
+            }],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { ongoingCardUid: 'graveyard-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const graveyardPrompt = getSimpleChoicePrompt(used.finalState, 'skeletons_graveyard');
+        const returnedOneOption = getPromptOption(graveyardPrompt, entry => entry.value?.cardUid === 'returned-one', 'returned one');
+
+        const afterUncover = respondToPrompt(
+            used.finalState,
+            returnedOneOption.id,
+            '0',
+            defaultTestRandom,
+        );
+        const counterPrompt = getSimpleChoicePrompt(afterUncover.finalState, 'skeletons_graveyard_counter');
+        const afterCounter = respondToPrompt(
+            afterUncover.finalState,
+            getPromptOptions(counterPrompt)[0].id,
+            '0',
+            defaultTestRandom,
+        );
+        const returnedOneSelfBuryPrompt = getSimpleChoicePrompt(afterCounter.finalState, 'skeletons_returned_one');
+        const selfBuryOption = getPromptOption(returnedOneSelfBuryPrompt, entry => entry.value?.cardUid === 'returned-one', 'returned one self bury');
+
+        const afterRejectedRebury = respondToPrompt(
+            afterCounter.finalState,
+            selfBuryOption.id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(afterRejectedRebury.finalState.core.bases[0].minions.some(minion => minion.uid === 'returned-one')).toBe(true);
+        expect(afterRejectedRebury.finalState.core.bases[0].buriedCards?.some(card => card.uid === 'returned-one') ?? false).toBe(false);
+
+        const reactionPrompt = getReactionPrompt(afterRejectedRebury.finalState);
+        const returnedOneReaction = getReactionPromptOptionBySourceDefId(afterRejectedRebury.finalState, reactionPrompt, 'skeletons_returned_one');
+        const afterReaction = respondToPrompt(
+            afterRejectedRebury.finalState,
+            returnedOneReaction.id,
+            '0',
+            defaultTestRandom,
+        );
+        const returnedOnePrompt = getSimpleChoicePrompt(afterReaction.finalState, 'skeletons_returned_one_uncover');
+
+        expect(getPromptOptions(returnedOnePrompt).some(option => option.value?.cardUid === 'returned-one')).toBe(false);
+        expect(getPromptOptions(returnedOnePrompt).some(option => option.value?.cardUid === 'other-buried')).toBe(true);
+    });
+
+    it('skeletons_graveyard 挖出随从时应能叠加墓碑的 +1 指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [
+                    { uid: 'graveyard-1', defId: 'skeletons_graveyard', ownerId: '0', talentUsed: false },
+                    { uid: 'gravestones-1', defId: 'skeletons_gravestones', ownerId: '0' },
+                ],
+                buriedCards: [
+                    { uid: 'buried-a', defId: 'robot_microbot_alpha', trueOwnerId: '0', controllerId: '0', buriedFrom: 'hand' },
+                ],
+            }],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { ongoingCardUid: 'graveyard-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const graveyardPrompt = getSimpleChoicePrompt(used.finalState, 'skeletons_graveyard');
+        const buriedOption = getPromptOption(graveyardPrompt, entry => entry.value?.cardUid === 'buried-a', 'buried minion');
+
+        const afterUncover = respondToPrompt(
+            used.finalState,
+            buriedOption.id,
+            '0',
+            defaultTestRandom,
+        );
+        const graveyardCounter = getSimpleChoicePrompt(afterUncover.finalState, 'skeletons_graveyard_counter');
+        const afterGraveyardCounter = respondToPrompt(
+            afterUncover.finalState,
+            getPromptOptions(graveyardCounter)[0].id,
+            '0',
+            defaultTestRandom,
+        );
+        const reactionPrompt = getReactionPrompt(afterGraveyardCounter.finalState);
+        const gravestonesReaction = getReactionPromptOptionBySourceDefId(afterGraveyardCounter.finalState, reactionPrompt, 'skeletons_gravestones');
+        const afterReaction = respondToPrompt(
+            afterGraveyardCounter.finalState,
+            gravestonesReaction.id,
+            '0',
+            defaultTestRandom,
+        );
+        const gravestonesCounter = getSimpleChoicePrompt(afterReaction.finalState, 'skeletons_gravestones_counter');
+        const resolved = respondToPrompt(
+            afterReaction.finalState,
+            getPromptOptions(gravestonesCounter)[0].id,
+            '0',
+            defaultTestRandom,
+        );
+
+        const minion = resolved.finalState.core.bases[0].minions.find(entry => entry.uid === 'buried-a');
+        expect(minion?.powerCounters).toBe(2);
     });
 
     it('skeletons_lord_of_bones 天赋可选择从手牌埋葬', () => {

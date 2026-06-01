@@ -195,6 +195,7 @@ function collectAllRegisteredIds(): Set<string> {
         interceptorIds,
         baseAbilitySuppressionIds,
         baseScoringSuppressionIds,
+        cardAbilitySuppressionIds,
     } = getRegisteredOngoingEffectIds();
     const { powerModifierIds, breakpointModifierIds } = getRegisteredModifierIds();
     const abilityKeys = getRegisteredAbilityKeys();
@@ -205,6 +206,7 @@ function collectAllRegisteredIds(): Set<string> {
     for (const id of interceptorIds) all.add(id);
     for (const id of baseAbilitySuppressionIds) all.add(id);
     for (const id of baseScoringSuppressionIds) all.add(id);
+    for (const id of cardAbilitySuppressionIds) all.add(id);
     for (const id of powerModifierIds) all.add(id);
     for (const id of breakpointModifierIds) all.add(id);
     for (const key of abilityKeys) all.add(key.split('::')[0]);

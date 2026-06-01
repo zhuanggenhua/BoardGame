@@ -3,9 +3,11 @@ import type { DiceThroneCommand, DiceThroneCore, DiceThroneEvent } from '../doma
 import { execute } from '../domain/execute';
 import { reduce } from '../domain/reducer';
 import { diceThroneFlowHooks } from '../domain/flowHooks';
+import { resolvePostDamageEffects } from '../domain/attack';
 import { getChoiceResolvedEventHandler } from '../domain/choiceResolvedEvents';
 import { RESOURCE_IDS } from '../domain/resources';
 import { TOKEN_IDS } from '../domain/ids';
+import { SLASH_2 } from '../heroes/ninja/abilities';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
@@ -76,6 +78,35 @@ describe('DiceThrone Ninja Token 机制', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
         expect(next.pendingDamage?.currentDamage).toBe(8);
         expect(next.pendingAttack?.bonusDamage).toBe(2);
+    });
+
+    it('斩击 II postDamage 应使用攻击骰快照判断三个相同数字，防御阶段不读取当前防御骰', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
+            ability.id === 'slash' ? SLASH_2 : ability
+        ));
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            value: index + 2,
+        }));
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'slash-2-4',
+            defenseAbilityId: 'splinter',
+            isDefendable: true,
+            damage: 6,
+            damageResolved: true,
+            resolvedDamage: 6,
+            attackDiceValues: [1, 1, 1, 4, 5],
+        };
+
+        const events = resolvePostDamageEffects(state.core, createQueuedRandom([1]), 300);
+        const next = applyEvents(state.core, events);
+
+        expect(events.some(event => event.type === 'TOKEN_GRANTED' && event.payload.tokenId === TOKEN_IDS.NINJUTSU)).toBe(true);
+        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(1);
     });
 
     it('忍术掷出 6 后选择慢性中毒分支，应 +2 伤害并给防御者慢性中毒', () => {

@@ -91,6 +91,10 @@ export function registerBuryInteractionHandlers(): void {
 }
 
 export function buildBuryCardEvents(params: BuildBuryCardEventsParams): SmashUpEvent[] {
+    if (params.buriedFrom === 'play' && isImmediateReburyOfUncoveredMinion(params)) {
+        return [];
+    }
+
     const buriedEvt: SmashUpEvent = {
         type: SU_EVENTS.CARD_BURIED,
         payload: {
@@ -120,6 +124,16 @@ export function buildBuryCardEvents(params: BuildBuryCardEventsParams): SmashUpE
     });
     if (queued) events.push(queued);
     return events;
+}
+
+function isImmediateReburyOfUncoveredMinion(params: BuildBuryCardEventsParams): boolean {
+    return params.core.bases.some((base) =>
+        base.minions.some((minion) =>
+            minion.uid === params.cardUid
+            && minion.defId === params.defId
+            && minion.metadata?.playedFrom === 'buried',
+        ),
+    );
 }
 
 export function buildBuriedCardReturnedToHandEvent(

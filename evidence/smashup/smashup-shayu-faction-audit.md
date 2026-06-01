@@ -87,7 +87,7 @@
 | `tornados_not_in_kansas` | 摧毁基地和附着行动；用牌库顶基地替换，原仆从保留。 | `abilities/tornados.ts` `tornadosNotInKansas` | base replace keepCards | L3 | E2E 证明基地替换后原随从保留、基地/随从行动被清理，baseDeck 顺序符合预期。 |
 | `tornados_over_the_rainbow` | 计分前 special：把你另一基地仆从移到计分基地。 | `abilities/tornados.ts` `tornadosOverTheRainbow` | beforeScoring move-in special | L3/L4 | E2E 从 Me First 窗口真实打出，随从从非计分基地移入计分基地。 |
 | `base_trailer_park` | 仆从移动到这里后，其上 +1 指示物。 | `abilities/tornados.ts` `baseTrailerPark` | onMinionMoved base ability | L1/L2 | 共享 move hook；Whirlwinds/Carried Away 行为链覆盖移动，指示物未单独 E2E。 |
-| `base_tornado_alley` | 每回合第一次仆从移到这里后，可把另一个仆从移到这里。 | `abilities/tornados.ts` `baseTornadoAlley` | once/turn base move hook | L3 | E2E 证明首次移入触发可选拉入，且同回合第二次移入不重复触发。 |
+| `base_tornado_alley` | 每回合第一次仆从移到这里后，可把另一个仆从移到这里。 | `abilities/tornados.ts` `baseTornadoAlley` | once/turn base move hook | L3 | 旧结论只证明“同回合首次触发 + 第二次不重复”，未覆盖 once 状态跨回合清理。2026-06-01 已补 `tornado-alley-base.test.ts`，证明上一位玩家回合残留记录不会阻止新回合首次移入触发。 |
 | `mythic_greeks_odysseus` | 你打出行动后，在你的一个仆从上放 +1 指示物。 | `abilities/mythic_greeks.ts` `odysseusActionTrigger` | onActionPlayed trigger | L2 | Argonaut 行为测试覆盖代表触发。 |
 | `mythic_greeks_argonaut` | 触发所有因你打出行动而触发的能力；可替代行动打出。 | `abilities/mythic_greeks.ts` `argonautOnPlay` | action trigger replay / special play | L2/L3 | 行为测试与 E2E 覆盖 Mythic Greeks 内 Odysseus/Heracles/Spartan action-trigger 代表链；跨派系泛化由共享注册表审计兜底。 |
 | `mythic_greeks_jason` | 每回合一次，打出行动后选基地，你在那里的仆从 +1 到回合结束。 | `abilities/mythic_greeks.ts` `jasonActionTrigger` | once/turn action trigger | L2 / scoped L3 | 行为链复用 trigger；Argonaut 真实入口已补 Jason base prompt 与 chosen-base buff E2E，不再是“未单独 E2E”。 |
@@ -270,3 +270,13 @@
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-after-move-destroy.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`
+
+## 2026-06-01 回写：`龙卷风走廊` 旧审计结论失效
+
+- **旧结论是什么**：本文 `base_tornado_alley` 条目此前写的是“首次移入触发可选拉入，且同回合第二次移入不重复触发”。
+- **为何失效**：旧证据只打到了对象级 happy path，没有打穿共享回合态 `usedBaseAbilitiesThisTurn` 的生命周期。旧实现会在 `TURN_STARTED` 时仅按 `playerId` 过滤 once 记录，而 `龙卷风走廊` 的判重只看 `baseIndex + baseDefId`，不看触发玩家，因此上一位玩家回合残留的记录会错误挡住下一位玩家本回合第一次移入触发。
+- **新增证据**：
+  - [src/games/smashup/domain/reduce.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/domain/reduce.ts:1739)：新回合开始时整组清空 `usedBaseAbilitiesThisTurn`。
+  - [src/games/smashup/__tests__/bases/tornado-alley-base.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/tornado-alley-base.test.ts:72)：新增“上一位玩家回合留下的 once 记录不应阻止新回合首次移入触发”。
+  - 验证：`npx vitest run src/games/smashup/__tests__/bases/tornado-alley-base.test.ts --config vitest.config.ts`、`npx vitest run src/games/smashup/__tests__/abilities/tornados.test.ts --config vitest.config.ts`。
+- **新结论**：`龙卷风走廊（base_tornado_alley）` 现在不仅验证“同回合只触发一次”，也验证“跨回合必须重置 once 状态”。本次漏审命中 D5/D8/D18/D49：旧审计把共享 turn-state 边界遗漏成了对象已通过，不能再把“代表性 E2E 已验证”解释成 once/turn 生命周期已全面收口。

@@ -70,7 +70,11 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-cursed-pirate-curse-card', 'description'),
         previewRef: atlasPreview(18),
         sourceAtlasIndex: 18,
-        effects: [{ description: 'L1 录入：选择抽 1，或受 2/4 伤害并抽 2/3。' }],
+        effects: [{
+            description: '选择抽 1，或受 2/4 伤害并抽 2/3。',
+            action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-curse-card-choice' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-cursed-pirate-batten-down',
@@ -81,7 +85,11 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-cursed-pirate-batten-down', 'description'),
         previewRef: atlasPreview(19),
         sourceAtlasIndex: 19,
-        effects: [{ description: 'L1 录入：弃掉所有手牌，然后抽 4。' }],
+        effects: [{
+            description: '弃掉所有手牌，然后抽 4。',
+            action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-batten-down' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-cursed-pirate-shark-bait',
@@ -111,7 +119,11 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         sourceAtlasIndex: 21,
         isAttackModifier: true,
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: 'L1 录入：投 5 骰，按弯刀数量加伤；若至少加 3 伤害则施加火药桶。' }],
+        effects: [{
+            description: '投 5 骰，每个弯刀增加 1 攻击伤害；若至少增加 3 伤害，则施加火药桶。',
+            action: { type: 'custom', target: 'opponent', customActionId: 'cursed-pirate-flay-roll' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-cursed-pirate-ransom',
@@ -122,7 +134,12 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-cursed-pirate-ransom', 'description'),
         previewRef: atlasPreview(22),
         sourceAtlasIndex: 22,
-        effects: [{ description: 'L1 录入：选择对手一颗骰子，除非对手支付 2CP，否则重掷该骰子。' }],
+        playCondition: { requireDiceExists: true, requireHasRolled: true },
+        effects: [{
+            description: '选择对手一颗骰子；除非其支付 2CP，否则重掷该骰子。',
+            action: { type: 'custom', target: 'opponent', customActionId: 'cursed-pirate-ransom-die-choice' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-cursed-pirate-bluster',
@@ -201,7 +218,11 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-cursed-pirate-crows-nest', 'description'),
         previewRef: atlasPreview(27),
         sourceAtlasIndex: 27,
-        effects: [{ description: 'L1 录入：选择一名对手并投 1 骰，按弯刀/战利品/骷髅结算手牌信息或弃牌。' }],
+        effects: [{
+            description: '选择一名对手并投 1 骰：弯刀查看其手牌；战利品由其自选弃 1；骷髅随机弃 1。',
+            action: { type: 'custom', target: 'opponent', customActionId: 'cursed-pirate-crows-nest-roll' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-cursed-pirate-hefty',
@@ -212,7 +233,11 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-cursed-pirate-hefty', 'description'),
         previewRef: atlasPreview(28),
         sourceAtlasIndex: 28,
-        effects: [{ description: 'L1 录入：投 2 骰，若投出战利品则抽 2 并获得 2CP。' }],
+        effects: [{
+            description: '投 2 骰；若投出战利品，抽 2 并获得 2CP。',
+            action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-hefty-roll' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-cursed-pirate-pirates-life',
@@ -223,7 +248,11 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-cursed-pirate-pirates-life', 'description'),
         previewRef: atlasPreview(29),
         sourceAtlasIndex: 29,
-        effects: [{ description: 'L1 录入：获得 1 诅咒金币；若处于咒缚面则改为治疗 3。' }],
+        effects: [{
+            description: '普通面路径：获得 1 诅咒金币；咒缚面治疗 3 待面板翻面状态合同。',
+            action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-pirates-life' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-cursed-pirate-go-fish',
@@ -234,7 +263,11 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-cursed-pirate-go-fish', 'description'),
         previewRef: atlasPreview(30),
         sourceAtlasIndex: 30,
-        effects: [{ description: '对至多 3 名不同的对手施加火药桶。', action: { type: 'grantStatus', target: 'opponent', statusId: STATUS_IDS.POWDER_KEG, value: 1 }, timing: 'immediate' }],
+        effects: [{
+            description: '对至多 3 名不同的对手施加火药桶。',
+            action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-go-fish-powder-keg-targets' },
+            timing: 'immediate',
+        }],
     },
     {
         id: 'card-cursed-pirate-give-me-some',
@@ -256,7 +289,11 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-cursed-pirate-sip', 'description'),
         previewRef: atlasPreview(32),
         sourceAtlasIndex: 32,
-        effects: [{ description: 'L1 录入：对一名对手施加火药桶；该对手可改为投 1 骰，3-6 时获得火药桶和凋零。' }],
+        effects: [{
+            description: '对一名对手施加火药桶；该对手可改为投 1 骰，3-6 时获得火药桶和凋零。',
+            action: { type: 'custom', target: 'opponent', customActionId: 'cursed-pirate-sip-choice' },
+            timing: 'immediate',
+        }],
     },
 ];
 

@@ -30,6 +30,121 @@ interface SmashUpRendererArgs {
     onMouseLeave?: () => void;
 }
 
+const HULUWAWA_TITAN_DEF_ID = 'huluwawa_little_king_kong';
+
+function wrapSvgTextLines(text: string, maxCharsPerLine: number): string[] {
+    const lines: string[] = [];
+    for (const paragraph of text.split('\n')) {
+        let currentLine = '';
+        for (const char of [...paragraph]) {
+            if (currentLine.length >= maxCharsPerLine) {
+                lines.push(currentLine);
+                currentLine = char;
+            } else {
+                currentLine += char;
+            }
+        }
+        if (currentLine) {
+            lines.push(currentLine);
+        }
+    }
+    return lines;
+}
+
+function renderHuluwawaTitanFallback(
+    name: string,
+    text: string,
+    className?: string,
+    style?: CSSProperties,
+) {
+    const effectLines = wrapSvgTextLines(text, 18);
+    const orbColors = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#38bdf8', '#6366f1', '#a855f7'];
+    const orbPositions = [
+        { x: 182, y: 272 },
+        { x: 278, y: 230 },
+        { x: 382, y: 214 },
+        { x: 488, y: 230 },
+        { x: 562, y: 292 },
+        { x: 528, y: 384 },
+        { x: 218, y: 394 },
+    ];
+
+    return (
+        <svg
+            viewBox="0 0 714 1000"
+            preserveAspectRatio="none"
+            className={className}
+            style={style}
+            role="img"
+            aria-label={name}
+        >
+            <defs>
+                <linearGradient id="huluwawa-card-bg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f6eed9" />
+                    <stop offset="45%" stopColor="#efdfb1" />
+                    <stop offset="100%" stopColor="#d9b26d" />
+                </linearGradient>
+                <linearGradient id="huluwawa-header-bg" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#166534" />
+                    <stop offset="50%" stopColor="#1f8a43" />
+                    <stop offset="100%" stopColor="#166534" />
+                </linearGradient>
+                <linearGradient id="huluwawa-art-bg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#e7f9b9" />
+                    <stop offset="34%" stopColor="#fde68a" />
+                    <stop offset="100%" stopColor="#fdba74" />
+                </linearGradient>
+                <radialGradient id="huluwawa-art-glow" cx="50%" cy="30%" r="32%">
+                    <stop offset="0%" stopColor="rgba(254,240,138,0.98)" />
+                    <stop offset="100%" stopColor="rgba(254,240,138,0)" />
+                </radialGradient>
+                {orbColors.map((color, index) => (
+                    <radialGradient key={color} id={`huluwawa-orb-${index}`} cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stopColor="#fff7ed" />
+                        <stop offset="35%" stopColor={color} />
+                        <stop offset="100%" stopColor="#7c2d12" />
+                    </radialGradient>
+                ))}
+            </defs>
+
+            <rect x="0" y="0" width="714" height="1000" rx="28" fill="url(#huluwawa-card-bg)" />
+            <rect x="12" y="12" width="690" height="976" rx="26" fill="none" stroke="#a96a16" strokeWidth="16" />
+            <rect x="30" y="30" width="654" height="940" rx="20" fill="none" stroke="#f5deb3" strokeWidth="6" />
+
+            <rect x="42" y="42" width="630" height="126" rx="18" fill="url(#huluwawa-header-bg)" />
+            <text x="58" y="92" fill="#fef3c7" fontSize="32" fontWeight="700">Titan</text>
+            <text x="54" y="146" fill="#fef3c7" fontSize="58" fontWeight="700">{name}</text>
+
+            <rect x="502" y="56" width="152" height="60" rx="14" fill="#14532d" />
+            <text x="524" y="95" fill="#ecfccb" fontSize="24" fontWeight="700">DIY Faction</text>
+
+            <rect x="48" y="188" width="92" height="92" rx="18" fill="#1d4ed8" />
+            <text x="75" y="257" fill="#e0f2fe" fontSize="66" fontWeight="700">4</text>
+
+            <rect x="58" y="198" width="598" height="348" rx="24" fill="url(#huluwawa-art-bg)" />
+            <circle cx="357" cy="304" r="176" fill="url(#huluwawa-art-glow)" />
+            {orbPositions.map((orb, index) => (
+                <g key={`${orb.x}-${orb.y}`}>
+                    <circle cx={orb.x} cy={orb.y} r="36" fill={`url(#huluwawa-orb-${index})`} />
+                    <circle cx={orb.x} cy={orb.y} r="38.5" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="5" />
+                </g>
+            ))}
+            <text x="222" y="432" fill="rgba(14,78,35,0.92)" fontSize="180" fontWeight="700">葫</text>
+            <text x="192" y="500" fill="rgba(255,255,255,0.92)" fontSize="44" fontWeight="700">七兄弟合体泰坦</text>
+
+            <rect x="54" y="578" width="606" height="330" rx="22" fill="#0f172a" />
+            <text x="82" y="626" fill="#fef3c7" fontSize="30" fontWeight="700">效果</text>
+            <text x="82" y="670" fill="#f8fafc" fontSize="24" fontWeight="400">
+                {effectLines.map((line, index) => (
+                    <tspan key={`${line}-${index}`} x="82" dy={index === 0 ? 0 : 34}>
+                        {line}
+                    </tspan>
+                ))}
+            </text>
+        </svg>
+    );
+}
+
 export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
   previewRef,
   locale,
@@ -155,6 +270,10 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
     // Early returns after all hooks
     if (previewRef.type !== 'renderer' || !defId) {
         return null;
+    }
+
+    if (defId === HULUWAWA_TITAN_DEF_ID) {
+        return renderHuluwawaTitanFallback(name, text, className, style);
     }
 
     // 如果未配置任何图集，只渲染外框和名字

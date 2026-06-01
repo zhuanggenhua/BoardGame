@@ -1,14 +1,21 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, SmashUpCore } from '../domain/types';
-import { getReactionPrompt, makeMatchState, makePlayer } from './helpers';
+import type { SmashUpCore } from '../domain/types';
+import { getReactionPrompt, getSimpleChoicePrompt, makeMatchState, makePlayer, respondToPromptOption } from './helpers';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
+import { clearRegistry, registerAbility } from '../domain/abilityRegistry';
+import { clearBaseAbilityRegistry, registerBaseAbility } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry, registerTrigger, collectTriggers } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { fireMinionPlayedTriggers } from '../domain/abilityHelpers';
+import { postProcessSystemEvents } from '../domain';
+import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 
 beforeEach(() => {
+  clearRegistry();
+  clearBaseAbilityRegistry();
   clearOngoingEffectRegistry();
   clearInteractionHandlers();
   registerReactionQueueInteractionHandlers();
@@ -108,6 +115,88 @@ describe('reaction queue: onMinionPlayed ordering', () => {
     const trigger = queued.payload.triggers[0];
     expect(trigger.sourceEventId).toBe('minion-played:m1:0:10');
     expect(trigger.frameId).toBe('minion-played-frame:m1:0:10');
+  });
+
+  it('随从本体交互完成后，同一次进场触发的基地能力仍会继续结算', () => {
+    registerAbility('alien_scout', 'onPlay', (ctx) => {
+      const interaction = createSimpleChoice(
+        'test_minion_onplay_prompt',
+        ctx.playerId,
+        '随从本体',
+        [
+          {
+            id: 'resolve',
+            label: '结算',
+            value: { resolve: true },
+            displayMode: 'button' as const,
+          },
+        ],
+        { sourceId: 'test_minion_onplay_prompt', targetType: 'button' },
+      );
+      return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    });
+    registerInteractionHandler('test_minion_onplay_prompt', (state, playerId, _value, _data, _random, timestamp) => ({
+      state,
+      events: [{
+        type: SU_EVENTS.ABILITY_FEEDBACK,
+        payload: { playerId, messageKey: 'onplay_done', tone: 'info' },
+        timestamp,
+      } as any],
+    }));
+    registerBaseAbility('base_castle_blood', 'onMinionPlayed', (ctx) => {
+      const interaction = createSimpleChoice(
+        'test_base_on_minion_played_prompt',
+        ctx.playerId,
+        '基地能力',
+        [
+          {
+            id: 'base-resolve',
+            label: '结算基地能力',
+            value: { resolve: true },
+            displayMode: 'button' as const,
+          },
+        ],
+        { sourceId: 'test_base_on_minion_played_prompt', targetType: 'button' },
+      );
+      return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {});
+
+    const core = core2p();
+    core.bases[0] = { ...core.bases[0], defId: 'base_castle_blood' };
+    const matchState = makeMatchState(core);
+    const processed = postProcessSystemEvents(core, [{
+      type: SU_EVENTS.MINION_PLAYED,
+      payload: {
+        playerId: '0',
+        cardUid: 'm1',
+        defId: 'alien_scout',
+        baseIndex: 0,
+        power: 2,
+      },
+      timestamp: 10,
+    } as any], { shuffle: (a: any[]) => a } as any, matchState);
+
+    expect(getSimpleChoicePrompt(processed.matchState!, 'test_minion_onplay_prompt')).toBeDefined();
+    expect(processed.matchState!.core.triggerQueue ?? []).toHaveLength(1);
+
+    const resolved = respondToPromptOption(
+      processed.matchState!,
+      (option: any) => option.id === 'resolve',
+      'resolve onPlay option',
+      '0',
+      { shuffle: (a: any[]) => a } as any,
+    );
+
+    expect(resolved.success).toBe(true);
+    expect(resolved.events).toContainEqual(expect.objectContaining({
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: expect.objectContaining({ messageKey: 'onplay_done' }),
+    }));
+    expect(resolved.events).toContainEqual(expect.objectContaining({
+      type: SU_EVENTS.TRIGGER_CONSUMED,
+    }));
+    expect(getSimpleChoicePrompt(resolved.finalState, 'test_base_on_minion_played_prompt')).toBeDefined();
+    expect(resolved.finalState.core.triggerQueue ?? []).toHaveLength(0);
   });
 });
 

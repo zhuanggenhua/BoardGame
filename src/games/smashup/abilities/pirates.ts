@@ -845,7 +845,9 @@ const pirateSeaDogsChooseToPromptProgram = createPromptProgram<PirateSeaDogsToPr
             if (minion.controller === context.playerId) continue;
             const def = getCardDef(minion.defId);
             if (def?.faction !== context.factionId) continue;
-            if (isMinionProtected(state.core, minion, context.fromBase, context.playerId, 'affect')) {
+            if (isMinionProtected(state.core, minion, context.fromBase, context.playerId, 'affect', {
+                sourceKind: 'action',
+            })) {
                 protectedSkipped += 1;
                 continue;
             }

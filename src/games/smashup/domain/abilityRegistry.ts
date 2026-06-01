@@ -8,6 +8,7 @@
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
 import type { SmashUpCore, SmashUpEvent, AbilityTag, ActiveDuel, ValidationResult } from './types';
 import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
+import { isCardSuppressed } from './ongoingEffects';
 import {
     createEffectProgram,
     executeAbilityProgram,
@@ -245,6 +246,9 @@ export function resolveTalent(defId: string): AbilityExecutor | undefined {
 }
 
 function validateAbilityUseByTag(ctx: AbilityContext, tag: AbilityTag): ValidationResult {
+    if (isCardSuppressed(ctx.state, ctx.cardUid)) {
+        return { valid: false, error: '该卡牌能力已被压制' };
+    }
     const validator = resolveAbilityDefinition(ctx.defId, tag)?.validateUse;
     const error = validator?.(ctx) ?? null;
     return error ? { valid: false, error } : { valid: true };

@@ -5,6 +5,7 @@
  */
 
 import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState } from '../../../engine/types';
+import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import {
     processDestroyMoveCycle,
     processAffectTriggers,
@@ -36,6 +37,9 @@ import type {
     MinionPowerBreakdown,
     MinionOnBase,
     TalentUsedEvent,
+    VpAwardedEvent,
+    ActionReturnToHandOptionArmedEvent,
+    SpecialAfterScoringConsumedEvent,
 } from './types';
 import {
     PHASE_ORDER,
@@ -49,7 +53,7 @@ import {
     getCurrentPlayerId,
 } from './types';
 import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from './ongoingModifiers';
-import { collectTriggers, fireTriggerForSource, hasRegisteredTrigger, interceptEvent as ongoingInterceptEvent, isBaseScoringSuppressed } from './ongoingEffects';
+import { collectTriggers, fireTriggerForSource, getModifiedBaseVp, hasRegisteredTrigger, interceptEvent as ongoingInterceptEvent, isBaseScoringSuppressed } from './ongoingEffects';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import {
     getSmashUpReactionSession,
@@ -84,10 +88,7 @@ import { triggerBaseAbility, triggerExtendedBaseAbility, hasBaseAbility } from '
 import { collectBaseAbilityTriggers, collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
 import { buildBaseTargetOptions, createSkipOption, isSpecialLimitBlocked } from './abilityHelpers';
 import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
-import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import type { SpecialAfterScoringConsumedEvent } from './types';
 import { queueImmediateExtraPlayInteractions } from './extraPlay';
 import {
     appendScoringFrameDeferredPayload,
@@ -106,6 +107,79 @@ import {
     type SmashUpScoringBaseRef,
 } from './scoringSession';
 import { getActiveResolutionFrame } from '../../../engine/systems/resolutionStack';
+
+function buildActionReturnToHandPromptKey(event: ActionReturnToHandOptionArmedEvent): string {
+    return [
+        event.type,
+        event.payload.playerId,
+        event.payload.ownerId,
+        event.payload.cardUid,
+        event.payload.reason,
+        event.timestamp ?? 0,
+    ].join(':');
+}
+
+function queueActionReturnToHandPrompts(
+    state: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+    now: number,
+): MatchState<SmashUpCore> {
+    const sysAny = state.sys as Record<string, unknown>;
+    if (!(sysAny._processedActionReturnToHandPromptEvents instanceof Set)) {
+        sysAny._processedActionReturnToHandPromptEvents = new Set<string>();
+    }
+    const processedKeys = sysAny._processedActionReturnToHandPromptEvents as Set<string>;
+
+    let nextState = state;
+    for (const rawEvent of events) {
+        if (rawEvent.type !== SU_EVENTS.ACTION_RETURN_TO_HAND_OPTION_ARMED) continue;
+        const event = rawEvent as ActionReturnToHandOptionArmedEvent;
+        const promptKey = buildActionReturnToHandPromptKey(event);
+        if (processedKeys.has(promptKey)) continue;
+        processedKeys.add(promptKey);
+
+        const owner = nextState.core.players[event.payload.ownerId];
+        const inDiscard = owner?.discard.some((card) => card.uid === event.payload.cardUid && card.defId === event.payload.defId) ?? false;
+        if (!inDiscard) continue;
+
+        const actionName = getCardDef(event.payload.defId)?.name ?? event.payload.defId;
+        nextState = queueInteraction(nextState, createSimpleChoice(
+            `smashup_action_return_to_hand_${event.payload.cardUid}_${event.timestamp ?? now}`,
+            event.payload.playerId,
+            `无限循环：是否将${actionName}收入手牌？`,
+            [
+                {
+                    id: 'return',
+                    label: '收入手牌',
+                    value: {
+                        returnToHand: true,
+                        cardUid: event.payload.cardUid,
+                        defId: event.payload.defId,
+                        ownerId: event.payload.ownerId,
+                        reason: event.payload.reason,
+                    },
+                },
+                {
+                    id: 'leave',
+                    label: '留在原处',
+                    value: {
+                        returnToHand: false,
+                        cardUid: event.payload.cardUid,
+                        defId: event.payload.defId,
+                        ownerId: event.payload.ownerId,
+                        reason: event.payload.reason,
+                    },
+                },
+            ],
+            {
+                sourceId: 'geeks_non_infinite_loop_return',
+                autoResolveIfSingle: false,
+            },
+        ));
+    }
+
+    return nextState;
+}
 
 // ============================================================================
 
@@ -239,6 +313,8 @@ function buildTurnEndAdvancePayload(core: SmashUpCore): TurnEndAdvancePayload {
 }
 
 function buildBaseRankings(
+    core: SmashUpCore,
+    baseIndex: number,
     baseDef: { vpAwards: number[] },
     playerPowers: Map<PlayerId, number>,
 ): { playerId: PlayerId; power: number; vp: number }[] {
@@ -255,7 +331,13 @@ function buildBaseRankings(
         }
 
         const awardSlot = groupEnd;
-        const vp = awardSlot < 3 ? (baseDef.vpAwards[awardSlot] ?? 0) : 0;
+        const printedVp = awardSlot < 3 ? (baseDef.vpAwards[awardSlot] ?? 0) : 0;
+        const vp = getModifiedBaseVp(
+            core,
+            baseIndex,
+            sorted[index][0],
+            printedVp,
+        );
 
         for (let i = index; i <= groupEnd; i += 1) {
             rankings.push({
@@ -560,7 +642,7 @@ export function scoreOneBase(
 
     const updatedBase = updatedCore.bases[baseIndex];
     const playerPowers = collectQualifiedPlayerPowers(updatedCore, updatedBase, baseIndex);
-    const preliminaryRankings = buildBaseRankings(baseDef, playerPowers);
+    const preliminaryRankings = buildBaseRankings(updatedCore, baseIndex, baseDef, playerPowers);
 
     const alreadyTriggeredWhenScoring = updatedCore.whenScoringTriggeredBases?.includes(baseIndex) ?? false;
     const whenScoringFrameId = `score-when:${baseIndex}:${now}`;
@@ -612,7 +694,7 @@ export function scoreOneBase(
     const effectiveBreakpoint = getEffectiveBreakpoint(updatedCore, scoringBase, baseIndex);
     const scoredByLockedEligibility = totalPower < effectiveBreakpoint;
     const finalPlayerPowers = collectQualifiedPlayerPowers(updatedCore, scoringBase, baseIndex);
-    const rankings = buildBaseRankings(baseDef, finalPlayerPowers);
+    const rankings = buildBaseRankings(updatedCore, baseIndex, baseDef, finalPlayerPowers);
 
     const minionBreakdowns: Record<PlayerId, MinionPowerBreakdown[]> = {};
     for (const m of scoringBase.minions) {
@@ -2240,7 +2322,34 @@ function postProcessSystemEvents(
     }
     
     for (const event of afterDeckInspection.events) {
-        if (event.type === SU_EVENTS.CARDS_DISCARDED) {
+        if (event.type === SU_EVENTS.VP_AWARDED) {
+            const vpEvt = event as VpAwardedEvent;
+            let tempCore = state;
+            for (const preEvt of prePlayEvents) {
+                tempCore = reduce(tempCore, preEvt);
+            }
+            if (!inputEventsAlreadyReduced) {
+                tempCore = reduce(tempCore, event);
+            }
+            const sourceEventId = `vp-awarded:${vpEvt.payload.playerId}:${event.timestamp}`;
+            const frameId = `vp-awarded-frame:${vpEvt.payload.playerId}:${event.timestamp}`;
+            const queued = collectTriggers(tempCore, 'onVpAwarded', {
+                state: tempCore,
+                matchState: tempCore === ms.core ? ms : { ...ms, core: tempCore },
+                playerId: vpEvt.payload.playerId,
+                vpAmount: vpEvt.payload.amount,
+                reason: vpEvt.payload.reason,
+                frameId,
+                sourceEventId,
+                random,
+                now: event.timestamp,
+            });
+            if (queued) {
+                derivedEvents.push(queued);
+                ms = queued.matchState ?? ms;
+            }
+            prePlayEvents.push(event);
+        } else if (event.type === SU_EVENTS.CARDS_DISCARDED) {
             const discardEvt = event as { type: string; payload: { playerId: PlayerId; cardUids: string[] }; timestamp: number };
             const tempCore = prePlayEvents.reduce((acc, preEvt) => reduce(acc, preEvt), state);
             const queued = collectTriggers(tempCore, 'onCardsDiscarded', {
@@ -2633,6 +2742,8 @@ function postProcessSystemEvents(
             } as any,
         };
     }
+
+    ms = queueActionReturnToHandPrompts(ms, finalEvents, now);
 
     return { events: finalEvents, matchState: ms };
 }

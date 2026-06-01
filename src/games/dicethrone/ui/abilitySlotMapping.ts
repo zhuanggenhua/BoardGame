@@ -32,6 +32,28 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         calm: ['__treant-unmapped-calm__'],
         meditate: ['rooted'],
     },
+    zhanshujia: {
+        fist: ['sabre-thrust'],
+        chi: ['carpet-bombing'],
+        sky: ['war-monger'],
+        lotus: ['drum-movement'],
+        combo: ['flanking'],
+        lightning: ['expand-battlefield'],
+        calm: ['strategic-shift'],
+        meditate: ['countermeasures'],
+        ultimate: ['high-ground'],
+    },
+    cursed_pirate: {
+        fist: ['soul-stab'],
+        chi: ['marked-for-death'],
+        sky: ['cursed'],
+        lotus: ['deep-sea-dive'],
+        combo: ['breath-of-death'],
+        lightning: ['soul-command'],
+        calm: ['undead-claw'],
+        meditate: ['still-wet-behind-ears'],
+        ultimate: ['merciless-curse'],
+    },
 };
 
 const ABILITY_BASE_ID_MAP = new Map<string, string>();

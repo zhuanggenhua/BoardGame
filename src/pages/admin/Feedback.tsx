@@ -89,11 +89,33 @@ type ReporterTypeOptionWithLabel = ReporterTypeOption & { label: string };
 type SourceOptionValue =
     | 'feedback-modal'
     | 'online-ai-watchdog'
+    | 'client-auto-report'
+    | 'client-runtime-guard'
+    | 'client-window-error'
+    | 'client-unhandled-rejection'
+    | 'react-error-boundary'
+    | 'board-render-error'
+    | 'home-modal-error-boundary'
     | 'global-error-capture'
     | 'system-unsatisfiable-interaction'
     | 'unknown';
 type SourceOption = { value: SourceOptionValue; label: string };
 type SeverityConfig = Record<FeedbackItem['severity'], { label: string; dot: string; tone: string }>;
+
+const SOURCE_OPTIONS: Array<{ value: SourceOptionValue; labelKey: string }> = [
+    { value: 'feedback-modal', labelKey: 'feedback.source.feedbackModal' },
+    { value: 'online-ai-watchdog', labelKey: 'feedback.source.onlineAiWatchdog' },
+    { value: 'client-auto-report', labelKey: 'feedback.source.clientAutoReport' },
+    { value: 'client-runtime-guard', labelKey: 'feedback.source.clientRuntimeGuard' },
+    { value: 'client-window-error', labelKey: 'feedback.source.clientWindowError' },
+    { value: 'client-unhandled-rejection', labelKey: 'feedback.source.clientUnhandledRejection' },
+    { value: 'react-error-boundary', labelKey: 'feedback.source.reactErrorBoundary' },
+    { value: 'board-render-error', labelKey: 'feedback.source.boardRenderError' },
+    { value: 'home-modal-error-boundary', labelKey: 'feedback.source.homeModalErrorBoundary' },
+    { value: 'global-error-capture', labelKey: 'feedback.source.globalErrorCapture' },
+    { value: 'system-unsatisfiable-interaction', labelKey: 'feedback.source.unsatAutoSkip' },
+    { value: 'unknown', labelKey: 'feedback.source.unknown' },
+];
 
 const STATUS_OPTIONS: StatusOption[] = [
     { value: 'open', color: 'bg-amber-50 text-amber-700 border-amber-200' },
@@ -145,13 +167,10 @@ const buildReporterTypeOptions = (t: TFunction<'admin'>): ReporterTypeOptionWith
 );
 
 const buildSourceOptions = (t: TFunction<'admin'>): SourceOption[] => (
-    [
-        { value: 'feedback-modal', label: t('feedback.source.feedbackModal') },
-        { value: 'online-ai-watchdog', label: t('feedback.source.onlineAiWatchdog') },
-        { value: 'global-error-capture', label: t('feedback.source.globalErrorCapture') },
-        { value: 'system-unsatisfiable-interaction', label: t('feedback.source.unsatAutoSkip') },
-        { value: 'unknown', label: t('feedback.source.unknown') },
-    ]
+    SOURCE_OPTIONS.map((option) => ({
+        value: option.value,
+        label: t(option.labelKey),
+    }))
 );
 
 const buildSeverityConfig = (t: TFunction<'admin'>): SeverityConfig => ({
@@ -190,18 +209,8 @@ const resolveOriginInfo = (item: FeedbackItem): {
 };
 
 const resolveSourceLabel = (t: TFunction<'admin'>, source: string): string => {
-    switch (source) {
-        case 'feedback-modal':
-            return t('feedback.source.feedbackModal');
-        case 'online-ai-watchdog':
-            return t('feedback.source.onlineAiWatchdog');
-        case 'global-error-capture':
-            return t('feedback.source.globalErrorCapture');
-        case 'system-unsatisfiable-interaction':
-            return t('feedback.source.unsatAutoSkip');
-        default:
-            return t('feedback.source.unknown');
-    }
+    const option = SOURCE_OPTIONS.find((item) => item.value === source);
+    return option ? t(option.labelKey) : t('feedback.source.unknown');
 };
 
 function StatusSelect({

@@ -10,10 +10,10 @@ import { initializeCustomActions } from '../domain/customActions';
 import { validateCommand } from '../domain/commandValidation';
 import { getTokenStackLimit } from '../domain/rules';
 import { RESOURCE_IDS } from '../domain/resources';
-import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
+import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import type { CharacterId, DiceThroneCommand, DiceThroneCore, DiceThroneEvent, TurnPhase } from '../domain/types';
 import { initHeroState } from '../domain/characters';
-import { createInitialSystemState } from '../../../engine/pipeline';
+import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
     cmd,
@@ -110,6 +110,49 @@ const createZhanshujiaDefenseCardPlayState = (cardId: string) => {
         defenseAbilityId: 'countermeasures',
     } as any;
     return state;
+};
+
+const createCursedPirateCardPlayState = (cardId: string, phase: TurnPhase = 'main1') => {
+    const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+    state.sys.phase = phase;
+    state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+    state.core.players['0'].hand = [getCardById(cardId)];
+    return state;
+};
+
+const playCardWithPipeline = (
+    state: MatchState<DiceThroneCore>,
+    playerId: PlayerId,
+    cardId: string,
+    random = fixedRandom,
+) => executePipeline(
+    { domain: DiceThroneDomain, systems: testSystems },
+    state,
+    command('PLAY_CARD', playerId, { cardId }),
+    random,
+    Object.keys(state.core.players) as PlayerId[],
+);
+
+const setCursedPirateDiceValues = (state: MatchState<DiceThroneCore>, values: number[]) => {
+    const faceByValue: Record<number, string> = {
+        1: CURSED_PIRATE_DICE_FACE_IDS.CUTLASS,
+        2: CURSED_PIRATE_DICE_FACE_IDS.CUTLASS,
+        3: CURSED_PIRATE_DICE_FACE_IDS.CUTLASS,
+        4: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
+        5: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
+        6: CURSED_PIRATE_DICE_FACE_IDS.SKULL,
+    };
+    state.core.dice = state.core.dice.map((die, index) => {
+        const value = values[index] ?? die.value;
+        const symbol = faceByValue[value] ?? null;
+        return {
+            ...die,
+            definitionId: 'cursed_pirate-dice',
+            value,
+            symbol: symbol as typeof die.symbol,
+            symbols: symbol ? [symbol] : [],
+        };
+    });
 };
 
 const createFourPlayerCursedPirateState = (): MatchState<DiceThroneCore> => {
@@ -1113,6 +1156,24 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(cutlassDamageEvents).toHaveLength(2);
         expect(cutlassDamageEvents.every(event => event.payload.amount === 2 && event.payload.unblockable === true)).toBe(true);
 
+        const markedLootAndSkull = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        const markedLootAndSkullEvents = resolveEffectsToEvents(
+            getAbilityEffects(markedLootAndSkull.core, '0', 'marked-for-death'),
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'marked-for-death',
+                state: markedLootAndSkull.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: createQueuedRandom([4, 5, 6, 6]) },
+        );
+        const markedLootAndSkullNext = applyEvents(markedLootAndSkull.core, markedLootAndSkullEvents);
+        expect(markedLootAndSkullNext.players['0'].hand).toHaveLength(2);
+        expect(markedLootAndSkullNext.players['1'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
+
         const claw = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         claw.core.players['1'].statusEffects[STATUS_IDS.CURSED_COIN] = 3;
         const clawEvents = resolveEffectsToEvents(
@@ -1250,6 +1311,66 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(extraAttack?.payload.sourceStatusId).toBe('war-monger');
     });
 
+    it('战争贩子 II 勋章分支在防御阶段收口后会进入额外进攻投掷阶段', () => {
+        const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'war-monger',
+            isDefendable: true,
+            defenseAbilityId: 'still-wet-behind-ears',
+            damageResolved: true,
+            resolvedDamage: 0,
+        } as any;
+        state.core.extraAttackInProgress = {
+            attackerId: '0',
+            originalActivePlayerId: '0',
+            phaseEntered: false,
+        };
+
+        const result = diceThroneFlowHooks.onPhaseExit?.({
+            state: { core: state.core, sys: { phase: 'defensiveRoll' } },
+            from: 'defensiveRoll',
+            to: 'main2',
+            command: command('ADVANCE_PHASE', '1'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+
+        expect(Array.isArray(result)).toBe(false);
+        const resolved = result as Exclude<typeof result, DiceThroneEvent[] | void>;
+        expect(resolved?.overrideNextPhase).toBe('offensiveRoll');
+    });
+
+    it('额外进攻已经进入 offensiveRoll 后，后续攻击收口不应再次跳回 offensiveRoll', () => {
+        const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'flanking',
+            isDefendable: true,
+            defenseAbilityId: 'still-wet-behind-ears',
+            damageResolved: true,
+            resolvedDamage: 0,
+        } as any;
+        state.core.extraAttackInProgress = {
+            attackerId: '0',
+            originalActivePlayerId: '0',
+            phaseEntered: true,
+        };
+
+        const result = diceThroneFlowHooks.onPhaseExit?.({
+            state: { core: state.core, sys: { phase: 'defensiveRoll' } },
+            from: 'defensiveRoll',
+            to: 'main2',
+            command: command('ADVANCE_PHASE', '1'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+
+        expect(Array.isArray(result)).toBe(false);
+        const resolved = result as Exclude<typeof result, DiceThroneEvent[] | void>;
+        expect(resolved?.overrideNextPhase).toBe('main2');
+    });
+
     it('灵魂突刺在 3 个相同骰值时施加火药桶，深海潜行偷取 1CP 并让对手自选弃牌', () => {
         const soulStab = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         soulStab.core.rollDiceCount = 5;
@@ -1267,6 +1388,38 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
                 state: soulStab.core,
                 damageDealt: 5,
                 timestamp: 100,
+            },
+            { random: fixedRandom },
+        );
+        expect(eventsOfType(events, 'STATUS_APPLIED')[0]?.payload.statusId).toBe(STATUS_IDS.POWDER_KEG);
+
+        const postDefenseSoulStab = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        postDefenseSoulStab.core.rollDiceCount = 5;
+        postDefenseSoulStab.core.dice = postDefenseSoulStab.core.dice.map((die, index) => ({
+            ...die,
+            value: index + 1,
+        }));
+        postDefenseSoulStab.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'soul-stab-3',
+            defenseAbilityId: 'countermeasures',
+            isDefendable: true,
+            damage: 5,
+            damageResolved: true,
+            resolvedDamage: 5,
+            attackDiceValues: [2, 2, 2, 4, 5],
+        };
+        events = resolveEffectsToEvents(
+            getAbilityVariantEffects(postDefenseSoulStab.core, '0', 'soul-stab', 'soul-stab-3'),
+            'postDamage',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'soul-stab-3',
+                state: postDefenseSoulStab.core,
+                damageDealt: 5,
+                timestamp: 110,
             },
             { random: fixedRandom },
         );
@@ -1326,5 +1479,409 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(afterDiscard.players['1'].hand.some(card => card.id === discardedCardId)).toBe(false);
         expect(afterDiscard.players['1'].discard.some(card => card.id === discardedCardId)).toBe(true);
         expect(eventsOfType(resolveEvents, 'CARD_DISCARDED')[0]?.payload.playerId).toBe('1');
+    });
+
+    it('深海潜行真实进攻 pipeline 在偷取 CP 与施加凋零后保留对手弃牌交互', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].hand = [getCardById('card-zhanshujia-strategic-defense')];
+        setCursedPirateDiceValues(state, [1, 4, 5, 6, 2]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'deep-sea-dive' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'deep-sea-dive',
+        });
+
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(6);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(4);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+
+        const discardPrompt = getCardInteractionPrompt(advanced.state, 'deep-sea-dive');
+        expect(discardPrompt.type).toBe('selectHandCard');
+        expect(discardPrompt.playerId).toBe('1');
+
+        const discarded = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            advanced.state,
+            command('RESOLVE_INTERACTION', '1', {
+                selectedCardIds: ['card-zhanshujia-strategic-defense'],
+            }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(discarded.success).toBe(true);
+        expect(discarded.state.sys.interaction.current).toBeUndefined();
+        expect(discarded.state.core.players['1'].hand).toHaveLength(0);
+        expect(discarded.state.core.players['1'].discard.map(card => card.id)).toContain('card-zhanshujia-strategic-defense');
+    });
+
+    it('诅咒卡牌允许选择自伤抽牌分支', () => {
+        const state = createCursedPirateCardPlayState('card-cursed-pirate-curse-card');
+        const initialHp = state.core.players['0'].resources[RESOURCE_IDS.HP];
+        state.core.players['0'].deck = [
+            getCardById('card-flick'),
+            getCardById('card-surprise'),
+            getCardById('card-just-this'),
+        ];
+
+        const playResult = playCardWithPipeline(state, '0', 'card-cursed-pirate-curse-card');
+        expect(playResult.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(playResult.state, 'card-cursed-pirate-curse-card');
+        expect(prompt.title).toBe('choices.cursedPirateCurseCard.title');
+        const damage4Draw3 = prompt.options.find(option => (
+            option.value as { value?: number }
+        ).value === 3);
+        expect(damage4Draw3).toBeDefined();
+
+        const result = respondToPrompt(playResult.state, damage4Draw3!.id, '0');
+        expect(result.success).toBe(true);
+        const damage = eventsOfType(result.events as DiceThroneEvent[], 'DAMAGE_DEALT')[0];
+        expect(damage?.payload).toMatchObject({
+            targetId: '0',
+            amount: 4,
+            damageScope: 'direct',
+            unblockable: true,
+        });
+        expect(eventsOfType(result.events as DiceThroneEvent[], 'CARD_DRAWN')).toHaveLength(3);
+        expect(result.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(initialHp - 4);
+        expect(result.state.core.players['0'].hand.map(card => card.id)).toEqual([
+            'card-flick',
+            'card-surprise',
+            'card-just-this',
+        ]);
+    });
+
+    it('封舱弃掉剩余手牌后抽 4', () => {
+        const state = createCursedPirateCardPlayState('card-cursed-pirate-batten-down');
+        state.core.players['0'].hand = [
+            getCardById('card-cursed-pirate-batten-down'),
+            getCardById('card-flick'),
+            getCardById('card-surprise'),
+        ];
+        state.core.players['0'].deck = [
+            getCardById('card-just-this'),
+            getCardById('card-next-time'),
+            getCardById('card-i-can-again'),
+            getCardById('card-me-too'),
+        ];
+
+        const events = execute(state, command('PLAY_CARD', '0', {
+            cardId: 'card-cursed-pirate-batten-down',
+        }), fixedRandom);
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'CARD_DISCARDED').map(event => event.payload.cardId).sort()).toEqual([
+            'card-flick',
+            'card-surprise',
+        ]);
+        expect(eventsOfType(events, 'CARD_DRAWN')).toHaveLength(4);
+        expect(next.players['0'].discard.map(card => card.id).sort()).toEqual([
+            'card-cursed-pirate-batten-down',
+            'card-flick',
+            'card-surprise',
+        ]);
+        expect(next.players['0'].hand.map(card => card.id)).toEqual([
+            'card-just-this',
+            'card-next-time',
+            'card-i-can-again',
+            'card-me-too',
+        ]);
+    });
+
+    it('抽筋剥皮按弯刀数增加攻击伤害，至少 3 点时施加火药桶', () => {
+        const state = createCursedPirateCardPlayState('card-cursed-pirate-flay', 'offensiveRoll');
+        state.core.rollCount = 1;
+        state.core.rollDiceCount = 5;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-attack',
+            isDefendable: true,
+        } as any;
+
+        const events = execute(state, command('PLAY_CARD', '0', {
+            cardId: 'card-cursed-pirate-flay',
+        }), createQueuedRandom([1, 2, 3, 4, 6]));
+        const next = applyEvents(state.core, events);
+
+        const bonusDamage = eventsOfType(events, 'BONUS_DAMAGE_ADDED')[0];
+        expect(bonusDamage?.payload).toMatchObject({
+            playerId: '0',
+            amount: 3,
+            sourceCardId: 'card-cursed-pirate-flay',
+        });
+        expect(next.pendingAttack?.bonusDamage).toBe(3);
+        expect(next.pendingAttack?.attackModifierBonusDamage).toBe(3);
+        expect(next.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('赎金先选择对手骰子，再由对手支付 2CP 或重掷该骰子', () => {
+        const payState = createCursedPirateCardPlayState('card-cursed-pirate-ransom', 'offensiveRoll');
+        payState.core.rollCount = 1;
+        payState.core.rollDiceCount = 5;
+        payState.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        payState.core.players['1'].resources[RESOURCE_IDS.CP] = 3;
+        payState.core.dice = payState.core.dice.map((die, index) => ({
+            ...die,
+            value: index === 0 ? 6 : die.value,
+        }));
+
+        const payPlay = playCardWithPipeline(payState, '0', 'card-cursed-pirate-ransom');
+        expect(payPlay.success).toBe(true);
+        const diePrompt = getSimpleChoicePrompt(payPlay.state, 'card-cursed-pirate-ransom');
+        expect(diePrompt.title).toBe('choices.cursedPirateRansomDie.title');
+        const dieOption = diePrompt.options.find(option => (
+            option.value as { labelParams?: { die?: number } }
+        ).labelParams?.die === 1);
+        expect(dieOption).toBeDefined();
+
+        const payDecisionState = respondToPrompt(payPlay.state, dieOption!.id, '0');
+        expect(payDecisionState.success).toBe(true);
+        const payPrompt = getSimpleChoicePrompt(payDecisionState.state, 'card-cursed-pirate-ransom');
+        expect(payPrompt.title).toBe('choices.cursedPirateRansomResolve.title');
+        expect(payPrompt.playerId).toBe('1');
+        const pay = payPrompt.options.find(option => (
+            option.value as { value?: number }
+        ).value! % 10 === 1);
+        expect(pay).toBeDefined();
+        const payResult = respondToPrompt(payDecisionState.state, pay!.id, '1');
+        expect(payResult.success).toBe(true);
+        expect(payResult.state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(5 - 1 + 2);
+        expect(payResult.state.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(1);
+
+        const rerollState = createCursedPirateCardPlayState('card-cursed-pirate-ransom', 'offensiveRoll');
+        rerollState.core.rollCount = 1;
+        rerollState.core.rollDiceCount = 5;
+        rerollState.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        rerollState.core.players['1'].resources[RESOURCE_IDS.CP] = 0;
+        rerollState.core.dice = rerollState.core.dice.map((die, index) => ({
+            ...die,
+            value: index === 0 ? 6 : die.value,
+        }));
+
+        const rerollPlay = playCardWithPipeline(rerollState, '0', 'card-cursed-pirate-ransom');
+        const rerollDiePrompt = getSimpleChoicePrompt(rerollPlay.state, 'card-cursed-pirate-ransom');
+        const rerollDieOption = rerollDiePrompt.options.find(option => (
+            option.value as { labelParams?: { die?: number } }
+        ).labelParams?.die === 1);
+        expect(rerollDieOption).toBeDefined();
+        const rerollDecisionState = respondToPrompt(rerollPlay.state, rerollDieOption!.id, '0');
+        const rerollPrompt = getSimpleChoicePrompt(rerollDecisionState.state, 'card-cursed-pirate-ransom');
+        const reroll = rerollPrompt.options.find(option => (
+            option.value as { value?: number }
+        ).value! % 10 === 0);
+        expect(reroll).toBeDefined();
+        const rerollResult = respondToPrompt(rerollDecisionState.state, reroll!.id, '1', createQueuedRandom([4]));
+        expect(rerollResult.success).toBe(true);
+        const rerolled = eventsOfType(rerollResult.events as DiceThroneEvent[], 'DIE_REROLLED')[0];
+        expect(rerolled?.payload).toMatchObject({
+            dieId: 0,
+            oldValue: 6,
+            newValue: 4,
+            playerId: '1',
+        });
+        expect(rerollResult.state.core.dice[0].value).toBe(4);
+    });
+
+    it('干票大的只要投出战利品就抽 2 并获得 2CP', () => {
+        const state = createCursedPirateCardPlayState('card-cursed-pirate-hefty');
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 3;
+        state.core.players['0'].deck = [
+            getCardById('card-flick'),
+            getCardById('card-surprise'),
+        ];
+
+        const events = execute(state, command('PLAY_CARD', '0', {
+            cardId: 'card-cursed-pirate-hefty',
+        }), createQueuedRandom([4, 6]));
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'BONUS_DIE_ROLLED')).toHaveLength(2);
+        expect(eventsOfType(events, 'CARD_DRAWN')).toHaveLength(2);
+        expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(3 - 2 + 2);
+        expect(next.players['0'].hand.map(card => card.id)).toEqual([
+            'card-flick',
+            'card-surprise',
+        ]);
+    });
+
+    it('送你们去喂鱼在 4 人 2v2 中选择至多三名不同对手，且可跳过', () => {
+        const state = createFourPlayerCursedPirateState();
+        state.sys.phase = 'main1';
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['0'].hand = [getCardById('card-cursed-pirate-go-fish')];
+
+        const playResult = playCardWithPipeline(state, '0', 'card-cursed-pirate-go-fish');
+        expect(playResult.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(playResult.state, 'card-cursed-pirate-go-fish');
+        expect(prompt.title).toBe('choices.cursedPirateGoFish.title');
+        const values = prompt.options.map(option => option.value as {
+            value: number;
+            labelParams?: { targets?: string };
+        });
+        expect(values.map(option => option.value).sort((a, b) => a - b)).toEqual([0, 1, 2, 3]);
+        expect(values.some(option => option.labelParams?.targets === 'P2, P4')).toBe(true);
+        expect(values.some(option => option.labelParams?.targets?.includes('P3'))).toBe(false);
+
+        const bothOpponents = prompt.options.find(option => (
+            option.value as { value?: number }
+        ).value === 3);
+        expect(bothOpponents).toBeDefined();
+        const result = respondToPrompt(playResult.state, bothOpponents!.id);
+        expect(result.success).toBe(true);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(result.state.core.players['2'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
+        expect(result.state.core.players['3'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+
+        const skipState = createFourPlayerCursedPirateState();
+        skipState.sys.phase = 'main1';
+        skipState.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+        skipState.core.players['0'].hand = [getCardById('card-cursed-pirate-go-fish')];
+        const skipPlay = playCardWithPipeline(skipState, '0', 'card-cursed-pirate-go-fish');
+        const skipPrompt = getSimpleChoicePrompt(skipPlay.state, 'card-cursed-pirate-go-fish');
+        const skip = skipPrompt.options.find(option => (
+            option.value as { value?: number }
+        ).value === 0);
+        expect(skip).toBeDefined();
+        const skipResult = respondToPrompt(skipPlay.state, skip!.id);
+        expect(skipResult.success).toBe(true);
+        expect(eventsOfType(skipResult.events as DiceThroneEvent[], 'STATUS_APPLIED')
+            .some(event => event.payload.statusId === STATUS_IDS.POWDER_KEG)).toBe(false);
+    });
+
+    it('啜呼让目标选择直接获得火药桶或改为投骰结算', () => {
+        const acceptState = createCursedPirateCardPlayState('card-cursed-pirate-sip');
+        const acceptPlay = playCardWithPipeline(acceptState, '0', 'card-cursed-pirate-sip');
+        expect(acceptPlay.success).toBe(true);
+        const acceptPrompt = getSimpleChoicePrompt(acceptPlay.state, 'card-cursed-pirate-sip');
+        expect(acceptPrompt.title).toBe('choices.cursedPirateSip.title');
+        expect(acceptPrompt.playerId).toBe('1');
+        const accept = acceptPrompt.options.find(option => (
+            option.value as { value?: number }
+        ).value === 0);
+        expect(accept).toBeDefined();
+        const acceptResult = respondToPrompt(acceptPlay.state, accept!.id, '1');
+        expect(acceptResult.success).toBe(true);
+        expect(acceptResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(acceptResult.state.core.players['1'].statusEffects[STATUS_IDS.WITHER] ?? 0).toBe(0);
+
+        const rollState = createCursedPirateCardPlayState('card-cursed-pirate-sip');
+        const rollPlay = playCardWithPipeline(rollState, '0', 'card-cursed-pirate-sip');
+        const rollPrompt = getSimpleChoicePrompt(rollPlay.state, 'card-cursed-pirate-sip');
+        const roll = rollPrompt.options.find(option => (
+            option.value as { value?: number }
+        ).value === 1);
+        expect(roll).toBeDefined();
+        const rollResult = respondToPrompt(rollPlay.state, roll!.id, '1', createQueuedRandom([4]));
+        expect(rollResult.success).toBe(true);
+        expect(eventsOfType(rollResult.events as DiceThroneEvent[], 'BONUS_DIE_ROLLED')[0]?.payload.value).toBe(4);
+        expect(rollResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(rollResult.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+    });
+
+    it('瞭望台按弯刀查看手牌、战利品自选弃牌、骷髅随机弃牌分支结算', () => {
+        const viewState = createCursedPirateCardPlayState('card-cursed-pirate-crows-nest');
+        viewState.core.players['1'].hand = [getCardById('card-flick'), getCardById('card-surprise')];
+        const viewPlay = playCardWithPipeline(viewState, '0', 'card-cursed-pirate-crows-nest', createQueuedRandom([1]));
+        expect(viewPlay.success).toBe(true);
+        const viewPrompt = getSimpleChoicePrompt(viewPlay.state, 'card-cursed-pirate-crows-nest');
+        expect(viewPrompt.title).toBe('choices.cursedPirateCrowsNestView.title');
+        expect(viewPrompt.playerId).toBe('0');
+        expect((viewPrompt.options[0]?.value as { labelParams?: { cards?: string } }).labelParams?.cards)
+            .toContain('card-flick');
+        const viewConfirm = respondToPrompt(viewPlay.state, viewPrompt.options[0]!.id, '0');
+        expect(viewConfirm.success).toBe(true);
+        expect(viewConfirm.state.core.players['1'].hand.map(card => card.id)).toEqual([
+            'card-flick',
+            'card-surprise',
+        ]);
+
+        const lootState = createCursedPirateCardPlayState('card-cursed-pirate-crows-nest');
+        lootState.core.players['1'].hand = [getCardById('card-flick')];
+        const lootPlay = playCardWithPipeline(lootState, '0', 'card-cursed-pirate-crows-nest', createQueuedRandom([4]));
+        expect(lootPlay.success).toBe(true);
+        const discardPrompt = getCardInteractionPrompt(lootPlay.state, 'card-cursed-pirate-crows-nest');
+        expect(discardPrompt.type).toBe('selectHandCard');
+        expect(discardPrompt.playerId).toBe('1');
+        const discardEvents = execute(lootPlay.state, command('RESOLVE_INTERACTION', '1', {
+            selectedCardIds: ['card-flick'],
+        }), fixedRandom);
+        const afterDiscard = applyEvents(lootPlay.state.core, discardEvents);
+        expect(afterDiscard.players['1'].hand).toHaveLength(0);
+        expect(afterDiscard.players['1'].discard.map(card => card.id)).toContain('card-flick');
+
+        const skullState = createCursedPirateCardPlayState('card-cursed-pirate-crows-nest');
+        skullState.core.players['1'].hand = [getCardById('card-flick'), getCardById('card-surprise')];
+        const skullEvents = execute(skullState, command('PLAY_CARD', '0', {
+            cardId: 'card-cursed-pirate-crows-nest',
+        }), createQueuedRandom([6]));
+        const afterSkull = applyEvents(skullState.core, skullEvents);
+        const randomDiscard = eventsOfType(skullEvents, 'CARD_DISCARDED')[0];
+        expect(randomDiscard?.payload).toMatchObject({
+            playerId: '1',
+            cardId: 'card-flick',
+        });
+        expect(afterSkull.players['1'].hand.map(card => card.id)).toEqual(['card-surprise']);
+    });
+
+    it('咒缚海盗当前接入素材初始化为咒缚面', () => {
+        const state = createCursedPirateCardPlayState('card-cursed-pirate-pirates-life');
+
+        expect(state.core.players['0'].playerBoardFace).toBe('cursed');
+    });
+
+    it('海盗的一生在咒缚面治疗 3 而不是获得诅咒金币', () => {
+        const state = createCursedPirateCardPlayState('card-cursed-pirate-pirates-life');
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 1;
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = INITIAL_HEALTH - 5;
+
+        const playResult = playCardWithPipeline(state, '0', 'card-cursed-pirate-pirates-life');
+        expect(playResult.success).toBe(true);
+        expect(playResult.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2);
+        expect(playResult.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+        expect(playResult.state.core.currentChoiceSourceAbilityId).not.toBe('card-cursed-pirate-pirates-life');
+    });
+
+    it('海盗的一生在普通面保留获得 1 诅咒金币选择分支', () => {
+        const state = createCursedPirateCardPlayState('card-cursed-pirate-pirates-life');
+        state.core.players['0'].playerBoardFace = 'normal';
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 1;
+
+        const playResult = playCardWithPipeline(state, '0', 'card-cursed-pirate-pirates-life');
+        expect(playResult.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(playResult.state, 'card-cursed-pirate-pirates-life');
+        expect(prompt.playerId).toBe('0');
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const result = respondToPrompt(playResult.state, accept!.id, '0');
+        expect(result.success).toBe(true);
+        expect(result.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
     });
 });

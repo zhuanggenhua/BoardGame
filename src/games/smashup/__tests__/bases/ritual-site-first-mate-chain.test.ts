@@ -8,6 +8,7 @@ import type { SmashUpCommand, SmashUpCore, SmashUpEvent } from '../../domain/typ
 import {
     expectNoPrompt,
     getPromptOption,
+    getPromptOptions,
     getReactionPrompt,
     getReactionPromptOptionBySourceDefId,
     getSimpleChoicePrompt,
@@ -153,5 +154,44 @@ describe('base_ritual_site + pirate_first_mate afterScoring 链路', () => {
         expect(state.core.bases[2].minions.map(minion => minion.uid)).toContain('mate2');
         expect(state.core.players['0'].deck.some(card => card.uid === 'mate1')).toBe(false);
         expect(state.core.players['0'].deck.some(card => card.uid === 'mate2')).toBe(false);
+    });
+
+    it('仪式场所先结算后，统一反应入口会同时暴露两张大副，而不是只剩其中一张', () => {
+        const runner = createRunner((core) => {
+            core.bases = [
+                makeBase('base_ritual_site', [
+                    makeMinion('mate1', 'pirate_first_mate', '0', 2),
+                    makeMinion('mate2', 'pirate_first_mate', '0', 2),
+                    makeMinion('ally1', 'alien_invader', '0', 14),
+                    makeMinion('enemy1', 'robot_zapbot', '1', 4),
+                ]),
+                makeBase('base_secret_garden'),
+                makeBase('base_tar_pits'),
+                makeBase('base_the_factory'),
+            ];
+            core.baseDeck = ['base_central_brain'];
+            core.players['0'].hand = [];
+            core.players['1'].hand = [];
+        });
+
+        const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advance.success).toBe(true);
+
+        const reactionPrompt = getReactionPrompt(runner.getState());
+        const ritualSiteTrigger = getReactionPromptOptionBySourceDefId(
+            runner.getState(),
+            reactionPrompt,
+            'base_ritual_site',
+        );
+        const state = resolveCurrentOption(runner, ritualSiteTrigger.id);
+
+        const resumedReactionPrompt = getReactionPrompt(state);
+        const firstMateOptions = getPromptOptions(resumedReactionPrompt).filter((option: any) => {
+            const optionId = String(option.id ?? '');
+            const optionLabel = String(option.label ?? '');
+            return optionId.includes('pirate_first_mate') || optionLabel.includes('pirate_first_mate');
+        });
+
+        expect(firstMateOptions).toHaveLength(2);
     });
 });

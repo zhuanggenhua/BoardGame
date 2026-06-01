@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { i18n as I18nInstance } from 'i18next';
 import { logger } from '../lib/logger';
 import { logMobileRuntime, logMobileRuntimeCritical } from '../lib/mobile/mobileRuntimeDebug';
+import { normalizeI18nLanguage } from '../lib/i18n/types';
 
 interface GameNamespaceState {
     isReady: boolean;
@@ -19,6 +20,34 @@ export const GAME_NAMESPACE_AUTO_RETRY_DELAY_MS = 1200;
 const createGameNamespaceTimeoutMessage = (gameId: string, namespace: string) => (
     `游戏文案加载超时：${gameId}/${namespace}（${GAME_NAMESPACE_LOAD_TIMEOUT_MS}ms）`
 );
+
+const localeHashes: Record<string, string> =
+    typeof __LOCALE_HASHES__ !== 'undefined' ? __LOCALE_HASHES__ : {};
+
+const buildNamespaceLoadPath = (language: string, namespace: string) => {
+    const normalizedLanguage = normalizeI18nLanguage(language);
+    const key = `${normalizedLanguage}/${namespace}.json`;
+    const hash = localeHashes[key];
+    return hash ? `/locales/${key}?v=${hash}` : `/locales/${key}`;
+};
+
+const loadNamespaceByHttpFallback = async (
+    i18n: I18nInstance,
+    language: string,
+    namespace: string,
+) => {
+    const normalizedLanguage = normalizeI18nLanguage(language);
+    const response = await fetch(buildNamespaceLoadPath(normalizedLanguage, namespace), {
+        credentials: 'same-origin',
+    });
+
+    if (!response.ok) {
+        throw new Error(`游戏文案加载失败：${namespace} HTTP ${response.status}`);
+    }
+
+    const resources = await response.json() as Record<string, unknown>;
+    i18n.addResourceBundle(normalizedLanguage, namespace, resources, true, true);
+};
 
 const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -121,40 +150,66 @@ export function useGameNamespaceReady(
                 setState({ isReady: true, error: null });
             })
             .catch((error: unknown) => {
-                const message = error instanceof Error ? error.message : String(error);
-                const isTimeout = message === timeoutMessage;
-                const payload = {
-                    gameId,
-                    namespace,
-                    language: languageKey,
-                    resolvedLanguage: i18n.resolvedLanguage,
-                    error: message,
-                    durationMs: Date.now() - startedAt,
+                const handleFailure = (message: string) => {
+                    const isTimeout = message === timeoutMessage;
+                    const payload = {
+                        gameId,
+                        namespace,
+                        language: languageKey,
+                        resolvedLanguage: i18n.resolvedLanguage,
+                        error: message,
+                        durationMs: Date.now() - startedAt,
+                    };
+                    logger.error('[i18n] 游戏 namespace 加载失败', {
+                        ...payload,
+                        timeoutMs: GAME_NAMESPACE_LOAD_TIMEOUT_MS,
+                    });
+                    logMobileRuntime(
+                        'GameNamespace',
+                        isTimeout ? 'load-timeout' : 'load-failed',
+                        payload,
+                        isTimeout ? 'warn' : 'error',
+                    );
+                    if (isTimeout) {
+                        logMobileRuntimeCritical('GameNamespace', 'load-timeout', payload);
+                    }
+                    if (!isActive) return;
+                    if (isTimeout && autoRetryCount < GAME_NAMESPACE_AUTO_RETRY_LIMIT) {
+                        setAutoRetryCount((count) => count + 1);
+                        setState({ isReady: false, error: null });
+                        retryTimer = setTimeout(() => {
+                            if (!isActive) return;
+                            setRetryTick((tick) => tick + 1);
+                        }, GAME_NAMESPACE_AUTO_RETRY_DELAY_MS);
+                        return;
+                    }
+                    setState({ isReady: false, error: message });
                 };
-                logger.error('[i18n] 游戏 namespace 加载失败', {
-                    ...payload,
-                    timeoutMs: GAME_NAMESPACE_LOAD_TIMEOUT_MS,
-                });
-                logMobileRuntime(
-                    'GameNamespace',
-                    isTimeout ? 'load-timeout' : 'load-failed',
-                    payload,
-                    isTimeout ? 'warn' : 'error',
-                );
-                if (isTimeout) {
-                    logMobileRuntimeCritical('GameNamespace', 'load-timeout', payload);
-                }
-                if (!isActive) return;
-                if (isTimeout && autoRetryCount < GAME_NAMESPACE_AUTO_RETRY_LIMIT) {
-                    setAutoRetryCount((count) => count + 1);
-                    setState({ isReady: false, error: null });
-                    retryTimer = setTimeout(() => {
+
+                const message = error instanceof Error ? error.message : String(error);
+                void (async () => {
+                    try {
+                        await loadNamespaceByHttpFallback(
+                            i18n,
+                            i18n.resolvedLanguage ?? i18n.language,
+                            namespace,
+                        );
                         if (!isActive) return;
-                        setRetryTick((tick) => tick + 1);
-                    }, GAME_NAMESPACE_AUTO_RETRY_DELAY_MS);
-                    return;
-                }
-                setState({ isReady: false, error: message });
+                        logMobileRuntime('GameNamespace', 'load-http-fallback-success', {
+                            gameId,
+                            namespace,
+                            language: languageKey,
+                            resolvedLanguage: i18n.resolvedLanguage,
+                            durationMs: Date.now() - startedAt,
+                        });
+                        setState({ isReady: true, error: null });
+                    } catch (fallbackError: unknown) {
+                        const fallbackMessage = fallbackError instanceof Error
+                            ? fallbackError.message
+                            : String(fallbackError);
+                        handleFailure(`${message}; fallback: ${fallbackMessage}`);
+                    }
+                })();
             });
 
         return () => {

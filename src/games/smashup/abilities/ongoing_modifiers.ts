@@ -475,6 +475,20 @@ function registerWerewolfModifiers(): void {
     registerOngoingPowerModifier('werewolf_full_moon', 'base', 'ownerMinions', 1);
 }
 
+function registerDragonModifiers(): void {
+    registerPowerModifier('base_wyrms_desolation', (ctx: PowerModifierContext) => {
+        if (ctx.base.defId !== 'base_wyrms_desolation') return 0;
+        if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+        return -1;
+    }, { handlesPodInternally: true });
+    registerOngoingPowerModifier('dragons_dragon_lands', 'base', 'ownerMinions', 1);
+    registerOngoingPowerModifier('dragons_intimidating_presence', 'base', 'opponentMinions', -1);
+}
+
+function registerSuperheroesModifiers(): void {
+    registerOngoingPowerModifier('superheroes_expanded_power', 'minion', 'self', 1);
+}
+
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
@@ -495,5 +509,7 @@ export function registerAllOngoingModifiers(): void {
     registerPrincessesModifiers();
     registerKaijuModifiers();
     registerWerewolfModifiers();
+    registerDragonModifiers();
+    registerSuperheroesModifiers();
     registerYuanhouModifiers();
 }

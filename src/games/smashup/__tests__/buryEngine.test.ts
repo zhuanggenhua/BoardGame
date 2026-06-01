@@ -289,6 +289,48 @@ describe('bury engine', () => {
         expect(next.players['1'].discard.some(card => card.uid === 'attach-1')).toBe(true);
     });
 
+    it('从埋葬区翻出的随从不能在同一条结算链里立即重新埋葬自己', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [], deck: [], discard: [] }),
+                '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [{
+                    uid: 'uncovered-1',
+                    defId: 'skeletons_returned_one',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                    metadata: { playedFrom: 'buried' },
+                } as any],
+                ongoingActions: [],
+                buriedCards: [],
+            }],
+        });
+
+        const events = buildBuryCardEvents({
+            core,
+            playerId: '0',
+            cardUid: 'uncovered-1',
+            defId: 'skeletons_returned_one',
+            baseIndex: 0,
+            trueOwnerId: '0',
+            buriedFrom: 'play',
+            reason: 'immediate_rebury_probe',
+            random: defaultTestRandom,
+            now: 11,
+        });
+
+        expect(events).toEqual([]);
+    });
+
     it('BURIED_CARD_RETURNED_TO_HAND 会把埋葬牌直接移回手牌而不翻开或进弃牌堆', () => {
         const core = makeState({
             players: {

@@ -2,7 +2,7 @@ import { createBonusDiceWithReroll, createDisplayOnlySettlement, registerCustomA
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
-import { getActiveDice, getFaceCounts, getMaxDuplicateValueCount, getOpponents, getPlayerDieFace, getSeatingOrder, getTokenStackLimit } from '../rules';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getOpponents, getPlayerDieFace, getSeatingOrder, getTokenStackLimit } from '../rules';
 import { reduce } from '../reducer';
 import { applyEvents } from '../utils';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
@@ -248,7 +248,8 @@ function handleBlink2(ctx: CustomActionContext): DiceThroneEvent[] {
 }
 
 function handleSlash2Bonus(ctx: CustomActionContext): DiceThroneEvent[] {
-    if (getMaxDuplicateValueCount(ctx.state) < 3) return [];
+    const duplicateCount = getAttackMaxDuplicateValueCount(ctx.state);
+    if (duplicateCount < 3) return [];
     const event = grantTokenEvent(ctx.state, ctx.sourceAbilityId, ctx.attackerId, TOKEN_IDS.NINJUTSU, 1, ctx.timestamp);
     return event ? [event] : [];
 }
@@ -526,7 +527,7 @@ export function registerNinjaCustomActions(): void {
 
     registerCustomActionHandler('ninja-blink', handleBlinkBase, { categories: ['dice', 'damage', 'defense', 'token'] });
     registerCustomActionHandler('ninja-blink-2', handleBlink2, { categories: ['dice', 'damage', 'defense', 'token'] });
-    registerCustomActionHandler('ninja-slash-2-bonus', handleSlash2Bonus, { categories: ['token'] });
+    registerCustomActionHandler('ninja-slash-2-bonus', handleSlash2Bonus, { categories: ['token'], usesAttackDiceSnapshot: true });
     registerCustomActionHandler('ninja-going-forward', handleGoingForward, {
         categories: ['dice', 'damage'],
         requiresSelectedDefender: true,

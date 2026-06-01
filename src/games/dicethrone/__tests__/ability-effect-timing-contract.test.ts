@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { CHARACTER_DATA_MAP } from '../domain/characters';
 import type { AbilityCard } from '../domain/core-types';
 import type { AbilityDef, AbilityEffect, EffectTiming } from '../domain/combat';
+import { getCustomActionMeta } from '../domain/effects';
 import type { SelectableCharacterId } from '../domain/types';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
 import { GUNSLINGER_CARDS } from '../heroes/gunslinger/cards';
@@ -74,6 +77,13 @@ const collectAbilitySources = (): AbilitySource[] =>
 const formatAbility = ({ heroId, source, ability }: AbilitySource): string =>
     `${heroId}/${ability.id}@${source}`;
 
+const collectTsFiles = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+        const fullPath = join(dir, entry.name);
+        if (entry.isDirectory()) return collectTsFiles(fullPath);
+        return entry.isFile() && entry.name.endsWith('.ts') ? [fullPath] : [];
+    });
+
 describe('DiceThrone effect timing 框架消费合同', () => {
     it('防御技能的可执行效果必须能被 defense resolver 消费', () => {
         const violations = collectAbilitySources()
@@ -93,6 +103,29 @@ describe('DiceThrone effect timing 框架消费合同', () => {
             .flatMap(entry => collectEffects(entry.ability).map(effect => ({ entry, effect })))
             .filter(({ effect }) => !DEFENSE_RESOLVER_CONSUMED_TIMINGS.has(effect.timing ?? 'preDefense'))
             .map(({ entry, effect }) => `${formatAbility(entry)} -> ${effect.description} timing=${effect.timing ?? 'default:preDefense'}`);
+
+        expect(violations).toEqual([]);
+    });
+
+    it('postDamage 中按相同数字判定的 custom action 必须声明并使用攻击骰快照', () => {
+        const violations = collectAbilitySources()
+            .flatMap(entry => collectEffects(entry.ability).map(effect => ({ entry, effect })))
+            .filter(({ effect }) => effect.timing === 'postDamage')
+            .filter(({ effect }) => effect.action?.type === 'custom')
+            .filter(({ effect }) => /相同数字|same kind|of-a-kind/i.test(String(effect.description ?? '')))
+            .filter(({ effect }) => !getCustomActionMeta(effect.action!.customActionId!)?.usesAttackDiceSnapshot)
+            .map(({ entry, effect }) => `${formatAbility(entry)} -> ${effect.action!.customActionId}`);
+
+        expect(violations).toEqual([]);
+    });
+
+    it('骰子数组 helper 不得直接接收核心 state 对象', () => {
+        const root = join(process.cwd(), 'src/games/dicethrone/domain');
+        const violations = collectTsFiles(root).flatMap(file => {
+            const source = readFileSync(file, 'utf8');
+            const matches = source.matchAll(/getMaxDuplicateValueCount\(\s*(?:ctx\.|context\.)?state\s*\)/g);
+            return [...matches].map(match => `${file.replace(process.cwd(), '')}:${match.index}`);
+        });
 
         expect(violations).toEqual([]);
     });

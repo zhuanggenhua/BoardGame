@@ -589,7 +589,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                 }
 
-                // ---- 状态交互自动完成：STATUS_REMOVED / TOKEN_CONSUMED 触发时直接 resolve ----
+                // ---- 状态/手牌交互自动完成：只在各自权威完成事件出现时 resolve ----
                 // 注意：REMOVE_STATUS 移除所有状态时会生成多个 STATUS_REMOVED 事件，
                 // 使用 statusInteractionCompleted 标记防止重复 resolve
                 if (!statusInteractionCompleted && (dtEvent.type === 'STATUS_REMOVED' || dtEvent.type === 'TOKEN_CONSUMED'
@@ -598,13 +598,21 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     const current = newState.sys.interaction.current;
                     if (current?.kind === 'dt:card-interaction') {
                         const interactionData = current.data as DtInteractionDescriptor;
-                        const isStatusType = interactionData.type === 'selectStatus'
+                        const isStatusSelectionCompleted = (
+                            interactionData.type === 'selectStatus'
                             || interactionData.type === 'selectPlayer'
                             || interactionData.type === 'selectTargetStatus'
-                            || interactionData.type === 'selectHandCard';
-                        if (isStatusType) {
+                        ) && (
+                            dtEvent.type === 'STATUS_REMOVED'
+                            || dtEvent.type === 'TOKEN_CONSUMED'
+                            || dtEvent.type === 'STATUS_APPLIED'
+                            || dtEvent.type === 'TOKEN_GRANTED'
+                        );
+                        const isHandCardSelectionCompleted = interactionData.type === 'selectHandCard'
+                            && dtEvent.type === 'CARD_DISCARDED';
+                        if (isStatusSelectionCompleted || isHandCardSelectionCompleted) {
                             statusInteractionCompleted = true;
-                            // 状态交互完成：直接 resolve，不生成事件
+                            // 业务完成事件已经由领域层生成；系统层只清理当前交互。
                             newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                         }
                     }

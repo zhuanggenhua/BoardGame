@@ -10,6 +10,7 @@ import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type {
     SmashUpCore,
     SmashUpEvent,
+    CardsDiscardedEvent,
     MinionDestroyedEvent,
     MinionPlayedEvent,
     PendingPostScoringAction,
@@ -39,6 +40,7 @@ import { registerBaseAbility, registerExtended as registerExtendedBase, type Bas
 import { registerProtection, registerTrigger } from './ongoingEffects';
 import type { ProtectionCheckContext } from './ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
+import { reduce } from './reduce';
 import { getPlayerLabel } from './utils';
 import {
     appendPendingPostScoringActions,
@@ -60,6 +62,28 @@ import {
 
 function getContinuationContext<T>(interactionData: Record<string, unknown> | undefined): T | undefined {
     return interactionData?.continuationContext as T | undefined;
+}
+
+type TableTopHandChoiceValue = {
+    cardUid?: string;
+    defId?: string;
+};
+
+function normalizeFactionId(factionId: string | undefined): string | undefined {
+    if (!factionId) return undefined;
+    return factionId.endsWith('_pod') ? factionId.slice(0, -4) : factionId;
+}
+
+function buildTableTopDiscardOptions(
+    hand: Array<{ uid: string; defId: string }>,
+): PromptOption<TableTopHandChoiceValue>[] {
+    return hand.map((card, index) => ({
+        id: `card-${index}`,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+        value: { cardUid: card.uid, defId: card.defId },
+        _source: 'hand' as const,
+        displayMode: 'card' as const,
+    }));
 }
 
 function isFirstMinionPlayedByPlayerAtBaseThisTurn(ctx: BaseAbilityContext): boolean {
@@ -556,6 +580,124 @@ export function registerExpansionBaseAbilities(): void {
             { sourceId: 'base_inventors_salon', targetType: 'generic' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+    });
+
+    // ── 水晶堡垒（Crystal Fortress）────────────────────────────
+    // "你在这里打出随从后，可将弃牌堆中的一个随从放到牌库底"
+    registerBaseAbility('base_crystal_fortress', 'onMinionPlayed', (ctx) => {
+        const player = ctx.state.players[ctx.playerId];
+        if (!player || !ctx.matchState) return { events: [] };
+
+        const minionsInDiscard = player.discard.filter((card) => card.type === 'minion');
+        if (minionsInDiscard.length === 0) return { events: [] };
+
+        const options: PromptOption<Record<string, unknown>>[] = [
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            ...minionsInDiscard.map((card, index) => ({
+                id: `minion-${index}`,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+                _source: 'discard' as const,
+                displayMode: 'card' as const,
+            })),
+        ];
+
+        const interaction = createSimpleChoice(
+            `base_crystal_fortress_${ctx.now}`,
+            ctx.playerId,
+            '水晶堡垒：从弃牌堆选择一个随从放到牌库底',
+            options,
+            { sourceId: 'base_crystal_fortress', targetType: 'generic' },
+        );
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+    });
+
+    // ── 桌游桌（TableTop）────────────────────────────
+    // "在这个基地计分后，冠军抽 3 张牌，然后弃 2 张牌"
+    registerBaseAbility('base_tabletop', 'afterScoring', (ctx) => {
+        if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
+        const winnerId = ctx.rankings[0].playerId;
+        const winner = ctx.state.players[winnerId];
+        if (!winner) return { events: [] };
+
+        const drawEvents = buildStandardDrawEvents(ctx.state, winnerId, 3, ctx.random, ctx.now);
+        const previewState = drawEvents.reduce((state, event) => reduce(state, event), ctx.state);
+        const previewWinner = previewState.players[winnerId];
+        if (!previewWinner || previewWinner.hand.length === 0) {
+            return { events: drawEvents };
+        }
+        if (previewWinner.hand.length <= 2) {
+            return {
+                events: [
+                    ...drawEvents,
+                    {
+                        type: SU_EVENTS.CARDS_DISCARDED,
+                        payload: {
+                            playerId: winnerId,
+                            cardUids: previewWinner.hand.map((card) => card.uid),
+                        },
+                        timestamp: ctx.now,
+                    } as CardsDiscardedEvent,
+                ],
+            };
+        }
+        if (!ctx.matchState) {
+            return {
+                events: [
+                    ...drawEvents,
+                    {
+                        type: SU_EVENTS.CARDS_DISCARDED,
+                        payload: {
+                            playerId: winnerId,
+                            cardUids: previewWinner.hand.slice(0, 2).map((card) => card.uid),
+                        },
+                        timestamp: ctx.now,
+                    } as CardsDiscardedEvent,
+                ],
+            };
+        }
+
+        const interaction = createSimpleChoice(
+            `base_tabletop_${ctx.now}`,
+            winnerId,
+            '桌游桌：选择 2 张手牌弃掉',
+            buildTableTopDiscardOptions(previewWinner.hand),
+            {
+                sourceId: 'base_tabletop',
+                targetType: 'hand',
+                multi: { min: 2, max: 2 },
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state) => {
+            const liveWinner = (state.core as SmashUpCore).players[winnerId];
+            return buildTableTopDiscardOptions(liveWinner?.hand ?? []);
+        };
+
+        return {
+            events: drawEvents,
+            matchState: queueInteraction(ctx.matchState, interaction),
+        };
+    }, {
+    });
+
+    // ── 展会（The Con）──────────────────────────────
+    // "当一个随从打到这里时，这里其他同派系随从本回合 +1 力量"
+    registerBaseAbility('base_the_con', 'onMinionPlayed', (ctx) => {
+        if (!ctx.minionUid || !ctx.minionDefId) return { events: [] };
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base) return { events: [] };
+        const playedFactionId = normalizeFactionId(getCardDef(ctx.minionDefId)?.faction);
+        if (!playedFactionId) return { events: [] };
+
+        return {
+            events: base.minions
+                .filter((minion) => minion.uid !== ctx.minionUid)
+                .filter((minion) => normalizeFactionId(getCardDef(minion.defId)?.faction) === playedFactionId)
+                .map((minion) => addTempPower(minion.uid, ctx.baseIndex, 1, 'base_the_con', ctx.now)),
+        };
     }, {
     });
 
@@ -1292,6 +1434,45 @@ export function registerExpansionBaseInteractionHandlers(): void {
         );
         if (!cardInDiscard) return { state, events: [] };
         return { state, events: [recoverCardsFromDiscard(playerId, [selected.cardUid!], '发明家沙龙：从弃牌堆取回行动卡', timestamp)] };
+    });
+
+    registerInteractionHandler('base_crystal_fortress', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; cardUid?: string; defId?: string; ownerId?: string };
+        if (selected.skip) return { state, events: [] };
+        if (!selected.cardUid || !selected.defId || !selected.ownerId) return { state, events: [] };
+        return {
+            state,
+            events: buildValidatedCardToDeckBottomEvents(state, {
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                ownerId: selected.ownerId,
+                reason: '水晶堡垒：弃牌堆随从置于牌库底',
+                now: timestamp,
+                expectedLocation: 'discard',
+            }),
+        };
+    });
+
+    registerInteractionHandler('base_tabletop', (state, playerId, value, _iData, _random, timestamp) => {
+        const selections = (Array.isArray(value) ? value : []) as TableTopHandChoiceValue[];
+        const selectedCardUids = Array.from(new Set(
+            selections
+                .map((selection) => selection.cardUid)
+                .filter((cardUid): cardUid is string => typeof cardUid === 'string'),
+        ));
+        if (selectedCardUids.length !== 2) return { state, events: [] };
+        const player = state.core.players[playerId];
+        if (!player) return { state, events: [] };
+        const liveSelected = selectedCardUids.filter((cardUid) => player.hand.some((card) => card.uid === cardUid));
+        if (liveSelected.length !== 2) return { state, events: [] };
+        return {
+            state,
+            events: [{
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: { playerId, cardUids: liveSelected },
+                timestamp,
+            } as CardsDiscardedEvent],
+        };
     });
 
     registerInteractionHandler('base_cat_fanciers_alley', (state, playerId, value, iData, _random, timestamp) => {

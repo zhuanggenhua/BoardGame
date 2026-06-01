@@ -1,3 +1,5 @@
+import { reportClientAutoFeedbackOnce } from './clientAutoReport';
+
 export interface LastErrorContext {
     message: string;
     name?: string;
@@ -48,29 +50,74 @@ export const installGlobalErrorContextCapture = () => {
         const source = event.filename
             ? `${event.filename}:${event.lineno ?? 0}:${event.colno ?? 0}`
             : 'window.error';
+        const message = error?.message ?? event.message ?? 'Script error';
+        const name = error?.name ?? 'Error';
+        const stack = error?.stack;
         setLastErrorContext({
-            message: error?.message ?? event.message ?? 'Script error',
-            name: error?.name,
-            stack: error?.stack,
+            message,
+            name,
+            stack,
             source,
+        });
+        if (event.defaultPrevented) return;
+        const signature = `client-window-error:${name}:${message}:${source}`;
+        void reportClientAutoFeedbackOnce(signature, {
+            content: `[auto][window.error] ${message}`,
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: name,
+            errorMessage: message,
+            errorSource: source,
+            stack,
         });
     });
 
     host.addEventListener('unhandledrejection', (event) => {
         const reason = event.reason;
+        if (event.defaultPrevented) return;
         if (reason instanceof Error) {
+            const message = reason.message || 'Unhandled rejection';
+            const name = reason.name || 'UnhandledRejection';
+            const stack = reason.stack;
             setLastErrorContext({
-                message: reason.message || 'Unhandled rejection',
-                name: reason.name,
-                stack: reason.stack,
+                message,
+                name,
+                stack,
                 source: 'window.unhandledrejection',
+            });
+            const signature = `client-unhandled-rejection:${name}:${message}`;
+            void reportClientAutoFeedbackOnce(signature, {
+                content: `[auto][unhandledrejection] ${message}`,
+                autoReportKind: 'unhandled-rejection',
+                source: 'client-unhandled-rejection',
+                gameId: 'unknown',
+                gameName: 'client',
+                errorName: name,
+                errorMessage: message,
+                errorSource: 'window.unhandledrejection',
+                stack,
             });
             return;
         }
 
+        const message = typeof reason === 'string' ? reason : 'Unhandled rejection';
         setLastErrorContext({
-            message: typeof reason === 'string' ? reason : 'Unhandled rejection',
+            message,
+            name: 'UnhandledRejection',
             source: 'window.unhandledrejection',
+        });
+        const signature = `client-unhandled-rejection:UnhandledRejection:${message}`;
+        void reportClientAutoFeedbackOnce(signature, {
+            content: `[auto][unhandledrejection] ${message}`,
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'UnhandledRejection',
+            errorMessage: message,
+            errorSource: 'window.unhandledrejection',
         });
     });
 };

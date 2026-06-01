@@ -112,6 +112,16 @@ export class CreateFeedbackDto {
 
     @IsString()
     @IsOptional()
+    @MaxLength(64)
+    source?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    autoReportKind?: string;
+
+    @IsString()
+    @IsOptional()
     contactInfo?: string;
 
     @IsString()

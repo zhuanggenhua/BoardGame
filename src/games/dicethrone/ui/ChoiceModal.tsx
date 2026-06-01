@@ -48,6 +48,18 @@ function translateRuntimeKey(
     return t(runtimeKey.value, opts);
 }
 
+const translateInterpolatedParam = (
+    t: (key: string, opts?: Record<string, unknown>) => string,
+    value: string | number,
+): string | number => {
+    if (typeof value !== 'string') return value;
+    const separator = ', ';
+    return value.split(separator).map(part => {
+        if (!part.startsWith('cards.')) return part;
+        return translateRuntimeKey(t, part, { defaultValue: part });
+    }).join(separator);
+};
+
 export const ChoiceModal = ({
     choice,
     canResolve,
@@ -83,7 +95,13 @@ export const ChoiceModal = ({
                 return t('choices.option', { index: index + 1 });
             }
         }
-        return translateRuntimeKey(t, option.label, { ...option.labelParams, defaultValue: option.label });
+        const translatedParams = Object.fromEntries(
+            Object.entries(option.labelParams ?? {}).map(([key, value]) => [
+                key,
+                translateInterpolatedParam(t, value),
+            ]),
+        );
+        return translateRuntimeKey(t, option.label, { ...translatedParams, defaultValue: option.label });
     };
 
     const handleSliderConfirm = (selectedValue: number) => {

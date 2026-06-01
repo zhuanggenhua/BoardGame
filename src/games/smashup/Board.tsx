@@ -97,6 +97,8 @@ import { isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolv
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
+import { normalizeSmashUpCoreForUi } from './ui/normalizeRuntimeState';
+import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoReport';
 
 const ABILITY_FEEDBACK_DEFAULT_MESSAGES: Record<string, string> = {
     'ui.extra_minion_granted': '获得{{count}}次额外随从机会',
@@ -258,7 +260,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const { t, i18n } = useTranslation('game-smashup');
     const { setSelectedFactions, interactionMode } = useSmashUpOverlay();
 
-    const core = G?.core;
+    const runtimeStateNormalization = useMemo(() => normalizeSmashUpCoreForUi(G?.core), [G?.core]);
+    const core = runtimeStateNormalization.core;
+    const matchState = useMemo(() => (G && core ? { ...G, core } : G), [G, core]);
     const phase = G?.sys?.phase;
     const corePlayers = core?.players ?? EMPTY_PLAYERS;
     const coreBases = core?.bases ?? EMPTY_BASES;
@@ -371,6 +375,33 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         return resolveI18nKeys(opt.label, t);
     }, [t]);
+
+    useEffect(() => {
+        const anomalies = runtimeStateNormalization.anomalies;
+        if (!core || anomalies.length === 0) return;
+
+        const summarized = anomalies.slice(0, 8).map((item) => `${item.path}:${item.actual}`);
+        const extraCount = anomalies.length - summarized.length;
+        const summaryText = extraCount > 0 ? `${summarized.join(', ')} (+${extraCount})` : summarized.join(', ');
+        const signature = `smashup-runtime-state-normalized:${summaryText}`;
+
+        void reportClientAutoFeedbackOnce(signature, {
+            content: `[auto][smashup-runtime-guard] 大杀四方运行时状态被强制规范化：${summaryText}`,
+            autoReportKind: 'smashup-runtime-state-normalized',
+            source: 'client-runtime-guard',
+            gameId: 'smashup',
+            gameName: 'smashup',
+            playerId: playerID ?? rootPid,
+            errorName: 'SmashUpRuntimeStateNormalized',
+            errorMessage: `大杀四方运行时状态存在空数组合同破坏：${summaryText}`,
+            errorSource: 'smashup.runtime_state_guard',
+            stack: JSON.stringify({
+                phase,
+                turnNumber: core.turnNumber,
+                anomalies,
+            }),
+        });
+    }, [core, phase, playerID, rootPid, runtimeStateNormalization.anomalies]);
     
     // 更新选择的派系到 Context（游戏开始后）
     useEffect(() => {
@@ -1580,7 +1611,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 事件流消费 → FX 特效驱动
     const myPid = playerID || '0';
-    const gameEvents = useGameEvents({ G, myPlayerId: myPid, fxBus, baseRefs: baseRefsMap, playerNames });
+    const gameEvents = useGameEvents({
+        G: (matchState ?? G) as MatchState<SmashUpCore>,
+        myPlayerId: myPid,
+        fxBus,
+        baseRefs: baseRefsMap,
+        playerNames,
+    });
     const { feedbacks: gameFeedbacks, removeFeedback: removeGameFeedback } = gameEvents;
 
     // 行动卡特写队列：
@@ -2629,7 +2666,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // 防御性检查：HMR 或 client 重建时 core 可能不完整
     if (!core.turnOrder || !core.bases) {
         return (
-            <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
+            <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
                 <LoadingScreen
                     anchor="container"
                     description={t('ui.loading', { defaultValue: '加载中...' })}
@@ -2642,7 +2679,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // EARLY RETURN: Faction Selection
     if (phase === 'factionSelect' && core.factionSelection) {
         return (
-            <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
+            <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
                 <TutorialSelectionGate
                     isTutorialMode={isTutorialMode}
                     isTutorialActive={isTutorialActive}
@@ -2676,7 +2713,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }
 
     return (
-        <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
+        <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
             {/* BACKGROUND: A warm, dark wooden table texture. */}
             <div className="relative w-full h-full bg-[#3e2723] overflow-hidden font-sans select-none"
             >
@@ -3727,7 +3764,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* ME FIRST! 响应窗口 */}
                 <MeFirstOverlay
-                    G={G}
+                    G={(matchState ?? G) as MatchState<SmashUpCore>}
                     dispatch={dispatch}
                     playerID={playerID}
                     pendingCard={meFirstPendingCard}

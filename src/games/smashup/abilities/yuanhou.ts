@@ -1341,7 +1341,7 @@ function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
                 now: ctx.now,
                 sourcePlayerId: ctx.playerId,
             }),
-            grantExtraMinion(ctx.playerId, 'time_travelers_doctor_when', ctx.now, target.baseIndex, {
+            grantExtraMinion(ctx.playerId, 'time_travelers_doctor_when', ctx.now, undefined, {
                 sameNameDefId: target.minion.defId,
                 specificCardUid: target.minion.uid,
                 playTiming: 'immediate',
@@ -1475,7 +1475,7 @@ function timeTravelersDoOver(ctx: AbilityContext): AbilityResult {
                 now: ctx.now,
                 sourcePlayerId: ctx.playerId,
             }),
-            grantExtraMinion(ctx.playerId, 'time_travelers_do_over', ctx.now, target.baseIndex, {
+            grantExtraMinion(ctx.playerId, 'time_travelers_do_over', ctx.now, undefined, {
                 sameNameDefId: target.minion.defId,
                 specificCardUid: target.minion.uid,
                 playTiming: 'immediate',
@@ -3135,7 +3135,7 @@ export function registerYuanhouAbilities(): void {
                     now: timestamp,
                     sourcePlayerId: playerId,
                 }),
-                grantExtraMinion(playerId, 'time_travelers_doctor_when', timestamp, target.baseIndex, {
+                grantExtraMinion(playerId, 'time_travelers_doctor_when', timestamp, undefined, {
                     sameNameDefId: target.minion.defId,
                     specificCardUid: target.minion.uid,
                     playTiming: 'immediate',

@@ -32,6 +32,7 @@ export interface CharacterData {
     abilities: any[];
     tokens: TokenDef[];
     initialTokens: Record<string, number>;
+    initialPlayerBoardFace?: HeroState['playerBoardFace'];
     diceDefinitionId: string;
     getStartingDeck: (random: RandomFn) => AbilityCard[];
     initialAbilityLevels: Record<string, number>;
@@ -280,6 +281,7 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         abilities: CURSED_PIRATE_ABILITIES,
         tokens: CURSED_PIRATE_TOKENS,
         initialTokens: CURSED_PIRATE_INITIAL_TOKENS,
+        initialPlayerBoardFace: 'cursed',
         diceDefinitionId: 'cursed_pirate-dice',
         getStartingDeck: getCursedPirateStartingDeck,
         initialAbilityLevels: {
@@ -370,6 +372,7 @@ export function initHeroState(
     return {
         id: `player-${playerId}`,
         characterId,
+        playerBoardFace: data.initialPlayerBoardFace,
         // initialDeckCardIds 不包含在返回值中（已消费完毕，避免状态膨胀）
         resources,
         hand: startingHand,

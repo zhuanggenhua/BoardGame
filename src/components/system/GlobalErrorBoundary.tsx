@@ -1,6 +1,7 @@
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { reportClientAutoFeedbackOnce } from "../../lib/feedback/clientAutoReport";
 import { setLastErrorContext } from "../../lib/feedback/errorContext";
 
 interface Props {
@@ -25,11 +26,24 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+        const stack = [error.stack ?? '', errorInfo.componentStack ?? ''].filter(Boolean).join('\n');
         setLastErrorContext({
             message: error.message || 'React render error',
             name: error.name,
-            stack: [error.stack ?? '', errorInfo.componentStack ?? ''].filter(Boolean).join('\n'),
+            stack,
             source: 'react.error_boundary',
+        });
+        const signature = `react-error-boundary:${error.name}:${error.message}`;
+        void reportClientAutoFeedbackOnce(signature, {
+            content: `[auto][react.error_boundary] ${error.message || 'React render error'}`,
+            autoReportKind: 'react-render-error',
+            source: 'react-error-boundary',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: error.name || 'Error',
+            errorMessage: error.message || 'React render error',
+            errorSource: 'react.error_boundary',
+            stack,
         });
         console.error("Uncaught error:", error, errorInfo);
         // Here you would log to Sentry

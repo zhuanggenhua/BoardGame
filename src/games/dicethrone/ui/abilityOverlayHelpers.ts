@@ -10,6 +10,8 @@ import { GUNSLINGER_CARDS } from '../heroes/gunslinger/cards';
 import { SAMURAI_CARDS } from '../heroes/samurai/cards';
 import { TREANT_CARDS } from '../heroes/treant/cards';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
+import { ZHANSHUJIA_CARDS } from '../heroes/zhanshujia/cards';
+import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
 
 export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     monk: MONK_CARDS,
@@ -22,6 +24,8 @@ export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     samurai: SAMURAI_CARDS,
     treant: TREANT_CARDS,
     ninja: NINJA_CARDS,
+    zhanshujia: ZHANSHUJIA_CARDS,
+    cursed_pirate: CURSED_PIRATE_CARDS,
 };
 
 const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
@@ -132,6 +136,28 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         calm: 'shadow-fang',
         meditate: 'blink',
         ultimate: 'ninja-assassinate',
+    },
+    zhanshujia: {
+        fist: 'sabre-thrust',
+        chi: 'carpet-bombing',
+        sky: 'war-monger',
+        lotus: 'drum-movement',
+        combo: 'flanking',
+        lightning: 'expand-battlefield',
+        calm: 'strategic-shift',
+        meditate: 'countermeasures',
+        ultimate: 'high-ground',
+    },
+    cursed_pirate: {
+        fist: 'soul-stab',
+        chi: 'marked-for-death',
+        sky: 'cursed',
+        lotus: 'deep-sea-dive',
+        combo: 'breath-of-death',
+        lightning: 'soul-command',
+        calm: 'undead-claw',
+        meditate: 'still-wet-behind-ears',
+        ultimate: 'merciless-curse',
     },
 };
 

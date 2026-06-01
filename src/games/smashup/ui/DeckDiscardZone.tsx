@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Library, Trash2 } from 'lucide-react';
+import { Hourglass, Library, Trash2 } from 'lucide-react';
 import type { CardInstance, TitanState } from '../domain/types';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PromptOverlay } from './PromptOverlay';
@@ -16,6 +16,13 @@ const DECK_DISCARD_LAYER_Z_INDEX = UI_Z_INDEX.hud + 1;
 
 function cardHeight(width: string): string {
     return `calc(${width} / ${CARD_ASPECT_RATIO})`;
+}
+
+function getTimeBoxCounterLabel(titan: TitanState): string | null {
+    if (titan.defId !== 'time_travelers_time_box') return null;
+    const counters = Number(titan.metadata?.timeBoxCounters ?? 0);
+    if (!Number.isFinite(counters) || counters <= 0) return null;
+    return String(counters);
 }
 
 type Props = {
@@ -197,6 +204,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                     const isReactionTitan = !!reactionTitanUids?.has(titan.uid);
                     const isActivatable = !!activatableTitanUids?.has(titan.uid) && (isMyTurn || isReactionTitan);
                     const showTitanInspectButton = showDesktopTitanInspectButton || isCoarseTitanPointer;
+                    const timeBoxCounterLabel = getTimeBoxCounterLabel(titan);
                     return (
                         <div
                             key={titan.uid}
@@ -233,6 +241,19 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                     className="h-full w-full"
                                     title={titanName}
                                 />
+                                {timeBoxCounterLabel && (
+                                    <div className="absolute -top-1 left-1/2 z-20 flex -translate-x-1/2 justify-center pointer-events-none">
+                                        <div
+                                            data-testid={`su-rail-titan-timebox-counter-${titan.uid}`}
+                                            className="flex items-center gap-1 whitespace-nowrap rounded-full border border-white bg-sky-300/95 px-1.5 py-[1px] font-black leading-none text-sky-950 shadow-md"
+                                            style={{ fontSize: titanAbilityBadgeFontSize }}
+                                            title={`时间盒子计数：${timeBoxCounterLabel}`}
+                                        >
+                                            <Hourglass aria-hidden className="block shrink-0" size="1em" strokeWidth={3} />
+                                            <span className="block tabular-nums">{timeBoxCounterLabel}</span>
+                                        </div>
+                                    </div>
+                                )}
                                 {isActivatable && (
                                     <div className="absolute bottom-1 inset-x-0 z-20 flex justify-center px-1 pointer-events-none">
                                         <div

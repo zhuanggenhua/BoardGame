@@ -1637,7 +1637,9 @@ function buildCropCirclesReturnEvents(
     let protectedSkipped = 0;
     for (const m of base.minions.filter(minion => selectedSet.has(minion.uid))) {
         // 跳过受保护的对手随从
-        if (sourcePlayerId && m.controller !== sourcePlayerId && isMinionProtected(core, m, baseIndex, sourcePlayerId, 'affect')) {
+        if (sourcePlayerId && m.controller !== sourcePlayerId && isMinionProtected(core, m, baseIndex, sourcePlayerId, 'affect', {
+            sourceKind: 'action',
+        })) {
             protectedSkipped += 1;
             continue;
         }

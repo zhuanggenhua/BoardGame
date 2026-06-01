@@ -168,6 +168,67 @@ describe('Feedback Module (e2e)', () => {
         expect(res.body.userId).toBeUndefined();
     });
 
+    it('运行时守卫自动反馈允许保留受控 source 与 autoReportKind', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/feedback')
+            .send({
+                content: '[auto][smashup-runtime-guard] 发现空数组合同破坏',
+                source: 'client-runtime-guard',
+                autoReportKind: 'smashup-runtime-state-normalized',
+                type: 'bug',
+                severity: 'high',
+                gameName: 'smashup',
+                clientContext: {
+                    gameId: 'smashup',
+                    matchId: 'match-1',
+                    playerId: '0',
+                },
+                errorContext: {
+                    name: 'SmashUpRuntimeStateNormalized',
+                    source: 'smashup.runtime_state_guard',
+                },
+            })
+            .expect(201);
+
+        expect(res.body.source).toBe('client-runtime-guard');
+        expect(res.body.autoReportKind).toBe('smashup-runtime-state-normalized');
+        expect(res.body.clientContext?.matchId).toBe('match-1');
+    });
+
+    it('全局客户端错误自动反馈来源也允许透传', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/feedback')
+            .send({
+                content: '[auto][window.error] 页面运行时异常',
+                source: 'client-window-error',
+                autoReportKind: 'window-error',
+                type: 'bug',
+                severity: 'high',
+                gameName: 'client',
+                errorContext: {
+                    name: 'TypeError',
+                    message: 'window boom',
+                    source: 'window.error',
+                },
+            })
+            .expect(201);
+
+        expect(res.body.source).toBe('client-window-error');
+        expect(res.body.autoReportKind).toBe('window-error');
+    });
+
+    it('普通用户自定义未知 source 会被收敛回反馈弹窗来源', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/feedback')
+            .send({
+                content: '伪造来源测试',
+                source: 'evil-bot',
+            })
+            .expect(201);
+
+        expect(res.body.source).toBe('feedback-modal');
+    });
+
     it('未登录可以匿名读取反馈列表（只读）', async () => {
         await request(app.getHttpServer())
             .post('/feedback')

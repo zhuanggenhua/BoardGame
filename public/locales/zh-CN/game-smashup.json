@@ -551,6 +551,18 @@
       "name": "希腊神话",
       "description": "以行动触发英雄加成，并通过诸神恩惠连续获得额外行动与战力。"
     },
+    "dragons": {
+      "name": "龙",
+      "description": "用持续威慑、基地压制和计分惩罚逼迫对手付出代价。"
+    },
+    "superheroes": {
+      "name": "超级英雄",
+      "description": "保护弱小、强化强者，并在关键时刻调动英雄登场。"
+    },
+    "geeks": {
+      "name": "极客",
+      "description": "用规则、反制和手牌信息打断对手节奏。"
+    },
     "itty_critters": {
       "name": "迷你萌宠",
       "description": "以低战力萌宠的检索、临时上场与回收循环来适应不同基地。"

@@ -15,6 +15,16 @@ type FeedbackManagerScope = {
 };
 
 const DEFAULT_USER_SOURCE = 'feedback-modal';
+const ALLOWED_USER_SOURCES = new Set([
+    DEFAULT_USER_SOURCE,
+    'client-auto-report',
+    'client-runtime-guard',
+    'client-window-error',
+    'client-unhandled-rejection',
+    'react-error-boundary',
+    'board-render-error',
+    'home-modal-error-boundary',
+]);
 const LEGACY_WATCHDOG_SOURCE = 'online-ai-watchdog';
 const WATCHDOG_AGGREGATION_SOURCE = 'online-ai-watchdog';
 export const WATCHDOG_AGGREGATION_WINDOW_MS = 6 * 60 * 60 * 1000;
@@ -51,7 +61,7 @@ export class FeedbackService {
             ...dto,
             gameId: this.normalizeFeedbackGameIdCandidates(dto.clientContext?.gameId, dto.gameName),
             reporterType: FeedbackReporterType.USER,
-            source: DEFAULT_USER_SOURCE,
+            source: this.normalizeUserSource(dto.source),
             ...(userId && { userId }),
         });
     }
@@ -263,6 +273,14 @@ export class FeedbackService {
         }
         const normalized = value.trim().toLowerCase();
         return normalized || fallback;
+    }
+
+    private normalizeUserSource(value?: string | null): string {
+        const normalized = this.normalizeSource(value, DEFAULT_USER_SOURCE);
+        if (ALLOWED_USER_SOURCES.has(normalized)) {
+            return normalized;
+        }
+        return DEFAULT_USER_SOURCE;
     }
 
     private shouldAggregateSystemFeedback(

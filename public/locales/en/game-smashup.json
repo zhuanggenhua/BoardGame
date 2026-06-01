@@ -587,6 +587,18 @@
       "name": "Mythic Greeks",
       "description": "Trigger heroic bonuses from actions and chain divine favors for extra plays and power."
     },
+    "dragons": {
+      "name": "Dragons",
+      "description": "Threaten bases with ongoing pressure, breakpoint control, and scoring penalties."
+    },
+    "superheroes": {
+      "name": "Superheroes",
+      "description": "Protect the vulnerable, empower heavy hitters, and call heroes in at key moments."
+    },
+    "geeks": {
+      "name": "Geeks",
+      "description": "Use rules knowledge, counters, and hand information to disrupt opposing tempo."
+    },
     "itty_critters": {
       "name": "Itty Critters",
       "description": "Search, play, and recycle tiny power-2 minions for flexible tactical bursts."

@@ -574,7 +574,8 @@ function resolvePostAttackFollowUp(
     }
 
     const existingExtraAttack = events.find(e => e.type === 'EXTRA_ATTACK_TRIGGERED');
-    if (existingExtraAttack) {
+    const pendingExtraAttack = core.extraAttackInProgress;
+    if (existingExtraAttack || (pendingExtraAttack && pendingExtraAttack.phaseEntered !== true)) {
         return { events, overrideNextPhase: 'offensiveRoll' };
     }
 

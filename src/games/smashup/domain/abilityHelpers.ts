@@ -657,11 +657,20 @@ export function modifyBreakpoint(
 export function shuffleBaseDeck(
     newBaseDeckDefIds: string[],
     reason: string,
-    now: number
+    now: number,
+    options?: {
+        clearBaseDiscard?: boolean;
+        newBaseDiscardDefIds?: string[];
+    },
 ): BaseDeckShuffledEvent {
     return {
         type: SU_EVENTS.BASE_DECK_SHUFFLED,
-        payload: { newBaseDeckDefIds, reason },
+        payload: {
+            newBaseDeckDefIds,
+            reason,
+            ...(options?.clearBaseDiscard ? { clearBaseDiscard: true } : {}),
+            ...(options?.newBaseDiscardDefIds ? { newBaseDiscardDefIds: options.newBaseDiscardDefIds } : {}),
+        },
         timestamp: now,
     };
 }
@@ -967,6 +976,7 @@ export function fireMinionPlayedTriggers(params: {
     let matchState = params.matchState;
     let triggerCore = core;
     const events: SmashUpEvent[] = [];
+    const preOnPlayTriggerBaseMinionUids = new Set(core.bases[baseIndex]?.minions.map((minion) => minion.uid) ?? []);
 
     // 注意：此函数被 postProcessSystemEvents 调用时，MINION_PLAYED 事件已经被 reduce 到 core 中
     // 所以随从已经在基地上了，不需要再次 reduce
@@ -1024,6 +1034,9 @@ export function fireMinionPlayedTriggers(params: {
 
     // 3. ongoing 触发器 onMinionPlayed（改为入队，按 Wiki 同时触发排序解决）
     const playedMinion = triggerCore.bases[baseIndex]?.minions.find(m => m.uid === cardUid);
+    const suppressedSourceCardUids = (triggerCore.bases[baseIndex]?.minions ?? [])
+        .filter(minion => minion.uid !== cardUid && !preOnPlayTriggerBaseMinionUids.has(minion.uid))
+        .map(minion => minion.uid);
     const queued = collectTriggers(triggerCore, 'onMinionPlayed', {
         state: triggerCore,
         matchState,
@@ -1032,6 +1045,7 @@ export function fireMinionPlayedTriggers(params: {
         triggerMinionUid: cardUid,
         triggerMinionDefId: defId,
         triggerMinion: playedMinion,
+        suppressedSourceCardUids,
         frameId,
         sourceEventId,
         random,
@@ -1695,24 +1709,35 @@ export function buildMinionTargetOptions(
     const inferredActionSource = sourceKind === 'action'
         || (sourceKind !== 'nonAction' && !!sourceDefId && getCardDef(sourceDefId)?.type === 'action');
     const shouldRespectActionProtection = respectActionProtection || inferredActionSource;
+    const effectSourceKind: 'action' | 'nonAction' = inferredActionSource ? 'action' : 'nonAction';
     const filteredCandidates = candidates.filter(c => {
         const minion = state.bases[c.baseIndex]?.minions.find(m => m.uid === c.uid);
         if (!minion) return false;
         // 己方随从不做保护检查（保护只针对对手效果）
         if (minion.controller === sourcePlayerId) return true;
-        if (shouldRespectActionProtection && isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, 'action')) {
+        if (shouldRespectActionProtection && isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, 'action', {
+            sourceKind: 'action',
+        })) {
             return false;
         }
         // 对手随从：检查保护
         if (effectType) {
             // 指定了 effectType → 只检查该类型（非消耗型）+ affect（非消耗型广义保护）
-            if (isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, effectType)) return false;
-            if (effectType !== 'affect' && isMinionProtectedNonConsumable(state, minion, c.baseIndex, sourcePlayerId, 'affect')) return false;
+            if (isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, effectType, {
+                sourceKind: effectSourceKind,
+            })) return false;
+            if (effectType !== 'affect' && isMinionProtectedNonConsumable(state, minion, c.baseIndex, sourcePlayerId, 'affect', {
+                sourceKind: effectSourceKind,
+            })) return false;
             return true;
         }
         // 未指定 effectType → 检查 destroy（全部）+ affect（仅非消耗型）
-        if (isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, 'destroy')) return false;
-        if (isMinionProtectedNonConsumable(state, minion, c.baseIndex, sourcePlayerId, 'affect')) return false;
+        if (isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, 'destroy', {
+            sourceKind: effectSourceKind,
+        })) return false;
+        if (isMinionProtectedNonConsumable(state, minion, c.baseIndex, sourcePlayerId, 'affect', {
+            sourceKind: effectSourceKind,
+        })) return false;
         return true;
     });
 

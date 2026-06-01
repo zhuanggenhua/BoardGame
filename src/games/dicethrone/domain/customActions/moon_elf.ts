@@ -8,7 +8,7 @@
  * - 琛屽姩鍗￠€昏緫 (Moon Shadow Strike / Volley / Watch Out)
  */
 
-import { getActiveDice, getFaceCounts, getMaxDuplicateValueCountFromValues, getPlayerDieFace } from '../rules';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPlayerDieFace } from '../rules';
 import { STATUS_IDS, MOON_ELF_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import type {
@@ -169,9 +169,7 @@ function handleLongbowBonusCheck4(context: CustomActionContext): DiceThroneEvent
         console.warn('[moon_elf] handleLongbowBonusCheck4: No defenderId in context');
         return [];
     }
-    const attackDiceValues = state.pendingAttack?.attackDiceValues
-        ?? getActiveDice(state).map((die) => die.value);
-    const hasMatch = getMaxDuplicateValueCountFromValues(attackDiceValues) >= 4;
+    const hasMatch = getAttackMaxDuplicateValueCount(state) >= 4;
     if (!hasMatch) return [];
     return [applyStatus(opponentId, STATUS_IDS.ENTANGLE, 1, sourceAbilityId, state, timestamp)];
 }
@@ -187,9 +185,7 @@ function handleLongbowBonusCheck3(context: CustomActionContext): DiceThroneEvent
         console.warn('[moon_elf] handleLongbowBonusCheck3: No defenderId in context');
         return [];
     }
-    const attackDiceValues = state.pendingAttack?.attackDiceValues
-        ?? getActiveDice(state).map((die) => die.value);
-    const hasMatch = getMaxDuplicateValueCountFromValues(attackDiceValues) >= 3;
+    const hasMatch = getAttackMaxDuplicateValueCount(state) >= 3;
     if (!hasMatch) return [];
     return [applyStatus(opponentId, STATUS_IDS.ENTANGLE, 1, sourceAbilityId, state, timestamp)];
 }
@@ -674,9 +670,11 @@ export function registerMoonElfCustomActions(): void {
     // 闀垮紦杩炲嚮鍒ゅ畾
     registerCustomActionHandler('moon_elf-longbow-bonus-check-4', handleLongbowBonusCheck4, {
         categories: ['status'],
+        usesAttackDiceSnapshot: true,
     });
     registerCustomActionHandler('moon_elf-longbow-bonus-check-3', handleLongbowBonusCheck3, {
         categories: ['status'],
+        usesAttackDiceSnapshot: true,
     });
 
     // 鐖嗚绠粨绠?

@@ -10,7 +10,7 @@ import type { EffectAction, RollDieConditionalEffect, RollDieDefaultEffect } fro
 export type { RollDieConditionalEffect, RollDieDefaultEffect };
 import type { AbilityEffect, EffectTiming, EffectResolutionContext } from './combat';
 import { combatAbilityManager } from './combatAbility';
-import { getActiveDice, getFaceCounts, getOpponents, getPlayerDieFace, getTokenStackLimit } from './rules';
+import { getActiveDice, getAttackDiceFaceCounts, getAttackDiceValues, getFaceCounts, getOpponents, getPlayerDieFace, getTokenStackLimit } from './rules';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS } from './ids';
 import type {
@@ -119,6 +119,8 @@ export interface CustomActionMeta {
     categories: CustomActionCategory[];
     /** 是否需要玩家交互 */
     requiresInteraction?: boolean;
+    /** 该处理器在跨阶段攻击结算中读取攻击骰结果，必须使用 pendingAttack 中的攻击快照。 */
+    usesAttackDiceSnapshot?: boolean;
     /** 是否依赖当前已选中的单一 defender（常见于 2v2 攻击修正/主阶段对手卡） */
     requiresSelectedDefender?: boolean;
     /** 可用阶段（不指定则不限制） */
@@ -800,14 +802,23 @@ function resolveEffectAction(
                     timestamp,
                     sfxKey,
                 };
-                events.push(bonusDieEvent);
+                const perDieEvents: DiceThroneEvent[] = [bonusDieEvent];
 
                 // 触发匹配的条件效果，或 defaultEffect
                 if (matchedEffect) {
                     const conditionalEvents = resolveConditionalEffect(matchedEffect, ctx, targetId, sourceAbilityId, timestamp, sfxKey, random);
-                    events.push(...conditionalEvents);
+                    perDieEvents.push(...conditionalEvents);
                 } else if (action.defaultEffect) {
-                    events.push(...resolveDefaultEffect(action.defaultEffect, ctx, targetId, sourceAbilityId, timestamp, sfxKey, random));
+                    perDieEvents.push(...resolveDefaultEffect(action.defaultEffect, ctx, targetId, sourceAbilityId, timestamp, sfxKey, random));
+                }
+
+                events.push(...perDieEvents);
+
+                // rollDie 的多颗奖励骰需要按顺序“看到”前一颗骰子的落点。
+                // 否则像“连续两颗骷髅各施加 1 层状态”或“连续两颗战利品各抽 1 张牌”
+                // 会都基于旧状态计算，导致后续骰子的累计效果被吞掉。
+                for (const evt of perDieEvents) {
+                    ctx.state = reduceDiceThroneCore(ctx.state, evt);
                 }
             }
 
@@ -1294,7 +1305,15 @@ export function resolveEffectsToEvents(
         && ctx.state.pendingAttack?.attackerId === ctx.attackerId;
 
     // 构建 EffectResolutionContext 用于条件检查
+    const useAttackDiceSnapshot = (timing === 'withDamage' || timing === 'postDamage')
+        && ctx.state.pendingAttack?.attackerId === ctx.attackerId;
     const activeDice = getActiveDice(ctx.state);
+    const diceValues = useAttackDiceSnapshot
+        ? getAttackDiceValues(ctx.state)
+        : activeDice.map(die => die.value);
+    const faceCounts = useAttackDiceSnapshot
+        ? getAttackDiceFaceCounts(ctx.state)
+        : getFaceCounts(activeDice);
     const resolutionCtx: EffectResolutionContext = {
         attackerId: ctx.attackerId,
         defenderId: ctx.defenderId,
@@ -1302,8 +1321,8 @@ export function resolveEffectsToEvents(
         damageDealt: ctx.damageDealt,
         attackerStatusEffects: ctx.state.players[ctx.attackerId]?.statusEffects,
         defenderStatusEffects: ctx.state.players[ctx.defenderId]?.statusEffects,
-        diceValues: activeDice.map(die => die.value),
-        faceCounts: getFaceCounts(activeDice),
+        diceValues,
+        faceCounts,
     };
 
     const timedEffects = combatAbilityManager.instance.getEffectsByTiming(effects, timing);
@@ -1367,8 +1386,14 @@ export function resolveEffectsToEvents(
         resolutionCtx.attackerStatusEffects = ctx.state.players[ctx.attackerId]?.statusEffects;
         resolutionCtx.defenderStatusEffects = ctx.state.players[ctx.defenderId]?.statusEffects;
         const updatedDice = getActiveDice(ctx.state);
-        resolutionCtx.diceValues = updatedDice.map(die => die.value);
-        resolutionCtx.faceCounts = getFaceCounts(updatedDice);
+        const useUpdatedAttackDiceSnapshot = (timing === 'withDamage' || timing === 'postDamage')
+            && ctx.state.pendingAttack?.attackerId === ctx.attackerId;
+        resolutionCtx.diceValues = useUpdatedAttackDiceSnapshot
+            ? getAttackDiceValues(ctx.state)
+            : updatedDice.map(die => die.value);
+        resolutionCtx.faceCounts = useUpdatedAttackDiceSnapshot
+            ? getAttackDiceFaceCounts(ctx.state)
+            : getFaceCounts(updatedDice);
 
         // TOKEN_RESPONSE_REQUESTED 意味着伤害被挂起等待玩家响应，
         // 后续效果（如 rollDie）应在 Token 响应完成后由 resolvePostDamageEffects 执行。

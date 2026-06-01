@@ -127,6 +127,38 @@ describe('SmashUp command validation', () => {
         });
     });
 
+    it('时间盒子上场后不能再通过 ACTIVATE_SPECIAL 触发特殊能力', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            titans: [
+                makeTitan({
+                    uid: 'live-time-box',
+                    defId: 'time_travelers_time_box',
+                    faction: 'time_travelers',
+                    ownerId: '0',
+                    controllerId: '0',
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                    metadata: { timeBoxCounters: 5, timeBoxPlayArmed: true },
+                }),
+            ],
+            currentPlayerIndex: 0,
+            turnOrder: ['0', '1'],
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'live-time-box', baseIndex: 0 },
+        } as any);
+
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('该泰坦当前不在牌库旁');
+    });
+
     it('fairies_spirit_of_the_forest special 需要同时保留通常随从与通常行动额度', () => {
         const validCore = makeState({
             players: {
@@ -780,6 +812,68 @@ describe('SmashUp command validation', () => {
             zone: 'board',
             window: 'afterScoring',
         })).toBe(false);
+    });
+
+    it('supports hand-based special validation for geeks_fan during playCards only', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('fan-1', 'geeks_fan', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            currentPlayerIndex: 0,
+        });
+
+        const validResult = validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { handCardUid: 'fan-1', baseIndex: 0 },
+        } as any);
+
+        const invalidTurnResult = validate(makeMatchState({
+            ...core,
+            currentPlayerIndex: 1,
+        }), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { handCardUid: 'fan-1', baseIndex: 0 },
+        } as any);
+
+        expect(validResult.valid).toBe(true);
+        expect(invalidTurnResult.valid).toBe(false);
+    });
+
+    it('beforeScoring 仍只允许在达标基地上激活计分前 special', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [makeMinion('mole-1', 'super_spies_mole', '0', 4)],
+                }),
+                makeBase({ defId: 'base_b' }),
+            ],
+            scoringEligibleBaseIndices: [1],
+            currentPlayerIndex: 0,
+        });
+        const state = makeMatchState(core);
+        state.sys.phase = 'scoreBases';
+
+        const result = validate(state, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'mole-1', baseIndex: 0 },
+        } as any);
+
+        expect(result).toEqual({
+            valid: false,
+            error: '只能在达到临界点的基地上激活计分前特殊能力',
+        });
     });
 
     it('rejects ninja_acolyte_pod talent on the same turn it was played', () => {

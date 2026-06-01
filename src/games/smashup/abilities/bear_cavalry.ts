@@ -1754,7 +1754,9 @@ export function registerBearCavalryInteractionHandlers(): void {
         const { baseIndex: fromBase } = value as { baseIndex: number };
         // 若没有任何可被移动的对手随从，则直接 fizzle（不再要求选择目标基地）
         const opponentMinions = state.core.bases[fromBase]?.minions.filter(m => m.controller !== playerId) ?? [];
-        const movable = opponentMinions.filter(m => !isMinionProtected(state.core, m, fromBase, playerId, 'affect'));
+        const movable = opponentMinions.filter(m => !isMinionProtected(state.core, m, fromBase, playerId, 'affect', {
+            sourceKind: 'action',
+        }));
         if (movable.length === 0) {
             return {
                 state,
@@ -1790,7 +1792,9 @@ export function registerBearCavalryInteractionHandlers(): void {
         const opponentMinions = state.core.bases[ctx.fromBase].minions.filter(m => m.controller !== playerId);
         for (const m of opponentMinions) {
             // 检查保护（手动检查，因为这里不是构建选项而是批量移动）
-            if (isMinionProtected(state.core, m, ctx.fromBase, playerId, 'affect')) {
+            if (isMinionProtected(state.core, m, ctx.fromBase, playerId, 'affect', {
+                sourceKind: 'action',
+            })) {
                 protectedSkipped += 1;
                 continue;
             }

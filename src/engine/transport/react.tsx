@@ -73,6 +73,7 @@ import {
 import { injectTutorialInteractionId } from './tutorialAiCommand';
 import { resolveSetupPlayerIds } from './setupPlayerOrder';
 import { createScopedLogger } from '../../lib/logger';
+import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoReport';
 
 import { createCommandBatcher, type CommandBatcher } from './latency/commandBatcher';
 import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../hooks/EventStreamRollbackContext';
@@ -1960,6 +1961,19 @@ class BoardErrorBoundary extends React.Component<
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error('[BoardBridge] Board 组件渲染错误:', error, errorInfo);
         console.error('[BoardBridge] 错误堆栈:', error.stack);
+        const componentStack = errorInfo.componentStack ?? '';
+        const signature = `board-render-error:${error.name}:${error.message}`;
+        void reportClientAutoFeedbackOnce(signature, {
+            content: `[auto][board-render-error] ${error.message || 'Board render error'}`,
+            autoReportKind: 'board-render-error',
+            source: 'board-render-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: error.name || 'Error',
+            errorMessage: error.message || 'Board render error',
+            errorSource: 'board.error_boundary',
+            stack: [error.stack ?? '', componentStack].filter(Boolean).join('\n'),
+        });
         
         const isRecoverable = isBoardRenderErrorRecoverable(error);
         

@@ -156,6 +156,7 @@ export interface OngoingRegistrationResult {
         interceptor: boolean;
         baseAbilitySuppression: boolean;
         baseScoringSuppression: boolean;
+        cardAbilitySuppression: boolean;
         powerModifier: boolean;
         breakpointModifier: boolean;
     };
@@ -170,6 +171,7 @@ export function checkOngoingRegistration(defId: string): OngoingRegistrationResu
         interceptorIds,
         baseAbilitySuppressionIds,
         baseScoringSuppressionIds,
+        cardAbilitySuppressionIds,
     } =
         getRegisteredOngoingEffectIds();
     const { powerModifierIds, breakpointModifierIds } = getRegisteredModifierIds();
@@ -182,6 +184,7 @@ export function checkOngoingRegistration(defId: string): OngoingRegistrationResu
         interceptor: interceptorIds.has(defId),
         baseAbilitySuppression: baseAbilitySuppressionIds.has(defId),
         baseScoringSuppression: baseScoringSuppressionIds.has(defId),
+        cardAbilitySuppression: cardAbilitySuppressionIds.has(defId),
         powerModifier: powerModifierIds.has(defId),
         breakpointModifier: breakpointModifierIds.has(defId),
     };
@@ -193,6 +196,7 @@ export function checkOngoingRegistration(defId: string): OngoingRegistrationResu
         registries.interceptor ||
         registries.baseAbilitySuppression ||
         registries.baseScoringSuppression ||
+        registries.cardAbilitySuppression ||
         registries.powerModifier ||
         registries.breakpointModifier;
 
@@ -270,6 +274,7 @@ export function collectAllOngoingRegisteredIds(): Set<string> {
         interceptorIds,
         baseAbilitySuppressionIds,
         baseScoringSuppressionIds,
+        cardAbilitySuppressionIds,
     } =
         getRegisteredOngoingEffectIds();
     const { powerModifierIds, breakpointModifierIds } = getRegisteredModifierIds();
@@ -280,6 +285,7 @@ export function collectAllOngoingRegisteredIds(): Set<string> {
     for (const id of interceptorIds) all.add(id);
     for (const id of baseAbilitySuppressionIds) all.add(id);
     for (const id of baseScoringSuppressionIds) all.add(id);
+    for (const id of cardAbilitySuppressionIds) all.add(id);
     for (const id of powerModifierIds) all.add(id);
     for (const id of breakpointModifierIds) all.add(id);
     return all;

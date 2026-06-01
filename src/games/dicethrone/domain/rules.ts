@@ -128,6 +128,30 @@ export const getMaxDuplicateValueCount = (dice: Die[]): number => {
 };
 
 /**
+ * 获取当前攻击的骰子点数快照。
+ *
+ * 进攻骰会在防御阶段被防御方骰子覆盖；withDamage/postDamage 等跨阶段消费攻击结果的逻辑
+ * 必须优先读取 pendingAttack 快照，只在攻击尚未创建快照的早期窗口回退到当前活跃骰。
+ */
+export const getAttackDiceValues = (state: DiceThroneCore): number[] => (
+    state.pendingAttack?.attackDiceValues ?? getActiveDice(state).map((die) => die.value)
+);
+
+/**
+ * 获取当前攻击的骰面计数快照。
+ *
+ * 供跨阶段效果读取攻击方骰面，避免防御阶段误读防御方当前骰。
+ */
+export const getAttackDiceFaceCounts = (state: DiceThroneCore): Record<DieFace, number> => (
+    (state.pendingAttack?.attackDiceFaceCounts as Record<DieFace, number> | undefined)
+    ?? getFaceCounts(getActiveDice(state))
+);
+
+export const getAttackMaxDuplicateValueCount = (state: DiceThroneCore): number => (
+    getMaxDuplicateValueCountFromValues(getAttackDiceValues(state))
+);
+
+/**
  * 获取玩家某个 Token 的堆叠上限（支持技能永久提高上限，如莲花掌）
  * - player.tokenStackLimits 优先
  * - 回退到 tokenDefinitions.stackLimit

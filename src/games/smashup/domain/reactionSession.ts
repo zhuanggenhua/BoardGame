@@ -329,6 +329,8 @@ function pruneUnavailableScoringFrameTriggers(
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const staleTriggers = getSessionFrameTriggers(state, session.frameId).filter(
         (trigger) => (
+            !(trigger.witnessRequirement === 'inPlayAtTriggerTime' && trigger.witnessed)
+            &&
             !isTriggerSourceStillPresentDuringScoring(state, trigger)
             && !shouldKeepQueuedScoringTriggerFromSnapshot(trigger)
         ),
@@ -798,6 +800,9 @@ function executeQueuedTrigger(
         baseIndex: trigger.baseIndex,
         moveFromBaseIndex: trigger.moveFromBaseIndex,
         moveToBaseIndex: trigger.moveToBaseIndex,
+        simultaneousMoveBatchMinionUids: trigger.simultaneousMoveBatchMinionUids
+            ? [...trigger.simultaneousMoveBatchMinionUids]
+            : undefined,
         duel: trigger.duel ? structuredClone(trigger.duel) : undefined,
         duelSourceId: trigger.duelSourceId,
         duelOutcome: trigger.duelOutcome,

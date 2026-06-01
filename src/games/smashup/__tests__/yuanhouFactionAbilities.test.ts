@@ -7459,6 +7459,53 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(skipped.finalState.core.players['0'].hand.map(card => card.uid)).toContain('jumper-a');
     });
 
+    it('时间旅行者：从头来过允许把刚返回的随从重新打到另一基地', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a-do-over', 'time_travelers_do_over', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_portal_room', [
+                    makeMinion('jumper-a', 'time_travelers_jumper', '0', 2),
+                ]),
+                makeBase('base_the_deep', []),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-do-over', targetBaseIndex: 0, targetMinionUid: 'jumper-a' },
+        } as any);
+
+        expect(played.success).toBe(true);
+        const resolved = resolveInteractionChain(played.finalState, (prompt, _state, step) => {
+            if (step === 0) {
+                expect(prompt?.data?.sourceId).toBe('smashup_immediate_extra_minion');
+                const returned = findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'jumper-a');
+                expect(returned).toBeTruthy();
+                return { optionId: returned.id };
+            }
+            expect(prompt?.data?.sourceId).toBe('smashup_immediate_extra_minion_base');
+            expect(findInteractionOption(prompt, candidate => candidate.value?.baseIndex === 0)).toBeTruthy();
+            const otherBase = findInteractionOption(prompt, candidate => candidate.value?.baseIndex === 1);
+            expect(otherBase).toBeTruthy();
+            return { optionId: otherBase.id };
+        });
+
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'jumper-a')).toBe(false);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'jumper-a')).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('jumper-a');
+    });
+
     it('时间旅行者：时间掠夺者天赋允许选择弃牌堆任意一张放到牌库底', () => {
         const core = {
             players: {
@@ -11431,6 +11478,59 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(skipped.finalState.core.players['0'].hand.map(card => card.uid)).toContain('raider-a');
     });
 
+    it('时间旅行者：时间博士允许把刚返回的随从重新打到另一基地', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('doctor-a', 'time_travelers_doctor_when', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_portal_room', [
+                    makeMinion('raider-a', 'time_travelers_time_raider', '0', 3),
+                ]),
+                makeBase('base_the_deep', []),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'doctor-a', baseIndex: 0 },
+        } as any);
+
+        expect(played.success).toBe(true);
+        const resolved = resolveInteractionChain(played.finalState, (prompt, _state, step) => {
+            if (step === 0) {
+                expect(prompt?.data?.sourceId).toBe('time_travelers_doctor_when_choose');
+                const returned = findInteractionOption(prompt, candidate => candidate.value?.minionUid === 'raider-a');
+                expect(returned).toBeTruthy();
+                return { optionId: returned.id };
+            }
+            if (step === 1) {
+                expect(prompt?.data?.sourceId).toBe('smashup_immediate_extra_minion');
+                const returned = findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'raider-a');
+                expect(returned).toBeTruthy();
+                return { optionId: returned.id };
+            }
+            expect(prompt?.data?.sourceId).toBe('smashup_immediate_extra_minion_base');
+            expect(findInteractionOption(prompt, candidate => candidate.value?.baseIndex === 0)).toBeTruthy();
+            const otherBase = findInteractionOption(prompt, candidate => candidate.value?.baseIndex === 1);
+            expect(otherBase).toBeTruthy();
+            return { optionId: otherBase.id };
+        });
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['doctor-a']);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'raider-a')).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('raider-a');
+    });
+
     it('时间旅行者：时间博士的 may 可以跳过且不能伪造返回自身', () => {
         const core = {
             players: {
@@ -12559,6 +12659,43 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             && (event as any).payload?.metadataUpdate?.timeBoxCounters === 6,
         )).toBe(true);
         expect(triggered.matchState?.sys.interaction.current?.data?.sourceId).toBe('titan_time_travelers_time_box_play');
+    });
+
+    it('时间盒子：已经上场后，回合开始不应再触发牌库旁特殊计数', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_portal_room', [])],
+            titans: [{
+                uid: 'time-box-live',
+                defId: 'time_travelers_time_box',
+                faction: 'time_travelers',
+                ownerId: '0',
+                controllerId: '0',
+                location: { zone: 'base' as const, baseIndex: 0, enteredAt: 1 },
+                powerCounters: 0,
+                talentUsed: false,
+                metadata: { timeBoxCounters: 5, timeBoxPlayArmed: false },
+            }],
+            baseDeck: [],
+            turnNumber: 2,
+            nextUid: 100,
+        };
+
+        const triggered = fireTriggers(core as any, 'onTurnStart', {
+            state: core as any,
+            matchState: makeMatchState(core as any, 'startTurn', '0'),
+            playerId: '0',
+            random: { random: () => 0.5, d: () => 1, range: () => 1, shuffle: <T,>(items: T[]) => items },
+            now: 1001,
+        });
+
+        expect(triggered.events.some(event => event.type === SU_EVENTS.TITAN_METADATA_UPDATED)).toBe(false);
+        expect(triggered.matchState?.sys.interaction.current).toBeUndefined();
     });
 
     it('时间盒子：跳过本次第 5 枚计数进场后，不应在后续窗口继续保留手动 special 入口', () => {

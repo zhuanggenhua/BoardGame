@@ -54,7 +54,7 @@ export type FactionId = string;
 export type AbilityTag = 'onPlay' | 'ongoing' | 'special' | 'talent' | 'extra' | 'onDestroy' | 'onUncover' | 'ongoingActivation';
 
 export type SmashUpActivationKind = 'special' | 'talent' | 'ongoing';
-export type SmashUpActivationZone = 'board' | 'discard' | 'setaside';
+export type SmashUpActivationZone = 'board' | 'discard' | 'setaside' | 'hand';
 export type SmashUpActivationWindow = 'playCards' | 'beforeScoring' | 'afterScoring';
 
 export interface SmashUpActivatableAbility {
@@ -624,6 +624,7 @@ export interface TriggerInstance {
     baseIndex?: number;
     moveFromBaseIndex?: number;
     moveToBaseIndex?: number;
+    simultaneousMoveBatchMinionUids?: string[];
     duel?: ActiveDuel;
     duelSourceId?: string;
     duelOutcome?: DuelOutcomeKind;
@@ -1051,6 +1052,7 @@ export interface ActivateSpecialCommand extends Command<typeof SU_COMMANDS.ACTIV
         minionUid?: string;
         titanUid?: string;
         discardCardUid?: string;
+        handCardUid?: string;
         baseIndex: number;
     };
 }
@@ -1376,6 +1378,20 @@ export interface BaseReplacedEvent extends GameEvent<'su:base_replaced'> {
         newBaseDefId: string;
         /** 为 true 时保留基地上的随从和 ongoing，仅替换 defId（如 terraform） */
         keepCards?: boolean;
+        /** 某些效果会在后续事件里显式重写 baseDeck/baseDiscard，允许跳过 newBaseDefId 不在 baseDeck 的告警。 */
+        allowMissingFromBaseDeck?: boolean;
+    };
+}
+
+export interface ActionCounteredEvent extends GameEvent<'su:action_countered'> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        counteredByPlayerId: PlayerId;
+        counteredByDefId: string;
+        reason: string;
     };
 }
 
@@ -1454,6 +1470,7 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
 export type SmashUpEvent =
     | MinionPlayedEvent
     | ActionPlayedEvent
+    | ActionCounteredEvent
     | TitanPlayedEvent
     | TitanMovedEvent
     | TitanRemovedFromPlayEvent
@@ -1518,6 +1535,7 @@ export type SmashUpEvent =
     | SpecialLimitUsedEvent
     | SpecialAfterScoringArmedEvent
     | SpecialAfterScoringConsumedEvent
+    | ActionReturnToHandOptionArmedEvent
     | AbilityFeedbackEvent
     | AbilityTriggeredEvent
     | BaseAbilitySuppressedEvent
@@ -1596,6 +1614,8 @@ export interface MinionMovedEvent extends GameEvent<typeof SU_EVENTS.MINION_MOVE
         toBaseIndex: number;
         /** 目标基地 defId（可选）。存在时 reducer 优先按活体基地定位目标索引。 */
         toBaseDefId?: string;
+        /** 同批移动标记；同一批内的随从不应互相见证彼此的移动。 */
+        batchId?: string;
         reason: string;
     };
 }
@@ -1997,6 +2017,8 @@ export interface BaseDeckShuffledEvent extends GameEvent<typeof SU_EVENTS.BASE_D
         /** 洗混后的基地牌库 defId 列表（确定性） */
         newBaseDeckDefIds: string[];
         reason: string;
+        /** 显式指定新的基地弃牌堆内容；用于非计分换基地等需要同步修正 discard 的场景 */
+        newBaseDiscardDefIds?: string[];
         /**
          * 是否将 baseDiscard 一并清空。
          * 用于“基地牌库见底 → 将弃牌堆洗回牌库”的确定性归约。
@@ -2049,6 +2071,16 @@ export interface SpecialAfterScoringConsumedEvent extends GameEvent<typeof SU_EV
         playerId: PlayerId;
         baseIndex: number;
         cardUid?: string;
+    };
+}
+
+export interface ActionReturnToHandOptionArmedEvent extends GameEvent<typeof SU_EVENTS.ACTION_RETURN_TO_HAND_OPTION_ARMED> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        reason: string;
     };
 }
 

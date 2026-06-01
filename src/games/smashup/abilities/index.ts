@@ -43,6 +43,9 @@ import { registerPrincessesAbilities } from './princesses';
 import { registerSharksAbilities } from './sharks';
 import { registerTornadosAbilities } from './tornados';
 import { registerMythicGreeksAbilities } from './mythic_greeks';
+import { registerDragonAbilities } from './dragons';
+import { registerGeekAbilities } from './geeks';
+import { registerSuperheroesAbilities, registerSuperheroesInteractionHandlers } from './superheroes';
 import { registerYuanhouAbilities } from './yuanhou';
 import { registerIttyCrittersAbilities } from './itty_critters';
 import { registerKaijuAbilities, registerKaijuInteractionHandlers } from './kaiju';
@@ -59,6 +62,7 @@ import {
 import { registerMultiBaseScoringInteractionHandler } from '../domain/index';
 import { registerDuelInteractionHandlers } from '../domain/duel';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
+import { registerActionCounterInteractionHandlers } from '../domain/actionCounter';
 import { registerMulliganInteractionHandlers } from '../domain/mulliganHandlers';
 import { registerAllOngoingModifiers } from './ongoing_modifiers';
 import { clearPowerModifierRegistry, registerPodPowerModifierAliases } from '../domain/ongoingModifiers';
@@ -108,6 +112,7 @@ export function initAllAbilities(): void {
 
     // 全局反应队列（同时触发排序）
     registerReactionQueueInteractionHandlers();
+    registerActionCounterInteractionHandlers();
     registerMulliganInteractionHandlers();
     registerBuryInteractionHandlers();
     registerDuelInteractionHandlers();
@@ -152,6 +157,10 @@ export function initAllAbilities(): void {
     registerSharksAbilities();
     registerTornadosAbilities();
     registerMythicGreeksAbilities();
+    registerDragonAbilities();
+    registerGeekAbilities();
+    registerSuperheroesAbilities();
+    registerSuperheroesInteractionHandlers();
     registerYuanhouAbilities();
     registerIttyCrittersAbilities();
     registerKaijuAbilities();

@@ -768,6 +768,18 @@ export function registerBaseAbilities(): void {
     }, {
     });
 
+    // base_dragons_lair: 龙穴
+    // "在这个基地计分后，冠军抽 3 张牌"
+    registerBaseAbility('base_dragons_lair', 'afterScoring', (ctx) => {
+        if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
+        const winnerId = ctx.rankings[0].playerId;
+        if (!ctx.state.players[winnerId]) return { events: [] };
+        return {
+            events: buildStandardDrawEvents(ctx.state, winnerId, 3, ctx.random, ctx.now),
+        };
+    }, {
+    });
+
     // base_temple_of_goju: 刚柔流寺庙
     // "在这个基地计分后，将每位玩家在这里力量最高的一张随从放入他们拥有者的牌库底"
     registerBaseAbility('base_temple_of_goju', 'afterScoring', (ctx) => {

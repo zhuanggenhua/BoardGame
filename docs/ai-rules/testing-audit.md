@@ -601,6 +601,7 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 1. **语义→实现模式映射表**：
    - "你可以打出 N 张额外随从/行动卡" → 额度模式：`grantExtraMinion`/`grantExtraAction` 修改 `minionLimit`/`actionLimit`，玩家在正常出牌流程中使用
    - "你可以打出一张力量≤N 的额外随从" → 额度模式 + 约束：`grantExtraMinion(playerId, reason, now, undefined, { powerMax: N })`
+   - "返回/回手一张牌（或随从）后，将它再次打出 / play it again / play the returned card" → **returned-card 额度模式**：默认应锁 `specificCardUid`（必要时再带 `sameNameDefId`），但**除非文本显式写了 `here/on that base/到原处/在该基地`，否则不得把原 `baseIndex` 当成隐式限制继续传下去**；基地/位置选择仍按普通合法目标重新生成
    - "选择一个随从消灭/移动/返回手牌" → 交互模式：`createSimpleChoice` 让玩家选择目标
    - "从牌库/弃牌堆中检索一张卡到手牌" → 交互模式：需要玩家从非手牌来源选择
    - "从弃牌堆打出一个随从" → **两步交互模式**：步骤1选随从 + 步骤2选基地 → 生成 `MINION_PLAYED(fromDiscard: true)` 事件。参照 `zombie_lord`、`vampire_crack_of_dusk` 的实现。❌ 禁止用「回收到手牌 + 给额度」模式（`CARD_RECOVERED_FROM_DISCARD` + `grantExtraMinion`），这会导致选完随从后没有基地选择引导，UX 断裂
@@ -1006,6 +1007,7 @@ onAutoContinueCheck({ state }) {
 2. **逐字段验证**：每个在回合中被写入的临时字段，在回合结束/开始时是否有对应的清理/重置
 3. **清理时机**：清理发生在 `TURN_STARTED` 还是 `TURN_ENDED`？如果有跨回合效果（如"下回合开始时"），清理时机是否正确避开？
 4. **新增字段必查**：新增任何临时状态字段时，必须同时在回合清理逻辑中添加对应的清理代码
+5. **once/turn 共享回合态专项**：凡字段名或语义属于 `usedXThisTurn`、`oncePerTurn`、`triggeredThisTurn`、`movedToBasesThisTurn`、`destroyedThisTurn` 这类“本回合态”，不能只证明“同一回合第二次不触发”。还必须额外证明：① 到下一回合时会被正确清空或重建；② 若判重键未显式带 `playerId/controllerId`，也不会因为上一位玩家的残留记录挡住下一位玩家本回合第一次触发；③ 清理粒度与语义一致，是“整回合态”还是“该玩家下次回合态”必须写清。缺这组证据，once/turn 只算局部 happy path 通过。
 **D15 UI 状态同步（强制）**（修"UI 显示不对"或新增 UI 展示时触发）：UI 展示的数值/状态是否与 core 状态一致。**核心原则：UI 必须读取 reducer 实际写入的字段，不能读取"看起来相关但实际不同"的字段。** 审查方法：
 1. **追踪 UI 数据源**：UI 组件展示某个数值时，追踪到它读取的是 core 的哪个字段
 2. **对比 reducer 写入**：reducer 实际写入的字段是否就是 UI 读取的字段？是否存在"UI 读 fieldA 但 reducer 写 fieldB"的不一致？
@@ -1025,6 +1027,7 @@ onAutoContinueCheck({ state }) {
 3. **玩家隔离测试**：玩家 A 的额度变化是否不影响玩家 B？
 4. **回合隔离测试**：本回合的临时效果是否不泄漏到下回合？
 5. **构造否定断言**：对每个写入操作，构造"写入后，不相关的字段应该不变"的断言
+6. **隐式空间限制排除**：当文本只写“play it again / play the returned card / 将其再次打出 / 将返回的那张牌再次打出”而没有 `here`、`on that base`、`到原处`、`在该基地` 等显式位置词时，必须补否定路径证明实现没有偷偷继承原 `baseIndex / zone / position` 作为隐藏限制。也就是说，若规则只锁“那张牌”，测试必须证明它仍可在所有正常合法目标中重新选择，而不是被错误锁回原基地/原位置。
 
 
 **D19 组合场景（强制）**（全面审查、新增与已有机制交叉的能力时触发）：两个独立正确的机制组合使用时是否仍然正确。**核心原则：单独测试通过不代表组合测试通过。两个机制共享同一资源/状态时，必须测试组合场景。** 审查方法：
@@ -1279,6 +1282,7 @@ onAutoContinueCheck({ state }) {
 | 修"交互完成后仍然 halt" | D39,D8,D5 | D3,D17 |
 | 新增/修改流程控制标志 | D39,D8,D17 | D3,D5 |
 | 修`scoreBases`/`afterScoring` 交互后效果丢失 | D12,D35,D36,D8 | D39,D24,D17 |
+| 修跨阶段读取错结果/当前状态污染原结果 | D54,D12,D8 | D35,D36,D3 |
 
 ### 输出格式
 

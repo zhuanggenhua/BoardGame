@@ -68,6 +68,9 @@ import { ITTY_CRITTERS_CARDS } from './factions/itty_critters';
 import { KAIJU_CARDS } from './factions/kaiju';
 import { MAGICAL_GIRLS_CARDS } from './factions/magical_girls';
 import { MEGA_TROOPERS_CARDS } from './factions/mega_troopers';
+import { DRAGONS_CARDS } from './factions/dragons';
+import { SUPERHEROES_CARDS } from './factions/superheroes';
+import { GEEKS_CARDS } from './factions/geeks';
 
 // ============================================================================
 // 注册表
@@ -200,6 +203,9 @@ registerCards(ITTY_CRITTERS_CARDS);
 registerCards(KAIJU_CARDS);
 registerCards(MAGICAL_GIRLS_CARDS);
 registerCards(MEGA_TROOPERS_CARDS);
+registerCards(DRAGONS_CARDS);
+registerCards(SUPERHEROES_CARDS);
+registerCards(GEEKS_CARDS);
 // POD 版本阵营（最新英文 POD 版本）
 registerCards(NINJA_POD_CARDS);
 registerCards(TITAN_CARD_DEFS);
@@ -967,6 +973,24 @@ registerBases(BASE_CARDS_10TH_ANNIVERSARY);
 // ============================================================================
 export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
     {
+        id: 'base_tabletop',
+        name: '桌游桌',
+        nameEn: 'TableTop',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.GEEKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 0 },
+    },
+    {
+        id: 'base_wyrms_desolation',
+        name: '龙之荒芜',
+        nameEn: "Wyrm's Desolation",
+        breakpoint: 20,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.DRAGONS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 1 },
+    },
+    {
         id: 'base_shark_reef',
         name: '鲨鱼领地',
         nameEn: 'Shark Reef',
@@ -976,31 +1000,22 @@ export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 2 },
     },
     {
-        id: 'base_the_deep',
-        name: '海渊',
-        nameEn: 'The Deep',
-        breakpoint: 16,
-        vpAwards: [3, 2, 2],
-        faction: SMASHUP_FACTION_IDS.SHARKS,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 9 },
+        id: 'base_the_con',
+        name: '展会',
+        nameEn: 'The Con',
+        breakpoint: 24,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.GEEKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 3 },
     },
     {
-        id: 'base_trailer_park',
-        name: '拖车公园',
-        nameEn: 'Trailer Park',
-        breakpoint: 20,
-        vpAwards: [4, 2, 1],
-        faction: SMASHUP_FACTION_IDS.TORNADOS,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 6 },
-    },
-    {
-        id: 'base_tornado_alley',
-        name: '龙卷风走廊',
-        nameEn: 'Tornado Alley',
-        breakpoint: 25,
-        vpAwards: [4, 3, 2],
-        faction: SMASHUP_FACTION_IDS.TORNADOS,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 11 },
+        id: 'base_dragons_lair',
+        name: '龙穴',
+        nameEn: "Dragon's Lair",
+        breakpoint: 18,
+        vpAwards: [2, 2, 1],
+        faction: SMASHUP_FACTION_IDS.DRAGONS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 4 },
     },
     {
         id: 'base_oracle_at_delphi',
@@ -1012,6 +1027,24 @@ export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 5 },
     },
     {
+        id: 'base_trailer_park',
+        name: '拖车公园',
+        nameEn: 'Trailer Park',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.TORNADOS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 6 },
+    },
+    {
+        id: 'base_converted_cave',
+        name: '改造洞穴',
+        nameEn: 'Converted Cave',
+        breakpoint: 18,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.SUPERHEROES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 7 },
+    },
+    {
         id: 'base_wooden_horse',
         name: '特洛伊木马',
         nameEn: 'Wooden Horse',
@@ -1019,6 +1052,33 @@ export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
         vpAwards: [3, 2, 1],
         faction: SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 8 },
+    },
+    {
+        id: 'base_the_deep',
+        name: '海渊',
+        nameEn: 'The Deep',
+        breakpoint: 16,
+        vpAwards: [3, 2, 2],
+        faction: SMASHUP_FACTION_IDS.SHARKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 9 },
+    },
+    {
+        id: 'base_crystal_fortress',
+        name: '水晶堡垒',
+        nameEn: 'Crystal Fortress',
+        breakpoint: 19,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.SUPERHEROES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 10 },
+    },
+    {
+        id: 'base_tornado_alley',
+        name: '龙卷风走廊',
+        nameEn: 'Tornado Alley',
+        breakpoint: 25,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.TORNADOS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 11 },
     },
 ];
 registerBases(BASE_CARDS_ITS_YOUR_FAULT);

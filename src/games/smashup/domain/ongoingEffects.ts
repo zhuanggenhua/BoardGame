@@ -33,6 +33,8 @@ export type ProtectionType =
 
 export type BaseAbilitySuppressionChecker = (state: SmashUpCore, baseIndex: number) => boolean;
 export type BaseScoringSuppressionChecker = (state: SmashUpCore, baseIndex: number) => boolean;
+export type BaseVpModifierChecker = (state: SmashUpCore, baseIndex: number, playerId: PlayerId, currentVp: number) => number;
+export type CardAbilitySuppressionChecker = (state: SmashUpCore, turnScopedSuppressedCardUids: ReadonlySet<string>) => string[];
 
 
 export interface ProtectionCheckContext {
@@ -43,6 +45,8 @@ export interface ProtectionCheckContext {
     targetBaseIndex: number;
 
     sourcePlayerId: PlayerId;
+
+    sourceKind?: 'action' | 'nonAction';
 
     protectionType: ProtectionType;
 }
@@ -82,6 +86,7 @@ export type TriggerTiming =
     | 'onDuelResolved'
     | 'onMinionPlayed'
     | 'onActionPlayed'
+    | 'onVpAwarded'
     | 'onCardsDiscarded'
     | 'onCardBuried'
     | 'onBuriedCardUncovered'
@@ -149,18 +154,24 @@ export interface TriggerContext {
     moveFromBaseIndex?: number;
     /** onMinionMoved 时：移动后基地 */
     moveToBaseIndex?: number;
+    /** 同批移动的随从 UID 列表；用于批量移动时抑制组内互相见证。 */
+    simultaneousMoveBatchMinionUids?: string[];
     /** 触发相关随从 */
     triggerMinion?: MinionOnBase;
     /** 触发相关随从 UID */
     triggerMinionUid?: string;
     /** 触发相关随从 defId */
     triggerMinionDefId?: string;
+    /** 收集 trigger 时应排除的来源实例 UID（例如 onPlay 才被移动进来的“晚到见证者”）。 */
+    suppressedSourceCardUids?: string[];
     /** 消灭者（仅 onMinionDestroyed） */
     destroyerId?: PlayerId;
     /** 事件里相关随从/对象的控制者 */
     controllerId?: PlayerId;
     /** 事件原因 */
     reason?: string;
+    /** VP 变化量（仅 onVpAwarded） */
+    vpAmount?: number;
     /** 影响类型（仅 onMinionAffected） */
     affectType?: AffectType;
     /** 指示物变化类型（仅 onMinionAffected + power_change） */
@@ -286,6 +297,18 @@ interface BaseScoringSuppressionEntry {
     generatedPodAlias?: boolean;
 }
 
+interface BaseVpModifierEntry {
+    sourceDefId: string;
+    checker: BaseVpModifierChecker;
+    generatedPodAlias?: boolean;
+}
+
+interface CardAbilitySuppressionEntry {
+    sourceDefId: string;
+    checker: CardAbilitySuppressionChecker;
+    generatedPodAlias?: boolean;
+}
+
 // ============================================================================
 
 // ============================================================================
@@ -296,6 +319,8 @@ const triggerRegistry: TriggerEntry[] = [];
 const interceptorRegistry: InterceptorEntry[] = [];
 const baseAbilitySuppressionRegistry: BaseAbilitySuppressionEntry[] = [];
 const baseScoringSuppressionRegistry: BaseScoringSuppressionEntry[] = [];
+const baseVpModifierRegistry: BaseVpModifierEntry[] = [];
+const cardAbilitySuppressionRegistry: CardAbilitySuppressionEntry[] = [];
 
 function shouldExposePodOngoingAlias(defId: string): boolean {
     const podCard = getCardDef(`${defId}_pod`);
@@ -563,6 +588,9 @@ function createTriggerInstance(
         baseIndex: ctx.baseIndex,
         moveFromBaseIndex: ctx.moveFromBaseIndex,
         moveToBaseIndex: ctx.moveToBaseIndex,
+        simultaneousMoveBatchMinionUids: ctx.simultaneousMoveBatchMinionUids
+            ? [...ctx.simultaneousMoveBatchMinionUids]
+            : undefined,
         duel: ctx.duel ? structuredClone(ctx.duel) : undefined,
         duelSourceId: ctx.duelSourceId,
         duelOutcome: ctx.duelOutcome,
@@ -661,6 +689,25 @@ function shouldSkipTriggerInstance(
     located: TriggerSourceLocation,
     ctx: Omit<TriggerContext, 'timing'>,
 ): boolean {
+    if (
+        timing === 'onMinionPlayed'
+        && located.uid
+        && ctx.suppressedSourceCardUids?.includes(located.uid)
+    ) {
+        return true;
+    }
+
+    if (
+        timing === 'onMinionMoved'
+        && located.uid
+        && ctx.triggerMinionUid
+        && ctx.simultaneousMoveBatchMinionUids?.includes(located.uid)
+        && ctx.simultaneousMoveBatchMinionUids.includes(ctx.triggerMinionUid)
+        && located.uid !== ctx.triggerMinionUid
+    ) {
+        return true;
+    }
+
     if (
         entry.sourceDefId === 'world_champs_aramis'
         && timing === 'onMinionAffected'
@@ -895,6 +942,24 @@ export function registerBaseScoringSuppression(
     baseScoringSuppressionRegistry.push({ sourceDefId, checker, generatedPodAlias: options?.generatedPodAlias });
 }
 
+export function registerCardAbilitySuppression(
+    sourceDefId: string,
+    checker: CardAbilitySuppressionChecker,
+    options?: { generatedPodAlias?: boolean },
+): void {
+    if (cardAbilitySuppressionRegistry.some(e => e.sourceDefId === sourceDefId)) return;
+    cardAbilitySuppressionRegistry.push({ sourceDefId, checker, generatedPodAlias: options?.generatedPodAlias });
+}
+
+export function registerBaseVpModifier(
+    sourceDefId: string,
+    checker: BaseVpModifierChecker,
+    options?: { generatedPodAlias?: boolean },
+): void {
+    if (baseVpModifierRegistry.some(e => e.sourceDefId === sourceDefId)) return;
+    baseVpModifierRegistry.push({ sourceDefId, checker, generatedPodAlias: options?.generatedPodAlias });
+}
+
 
 export function clearOngoingEffectRegistry(): void {
     protectionRegistry.length = 0;
@@ -903,6 +968,8 @@ export function clearOngoingEffectRegistry(): void {
     interceptorRegistry.length = 0;
     baseAbilitySuppressionRegistry.length = 0;
     baseScoringSuppressionRegistry.length = 0;
+    baseVpModifierRegistry.length = 0;
+    cardAbilitySuppressionRegistry.length = 0;
 }
 
 export function hasRegisteredTrigger(sourceDefId: string, timing: TriggerTiming): boolean {
@@ -1109,6 +1176,27 @@ export function registerPodOngoingAliases(): void {
     baseScoringSuppressionRegistry.push(...scoringSuppressionsToAdd);
 
 
+    const cardSuppressionsToAdd: CardAbilitySuppressionEntry[] = [];
+    for (const entry of cardAbilitySuppressionRegistry) {
+        const { sourceDefId, checker } = entry;
+
+        if (sourceDefId.endsWith('_pod')) continue;
+        if (getTitanDef(sourceDefId)) continue;
+
+        const podDefId = `${sourceDefId}_pod`;
+
+        const alreadyRegistered = cardAbilitySuppressionRegistry.some(
+            e => e.sourceDefId === podDefId && e.checker === checker,
+        );
+        if (alreadyRegistered) continue;
+
+        cardSuppressionsToAdd.push({ sourceDefId: podDefId, checker, generatedPodAlias: true });
+        _mappedCount++;
+    }
+
+    cardAbilitySuppressionRegistry.push(...cardSuppressionsToAdd);
+
+
 }
 
 
@@ -1133,6 +1221,7 @@ export function getRegisteredOngoingEffectIds(): {
     interceptorIds: Set<string>;
     baseAbilitySuppressionIds: Set<string>;
     baseScoringSuppressionIds: Set<string>;
+    cardAbilitySuppressionIds: Set<string>;
 } {
     const protectionIds = new Set(
         protectionRegistry
@@ -1159,6 +1248,11 @@ export function getRegisteredOngoingEffectIds(): {
             .filter((entry) => !shouldHideGeneratedPodOngoingAlias(baseScoringSuppressionRegistry, entry.sourceDefId))
             .map(e => e.sourceDefId),
     );
+    const cardAbilitySuppressionIds = new Set(
+        cardAbilitySuppressionRegistry
+            .filter((entry) => !shouldHideGeneratedPodOngoingAlias(cardAbilitySuppressionRegistry, entry.sourceDefId))
+            .map(e => e.sourceDefId),
+    );
 
 
     const triggerIds = new Map<string, TriggerTiming[]>();
@@ -1176,6 +1270,7 @@ export function getRegisteredOngoingEffectIds(): {
         interceptorIds,
         baseAbilitySuppressionIds,
         baseScoringSuppressionIds,
+        cardAbilitySuppressionIds,
     };
 }
 
@@ -1221,23 +1316,68 @@ export function isBaseScoringSuppressed(
     return false;
 }
 
+export function getModifiedBaseVp(
+    state: SmashUpCore,
+    baseIndex: number,
+    playerId: PlayerId,
+    printedVp: number,
+): number {
+    let currentVp = printedVp;
+    if (baseVpModifierRegistry.length === 0) {
+        return Math.max(0, currentVp);
+    }
+    for (const entry of baseVpModifierRegistry) {
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
+        if (!isSourceActiveOnBase(filteredState, entry.sourceDefId, baseIndex)) continue;
+        currentVp += entry.checker(filteredState, baseIndex, playerId, currentVp);
+    }
+    return Math.max(0, currentVp);
+}
+
+function getTurnScopedSuppressedCardUids(state: SmashUpCore): ReadonlySet<string> {
+    return new Set((state.suppressedCardsUntilTurnStart ?? []).map(entry => entry.cardUid));
+}
+
+function getSuppressedCardUids(state: SmashUpCore): Set<string> {
+    const suppressedUids = new Set(getTurnScopedSuppressedCardUids(state));
+    if (cardAbilitySuppressionRegistry.length === 0) {
+        return suppressedUids;
+    }
+
+    const turnScopedSuppressedCardUids = getTurnScopedSuppressedCardUids(state);
+    for (const entry of cardAbilitySuppressionRegistry) {
+        const filteredState = getStateFilteredBySuppressedUids(state, entry.sourceDefId, turnScopedSuppressedCardUids);
+        const additionalSuppressedUids = entry.checker(filteredState, turnScopedSuppressedCardUids);
+        for (const cardUid of additionalSuppressedUids) {
+            suppressedUids.add(cardUid);
+        }
+    }
+    return suppressedUids;
+}
 
 export function isCardSuppressed(
     state: SmashUpCore,
     cardUid: string,
 ): boolean {
-    return state.suppressedCardsUntilTurnStart?.some(entry => entry.cardUid === cardUid) ?? false;
+    return getSuppressedCardUids(state).has(cardUid);
 }
 
 export function getSuppressionFilteredStateForSource(
     state: SmashUpCore,
     sourceDefId: string,
 ): SmashUpCore {
-    if (!state.suppressedCardsUntilTurnStart?.length) {
+    const suppressedUids = getSuppressedCardUids(state);
+    if (suppressedUids.size === 0) {
         return state;
     }
+    return getStateFilteredBySuppressedUids(state, sourceDefId, suppressedUids);
+}
 
-    const suppressedUids = new Set(state.suppressedCardsUntilTurnStart.map(entry => entry.cardUid));
+function getStateFilteredBySuppressedUids(
+    state: SmashUpCore,
+    sourceDefId: string,
+    suppressedUids: ReadonlySet<string>,
+): SmashUpCore {
     let changed = false;
 
     const bases = state.bases.map(base => {
@@ -1299,7 +1439,8 @@ export function isMinionProtected(
     targetMinion: MinionOnBase,
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
-    protectionType: ProtectionType
+    protectionType: ProtectionType,
+    options?: { sourceKind?: 'action' | 'nonAction' },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1309,6 +1450,7 @@ export function isMinionProtected(
         targetMinion,
         targetBaseIndex,
         sourcePlayerId,
+        sourceKind: options?.sourceKind,
         protectionType };
 
     for (const entry of protectionRegistry) {
@@ -1332,7 +1474,8 @@ export function isMinionProtectedNonConsumable(
     targetMinion: MinionOnBase,
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
-    protectionType: ProtectionType
+    protectionType: ProtectionType,
+    options?: { sourceKind?: 'action' | 'nonAction' },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1342,6 +1485,7 @@ export function isMinionProtectedNonConsumable(
         targetMinion,
         targetBaseIndex,
         sourcePlayerId,
+        sourceKind: options?.sourceKind,
         protectionType };
 
     for (const entry of protectionRegistry) {
@@ -1935,7 +2079,6 @@ function buildExplicitGlobalSourceFallback(
     ctx?: Omit<TriggerContext, 'timing'>,
 ): TriggerSourceLocation | undefined {
     if (!ctx?.sourceCardUid || ctx.sourceControllerId === undefined) return undefined;
-    if (!ctx.sourceDefId) return undefined;
     return {
         uid: ctx.sourceCardUid,
         baseIndex: ctx.sourceBaseIndex,
@@ -1987,15 +2130,22 @@ function selectGlobalTriggerSourceLocation(
             && isCandidateEligible(candidate),
         )
         : undefined;
+    const explicitGlobalFallback = buildExplicitGlobalSourceFallback(entry, ctx);
+    if (ctx?.sourceCardUid) {
+        if (preferredLocated) return preferredLocated;
+        if (explicitGlobalFallback && (!isEligible || isEligible(explicitGlobalFallback))) {
+            return explicitGlobalFallback;
+        }
+        return undefined;
+    }
     const located = preferredLocated
         ?? selectSpecificSourceLocation(locatedSources, ctx, isCandidateEligible);
     if (located) return located;
     if (entry.playerContext !== 'sourceController' && entry.playerContext !== 'sourceHostController') {
         return {};
     }
-    const fallback = buildExplicitGlobalSourceFallback(entry, ctx);
-    if (!fallback || (isEligible && !isEligible(fallback))) return undefined;
-    return fallback;
+    if (!explicitGlobalFallback || (isEligible && !isEligible(explicitGlobalFallback))) return undefined;
+    return explicitGlobalFallback;
 }
 
 // ============================================================================

@@ -7,6 +7,7 @@
 import type {
     SmashUpCore,
     SmashUpEvent,
+    ActionCounteredEvent,
     MinionDestroyedEvent,
     MinionMovedEvent,
     MinionControlChangedEvent,
@@ -735,6 +736,40 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 players: nextPlayers,
                 cardsPlayedThisTurn: (state.cardsPlayedThisTurn ?? 0) + 1,
                 ...(newBases !== state.bases ? { bases: newBases } : {}),
+            };
+        }
+
+        case SU_EVENTS.ACTION_COUNTERED: {
+            const { cardUid, defId, ownerId } = (event as ActionCounteredEvent).payload;
+            const def = getCardDef(defId) as ActionCardDef | FusionCardDef | undefined;
+            const subtype = def?.type === 'fusion' ? def.actionSubtype : def?.subtype;
+            if (subtype !== 'ongoing') {
+                return state;
+            }
+
+            const owner = state.players[ownerId];
+            if (!owner) return state;
+            if (owner.discard.some((card) => card.uid === cardUid)) {
+                return state;
+            }
+
+            return {
+                ...state,
+                players: {
+                    ...state.players,
+                    [ownerId]: {
+                        ...owner,
+                        discard: [
+                            ...owner.discard,
+                            {
+                                uid: cardUid,
+                                defId,
+                                type: 'action',
+                                owner: ownerId,
+                            } as CardInstance,
+                        ],
+                    },
+                },
             };
         }
 
@@ -1704,10 +1739,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 scoringEligibleBaseIndices: undefined,
                 // 清空本回合已使用的持续行动 UID 追踪
                 turnUsedOngoingUids: undefined,
-                usedBaseAbilitiesThisTurn: (() => {
-                    const remaining = (state.usedBaseAbilitiesThisTurn ?? []).filter(entry => entry.playerId !== playerId);
-                    return remaining.length > 0 ? remaining : undefined;
-                })(),
+                // 这是“本回合”态，不是“该玩家下一次回合”态。
+                // 像龙卷风走廊这类 once/turn 基地能力若跨回合残留，会直接把下一位玩家的首次触发错误挡掉。
+                usedBaseAbilitiesThisTurn: undefined,
                 activeDuel: undefined,
                 sleepMarkedPlayers: state.sleepMarkedPlayers,
                 playerRestrictionsUntilTurnStart: remainingPlayerRestrictions?.length
@@ -1756,8 +1790,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     const temporaryControlPlayerId = metadata?.temporaryControlPlayerId ?? metadata?.mermaidsTemporaryControlPlayerId;
                     const temporaryControlTurn = metadata?.temporaryControlTurn ?? metadata?.mermaidsTemporaryControlTurn;
                     const originalController = metadata?.temporaryControlOriginalController ?? metadata?.mermaidsTemporaryControlOriginalController;
+                    const temporaryControlEndsOnTurnEndPlayerId = metadata?.temporaryControlEndsOnTurnEndPlayerId;
                     if (
-                        temporaryControlPlayerId === playerId
+                        (temporaryControlEndsOnTurnEndPlayerId ?? temporaryControlPlayerId) === playerId
                         && temporaryControlTurn === state.turnNumber
                         && typeof originalController === 'string'
                     ) {
@@ -1769,6 +1804,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                                 temporaryControlPlayerId: undefined,
                                 temporaryControlTurn: undefined,
                                 temporaryControlOriginalController: undefined,
+                                temporaryControlEndsOnTurnEndPlayerId: undefined,
                                 mermaidsTemporaryControlPlayerId: undefined,
                                 mermaidsTemporaryControlTurn: undefined,
                                 mermaidsTemporaryControlOriginalController: undefined,
@@ -1838,14 +1874,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.BASE_REPLACED: {
-            const { baseIndex, oldBaseDefId, newBaseDefId, keepCards } = (event as BaseReplacedEvent).payload;
+            const { baseIndex, oldBaseDefId, newBaseDefId, keepCards, allowMissingFromBaseDeck } = (event as BaseReplacedEvent).payload;
             // ✅ 修复：使用 indexOf + slice 移除第一个匹配的基地，而不是 filter
             // 原因：filter 会移除所有匹配的基地，如果 baseDeck 中有重复基地会出错
             // 而且 scoreOneBase 中已经用 slice(1) 移除了第一个基地，这里应该保持一致
             // 但是 reduce 是基于事件的，不应该依赖 scoreOneBase 的返回值
             // 所以这里需要找到 newBaseDefId 在 baseDeck 中的索引，然后移除它
             const baseDefIdIndex = state.baseDeck.indexOf(newBaseDefId);
-            if (baseDefIdIndex < 0) {
+            if (baseDefIdIndex < 0 && !allowMissingFromBaseDeck) {
                 console.warn(`[BASE_REPLACED] newBaseDefId ${newBaseDefId} not found in baseDeck`, {
                     baseDeck: state.baseDeck,
                     baseIndex,
@@ -3260,7 +3296,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const { topDefIds, reason } = (event as BaseDeckReorderedEvent).payload;
             // 将 topDefIds 放到牌库顶部，其余保持原序
             const remaining = state.baseDeck.filter(id => !topDefIds.includes(id));
-            const shouldRemoveFromBaseDiscard = reason === 'time_travelers_time_is_fleeting' || reason === 'base_the_nexus';
+            const shouldRemoveFromBaseDiscard =
+                reason === 'time_travelers_time_is_fleeting'
+                || reason === 'base_the_nexus'
+                || reason === 'dragons_burn_it_down';
             const nextBaseDiscard = shouldRemoveFromBaseDiscard
                 ? topDefIds.reduce((discard, defId) => {
                     const index = discard.indexOf(defId);
@@ -3386,11 +3425,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
         // 基地牌库洗混
         case SU_EVENTS.BASE_DECK_SHUFFLED: {
-            const { newBaseDeckDefIds, clearBaseDiscard } = (event as BaseDeckShuffledEvent).payload;
+            const { newBaseDeckDefIds, clearBaseDiscard, newBaseDiscardDefIds } = (event as BaseDeckShuffledEvent).payload;
             return {
                 ...state,
                 baseDeck: newBaseDeckDefIds,
-                baseDiscard: clearBaseDiscard ? [] : state.baseDiscard,
+                baseDiscard: newBaseDiscardDefIds ?? (clearBaseDiscard ? [] : state.baseDiscard),
             };
         }
 

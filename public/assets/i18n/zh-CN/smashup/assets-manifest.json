@@ -40,6 +40,15 @@
         }
       }
     },
+    "cards/compressed/longzu": {
+      "variants": {
+        "webp": {
+          "sha256": "3850908ee5521dc3e58b77ce142c26a1d5e3909aeb36ca1fe5788ecb207f6e8b",
+          "bytes": 953548,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/pretty_pretty": {
       "variants": {
         "webp": {
@@ -55,6 +64,15 @@
           "sha256": "c32bbf6f88f3f7c952d07fa8f573d82aea72daa422861894dfc1df857bf76492",
           "bytes": 1018858,
           "mime": "image/webp"
+        }
+      }
+    },
+    "cards/longzu": {
+      "variants": {
+        "png": {
+          "sha256": "090bbb869f292a94906cb7c45db043482b5ec05438450a7daa290105ef71cf13",
+          "bytes": 42040387,
+          "mime": "image/png"
         }
       }
     },

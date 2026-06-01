@@ -793,7 +793,17 @@
       "cursedPirateWeighAnchorOther": "Weigh Anchor: otherwise draw 1 card",
       "cursedPirateBlusterCutlass": "Bluster: Cutlass deals 2 damage",
       "cursedPirateBlusterLoot": "Bluster: Loot draws 2 cards",
-      "cursedPirateBlusterSkull": "Bluster: Skull inflicts Powder Keg"
+      "cursedPirateBlusterSkull": "Bluster: Skull inflicts Powder Keg",
+      "cursedPirateFlayCutlass": "Flay: Cutlass adds 1 attack damage",
+      "cursedPirateFlayOther": "Flay: no damage added",
+      "cursedPirateCrowsNestCutlass": "Crow's Nest: Cutlass checks the hand",
+      "cursedPirateCrowsNestLoot": "Crow's Nest: Loot makes the target discard 1 card",
+      "cursedPirateCrowsNestSkull": "Crow's Nest: Skull randomly discards 1 card",
+      "cursedPirateCrowsNestOther": "Crow's Nest: no trigger",
+      "cursedPirateHeftyLoot": "Hefty: Loot triggers draw and CP",
+      "cursedPirateHeftyOther": "Hefty: no trigger",
+      "cursedPirateSipHit": "Sip: 3-6, gain Powder Keg and Wither",
+      "cursedPirateSipMiss": "Sip: 1-2, nothing happens"
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
@@ -1023,10 +1033,39 @@
       "accept": "Gain Cursed Coin",
       "decline": "Decline"
     },
+      "cursedPirateCurseCard": {
+        "title": "Curse Card: choose the resolution",
+        "draw1": "Draw 1 card",
+        "damage2Draw2": "Receive 2 damage and draw 2 cards",
+        "damage4Draw3": "Receive 4 damage and draw 3 cards"
+      },
+      "cursedPirateRansomDie": {
+        "title": "Ransom: choose one opponent die",
+        "choose": "Die {{die}} (currently {{value}})"
+      },
+      "cursedPirateRansomResolve": {
+        "title": "Ransom: pay 2 CP?",
+        "pay": "Pay 2 CP to your opponent",
+        "reroll": "Do not pay; reroll die {{die}} (currently {{value}})"
+      },
+      "cursedPirateCrowsNestView": {
+        "title": "Crow's Nest: check the hand",
+        "confirm": "Checked {{player}}'s hand: {{cards}}"
+      },
       "mercilessCursePowderKeg": {
         "title": "Choose up to two opponents to gain Powder Keg",
         "apply": "Apply to {{targets}}",
         "skip": "Do not apply Powder Keg"
+      },
+      "cursedPirateGoFish": {
+        "title": "Choose up to three opponents to gain Powder Keg",
+        "apply": "Apply to {{targets}}",
+        "skip": "Do not apply Powder Keg"
+      },
+      "cursedPirateSip": {
+        "title": "Sip: choose whether to roll instead",
+        "acceptPowderKeg": "Gain Powder Keg",
+        "rollInstead": "Do not gain Powder Keg; roll 1 die instead"
       },
       "powderKegTransfer": {
         "title": "Powder Keg: choose who receives it",

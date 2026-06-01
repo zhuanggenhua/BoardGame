@@ -603,7 +603,7 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(rq!.events.some(event => event.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(true);
   });
 
-  it('afterScoring 排序时会自动清掉已离场来源的 stale trigger，不再继续展示按钮', () => {
+  it('afterScoring 来源在触发后离场时，已排队 trigger 仍应继续结算', () => {
     registerTrigger('test_after_source_a', 'afterScoring', () => ([{
       type: SU_EVENTS.MINION_MOVED,
       payload: {
@@ -615,21 +615,15 @@ describe('Reaction queue ordering (Wiki-style)', () => {
       },
       timestamp: 2,
     }] as any), {});
-    registerTrigger('test_after_source_b', 'afterScoring', (ctx: any) => {
-      const base = ctx.sourceBaseIndex === undefined ? undefined : ctx.state.bases[ctx.sourceBaseIndex];
-      const sourceStillHere = !!base?.minions.some((minion: any) => minion.uid === ctx.sourceCardUid);
-      return sourceStillHere
-        ? [{
-          type: SU_EVENTS.ABILITY_FEEDBACK,
-          payload: { playerId: '0', messageKey: 'after_b', tone: 'info' },
-          timestamp: 2,
-        } as any]
-        : [];
-    }, {
+    registerTrigger('test_after_source_b', 'afterScoring', () => ([{
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'after_b', tone: 'info' },
+      timestamp: 2,
+    } as any]), {
       fallbackFootprint: {
         reads: [{ kind: 'base', index: 0 }],
         writes: [],
-        fallbackReason: 'test source checks whether it is still on scoring base',
+        fallbackReason: 'test source resolves from queued trigger snapshot after leaving base',
       },
     });
 
@@ -668,7 +662,11 @@ describe('Reaction queue ordering (Wiki-style)', () => {
       2,
       optA.value,
     );
-    expect(r2.events.filter((event: any) => event.type === SU_EVENTS.TRIGGER_CONSUMED).length).toBeGreaterThanOrEqual(1);
+    expect(r2.events.filter((event: any) => event.type === SU_EVENTS.TRIGGER_CONSUMED).length).toBeGreaterThanOrEqual(2);
+    expect(r2.events).toContainEqual(expect.objectContaining({
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: expect.objectContaining({ messageKey: 'after_b' }),
+    }));
     expect(r2.state.core.triggerQueue ?? []).toHaveLength(0);
     expectNoPrompt(r2.state);
   });

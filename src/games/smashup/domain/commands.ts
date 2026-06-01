@@ -63,13 +63,18 @@ function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): Set<str
 
 function getCurrentManualActivationWindow(state: MatchState<SmashUpCore>): SmashUpActivationWindow {
     if (state.sys.phase !== 'scoreBases') return 'playCards';
+    const turnOrder = state.core.turnOrder ?? [];
+    const legacyQueue = state.sys.responseWindow?.current?.responderQueue ?? [];
+    if (legacyQueue.some((playerId) => !turnOrder.includes(playerId))) {
+        return 'playCards';
+    }
     return getAfterScoringSourceBaseIndex(state) !== undefined ? 'afterScoring' : 'beforeScoring';
 }
 
 function getManualSpecialAvailability(
     defId: string,
     options: {
-        zone: 'board' | 'discard' | 'setaside';
+        zone: 'board' | 'discard' | 'setaside' | 'hand';
         window: SmashUpActivationWindow;
         face?: 'minion' | 'action';
     },
@@ -958,16 +963,58 @@ export function validate(
                 minionUid: spMinionUid,
                 titanUid: spTitanUid,
                 discardCardUid: spDiscardCardUid,
+                handCardUid: spHandCardUid,
                 baseIndex: spBaseIndex,
             } = command.payload;
-            const targetCount = [spMinionUid, spTitanUid, spDiscardCardUid].filter(Boolean).length;
+            const targetCount = [spMinionUid, spTitanUid, spDiscardCardUid, spHandCardUid].filter(Boolean).length;
             if (targetCount !== 1) {
                 return { valid: false, error: '蹇呴』涓旀墜鑳藉彧鑳芥寚瀹氫竴涓壒娈婅兘鍔涚洰鏍?' };
             }
-            const afterScoringSourceBaseIndex = getAfterScoringSourceBaseIndex(state);
             const activationWindow = getCurrentManualActivationWindow(state);
             const spBase = core.bases[spBaseIndex];
             if (!spBase) return { valid: false, error: '无效的基地索引' };
+            if (spHandCardUid) {
+                const player = core.players[command.playerId];
+                if (!player) return { valid: false, error: '玩家不存在' };
+                const handCard = player.hand.find(card => card.uid === spHandCardUid);
+                if (!handCard) {
+                    return { valid: false, error: '手牌中没有该卡牌' };
+                }
+                const handCardFace = handCard.type === 'minion'
+                    ? 'minion'
+                    : handCard.type === 'action'
+                        ? 'action'
+                        : undefined;
+                const specialAvailability = getManualSpecialAvailability(handCard.defId, {
+                    zone: 'hand',
+                    window: activationWindow,
+                    ...(handCardFace ? { face: handCardFace } : {}),
+                });
+                if (!specialAvailability.hasSpecialActivation) {
+                    return { valid: false, error: '该手牌没有特殊能力' };
+                }
+                if (!specialAvailability.hasSpecialExecutor) {
+                    return { valid: false, error: '该手牌的特殊能力不能手动激活' };
+                }
+                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex);
+                if (scoringBaseValidation) {
+                    return scoringBaseValidation;
+                }
+                const specialValidation = validateSpecialUse({
+                    state: core,
+                    matchState: state,
+                    playerId: command.playerId,
+                    cardUid: spHandCardUid,
+                    defId: handCard.defId,
+                    baseIndex: spBaseIndex,
+                    random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
+                    now: core.turnNumber ?? 0,
+                });
+                if (!specialValidation.valid) {
+                    return specialValidation;
+                }
+                return { valid: true };
+            }
             if (spDiscardCardUid) {
                 if (phase !== 'playCards') {
                     return { valid: false, error: '弃牌堆中的特殊能力只能在出牌阶段激活' };

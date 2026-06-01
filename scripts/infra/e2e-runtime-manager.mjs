@@ -86,7 +86,9 @@ function getLogTail(logFile, maxChars = 4000) {
 
 function getSingleWorkerUrls(ports) {
     return {
-        frontend: `http://127.0.0.1:${ports.frontend}/__ready`,
+        frontendReady: `http://127.0.0.1:${ports.frontend}/__ready`,
+        viteClient: `http://127.0.0.1:${ports.frontend}/@vite/client`,
+        mainEntry: `http://127.0.0.1:${ports.frontend}/src/main.tsx`,
         gameServer: `http://127.0.0.1:${ports.gameServer}/games`,
         apiServer: `http://127.0.0.1:${ports.apiServer}/health`,
     };
@@ -110,16 +112,20 @@ async function isUrlReady(url) {
 
 export async function probeSingleWorkerRuntimeHealth(ports) {
     const urls = getSingleWorkerUrls(ports);
-    const [frontend, gameServer, apiServer] = await Promise.all([
-        isUrlReady(urls.frontend),
+    const [frontendReady, viteClient, mainEntry, gameServer, apiServer] = await Promise.all([
+        isUrlReady(urls.frontendReady),
+        isUrlReady(urls.viteClient),
+        isUrlReady(urls.mainEntry),
         isUrlReady(urls.gameServer),
         isUrlReady(urls.apiServer),
     ]);
 
     return {
-        ready: frontend && gameServer && apiServer,
+        ready: frontendReady && viteClient && mainEntry && gameServer && apiServer,
         checks: {
-            frontend,
+            frontendReady,
+            viteClient,
+            mainEntry,
             gameServer,
             apiServer,
         },
@@ -349,6 +355,7 @@ export async function ensureSingleWorkerRuntime(options = {}) {
                 PW_RUNTIME_SCOPE: plan.scope,
                 PW_TEST_TARGET: target,
                 PW_BOOTSTRAP_LOG_FILE: logFile,
+                PW_SERVER_WATCH: process.env.PW_SERVER_WATCH ?? 'false',
                 PW_E2E_DAEMON: plan.mode,
                 PW_PORT: String(ports.frontend),
                 PW_GAME_SERVER_PORT: String(ports.gameServer),

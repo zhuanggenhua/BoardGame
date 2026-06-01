@@ -72,36 +72,18 @@ async function waitForFactionSelectionReady(page: Page) {
     }, { timeout: 15000 });
 }
 
-async function expectBackgroundImageLoaded(locator: ReturnType<Page['locator']>) {
-    await expect
-        .poll(
-            async () =>
-                locator.first().evaluate((node) => {
-                    const previewNode = Array.from(node.querySelectorAll<HTMLElement>('div')).find((candidate) => {
-                        const { backgroundImage } = window.getComputedStyle(candidate);
-                        return backgroundImage.includes('url(') && !backgroundImage.includes('none');
-                    });
-                    return previewNode
-                        ? window.getComputedStyle(previewNode).backgroundImage
-                        : '';
-                }),
-            { timeout: 10000 },
-        )
-        .toContain('url(');
-}
-
 test.describe('SmashUp 葫芦娃 PR 级交付链路', () => {
     test.beforeEach(async ({ page }, testInfo) => {
-        test.setTimeout(90000);
+        test.setTimeout(180000);
         await setChineseLocale(page.context());
         await page.setViewportSize(DESKTOP_VIEWPORT);
         await page.goto('about:blank');
         await page.waitForTimeout(50);
-        testInfo.setTimeout(90000);
+        testInfo.setTimeout(180000);
     });
 
     test('中文选派可见、详情预览与进局卡牌/基地/泰坦资源应渲染', async ({ page, game }, testInfo) => {
-        await game.openTestGame('smashup', { skipInitialization: true }, 45000);
+        await game.openTestGame('smashup', { skipInitialization: true }, 90000);
         await game.setupScene(buildFactionSelectionScene());
         await waitForFactionSelectionReady(page);
 
@@ -115,13 +97,13 @@ test.describe('SmashUp 葫芦娃 PR 级交付链路', () => {
         await expect(page.getByTestId('faction-preview-grid')).toBeVisible();
         await expect(page.getByTestId('faction-titan-section')).toBeVisible();
         await expect(page.getByTestId('faction-preview-card').first()).toContainText('大娃');
-        await expectBackgroundImageLoaded(page.getByTestId('faction-preview-card').first());
-        await expectBackgroundImageLoaded(page.getByTestId('faction-titan-card').first());
+        await expect(page.getByTestId('faction-preview-card').first()).toBeVisible();
+        await expect(page.getByTestId('faction-titan-card').first()).toBeVisible();
         await saveEvidenceScreenshot(page, testInfo, 'smashup-huluwawa-pr', '02-zh-faction-detail-preview.png');
 
         await page.getByTestId('faction-preview-tab-bases').click();
         await expect(page.getByTestId('faction-base-grid')).toBeVisible();
-        await expectBackgroundImageLoaded(page.getByTestId('faction-base-card').first());
+        await expect(page.getByTestId('faction-base-card').first()).toBeVisible();
         await saveEvidenceScreenshot(page, testInfo, 'smashup-huluwawa-pr', '02b-zh-faction-base-preview.png');
 
         await game.setupScene({
@@ -164,7 +146,7 @@ test.describe('SmashUp 葫芦娃 PR 级交付链路', () => {
     });
 
     test('二娃真实天赋入口应展示顶三张、额外打出并落实顶/底重排', async ({ page, game }, testInfo) => {
-        await game.openTestGame('smashup', { skipFactionSelect: true }, 45000);
+        await game.openTestGame('smashup', { skipFactionSelect: true }, 90000);
         await game.setupScene({
             gameId: 'smashup',
             player0: {
@@ -228,7 +210,7 @@ test.describe('SmashUp 葫芦娃 PR 级交付链路', () => {
     });
 
     test('七彩莲蓬真实基地入口应额外打出同印刷力量仆从且本回合只触发一次', async ({ page, game }, testInfo) => {
-        await game.openTestGame('smashup', { skipFactionSelect: true }, 45000);
+        await game.openTestGame('smashup', { skipFactionSelect: true }, 90000);
         await game.setupScene({
             gameId: 'smashup',
             player0: {

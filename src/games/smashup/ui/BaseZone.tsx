@@ -5,7 +5,7 @@
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Paperclip } from 'lucide-react';
+import { Hourglass, Paperclip } from 'lucide-react';
 import type { SmashUpCore, BaseInPlay, MinionOnBase } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
 import { SMASHUP_CARD_BACK } from '../domain/ids';
@@ -36,6 +36,13 @@ function layoutCardHeight(
     aspectRatio = CARD_ASPECT_RATIO,
 ): string {
     return layoutInlineSize(width / aspectRatio, layout);
+}
+
+function getTimeBoxCounterLabel(titan: { defId: string; metadata?: Record<string, unknown> }): string | null {
+    if (titan.defId !== 'time_travelers_time_box') return null;
+    const counters = Number(titan.metadata?.timeBoxCounters ?? 0);
+    if (!Number.isFinite(counters) || counters <= 0) return null;
+    return String(counters);
 }
 
 // ============================================================================
@@ -424,6 +431,7 @@ export const BaseZone: React.FC<{
         const canUseTitanReaction = !!reactionTitanTriggerUids?.has(titan.uid);
         const hasMultipleTitanActivations = canUseTitanTalent && canUseTitanOngoing;
         const canActivateTitan = canUseTitanReaction || canUseTitanTalent || canUseTitanOngoing;
+        const timeBoxCounterLabel = getTimeBoxCounterLabel(titan);
 
         const titanActivationKey = `titan-${titan.uid}`;
         const isTitanActivationArmed = isActivationArmed(titanActivationKey);
@@ -562,6 +570,16 @@ export const BaseZone: React.FC<{
                 )}
                 {titan.talentUsed && (
                     <UsedStateBadge label={t('ui.talent_used')} compact insetClassName="left-[0.12vw] right-[0.12vw]" />
+                )}
+                {timeBoxCounterLabel && (
+                    <div
+                        data-testid={`su-base-titan-timebox-counter-${titan.uid}`}
+                        className="absolute -top-[0.38vw] left-1/2 -translate-x-1/2 min-w-[1.55vw] h-[1vw] rounded-full flex items-center justify-center gap-[0.1vw] text-[0.42vw] font-black leading-none text-sky-950 bg-gradient-to-br from-cyan-200 to-sky-400 shadow-md border-[0.1vw] border-white z-40 px-[0.18vw]"
+                        title={`时间盒子计数：${timeBoxCounterLabel}`}
+                    >
+                        <Hourglass aria-hidden className="block h-[0.52vw] w-[0.52vw] shrink-0 stroke-[3]" />
+                        <span className="block tabular-nums">{timeBoxCounterLabel}</span>
+                    </div>
                 )}
                 {titan.powerCounters > 0 && (
                     <div
