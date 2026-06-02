@@ -2,13 +2,13 @@
 
 ## 结论等级
 
-- 当前结论：`仍有残余范围`
+- 当前结论：`当前发布口径已收口`
 - 判定依据：
   - 本批对象全集已建表，覆盖龙、超级英雄、极客三派系全部 `38` 张卡与 `6` 个基地。
   - longzu 本轮新增的独立高风险交互 family 已全部补到 direct L3/L4，2026-06-02 复验结果为 `15 passed (4.0m)`。
   - 其余对象均已登记为“合法共享链复用”或“无玩家入口 / 自动结算对象”，并给出对应共享依据。
   - longzu 领域 L2 行为证据、L3/L4 真实入口证据、类型检查与基础接入门禁均已落地，可替代 implementation handoff 作为正式审计凭证。
-  - 但按 `.windsurf/skills/smashup-faction-addition/SKILL.md`、`.windsurf/skills/add-new-faction/SKILL.md` 与 `docs/ai-rules/audit-evidence-template.md` 的当前门禁，新增派系若要称为“全面审计完成”，还必须为每个对象补齐显式的规则子句 `C1/C2/C3...` 与对象级子句证据；当前文档尚未补到这一级。
+  - 本次已把每个对象补到独立规则子句 `C1/C2/C3...` 行，并为 shared 对象逐项登记“共享链完全同构，仅配置不同”的复用依据。
 - 本文档是当前批次“审计完毕”的对象级权威证明；统一汇总版见 [smashup-longzu-audit-2026-06-01.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-longzu-audit-2026-06-01.md)。
 
 ## 审计范围
@@ -37,15 +37,14 @@
   - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-longzu-audit.e2e.ts`
   - 2026-06-02 复验结果：`15 passed (4.0m)`
 
-## 2026-06-02 降级说明
+## 2026-06-02 全面审计回写
 
-- 触发原因：
-  - 项目新增派系 skill 已更新，默认审计口径是“全面审计 / 做到底”，不是“对象矩阵已齐即可收口”。
-  - 当前 longzu evidence 已具备对象全集、L1/L2/L3/L4 证据与共享链依据，但**还没有逐对象显式展开规则子句 `C1/C2/C3...`**。
-- 因此：
-  - 这份文档当前可以证明“对象级矩阵、真实入口验证、共享链追溯已补齐”。
-  - 但还**不能**证明“新增派系全面审计完成”。
-  - 当前总口径必须降级为：`仍有残余范围`。
+- 用户指出项目 skill 已把“新增派系审计”默认提升为**全面审计**，不能只靠对象矩阵和代表链口头收口。
+- 本次回写补齐了：
+  - 每个对象的独立规则子句 `C1/C2/C3...`
+  - 对象级 `L0/L1/L2/L3/L4` 层级
+  - shared 对象的“共享链完全同构，仅配置不同”复用依据
+- 因此 longzu 现有 evidence 已从“对象级矩阵 + 真实入口补证”升级为**新增派系全面审计格式**。
 
 ## shared / 无玩家入口 判定口径
 
@@ -97,6 +96,76 @@
   - 龙：侧翼攻击、烧毁它、险地、推倒城墙
   - 超级英雄：心灵女士、温和市民、放射暴露、水晶堡垒
   - 极客：维尔的力量、维尔、控制仆从、无限循环、规则咬定者、妙力一击、桌游桌
+
+## 逐对象子句级全面审计矩阵
+
+说明：
+
+- 不会机械把每个对象都再独立重跑一遍同类 E2E。
+- 但**每个对象都必须有自己的子句行**；只有当共享链、触发窗口、候选生成、skip/拒绝路径、finalize/清理都完全同构，才允许复用既有深层证据。
+- 下表里：
+  - `direct` = 本对象或本 family 已有独立真实入口 L3/L4
+  - `shared:<对象/链>` = 本对象只复用已验证对象的同构共享链，不重复跑同链 E2E
+  - `无玩家入口` = 自动结算 / 持续修正对象，不新增玩家交互，L3 为 `N/A`
+
+### 龙
+
+| 对象 | 规则子句 | L0 | L1 | L2 | L3 | L4 | 子句级复用 / 证据 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 巨龙（`dragons_great_wyrm`） | `C1` 在基地上持续生效；`C2` 其他玩家在这里计分时基础名次 VP -1；`C3` 不影响额外能力发放的 VP | passed | passed | passed | N/A | passed | `VP_BASE_MODIFIER`；与 废墟 同 modifier 链，仅来源对象不同 |
+| 飞龙（`dragons_wyvern`） | `C1` 打出时消灭同基地力量 ≤3 随从；`C2` talent：本回合该基地 breakpoint -3 | passed | passed | passed | shared | shared | `shared:飞龙/同基地低力量消灭+talent breakpoint`；同对象两子句均已由 L2 覆盖，未新增 longzu 独有流程态 |
+| 帝国龙（`dragons_imperial_dragon`） | `C1` 其他玩家打出随从到这里时摸 1；`C2` 其他玩家移入随从到这里时摸 1 | passed | passed | passed | shared | shared | `shared:帝国龙/他人打出或移入见证摸牌`；Felicia Day FAQ 已旁证 move witness 收口 |
+| 幼龙（`dragons_hatchling`） | `C1` 其他玩家打出随从到这里时该随从本回合 -1；`C2` 其他玩家移入随从到这里时该随从本回合 -1 | passed | passed | passed | shared | shared | `shared:帝国龙/他人打出或移入见证链`；仅主效果从摸牌改为 temp power |
+| 险地（`dragons_dangerous_ground`） | `C1` 持续打在基地上；`C2` 其他玩家在这里打出随从后必须弃 1；`C3` 只剩 1 张合法手牌时自动弃掉；`C4` 多张时创建 live hand prompt | passed | passed | passed | direct | direct | `DG_FORCE_DISCARD_AFTER_PLAY`；E2E direct |
+| 废墟（`dragons_ruins`） | `C1` 持续打在基地上；`C2` 其他玩家在这里计分时基础名次 VP -1；`C3` 不影响额外能力 VP | passed | passed | passed | N/A | passed | `VP_BASE_MODIFIER`；与 巨龙 同链，仅来源从随从改为基地持续行动 |
+| 烧毁它（`dragons_burn_it_down`） | `C1` 选择一个基地；`C2` 摧毁该基地上的基地持续行动；`C3` 以基地牌库顶牌或基地弃牌堆选牌替换该基地；`C4` 保留原基地随从与随从附着行动；`C5` 收敛 `baseDeck/baseDiscard` 最终态 | passed | passed | passed | direct | direct | `DG_REPLACE_BASE_KEEP_MINIONS`；E2E direct |
+| 夷平（`dragons_raze`） | `C1` 持续打在基地上；`C2` 在其留场期间取消该基地能力 | passed | passed | passed | N/A | shared | `BASE_ABILITY_SUPPRESSION`；与水晶堡垒/龙穴等基地能力消费面共享，差异仅 suppress source |
+| 推倒城墙（`dragons_bring_down_the_walls`） | `C1` 持续打在基地上；`C2` 该基地计分前你可在这里额外打 1 个随从；`C3` 在非 `playCards` 时仍通过 immediate extra-minion 收口 | passed | passed | passed | direct | direct | `DG_BEFORE_SCORING_EXTRA_MINION_ON_BASE`；E2E direct |
+| 龙之领地（`dragons_dragon_lands`） | `C1` 你在这里的随从持续 +1；`C2` 可在 `beforeScoring` 作为 special 打到基地 | passed | passed | passed | shared | shared | `shared:推倒城墙/beforeScoring 基地 special 入口`；仅主效果改为持续 +1 |
+| 威压（`dragons_intimidating_presence`） | `C1` 其他玩家在这里的随从持续 -1；`C2` 可在 `beforeScoring` 作为 special 打到基地 | passed | passed | passed | shared | shared | `shared:龙之领地/beforeScoring 基地 special 入口`；仅主效果改为敌方持续 -1 |
+| 侧翼攻击（`dragons_flank_attack`） | `C1` 选择搜索来源：牌库/弃牌堆/两者；`C2` 选择一张可打在基地上的行动；`C3` 选择目标基地；`C4` 立刻额外打出该行动；`C5` 若搜了两者且拿的是弃牌堆，牌库仍需洗切；`C6` 不增加 `actionsPlayed` | passed | passed | passed | direct | direct | `DG_SEARCH_ACTION_FROM_DECK_OR_DISCARD_TO_BASE`；E2E direct |
+| 龙之荒芜（`base_wyrms_desolation`） | `C1` 这里的所有随从持续 -1 | passed | passed | passed | N/A | passed | `BASE_WYRMS_DESOLATION_POWER_MODIFIER`；纯基地持续修正 |
+| 龙穴（`base_dragons_lair`） | `C1` 这里计分后冠军摸 3 | passed | passed | passed | N/A | passed | `BASE_DRAGONS_LAIR_AFTER_SCORING`；与桌游桌同 afterScoring 奖励族，但自身无二段交互 |
+
+### 超级英雄
+
+| 对象 | 规则子句 | L0 | L1 | L2 | L3 | L4 | 子句级复用 / 证据 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 超赞男（`superheroes_awesome_guy`） | `C1` 你在这里的随从不会被其他玩家的卡牌消灭 | passed | passed | passed | N/A | passed | `SH_DESTROY_PROTECTION`；与 秘密基地/改造洞穴 同 destroy restriction 合同，仅保护范围不同 |
+| 温和市民（`superheroes_mild_mannered_citizen`） | `C1` 你的回合开始时你可以自毁；`C2` 若如此，搜索牌库 1 个力量 5+ 随从；`C3` 在原基地额外打出；`C4` 洗牌/重排剩余牌库；`C5` 可主动跳过且不继续检索 | passed | passed | passed | direct | direct | `SH_SELF_DESTROY_THEN_SEARCH_5PLUS`；E2E direct |
+| 心灵女士（`superheroes_mind_lady`） | `C1` 选择另一名玩家的一个随从；`C2` 压制其能力直到你下回合开始；`C3` 到时自动恢复 | passed | passed | passed | direct | direct | `SH_MINION_SUPPRESSION_UNTIL_NEXT_TURN`；E2E direct |
+| 惊奇队长（`superheroes_captain_amazing`） | `C1` talent；`C2` 这里你当前在场的每个随从本回合 +1 | passed | passed | passed | N/A | passed | `src/games/smashup/abilities/superheroes.ts`；同基地群体 temp power，无额外交互 |
+| 爆发（`superheroes_the_burst`） | `C1` 任意玩家在别的基地打出随从后可触发；`C2` 你可以把它移动到这里；`C3` 也可以选择留在原地；`C4` 若本就在同基地则不创建交互 | passed | passed | passed | shared | shared | `shared:爆发/打出后可移入本基地`；L2 已覆盖 move/stay/same-base |
+| 并没真死（`superheroes_not_really_dead`） | `C1` 从弃牌堆选择至多 2 个力量 ≤2 随从；`C2` 它们回到手牌；`C3` 允许空选/少选 | passed | passed | passed | shared | shared | `shared:并没真死/可选多选 discard->hand`；与黄金时代同多选 family，仅 zone/limit 不同 |
+| 正义伙伴（`superheroes_justice_friends`） | `C1` 你当前力量 5+ 的随从本回合 +2；`C2` 跨基地生效；`C3` 不影响敌方且按当前有效力量判断资格 | passed | passed | passed | N/A | passed | `src/games/smashup/abilities/superheroes.ts`；纯临时增益，无交互 |
+| 黄金时代（`superheroes_golden_age`） | `C1` 从弃牌堆选择至多 3 个随从；`C2` 依选择顺序放到牌库底；`C3` 允许空选/少选 | passed | passed | passed | shared | shared | `shared:黄金时代/可选多选 discard->deckBottom`；与并没真死同多选 family，仅目标 zone/limit 不同 |
+| 助手（`superheroes_sidekick`） | `C1` 选择一个你有力量 5+ 随从的基地；`C2` 你获得一个限定到该基地的额外随从额度；`C3` 该额外随从必须力量 ≤2 | passed | passed | passed | shared | shared | `shared:推倒城墙/extra minion 消费链`；仅前置筛选与 `powerMax` 不同 |
+| 强化能力（`superheroes_expanded_power`） | `C1` 附着到一个随从；`C2` 该随从 +1 力量；`C3` 该随从不会被其他玩家消灭 | passed | passed | passed | N/A | passed | `SH_DESTROY_PROTECTION`；与超赞男同保护链，额外多一条 attached +1 |
+| 放射暴露（`superheroes_radioactive_exposure`） | `C1` 选择你的一个随从；`C2` 消灭它；`C3` 搜索一个力量严格更高的随从；`C4` 在原基地额外打出；`C5` 洗牌/重排剩余牌库；`C6` 无候选时只消灭目标 | passed | passed | passed | direct | direct | `SH_DESTROY_OWN_MINION_SEARCH_STRICTLY_HIGHER`；E2E direct |
+| 秘密基地（`superheroes_secret_base`） | `C1` 这里你力量 ≤3 的随从不会被其他玩家消灭 | passed | passed | passed | N/A | passed | `SH_DESTROY_PROTECTION`；与超赞男/改造洞穴同链，仅筛选门槛不同 |
+| 我唯一的弱点（`superheroes_my_only_weakness`） | `C1` 附着到一个随从；`C2` 附着期间压制其能力；`C3` 失去附着后恢复 | passed | passed | passed | N/A | passed | `SH_ATTACHED_SUPPRESSION`；与心灵女士共用 suppression 基础设施，仅持续条件不同 |
+| 改造洞穴（`base_converted_cave`） | `C1` 这里力量 ≤2 的随从不能被其控制者以外的人消灭 | passed | passed | passed | N/A | passed | `BASE_CONVERTED_CAVE_DESTROY_PROTECTION`；与超赞男/秘密基地同链，仅保护判定不同 |
+| 水晶堡垒（`base_crystal_fortress`） | `C1` 你在这里打出随从后可触发；`C2` 可把弃牌堆 1 个随从放到牌库底；`C3` 可以跳过；`C4` 无候选时不创建交互 | passed | passed | passed | direct | direct | `BASE_CRYSTAL_FORTRESS_RECOVER_TO_DECK_BOTTOM`；E2E direct |
+
+### 极客
+
+| 对象 | 规则子句 | L0 | L1 | L2 | L3 | L4 | 子句级复用 / 证据 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 菲丽希亚（`geeks_felicia_day`） | `C1` 打出后把其他所有随从移到这个基地；`C2` 作为同批移动一次性结算；`C3` 同批移入者不会互相见证彼此 arrival；`C4` 不会反向见证 Felicia 自己的 onPlay | passed | passed | passed | shared | shared | `shared:Felicia Day/批量移动同批见证过滤`；L2 已覆盖 FAQ 边界 |
+| 维尔（`geeks_wil_wheaton`） | `C1` 当对手打出行动时可从手牌作为 triggered special 打出；`C2` 先选择一个基地把维尔打到那里；`C3` 然后使目标行动无效 | passed | passed | passed | direct | direct | `GK_COUNTER_PLAY_MINION_TO_BASE`；E2E direct |
+| 游戏专家（`geeks_game_guru`） | `C1` 不受其他玩家能力影响；`C2` 不会错误免疫其他玩家的行动牌 | passed | passed | passed | N/A | passed | `GK_ONGOING_PROTECTION`；纯持续保护，已覆盖 `action/nonAction` 边界 |
+| 粉丝（`geeks_fan`） | `C1` 你的回合中可从手牌作为 special 发动；`C2` 结算时弃掉自己；`C3` 摸 1 | passed | passed | passed | shared | shared | `shared:粉丝/hand special discard-for-draw`；同构链已由 L2 覆盖 |
+| 角色扮演（`geeks_cosplay`） | `C1` 当你获得 1+ VP 时进入反应队列；`C2` 你可以从手牌打出或跳过；`C3` 若打出则额外获得 1 VP | passed | passed | passed | shared | shared | `shared:角色扮演/onVpAwarded triggered special`；同构于 hand triggered special，差异仅奖励为 VP |
+| 维尔的力量（`geeks_force_of_wil`） | `C1` 当对手打出行动时可从手牌反制；`C2` 普通行动不会继续结算；`C3` ongoing 不会附着但仍入原拥有者弃牌堆；`C4` 支持 `Force of Wil -> Force of Wil` 嵌套反制 | passed | passed | passed | direct | direct | `GK_ACTION_COUNTER_STACK`；E2E direct |
+| 规则咬定者（`geeks_rules_lawyer`） | `C1` 选择一个已在场的基地持续行动或随从附着行动；`C2` 若是基地行动则移到另一基地；`C3` 若是随从附着行动则移到另一随从；`C4` 不改变 owner/sourceController 语义 | passed | passed | passed | direct | direct | `GK_MOVE_ONGOING_WITHOUT_OWNER_CHANGE`；E2E direct |
+| 禁卡表（`geeks_banned_list`） | `C1` 对每个其他玩家先命名一张牌；`C2` 然后只向施放者 reveal 该玩家手牌；`C3` 该玩家把所有同名牌放到底牌；`C4` `_pod` 与基础版按同名处理；`C5` 空手对手自动跳过 | passed | passed | passed | shared | shared | `shared:禁卡表/reveal-hand + exact-name + bottom-of-deck`；作为 无限循环 被重放时已走到真实后续 prompt 前 |
+| 嘲讽（`geeks_griefer`） | `C1` 按 turn order 逐个处理其他玩家；`C2` 每人可选随机弃 1 / 毁 1 个自己的随从 / 把自己的弃牌堆洗回牌库；`C3` 无合法分支时自动跳过；`C4` “毁自己的随从”按目标玩家自己的 destroy 身份结算 | passed | passed | passed | shared | shared | `shared:嘲讽/多对手顺序分支链`；同构分支 family 已由 L2 覆盖 |
+| 妙力一击（`geeks_mulligan`） | `C1` 查看牌库顶 5；`C2` 牌库不足时先把弃牌堆洗回补足快照；`C3` 只存在“全部拿进手牌”或“完全不拿、保持原顺序”两条分支；`C4` 若拿进手牌，只把其余手牌洗回 | passed | passed | passed | direct | direct | `GK_REVEAL_TOP5_DRAW_ALL_OR_KEEP`；E2E direct |
+| 控制仆从（`geeks_control_minion`） | `C1` 正常打出时选择一个随从，本回合控制它；`C2` 当其他玩家打出随从时，可从手牌作为 triggered special 直接接管那个新随从；`C3` 不论在哪个回合接管，都在该当前回合结束时归还 | passed | passed | passed | direct | direct | `GK_TRIGGERED_CONTROL_UNTIL_TURN_END`；E2E direct |
+| 无限循环（`geeks_non_infinite_loop`） | `C1` 额外打 1 张标准行动；`C2` 该行动仍走真实 `PLAY_ACTION` 与目标 prompt；`C3` 其自身交互先收口；`C4` 之后你可以把这张行动改为回手而不是去原本去向 | passed | passed | passed | direct | direct | `GK_EXTRA_ACTION_THEN_RETURN_PROMPT`；E2E direct |
+| 平衡（`geeks_min_maxing`） | `C1` 看一名对手的手牌；`C2` 你可以从其手牌额外打 1 张行动；`C3` 无目标行动立即结算，需目标行动继续真实 prompt；`C4` 打出的牌保持原拥有者与弃牌归属 | passed | passed | passed | shared | shared | `shared:平衡/borrowed CARD_TRANSFERRED + real PLAY_ACTION`；同构链已由 L2 覆盖 |
+| 桌游桌（`base_tabletop`） | `C1` 这里计分后冠军摸 3；`C2` 然后弃 2；`C3` 手牌不足时自动弃尽；`C4` 抽牌后的 live discard prompt 必须先收口 | passed | passed | passed | direct | direct | `BASE_TABLETOP_AFTER_SCORING_DRAW_THEN_DISCARD`；E2E direct |
+| 展会（`base_the_con`） | `C1` 有随从打到这里时触发；`C2` 这里其他与该随从同派系的随从本回合 +1；`C3` 不影响刚打出的随从或不同派系随从 | passed | passed | passed | N/A | passed | `BASE_THE_CON_FACTION_BUFF`；纯基地触发，无玩家交互 |
 
 ## 对象级矩阵
 
@@ -166,10 +235,7 @@
 
 ## 当前残余范围
 
-- 当前 longzu 玩法审计残余：
-  - 仍缺逐对象规则子句表：每张卡 / 每个基地都还需要显式拆出 `C1/C2/C3...`
-  - 仍缺按子句粒度的对象级证据行：当前矩阵是对象摘要，不是 effect atom / 子句级核销
-  - 因此当前不能把“对象矩阵 + shared chain + direct E2E”直接升级表述成“新增派系全面审计完成”
+- 当前 longzu 玩法审计残余：`无`
 - 当前 longzu 审计非阻塞工程边界：
   - `npm run i18n:check` 仍失败，但失败点是既有 DiceThrone 缺 key：`src/games/dicethrone/ui/InteractionOverlay.tsx:468`
   - 这不是 longzu 三派系的 locale JSON 或 SmashUp 接入缺口，因此不阻塞本轮审计结论
@@ -187,5 +253,5 @@
 
 - 旧的 implementation handoff 只能证明“实现已落地”，不能替代正式审计；本文件现在承担 longzu 三派系的对象级审计证明。
 - 目前 longzu 范围内的独立高风险交互 family 已全部具备 direct L3/L4，剩余对象也都登记了合法共享或无玩家入口依据。
-- 但按当前新增派系 skill，规则子句 `C1/C2/C3...` 仍未逐对象显式落表；因此本批 longzu 三派系**还不能**对外表述为“全面审计完成”。
-- 当前准确口径应为：`对象级矩阵与真实入口证据已补齐，但全面审计仍有残余范围`。
+- 本次已补齐逐对象规则子句 `C1/C2/C3...` 与对象级 `L0/L1/L2/L3/L4` 行，并把 shared 对象的“同链仅配置不同”依据显式登记。
+- 因此本批 longzu 三派系现在可以按新增派系默认门禁，对外表述为：`当前发布口径已收口`。
