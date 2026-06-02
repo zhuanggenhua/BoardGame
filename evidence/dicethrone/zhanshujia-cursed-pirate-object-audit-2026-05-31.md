@@ -211,9 +211,22 @@
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算火药桶的维持阶段爆炸链"` | 1 passed（2026-06-02；既有旧红链恢复） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 历史上曾 `26 passed`（2026-06-02 20:54），但该结论已被更晚回归取代：最新整跑在最前两条开局/选角用例就被 online room / frontend runtime 不稳定拦住，现象包括 `page.goto ... waitUntil "commit" timeout`、`chrome-error://chromewebdata/`、`localStorage/sessionStorage Access is denied`，随后 26 条全部 `skipped`，并伴随前端服务退出 `code=3221226505`；因此不能再把整份 intake 写成“当前全绿” |
 | `run-e2e-single.mjs` 并行定点执行 | 不可作为当前默认验证方式：并行会稳定撞 `.tmp/e2e-preflight-cache.json` 的 `EBUSY`，应串行跑相关定点用例 |
+| `npx tsx scripts/infra/diagnose-dicethrone-room-entry.ts --attempts 1 --character-selection-timeout 90000` | 已新增最小进房诊断脚本（2026-06-02），反馈环收窄为 `create -> join -> seed -> goto room -> wait character selection`；当前结论仍是环境 blocker：`bundle` runtime 下 `vite-with-logging` 异常退出且 `bundle-runner e2e-game-single` 启动期 `Fatal JavaScript out of memory`，切到 `tsx` runtime 后 Vite 与游戏服务又分别出现 `Zone Allocation failed - process out of memory`，因此 isolated single-worker 现在会在真正进房前随机撞启动期 OOM |
+| `waitForFrontendAssets(hostPage, 30000)` | 目前只能算 best-effort 诊断：即使 runtime manager 已把 `/__ready`、`/@vite/client`、`/src/main.tsx` 纳入健康检查，Playwright `page.request.get('/@vite/client')` 仍可能单独挂死 30s；可证明环境不稳，但不能单独作为业务结论 |
 | `npm run assets:check` | 上传前发现 24 个 DiceThrone 新资源缺远端 |
 | `npm run assets:upload` | 上传 25，跳过 2025，失败 0；其中 24 个为本轮 DiceThrone 新资源，另 1 个为既有 SmashUp `pretty_pretty.webp` 远端差异 |
 | 代表 URL HEAD 回查 | 战术家与咒缚海盗的 `player-board.webp`、`tip.webp`、`ability-cards.webp`、`dice.webp`、`status-icons-atlas.webp` 均为 200；Common `background.webp`、`character-portraits.webp` 均为 200 |
+
+## 2026-06-02 新增环境证据
+
+- `反制措施 / 你还嫩了点` 当前静态复核没有推翻“测试命令玩家错误是首个真实修点”的结论：
+  - `你还嫩了点` 结束防御命令确实应由 Guest / `playerId: '1'` 发送；
+  - `rules.ts` 的 `canAdvancePhase(defensiveRoll)`、`flowHooks.ts` 的 `defensiveRoll` 退出逻辑与现有 mechanics tests 都表明，`setupDefenseEvidenceScenario(...)` 现在的 direct `defensiveRoll + pendingAttack + rollConfirmed` 注入结构在合同上仍然自洽；
+  - 在新的运行时证据恢复前，不能静态宣称它本身就是下一层根因。
+- 当前最小诊断脚本已经把环境 blocker 从“可能是 `Board.tsx` 首取慢”继续收窄到“runtime 启动期可能随机 OOM”：
+  - `bundle` runtime：前端进程异常退出，`bundle-runner e2e-game-single` 启动期 `Fatal JavaScript out of memory`；
+  - `tsx` runtime：Vite 与游戏服务分别出现 `Zone Allocation failed - process out of memory`；
+  - 因此当前仍拿不到“已稳定进房并重新验证旧防御链”的新证据。
 
 ## E2E 截图证据
 
@@ -321,4 +334,5 @@
 | 官方 human/normal 面完整实现 | scoped-debt | 当前素材只接入咒缚面玩家板；普通面分支已保留测试，但另一套玩家板素材与技能未在本轮素材中出现 |
 | 对象级 L3/L4 | partial | 真实入口选角、开局、玩家板/提示板、手牌 atlas 已覆盖；战略防御、送你们去喂鱼、手牌选择、瞭望台三分支、作战室奖励骰、占得上风勋章分支、起锚骷髅分支、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、`咒缚` 自伤/施桶链、`伴装撤退 / 脱战` 真实防御响应手牌链、深海潜行完整攻击入口、4 人无情诅咒火药桶链、诅咒卡牌自伤抽牌分支、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链与火药桶维持阶段爆炸链都已有对象级或代表性截图链；当前 `partial` 的核心原因不仅是一批 `L1/L2 shared` / `representative` 对象尚未逐对象登记合法复用依据，也包括旧防御链 `反制措施 / 你还嫩了点` 最新单跑再次转红，不能把历史截图直接外推成当前对象级全绿 |
 | 4 人 online readiness 通用稳定性 | risk-watch | 当前无情诅咒 4 人真实链已通过，但不能把它外推成多人或整份 intake runtime 已稳定；最新整跑已暴露 online room / frontend runtime 波动，且尚未做重复 soak |
+| isolated single-worker DiceThrone runtime 启动稳定性 | risk-watch | 最新最小进房诊断脚本已证明：当前本机在真正进房前就可能随机撞 `bundle-runner` / `vite` / `tsx` 启动期 OOM；这属于运行环境/基础设施 blocker，不应误记成 `反制措施 / 你还嫩了点` 业务回归已定位 |
 | `implementation_in_progress` | 保留 | 全流程未完成，不允许移除 |

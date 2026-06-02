@@ -2,12 +2,13 @@
 
 ## 结论等级
 
-- 当前结论：`当前发布口径已收口`
+- 当前结论：`仍有残余范围`
 - 判定依据：
   - 本批对象全集已建表，覆盖龙、超级英雄、极客三派系全部 `38` 张卡与 `6` 个基地。
   - longzu 本轮新增的独立高风险交互 family 已全部补到 direct L3/L4，2026-06-02 复验结果为 `15 passed (4.0m)`。
   - 其余对象均已登记为“合法共享链复用”或“无玩家入口 / 自动结算对象”，并给出对应共享依据。
   - longzu 领域 L2 行为证据、L3/L4 真实入口证据、类型检查与基础接入门禁均已落地，可替代 implementation handoff 作为正式审计凭证。
+  - 但按 `.windsurf/skills/smashup-faction-addition/SKILL.md`、`.windsurf/skills/add-new-faction/SKILL.md` 与 `docs/ai-rules/audit-evidence-template.md` 的当前门禁，新增派系若要称为“全面审计完成”，还必须为每个对象补齐显式的规则子句 `C1/C2/C3...` 与对象级子句证据；当前文档尚未补到这一级。
 - 本文档是当前批次“审计完毕”的对象级权威证明；统一汇总版见 [smashup-longzu-audit-2026-06-01.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-longzu-audit-2026-06-01.md)。
 
 ## 审计范围
@@ -35,6 +36,16 @@
 - L3/L4 证据：
   - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-longzu-audit.e2e.ts`
   - 2026-06-02 复验结果：`15 passed (4.0m)`
+
+## 2026-06-02 降级说明
+
+- 触发原因：
+  - 项目新增派系 skill 已更新，默认审计口径是“全面审计 / 做到底”，不是“对象矩阵已齐即可收口”。
+  - 当前 longzu evidence 已具备对象全集、L1/L2/L3/L4 证据与共享链依据，但**还没有逐对象显式展开规则子句 `C1/C2/C3...`**。
+- 因此：
+  - 这份文档当前可以证明“对象级矩阵、真实入口验证、共享链追溯已补齐”。
+  - 但还**不能**证明“新增派系全面审计完成”。
+  - 当前总口径必须降级为：`仍有残余范围`。
 
 ## shared / 无玩家入口 判定口径
 
@@ -155,7 +166,10 @@
 
 ## 当前残余范围
 
-- 当前 longzu 玩法审计残余：`无`
+- 当前 longzu 玩法审计残余：
+  - 仍缺逐对象规则子句表：每张卡 / 每个基地都还需要显式拆出 `C1/C2/C3...`
+  - 仍缺按子句粒度的对象级证据行：当前矩阵是对象摘要，不是 effect atom / 子句级核销
+  - 因此当前不能把“对象矩阵 + shared chain + direct E2E”直接升级表述成“新增派系全面审计完成”
 - 当前 longzu 审计非阻塞工程边界：
   - `npm run i18n:check` 仍失败，但失败点是既有 DiceThrone 缺 key：`src/games/dicethrone/ui/InteractionOverlay.tsx:468`
   - 这不是 longzu 三派系的 locale JSON 或 SmashUp 接入缺口，因此不阻塞本轮审计结论
@@ -173,4 +187,5 @@
 
 - 旧的 implementation handoff 只能证明“实现已落地”，不能替代正式审计；本文件现在承担 longzu 三派系的对象级审计证明。
 - 目前 longzu 范围内的独立高风险交互 family 已全部具备 direct L3/L4，剩余对象也都登记了合法共享或无玩家入口依据。
-- 因此本批 longzu 三派系当前可以对外表述为：`当前发布口径已收口，正式审计完成`。
+- 但按当前新增派系 skill，规则子句 `C1/C2/C3...` 仍未逐对象显式落表；因此本批 longzu 三派系**还不能**对外表述为“全面审计完成”。
+- 当前准确口径应为：`对象级矩阵与真实入口证据已补齐，但全面审计仍有残余范围`。
