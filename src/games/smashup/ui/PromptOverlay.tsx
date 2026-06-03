@@ -26,13 +26,14 @@ import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScro
 import { useToast } from '../../../contexts/ToastContext';
 import { isSmashUpPromptOwnedByPlayer } from './interactionMode';
 
-type DisplayCardItem = { uid: string; defId: string };
+type DisplayCardItem = { uid: string; defId: string; count?: number };
 type DeckReorderCardItem = { uid: string; defId: string };
 
 type DisplayCardsBase = {
     title: string;
     cards: DisplayCardItem[];
     onClose: () => void;
+    panelKind?: 'deck' | 'discard';
 };
 
 type DisplayCardsViewOnly = DisplayCardsBase & {
@@ -608,8 +609,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                     className="fixed bottom-0 inset-x-0"
                     style={{ zIndex: UI_Z_INDEX.overlay }}
                 >
-                    <div 
-                        data-discard-view-panel
+                    <div
+                        data-discard-view-panel={displayCards.panelKind !== 'deck' ? true : undefined}
+                        data-card-view-panel={displayCards.panelKind === 'deck' ? true : undefined}
                         className="bg-gradient-to-t from-black/90 via-black/75 to-transparent pt-8 pb-4 px-4"
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
@@ -672,6 +674,14 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         <span className={`text-xs font-bold max-w-[8.5vw] truncate text-center ${isSel ? 'text-amber-300' : 'text-white/80'}`}>
                                             {name}
                                         </span>
+                                        {typeof card.count === 'number' && card.count > 1 && (
+                                            <span
+                                                data-card-count
+                                                className="rounded-full bg-amber-300/95 px-2 py-0.5 text-[11px] font-black text-slate-950 shadow-lg"
+                                            >
+                                                ×{card.count}
+                                            </span>
+                                        )}
                                     </motion.div>
                                 );
                             })}

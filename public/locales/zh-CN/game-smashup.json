@@ -227,12 +227,31 @@
     "click_to_cancel_selection": "点按取消选择",
     "close_faction_details": "关闭派系详情",
     "mechanic_tutorial": "机制教程",
+    "faction_mechanic_rules": "机制规则",
     "faction_variant_pod": "POD版",
     "faction_variant_base": "基础版",
     "faction_titan_preview": "泰坦预览",
     "faction_titan_missing": "该种族泰坦暂未接入",
     "cancel_selection": "取消选择",
     "faction_implementation_in_progress": "实施中"
+  },
+  "mechanics": {
+    "madness": {
+      "title": "疯狂牌",
+      "description": "疯狂牌来自公共疯狂牌堆，不会进入你的起始牌组。对局结束时，你每保留 2 张疯狂牌，就会失去 1 点胜利点。"
+    },
+    "bury": {
+      "title": "埋葬",
+      "description": "埋葬会把卡牌面朝下放到基地旁。它们留在场上但默认不可用，只有当牌面效果允许时，你才能翻开、移走或把这些埋葬牌重新利用。"
+    },
+    "duel": {
+      "title": "决斗",
+      "description": "决斗会让两个随从单独比拼力量，并按决斗流程结算结果。只有写明可以发起决斗的牌，才会进入这套额外结算。"
+    },
+    "powerCounters": {
+      "title": "+1 力量指示物",
+      "description": "带有 +1 力量指示物的随从，每枚指示物都会额外提供 1 点力量。许多牌还会围绕放置、转移或移除这些指示物继续连锁。"
+    }
   },
   "feedback": {
     "deck_search_no_match": "牌库中未找到符合条件的卡牌，已重洗牌库",
@@ -493,11 +512,11 @@
     },
     "cowboys": {
       "name": "牛仔",
-      "description": "通过决斗压制对手，低手牌出牌，并把埋葬的牌兑现成收益。"
+      "description": "通过决斗压制对手，并用低手牌节奏在关键时机赢下交换。"
     },
     "cowboys_pod": {
       "name": "牛仔",
-      "description": "通过决斗压制对手，低手牌出牌，并把埋葬的牌兑现成收益。"
+      "description": "通过决斗压制对手，并用低手牌节奏在关键时机赢下交换。"
     },
     "samurai": {
       "name": "武士",

@@ -257,8 +257,11 @@ const createDevApiDisabledPlugin = (enabled: boolean) => ({
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const forceInlineVite = env.BG_VITE_FORCE_INLINE === '1'
-    || process.env.BG_VITE_FORCE_INLINE === '1'
+  // `BG_VITE_FORCE_INLINE` 只控制包装器是否在当前进程内启动 Vite，
+  // 不应再顺带切到“禁 react/esbuild + TS fallback”的配置分支；
+  // 否则会让 howler 之类 CJS 依赖直接裸露到浏览器端。
+  const forceInlineVite = env.BG_VITE_FORCE_CONFIG_INLINE === '1'
+    || process.env.BG_VITE_FORCE_CONFIG_INLINE === '1'
   const disableViteWatch = process.env.PW_SERVER_WATCH === 'false'
     || process.env.VITE_DISABLE_WATCH === 'true'
     || env.VITE_DISABLE_WATCH === 'true'

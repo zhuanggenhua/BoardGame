@@ -35,7 +35,7 @@
 | `sharks_hammerhead` | 本基地有仆从被消灭后自身 +1 | onMinionDestroyed 触发 | `sourceScope: triggerBase` | 触发范围为本基地；最终加到 Hammerhead 自身；共享 destroy trigger 已覆盖 | L2/L3 |
 | `sharks_mako` | 你消灭任意基地仆从后，可作为额外随从打到那里 | onMinionDestroyed 全局手牌触发 | `destroyerId/baseIndex/globalZones:['hand']` | 入口是触发者手牌额外打出，不是常规手牌点击；上下文用 destroyer/baseIndex，未发现反转 | L1 |
 | `sharks_blood_in_the_water` | 打到基地；这里仆从被消灭后额外打 3- 到这里 | 打出目标基地 | `ongoingTarget:'base'` + `playNeedsBase` + `triggerBase` | 第一入口是基地，与文案一致；额外随从目标由上下文基地限定 | L1/L2 |
-| `sharks_week_of_sharks` | 打到基地；回合结束若你这里有仆从抽 1；每回合只一个 | 打出目标基地 | `ongoingTarget:'base'` + owner set once/turn | 基地入口一致；once/turn 不是 UI 选择，用 owner set 治理；已有 L2 覆盖只触发一次 | L2 |
+| `sharks_week_of_sharks` | 打到基地；回合结束若你这里有仆从抽 1；每回合只一个 | 打出目标基地 | `ongoingTarget:'base'` + owner set once/turn | 基地入口一致；once/turn 不是 UI 选择，用 owner set 治理；2026-06-02 已补“同回合只触发一次 + 跨到下一次自己回合结束仍可再次抽牌” | L2 |
 | `sharks_torn_apart` | 选择 3- 随从消灭并抽 1 | onPlay prompt 选随从 | 无 playNeeds，handler prompt `targetType:minion` | 第一选择是随从，未误用基地；最终 destroy+draw 有 L2/L3 | L2/L3 |
 | `sharks_chum` | 打到随从；任意仆从被消灭后宿主 +1 | 打出目标随从 | `ongoingTarget:'minion'` + `playNeedsMinion` | 第一入口是随从，与“打出到仆从上”一致；触发时使用 attached 宿主上下文 | L1/L2 |
 | `sharks_dangerous_waters` | 打到基地；天赋选择这里随从 -2 | 打出基地；后续天赋随从 prompt | `ongoingTarget:'base'` + `ctx.baseIndex` | 打出入口基地一致；天赋目标被限定在该基地，未发现跨基地泄漏 | L1 |
@@ -57,12 +57,12 @@
 | `tornados_not_in_kansas` | 选择基地 → 销毁基地/附着行动 → 替换基地保留随从 | 基地 | `playNeedsBase`；`BASE_REPLACED keepCards` | 第一入口基地正确；清理 action 与保留 minion 的 reducer 事件完整 | L3 |
 | `tornados_over_the_rainbow` | beforeScoring 打出；你另一基地随从移入计分基地 | 计分基地上下文 → 己方随从 | `specialNeedsBase`；fixedDestinationBaseIndex=scoring | special 上下文确定目标基地；第一用户选择是己方随从，归属/基地排除正确 | L3/L4 |
 | `base_trailer_park` | 仆从移动到这里后，在其上 +1 | onMinionMoved 触发 | `minionUid/baseIndex` | 移入对象由移动事件携带；无额外选择；最终状态是 power counter | L1/L2 |
-| `base_tornado_alley` | 每回合第一次移入后，可把另一个随从移到这里 | onMinionMoved → optional minion prompt | `usedBaseAbilitiesThisTurn` + skip + reason 防自触发 | once/turn、另一个、可选均有治理；历史 L3 覆盖 | L3 |
+| `base_tornado_alley` | 每回合第一次移入后，可把另一个随从移到这里 | onMinionMoved → optional minion prompt | `usedBaseAbilitiesThisTurn` + skip + reason 防自触发 | once/turn、另一个、可选均有治理；2026-06-01 已补跨回合清理回归，旧结论已回写 | L3 |
 | `mythic_greeks_odysseus` | 你打出行动后，在你的一个随从上 +1 | onActionPlayed → 己方随从 prompt | `playerContext:sourceController`，targets self | 触发者归属正确；第一选择随从；Argonaut 行为覆盖代表链 | L2 |
 | `mythic_greeks_argonaut` | 触发行动态能力；可代替行动打出 | 打出随从入口/特殊打出入口 | action-trigger replay 手写代表链，special 语义注册 | 本轮 P0 关注 action-trigger 入口，已有 L2/L3；跨派系泛化仍为残余范围 | L2/L3 |
-| `mythic_greeks_jason` | 每回合一次，行动后选基地，你在那里的随从 +1 | onActionPlayed → 基地 prompt | metadata once/turn，sourceUid，self minions on chosen base | 第一入口基地正确；once/turn metadata 存在；Argonaut 真实入口 E2E 已把 Jason prompt 和 chosen-base buff 跑通 | L2 / scoped L3 |
+| `mythic_greeks_jason` | 每回合一次，行动后选基地，你在那里的随从 +1 | onActionPlayed → 基地 prompt | metadata once/turn，sourceUid，self minions on chosen base | 第一入口基地正确；once/turn metadata 存在；Argonaut 真实入口 E2E 已把 Jason prompt 和 chosen-base buff 跑通；2026-06-02 已补跨回合 metadata 不残留回归 | L2 / scoped L3 |
 | `mythic_greeks_heracles` | 任意玩家行动后，本随从 +1 临时 | onActionPlayed 自动 | `sourceCardUid/sourceBaseIndex` | 无玩家选择；“任意玩家”与 trigger 不限 sourceController 一致 | L2 |
-| `mythic_greeks_spartan` | 每回合一次，你行动后本随从 +1 指示物 | onActionPlayed 自动 | sourceController self + metadata once/turn | 无用户入口；once/turn metadata 存在 | L2/L3 |
+| `mythic_greeks_spartan` | 每回合一次，你行动后本随从 +1 指示物 | onActionPlayed 自动 | sourceController self + metadata once/turn | 无用户入口；once/turn metadata 存在；2026-06-02 已补跨回合 metadata 不残留回归 | L2/L3 |
 | `mythic_greeks_favor_of_hades` | 从你的弃牌堆选择一张行动回手 | 弃牌行动卡 prompt/单张自动 | discard filter action + recover | 第一入口是卡牌；归属 self discard；单张自动不违背“将一张” | L1 |
 | `mythic_greeks_favor_of_ares` | 你的一个随从 +3 临时 | 己方随从 | `playNeedsMinion` + `playTargetMinionController:'self'` | UI/validator/handler self 归属一致 | L1 |
 | `mythic_greeks_favor_of_aphrodite` | 打出额外仆从 | 无目标按钮/额度事件 | `grantContextualExtraMinion` | 无入口目标；额度写入事件 | L1 |
@@ -158,6 +158,14 @@
 - `sharks_great_white` 已重新用真实 UI 点击随从触发天赋，旧“仅 harness 辅助”结论失效。
 - C4 已逐对象归档：所有真实 UI 交互入口均为独立 L3 或等价代表链；无用户入口对象显式标记 C4 不适用。
 - C5 已逐家族归档：beforeScoring、afterScoring、base replace、once/turn、action-trigger、base trigger、destroy trigger、multi/order/continuationContext 均有 L4 或系统代表链证据。
+
+## Addendum（2026-06-02 +08）：once-per-turn 家族扩审
+
+- `sharks_week_of_sharks`、`mythic_greeks_jason`、`mythic_greeks_spartan` 已新增跨回合重新可用回归，补齐旧矩阵只证明“同回合不重复”的缺口。
+- 当前 once/turn 家族读取口径：
+  - `base_tornado_alley` 代表共享回合态跨回合清理。
+  - `sharks_week_of_sharks` 代表自动 endTurn once/turn 的跨回合再触发。
+  - `mythic_greeks_jason`、`mythic_greeks_spartan` 代表 metadata once/turn 的跨回合再触发。
 - C6 已完成回写；最终是否 COMPLETE 以 `temp/smashup-shayu-comprehensive-audit-2026-05-12.json` 与 guard 检查为准。
 
 ## 2026-05-23 +08 destroyerId 专项回写

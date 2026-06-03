@@ -998,6 +998,32 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                             <p className="text-sm md:text-sm lg:text-base text-slate-600 leading-relaxed mb-4 lg:mb-8 font-medium">
                                                                 {t(focusedFactionMeta.descriptionKey)}
                                                             </p>
+
+                                                            {focusedFactionMeta.mechanicRule ? (
+                                                                <div className="mb-4 lg:mb-6" data-testid="faction-mechanic-rules">
+                                                                    <div className="mb-2 flex items-center gap-2 text-slate-400">
+                                                                        <BookOpen size={16} />
+                                                                        <span className="text-xs font-black uppercase tracking-widest">
+                                                                            {t('ui.faction_mechanic_rules', { defaultValue: '机制规则' })}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div
+                                                                        className="rounded-sm border border-slate-200 bg-white/75 px-3 py-2.5 shadow-[0_6px_14px_rgba(15,23,42,0.06)]"
+                                                                        style={{
+                                                                            borderLeftWidth: 4,
+                                                                            borderLeftColor: focusedFactionMeta.color,
+                                                                        }}
+                                                                        data-testid="faction-mechanic-rule"
+                                                                    >
+                                                                        <div className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-700">
+                                                                            {t(focusedFactionMeta.mechanicRule.titleKey)}
+                                                                        </div>
+                                                                        <p className="mt-1 text-xs font-medium leading-relaxed text-slate-600">
+                                                                            {t(focusedFactionMeta.mechanicRule.descriptionKey)}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            ) : null}
                                                         </div>
 
                                                         <div className="relative z-10 mb-4 lg:mb-6">

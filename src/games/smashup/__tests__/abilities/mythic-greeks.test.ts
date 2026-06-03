@@ -529,6 +529,90 @@ describe('神话希腊代表性玩法行为', () => {
         expectNoPrompt(secondAction.finalState);
     });
 
+    it('伊阿宋上一回合的 once metadata 不会挡住下一回合再次触发', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('hermes', 'mythic_greeks_favor_of_hermes', 'action', '0')],
+                    actionLimit: 2,
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_oracle_at_delphi', [
+                    makeMinion('jason', 'mythic_greeks_jason', '0', 3, {
+                        metadata: { mythicGreeksJasonTriggeredTurn: 1 },
+                    }),
+                ]),
+                makeBase('base_wooden_horse', [
+                    makeMinion('own-target', 'sharks_mako', '0', 2),
+                    makeMinion('enemy-target', 'tornados_dust_devil', '1', 2),
+                ]),
+            ],
+            baseDeck: [],
+            turnNumber: 2,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'hermes' },
+        } as any);
+
+        expect(play.success).toBe(true);
+        const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
+            const triggerOption = getPromptOptions(prompt).find((option: any) => {
+                const triggerId = option.value?.triggerId;
+                return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
+            });
+            if (triggerOption) return { optionId: triggerOption.id };
+
+            return chooseOptionBySource(prompt, 'mythic_greeks_jason', option => option.value?.baseIndex === 1);
+        }).finalState;
+
+        expect(resolved.core.bases[1].minions.find(minion => minion.uid === 'own-target')?.tempPowerModifier).toBe(1);
+        expect(resolved.core.bases[1].minions.find(minion => minion.uid === 'enemy-target')?.tempPowerModifier ?? 0).toBe(0);
+        expect(resolved.core.bases[0].minions.find(minion => minion.uid === 'jason')?.metadata?.mythicGreeksJasonTriggeredTurn).toBe(2);
+    });
+
+    it('斯巴达人上一回合的 once metadata 不会挡住下一回合再次触发', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('hermes', 'mythic_greeks_favor_of_hermes', 'action', '0')],
+                    actionLimit: 2,
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_oracle_at_delphi', [
+                    makeMinion('spartan', 'mythic_greeks_spartan', '0', 2, {
+                        metadata: { mythicGreeksSpartanTriggeredTurn: 1 },
+                    }),
+                ]),
+            ],
+            baseDeck: [],
+            turnNumber: 2,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'hermes' },
+        } as any);
+
+        expect(play.success).toBe(true);
+        expectNoPrompt(play.finalState);
+        expect(play.finalState.core.bases[0].minions.find(minion => minion.uid === 'spartan')?.powerCounters).toBe(1);
+        expect(play.finalState.core.bases[0].minions.find(minion => minion.uid === 'spartan')?.metadata?.mythicGreeksSpartanTriggeredTurn).toBe(2);
+    });
+
     it('哈迪斯的恩惠从弃牌堆行动牌中选择一张回手', () => {
         const core = {
             players: {

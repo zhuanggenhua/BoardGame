@@ -79,6 +79,8 @@ public/assets/
 - **禁止把关键图片降级成裸 CSS background 单路径**。`buildLocalizedImageSet` / `buildOptimizedImageSet` 只负责生成 URL 字符串，不能像 `OptimizedImage` 一样在运行时从本地包、public 资源、manifest/R2 之间逐级回退；浏览器的多 background URL 也不是可靠的失败回退机制。
 - **CSS background 只适合两类场景**：一是精灵图/图集裁剪、Canvas/特殊渲染等必须依赖 `background-position` 的场景；二是丢失后不影响主流程的纯装饰背景。前者必须明确仍然复用统一 URL 解析工具，并补测试或截图证明裁剪合同正确。
 - **发现移动端或离线包中“PC 正常、手机缺图”时，先查该图片是否绕过了统一图片组件**；不得先把问题归因到缓存、旧素材包或 CDN，除非已经证明运行时请求链本身符合回退合同。
+- **禁止为游戏正式素材新增假图兜底**：卡牌、基地、泰坦、角色立绘、地图、token 主视觉等正式游戏素材，如果真实素材未命中、R2 返回慢、或本地包里暂时没有，禁止新增内联 SVG、程序生成占位图、临时拼字卡面、截图裁片冒充正式资源。运行时只能显示真实素材或保持真实未加载状态。
+- **E2E / 截图验收同样禁止假素材**：如果截图时 R2 资源因为冷启动或远端拉取较慢而尚未出现，这是可记录的真实状态；可以等待更久，也可以保留真实空态截图，但不能为了“让截图好看”在游戏里加假的 fallback 素材。
 
 **locale 处理规则**：
 - `OptimizedImage` 默认 `locale="zh-CN"`，自动转换路径为 `i18n/zh-CN/dicethrone/images/foo.png`

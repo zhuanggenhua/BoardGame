@@ -251,6 +251,65 @@ describe('鲨鱼代表性玩法行为', () => {
         expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['draw-b']);
     });
 
+    it('鲨鱼周跨到下一次自己回合结束时仍可再次额外抽牌', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('draw-a', 'sharks_mako', 'minion', '0'),
+                        makeCard('draw-b', 'sharks_hammerhead', 'minion', '0'),
+                        makeCard('draw-c', 'sharks_great_white', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase({
+                    defId: 'base_the_deep',
+                    minions: [makeMinion('own-a', 'sharks_mako', '0', 2)],
+                    ongoingActions: [{ uid: 'week-a', defId: 'sharks_week_of_sharks', ownerId: '0' }],
+                }),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const firstEndTurnState = makeMatchState(core);
+        firstEndTurnState.sys.phase = 'endTurn';
+        const firstEndTurn = runCommand(firstEndTurnState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '0',
+            payload: undefined,
+        } as any);
+        expect(firstEndTurn.success).toBe(true);
+        expect(firstEndTurn.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a']);
+
+        const backToPlayerZero = runCommand(firstEndTurn.finalState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '1',
+            payload: undefined,
+        } as any);
+        expect(backToPlayerZero.success).toBe(true);
+        expect(backToPlayerZero.finalState.core.currentPlayerIndex).toBe(0);
+
+        const secondEndTurnState = {
+            ...backToPlayerZero.finalState,
+            sys: { ...backToPlayerZero.finalState.sys, phase: 'endTurn' as const },
+        };
+        const secondEndTurn = runCommand(secondEndTurnState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '0',
+            payload: undefined,
+        } as any);
+
+        expect(secondEndTurn.success).toBe(true);
+        expect(secondEndTurn.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
+        expect(secondEndTurn.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['draw-c']);
+    });
+
     it('危险水域天赋只影响其附着基地的随从', () => {
         const core = {
             players: {

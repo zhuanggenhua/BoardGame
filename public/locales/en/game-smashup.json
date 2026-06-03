@@ -245,6 +245,7 @@
     "close": "Close",
     "close_faction_details": "Close faction details",
     "mechanic_tutorial": "Mechanic Tutorial",
+    "faction_mechanic_rules": "Mechanic Rules",
     "reveal_your_hand_shown": "Your hand is being shown",
     "reveal_confirmed": "Confirmed",
     "reveal_queue_hint": "{{count}} reveals pending · click to continue",
@@ -269,6 +270,24 @@
     "titan_reaction_available": "React",
     "no_valid_targets": "No valid targets",
     "faction_implementation_in_progress": "Implementation in Progress"
+  },
+  "mechanics": {
+    "madness": {
+      "title": "Madness Cards",
+      "description": "Madness cards come from the shared Madness deck and are never part of your starting deck. At game end, every 2 Madness cards you still keep cost you 1 VP."
+    },
+    "bury": {
+      "title": "Bury",
+      "description": "Bury places a card face down beside a base. Buried cards stay in play but are not usable by default until another card effect lets you uncover, move, or replay them."
+    },
+    "duel": {
+      "title": "Duel",
+      "description": "A duel makes two minions compare their power in a separate showdown and resolve through the duel flow. Only cards that explicitly say they start a duel enter this extra resolution."
+    },
+    "powerCounters": {
+      "title": "+1 Power Counters",
+      "description": "Each +1 power counter on a minion grants it 1 extra power. Many cards in these factions keep chaining by placing, moving, or removing those counters."
+    }
   },
   "feedback": {
     "deck_search_no_match": "No matching card found in deck. Deck reshuffled.",
@@ -529,7 +548,7 @@
     },
     "cowboys": {
       "name": "Cowboys",
-      "description": "Duel enemies, play from low hand, and cash in buried cards."
+      "description": "Duel enemies and turn a lean hand into sharp tempo swings at key moments."
     },
     "samurai": {
       "name": "Samurai",
@@ -545,7 +564,7 @@
     },
     "cowboys_pod": {
       "name": "Cowboys",
-      "description": "Duel enemies, play from low hand, and cash in buried cards."
+      "description": "Duel enemies and turn a lean hand into sharp tempo swings at key moments."
     },
     "vikings_pod": {
       "name": "Vikings",

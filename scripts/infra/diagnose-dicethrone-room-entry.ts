@@ -35,8 +35,8 @@ process.on('unhandledRejection', (reason) => {
     console.error('[diag-dt-room-entry] unhandledRejection', reason);
 });
 
-process.env.PW_SERVER_RUNTIME = 'tsx';
-process.env.PW_SERVER_WATCH = 'false';
+process.env.PW_SERVER_RUNTIME = process.env.PW_SERVER_RUNTIME ?? 'tsx';
+process.env.PW_SERVER_WATCH = process.env.PW_SERVER_WATCH ?? 'false';
 
 const parseCliOptions = (): CliOptions => {
     const args = process.argv.slice(2);
@@ -116,6 +116,11 @@ const main = async () => {
     });
     const runtimeId = runtimeResult.runtime.runtimeId;
     const baseURL = `http://127.0.0.1:${runtimeResult.runtime.ports.frontend}`;
+    process.env.PW_PORT = String(runtimeResult.runtime.ports.frontend);
+    process.env.PW_GAME_SERVER_PORT = String(runtimeResult.runtime.ports.gameServer);
+    process.env.GAME_SERVER_PORT = String(runtimeResult.runtime.ports.gameServer);
+    process.env.PW_API_SERVER_PORT = String(runtimeResult.runtime.ports.apiServer);
+    process.env.API_SERVER_PORT = String(runtimeResult.runtime.ports.apiServer);
     const results: AttemptResult[] = [];
 
     console.log(`DiceThrone 进房诊断启动`);

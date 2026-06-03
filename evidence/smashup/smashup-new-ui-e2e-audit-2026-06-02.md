@@ -29,11 +29,11 @@
 ### 2. 葫芦娃泰坦预览空白
 
 - `葫芦娃` 详情页截图首次复现出“泰坦预览空白框”。
-- 根因不是交互逻辑本身，而是 `葫芦小金刚` 预览图链路不稳定，导致新详情 UI 无法稳定渲染泰坦卡面。
-- 已在 [SmashUpCardRenderer.tsx](/D:/gongzuo/webgame/BoardGame/src/games/smashup/ui/SmashUpCardRenderer.tsx) 为 `葫芦小金刚（huluwawa_little_king_kong）` 增加内联 SVG fallback 预览，彻底绕开外部静态图命中不稳定的问题；同时补齐本地资源文件与 manifest 元数据：
-  - [assets-manifest.json](/D:/gongzuo/webgame/BoardGame/public/assets/i18n/assets-manifest.json)
-  - `public/assets/i18n/zh-CN/smashup/taitan/huluwawa_titan.png`
-  - `public/assets/i18n/zh-CN/smashup/taitan/compressed/huluwawa_titan.webp`
+- 已确认这类现象不能通过游戏内假素材兜底来“修截图”。
+- 当前项目口径改为：
+  - 游戏运行时只能显示真实素材；
+  - 如果 R2 / 远端素材加载慢，截图可保留真实未加载状态；
+  - 这类慢加载不再被当作“必须在游戏里伪造卡面”的 bug。
 
 ## 验证命令
 
@@ -83,9 +83,9 @@ BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-command.mjs ci e2e/
 - 目录：`test-results/evidence-screenshots/smashup-huluwawa-pr/`
 - 关键截图：
   - `02-zh-faction-detail-preview.png`
-    - 已看到 `葫芦小金刚` 泰坦预览，不再是空白框
+    - 记录 `葫芦娃` 详情页真实状态；若远端素材当次尚未完成加载，允许保留真实空态
   - `03-in-game-huluwawa-resources.png`
-    - 对局内手牌 / 场上仆从 / 泰坦资源同时渲染
+    - 记录对局内手牌 / 场上仆从 / 泰坦的真实运行态；不再允许以假素材填补未加载卡面
   - `05-erwa-reorder-prompt.png`
     - 二娃真实“顶 / 底重排”交互
   - `08-lotus-resolved-once.png`

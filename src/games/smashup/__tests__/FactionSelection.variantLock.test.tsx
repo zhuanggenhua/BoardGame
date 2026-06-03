@@ -287,4 +287,20 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(getVisibleFactionVariantGroups('zh-CN', ['titans']).map(group => group.groupId))
             .not.toContain(SMASHUP_FACTION_IDS.HULUWAWA);
     });
+
+    it('带特有机制的派系详情应显示机制规则，普通派系不显示', () => {
+        renderSelection();
+
+        fireEvent.click(screen.getByTestId('faction-option-cowboys'));
+
+        expect(screen.getByTestId('faction-mechanic-rules')).toBeInTheDocument();
+        expect(screen.getByTestId('faction-mechanic-rule')).toBeInTheDocument();
+        expect(screen.getByText('mechanics.duel.title')).toBeInTheDocument();
+        expect(screen.queryByText('mechanics.bury.title')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('faction-detail-close'));
+        fireEvent.click(screen.getByTestId('faction-option-aliens'));
+
+        expect(screen.queryByTestId('faction-mechanic-rules')).not.toBeInTheDocument();
+    });
 });

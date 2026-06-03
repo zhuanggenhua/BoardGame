@@ -6,6 +6,10 @@
 - 战争贩子 II 勋章专门链此前未锁定的真实根因有两层：E2E 场景只改了 `abilityLevels` 没把 `war-monger` 真替换成升级后的能力定义；正式领域链则在勋章分支先写入 `extraAttackInProgress`、当前攻击稍后才于防御阶段收口时，没有把下一阶段切回 `offensiveRoll`。两层现都已修复，并分别由 E2E 与机制测试锁定。
 - 资源链已经闭合：上传前 `assets:check` 发现 24 个本轮 DiceThrone 新资源缺远端，随后 `assets:upload` 成功上传；两名英雄的玩家板、提示板、手牌图、骰子、状态图集以及 Common 背景/头像远端 HEAD 均为 200。
 - 真实入口双玩家 E2E 已通过：战术家和咒缚海盗可在真实在线选角入口被两名玩家选择，并能进入对局；截图证明双方玩家板、提示板、HUD、骰区与代表手牌 atlas 可见。
+- `通用牌索引` 当前也已拿到真实 UI 证据，而不再只是 intake test 的静态断言：开局双玩家 E2E 现已给 Host/Guest 手牌同时注入各自的 `card-unexpected`，并在同一条真实用例里等待两边 common 卡图加载完成、断言可见后再截图；因此 `05-host-zhanshujia-hand-card-atlas.png` 与 `06-guest-cursed-pirate-hand-card-atlas.png` 现在同时证明了战术家 slot 32 与咒缚海盗 slot 33 的通用牌 atlas 运行时落点。
+- 战术家 `军刀突刺` 现在也已拿到对象级 L3 代表链：新的真实入口 E2E 已证明 `fist` 槽位在 3 军刀盘面下会解析为 `sabre-thrust-3`，点击后先留在 `offensiveRoll`，再由 Host 推进到 Guest 的 `still-wet-behind-ears` 防御阶段；随后把 Guest 防御骰固定成全战利品面后，服务器状态断言 `Host HP=50 / Guest HP=46`，说明基础 `3 军刀 -> 4 伤害` 主链已经在真实 UI 里闭环。
+- 战术家 `战略转移 II` 现在也已拿到对象级 L3 代表链：新的真实入口 E2E 已证明 `calm` 槽位在 `4 勋章 + 3 勋章` 同时满足时不会自动走主分支，而是会先弹出“选择发动变体” modal；Host 显式选择 `战略转移 II（4个勋章）` 后，才会创建 `strategic-shift-2-main` 攻击链，并在推进后收口到 `Host 战术优势=5 / Guest bind=1 / Guest HP=45`。这说明升级主分支的 `grantToken + bind + unblockable damage` 已在真实 UI 中闭环。
+- 战术家 `摇鼓运动 II` 现在也已拿到对象级 L3 代表链：新的真实入口 E2E 已证明 `lotus` 槽位在 `3 军刀 + 2 勋章` 盘面下会直接解析为 `drum-movement-2-main`，点击并推进后会自然打开 Guest 的 `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器状态断言 `Host 战术优势=1 / Guest bind=1 / Guest HP=43`，说明主分支的 `grantToken + bind + 7 伤害` 已在真实 UI 中闭环。
 - 历史上确实有过整份 `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 在同一轮托管 isolated runtime 下 `26 passed (11.3m)` 的记录，但这已经不能当当前结论复述。最新整文件回归没有形成“当前全绿”证据：最新一次整跑在最前两条开局/选角用例就被 online room / frontend runtime 不稳定拦住，现象包括 `page.goto ... waitUntil "commit" timeout`、`chrome-error://chromewebdata/`、`localStorage/sessionStorage Access is denied`，随后 26 条全部 `skipped`，并伴随前端服务异常退出 `code=3221226505`。
 - 本轮已新增 `scripts/infra/diagnose-dicethrone-room-entry.ts`，把环境反馈环收窄到 `create -> join -> seed -> goto room -> wait character selection`。它已经证明：当前 isolated single-worker DiceThrone 诊断并不只是 `Board.tsx` 首取慢，而是会在真正进房前随机撞启动期 OOM。
 - 上述最小探针在两种 runtime 下都已打到可复述的环境证据：
@@ -15,9 +19,12 @@
 - `waitForFrontendAssets(hostPage, 30000)` 在 DiceThrone setup 里现在只能算 best-effort 诊断，不能当硬门禁：即使 runtime manager 已把 `/__ready`、`/@vite/client`、`/src/main.tsx` 纳入健康检查，Playwright `page.request.get('/@vite/client')` 仍可能单独挂死 30 秒；这能证明环境不稳，但不能直接推出后续业务链一定失败。
 - 新增的 `占得上风 / 起锚` 对象级真实入口都已单跑通过：前者通过循环重置最小主阶段手牌场景直到命中勋章分支，确认战术优势从 `0 -> 4`；后者同样命中骷髅分支，确认对目标真实写入 `休战 1`。这两条不再适合继续留在“独立对象待补”里。
 - 当前能确认的新通过证据是三条 `咒缚` 对象链都已单跑收口：`咒缚` 维持阶段自伤、对手未发起攻击时施加火药桶、火药桶维持阶段爆炸链均已通过真实入口定点 E2E。
-- `火药桶` upkeep 代表链当前不再依赖 `primeHarnessRandomQueue(...)`。新的结论是：online 服的 upkeep bonus die 不能稳定受前端 harness 随机队列控制，所以用例改成真实入口重置场景重试，直到命中 `1-2` 爆炸分支。
-- 当前稳定红已从旧 `紧缚 / 火药桶` 切换成旧防御链：`真实防御阶段入口应展示并结算反制措施与你还嫩了点` 最新单跑仍停在 `defensiveRoll`，`pendingAttack` 未清，因此不能把 2026-05-31 的那次通过继续当作“当前已绿”。
-- 对 `反制措施 / 你还嫩了点` 的静态复核结果目前没有推翻“测试命令玩家错误是首个真实修点”这一判断：`rules.ts` 的 `canAdvancePhase(defensiveRoll)`、`flowHooks.ts` 的 `defensiveRoll` 退出逻辑，以及现有 mechanics tests 都表明 `setupDefenseEvidenceScenario(...)` 的 direct `defensiveRoll + pendingAttack + rollConfirmed` 注入结构在合同上仍是自洽的；在新的运行时证据出现前，不能静态判定它本身就是下一层根因。
+- `火药桶` upkeep 代表链当前不再依赖 `primeHarnessRandomQueue(...)`。新的结论是：online 服的 upkeep bonus die 不能稳定受前端 harness 随机队列控制；但在 isolated runtime 侧，`prebuilt + BG_VITE_FORCE_INLINE=1` 且不启 `BG_VITE_FORCE_CONFIG_INLINE` 已被证明能绕开启动期 `howler` / OOM 组合噪音，把定点验证重新带回真实业务位点。
+- `反制措施 / 你还嫩了点` 当前已经拿到新的运行证据：旧红根因确实是测试把 `ADVANCE_PHASE` 发给了错误玩家，而不是领域逻辑未实现。修正为 `反制措施 -> Host / playerId '0'`、`你还嫩了点 -> Guest / playerId '1'` 后，定点 E2E 已再次 `1 passed`。
+- 对 `反制措施 / 你还嫩了点` 的静态复核结果现已被新的运行证据补强，而不是被推翻：`rules.ts` 的 `canAdvancePhase(defensiveRoll)`、`flowHooks.ts` 的 `defensiveRoll` 退出逻辑，以及现有 mechanics tests 都表明 `setupDefenseEvidenceScenario(...)` 的 direct `defensiveRoll + pendingAttack + rollConfirmed` 注入结构在合同上仍是自洽的；当前最新通过也说明首个真实修点不是这条注入结构，而是结束防御命令发给了错误玩家。
+- 战术家 `9 张升级牌` 当前也已拿到代表性真实入口证据，而不再只是 L2 映射：新 E2E 已证明升级牌从真实手牌用 `PLAY_UPGRADE_CARD` 打出后，会把 `war-monger` 的 `abilityLevels` 从 `1 -> 2`，把 `upgradeCardByAbilityId['war-monger'].cardId` 写成 `upgrade-zhanshujia-war-monger-2`，手牌归 0、CP 从 `5 -> 3`，且升级牌不会误入弃牌堆，而是保留在升级槽位。
+- 战术家 `战争贩子` 本体现在也已拿到对象级 L3 代表链：新 E2E 已证明真实攻击入口会先出现奖励骰覆盖层，并在关闭覆盖层、由防守方完成防御收口后，Host 真实回到额外进攻 `offensiveRoll`。这说明基础 `rollDie` 分支与 `postDamage -> extra offensive roll` 链都不再只停留在 mechanics test。
+- 战术家 `地毯式轰炸` 现在也已拿到对象级 L3 代表链：新的 4 人真实入口 E2E 已证明该链会先进入 `targetingRoll`，完成目标骰投掷/确认后，若命中 `5/6` 会真实弹出 `dt-defender-choice`，随后再进入 `selectPlayer` 双敌选择覆盖层；最终可只命中敌队两名玩家，不会把队友混入候选，且服务器状态断言 `player0Hp=46 / player2Hp=46 / player3Hp=50`。
 - `run-e2e-single.mjs` 当前必须串行跑。同一轮并行定点 run 会稳定撞 `.tmp/e2e-preflight-cache.json` 的 `EBUSY`，这属于验证基础设施边界，不应误记成业务对象红灯。
 - E2E 截图前等待图片真实加载完成是必要门禁。本轮上传前曾暴露“DOM 存在但图片未从远端加载完成”的空面板风险；`waitForBoardImageReady` 将证据从“元素出现”提升到“图片已加载且可见”。
 - 咒缚海盗当前唯一接入的玩家板素材是咒缚面；`HeroState.playerBoardFace='cursed'` 作为最小运行时合同后，海盗的一生咒缚面治疗 3 已有 L2 证据，普通面获得 1 诅咒金币分支也保留测试。
@@ -42,17 +49,19 @@
 ## 当前结论
 
 - 可以说：战术家与咒缚海盗已完成资源上传、远端回查、真实入口双玩家 E2E，以及代表性开局展示/手牌 atlas 截图核验。
-- 不能说：两个英雄已完整完成、机制已全量 L3/L4，或可以移除 `implementation_in_progress`。
+- 可以说：旧防御链 `反制措施 / 你还嫩了点` 已在 `prebuilt + inline Vite` 绕过路径下恢复通过，且根因已锁定为 E2E 测试命令玩家写反。
+- 不能说：两个英雄已完整完成、机制已全量 L3/L4、整份 intake 当前全绿，或可以移除 `implementation_in_progress`。
 
 ## 后续风险
 
 - 若要继续推进“官方双面咒缚海盗完整实现”，下一步需要补 human/normal 面玩家板素材与对应技能表；当前本轮素材只证明咒缚面接入，不能把另一套面板规则猜进当前运行时默认。
 - 多人目标、隐藏信息查看、手牌弃置、跨玩家双步选择、目标页奖励骰选择、深海潜行完整攻击入口、作战室奖励骰展示、干票大的奖励骰分支、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、4 人无情诅咒火药桶链、诅咒卡牌选择链、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪追加直伤链、诅咒金币维持阶段掉血链与火药桶维持阶段爆炸链已有代表性 E2E 证据；后续若对外承诺“完全可玩”，剩余工作重点已从“继续证明这些代表链是否能跑通”转为“把其余对象逐项补到真实入口交互链、或在审计中登记共享链合法复用/明确冻结”。
 - 当前不能把 `无情诅咒` 单链通过外推成“所有 4 人 DiceThrone online readiness 都已稳定”。现阶段更准确的口径是：这条新英雄 intake 的高风险 4 人链已收口，但通用多人房冷启动与 frontend runtime 仍有明显波动；历史上的整份 intake `26 passed` 只是一轮旧通过记录，最新整跑已被环境不稳定取代，更不能外推成多人基线已做完重复 soak。
+- 当前也不能把“旧防御链已恢复”外推成“整份 intake 当前全绿”。更准确的口径是：这条旧红业务链已经恢复，剩余阻塞回到对象级彻底审计与 runtime 稳定性，而不是 `反制措施 / 你还嫩了点` 仍未实现。
 - 对战术家防御响应牌，真实入口策略现在已经同时被 `伴装撤退 / 脱战` 验证：应复用正式攻击链，让响应窗口自然打开，再证明从真实手牌打出目标响应牌；不应继续沿用 direct state injection 把房间瞬间切到 `defensiveRoll` 的捷径。
 - 战术家对象级高优先缺口现已清空：`紧缚` 已由 `64-66` 真实入口链补齐，`伴装撤退` 已由 `67-68` 真实防御响应手牌链补齐，`脱战` 已由 `69-71` 真实防御响应手牌链补齐。当前剩余风险回到整批 intake 级别的“复杂交互 UI 尚未逐项 L3/L4 全覆盖”，不是这三个对象仍未落地。
-- 当前仍不能保守外推的一组 shared 对象也已经更明确：`军刀突刺 / 战争贩子 / 地毯式轰炸 / 虚张声势 / 9 张升级牌` 仍带独立 `rollDie`、`customAction`、额外阶段、升级替换或玩家选择入口；它们不是“简单参数差”，因此这轮不能被并入合法复用。
-- 同一标准下，`诱饵`、`军刀突刺 II` 与 `咒缚` 也仍不能外推：它们分别带 attack modifier、私有时序 hook 或 phase 级行为，不是“只换参数”的共享对象。当前继续留在独立缺口里的，仍是 `军刀突刺 / 地毯式轰炸 / 战争贩子 / 摇鼓运动 II / 开拓战场 II / 战略转移 II / 诱饵 / 虚张声势 / 咒缚 / 9 张升级牌 / 通用牌索引`。
+- `虚张声势` 先前不能保守外推的原因已经解除：它带独立 `rollDie` 三分支入口，但现在已补到真实手牌打出 + 奖励骰覆盖层 + 弯刀分支收口的对象级 direct E2E，因此不再属于“只能 shared 外推”的对象。
+- 同一标准下，`诱饵` 与 `军刀突刺 II` 仍不能外推：它们分别带 attack modifier 或私有时序 hook，不是“只换参数”的共享对象。随着 `开拓战场 II` 与 `虚张声势` 都已补到真实入口对象级代表链，当前继续留在独立缺口里的已收窄为 `诱饵`。
 
 # Findings: TDD 行为 seam 与测试结构重构（2026-05-16）
 

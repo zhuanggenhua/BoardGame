@@ -34,7 +34,7 @@ import {
 } from '../../src/games/dicethrone/domain/ids';
 import { CURSED_PIRATE_CARDS } from '../../src/games/dicethrone/heroes/cursed_pirate/cards';
 import { ZHANSHUJIA_CARDS } from '../../src/games/dicethrone/heroes/zhanshujia/cards';
-import { WAR_MONGER_2 } from '../../src/games/dicethrone/heroes/zhanshujia/abilities';
+import { DRUM_MOVEMENT_2, EXPAND_BATTLEFIELD_2, STRATEGIC_SHIFT_2, WAR_MONGER_2 } from '../../src/games/dicethrone/heroes/zhanshujia/abilities';
 
 type JsonRecord = Record<string, unknown>;
 type MatchSetup = NonNullable<Awaited<ReturnType<typeof setupOnlineMatch>>>;
@@ -49,20 +49,24 @@ const FOUR_PLAYER_ENEMY_CAPTAIN_HERO_ID = 'treant';
 const HOST_CARD_ID = 'card-zhanshujia-war-room';
 const GAIN_UPPER_HAND_CARD_ID = 'card-zhanshujia-gain-the-upper-hand';
 const GUEST_CARD_ID = 'card-cursed-pirate-pirates-life';
+const COMMON_UNEXPECTED_CARD_ID = 'card-unexpected';
 const WEIGH_ANCHOR_CARD_ID = 'card-cursed-pirate-weigh-anchor';
 const CURSE_CARD_ID = 'card-cursed-pirate-curse-card';
 const BATTEN_DOWN_CARD_ID = 'card-cursed-pirate-batten-down';
+const SHARK_BAIT_CARD_ID = 'card-cursed-pirate-shark-bait';
 const STRATEGIC_DEFENSE_CARD_ID = 'card-zhanshujia-strategic-defense';
 const GO_FISH_CARD_ID = 'card-cursed-pirate-go-fish';
 const GIVE_ME_SOME_CARD_ID = 'card-cursed-pirate-give-me-some';
 const HAND_SELECTION_CARD_ID = 'card-zhanshujia-war-room';
 const CROWS_NEST_CARD_ID = 'card-cursed-pirate-crows-nest';
 const HEFTY_CARD_ID = 'card-cursed-pirate-hefty';
+const BLUSTER_CARD_ID = 'card-cursed-pirate-bluster';
 const FLAY_CARD_ID = 'card-cursed-pirate-flay';
 const RANSOM_CARD_ID = 'card-cursed-pirate-ransom';
 const SIP_CARD_ID = 'card-cursed-pirate-sip';
 const DISENGAGE_CARD_ID = 'card-zhanshujia-disengage';
 const TACTICAL_RETREAT_CARD_ID = 'card-zhanshujia-tactical-retreat';
+const WAR_MONGER_2_UPGRADE_CARD_ID = 'upgrade-zhanshujia-war-monger-2';
 const CHARACTER_SELECTION_TIMEOUT = 240000;
 const ATTACK_DAMAGE_FOR_DEFENSE_EVIDENCE = 6;
 const DEEP_SEA_DIVE_TARGET_CARD_ID = STRATEGIC_DEFENSE_CARD_ID;
@@ -237,6 +241,64 @@ const buildMercilessCurseTargetingRollState = (
         phase: 'targetingRoll',
         flowHalted: false,
         interaction: { current: undefined, queue: [] },
+    };
+    return state;
+};
+
+const buildCarpetBombingFourPlayerState = (state: JsonRecord): JsonRecord => {
+    const root = asRecord(state.G ?? state);
+    const core = asRecord(root.core);
+    const sys = asRecord(root.sys);
+    const players = asRecordMap(core.players);
+
+    for (const playerId of Object.keys(players)) {
+        const player = asRecord(players[playerId]);
+        const resources = asRecord(player.resources);
+        players[playerId] = {
+            ...player,
+            hand: [],
+            discard: [],
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+            resources: {
+                ...resources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+        };
+    }
+
+    root.core = {
+        ...core,
+        activePlayerId: '1',
+        phase: 'offensiveRoll',
+        rollCount: 1,
+        rollLimit: 3,
+        rollDiceCount: 5,
+        rollConfirmed: true,
+        selectedAbilityId: undefined,
+        activatingAbilityId: undefined,
+        pendingAttack: undefined,
+        pendingBonusDiceSettlement: undefined,
+        pendingDamage: undefined,
+        extraAttackInProgress: undefined,
+        players,
+        dice: buildDiceForValues('zhanshujia-dice', [1, 2, 4, 5, 6], {
+            1: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+            2: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+            4: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+            5: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+            6: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+        }),
+    };
+    root.sys = {
+        ...sys,
+        phase: 'offensiveRoll',
+        currentPlayerIndex: 1,
+        flowHalted: false,
+        interaction: { current: undefined, queue: [] },
+        responseWindow: { current: undefined },
     };
     return state;
 };
@@ -463,7 +525,7 @@ const waitForPendingAttack = async (
     page: Page,
     expected: {
         attackerId: string;
-        defenderId: string;
+        defenderId?: string;
         sourceAbilityId: string;
         damage?: number;
     },
@@ -483,7 +545,7 @@ const waitForPendingAttack = async (
             };
         }
         return actual;
-    }, { timeout: 10000 }).toEqual(expected);
+    }, { timeout: 10000 }).toMatchObject(expected);
 };
 
 const waitForDiscardContains = async (
@@ -725,6 +787,77 @@ const setupHighGroundScenario = async (match: MatchSetup) => {
             pendingAttack: undefined,
             pendingDamage: undefined,
             pendingBonusDiceSettlement: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
+const setupSabreThrustScenario = async (match: MatchSetup) => {
+    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            discard: [],
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+        players['1'] = {
+            ...guest,
+            hand: [],
+            discard: [],
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '0',
+            phase: 'offensiveRoll',
+            dice: buildDiceForValues('zhanshujia-dice', [1, 2, 3, 6, 6], {
+                1: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                2: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                3: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                6: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+            }),
+            rollCount: 1,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
+            pendingDamage: undefined,
+            pendingBonusDiceSettlement: undefined,
+            extraAttackInProgress: undefined,
         };
         root.sys = {
             ...sys,
@@ -1124,6 +1257,62 @@ const setupHeftyScenario = async (
             hand: [heftyCard],
             discard: [],
             resources: { ...guestResources, [RESOURCE_IDS.CP]: 5 },
+            tokens: {},
+            statusEffects: {},
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '1',
+            phase: 'main1',
+            pendingAttack: undefined,
+            pendingBonusDiceSettlement: undefined,
+            pendingDamage: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'main1',
+            currentPlayerIndex: 1,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
+const setupBlusterScenario = async (
+    match: MatchSetup,
+    blusterCard: JsonRecord,
+    drawCards: JsonRecord[],
+) => {
+    await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const guestResources = asRecord(guest.resources);
+        const hostResources = asRecord(host.resources);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            discard: [],
+            statusEffects: {},
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.HP]: 50,
+                [RESOURCE_IDS.CP]: 5,
+            },
+        };
+        players['1'] = {
+            ...guest,
+            hand: [blusterCard],
+            deck: drawCards,
+            discard: [],
+            resources: { ...guestResources, [RESOURCE_IDS.CP]: 5, [RESOURCE_IDS.HP]: 50 },
             tokens: {},
             statusEffects: {},
         };
@@ -1588,6 +1777,65 @@ const setupFlayScenario = async (
         players['1'] = {
             ...guest,
             hand: [flayCard],
+            discard: [],
+            resources: { ...guestResources, [RESOURCE_IDS.CP]: 5 },
+            tokens: {},
+            statusEffects: {},
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '1',
+            phase: 'offensiveRoll',
+            rollCount: 1,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            pendingAttack: {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'test-attack',
+                isDefendable: true,
+                bonusDamage: 0,
+                attackModifierBonusDamage: 0,
+            },
+            pendingBonusDiceSettlement: undefined,
+            pendingDamage: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            currentPlayerIndex: 1,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
+const setupSharkBaitScenario = async (
+    match: MatchSetup,
+    sharkBaitCard: JsonRecord,
+) => {
+    await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const guestResources = asRecord(guest.resources);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            discard: [],
+            statusEffects: {},
+        };
+        players['1'] = {
+            ...guest,
+            hand: [sharkBaitCard],
             discard: [],
             resources: { ...guestResources, [RESOURCE_IDS.CP]: 5 },
             tokens: {},
@@ -2108,6 +2356,409 @@ const setupWarMonger2Scenario = async (
     });
 };
 
+const setupStrategicShift2Scenario = async (match: MatchSetup) => {
+    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
+        const hostAbilityLevels = asRecord(host.abilityLevels);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            discard: [],
+            abilities: Array.isArray(host.abilities)
+                ? (host.abilities as JsonRecord[]).map((ability) => (
+                    ability.id === 'strategic-shift'
+                        ? { ...structuredClone(STRATEGIC_SHIFT_2 as unknown as JsonRecord), id: 'strategic-shift' }
+                        : ability
+                ))
+                : host.abilities,
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            abilityLevels: {
+                ...hostAbilityLevels,
+                'strategic-shift': 2,
+            },
+            damageShields: [],
+        };
+        players['1'] = {
+            ...guest,
+            hand: [],
+            discard: [],
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '0',
+            phase: 'offensiveRoll',
+            dice: buildDiceForValues('zhanshujia-dice', [6, 6, 6, 6, 1], {
+                1: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                6: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+            }),
+            rollCount: 1,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
+            pendingDamage: undefined,
+            pendingBonusDiceSettlement: undefined,
+            extraAttackInProgress: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
+const setupDrumMovement2Scenario = async (match: MatchSetup) => {
+    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
+        const hostAbilityLevels = asRecord(host.abilityLevels);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            discard: [],
+            abilities: Array.isArray(host.abilities)
+                ? (host.abilities as JsonRecord[]).map((ability) => (
+                    ability.id === 'drum-movement'
+                        ? { ...structuredClone(DRUM_MOVEMENT_2 as unknown as JsonRecord), id: 'drum-movement' }
+                        : ability
+                ))
+                : host.abilities,
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            abilityLevels: {
+                ...hostAbilityLevels,
+                'drum-movement': 2,
+            },
+            damageShields: [],
+        };
+        players['1'] = {
+            ...guest,
+            hand: [],
+            discard: [],
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '0',
+            phase: 'offensiveRoll',
+            dice: buildDiceForValues('zhanshujia-dice', [1, 2, 3, 6, 6], {
+                1: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                2: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                3: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                6: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+            }),
+            rollCount: 1,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
+            pendingDamage: undefined,
+            pendingBonusDiceSettlement: undefined,
+            extraAttackInProgress: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
+const setupExpandBattlefield2Scenario = async (match: MatchSetup) => {
+    const drawCards = [
+        cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], STRATEGIC_DEFENSE_CARD_ID),
+        cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], GAIN_UPPER_HAND_CARD_ID),
+    ];
+    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
+        const hostAbilityLevels = asRecord(host.abilityLevels);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            deck: drawCards,
+            discard: [],
+            abilities: Array.isArray(host.abilities)
+                ? (host.abilities as JsonRecord[]).map((ability) => (
+                    ability.id === 'expand-battlefield'
+                        ? { ...structuredClone(EXPAND_BATTLEFIELD_2 as unknown as JsonRecord), id: 'expand-battlefield' }
+                        : ability
+                ))
+                : host.abilities,
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            abilityLevels: {
+                ...hostAbilityLevels,
+                'expand-battlefield': 2,
+            },
+            damageShields: [],
+        };
+        players['1'] = {
+            ...guest,
+            hand: [],
+            discard: [],
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '0',
+            phase: 'offensiveRoll',
+            dice: buildDiceForValues('zhanshujia-dice', [2, 3, 4, 5, 6], {
+                2: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                3: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                4: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                5: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                6: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+            }),
+            rollCount: 1,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
+            pendingDamage: undefined,
+            pendingBonusDiceSettlement: undefined,
+            extraAttackInProgress: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
+const setupWarMongerScenario = async (
+    match: MatchSetup,
+    drawCard: JsonRecord,
+) => {
+    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
+        const hostAbilityLevels = asRecord(host.abilityLevels);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            deck: [drawCard],
+            discard: [],
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            abilityLevels: {
+                ...hostAbilityLevels,
+                'war-monger': 1,
+            },
+            upgradeCardByAbilityId: {},
+        };
+        players['1'] = {
+            ...guest,
+            hand: [],
+            discard: [],
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '0',
+            phase: 'offensiveRoll',
+            dice: buildDiceForValues('zhanshujia-dice', [1, 4, 4, 4, 2], {
+                1: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                2: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                4: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+            }),
+            rollCount: 1,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
+            pendingBonusDiceSettlement: undefined,
+            pendingDamage: undefined,
+            extraAttackInProgress: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
+const setupWarMonger2UpgradeCardScenario = async (
+    match: MatchSetup,
+    upgradeCard: JsonRecord,
+) => {
+    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
+
+        players['0'] = {
+            ...host,
+            hand: [upgradeCard],
+            deck: [],
+            discard: [],
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            abilityLevels: {
+                ...asRecord(host.abilityLevels),
+                'war-monger': 1,
+            },
+            upgradeCardByAbilityId: {},
+        };
+        players['1'] = {
+            ...guest,
+            hand: [],
+            deck: [],
+            discard: [],
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '0',
+            phase: 'main1',
+            rollConfirmed: true,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
+            pendingBonusDiceSettlement: undefined,
+            pendingDamage: undefined,
+            extraAttackInProgress: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'main1',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
 const playHeftyUntilLoot = async (
     match: MatchSetup,
     heftyCard: JsonRecord,
@@ -2154,6 +2805,114 @@ const playHeftyUntilLoot = async (
     }
 
     throw new Error('8 次真实打出干票大的后仍未命中奖励骰战利品分支');
+};
+
+const playBlusterUntilCutlass = async (
+    match: MatchSetup,
+    blusterCard: JsonRecord,
+    drawCards: JsonRecord[],
+    testInfo: TestInfo,
+): Promise<void> => {
+    const overlay = match.guestPage.getByTestId('bonus-die-overlay');
+
+    for (let attempt = 1; attempt <= 12; attempt += 1) {
+        await setupBlusterScenario(match, blusterCard, drawCards);
+        await dismissCardSpotlightIfPresent(match.hostPage);
+        await dismissCardSpotlightIfPresent(match.guestPage);
+
+        await waitForHandCardVisualReady(match.guestPage, BLUSTER_CARD_ID);
+        await dispatchDiceThroneCommand(match.guestPage, {
+            type: 'PLAY_CARD',
+            playerId: '1',
+            payload: { cardId: BLUSTER_CARD_ID },
+        });
+
+        await dismissCardSpotlightIfPresent(match.guestPage);
+        await expect(overlay).toBeVisible({ timeout: 10000 });
+        await expect.poll(async () => {
+            const core = await readServerCore(match.matchId, match.guestPage);
+            const settlement = asRecord(core.pendingBonusDiceSettlement);
+            const dice = Array.isArray(settlement.dice) ? settlement.dice as JsonRecord[] : [];
+            return dice.length;
+        }, {
+            timeout: 10000,
+            message: '等待虚张声势奖励骰结算状态出现',
+        }).toBe(1);
+
+        const coreWithSettlement = await readServerCore(match.matchId, match.guestPage);
+        const settlement = asRecord(coreWithSettlement.pendingBonusDiceSettlement);
+        const dice = Array.isArray(settlement.dice) ? settlement.dice as JsonRecord[] : [];
+        const rolledFace = String(asRecord(dice[0]).face ?? '');
+
+        if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS) {
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '95-guest-bluster-bonus-die-cutlass');
+        }
+
+        await overlay.click({ force: true });
+        await expect(overlay).toBeHidden({ timeout: 5000 });
+        await waitForDiscardContains(match.matchId, match.guestPage, '1', BLUSTER_CARD_ID);
+
+        if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS) {
+            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 48);
+            await waitForHandCount(match.matchId, match.guestPage, '1', 0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '96-host-bluster-cutlass-applied');
+            return;
+        }
+
+        if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.LOOT) {
+            await waitForHandCount(match.matchId, match.guestPage, '1', 2);
+        } else if (rolledFace === CURSED_PIRATE_DICE_FACE_IDS.SKULL) {
+            await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.POWDER_KEG, 1);
+            await waitForHandCount(match.matchId, match.guestPage, '1', 0);
+        }
+    }
+
+    throw new Error('12 次真实打出虚张声势后仍未命中奖励骰弯刀分支');
+};
+
+const playSharkBaitModifier = async (
+    match: MatchSetup,
+    sharkBaitCard: JsonRecord,
+    testInfo: TestInfo,
+): Promise<void> => {
+    await setupSharkBaitScenario(match, sharkBaitCard);
+    await dismissCardSpotlightIfPresent(match.hostPage);
+    await dismissCardSpotlightIfPresent(match.guestPage);
+
+    await waitForHandCardVisualReady(match.guestPage, SHARK_BAIT_CARD_ID);
+    await dispatchDiceThroneCommand(match.guestPage, {
+        type: 'PLAY_CARD',
+        playerId: '1',
+        payload: { cardId: SHARK_BAIT_CARD_ID },
+    });
+
+    const modifierBadge = match.guestPage.getByTestId('active-modifier-badge');
+    await expect(modifierBadge).toBeVisible({ timeout: 10000 });
+
+    await expect.poll(async () => {
+        const core = await readServerCore(match.matchId, match.guestPage);
+        const pendingAttack = asRecord(core.pendingAttack);
+        const guest = asRecord(asRecordMap(core.players)['1']);
+        const guestDiscard = Array.isArray(guest.discard) ? guest.discard as JsonRecord[] : [];
+        return {
+            attackerId: pendingAttack.attackerId ?? null,
+            defenderId: pendingAttack.defenderId ?? null,
+            sourceAbilityId: pendingAttack.sourceAbilityId ?? null,
+            bonusDamage: Number(pendingAttack.bonusDamage ?? 0),
+            attackModifierBonusDamage: Number(pendingAttack.attackModifierBonusDamage ?? 0),
+            discardIds: guestDiscard.map(card => card.id),
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        attackerId: '1',
+        defenderId: '0',
+        sourceAbilityId: 'test-attack',
+        bonusDamage: 2,
+        attackModifierBonusDamage: 2,
+        discardIds: expect.arrayContaining([SHARK_BAIT_CARD_ID]),
+    });
+
+    await saveEvidenceScreenshot(match.guestPage, testInfo, '97-guest-shark-bait-modifier-active');
+    await saveEvidenceScreenshot(match.hostPage, testInfo, '98-host-shark-bait-bonus-damage-applied');
 };
 
 const playGainUpperHandUntilMedal = async (
@@ -2450,6 +3209,80 @@ const playWarMonger2BonusBranch = async (
     throw new Error(`战争贩子 II 奖励骰分支状态未达预期: ${JSON.stringify(lastSnapshot)}`);
 };
 
+const playWarMongerBonusBranch = async (
+    match: MatchSetup,
+    drawCard: JsonRecord,
+    testInfo: TestInfo,
+): Promise<{
+    extraRollValue: number;
+    hostHandIds: string[];
+    hostTacticalAdvantage: number;
+    guestHp: number;
+    extraAttackAttackerId: string | null;
+    pendingAttackSourceId: string | null;
+}> => {
+    const overlay = match.hostPage.getByTestId('bonus-die-overlay');
+    const warMongerSlot = match.hostPage.locator('[data-testid="player-board-surface"] [data-ability-slot="sky"]').first();
+    await setupWarMongerScenario(match, drawCard);
+    await dismissCardSpotlightIfPresent(match.hostPage);
+    await dismissCardSpotlightIfPresent(match.guestPage);
+
+    await expect(warMongerSlot).toHaveAttribute('data-resolved-ability-id', 'war-monger', { timeout: 10000 });
+    await expect(warMongerSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+    await warMongerSlot.click();
+
+    await waitForPendingAttack(match.matchId, match.hostPage, {
+        attackerId: '0',
+        defenderId: '1',
+        sourceAbilityId: 'war-monger',
+    });
+
+    const advanceButton = match.hostPage.locator('[data-tutorial-id="advance-phase-button"]');
+    await expect(advanceButton).toBeEnabled({ timeout: 10000 });
+    await advanceButton.click();
+
+    await expect(overlay).toBeVisible({ timeout: 10000 });
+    await saveEvidenceScreenshot(match.hostPage, testInfo, '78-host-war-monger-bonus-die-branch');
+    await overlay.click({ force: true });
+    await expect(overlay).toBeHidden({ timeout: 5000 });
+
+    const deadline = Date.now() + 5000;
+    let lastSnapshot: JsonRecord | null = null;
+    while (Date.now() < deadline) {
+        const { core } = await readServerRoot(match.matchId, match.hostPage);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostHand = Array.isArray(host.hand) ? host.hand as JsonRecord[] : [];
+        const hostTokens = asRecord(host.tokens);
+        const guestResources = asRecord(guest.resources);
+        const extraAttack = asRecord(core.extraAttackInProgress);
+        const pendingAttack = asRecord(core.pendingAttack);
+        const extraRoll = asRecord(pendingAttack.extraRoll);
+        lastSnapshot = {
+            handIds: hostHand.map(card => card.id),
+            extraAttackAttackerId: extraAttack.attackerId ?? null,
+            pendingAttack,
+            hostTacticalAdvantage: hostTokens[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? 0,
+            guestHp: guestResources[RESOURCE_IDS.HP] ?? 0,
+        };
+        const extraRollValue = extraRoll.value;
+        if (typeof extraRollValue === 'number') {
+            return {
+                extraRollValue,
+                hostHandIds: hostHand.map(card => card.id as string),
+                hostTacticalAdvantage: Number(hostTokens[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? 0),
+                guestHp: Number(guestResources[RESOURCE_IDS.HP] ?? 0),
+                extraAttackAttackerId: typeof extraAttack.attackerId === 'string' ? extraAttack.attackerId : null,
+                pendingAttackSourceId: typeof pendingAttack.sourceAbilityId === 'string' ? pendingAttack.sourceAbilityId : null,
+            };
+        }
+        await match.hostPage.waitForTimeout(250);
+    }
+
+    throw new Error(`战争贩子奖励骰分支状态未达预期: ${JSON.stringify(lastSnapshot)}`);
+};
+
 const playWeighAnchorUntilSkull = async (
     match: MatchSetup,
     weighAnchorCard: JsonRecord,
@@ -2739,7 +3572,9 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await saveEvidenceScreenshot(match.guestPage, testInfo, '04-guest-gameplay-cursed-pirate-board-tip-hud');
 
             const hostCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], HOST_CARD_ID);
+            const hostCommonCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], COMMON_UNEXPECTED_CARD_ID);
             const guestCard = cloneCard(CURSED_PIRATE_CARDS as unknown as JsonRecord[], GUEST_CARD_ID);
+            const guestCommonCard = cloneCard(CURSED_PIRATE_CARDS as unknown as JsonRecord[], COMMON_UNEXPECTED_CARD_ID);
             await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
                 const root = asRecord(state.G ?? state);
                 const core = asRecord(root.core);
@@ -2752,12 +3587,12 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
 
                 players['0'] = {
                     ...host,
-                    hand: [hostCard],
+                    hand: [hostCard, hostCommonCard],
                     resources: { ...hostResources, [RESOURCE_IDS.CP]: 5 },
                 };
                 players['1'] = {
                     ...guest,
-                    hand: [guestCard],
+                    hand: [guestCard, guestCommonCard],
                     resources: { ...guestResources, [RESOURCE_IDS.CP]: 5 },
                 };
 
@@ -2776,12 +3611,81 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             });
 
             await waitForHandCardVisualReady(match.hostPage, HOST_CARD_ID);
+            await waitForHandCardVisualReady(match.hostPage, COMMON_UNEXPECTED_CARD_ID);
             await waitForHandCardVisualReady(match.guestPage, GUEST_CARD_ID);
+            await waitForHandCardVisualReady(match.guestPage, COMMON_UNEXPECTED_CARD_ID);
             await expect(match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${HOST_CARD_ID}"]`).first()).toBeVisible({ timeout: 10000 });
+            await expect(match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${COMMON_UNEXPECTED_CARD_ID}"]`).first()).toBeVisible({ timeout: 10000 });
             await expect(match.guestPage.locator(`[data-testid="hand-area"] [data-card-id="${GUEST_CARD_ID}"]`).first()).toBeVisible({ timeout: 10000 });
+            await expect(match.guestPage.locator(`[data-testid="hand-area"] [data-card-id="${COMMON_UNEXPECTED_CARD_ID}"]`).first()).toBeVisible({ timeout: 10000 });
 
             await saveEvidenceScreenshot(match.hostPage, testInfo, '05-host-zhanshujia-hand-card-atlas');
             await saveEvidenceScreenshot(match.guestPage, testInfo, '06-guest-cursed-pirate-hand-card-atlas');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应展示并结算战术家升级牌的共享替换链', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+        const warMongerUpgradeCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], WAR_MONGER_2_UPGRADE_CARD_ID);
+
+        try {
+            await setupWarMonger2UpgradeCardScenario(match, warMongerUpgradeCard);
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const warMongerSlot = match.hostPage
+                .getByTestId('player-board-surface')
+                .locator('[data-ability-slot="sky"]')
+                .first();
+
+            await waitForHandCardVisualReady(match.hostPage, WAR_MONGER_2_UPGRADE_CARD_ID);
+            await expect(warMongerSlot).toHaveAttribute('data-base-ability-id', 'war-monger', { timeout: 10000 });
+            await expect(warMongerSlot).toHaveAttribute('data-upgrade-card-interactive', 'false', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '76-host-war-monger-upgrade-card-before-play');
+
+            await dispatchDiceThroneCommand(match.hostPage, {
+                type: 'PLAY_UPGRADE_CARD',
+                playerId: '0',
+                payload: {
+                    cardId: WAR_MONGER_2_UPGRADE_CARD_ID,
+                    targetAbilityId: 'war-monger',
+                },
+            });
+
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await waitForHandCount(match.matchId, match.hostPage, '0', 0);
+
+            await expect.poll(async () => {
+                const core = await readServerCore(match.matchId, match.hostPage);
+                const players = asRecordMap(core.players);
+                const host = asRecord(players['0']);
+                const resources = asRecord(host.resources);
+                const abilityLevels = asRecord(host.abilityLevels);
+                const upgradeCardByAbilityId = asRecord(host.upgradeCardByAbilityId);
+                const warMongerUpgrade = asRecord(upgradeCardByAbilityId['war-monger']);
+                const discard = Array.isArray(host.discard) ? host.discard as JsonRecord[] : [];
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    warMongerLevel: abilityLevels['war-monger'],
+                    upgradeCardId: warMongerUpgrade.cardId,
+                    discardIds: discard.map(card => card.id),
+                };
+            }, {
+                timeout: 10000,
+                message: '等待战争贩子 II 升级牌真实写入 abilityLevels / upgradeCardByAbilityId',
+            }).toEqual({
+                cp: 3,
+                warMongerLevel: 2,
+                upgradeCardId: WAR_MONGER_2_UPGRADE_CARD_ID,
+                discardIds: [],
+            });
+
+            await expect(warMongerSlot).toHaveAttribute('data-upgrade-card-interactive', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '77-host-war-monger-upgrade-card-applied');
         } finally {
             await cleanupDTMatch(match);
         }
@@ -3086,9 +3990,9 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '20-host-countermeasures-defense-before-resolve');
 
-            await dispatchDiceThroneCommand(match.guestPage, {
+            await dispatchDiceThroneCommand(match.hostPage, {
                 type: 'ADVANCE_PHASE',
-                playerId: '1',
+                playerId: '0',
                 payload: {},
             });
             await waitForAttackResolved(match.matchId, match.hostPage);
@@ -3114,9 +4018,9 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await expect(match.guestPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
             await saveEvidenceScreenshot(match.guestPage, testInfo, '22-guest-still-wet-behind-ears-defense-before-resolve');
 
-            await dispatchDiceThroneCommand(match.hostPage, {
+            await dispatchDiceThroneCommand(match.guestPage, {
                 type: 'ADVANCE_PHASE',
-                playerId: '0',
+                playerId: '1',
                 payload: {},
             });
             await waitForAttackResolved(match.matchId, match.guestPage);
@@ -3165,6 +4069,305 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await waitForStatusStack(match.matchId, match.hostPage, '1', STATUS_IDS.TARGETED, 1);
             await waitForStatusStack(match.matchId, match.hostPage, '1', STATUS_IDS.BIND, 1);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '59-host-high-ground-pre-defense-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应通过玩家板槽位触发并进入军刀突刺的攻击链', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await setupSabreThrustScenario(match);
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const sabreThrustSlot = match.hostPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="fist"]')
+                .first();
+            await expect(sabreThrustSlot).toHaveAttribute('data-base-ability-id', 'sabre-thrust', { timeout: 10000 });
+            await expect(sabreThrustSlot).toHaveAttribute('data-resolved-ability-id', 'sabre-thrust-3', { timeout: 10000 });
+            await expect(sabreThrustSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '82-host-sabre-thrust-offensive-entry');
+
+            await sabreThrustSlot.click();
+            await waitForPendingAttack(match.matchId, match.hostPage, {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'sabre-thrust-3',
+            });
+            await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await dispatchDiceThroneCommand(match.hostPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '0',
+                payload: {},
+            });
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    defenderId: pendingAttack.defenderId ?? null,
+                    defenseAbilityId: pendingAttack.defenseAbilityId ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'defensiveRoll',
+                defenderId: '1',
+                defenseAbilityId: 'still-wet-behind-ears',
+            });
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                root.core = {
+                    ...core,
+                    dice: buildDiceForValues('cursed_pirate-dice', [4, 4, 4, 4, 4], {
+                        4: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
+                    }),
+                    rollCount: 1,
+                    rollLimit: 1,
+                    rollDiceCount: 5,
+                    rollConfirmed: true,
+                };
+                return state;
+            });
+            await dismissDefenseShowcaseIfPresent(match.guestPage);
+            await expect(match.guestPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '83-guest-sabre-thrust-defense-entry');
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '1',
+                payload: {},
+            });
+            await waitForAttackResolved(match.matchId, match.guestPage);
+            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 50);
+            await waitForResourceValue(match.matchId, match.guestPage, '1', RESOURCE_IDS.HP, 46);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '84-host-sabre-thrust-resolved');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应通过玩家板槽位触发并结算战略转移 II 的主分支', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await setupStrategicShift2Scenario(match);
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const strategicShiftSlot = match.hostPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="calm"]')
+                .first();
+            await expect(strategicShiftSlot).toHaveAttribute('data-base-ability-id', 'strategic-shift', { timeout: 10000 });
+            await expect(strategicShiftSlot).toHaveAttribute('data-resolved-ability-id', 'strategic-shift-2-main', { timeout: 10000 });
+            await expect(strategicShiftSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '85-host-strategic-shift-2-entry');
+
+            await strategicShiftSlot.click();
+            const variantModal = match.hostPage.locator('#modal-root');
+            await expect(variantModal).toContainText(/选择发动变体/i, { timeout: 10000 });
+            await expect(variantModal).toContainText(/战略转移 II（4个勋章）/i, { timeout: 10000 });
+            await expect(variantModal).toContainText(/战略转移 II（3个勋章）/i, { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '86-host-strategic-shift-2-variant-choice');
+
+            await variantModal.getByRole('button', { name: /战略转移 II（4个勋章）/i }).click();
+            await waitForPendingAttack(match.matchId, match.hostPage, {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'strategic-shift-2-main',
+            });
+            await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await dispatchDiceThroneCommand(match.hostPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '0',
+                payload: {},
+            });
+
+            await waitForAttackResolved(match.matchId, match.hostPage);
+            await waitForTokenStack(match.matchId, match.hostPage, '0', TOKEN_IDS.TACTICAL_ADVANTAGE, 5);
+            await waitForStatusStack(match.matchId, match.hostPage, '1', STATUS_IDS.BIND, 1);
+            await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.HP, 50);
+            await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.HP, 45);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '87-host-strategic-shift-2-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应通过玩家板槽位触发并结算摇鼓运动 II 的主分支', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await setupDrumMovement2Scenario(match);
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const drumMovementSlot = match.hostPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="lotus"]')
+                .first();
+            await expect(drumMovementSlot).toHaveAttribute('data-base-ability-id', 'drum-movement', { timeout: 10000 });
+            await expect(drumMovementSlot).toHaveAttribute('data-resolved-ability-id', 'drum-movement-2-main', { timeout: 10000 });
+            await expect(drumMovementSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '88-host-drum-movement-2-entry');
+
+            await drumMovementSlot.click();
+            await waitForPendingAttack(match.matchId, match.hostPage, {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'drum-movement-2-main',
+            });
+            await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await dispatchDiceThroneCommand(match.hostPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '0',
+                payload: {},
+            });
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    defenderId: pendingAttack.defenderId ?? null,
+                    defenseAbilityId: pendingAttack.defenseAbilityId ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'defensiveRoll',
+                defenderId: '1',
+                defenseAbilityId: 'still-wet-behind-ears',
+            });
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                root.core = {
+                    ...core,
+                    dice: buildDiceForValues('cursed_pirate-dice', [4, 4, 4, 4, 4], {
+                        4: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
+                    }),
+                    rollCount: 1,
+                    rollLimit: 1,
+                    rollDiceCount: 5,
+                    rollConfirmed: true,
+                };
+                return state;
+            });
+            await dismissDefenseShowcaseIfPresent(match.guestPage);
+            await expect(match.guestPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '89-guest-drum-movement-2-defense-entry');
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '1',
+                payload: {},
+            });
+            await waitForAttackResolved(match.matchId, match.guestPage);
+            await waitForTokenStack(match.matchId, match.guestPage, '0', TOKEN_IDS.TACTICAL_ADVANTAGE, 1);
+            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.BIND, 1);
+            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 50);
+            await waitForResourceValue(match.matchId, match.guestPage, '1', RESOURCE_IDS.HP, 43);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '90-host-drum-movement-2-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应通过玩家板槽位触发并结算开拓战场 II 的大顺主分支', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await setupExpandBattlefield2Scenario(match);
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const expandBattlefieldSlot = match.hostPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="lightning"]')
+                .first();
+            await expect(expandBattlefieldSlot).toHaveAttribute('data-base-ability-id', 'expand-battlefield', { timeout: 10000 });
+            await expect(expandBattlefieldSlot).toHaveAttribute('data-resolved-ability-id', 'expand-battlefield-2-large-straight', { timeout: 10000 });
+            await expect(expandBattlefieldSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '91-host-expand-battlefield-2-entry');
+
+            await expandBattlefieldSlot.click();
+            const variantModal = match.hostPage.locator('#modal-root');
+            await expect(variantModal).toContainText(/选择发动变体/i, { timeout: 10000 });
+            await expect(variantModal).toContainText(/开拓战场 II/i, { timeout: 10000 });
+            await expect(variantModal).toContainText(/大顺子/i, { timeout: 10000 });
+            await expect(variantModal).toContainText(/军刀.*旗帜.*勋章/i, { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '92-host-expand-battlefield-2-variant-choice');
+
+            await variantModal.getByRole('button', { name: /开拓战场 II.*大顺子/i }).click();
+            await waitForPendingAttack(match.matchId, match.hostPage, {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'expand-battlefield-2-large-straight',
+            });
+            await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await dispatchDiceThroneCommand(match.hostPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '0',
+                payload: {},
+            });
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    defenderId: pendingAttack.defenderId ?? null,
+                    defenseAbilityId: pendingAttack.defenseAbilityId ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'defensiveRoll',
+                defenderId: '1',
+                defenseAbilityId: 'still-wet-behind-ears',
+            });
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                root.core = {
+                    ...core,
+                    dice: buildDiceForValues('cursed_pirate-dice', [4, 4, 4, 4, 4], {
+                        4: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
+                    }),
+                    rollCount: 1,
+                    rollLimit: 1,
+                    rollDiceCount: 5,
+                    rollConfirmed: true,
+                };
+                return state;
+            });
+            await dismissDefenseShowcaseIfPresent(match.guestPage);
+            await expect(match.guestPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '93-guest-expand-battlefield-2-defense-entry');
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '1',
+                payload: {},
+            });
+            await waitForAttackResolved(match.matchId, match.guestPage);
+            await waitForTokenStack(match.matchId, match.guestPage, '0', TOKEN_IDS.TACTICAL_ADVANTAGE, 3);
+            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.BIND, 1);
+            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 50);
+            await waitForResourceValue(match.matchId, match.guestPage, '1', RESOURCE_IDS.HP, 41);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '94-host-expand-battlefield-2-applied');
         } finally {
             await cleanupDTMatch(match);
         }
@@ -3612,6 +4815,43 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
+    test('真实入口应命中并结算虚张声势的弯刀分支', async ({ browser }, testInfo) => {
+        test.setTimeout(360000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            const blusterCard = cloneCard(CURSED_PIRATE_CARDS as unknown as JsonRecord[], BLUSTER_CARD_ID);
+            const drawCards = [
+                cloneCard(CURSED_PIRATE_CARDS as unknown as JsonRecord[], GO_FISH_CARD_ID),
+                cloneCard(CURSED_PIRATE_CARDS as unknown as JsonRecord[], CROWS_NEST_CARD_ID),
+            ];
+            await playBlusterUntilCutlass(match, blusterCard, drawCards, testInfo);
+
+            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 48);
+            await waitForDiscardContains(match.matchId, match.guestPage, '1', BLUSTER_CARD_ID);
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应展示并写入诱饵的攻击修正加伤', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            const sharkBaitCard = cloneCard(CURSED_PIRATE_CARDS as unknown as JsonRecord[], SHARK_BAIT_CARD_ID);
+            await playSharkBaitModifier(match, sharkBaitCard, testInfo);
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实入口应展示并结算诅咒卡牌的自伤抽牌分支', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -3863,6 +5103,33 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 expect(branch.guestHp).toBe(44);
             }
             await saveEvidenceScreenshot(match.hostPage, testInfo, '30-host-war-monger-2-branch-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应展示并结算战争贩子的奖励骰分支与额外进攻阶段', async ({ browser }, testInfo) => {
+        test.setTimeout(360000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            const drawCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], STRATEGIC_DEFENSE_CARD_ID);
+            const branch = await playWarMongerBonusBranch(match, drawCard, testInfo);
+
+            expect(branch.pendingAttackSourceId).toBe('war-monger');
+            if (branch.extraRollValue === 6) {
+                expect(branch.hostHandIds).toContain(STRATEGIC_DEFENSE_CARD_ID);
+            } else if (branch.extraRollValue === 4 || branch.extraRollValue === 5) {
+                expect(branch.hostTacticalAdvantage).toBe(5);
+            } else {
+                expect(branch.guestHp).toBe(45);
+            }
+
+            await finishWarMongerDefenseAndWaitForExtraAttack(match);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '79-host-war-monger-extra-attack-phase');
         } finally {
             await cleanupDTMatch(match);
         }
@@ -4193,6 +5460,152 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await saveEvidenceScreenshot(hostPage, testInfo, '43-four-player-merciless-curse-attacker-choice');
 
             await expect(defenderFrontPage.getByTestId('dt-defender-choice-panel')).toHaveCount(0);
+        } finally {
+            await cleanupDTMatch(setup);
+        }
+    });
+
+    test('4 人真实入口应展示并结算地毯式轰炸的双敌目标链', async ({ browser }, testInfo) => {
+        test.setTimeout(420000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupNewHeroFourPlayerMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            const { matchId, hostPage, players } = setup;
+            const zhanshujiaPage = players[1].page;
+
+            await applyOnlineMatchState(matchId, zhanshujiaPage, buildCarpetBombingFourPlayerState);
+            await expect.poll(async () => {
+                const root = await readServerRoot(matchId, zhanshujiaPage);
+                return root.sys.phase ?? root.core.phase ?? null;
+            }, { timeout: 10000 }).toBe('offensiveRoll');
+
+            const carpetBombingSlot = zhanshujiaPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="chi"]')
+                .first();
+            await expect(carpetBombingSlot).toHaveAttribute('data-resolved-ability-id', 'carpet-bombing', { timeout: 10000 });
+            await expect(carpetBombingSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await carpetBombingSlot.click();
+
+            await waitForPendingAttack(matchId, zhanshujiaPage, {
+                attackerId: '1',
+                sourceAbilityId: 'carpet-bombing',
+            });
+
+            const advanceButton = zhanshujiaPage.locator('[data-tutorial-id="advance-phase-button"]');
+            await expect(advanceButton).toBeEnabled({ timeout: 10000 });
+            await advanceButton.click();
+            await expect.poll(async () => {
+                const root = await readServerRoot(matchId, zhanshujiaPage);
+                return root.sys.phase ?? root.core.phase ?? null;
+            }, { timeout: 10000 }).toBe('targetingRoll');
+
+            const targetingRollButton = zhanshujiaPage.locator('[data-tutorial-id="dice-roll-button"]');
+            const targetingConfirmButton = zhanshujiaPage.locator('[data-tutorial-id="dice-confirm-button"]');
+            await expect(targetingRollButton).toBeEnabled({ timeout: 10000 });
+            await targetingRollButton.click();
+            await expect(targetingConfirmButton).toBeEnabled({ timeout: 10000 });
+            await targetingConfirmButton.click();
+            await expect(advanceButton).toBeEnabled({ timeout: 10000 });
+            await advanceButton.click();
+
+            let targetingSnapshot: {
+                phase: unknown;
+                interactionKind: unknown;
+                interactionType: unknown;
+                interactionPlayerId: unknown;
+                defenderId: unknown;
+            } | null = null;
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(matchId, zhanshujiaPage);
+                const interactionCurrent = asRecord(asRecord(sys.interaction).current);
+                const interactionData = asRecord(interactionCurrent.data);
+                targetingSnapshot = {
+                    phase: sys.phase ?? core.phase ?? null,
+                    interactionKind: interactionCurrent.kind ?? null,
+                    interactionType: interactionData.type ?? null,
+                    interactionPlayerId: interactionCurrent.playerId ?? null,
+                    defenderId: asRecord(core.pendingAttack).defenderId ?? null,
+                };
+                return Boolean(
+                    targetingSnapshot.interactionKind === 'dt:defender-choice'
+                    || (
+                        targetingSnapshot.interactionKind === 'dt:card-interaction'
+                        && targetingSnapshot.interactionType === 'selectPlayer'
+                    )
+                    || targetingSnapshot.defenderId
+                );
+            }, { timeout: 10000 }).toBe(true);
+
+            if (targetingSnapshot?.interactionKind === 'dt:defender-choice') {
+                const chooserPlayerId = String(targetingSnapshot.interactionPlayerId ?? '');
+                const chooserPage = setup.players[Number(chooserPlayerId)]?.page;
+                if (!chooserPage) {
+                    throw new Error(`地毯式轰炸 targetingRoll 选择者页缺失: ${JSON.stringify(targetingSnapshot)}`);
+                }
+
+                await expect(chooserPage.getByTestId('dt-defender-choice-panel')).toBeVisible({ timeout: 10000 });
+                await expect(chooserPage.getByTestId('dt-defender-choice-option-0')).toBeVisible({ timeout: 10000 });
+                await expect(chooserPage.getByTestId('dt-defender-choice-option-2')).toBeVisible({ timeout: 10000 });
+                await expect(chooserPage.getByTestId('dt-defender-choice-option-3')).toHaveCount(0);
+                await chooserPage.getByTestId('dt-defender-choice-option-0').click();
+            }
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(matchId, zhanshujiaPage);
+                const interactionCurrent = asRecord(asRecord(sys.interaction).current);
+                const interactionData = asRecord(interactionCurrent.data);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    interactionKind: interactionCurrent.kind ?? null,
+                    interactionType: interactionData.type ?? null,
+                    interactionPlayerId: interactionCurrent.playerId ?? null,
+                    defenderId: asRecord(core.pendingAttack).defenderId ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                interactionKind: 'dt:card-interaction',
+                interactionType: 'selectPlayer',
+                interactionPlayerId: '1',
+            });
+
+            await expect(zhanshujiaPage.getByTestId('dt-player-target-0')).toBeVisible({ timeout: 10000 });
+            await expect(zhanshujiaPage.getByTestId('dt-player-target-2')).toBeVisible({ timeout: 10000 });
+            await expect(zhanshujiaPage.getByTestId('dt-player-target-3')).toHaveCount(0);
+            await saveEvidenceScreenshot(zhanshujiaPage, testInfo, '80-player2-carpet-bombing-target-choice');
+
+            await zhanshujiaPage.getByTestId('dt-player-target-0').click();
+            await zhanshujiaPage.getByTestId('dt-player-target-2').click();
+            await zhanshujiaPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(matchId, hostPage);
+                const playersMap = asRecordMap(core.players);
+                const player0 = asRecord(playersMap['0']);
+                const player2 = asRecord(playersMap['2']);
+                const player3 = asRecord(playersMap['3']);
+                const resources0 = asRecord(player0.resources);
+                const resources2 = asRecord(player2.resources);
+                const resources3 = asRecord(player3.resources);
+                const teamHealth = asRecord(core.teamHealth);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    teamA: Number(teamHealth.A ?? 0),
+                    player0Hp: Number(resources0[RESOURCE_IDS.HP] ?? 0),
+                    player2Hp: Number(resources2[RESOURCE_IDS.HP] ?? 0),
+                    player3Hp: Number(resources3[RESOURCE_IDS.HP] ?? 0),
+                    hasInteraction: Boolean(asRecord(asRecord(sys.interaction).current).id),
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                teamA: 46,
+                player0Hp: 46,
+                player2Hp: 46,
+                player3Hp: 50,
+                hasInteraction: false,
+            });
+
+            await saveEvidenceScreenshot(zhanshujiaPage, testInfo, '81-player2-carpet-bombing-applied');
         } finally {
             await cleanupDTMatch(setup);
         }

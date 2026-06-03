@@ -7,7 +7,7 @@ import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PromptOverlay } from './PromptOverlay';
 import { UI_Z_INDEX } from '../../../core';
 import { SMASHUP_CARD_BACK } from '../domain/ids';
-import { getTitanDef, resolveCardName } from '../data/cards';
+import { getCardDef, getTitanDef, resolveCardName } from '../data/cards';
 import { MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from '../domain/types';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
 
@@ -27,6 +27,9 @@ function getTimeBoxCounterLabel(titan: TitanState): string | null {
 
 type Props = {
     deckCount: number;
+    deckQueryEnabled?: boolean;
+    deckCards?: CardInstance[];
+    deckFactions?: string[];
     madnessSupplyCount?: number;
     discard: CardInstance[];
     isMyTurn: boolean;
@@ -60,6 +63,9 @@ type Props = {
 
 export const DeckDiscardZone: React.FC<Props> = ({
     deckCount,
+    deckQueryEnabled = false,
+    deckCards = [],
+    deckFactions = [],
     madnessSupplyCount,
     discard,
     isMyTurn,
@@ -84,6 +90,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
     focusedTitanPrompt = false,
 }) => {
     const { t } = useTranslation('game-smashup');
+    const [showDeck, setShowDeck] = useState(false);
     const [showDiscard, setShowDiscard] = useState(false);
     const clampedMadnessSupplyCount = typeof madnessSupplyCount === 'number'
         ? Math.max(0, Math.min(MADNESS_DECK_SIZE, madnessSupplyCount))
@@ -93,6 +100,42 @@ export const DeckDiscardZone: React.FC<Props> = ({
     const labelMinHeight = compactLayout ? '24px' : '20px';
     const labelFontSize = compactLayout ? '11px' : '10px';
     const titanAbilityBadgeFontSize = compactLayout ? '10px' : '9px';
+
+    const aggregatedDeckCards = useMemo(() => {
+        if (!deckQueryEnabled || deckCards.length === 0) return [];
+
+        const factionOrder = new Map(deckFactions.map((factionId, index) => [factionId, index] as const));
+        const grouped = new Map<string, { uid: string; defId: string; count: number; factionOrder: number; name: string }>();
+
+        for (const card of deckCards) {
+            const cardDef = getCardDef(card.defId);
+            const existing = grouped.get(card.defId);
+            const cardFactionOrder = factionOrder.get(cardDef?.faction ?? '') ?? Number.MAX_SAFE_INTEGER;
+            const resolvedName = cardDef ? (resolveCardName(cardDef, t) || card.defId) : card.defId;
+
+            if (existing) {
+                existing.count += 1;
+                continue;
+            }
+
+            grouped.set(card.defId, {
+                uid: `deck-${card.defId}`,
+                defId: card.defId,
+                count: 1,
+                factionOrder: cardFactionOrder,
+                name: resolvedName,
+            });
+        }
+
+        return Array.from(grouped.values())
+            .sort((left, right) => {
+                if (left.factionOrder !== right.factionOrder) return left.factionOrder - right.factionOrder;
+                const nameOrder = left.name.localeCompare(right.name, 'zh-CN');
+                if (nameOrder !== 0) return nameOrder;
+                return left.defId.localeCompare(right.defId);
+            })
+            .map(({ uid, defId, count }) => ({ uid, defId, count }));
+    }, [deckCards, deckFactions, deckQueryEnabled, t]);
 
     // interaction 驱动的弃牌堆选择（僵尸领主等）：自动打开/关闭面板
     const prevAutoOpen = React.useRef(false);
@@ -128,6 +171,10 @@ export const DeckDiscardZone: React.FC<Props> = ({
         onClosePanel?.();
     }, [onSelectCard, onClosePanel]);
 
+    const handleCloseDeck = useCallback(() => {
+        setShowDeck(false);
+    }, []);
+
     // portal 容器 ref，用于点击外部关闭检测
     const portalRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -136,6 +183,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
 
         return {
             title: `${t('ui.discard_pile', { defaultValue: '弃牌堆' })} (${discard.length})`,
+            panelKind: 'discard' as const,
             // 反转顺序：最新弃掉的卡在左边
             cards: [...discard].reverse().map(c => ({ uid: c.uid, defId: c.defId })),
             onClose: handleCloseDiscard,
@@ -149,21 +197,39 @@ export const DeckDiscardZone: React.FC<Props> = ({
         };
     }, [showDiscard, discard, playableCards, selectedUid, onSelectCard, selectHint, t, handleCloseDiscard]);
 
+    const deckDisplayCardsData = useMemo(() => {
+        if (!showDeck || !deckQueryEnabled || aggregatedDeckCards.length === 0) return undefined;
+
+        return {
+            title: `${t('ui.deck', { defaultValue: '牌库' })} (${deckCount})`,
+            panelKind: 'deck' as const,
+            cards: aggregatedDeckCards,
+            onClose: handleCloseDeck,
+        };
+    }, [showDeck, deckQueryEnabled, aggregatedDeckCards, t, deckCount, handleCloseDeck]);
+
     // 点击面板外部关闭弃牌堆查看（interaction 驱动时不关闭，因为用户需要点击基地）
     useEffect(() => {
-        if (!showDiscard) return;
-        if (autoOpenPanel) return; // interaction 模式下不监听外部点击
+        if (!showDeck && !showDiscard) return;
+        if (!showDeck && autoOpenPanel) return; // interaction 模式下不监听外部点击
         const handler = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            // 点击在弃牌堆查看面板内部（含 portal）、弃牌堆按钮、或放大镜遮罩上，不关闭
-            if (target.closest('[data-discard-view-panel]') || target.closest('[data-discard-toggle]') || target.closest('[data-interaction-allow]')) return;
+            // 点击在面板内部（含 portal）、切换按钮、或放大镜遮罩上，不关闭
+            if (
+                target.closest('[data-discard-view-panel]')
+                || target.closest('[data-card-view-panel]')
+                || target.closest('[data-discard-toggle]')
+                || target.closest('[data-deck-toggle]')
+                || target.closest('[data-interaction-allow]')
+            ) return;
             // 额外检查 portal ref（防止 closest 在 portal 中失效）
             if (portalRef.current?.contains(target)) return;
-            setShowDiscard(false);
+            if (showDeck) setShowDeck(false);
+            if (showDiscard && !autoOpenPanel) setShowDiscard(false);
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
-    }, [showDiscard, autoOpenPanel]);
+    }, [showDeck, showDiscard, autoOpenPanel]);
 
     const handleTitanClick = useCallback((titan: TitanState) => {
         if (activatableTitanUids?.has(titan.uid) && onSelectTitan) {
@@ -322,7 +388,16 @@ export const DeckDiscardZone: React.FC<Props> = ({
         >
             <div className="flex items-end gap-3 pointer-events-auto">
                 {/* 牌库 - 左侧 */}
-                <div className="flex flex-col items-center group" data-testid="su-deck-stack">
+                <div
+                    className={`flex flex-col items-center group ${deckQueryEnabled && aggregatedDeckCards.length > 0 ? 'cursor-pointer' : ''}`}
+                    data-testid="su-deck-stack"
+                    data-deck-toggle
+                    onClick={() => {
+                        if (!deckQueryEnabled || aggregatedDeckCards.length === 0) return;
+                        setShowDiscard(false);
+                        setShowDeck(prev => !prev);
+                    }}
+                >
                     <div
                         className="relative aspect-[0.714]"
                         style={{
@@ -357,7 +432,10 @@ export const DeckDiscardZone: React.FC<Props> = ({
                         <div className="absolute inset-0 bg-slate-800 rounded-sm border-2 border-slate-500 shadow-xl overflow-hidden z-10 transition-transform group-hover:-translate-y-2">
                             <CardPreview previewRef={SMASHUP_CARD_BACK} className="w-full h-full" />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                <div className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg">
+                                <div
+                                    className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg"
+                                    data-testid="su-deck-count-badge"
+                                >
                                     <span className="text-white font-black font-mono text-base">{deckCount}</span>
                                 </div>
                             </div>
@@ -446,14 +524,14 @@ export const DeckDiscardZone: React.FC<Props> = ({
             </div>
 
             {/* 弃牌堆查看：复用 PromptOverlay 通用卡牌展示模式，Portal 到 body 避免被手牌区域 stacking context 遮挡 */}
-            {displayCardsData && createPortal(
+            {(deckDisplayCardsData || displayCardsData) && createPortal(
                 <div ref={portalRef}>
                     <PromptOverlay
                         interaction={undefined}
                         dispatch={dispatch}
                         playerID={playerID}
                         playerNames={playerNames}
-                        displayCards={displayCardsData}
+                        displayCards={deckDisplayCardsData ?? displayCardsData}
                     />
                 </div>,
                 document.body,

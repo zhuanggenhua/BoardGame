@@ -33,6 +33,8 @@ export interface FactionMeta {
     icon: LucideIcon | React.FC<any>;
     color: string;
     descriptionKey: string;
+    /** 可选：派系特有机制规则说明（用于派系选择详情面板） */
+    mechanicRule?: FactionMechanicRuleMeta;
     /** 派系实施状态：用于在派系选择页显示“实施中”横幅 */
     implementationStatus?: 'in_progress';
     /** 可选：实施状态提示文案 key */
@@ -49,6 +51,11 @@ export interface FactionMechanicTutorialMeta {
     descriptionKey: string;
 }
 
+export interface FactionMechanicRuleMeta {
+    titleKey: string;
+    descriptionKey: string;
+}
+
 export interface FactionVariantGroup {
     groupId: string;
     icon: FactionMeta['icon'];
@@ -57,6 +64,30 @@ export interface FactionVariantGroup {
 }
 
 const POD_SUFFIX = '_pod';
+
+const FACTION_MECHANIC_RULES = {
+    madness: {
+        titleKey: 'mechanics.madness.title',
+        descriptionKey: 'mechanics.madness.description',
+    },
+    bury: {
+        titleKey: 'mechanics.bury.title',
+        descriptionKey: 'mechanics.bury.description',
+    },
+    duel: {
+        titleKey: 'mechanics.duel.title',
+        descriptionKey: 'mechanics.duel.description',
+    },
+    powerCounters: {
+        titleKey: 'mechanics.powerCounters.title',
+        descriptionKey: 'mechanics.powerCounters.description',
+    },
+} as const satisfies Record<string, FactionMechanicRuleMeta>;
+
+const MADNESS_MECHANIC_RULE = FACTION_MECHANIC_RULES.madness;
+const BURY_MECHANIC_RULE = FACTION_MECHANIC_RULES.bury;
+const DUEL_MECHANIC_RULE = FACTION_MECHANIC_RULES.duel;
+const POWER_COUNTER_MECHANIC_RULE = FACTION_MECHANIC_RULES.powerCounters;
 
 function toFactionGroupId(factionId: string): string {
     return factionId.endsWith(POD_SUFFIX) ? factionId.slice(0, -POD_SUFFIX.length) : factionId;
@@ -88,18 +119,18 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.DINOSAURS_POD, nameKey: 'factions.dinosaurs_pod.name', icon: Bone, color: '#15803d', descriptionKey: 'factions.dinosaurs_pod.description' },
     { id: SMASHUP_FACTION_IDS.ALIENS, nameKey: 'factions.aliens.name', icon: Orbit, color: '#0ea5e9', descriptionKey: 'factions.aliens.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.ALIENS_POD, nameKey: 'factions.aliens_pod.name', icon: Orbit, color: '#0ea5e9', descriptionKey: 'factions.aliens_pod.description' },
-    { id: SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS, nameKey: 'factions.ancient_egyptians.name', icon: Pyramid, color: '#eab308', descriptionKey: 'factions.ancient_egyptians.description', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS_POD, nameKey: 'factions.ancient_egyptians_pod.name', icon: Pyramid, color: '#eab308', descriptionKey: 'factions.ancient_egyptians_pod.description' },
-    { id: SMASHUP_FACTION_IDS.COWBOYS, nameKey: 'factions.cowboys.name', icon: CowboyHatIcon, color: '#92400e', descriptionKey: 'factions.cowboys.description', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.COWBOYS_POD, nameKey: 'factions.cowboys_pod.name', icon: CowboyHatIcon, color: '#92400e', descriptionKey: 'factions.cowboys_pod.description' },
+    { id: SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS, nameKey: 'factions.ancient_egyptians.name', icon: Pyramid, color: '#eab308', descriptionKey: 'factions.ancient_egyptians.description', mechanicRule: BURY_MECHANIC_RULE, locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS_POD, nameKey: 'factions.ancient_egyptians_pod.name', icon: Pyramid, color: '#eab308', descriptionKey: 'factions.ancient_egyptians_pod.description', mechanicRule: BURY_MECHANIC_RULE },
+    { id: SMASHUP_FACTION_IDS.COWBOYS, nameKey: 'factions.cowboys.name', icon: CowboyHatIcon, color: '#92400e', descriptionKey: 'factions.cowboys.description', mechanicRule: DUEL_MECHANIC_RULE, locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.COWBOYS_POD, nameKey: 'factions.cowboys_pod.name', icon: CowboyHatIcon, color: '#92400e', descriptionKey: 'factions.cowboys_pod.description', mechanicRule: DUEL_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.ROBOTS, nameKey: 'factions.robots.name', icon: Bot, color: '#475569', descriptionKey: 'factions.robots.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.ROBOTS_POD, nameKey: 'factions.robots_pod.name', icon: Bot, color: '#475569', descriptionKey: 'factions.robots_pod.description' },
-    { id: SMASHUP_FACTION_IDS.SAMURAI, nameKey: 'factions.samurai.name', icon: Sword, color: '#94a3b8', descriptionKey: 'factions.samurai.description', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.SAMURAI_POD, nameKey: 'factions.samurai_pod.name', icon: Sword, color: '#94a3b8', descriptionKey: 'factions.samurai_pod.description' },
+    { id: SMASHUP_FACTION_IDS.SAMURAI, nameKey: 'factions.samurai.name', icon: Sword, color: '#94a3b8', descriptionKey: 'factions.samurai.description', mechanicRule: DUEL_MECHANIC_RULE, locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.SAMURAI_POD, nameKey: 'factions.samurai_pod.name', icon: Sword, color: '#94a3b8', descriptionKey: 'factions.samurai_pod.description', mechanicRule: DUEL_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.ZOMBIES, nameKey: 'factions.zombies.name', icon: Skull, color: '#10b981', descriptionKey: 'factions.zombies.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.ZOMBIES_POD, nameKey: 'factions.zombies_pod.name', icon: Skull, color: '#10b981', descriptionKey: 'factions.zombies_pod.description' },
-    { id: SMASHUP_FACTION_IDS.VIKINGS, nameKey: 'factions.vikings.name', icon: Axe, color: '#2563eb', descriptionKey: 'factions.vikings.description', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.VIKINGS_POD, nameKey: 'factions.vikings_pod.name', icon: Axe, color: '#2563eb', descriptionKey: 'factions.vikings_pod.description' },
+    { id: SMASHUP_FACTION_IDS.VIKINGS, nameKey: 'factions.vikings.name', icon: Axe, color: '#2563eb', descriptionKey: 'factions.vikings.description', mechanicRule: BURY_MECHANIC_RULE, locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.VIKINGS_POD, nameKey: 'factions.vikings_pod.name', icon: Axe, color: '#2563eb', descriptionKey: 'factions.vikings_pod.description', mechanicRule: BURY_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.WIZARDS, nameKey: 'factions.wizards.name', icon: Wand2, color: '#8b5cf6', descriptionKey: 'factions.wizards.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.WIZARDS_POD, nameKey: 'factions.wizards_pod.name', icon: Wand2, color: '#8b5cf6', descriptionKey: 'factions.wizards_pod.description' },
     { id: SMASHUP_FACTION_IDS.TRICKSTERS, nameKey: 'factions.tricksters.name', icon: Theater, color: '#f59e0b', descriptionKey: 'factions.tricksters.description', locales: ['zh-CN'] },
@@ -112,22 +143,22 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, nameKey: 'factions.killer_plants_pod.name', icon: Sprout, color: '#4d7c0f', descriptionKey: 'factions.killer_plants_pod.description' },
     { id: SMASHUP_FACTION_IDS.BEAR_CAVALRY, nameKey: 'factions.bear_cavalry.name', icon: PawPrint, color: '#7c2d12', descriptionKey: 'factions.bear_cavalry.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD, nameKey: 'factions.bear_cavalry_pod.name', icon: PawPrint, color: '#7c2d12', descriptionKey: 'factions.bear_cavalry_pod.description' },
-    { id: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU, nameKey: 'factions.minions_of_cthulhu.name', icon: Eye, color: '#4c1d95', descriptionKey: 'factions.minions_of_cthulhu.description' },
-    { id: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD, nameKey: 'factions.minions_of_cthulhu_pod.name', icon: Eye, color: '#4c1d95', descriptionKey: 'factions.minions_of_cthulhu_pod.description' },
-    { id: SMASHUP_FACTION_IDS.ELDER_THINGS, nameKey: 'factions.elder_things.name', icon: OctopusHeadIcon, color: '#0e7490', descriptionKey: 'factions.elder_things.description', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.ELDER_THINGS_POD, nameKey: 'factions.elder_things_pod.name', icon: OctopusHeadIcon, color: '#0e7490', descriptionKey: 'factions.elder_things_pod.description' },
-    { id: SMASHUP_FACTION_IDS.INNSMOUTH, nameKey: 'factions.innsmouth.name', icon: Fish, color: '#06b6d4', descriptionKey: 'factions.innsmouth.description', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.INNSMOUTH_POD, nameKey: 'factions.innsmouth_pod.name', icon: Fish, color: '#06b6d4', descriptionKey: 'factions.innsmouth_pod.description' },
-    { id: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY, nameKey: 'factions.miskatonic_university.name', icon: GraduationCap, color: '#fcd34d', descriptionKey: 'factions.miskatonic_university.description' },
-    { id: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD, nameKey: 'factions.miskatonic_university_pod.name', icon: GraduationCap, color: '#fcd34d', descriptionKey: 'factions.miskatonic_university_pod.description' },
-    { id: SMASHUP_FACTION_IDS.FRANKENSTEIN, nameKey: 'factions.frankenstein.name', icon: FlaskConical, color: '#65a30d', descriptionKey: 'factions.frankenstein.description', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.FRANKENSTEIN_POD, nameKey: 'factions.frankenstein_pod.name', icon: FlaskConical, color: '#65a30d', descriptionKey: 'factions.frankenstein_pod.description' },
+    { id: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU, nameKey: 'factions.minions_of_cthulhu.name', icon: Eye, color: '#4c1d95', descriptionKey: 'factions.minions_of_cthulhu.description', mechanicRule: MADNESS_MECHANIC_RULE },
+    { id: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD, nameKey: 'factions.minions_of_cthulhu_pod.name', icon: Eye, color: '#4c1d95', descriptionKey: 'factions.minions_of_cthulhu_pod.description', mechanicRule: MADNESS_MECHANIC_RULE },
+    { id: SMASHUP_FACTION_IDS.ELDER_THINGS, nameKey: 'factions.elder_things.name', icon: OctopusHeadIcon, color: '#0e7490', descriptionKey: 'factions.elder_things.description', mechanicRule: MADNESS_MECHANIC_RULE, locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.ELDER_THINGS_POD, nameKey: 'factions.elder_things_pod.name', icon: OctopusHeadIcon, color: '#0e7490', descriptionKey: 'factions.elder_things_pod.description', mechanicRule: MADNESS_MECHANIC_RULE },
+    { id: SMASHUP_FACTION_IDS.INNSMOUTH, nameKey: 'factions.innsmouth.name', icon: Fish, color: '#06b6d4', descriptionKey: 'factions.innsmouth.description', mechanicRule: MADNESS_MECHANIC_RULE, locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.INNSMOUTH_POD, nameKey: 'factions.innsmouth_pod.name', icon: Fish, color: '#06b6d4', descriptionKey: 'factions.innsmouth_pod.description', mechanicRule: MADNESS_MECHANIC_RULE },
+    { id: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY, nameKey: 'factions.miskatonic_university.name', icon: GraduationCap, color: '#fcd34d', descriptionKey: 'factions.miskatonic_university.description', mechanicRule: MADNESS_MECHANIC_RULE },
+    { id: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD, nameKey: 'factions.miskatonic_university_pod.name', icon: GraduationCap, color: '#fcd34d', descriptionKey: 'factions.miskatonic_university_pod.description', mechanicRule: MADNESS_MECHANIC_RULE },
+    { id: SMASHUP_FACTION_IDS.FRANKENSTEIN, nameKey: 'factions.frankenstein.name', icon: FlaskConical, color: '#65a30d', descriptionKey: 'factions.frankenstein.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE, locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.FRANKENSTEIN_POD, nameKey: 'factions.frankenstein_pod.name', icon: FlaskConical, color: '#65a30d', descriptionKey: 'factions.frankenstein_pod.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.WEREWOLVES, nameKey: 'factions.werewolves.name', icon: Moon, color: '#78716c', descriptionKey: 'factions.werewolves.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.WEREWOLVES_POD, nameKey: 'factions.werewolves_pod.name', icon: Moon, color: '#78716c', descriptionKey: 'factions.werewolves_pod.description' },
-    { id: SMASHUP_FACTION_IDS.VAMPIRES, nameKey: 'factions.vampires.name', icon: Droplet, color: '#991b1b', descriptionKey: 'factions.vampires.description', locales: ['zh-CN'] },
-    { id: SMASHUP_FACTION_IDS.VAMPIRES_POD, nameKey: 'factions.vampires_pod.name', icon: Droplet, color: '#991b1b', descriptionKey: 'factions.vampires_pod.description' },
-    { id: SMASHUP_FACTION_IDS.GIANT_ANTS, nameKey: 'factions.giant_ants.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants.description' },
-    { id: SMASHUP_FACTION_IDS.GIANT_ANTS_POD, nameKey: 'factions.giant_ants_pod.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants_pod.description' },
+    { id: SMASHUP_FACTION_IDS.VAMPIRES, nameKey: 'factions.vampires.name', icon: Droplet, color: '#991b1b', descriptionKey: 'factions.vampires.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE, locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.VAMPIRES_POD, nameKey: 'factions.vampires_pod.name', icon: Droplet, color: '#991b1b', descriptionKey: 'factions.vampires_pod.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE },
+    { id: SMASHUP_FACTION_IDS.GIANT_ANTS, nameKey: 'factions.giant_ants.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE },
+    { id: SMASHUP_FACTION_IDS.GIANT_ANTS_POD, nameKey: 'factions.giant_ants_pod.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants_pod.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.MERMAIDS, nameKey: 'factions.mermaids.name', icon: Fish, color: '#0ea5e9', descriptionKey: 'factions.mermaids.description' },
     { id: SMASHUP_FACTION_IDS.FAIRIES, nameKey: 'factions.fairies.name', icon: Flower2, color: '#ec4899', descriptionKey: 'factions.fairies.description' },
     { id: SMASHUP_FACTION_IDS.HULUWAWA, nameKey: 'factions.huluwawa.name', icon: Sprout, color: '#15803d', descriptionKey: 'factions.huluwawa.description', locales: ['zh-CN'], expansion: 'diy' },
@@ -146,7 +177,7 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.KAIJU, nameKey: 'factions.kaiju.name', icon: Bone, color: '#be123c', descriptionKey: 'factions.kaiju.description' },
     { id: SMASHUP_FACTION_IDS.MAGICAL_GIRLS, nameKey: 'factions.magical_girls.name', icon: Wand2, color: '#ec4899', descriptionKey: 'factions.magical_girls.description' },
     { id: SMASHUP_FACTION_IDS.MEGA_TROOPERS, nameKey: 'factions.mega_troopers.name', icon: Bot, color: '#dc2626', descriptionKey: 'factions.mega_troopers.description' },
-    { id: SMASHUP_FACTION_IDS.SKELETONS, nameKey: 'factions.skeletons.name', icon: Skull, color: '#6b7280', descriptionKey: 'factions.skeletons.description' },
+    { id: SMASHUP_FACTION_IDS.SKELETONS, nameKey: 'factions.skeletons.name', icon: Skull, color: '#6b7280', descriptionKey: 'factions.skeletons.description', mechanicRule: BURY_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.WORLD_CHAMPS, nameKey: 'factions.world_champs.name', icon: Medal, color: '#eab308', descriptionKey: 'factions.world_champs.description' },
     // POD 版本阵营：英文和中文都显示（英文用户的主版本）
     { id: SMASHUP_FACTION_IDS.NINJAS_POD, nameKey: 'factions.ninjas_pod.name', icon: ShurikenIcon, color: '#991b1b', descriptionKey: 'factions.ninjas_pod.description' },
