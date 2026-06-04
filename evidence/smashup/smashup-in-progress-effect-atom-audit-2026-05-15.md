@@ -20367,3 +20367,35 @@
 - 未覆盖风险：
   - 这格只补 `borrowed bear_cavalry_superiority / borrowed zombie_theyre_coming_to_get_you` 这 2 条 focused gate，不外推整个 Bear Cavalry / Zombies family 已重审
   - 其余 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象
+
+## 2026-06-04 `borrowed Insanity POD / processDeckInspectionTriggers` focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/abilities/elder-things.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/elder-things.test.ts)
+  - [src/games/smashup/__tests__/reactionQueueOrdering.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/reactionQueueOrdering.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已封账这 2 条 focused gate：
+    - `borrowed Insanity POD resolves into its true owner removed-from-game zone`
+    - `processDeckInspectionTriggers also advances prior non-inspection events before collecting onDeckInspected`
+  - 当前工作树里：
+    - `elderThingInsanityPod()` 已按 live hand/discard 中的 `card.owner` 回查真实 owner，并把 `CARD_REMOVED_FROM_GAME.playerId` 写成该 owner
+    - `processDeckInspectionTriggers()` 已在扫描 inspection 事件前，先把同批更早的非 inspection event 逐个 `reduce` 进 `ms/core`
+  - 因此这轮优先判断为 dedicated gate 补回，而不是预设要再改生产实现
+- 逐效果原子结论：
+  - `borrowed Insanity POD resolves into its true owner removed-from-game zone`
+    - 新增 focused gate：`borrowed Insanity POD resolves into its true owner removed-from-game zone`
+    - 当前工作树直绿，说明这格是 dedicated gate 补回，不是新的实现红灯
+    - 断言 `P0` 打出 `owner='1'` 的 borrowed `elder_thing_insanity_pod` 后，本牌不会留在 `P0/P1 discard`，而是进入真实 owner `P1.removedFromGame`
+  - `processDeckInspectionTriggers also advances prior non-inspection events before collecting onDeckInspected`
+    - 新增 focused gate：`processDeckInspectionTriggers also advances prior non-inspection events before collecting onDeckInspected`
+    - 当前工作树直绿，说明这格同样是 dedicated gate 补回，不是新的实现红灯
+    - 夹具先让 `test_inspect_titan` 通过 `TITAN_PLAYED` 从 `setaside` 进入基地，再发 `DECK_INSPECTED`；断言 `onDeckInspected` 收集时已经能看到这只刚落地的 titan source，而不是基于旧 `core` 提前扫描
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/elder-things.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed Insanity POD resolves into its true owner removed-from-game zone"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "processDeckInspectionTriggers also advances prior non-inspection events before collecting onDeckInspected"` -> `1 file passed, 1 passed`
+- 未覆盖风险：
+  - 这格只补 `borrowed Insanity POD / processDeckInspectionTriggers` 这 2 条 focused gate，不外推整个 Elder Things、所有 removed-from-game producer、所有 inspection 后处理链都已重审
+  - 其余 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象

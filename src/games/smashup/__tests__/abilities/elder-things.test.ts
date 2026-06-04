@@ -1202,6 +1202,37 @@ describe('elder_things_pod 专项行为', () => {
         expect((finalP0.removedFromGame ?? []).some(card => card.uid === 'a1')).toBe(true);
     });
 
+    it('borrowed Insanity POD resolves into its true owner removed-from-game zone', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('borrowed-insanity-1', 'elder_thing_insanity_pod', 'action', '1')] }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+            turnOrder: ['0', '1', '2'],
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+            madnessDeck: [
+                makeCard('m1', MADNESS_CARD_DEF_ID, 'action', '1'),
+                makeCard('m2', MADNESS_CARD_DEF_ID, 'action', '1'),
+                makeCard('m3', MADNESS_CARD_DEF_ID, 'action', '2'),
+                makeCard('m4', MADNESS_CARD_DEF_ID, 'action', '2'),
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'borrowed-insanity-1' } },
+            defaultRandom,
+        );
+
+        const finalP0 = result.finalState.core.players['0'];
+        const finalP1 = result.finalState.core.players['1'];
+        expect(finalP0.discard.some(card => card.uid === 'borrowed-insanity-1')).toBe(false);
+        expect((finalP0.removedFromGame ?? []).some(card => card.uid === 'borrowed-insanity-1')).toBe(false);
+        expect(finalP1.discard.some(card => card.uid === 'borrowed-insanity-1')).toBe(false);
+        expect((finalP1.removedFromGame ?? []).some(card => card.uid === 'borrowed-insanity-1')).toBe(true);
+    });
+
     it('Mi-Go POD：对手选择前不应提前抽疯狂卡', () => {
         const core = makeState({
             players: {

@@ -884,6 +884,52 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(trigger.frameId).toBe(`deck-inspected-frame:${SU_EVENTS.REVEAL_HAND}:hand:1:0:11`);
   });
 
+  it('processDeckInspectionTriggers also advances prior non-inspection events before collecting onDeckInspected', () => {
+    registerTrigger('test_inspect_titan', 'onDeckInspected', () => [], {});
+
+    const core = baseCore({
+      titans: [{
+        uid: 'inspect-titan-1',
+        defId: 'test_inspect_titan',
+        faction: 'wizards',
+        ownerId: '0',
+        controllerId: '0',
+        powerCounters: 0,
+        talentUsed: false,
+        location: { zone: 'setaside' },
+      } as any],
+    });
+
+    const result = processDeckInspectionTriggers([
+      {
+        type: SU_EVENTS.TITAN_PLAYED,
+        payload: {
+          titanUid: 'inspect-titan-1',
+          defId: 'test_inspect_titan',
+          ownerId: '0',
+          controllerId: '0',
+          baseIndex: 0,
+          baseDefId: core.bases[0].defId,
+          reason: 'test_inspection_setup',
+        },
+        timestamp: 12,
+      } as any,
+      {
+        type: SU_EVENTS.DECK_INSPECTED,
+        payload: {
+          inspectorPlayerId: '0',
+          targetPlayerId: '1',
+          reason: 'test_inspection_after_titan',
+        },
+        timestamp: 13,
+      } as any,
+    ], makeMatchState(core), '0', { shuffle: (a: any[]) => a } as any, 13);
+
+    const queued = result.events.find((event: any) => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+    expect(queued).toBeDefined();
+    expect(queued.payload.triggers.some((trigger: any) => trigger.sourceDefId === 'test_inspect_titan')).toBe(true);
+  });
+
   it('trigger 无手写读写声明时不再阻断收集，排序 footprint 由运行时产物推导', () => {
     registerTrigger('missing_contract_source', 'onTurnStart', () => ([{
       type: SU_EVENTS.CARDS_DRAWN,

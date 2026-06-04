@@ -6,15 +6,18 @@ import { clearInteractionHandlers } from '../../domain/abilityInteractionHandler
 import { clearOngoingEffectRegistry, collectTriggers } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { reduce } from '../../domain/reducer';
-import { SU_EVENTS } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
+    getPromptOption,
+    getSimpleChoicePrompt,
     makeCard,
     makeMatchState,
     makeMinion,
     makePlayer,
     makeState,
+    respondToPrompt,
 } from '../helpers';
-import { defaultTestRandom } from '../testRunner';
+import { defaultTestRandom, runCommand } from '../testRunner';
 
 beforeAll(() => {
     clearRegistry();
@@ -149,5 +152,44 @@ describe('Vikings abilities', () => {
         const finalCore = resolved!.events.reduce((acc, event) => reduce(acc, event), queuedCore);
         expect(finalCore.players['1'].discard.some(card => card.uid === 'borrowed-host')).toBe(false);
         expect(finalCore.players['1'].removedFromGame.some(card => card.uid === 'borrowed-host')).toBe(true);
+    });
+
+    it('vikings_cast_the_runes_order 排序 borrowed 揭示牌时应回到其拥有者牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('cast-runes-1', 'vikings_cast_the_runes', 'action', '0')],
+                    deck: [makeCard('p0-rest', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('own-top', 'wizard_neophyte', 'minion', '1'),
+                        makeCard('borrowed-top', 'pirate_first_mate', 'minion', '0'),
+                        makeCard('rest-1', 'zombie_walker', 'minion', '1'),
+                    ],
+                }),
+            },
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'cast-runes-1' },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const playerPrompt = getSimpleChoicePrompt(played.finalState, 'vikings_cast_the_runes_player');
+        const chooseP1 = getPromptOption(playerPrompt, option => option.value?.targetPlayerId === '1', 'target player 1 option');
+        const afterPlayerChoice = respondToPrompt(played.finalState, chooseP1.id, '0', defaultTestRandom);
+
+        const orderPrompt = getSimpleChoicePrompt(afterPlayerChoice.finalState, 'vikings_cast_the_runes_order');
+        const chooseOwnTop = getPromptOption(orderPrompt, option => option.value?.topCardUid === 'own-top', 'own top card option');
+        const resolved = respondToPrompt(afterPlayerChoice.finalState, chooseOwnTop.id, '0', defaultTestRandom);
+
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['own-top', 'rest-1']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['borrowed-top', 'p0-rest']);
     });
 });
