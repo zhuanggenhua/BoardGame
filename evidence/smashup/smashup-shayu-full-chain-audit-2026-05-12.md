@@ -67,7 +67,7 @@
 | `mythic_greeks_favor_of_ares` | 你的一个随从 +3 临时 | 己方随从 | `playNeedsMinion` + `playTargetMinionController:'self'` | UI/validator/handler self 归属一致 | L1 |
 | `mythic_greeks_favor_of_aphrodite` | 打出额外仆从 | 无目标按钮/额度事件 | `grantContextualExtraMinion` | 无入口目标；额度写入事件 | L1 |
 | `mythic_greeks_favor_of_dionysus` | 己方随从 +1 → 额外行动 → 可放回牌库顶 | 己方随从 → button skip/top | `playNeedsMinion+self`；`cardUid/defId` context；skip | 三段链入口/归属/可选均存在；已有 L2 | L2 |
-| `mythic_greeks_favor_of_hera` | 至多两个你的随从各 +1 指示物 | 多选己方随从 | targets self；multi min0 max2；optional | “至多/你的”均有 UI/handler 约束；已有 L2/L3 | L2/L3 |
+| `mythic_greeks_favor_of_hera` | 至多两个随从各 +1 指示物 | 多选任意随从 | 2026-06-04 按 `temp/smashup-hera-card-crop-20260604-r5c8/slot-33.webp` 回写：旧 `targets self` 结论失效，改为全场随从；multi min0 max2；optional | “至多”与全场目标范围均有 UI/handler/测试约束；新增对手随从门禁 | L2/L3 |
 | `mythic_greeks_favor_of_athena` | 展示顶5 → 可选一张行动入手 → 其余任意顺序回顶 | 卡牌选择/skip → 排序 | `revealed` snapshot；pick prompt；order prompt | 2026-05-11 修复自动选择/排序；本轮复核上下文完整 | L2 |
 | `mythic_greeks_favor_of_apollo` | 抽 1 → 额外行动 | 无目标 | draw + extra action events | 无用户入口；最终权威状态有 L2/L3 | L2/L3 |
 | `mythic_greeks_favor_of_hermes` | 打出两个额外行动 | 无目标 | extra action x2 events | 无用户入口；低风险额度事件，未单独 L2 | L1 |

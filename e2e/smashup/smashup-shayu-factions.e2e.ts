@@ -846,6 +846,7 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
           defId: 'base_oracle_at_delphi',
           minions: [
             { uid: 'p1-greek-a', defId: 'robot_zapbot', owner: '1', controller: '1', power: 2 },
+            { uid: 'p0-enemy-a', defId: 'sharks_mako', owner: '0', controller: '0', power: 2 },
           ],
         },
         {
@@ -866,16 +867,16 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
     await selectMultiInteractionOptionsBy(
       page,
       game,
-      option => optionHasMinionUid(option, 'p1-greek-a') || optionHasMinionUid(option, 'p1-greek-b'),
+      option => optionHasMinionUid(option, 'p1-greek-a') || optionHasMinionUid(option, 'p0-enemy-a'),
       2,
-      '赫拉的恩惠应能选择至多两个己方随从',
+      '赫拉的恩惠应能选择至多两个任意玩家的随从',
     );
     await game.waitForNoInteraction(10000);
     await expect.poll(async () => {
       const state = await game.getState();
       const minions = state.core.bases.flatMap((base: { minions?: Array<{ uid?: string; powerCounters?: number }> }) => base.minions ?? []);
       return minions
-        .filter((minion: { uid?: string }) => minion.uid === 'p1-greek-a' || minion.uid === 'p1-greek-b')
+        .filter((minion: { uid?: string }) => minion.uid === 'p1-greek-a' || minion.uid === 'p0-enemy-a')
         .map((minion: { powerCounters?: number }) => minion.powerCounters ?? 0)
         .sort();
     }, { timeout: 5000 }).toEqual([1, 1]);

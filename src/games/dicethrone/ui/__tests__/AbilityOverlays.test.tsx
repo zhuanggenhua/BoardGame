@@ -197,4 +197,22 @@ describe('AbilityOverlays', () => {
         expect(onSelectAbility).toHaveBeenCalledWith('shadow-step-2-main');
     });
 
+    it('咒缚海盗人类面应按 human 槽位映射解析技能', () => {
+        const { container } = renderAbilityOverlays({
+            characterId: 'cursed_pirate',
+            playerBoardFace: 'normal',
+            availableAbilityIds: ['verdict-command', 'merciless-plunder'],
+            canHighlight: true,
+            abilityLevels: {},
+        });
+
+        const lightningSlot = container.querySelector('[data-ability-slot="lightning"]');
+        const ultimateSlot = container.querySelector('[data-ability-slot="ultimate"]');
+
+        expect(lightningSlot).toHaveAttribute('data-base-ability-id', 'verdict-command');
+        expect(lightningSlot).toHaveAttribute('data-resolved-ability-id', 'verdict-command');
+        expect(ultimateSlot).toHaveAttribute('data-base-ability-id', 'merciless-plunder');
+        expect(ultimateSlot).toHaveAttribute('data-resolved-ability-id', 'merciless-plunder');
+    });
+
 });

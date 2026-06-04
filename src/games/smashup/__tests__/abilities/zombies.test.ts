@@ -750,6 +750,50 @@ describe('僵尸派系能力', () => {
         expect(nonOngoing.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
     });
 
+    it('borrowed ongoing 附着基地时，控制者也应能通过 PLAY_MINION fromDiscard 打到该基地', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('borrowed-disc-m1', 'pirate_first_mate', 'minion', '0'),
+                        makeCard('borrowed-disc-m2', 'zombie_walker', 'minion', '0'),
+                    ],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    factions: ['zombies', 'pirates'] as [string, string],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [],
+                    ongoingActions: [{
+                        uid: 'borrowed-ongoing-1',
+                        defId: 'zombie_theyre_coming_to_get_you',
+                        ownerId: '1',
+                        metadata: {
+                            sourcePlayerId: '0',
+                            sourceControllerId: '0',
+                        },
+                    } as any],
+                }),
+                makeBase({ defId: 'b2', minions: [], ongoingActions: [] }),
+            ],
+        });
+
+        const valid = execPlayMinionFromDiscard(state, '0', 'borrowed-disc-m1', 0);
+        expect(valid.matchState.core.players['0'].discard.some(card => card.uid === 'borrowed-disc-m1')).toBe(false);
+        expect(valid.matchState.core.bases[0].minions.some(minion => minion.uid === 'borrowed-disc-m1')).toBe(true);
+        expect(valid.matchState.core.players['0'].minionsPlayed).toBe(1);
+
+        const second = execPlayMinionFromDiscard(valid.matchState.core, '0', 'borrowed-disc-m2', 0);
+        expect(second.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+
+        const nonOngoing = execPlayMinionFromDiscard(state, '0', 'borrowed-disc-m2', 1);
+        expect(nonOngoing.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+    });
+
     it('zombie_overrun: 其他玩家不能打到附着基地；onTurnStart 自收口时不应弹排序 Prompt', () => {
         const blockState = makeState({
             players: {

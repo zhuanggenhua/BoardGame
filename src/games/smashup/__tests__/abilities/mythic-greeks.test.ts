@@ -56,7 +56,7 @@ describe('神话希腊代表性玩法行为', () => {
         expect(result.finalState.core.players['0'].actionLimit).toBe(2);
     });
 
-    it('赫拉的恩惠按玩家选择至多两个随从放置指示物', () => {
+    it('赫拉的恩惠可对任意玩家的至多两个随从放置指示物', () => {
         const core = {
             players: {
                 '0': makePlayer('0', { hand: [makeCard('a-hera', 'mythic_greeks_favor_of_hera', 'action', '0')] }),
@@ -67,7 +67,7 @@ describe('神话希腊代表性玩法行为', () => {
             bases: [makeBase('base_oracle_at_delphi', [
                 makeMinion('own-a', 'sharks_mako', '0', 2),
                 makeMinion('own-b', 'tornados_dust_devil', '0', 2),
-                makeMinion('own-c', 'sharks_hammerhead', '0', 3),
+                makeMinion('enemy-a', 'sharks_hammerhead', '1', 3),
             ])],
             baseDeck: [],
             turnNumber: 1,
@@ -82,13 +82,13 @@ describe('神话希腊代表性玩法行为', () => {
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
             const selectable = getPromptOptions(prompt).filter((option: any) => option.value?.minionUid);
             const a = selectable.find((option: any) => option.value?.minionUid === 'own-a') ?? selectable[0];
-            const b = selectable.find((option: any) => option.value?.minionUid === 'own-b') ?? selectable[1];
+            const b = selectable.find((option: any) => option.value?.minionUid === 'enemy-a') ?? selectable[1];
             return { optionIds: [a.id, b.id] };
         });
         const minions = resolved.finalState.core.bases[0].minions;
         expect(minions.find(minion => minion.uid === 'own-a')?.powerCounters).toBe(1);
-        expect(minions.find(minion => minion.uid === 'own-b')?.powerCounters).toBe(1);
-        expect(minions.find(minion => minion.uid === 'own-c')?.powerCounters).toBeUndefined();
+        expect(minions.find(minion => minion.uid === 'enemy-a')?.powerCounters).toBe(1);
+        expect(minions.find(minion => minion.uid === 'own-b')?.powerCounters).toBeUndefined();
     });
 
     it('波塞冬的恩惠按玩家选择弃牌洗回牌库', () => {

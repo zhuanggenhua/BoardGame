@@ -1,5 +1,6 @@
 import { HEROES_DATA } from '../heroes';
 import type { AbilityDef } from '../domain/combat';
+import type { HeroState } from '../domain/types';
 
 export const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] }> = {
     fist: { labelKey: 'abilitySlots.fist', ids: ['fist-technique', 'fireball', 'slap', 'longbow', 'dagger-strike', 'revolver', 'katana-slice', 'shattering-fist', 'slash'] },
@@ -56,6 +57,18 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
     },
 };
 
+const CURSED_PIRATE_NORMAL_SLOT_ABILITY_OVERRIDES: Record<string, string[]> = {
+    fist: ['cutlass-stab'],
+    chi: ['make-your-mark'],
+    sky: ['human-cursed'],
+    lotus: ['walk-the-plank'],
+    combo: ['light-the-fuse'],
+    lightning: ['verdict-command'],
+    calm: ['astonishing'],
+    meditate: ['human-still-wet-behind-ears'],
+    ultimate: ['merciless-plunder'],
+};
+
 const ABILITY_BASE_ID_MAP = new Map<string, string>();
 
 function registerAbility(ability: AbilityDef): void {
@@ -91,8 +104,16 @@ export function slotContainsAbilityId(slotId: string, abilityId: string): boolea
     return mapping.ids.includes(getBaseAbilityId(abilityId));
 }
 
-export function slotContainsAbilityIdForCharacter(characterId: string | undefined | null, slotId: string, abilityId: string): boolean {
+export function slotContainsAbilityIdForCharacter(
+    characterId: string | undefined | null,
+    slotId: string,
+    abilityId: string,
+    playerBoardFace?: HeroState['playerBoardFace'],
+): boolean {
     const baseAbilityId = getBaseAbilityId(abilityId);
+    if (characterId === 'cursed_pirate' && playerBoardFace === 'normal') {
+        return CURSED_PIRATE_NORMAL_SLOT_ABILITY_OVERRIDES[slotId]?.includes(baseAbilityId) ?? false;
+    }
     const override = CHARACTER_SLOT_ABILITY_OVERRIDES[characterId ?? '']?.[slotId];
     if (override) {
         return override.includes(baseAbilityId);

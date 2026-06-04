@@ -92,7 +92,7 @@
 | `mythic_greeks_favor_of_ares` | TS：己方随从临时 +3 | action playNeedsMinion self | 手牌选己方随从 | PLAY_ACTION | 行动额度 | 目标 temp +3 | 非己方不候选 | 临时修正回合清理 | L2 + L3 代表 | 通过 |
 | `mythic_greeks_favor_of_aphrodite` | TS：额外打出一个随从 | no-target action | 手牌行动入口 | PLAY_ACTION | 行动额度 | minionLimit +1 | 分支不适用 | 额度被后续出牌消费 | L2 | 通过 |
 | `mythic_greeks_favor_of_dionysus` | TS：随从 +1，可放回牌库顶，并额外行动 | action + optional topdeck | 手牌行动入口 | PLAY_ACTION + prompt | 行动额度 | +1、extra action、可 topdeck | skip/topdeck 两分支已测 | prompt 清空 | L2 + L3 代表 | 通过 |
-| `mythic_greeks_favor_of_hera` | TS：至多两个己方随从 +1 | action multi self | 手牌行动入口 | PLAY_ACTION + multi | 行动额度 | 0-2 个己方随从 +1 | 至多语义允许少选/空选 | multi 清空 | L2 + L3 | 通过 |
+| `mythic_greeks_favor_of_hera` | TS：至多两个随从 +1 | action multi any | 2026-06-04 按 `temp/smashup-hera-card-crop-20260604-r5c8/slot-33.webp` 回写旧“己方”误判；手牌行动入口 | PLAY_ACTION + multi | 行动额度 | 0-2 个任意玩家随从 +1 | 至多语义允许少选/空选，并已补对手随从可选 | multi 清空 | L2 + L3 | 通过 |
 | `mythic_greeks_favor_of_athena` | TS：展示顶 5，选行动入手，其余排序回顶 | action reveal/pick/order | 手牌行动入口 | PLAY_ACTION + pick/order prompts | 行动额度 | 选行动入手、其余回顶 | 可跳过入手；排序到剩 1 自动收口 | reveal/order 清空 | L2 + L3/L4 | 通过 |
 | `mythic_greeks_favor_of_apollo` | TS：抽牌并额外行动 | no-target action | 手牌行动入口 | PLAY_ACTION | 行动额度 | 抽牌，actionLimit +1 | 空牌库由抽牌系统处理 | 无 pending | L2 + L3 | 通过 |
 | `mythic_greeks_favor_of_hermes` | TS：额外两个行动 | no-target action | 手牌行动入口 | PLAY_ACTION | 行动额度 | actionLimit +2 | 分支不适用 | 无 pending | L2 | 通过 |

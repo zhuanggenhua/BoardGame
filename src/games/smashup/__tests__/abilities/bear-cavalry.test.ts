@@ -188,6 +188,31 @@ describe('bear_cavalry_superiority 保护', () => {
 
         expect(isMinionProtected(state, enemyMinion, 0, '0', 'destroy')).toBe(false);
     });
+
+    it('borrowed bear_cavalry_superiority 应按控制者而不是真实 owner 保护己方随从', () => {
+        const myMinion = makeMinion('borrowed-protected', 'test_minion', '0', 3, { powerModifier: 0 });
+        const state = makeState({
+            bases: [
+                makeBase({
+                    minions: [myMinion],
+                    ongoingActions: [{
+                        uid: 'borrowed-sup-1',
+                        defId: 'bear_cavalry_superiority',
+                        ownerId: '1',
+                        metadata: {
+                            sourcePlayerId: '0',
+                            sourceControllerId: '0',
+                        },
+                    } as any],
+                }),
+            ],
+        });
+
+        expect(isMinionProtected(state, myMinion, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, myMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, myMinion, 0, '1', 'affect')).toBe(true);
+        expect(isMinionProtected(state, myMinion, 0, '0', 'destroy')).toBe(false);
+    });
 });
 
 describe('bear_cavalry_cub_scout 触发', () => {

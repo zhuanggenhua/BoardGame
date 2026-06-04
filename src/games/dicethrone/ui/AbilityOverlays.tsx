@@ -12,7 +12,6 @@ import {
     getPlayerBoardLayoutVersion,
     type DiceThronePlayerBoardLayoutVersion,
 } from './abilitySlotLayout';
-import type { CardPreviewRef } from '../../../core';
 import type { AbilityCard } from '../types';
 import {
     ABILITY_SLOT_MAP as SHARED_ABILITY_SLOT_MAP,
@@ -140,7 +139,7 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
         const resolveAbilityId = (slotId: string) => {
             const mapping = ABILITY_SLOT_MAP[slotId];
             if (!mapping) return null;
-            return availableAbilityIds.find(id => slotContainsAbilityIdForCharacter(characterId, slotId, id)) ?? null;
+            return availableAbilityIds.find(id => slotContainsAbilityIdForCharacter(characterId, slotId, id, playerBoardFace)) ?? null;
         };
 
         const handleMouseDown = (e: React.MouseEvent, id: string, type: 'move' | 'resize') => {

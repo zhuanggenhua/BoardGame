@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DiceThroneCore, DiceThroneEvent } from '../domain/types';
 import type { Die } from '../domain/types';
 import { execute } from '../domain/execute';
+import { validateCommand } from '../domain/commandValidation';
 import { reduce } from '../domain/reducer';
 import { RESOURCE_IDS } from '../domain/resources';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../domain/ids';
@@ -10,7 +11,7 @@ import { resolveEffectsToEvents } from '../domain/effects';
 import { checkPlayCard, getAvailableAbilityIds } from '../domain/rules';
 import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
-import { BLINK_2, GOING_FORWARD_2, SHADOW_FANG_2, SHADOW_STEP_2 } from '../heroes/ninja/abilities';
+import { BLINK_2, DEATH_BLOSSOM_2, GOING_FORWARD_2, SHADOW_FANG_2, SHADOW_STEP_2 } from '../heroes/ninja/abilities';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
@@ -199,6 +200,196 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(next.pendingAttack?.defenseAbilityId).toBe('blink');
         expect(next.rollDiceCount).toBe(3);
         expect(next.rollLimit).toBe(2);
+    });
+
+    it('一往无前 II 主分支应通过共享奖励骰链限制为至多重掷 1 次，并在总和小于等于 6 时改成不可防御', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'going-forward-2-main',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const openEvents = resolveEffectsToEvents(
+            GOING_FORWARD_2.variants?.[0].effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'going-forward-2-main',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: createQueuedRandom([2, 3]) },
+        );
+        let next = applyEvents(state.core, openEvents);
+
+        expect(openEvents.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(2);
+        expect(next.pendingBonusDiceSettlement).toMatchObject({
+            sourceAbilityId: 'going-forward-2-main',
+            attackerId: '0',
+            targetId: '1',
+            maxRerollCount: 1,
+            rerollCount: 0,
+            customResolutionId: 'ninja-going-forward-2',
+            resolutionMode: 'attackBonus',
+        });
+
+        const firstRerollValidation = validateCommand(
+            next,
+            command('REROLL_BONUS_DIE', '0', { dieIndex: 0 }),
+            'offensiveRoll',
+        );
+        expect(firstRerollValidation.valid).toBe(true);
+
+        const rerollEvents = execute(
+            { core: next, sys: { phase: 'offensiveRoll' } },
+            command('REROLL_BONUS_DIE', '0', { dieIndex: 0 }),
+            createQueuedRandom([1]),
+        );
+        next = applyEvents(next, rerollEvents);
+
+        expect(next.pendingBonusDiceSettlement?.rerollCount).toBe(1);
+        expect(next.pendingBonusDiceSettlement?.dice.find(die => die.index === 0)?.value).toBe(1);
+
+        const secondRerollValidation = validateCommand(
+            next,
+            command('REROLL_BONUS_DIE', '0', { dieIndex: 1 }),
+            'offensiveRoll',
+        );
+        expect(secondRerollValidation).toEqual({
+            valid: false,
+            error: 'bonus_reroll_limit_reached',
+        });
+
+        const settleEvents = execute(
+            { core: next, sys: { phase: 'offensiveRoll' } },
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            createQueuedRandom([1]),
+        );
+        next = applyEvents(next, settleEvents);
+
+        expect(next.pendingBonusDiceSettlement).toBeUndefined();
+        expect(next.pendingAttack?.bonusDamage).toBe(4);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+    });
+
+    it('一往无前 II 的刀尖舔血分支应按单骰结果造成等值真实伤害并直接收口攻击链', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'going-forward-2-bleed',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveEffectsToEvents(
+            GOING_FORWARD_2.variants?.[1].effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'going-forward-2-bleed',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 150,
+            },
+            { random: createQueuedRandom([5]) },
+        );
+        const next = applyEvents(state.core, events);
+
+        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(1);
+        const damageEvent = events.find(event => event.type === 'DAMAGE_DEALT');
+        expect(damageEvent?.payload).toMatchObject({
+            targetId: '1',
+            amount: 5,
+            unblockable: true,
+            damageScope: 'direct',
+        });
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(25);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+    });
+
+    it('死亡盛放 II 应通过共享奖励骰链限制为至多重掷 2 次，并在双面具时施加慢性中毒且改成不可防御', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'death-blossom-2',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const openEvents = resolveEffectsToEvents(
+            DEATH_BLOSSOM_2.effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'death-blossom-2',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 200,
+            },
+            { random: createQueuedRandom([1, 1, 1, 4, 4]) },
+        );
+        let next = applyEvents(state.core, openEvents);
+
+        expect(openEvents.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(5);
+        expect(next.pendingBonusDiceSettlement).toMatchObject({
+            sourceAbilityId: 'death-blossom-2',
+            attackerId: '0',
+            targetId: '1',
+            maxRerollCount: 2,
+            rerollCount: 0,
+            customResolutionId: 'ninja-death-blossom-2',
+            resolutionMode: 'attackBonus',
+        });
+
+        const firstRerollEvents = execute(
+            { core: next, sys: { phase: 'offensiveRoll' } },
+            command('REROLL_BONUS_DIE', '0', { dieIndex: 0 }),
+            createQueuedRandom([6]),
+        );
+        next = applyEvents(next, firstRerollEvents);
+
+        const secondRerollEvents = execute(
+            { core: next, sys: { phase: 'offensiveRoll' } },
+            command('REROLL_BONUS_DIE', '0', { dieIndex: 1 }),
+            createQueuedRandom([6]),
+        );
+        next = applyEvents(next, secondRerollEvents);
+
+        expect(next.pendingBonusDiceSettlement?.rerollCount).toBe(2);
+        expect(next.pendingBonusDiceSettlement?.dice.filter(die => die.face === NINJA_DICE_FACE_IDS.MASK)).toHaveLength(2);
+
+        const thirdRerollValidation = validateCommand(
+            next,
+            command('REROLL_BONUS_DIE', '0', { dieIndex: 2 }),
+            'offensiveRoll',
+        );
+        expect(thirdRerollValidation).toEqual({
+            valid: false,
+            error: 'bonus_reroll_limit_reached',
+        });
+
+        const settleEvents = execute(
+            { core: next, sys: { phase: 'offensiveRoll' } },
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            createQueuedRandom([1]),
+        );
+        next = applyEvents(next, settleEvents);
+
+        expect(next.pendingBonusDiceSettlement).toBeUndefined();
+        expect(next.pendingAttack?.bonusDamage).toBe(5);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
     });
 
     it('upgrade-blink-2 打出后应通过真实升级链替换防御技能并按 Blink II 结算', () => {

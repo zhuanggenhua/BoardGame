@@ -106,7 +106,7 @@
 | `mythic_greeks_favor_of_ares` | self minion +3 temp | L2 | L2 + L3 | 补真实 UI 或代表链 |
 | `mythic_greeks_favor_of_aphrodite` | extra minion quota | L2 | L2 | L2 已覆盖额度写入并消费为第二个随从打出 |
 | `mythic_greeks_favor_of_dionysus` | self minion +1 + extra action + optional topdeck | L2 | L2 + L3 | 补真实 UI optional 证据 |
-| `mythic_greeks_favor_of_hera` | up to 2 self minions counters | L2/L3 | L2 + L3 | 已有 E2E；复核 0/1/2 选择边界 |
+| `mythic_greeks_favor_of_hera` | up to 2 minions counters | L2/L3 | L2 + L3 | 2026-06-04 已按 `temp/smashup-hera-card-crop-20260604-r5c8/slot-33.webp` 回写旧 self 误判；复核 0/1/2 与对手随从可选边界 |
 | `mythic_greeks_favor_of_athena` | reveal top5 + pick + order | L2 | L2 + L3 | 补真实 UI order L3 或代表链 |
 | `mythic_greeks_favor_of_apollo` | draw + extra action | L2/L3 | L2 + L3 | 已有 E2E；复核空牌库/额度消费边界 |
 | `mythic_greeks_favor_of_hermes` | +2 extra actions | L2 | L2 | 补额度消费或说明只需额度写入 |
@@ -220,7 +220,7 @@
 | `mythic_greeks_favor_of_ares` | `shayuEntryConsumption.test.ts` playNeedsMinion standard 组合用例 | 已断言已选己方随从直接获得 +3 临时力量，其他己方随从不受影响。 |
 | `mythic_greeks_favor_of_aphrodite` | `shayuComprehensiveBehavior.test.ts` 阿佛洛狄忒用例 | 已断言额外随从额度写入后可在已打一随从后再打第二个随从。 |
 | `mythic_greeks_favor_of_dionysus` | `shayuFactionAbilities.test.ts` 狄俄尼索斯用例 | 已断言可选择是否放回牌库顶，且 +1/额外行动链有效。 |
-| `mythic_greeks_favor_of_hera` | `shayuFactionAbilities.test.ts` 赫拉用例；整文件 E2E | 已断言至多两个己方随从各获得 +1 指示物。 |
+| `mythic_greeks_favor_of_hera` | `shayuFactionAbilities.test.ts` 赫拉用例；整文件 E2E | 旧“己方随从”结论已失效；现已断言至多两个任意玩家随从都可获得 +1 指示物，并专门覆盖对手随从。 |
 | `mythic_greeks_favor_of_athena` | `shayuFactionAbilities.test.ts` 雅典娜用例；整文件 E2E | 已断言展示顶 5、玩家选择行动牌入手、其余按玩家顺序回顶。 |
 | `mythic_greeks_favor_of_apollo` | `shayuFactionAbilities.test.ts` 阿波罗用例；整文件 E2E | 已断言抽牌并授予额外行动额度。 |
 | `mythic_greeks_favor_of_hermes` | `shayuFactionAbilities.test.ts` 抽样复审赫尔墨斯用例 | 已断言无目标结算两个额外行动且不创建交互。 |
@@ -277,10 +277,10 @@ C3 结论：45/45 对象已达到 L2 或更高行为证据。下一步仍是 C4 
 | `mythic_greeks_heracles` | action trigger automatic temp buff | 无玩家 UI 入口；Argonaut E2E 后态断言临时 +1。 | C4 不适用；C5 代表。 |
 | `mythic_greeks_spartan` | action trigger automatic once/turn counter | Argonaut E2E 后态断言 +1 counter 与 once/turn metadata，并已补跨回合 metadata 重用否定链。 | C4 不适用；C5 代表。 |
 | `mythic_greeks_favor_of_hades` | discard action card choice | `shayu-mythic-greeks-hades-discard-choice-open.png`、`shayu-mythic-greeks-hades-after-recover.png`。 | 独立 L3。 |
-| `mythic_greeks_favor_of_ares` | self minion buff | 与 Hera self-minion multi-select 代表；字段/归属由 L2 审计覆盖。 | 代表链成立。 |
+| `mythic_greeks_favor_of_ares` | self minion buff | 不再借 Hera 代表 self-target 语义；Hera 已回写为 any-minion multi-select，Ares 的 self 归属仅由自身 L2 合同覆盖。 | 代表链已收窄。 |
 | `mythic_greeks_favor_of_aphrodite` | 无目标额度 | 无玩家目标入口；L2 覆盖额外随从额度消费。 | C4 不适用。 |
-| `mythic_greeks_favor_of_dionysus` | self minion buff + optional topdeck | self-minion 入口由 Hera/Ares 家族代表；optional topdeck 由 L2 覆盖 skip/topdeck。 | 代表链成立。 |
-| `mythic_greeks_favor_of_hera` | up to 2 minion multi-select | `shayu-mythic-greeks-hera-after-two-counters.png`。 | 独立 L3。 |
+| `mythic_greeks_favor_of_dionysus` | self minion buff + optional topdeck | self-minion 入口不再借 Hera 代表；仅由 Ares/Dionysus 自身 L2 覆盖，optional topdeck 仍由 L2 覆盖 skip/topdeck。 | 代表链已收窄。 |
+| `mythic_greeks_favor_of_hera` | up to 2 any-minion multi-select | `shayu-mythic-greeks-hera-after-two-counters.png`。 | 2026-06-04 已回写为可选对手随从的独立 L3。 |
 | `mythic_greeks_favor_of_athena` | reveal pick + order | `shayu-mythic-greeks-athena-pick-open.png`、`shayu-mythic-greeks-athena-order-open.png`、`shayu-mythic-greeks-athena-after-order.png`。 | 独立 L3。 |
 | `mythic_greeks_favor_of_apollo` | draw + extra action | `shayu-mythic-greeks-apollo-after-action.png`。 | 真实手牌入口 L3。 |
 | `mythic_greeks_favor_of_hermes` | no-target extra actions | 无目标入口；L2/结构审计覆盖额度写入。 | C4 不适用。 |

@@ -80,6 +80,10 @@ function ownMinionTargets(state: SmashUpCore, playerId: string): MinionTarget[] 
     return collectMinionTargets(state, minion => minion.controller === playerId);
 }
 
+function allMinionTargets(state: SmashUpCore): MinionTarget[] {
+    return collectMinionTargets(state, () => true);
+}
+
 function findCardOwnerAcrossPlayerZones(state: SmashUpCore, cardUid: string, defId: string, fallbackPlayerId: string): string {
     for (const player of Object.values(state.players)) {
         const inHand = player.hand.find(card => card.uid === cardUid && card.defId === defId);
@@ -427,11 +431,11 @@ const dionysusTopPromptProgram = createPromptProgram<DionysusTopContext, SmashUp
 });
 
 function favorOfHera(ctx: AbilityContext): AbilityResult {
-    const targets = ownMinionTargets(ctx.state, ctx.playerId);
+    const targets = allMinionTargets(ctx.state);
     return runGreekMinionPrompt(
         ctx,
         'mythic_greeks_favor_of_hera',
-        '赫拉的恩惠：选择至多两个你的随从放置 +1 指示物',
+        '赫拉的恩惠：选择至多两个随从放置 +1 指示物',
         1,
         'counter',
         targets,

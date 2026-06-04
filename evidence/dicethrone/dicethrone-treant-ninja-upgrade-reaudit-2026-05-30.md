@@ -165,16 +165,16 @@
 | 对象 | 规则子句 | 共享消费链 / 实现入口 | 当前证据 | 结论 |
 | --- | --- | --- | --- | --- |
 | 瞬身 II | `C1 防御掷 3 骰` `C2 可重掷至多 2 颗` `C3 忍刀数量=反击伤害` `C4 手里剑固定 2 伤` `C5 2 面具得 1 烟雾弹` | `BLINK_2.trigger.phaseId=defensiveRoll/diceCount=3/rollLimit=2` -> `ABILITY_ACTIVATED` -> `reduce` 写入 `rollDiceCount/rollLimit` -> 防御 UI / `ROLL_DICE` 校验；结算走 `ninja-blink-2` | L1 已核 trigger 与文案；L2 `ninja-ability-card-contract.test.ts` 已断言 `rollLimit=2` 与结算；L3 已走到真实防御入口，但单页壳层身份与 isolated runtime 抖动仍阻塞稳定截图 | 当前 bug 已修；对象级主链路已补齐，但 L3 仍需稳定化证据 |
-| 一往无前 II | `C1 4 手里剑主分支` `C2 投掷 2 骰` `C3 可重掷其中 1 颗` `C4 造成点数和伤害` `C5 最终总和<=6 则不可防御` `C6 刀尖舔血(3 手里剑)改走真实伤害分支` | `GOING_FORWARD_2.variants` -> `ninja-going-forward-2` / `ninja-going-forward-bleed` | L1 已有结构合同：双分支、顺序与卡图对应；当前未见独立 L2/L3 证明 `C3` 的“重掷 1 次”已被真实奖励骰/交互链消费 | 仍有残余范围，特别是主分支的重投上限与不可防御分支需要对象级行为证据 |
-| 死亡盛放 II | `C1 投掷 5 骰` `C2 忍刀=1 伤/手里剑=2 伤` `C3 1 面具则不可防御` `C4 2 面具则慢性中毒` `C5 可重掷至多 2 颗` | `DEATH_BLOSSOM_2` -> `ninja-death-blossom-2` -> 奖励骰/结算链 | L1 已有结构合同；当前未见独立 L2/L3 证明 `C5` 的“至多 2 颗重掷”已经在奖励骰 settlement 中受限 | 仍有残余范围，属于与本次漏项同风险的兄弟对象 |
+| 一往无前 II | `C1 4 手里剑主分支` `C2 投掷 2 骰` `C3 可重掷其中 1 颗` `C4 造成点数和伤害` `C5 最终总和<=6 则不可防御` `C6 刀尖舔血(3 手里剑)改走真实伤害分支` | `GOING_FORWARD_2.variants` -> `ninja-going-forward-2` / `ninja-going-forward-bleed` -> `createBonusDiceWithReroll(maxRerollCount=1, customResolutionId='ninja-going-forward-2')` -> `validateCommand(REROLL_BONUS_DIE)` / `SKIP_BONUS_DICE_REROLL` -> `registerBonusDiceSettlementHandler(GOING_FORWARD_2_SETTLEMENT_ID)` | L1 已有结构合同：双分支、顺序与卡图对应；L2 已由 `ninja-ability-card-contract.test.ts` 新增用例证明 `C3` 的重掷上限为 1、`C5` 收口后会把攻击改成不可防御，且 `C6` 刀尖舔血分支会按单骰结果造成等值真实伤害并直接收口攻击链；L3 仍无真实入口截图链 | 主分支与 bleed 分支都已有对象级 L2 证据；整对象仍未收口，因为真实 UI 入口与 L4 时序证据仍缺 |
+| 死亡盛放 II | `C1 投掷 5 骰` `C2 忍刀=1 伤/手里剑=2 伤` `C3 1 面具则不可防御` `C4 2 面具则慢性中毒` `C5 可重掷至多 2 颗` | `DEATH_BLOSSOM_2` -> `ninja-death-blossom-2` -> `createBonusDiceWithReroll(maxRerollCount=2, customResolutionId='ninja-death-blossom-2')` -> `validateCommand(REROLL_BONUS_DIE)` / `SKIP_BONUS_DICE_REROLL` -> `registerBonusDiceSettlementHandler(DEATH_BLOSSOM_2_SETTLEMENT_ID)` | L1 已有结构合同；L2 已由 `ninja-ability-card-contract.test.ts` 新增用例证明 `C5` 的重掷上限为 2，且双面具收口后会同时命中 `C3/C4`：攻击改成不可防御并施加 1 层慢性中毒；L3 仍无真实入口截图链 | 与本次漏项同风险的兄弟对象已补到对象级 L2，但真实入口与整批 L3/L4 仍未收口 |
 | 毒刃 II | `C1 投 1 奖励骰` `C2 忍刀=1 慢性中毒` `C3 手里剑/面具=2 慢性中毒` | `POISON_BLADE_2` -> `ninja-poison-blade-2` | 本轮只回扫到它不含“再投/重投上限”子句；风险点不在本次共享 `rollLimit` 合同 | 不属于本次重投漏项家族，但仍保留原总审计里的录入/实现缺口 |
 
 ### 本轮补审结论
 
 - 本次确认的直接产品 bug 只落在 `瞬身 II`，且已经由 `trigger.rollLimit = 2` + `ABILITY_ACTIVATED` 共享消费补齐。
 - 但按新通用维度回扫后，忍者至少还有两个**同风险兄弟对象**不能继续沿用旧“已审过”口径：
-  - `一往无前 II`：主分支写了“可重掷其中 1 颗”，当前只有结构证据，没有对象级行为/真实入口证据证明这条子句真的被消费。
-  - `死亡盛放 II`：写了“可重掷至多 2 颗”，当前也仍缺对象级行为/真实入口证据。
+  - `一往无前 II`：主分支与 `刀尖舔血` bleed 分支现已都补到对象级 L2，但真实 UI 入口仍缺证据。
+  - `死亡盛放 II`：`可重掷至多 2 颗` 与 `双面具 -> 不可防御 + 慢性中毒` 现已补到对象级 L2，但真实 UI 入口仍缺证据。
 - 因此，忍者升级技能的“重投/奖励骰”专项结论现阶段只能写成：
   - `瞬身 II`：bug 已修，L1/L2 达标，L3 入口已到位但证据仍待稳定。
-  - `一往无前 II` / `死亡盛放 II`：已纳入同轮补审，但仍处于“结构审计通过，玩法证据不足”状态，不能继续宣称这一家族已经全面收口。
+  - `一往无前 II` / `死亡盛放 II`：已从“只有结构证据”推进到“对象级 L2 已验证”，但 L3/L4 仍未补齐，不能继续宣称这一家族已经全面收口。

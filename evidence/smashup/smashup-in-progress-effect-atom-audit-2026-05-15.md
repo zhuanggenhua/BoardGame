@@ -20289,3 +20289,81 @@
 - 未覆盖风险：
   - 这格只补 `墓碑 / 纠缠 / 藏身处 POD` 这 3 条 borrowed controller dedicated gate，不外推整个 Skeletons / Killer Plants / Tricksters family 都已重审。
   - 其余 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。
+
+## 2026-06-04 `innsmouth_in_plain_sight / fairies_enchantment / cowboys_stagecoach` focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/abilities/innsmouth.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/innsmouth.ts)
+  - [src/games/smashup/__tests__/abilities/innsmouth.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/innsmouth.test.ts)
+  - [src/games/smashup/__tests__/abilities/fairies.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/fairies.test.ts)
+  - [src/games/smashup/__tests__/abilities/cowboys.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/cowboys.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已封账这 3 条 focused gate：
+    - `borrowed in_plain_sight 应按控制者而不是真实 owner 保护控制者的低力量随从不受其他玩家影响`
+    - `borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId`
+    - `cowboys_stagecoach 应按控制者而不是真实 owner 搬运基地上的 borrowed 持续行动`
+  - 当前工作树里：
+    - `fairies.ts` 的 `fairiesEnchantmentPromptProgram.onResolve()` 已按 live attached ongoing 回填 `fairiesEnchantmentMode`，并从 `metadata.sourcePlayerId ?? metadata.sourceControllerId` 续传来源控制者语义
+    - `cowboys.ts` 的 `collectStagecoachCardsOnBase()` 已按 `metadata.sourceControllerId ?? ownerId` 收集基地上的 borrowed 持续行动
+    - `innsmouth.ts` 的 `innsmouthInPlainSightChecker()` 则仍停留在旧口径：只按 `ownerId` 判“保护谁”和“谁是其他玩家”
+- 逐效果原子结论：
+  - `borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId`
+    - 新增 focused gate：`borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId`
+    - 当前工作树直绿，说明这格是 dedicated gate 补回，不是新的实现红灯
+    - 断言 borrowed `fairies_enchantment(owner='1', playerId='0')` 选择 `minus` 后，live ongoing 继续保留 `ownerId='1'`、`metadata.sourcePlayerId='0'`、`metadata.sourceControllerId='0'`，并正确把基地上随从力量降到 2
+  - `cowboys_stagecoach 应按控制者而不是真实 owner 搬运基地上的 borrowed 持续行动`
+    - 新增 focused gate：`cowboys_stagecoach 应按控制者而不是真实 owner 搬运基地上的 borrowed 持续行动`
+    - 当前工作树直绿，说明这格同样是 dedicated gate 补回，不是新的实现红灯
+    - 断言 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `cowboys_gold_strike` 会出现在 `Stagecoach` 的可搬运候选里，并被控制者 `P0` 从 `base_a` 搬到 `base_b`，同时继续保留真实 `ownerId='1'`
+  - `borrowed in_plain_sight 应按控制者而不是真实 owner 保护控制者的低力量随从不受其他玩家影响`
+    - 新增 focused gate：`borrowed in_plain_sight 应按控制者而不是真实 owner 保护控制者的低力量随从不受其他玩家影响`
+    - 首轮直接坐实：`ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `innsmouth_in_plain_sight` 贴在基地上时，P0 的 2 力量随从面对 `sourcePlayerId='1'` 仍不受保护，`isMinionProtected(...,'affect')` 返回 `false`
+    - 最小根因在 `innsmouthInPlainSightChecker()`：旧实现只 `find()` 第一张同名 `in_plain_sight`，且整条判断都基于 `sight.ownerId`
+    - 当前最小修复只改这一处 checker：改为逐张遍历同基地 `in_plain_sight`，并统一按 `metadata.sourceControllerId ?? metadata.sourcePlayerId ?? ownerId` 解析控制者；不碰 `return_to_the_sea`、不改原版/POD 力量阈值语义，也不扩写其他 Innsmouth sibling
+- 命中的审计维度：
+  - D1 / D5 / D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/innsmouth.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed in_plain_sight 应按控制者而不是真实 owner 保护控制者的低力量随从不受其他玩家影响"` -> 首轮 `1 failed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/innsmouth.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed in_plain_sight 应按控制者而不是真实 owner 保护控制者的低力量随从不受其他玩家影响|力量≤2的己方随从不受对手影响|POD 版 in_plain_sight 也会保护力量≤2的己方随从|力量>2的随从不受保护|对手随从不受保护"` -> 修复后 `1 file passed, 5 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/fairies.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/cowboys.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "cowboys_stagecoach 应按控制者而不是真实 owner 搬运基地上的 borrowed 持续行动"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/fairies.test.ts src/games/smashup/__tests__/abilities/cowboys.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId|cowboys_stagecoach 应按控制者而不是真实 owner 搬运基地上的 borrowed 持续行动"` -> `2 files passed, 2 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=20`
+  - `git diff --check` -> 无新的格式错误；仅有仓库既有 CRLF warning
+- 未覆盖风险：
+  - 这格只补 `borrowed in_plain_sight / borrowed fairies_enchantment / cowboys_stagecoach` 这 3 条 focused gate，不外推整个 Innsmouth / Fairies / Cowboys family 已重审
+  - `innsmouth_in_plain_sight` 这次虽然顺手把“同基地多张同名 ongoing 时不能只吃第一张”的 seam 一并锁住了，但仍未外推所有 affect protection checker 都已按 controller 语义重审
+  - 其余 focused gate 继续待补；当前工作树剩余 `20` 条缺口，下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象
+
+## 2026-06-04 `bear_cavalry_superiority / zombie_theyre_coming_to_get_you` focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/abilities/bear-cavalry.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/bear-cavalry.test.ts)
+  - [src/games/smashup/__tests__/abilities/zombies.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/zombies.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已封账这 2 条 focused gate：
+    - `borrowed bear_cavalry_superiority 应按控制者而不是真实 owner 保护己方随从`
+    - `borrowed ongoing 附着基地时，控制者也应能通过 PLAY_MINION fromDiscard 打到该基地`
+  - 当前工作树里：
+    - `bear_cavalry.ts` 的 `bearCavalrySuperiorityChecker()` 已按 `metadata.sourceControllerId ?? ownerId` 判控制者
+    - `zombies.ts` 的 `zombie_theyre_coming_to_get_you` discard-play provider 也已按 `metadata.sourceControllerId ?? ownerId` 收集 `allowedBases`
+  - 因此这轮先按 dedicated gate 补回处理，而不是预设要再改生产实现
+- 逐效果原子结论：
+  - `borrowed bear_cavalry_superiority 应按控制者而不是真实 owner 保护己方随从`
+    - 新增 focused gate：`borrowed bear_cavalry_superiority 应按控制者而不是真实 owner 保护己方随从`
+    - 当前工作树直绿，说明这格是 dedicated gate 补回，不是新的实现红灯
+    - 断言 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `bear_cavalry_superiority` 仍会保护控制者 `P0` 的己方随从，不受 `P1` 的 `destroy / move / affect` 影响，同时不会把自己人的影响误判成“其他玩家”
+  - `borrowed ongoing 附着基地时，控制者也应能通过 PLAY_MINION fromDiscard 打到该基地`
+    - 新增 focused gate：`borrowed ongoing 附着基地时，控制者也应能通过 PLAY_MINION fromDiscard 打到该基地`
+    - 当前工作树直绿，说明这格同样是 dedicated gate 补回，不是新的实现红灯
+    - 断言 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed `zombie_theyre_coming_to_get_you` 贴在基地上时，控制者 `P0` 仍可从弃牌堆把随从打到该基地；第二次尝试则正常因为本回合随从额度已用完而被拒绝，打到未附着基地也会继续被正确拒绝
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/bear-cavalry.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed bear_cavalry_superiority 应按控制者而不是真实 owner 保护己方随从"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/zombies.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed ongoing 附着基地时，控制者也应能通过 PLAY_MINION fromDiscard 打到该基地"` -> `1 file passed, 1 passed`
+- 未覆盖风险：
+  - 这格只补 `borrowed bear_cavalry_superiority / borrowed zombie_theyre_coming_to_get_you` 这 2 条 focused gate，不外推整个 Bear Cavalry / Zombies family 已重审
+  - 其余 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象

@@ -57,7 +57,7 @@
 | `mythic_greeks_favor_of_ares` | playNeedsMinion + self | 己方随从 | 直接消费 payload 随从并 +3，不再二次选择随从 | L2 |
 | `mythic_greeks_favor_of_aphrodite` | standard no target | 无目标按钮 | 无 interaction；直接写额外随从额度 | L1 |
 | `mythic_greeks_favor_of_dionysus` | playNeedsMinion + self | 己方随从 | 直接消费 payload 随从；后续 optional 回顶 prompt 是新语义 | L2 |
-| `mythic_greeks_favor_of_hera` | standard action | 至多两个己方随从多选 | 无 playNeeds；multi prompt 是能力第一目标，skip/数量语义存在 | L2/L3(既有) |
+| `mythic_greeks_favor_of_hera` | standard action | 至多两个任意随从多选 | 2026-06-04 已按 `temp/smashup-hera-card-crop-20260604-r5c8/slot-33.webp` 回写旧“己方随从”误判；无 playNeeds；multi prompt 是能力第一目标，skip/数量语义存在 | L2/L3(已更新) |
 | `mythic_greeks_favor_of_athena` | standard action | 顶牌行动选择/排序 | 无 playNeeds；deck reveal snapshot 携带上下文 | L2 |
 | `mythic_greeks_favor_of_apollo` | standard no target | 无目标按钮 | 无 interaction；抽牌 + 额外行动 | L2 |
 | `mythic_greeks_favor_of_hermes` | standard no target | 无目标按钮 | 无 interaction；直接写两个额外行动 | L2 |

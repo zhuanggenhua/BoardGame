@@ -15,6 +15,7 @@ import {
     INTERACTION_COMMANDS,
     asCompareRollChoice,
     asSimpleChoice,
+    createSimpleChoice,
     type MultistepChoiceData,
 } from '../../../engine/systems/InteractionSystem';
 import { RESOURCE_IDS } from '../domain/resources';
@@ -141,6 +142,46 @@ export const respondToPrompt = (
     random,
     playerIds,
 );
+
+export const respondToPromptWithSystems = (
+    state: MatchState<DiceThroneCore>,
+    optionId: string,
+    systems: EngineSystem<DiceThroneCore>[],
+    playerId: PlayerId = '0',
+    random: RandomFn = fixedRandom,
+    playerIds: PlayerId[] = Object.keys(state.core.players) as PlayerId[],
+) => executePipeline(
+    { domain: DiceThroneDomain, systems },
+    state,
+    {
+        ...cmd(interactionRespondCommandType, playerId, { optionId }),
+        timestamp: Date.now(),
+    } as DiceThroneCommand,
+    random,
+    playerIds,
+);
+
+export const injectSimpleChoicePrompt = (
+    state: MatchState<DiceThroneCore>,
+    args: {
+        id: string;
+        playerId: PlayerId;
+        title: string;
+        options: Array<{ id: string; label: string; value: Record<string, unknown> }>;
+        sourceId: string;
+    },
+): void => {
+    state.sys.interaction = {
+        ...state.sys.interaction,
+        current: createSimpleChoice(
+            args.id,
+            args.playerId,
+            args.title,
+            args.options,
+            { sourceId: args.sourceId },
+        ),
+    };
+};
 
 export const getCompareRollChoicePrompt = (
     state: MatchState<DiceThroneCore>,

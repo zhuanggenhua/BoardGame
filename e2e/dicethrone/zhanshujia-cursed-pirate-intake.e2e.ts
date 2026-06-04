@@ -5684,6 +5684,16 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
 
             await verdictCommandSlot.click();
 
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'verdict-command',
+            });
+
+            const advanceButton = match.guestPage.locator('[data-tutorial-id="advance-phase-button"]');
+            await expect(advanceButton).toBeEnabled({ timeout: 10000 });
+            await advanceButton.click();
+
             const guestModal = match.guestPage.locator('#modal-root');
             const acceptCursedCoinButton = guestModal.getByRole('button', { name: /^获得诅咒金币$/ });
             await expect(guestModal).toContainText('是否获得诅咒金币？', { timeout: 10000 });
