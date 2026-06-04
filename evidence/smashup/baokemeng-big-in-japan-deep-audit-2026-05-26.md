@@ -76,7 +76,7 @@
 | `kaiju_pick_up_a_bus` | 有 | direct | `KJ_RECOVER_BASE_ACTION`；真实手牌行动多目标回收 | 通过 |
 | `kaiju_they_say_hes_got_to_go` | 有 | direct | `KJ_MOVE_ANY_TITAN`；先选泰坦再选基地 | 通过 |
 | `kaiju_oh_no` | 有 | shared | 与 `tiny_priestesses` 共用 `buildMoveOrPlayGorgodzollaEvents`；差异仅来源区 | 共享 |
-| `kaiju_radioactive_breath` | 有 | direct | `KJ_OPTIONAL_MULTI_DESTROY`；真实多选消灭 | 通过 |
+| `kaiju_radioactive_breath` | 有 | direct | `KJ_OPTIONAL_MULTI_DESTROY`；真实多选消灭 + 持续 `+3` 总力量 | 通过 |
 | `kaiju_the_folly_of_men` | 有 | 无玩家入口 | action-only protection/interceptor | 通过 |
 | `kaiju_tail_smash` | 有 | direct | `KJ_REQUIRED_SINGLE_DESTROY`；真实单目标消灭 | 通过 |
 | `kaiju_stomp` | 有 | direct | 在 `base_tokyo` direct E2E 中从真实手牌打到基地 | 通过 |

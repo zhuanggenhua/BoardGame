@@ -237,6 +237,75 @@ describe('Oops Ancient Egyptians bases', () => {
         expect(drawEvent.payload.count).toBe(1);
     });
 
+    it('base_star_portal 在其他玩家埋牌到这里时让埋葬者抽牌', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_star_portal',
+                minions: [],
+                ongoingActions: [],
+            }],
+            players: {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [{ uid: 'draw-0', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' }],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS, SMASHUP_FACTION_IDS.ALIENS],
+                },
+                '1': {
+                    id: '1',
+                    vp: 0,
+                    hand: [{ uid: 'bury-me', defId: 'robot_warbot', type: 'minion', owner: '1' }],
+                    deck: [{ uid: 'draw-1', defId: 'robot_microbot_beta', type: 'minion', owner: '1' }],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.ALIENS],
+                },
+            } as any,
+        });
+
+        const events = buildBuryCardEvents({
+            core,
+            playerId: '1',
+            cardUid: 'bury-me',
+            defId: 'robot_warbot',
+            baseIndex: 0,
+            trueOwnerId: '1',
+            buriedFrom: 'hand',
+            reason: 'test_star_portal',
+            random: defaultTestRandom,
+            now: 1003,
+        });
+
+        expect(events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
+
+        const buriedCore = events.reduce((acc, event) => reduce(acc, event), core);
+        const triggered = fireTriggers(buriedCore, 'onCardBuried', {
+            state: buriedCore,
+            playerId: '0',
+            baseIndex: 0,
+            buriedCardUid: 'bury-me',
+            buriedCardDefId: 'robot_warbot',
+            buriedCardControllerId: '1',
+            buriedFrom: 'hand',
+            random: defaultTestRandom,
+            now: 1003,
+        });
+
+        const drawEvent = triggered.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
+        expect(drawEvent).toBeDefined();
+        expect(drawEvent.payload.playerId).toBe('1');
+        expect(drawEvent.payload.count).toBe(1);
+    });
+
     it('base_star_portal_pod 上打出并自埋 Tomb Trap 时，应同时触发 onActionPlayed 与 onCardBuried 各抓一张', () => {
         const core = makeState({
             bases: [{

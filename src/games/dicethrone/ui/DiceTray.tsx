@@ -148,7 +148,9 @@ export const DiceTray = ({
     const canToggleDieLock = canInteract && rollCount > 0;
 
     const handleDieClick = (dieId: number) => {
-        if (isRolling && !isInteractionMode) return;
+        // 掷骰结果已进入权威状态后，允许玩家立刻锁骰，
+        // 不要让本地最短动画窗口吞掉真实点击。
+        if (isRolling && !isInteractionMode && rollCount === 0) return;
 
         if (isInteractionMode && !isAnyMode && multistepInteraction) {
             // set / copy / selectDie 模式：点击骰子 = step(select/toggle)

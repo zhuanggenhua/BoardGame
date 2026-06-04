@@ -35,6 +35,20 @@ initializeCustomActions();
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
 
+const setPlayerBoardFace = (
+    state: MatchState<DiceThroneCore>,
+    playerId: string,
+    face: 'normal' | 'cursed',
+) => {
+    state.core = applyEvents(state.core, [{
+        type: 'PLAYER_BOARD_FACE_CHANGED',
+        payload: { playerId, face, sourceAbilityId: 'test-setup' },
+        sourceCommandType: 'TEST',
+        timestamp: 90,
+    } as DiceThroneEvent]);
+    return state;
+};
+
 const command = (
     type: DiceThroneCommand['type'],
     playerId: string,
@@ -237,6 +251,47 @@ const requestMercilessCursePowderKegChoice = (state: MatchState<DiceThroneCore>)
     };
 };
 
+const resolveAbilityEffectsWithSystem = (
+    state: MatchState<DiceThroneCore>,
+    effects: ReturnType<typeof getAbilityEffects> | ReturnType<typeof getAbilityVariantEffects>,
+    timing: 'preDefense' | 'postDamage' | 'withDamage',
+    ctx: {
+        attackerId: string;
+        defenderId: string;
+        sourceAbilityId: string;
+        damageDealt?: number;
+        timestamp?: number;
+    },
+    random = fixedRandom,
+) => {
+    const events = resolveEffectsToEvents(
+        effects,
+        timing,
+        {
+            attackerId: ctx.attackerId,
+            defenderId: ctx.defenderId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            state: state.core,
+            damageDealt: ctx.damageDealt ?? 0,
+            timestamp: ctx.timestamp ?? 100,
+        },
+        { random },
+    );
+    const reducedCore = applyEvents(state.core, events);
+    const system = createDiceThroneEventSystem();
+    const afterEvents = system.afterEvents?.({
+        state: { ...state, core: reducedCore },
+        events,
+        random,
+    } as any);
+    return {
+        events,
+        state: afterEvents && !Array.isArray(afterEvents) && 'state' in afterEvents
+            ? afterEvents.state as MatchState<DiceThroneCore>
+            : ({ ...state, core: reducedCore } as MatchState<DiceThroneCore>),
+    };
+};
+
 const requestPowderKegTransferChoice = () => {
     const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
     state.sys.phase = 'discard';
@@ -372,6 +427,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
     it('咒缚海盗咒缚被动在自己维持阶段受到 4 点不可防止伤害', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
         state.sys.phase = 'discard';
         state.core.activePlayerId = '0';
         const hpBefore = state.core.players['0'].resources[RESOURCE_IDS.HP] ?? 0;
@@ -738,9 +794,62 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             passiveId: 'zhanshujia-tactical-advantage',
             actionIndex: 4,
         }), fixedRandom);
-        next = applyEvents(protect.core, events);
+        const protectReducedCore = applyEvents(protect.core, events);
+        const protectSystem = createDiceThroneEventSystem();
+        const protectAfterEvents = protectSystem.afterEvents?.({
+            state: { ...protect, core: protectReducedCore },
+            events,
+            random: fixedRandom,
+        } as any);
+        if (!protectAfterEvents || Array.isArray(protectAfterEvents) || !('state' in protectAfterEvents)) {
+            throw new Error('战术优势守护未创建目标选择交互');
+        }
+        const protectPromptState = protectAfterEvents.state as MatchState<DiceThroneCore>;
+        const protectInteraction = getCardInteractionPrompt(protectPromptState, 'zhanshujia-tactical-advantage');
+        expect(protectInteraction).toMatchObject({
+            type: 'selectPlayer',
+            sourceCardId: 'zhanshujia-tactical-advantage',
+            tokenGrantConfig: { tokenId: TOKEN_IDS.PROTECT, amount: 1 },
+        });
+        expect(protectInteraction.targetPlayerIds).toEqual(['0', '1']);
+
+        const protectResolveEvents = execute(protectPromptState, command('RESOLVE_INTERACTION', '0', {
+            selectedPlayerIds: ['1'],
+        }), fixedRandom);
+        next = applyEvents(protectPromptState.core, protectResolveEvents);
         expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(0);
-        expect(next.players['0'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
+        expect(eventsOfType(protectResolveEvents, 'TOKEN_GRANTED')[0]?.payload).toMatchObject({
+            targetId: '1',
+            tokenId: TOKEN_IDS.PROTECT,
+            amount: 1,
+            sourceAbilityId: 'zhanshujia-tactical-advantage',
+        });
+        expect(next.players['1'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
+
+        const protectSelf = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        protectSelf.sys.phase = 'main1';
+        protectSelf.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] = 4;
+        events = execute(protectSelf, command('USE_PASSIVE_ABILITY', '0', {
+            passiveId: 'zhanshujia-tactical-advantage',
+            actionIndex: 4,
+        }), fixedRandom);
+        const protectSelfReducedCore = applyEvents(protectSelf.core, events);
+        const protectSelfSystem = createDiceThroneEventSystem();
+        const protectSelfAfterEvents = protectSelfSystem.afterEvents?.({
+            state: { ...protectSelf, core: protectSelfReducedCore },
+            events,
+            random: fixedRandom,
+        } as any);
+        if (!protectSelfAfterEvents || Array.isArray(protectSelfAfterEvents) || !('state' in protectSelfAfterEvents)) {
+            throw new Error('战术优势守护未创建自选玩家交互');
+        }
+        const protectSelfPromptState = protectSelfAfterEvents.state as MatchState<DiceThroneCore>;
+        const protectSelfResolveEvents = execute(protectSelfPromptState, command('RESOLVE_INTERACTION', '0', {
+            selectedPlayerIds: ['0'],
+        }), fixedRandom);
+        const protectSelfNext = applyEvents(protectSelfPromptState.core, protectSelfResolveEvents);
+        expect(protectSelfNext.players['0'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
+        expect(protectSelfNext.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(0);
 
         const transfer = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
         transfer.sys.phase = 'main1';
@@ -1119,6 +1228,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
     it('死亡印记先获得 2CP，亡灵之爪按对手诅咒金币层数造成直接伤害', () => {
         const marked = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(marked, '0', 'cursed');
         marked.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
 
         const markedEvents = resolveEffectsToEvents(
@@ -1138,6 +1248,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(markedNext.players['0'].resources[RESOURCE_IDS.CP]).toBe(3);
 
         const markedCutlass = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(markedCutlass, '0', 'cursed');
         const markedCutlassEvents = resolveEffectsToEvents(
             getAbilityEffects(markedCutlass.core, '0', 'marked-for-death'),
             'preDefense',
@@ -1157,6 +1268,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(cutlassDamageEvents.every(event => event.payload.amount === 2 && event.payload.unblockable === true)).toBe(true);
 
         const markedLootAndSkull = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(markedLootAndSkull, '0', 'cursed');
         const markedLootAndSkullEvents = resolveEffectsToEvents(
             getAbilityEffects(markedLootAndSkull.core, '0', 'marked-for-death'),
             'preDefense',
@@ -1175,6 +1287,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(markedLootAndSkullNext.players['1'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
 
         const claw = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(claw, '0', 'cursed');
         claw.core.players['1'].statusEffects[STATUS_IDS.CURSED_COIN] = 3;
         const clawEvents = resolveEffectsToEvents(
             getAbilityEffects(claw.core, '0', 'undead-claw'),
@@ -1198,6 +1311,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
     it('咒缚海盗你还嫩了点按防御骰结算反击、CP、防伤与诅咒金币', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
         state.core.rollDiceCount = 5;
         state.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
         state.core.dice = state.core.dice.map((die, index) => ({
@@ -1236,6 +1350,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
     it('无情诅咒在 4 人 2v2 中只允许至多两名对手获得火药桶', () => {
         const state = createFourPlayerCursedPirateState();
+        setPlayerBoardFace(state, '0', 'cursed');
         const { state: promptState } = requestMercilessCursePowderKegChoice(state);
         const prompt = getSimpleChoicePrompt(promptState, 'merciless-curse');
         const values = prompt.options.map(option => option.value as {
@@ -1268,6 +1383,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
     it('无情诅咒选择跳过时不会施加火药桶', () => {
         const state = createFourPlayerCursedPirateState();
+        setPlayerBoardFace(state, '0', 'cursed');
         const { state: promptState } = requestMercilessCursePowderKegChoice(state);
         const prompt = getSimpleChoicePrompt(promptState, 'merciless-curse');
         const skip = prompt.options.find(option => (
@@ -1373,6 +1489,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
     it('灵魂突刺在 3 个相同骰值时施加火药桶，深海潜行偷取 1CP 并让对手自选弃牌', () => {
         const soulStab = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(soulStab, '0', 'cursed');
         soulStab.core.rollDiceCount = 5;
         soulStab.core.dice = soulStab.core.dice.map((die, index) => ({
             ...die,
@@ -1394,6 +1511,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(eventsOfType(events, 'STATUS_APPLIED')[0]?.payload.statusId).toBe(STATUS_IDS.POWDER_KEG);
 
         const postDefenseSoulStab = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(postDefenseSoulStab, '0', 'cursed');
         postDefenseSoulStab.core.rollDiceCount = 5;
         postDefenseSoulStab.core.dice = postDefenseSoulStab.core.dice.map((die, index) => ({
             ...die,
@@ -1426,6 +1544,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(eventsOfType(events, 'STATUS_APPLIED')[0]?.payload.statusId).toBe(STATUS_IDS.POWDER_KEG);
 
         const dive = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(dive, '0', 'cursed');
         dive.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
         dive.core.players['1'].resources[RESOURCE_IDS.CP] = 3;
         dive.core.players['1'].hand = [getCardById('card-flick')];
@@ -1483,6 +1602,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
     it('深海潜行真实进攻 pipeline 在偷取 CP 与施加凋零后保留对手弃牌交互', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
         state.sys.phase = 'offensiveRoll';
         state.core.activePlayerId = '0';
         state.core.rollCount = 1;
@@ -1848,14 +1968,16 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(afterSkull.players['1'].hand.map(card => card.id)).toEqual(['card-surprise']);
     });
 
-    it('咒缚海盗当前接入素材初始化为咒缚面', () => {
+    it('咒缚海盗真实开局为 human 面并自带 3 个诅咒金币', () => {
         const state = createCursedPirateCardPlayState('card-cursed-pirate-pirates-life');
 
-        expect(state.core.players['0'].playerBoardFace).toBe('cursed');
+        expect(state.core.players['0'].playerBoardFace).toBe('normal');
+        expect(state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(3);
     });
 
     it('海盗的一生在咒缚面治疗 3 而不是获得诅咒金币', () => {
         const state = createCursedPirateCardPlayState('card-cursed-pirate-pirates-life');
+        setPlayerBoardFace(state, '0', 'cursed');
         state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 1;
         state.core.players['0'].resources[RESOURCE_IDS.HP] = INITIAL_HEALTH - 5;
 
@@ -1883,5 +2005,359 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const result = respondToPrompt(playResult.state, accept!.id, '0');
         expect(result.success).toBe(true);
         expect(result.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
+    });
+
+    it('human 面咒缚在回合结束时优先移除 1 个诅咒金币且不翻面', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.sys.phase = 'discard';
+        state.core.activePlayerId = '0';
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 2;
+
+        const result = diceThroneFlowHooks.onPhaseExit?.({
+            state,
+            from: 'discard',
+            to: 'upkeep',
+            command: command('ADVANCE_PHASE', '0'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const events = Array.isArray(result) ? result : result?.events ?? [];
+        const next = applyEvents(state.core, events as DiceThroneEvent[]);
+
+        expect(eventsOfType(events as DiceThroneEvent[], 'STATUS_REMOVED')[0]?.payload).toMatchObject({
+            targetId: '0',
+            statusId: STATUS_IDS.CURSED_COIN,
+            stacks: 1,
+        });
+        expect(eventsOfType(events as DiceThroneEvent[], 'PLAYER_BOARD_FACE_CHANGED')).toHaveLength(0);
+        expect(next.players['0'].playerBoardFace).toBe('normal');
+        expect(next.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+        expect(next.players['0'].abilities.some(ability => ability.id === 'human-cursed')).toBe(true);
+        expect(next.players['0'].abilities.some(ability => ability.id === 'soul-stab')).toBe(false);
+    });
+
+    it('human 面咒缚在没有诅咒金币时会于回合结束翻回咒缚面并切换能力集', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.sys.phase = 'discard';
+        state.core.activePlayerId = '0';
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+
+        const result = diceThroneFlowHooks.onPhaseExit?.({
+            state,
+            from: 'discard',
+            to: 'upkeep',
+            command: command('ADVANCE_PHASE', '0'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const events = Array.isArray(result) ? result : result?.events ?? [];
+        const next = applyEvents(state.core, events as DiceThroneEvent[]);
+
+        expect(eventsOfType(events as DiceThroneEvent[], 'PLAYER_BOARD_FACE_CHANGED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            face: 'cursed',
+            sourceAbilityId: 'human-cursed',
+        });
+        expect(next.players['0'].playerBoardFace).toBe('cursed');
+        expect(next.players['0'].abilities.some(ability => ability.id === 'soul-stab')).toBe(true);
+        expect(next.players['0'].abilities.some(ability => ability.id === 'human-cursed')).toBe(false);
+    });
+
+    it('human 面弯刀突刺在 4 个相同数字时施加火药桶', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        setCursedPirateDiceValues(state, [1, 1, 1, 1, 4]);
+
+        const { events, state: nextState } = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityVariantEffects(state.core, '0', 'cutlass-stab', 'cutlass-stab-4'),
+            'postDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'cutlass-stab', damageDealt: 6 },
+        );
+        const next = applyEvents(state.core, events as DiceThroneEvent[]);
+
+        expect(eventsOfType(events as DiceThroneEvent[], 'STATUS_APPLIED')[0]?.payload).toMatchObject({
+            targetId: '1',
+            statusId: STATUS_IDS.POWDER_KEG,
+        });
+        expect(next.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(nextState.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('human 面做好标记会结算 CP、奖励骰伤害、抽牌和诅咒金币选择', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+
+        const cpBefore = state.core.players['0'].resources[RESOURCE_IDS.CP] ?? 0;
+        const hpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const handBefore = state.core.players['0'].hand.length;
+
+        const result = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityEffects(state.core, '0', 'make-your-mark'),
+            'preDefense',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'make-your-mark' },
+            createQueuedRandom([1, 4, 6]),
+        );
+
+        expect(result.state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(cpBefore + 1);
+        expect(result.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 2);
+        expect(result.state.core.players['0'].hand.length).toBe(handBefore + 1);
+
+        const prompt = getSimpleChoicePrompt(result.state, 'make-your-mark');
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const accepted = respondToPrompt(result.state, accept!.id, '0');
+        expect(accepted.success).toBe(true);
+        expect(accepted.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+    });
+
+    it('human 面走跳板可让对手自选弃掉 1 张牌', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['1'].hand = [getCardById('card-flick')];
+
+        const result = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityEffects(state.core, '0', 'walk-the-plank'),
+            'preDefense',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'walk-the-plank' },
+        );
+
+        const choicePrompt = getSimpleChoicePrompt(result.state, 'walk-the-plank');
+        const discardChoice = choicePrompt.options[1];
+        const choiceResolved = respondToPrompt(result.state, discardChoice.id, '0');
+        expect(choiceResolved.success).toBe(true);
+
+        const discardPrompt = getCardInteractionPrompt(choiceResolved.state, 'walk-the-plank');
+        expect(discardPrompt.type).toBe('selectHandCard');
+        expect(discardPrompt.playerId).toBe('1');
+
+        const discardEvents = execute(choiceResolved.state, command('RESOLVE_INTERACTION', '1', {
+            selectedCardIds: ['card-flick'],
+        }), fixedRandom);
+        const afterDiscard = applyEvents(choiceResolved.state.core, discardEvents);
+        expect(afterDiscard.players['1'].hand).toHaveLength(0);
+        expect(afterDiscard.players['1'].discard.map(card => card.id)).toContain('card-flick');
+    });
+
+    it('human 面点燃炸药会按大小顺子施加火药桶并造成对应伤害', () => {
+        const smallState = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        smallState.core = applyEvents(smallState.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+
+        const smallHpBefore = smallState.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const smallResult = resolveAbilityEffectsWithSystem(
+            smallState,
+            getAbilityVariantEffects(smallState.core, '0', 'light-the-fuse', 'light-the-fuse-small'),
+            'preDefense',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse' },
+        );
+
+        expect(smallResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(smallHpBefore - 7);
+        expect(smallResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+
+        const largeState = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        largeState.core = applyEvents(largeState.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+
+        const largeHpBefore = largeState.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const largeResult = resolveAbilityEffectsWithSystem(
+            largeState,
+            getAbilityVariantEffects(largeState.core, '0', 'light-the-fuse', 'light-the-fuse-large'),
+            'preDefense',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse' },
+        );
+
+        expect(largeResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(largeHpBefore - 9);
+        expect(largeResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('human 面判决指令会获得诅咒金币、施加休战并造成不可防御伤害', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+
+        const hpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const result = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityEffects(state.core, '0', 'verdict-command'),
+            'preDefense',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'verdict-command' },
+        );
+
+        expect(eventsOfType(result.events, 'CHOICE_REQUESTED')).toHaveLength(1);
+        expect(result.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+
+        const prompt = getSimpleChoicePrompt(result.state, 'verdict-command');
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const accepted = respondToPrompt(result.state, accept!.id, '0');
+        expect(accepted.success).toBe(true);
+        expect(accepted.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+        expect(accepted.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 7);
+        expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+    });
+
+    it('human 面惊魂动魄可移除任意数量的诅咒金币', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 3;
+
+        const result = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityEffects(state.core, '0', 'astonishing'),
+            'postDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'astonishing', damageDealt: 7 },
+        );
+
+        const prompt = getSimpleChoicePrompt(result.state, 'astonishing');
+        expect(prompt.options).toHaveLength(4);
+        const removeTwo = prompt.options[2];
+        expect(removeTwo).toBeDefined();
+
+        const afterRemove = respondToPrompt(result.state, removeTwo!.id, '0');
+        expect(afterRemove.success).toBe(true);
+        expect(afterRemove.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+    });
+
+    it('human 面无情劫掠会造成伤害、自得 2 个诅咒金币并施加休战和火药桶', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+
+        const hpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const damageResult = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityEffects(state.core, '0', 'merciless-plunder'),
+            'withDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'merciless-plunder' },
+        );
+
+        expect(damageResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 12);
+
+        const result = resolveAbilityEffectsWithSystem(
+            damageResult.state,
+            getAbilityEffects(damageResult.state.core, '0', 'merciless-plunder'),
+            'postDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'merciless-plunder', damageDealt: 12 },
+        );
+
+        expect(eventsOfType(result.events, 'CHOICE_REQUESTED')).toHaveLength(1);
+        expect(result.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 12);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
+
+        const prompt = getSimpleChoicePrompt(result.state, 'merciless-plunder');
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const accepted = respondToPrompt(result.state, accept!.id, '0');
+        expect(accepted.success).toBe(true);
+        expect(accepted.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
+        expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+        expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('human 面嘿，老兄会结算反击、CP、防伤与诅咒金币选择', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+        state.core.rollDiceCount = 4;
+        setCursedPirateDiceValues(state, [1, 1, 4, 6]);
+
+        const cpBefore = state.core.players['0'].resources[RESOURCE_IDS.CP] ?? 0;
+
+        const result = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityEffects(state.core, '0', 'human-still-wet-behind-ears'),
+            'withDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'human-still-wet-behind-ears' },
+        );
+
+        expect(result.state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(cpBefore + 1);
+        expect(result.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'DAMAGE_DEALT',
+                payload: expect.objectContaining({ targetId: '1', amount: 2 }),
+            }),
+            expect.objectContaining({
+                type: 'PREVENT_DAMAGE',
+                payload: expect.objectContaining({ targetId: '0', amount: 2 }),
+            }),
+        ]));
+
+        const prompt = getSimpleChoicePrompt(result.state, 'human-still-wet-behind-ears');
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const accepted = respondToPrompt(result.state, accept!.id, '0');
+        expect(accepted.success).toBe(true);
+        expect(accepted.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
     });
 });

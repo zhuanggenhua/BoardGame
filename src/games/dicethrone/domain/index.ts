@@ -2,7 +2,7 @@
  * DiceThrone 领域内核
  */
 
-import type { DomainCore, GameOverResult, PlayerId, RandomFn } from '../../../engine/types';
+import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
 import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent, HeroState, CharacterId, TurnPhase, InteractionDescriptor, DtResponseWindowType, SeatControllerKind, PendingDefenderChoice } from './types';
@@ -12,7 +12,7 @@ import { validateCommand } from './commandValidation';
 import { execute } from './execute';
 import { reduce } from './reducer';
 import { playerView } from './view';
-import { buildTeamIdByPlayerIdFromSeatingOrder, getActiveDice, getTeamId, isTeamMode } from './rules';
+import { buildTeamIdByPlayerIdFromSeatingOrder, getActiveDice, getPendingBonusSettlementDice, getTeamId, isTeamMode } from './rules';
 import { registerDiceThroneConditions } from '../conditions';
 import { ALL_TOKEN_DEFINITIONS } from './characters';
 import { monkDiceDefinition } from '../heroes/monk/diceConfig';
@@ -166,7 +166,10 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
         };
     },
 
+    normalizeRuntimeState: normalizeLegacyDiceThroneMatchState,
+
     validate: (state, command) => {
+        const normalizedCore = normalizeLegacyDiceThroneMatchState(state).core;
         const phase = (state.sys?.phase ?? 'setup') as TurnPhase;
         const interaction = state.sys?.interaction?.current;
         const responseWindowType = state.sys?.responseWindow?.current?.windowType as DtResponseWindowType | undefined;
@@ -190,7 +193,7 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
                         : [];
                 const allowedDieIds = rawAllowedDieIds.length > 0
                     ? Array.from(new Set(rawAllowedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')))
-                    : getActiveDice(state.core).map(die => die.id);
+                    : getActiveDice(normalizedCore).map(die => die.id);
                 const completedDieIds = Array.isArray(data.completedDieIds)
                     ? data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
                     : [];
@@ -211,11 +214,15 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
             }
         }
 
-        return validateCommand(state.core, command, phase, pendingInteraction, pendingDefenderChoice, responseWindowType);
+        return validateCommand(normalizedCore, command, phase, pendingInteraction, pendingDefenderChoice, responseWindowType);
     },
-    execute: (state, command, random) => execute(state, command, random),
+    execute: (state, command, random) => execute(
+        normalizeLegacyDiceThroneMatchState(state),
+        command,
+        random,
+    ),
     reduce,
-    playerView,
+    playerView: (state, viewingPlayerId) => playerView(normalizeLegacyDiceThroneMatchState(state), viewingPlayerId),
 
     isGameOver: (state: DiceThroneCore): GameOverResult | undefined => {
         // 在 setup 阶段不进行胜负判定，避免血量未初始化导致误判
@@ -266,6 +273,32 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
         return { draw: true };
     },
 };
+
+function normalizeLegacyDiceThroneMatchState(state: MatchState<DiceThroneCore>): MatchState<DiceThroneCore> {
+    const normalizedCore = normalizeLegacyDiceThroneCoreState(state.core);
+    if (normalizedCore === state.core) {
+        return state;
+    }
+    return {
+        ...state,
+        core: normalizedCore,
+    };
+}
+
+function normalizeLegacyDiceThroneCoreState(core: DiceThroneCore): DiceThroneCore {
+    const settlement = core.pendingBonusDiceSettlement;
+    if (!settlement || Array.isArray(settlement.dice)) {
+        return core;
+    }
+
+    return {
+        ...core,
+        pendingBonusDiceSettlement: {
+            ...settlement,
+            dice: getPendingBonusSettlementDice(settlement),
+        },
+    };
+}
 
 // 导出类型
 export type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent } from './types';

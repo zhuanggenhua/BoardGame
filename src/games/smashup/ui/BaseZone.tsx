@@ -1196,7 +1196,8 @@ const MinionCard: React.FC<{
 
     const seed = minion.uid.charCodeAt(0) + index;
     const rotation = (seed % 6) - 3;
-    const selectionStackOffset = Math.max(layout.minionStackOffset * 0.2, -1.2);
+    // 选择态必须给每张随从保留独立可点区域，避免负堆叠导致底部随从被上层盖住。
+    const selectionStackOffset = 0;
     const stackStyle = {
         marginTop: index === 0 ? 0 : layoutInlineSize(isMinionSelectMode ? selectionStackOffset : layout.minionStackOffset, layout),
         zIndex: isMinionSelectMode ? 100 + index : index + 1,

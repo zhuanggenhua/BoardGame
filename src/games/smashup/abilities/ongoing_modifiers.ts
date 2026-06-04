@@ -424,12 +424,15 @@ function countOwnedActionsOnBase(ctx: PowerModifierContext, ownerId: PlayerId): 
 
 function registerKaijuModifiers(): void {
     for (const defId of [
+        'kaiju_radioactive_breath',
         'kaiju_oh_no',
         'kaiju_the_folly_of_men',
         'kaiju_stomp',
     ]) {
         registerBasePowerModifier(defId, (ctx) =>
-            ctx.ongoing?.ownerId === ctx.playerId ? 2 : 0);
+            ctx.ongoing?.ownerId === ctx.playerId
+                ? (defId === 'kaiju_radioactive_breath' ? 3 : 2)
+                : 0);
     }
 
     for (const defId of [

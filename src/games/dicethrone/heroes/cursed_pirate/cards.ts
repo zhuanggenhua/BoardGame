@@ -249,7 +249,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(29),
         sourceAtlasIndex: 29,
         effects: [{
-            description: '普通面路径：获得 1 诅咒金币；咒缚面治疗 3 待面板翻面状态合同。',
+            description: '普通面路径：获得 1 诅咒金币；咒缚面路径：治疗 3。完整双面翻面/技能合同仍未收口。',
             action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-pirates-life' },
             timing: 'immediate',
         }],

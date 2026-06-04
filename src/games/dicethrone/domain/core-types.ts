@@ -507,8 +507,8 @@ export interface HeroState {
     id: string;
     characterId: CharacterId;
     /**
-     * 部分英雄存在双面玩家板。当前仓库只接入咒缚海盗咒缚面素材，
-     * 因此该字段先作为英雄专属运行时合同，供卡牌效果判断当前面。
+     * 部分英雄存在双面玩家板。咒缚海盗运行时已接入 normal / cursed 两张底图，
+     * 当前仅部分效果（如“海盗的一生”）按该字段分支，完整双面技能合同仍待收口。
      */
     playerBoardFace?: 'normal' | 'cursed';
     /**

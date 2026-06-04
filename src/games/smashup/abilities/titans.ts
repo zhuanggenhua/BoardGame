@@ -1526,6 +1526,24 @@ function getMoonZeroThreeInspectablePlayers(state: AbilityContext['state']) {
         }));
 }
 
+function getEverythingGloveHighPowerMinionCount(state: AbilityContext['state'], playerId: string) {
+    return state.bases.reduce((total, base, baseIndex) => total + base.minions.filter(minion =>
+        minion.controller === playerId
+        && getMinionPower(state, minion, baseIndex) >= 5,
+    ).length, 0);
+}
+
+function everythingGloveProtectionChecker(ctx: ProtectionCheckContext): boolean {
+    if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
+    const glove = (ctx.state.titans ?? []).find(candidate =>
+        candidate.defId === 'superheroes_the_everything_glove'
+        && candidate.location.zone === 'base'
+        && candidate.location.baseIndex === ctx.targetBaseIndex
+        && candidate.controllerId === ctx.targetMinion.controller,
+    );
+    return !!glove;
+}
+
 function getTimeBoxCounter(titan: TitanState | undefined) {
     return Number(titan?.metadata?.timeBoxCounters ?? 0);
 }
@@ -1663,6 +1681,22 @@ function getLiveControlledBaseTitan(
     return titan;
 }
 
+function hasPendingInteractionSource(
+    matchState: MatchState<SmashUpCore> | undefined,
+    sourceId: string,
+): boolean {
+    if (!matchState) return false;
+
+    const currentSourceId = (matchState.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId;
+    if (currentSourceId === sourceId) {
+        return true;
+    }
+
+    return matchState.sys.interaction.queue.some((interaction) =>
+        (interaction.data as { sourceId?: string } | undefined)?.sourceId === sourceId,
+    );
+}
+
 function buildTimeBoxCounterProgress(ctx: TriggerContext, reason: string): TriggerResult | SmashUpEvent[] {
     const titan = getQueuedSetAsideTitanForSourceController(ctx, 'time_travelers_time_box');
     if (!titan) return [];
@@ -1728,6 +1762,387 @@ function timeTravelersTimeBoxTalent(ctx: AbilityContext): AbilityResult {
             grantExtraMinion(ctx.playerId, 'time_travelers_time_box_talent', ctx.now, ctx.baseIndex, { powerMax: 2 }),
             grantExtraAction(ctx.playerId, 'time_travelers_time_box_talent', ctx.now),
         ],
+    };
+}
+
+function getHelicoprionCounter(titan: TitanState | undefined) {
+    return Number(titan?.metadata?.helicoprionCounters ?? 0);
+}
+
+function buildHelicoprionMetadataEvent(
+    titanUid: string,
+    counterCount: number,
+    reason: string,
+    now: number,
+): SmashUpEvent {
+    return {
+        type: SU_EVENTS.TITAN_METADATA_UPDATED,
+        payload: {
+            titanUid,
+            metadataUpdate: {
+                helicoprionCounters: Math.max(0, counterCount),
+            },
+            reason,
+        },
+        timestamp: now,
+    };
+}
+
+function queueHelicoprionPlayInteraction(
+    matchState: AbilityContext['matchState'] | TriggerContext['matchState'],
+    state: AbilityContext['state'],
+    playerId: string,
+    titan: TitanState,
+    now: number,
+) {
+    if (!matchState || !canControllerPlayTitan(state, playerId, titan.uid)) return undefined;
+    const baseOptions = buildBaseTargetOptions(
+        state.bases.map((base, baseIndex) => ({
+            baseIndex,
+            label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
+        })),
+        state,
+    );
+    if (baseOptions.length === 0) return undefined;
+
+    const interaction = createSimpleChoice(
+        `titan_sharks_helicoprion_play_${now}`,
+        playerId,
+        '旋齿鲨：是否移除全部计数器并打出到一个基地？',
+        [
+            ...baseOptions,
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'titan_sharks_helicoprion_play', targetType: 'base', autoResolveIfSingle: false },
+    );
+    (interaction.data as { continuationContext?: unknown }).continuationContext = {
+        titanUid: titan.uid,
+        titanDefId: titan.defId,
+    };
+    return queueInteraction(matchState, interaction);
+}
+
+function buildHelicoprionCounterProgress(ctx: TriggerContext, reason: string): TriggerResult | SmashUpEvent[] {
+    const titan = getQueuedSetAsideTitanForSourceController(ctx, 'sharks_helicoprion');
+    if (!titan) return [];
+
+    const nextCounter = getHelicoprionCounter(titan) + 1;
+    const events: SmashUpEvent[] = [
+        buildHelicoprionMetadataEvent(titan.uid, nextCounter, reason, ctx.now),
+    ];
+    if (nextCounter < 4) {
+        return { events };
+    }
+
+    const nextMatchState = queueHelicoprionPlayInteraction(
+        ctx.matchState,
+        ctx.state,
+        ctx.playerId,
+        titan,
+        ctx.now,
+    );
+    return nextMatchState ? { events, matchState: nextMatchState } : { events };
+}
+
+function sharksHelicoprionOnTurnStart(ctx: TriggerContext) {
+    return buildHelicoprionCounterProgress(ctx, 'sharks_helicoprion_on_turn_start');
+}
+
+function getControlledHelicoprionForTrigger(ctx: TriggerContext, controllerId: string) {
+    const sourceTitan = ctx.sourceCardUid ? getTitanByUid(ctx.state, ctx.sourceCardUid) : undefined;
+    if (sourceTitan?.defId === 'sharks_helicoprion' && sourceTitan.controllerId === controllerId) {
+        return sourceTitan;
+    }
+
+    return (ctx.state.titans ?? []).find(candidate =>
+        candidate.defId === 'sharks_helicoprion'
+        && candidate.controllerId === controllerId,
+    );
+}
+
+function sharksHelicoprionOnMinionDestroyed(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    const controllerId = ctx.sourceControllerId ?? ctx.playerId;
+    const titan = getControlledHelicoprionForTrigger(ctx, controllerId);
+    if (!titan) return [];
+
+    if (titan.location.zone === 'setaside') {
+        return buildHelicoprionCounterProgress({
+            ...ctx,
+            sourceCardUid: titan.uid,
+            sourceControllerId: controllerId,
+        }, 'sharks_helicoprion_on_minion_destroyed');
+    }
+
+    return sharksHelicoprionOnMinionDestroyedReward({
+        ...ctx,
+        sourceCardUid: titan.uid,
+        sourceControllerId: controllerId,
+    });
+}
+
+function sharksHelicoprionSpecial(ctx: AbilityContext): AbilityResult {
+    const titan = getTitanByUid(ctx.state, ctx.cardUid);
+    if (!titan || titan.location.zone !== 'setaside' || getHelicoprionCounter(titan) < 4) {
+        return { events: [] };
+    }
+
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return { events: [] };
+
+    return {
+        events: [
+            buildHelicoprionMetadataEvent(titan.uid, 0, 'sharks_helicoprion_special', ctx.now),
+            playTitan(
+                titan,
+                ctx.playerId,
+                ctx.baseIndex,
+                'sharks_helicoprion_special',
+                ctx.now,
+                base.defId,
+            ),
+        ],
+    };
+}
+
+function sharksHelicoprionTalent(ctx: AbilityContext): AbilityResult {
+    const titan = getTitanByUid(ctx.state, ctx.cardUid);
+    if (!titan || titan.location.zone !== 'base' || titan.controllerId !== ctx.playerId) {
+        return { events: [] };
+    }
+
+    return {
+        events: [grantExtraMinion(ctx.playerId, 'sharks_helicoprion_talent', ctx.now, ctx.baseIndex)],
+    };
+}
+
+function getHelicoprionMakoChoices(state: AbilityContext['state'], playerId: string) {
+    const player = state.players[playerId];
+    if (!player) return [];
+
+    return [
+        ...player.deck
+            .filter(card => card.defId === 'sharks_mako')
+            .map(card => ({
+                cardUid: card.uid,
+                defId: card.defId,
+                sourceZone: 'deck' as const,
+                label: `${getCardDef(card.defId)?.name ?? card.defId}（牌库）`,
+            })),
+        ...player.discard
+            .filter(card => card.defId === 'sharks_mako')
+            .map(card => ({
+                cardUid: card.uid,
+                defId: card.defId,
+                sourceZone: 'discard' as const,
+                label: `${getCardDef(card.defId)?.name ?? card.defId}（弃牌堆）`,
+            })),
+    ];
+}
+
+function sharksHelicoprionOnMinionDestroyedReward(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    if (!ctx.matchState || ctx.baseIndex === undefined) return [];
+
+    const controllerId = ctx.sourceControllerId ?? ctx.playerId;
+    const currentPlayerId = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
+    if (currentPlayerId === controllerId) return [];
+    if (ctx.destroyerId === undefined) return [];
+    if (ctx.destroyerId === controllerId) return [];
+
+    const titan = getControlledTitanOnBase(ctx.state, 'sharks_helicoprion', controllerId);
+    if (
+        !titan
+        || titan.defId !== 'sharks_helicoprion'
+        || titan.location.zone !== 'base'
+        || titan.location.baseIndex !== ctx.baseIndex
+        || titan.controllerId !== controllerId
+    ) {
+        return [];
+    }
+
+    const makoChoices = getHelicoprionMakoChoices(ctx.state, controllerId);
+    const canDraw = ((ctx.state.players[controllerId]?.deck.length ?? 0) + (ctx.state.players[controllerId]?.discard.length ?? 0)) > 0;
+    if (makoChoices.length === 0 && !canDraw) {
+        return [];
+    }
+
+    const interaction = createSimpleChoice(
+        `titan_sharks_helicoprion_reward_${titan.uid}_${ctx.now}`,
+        controllerId,
+        '旋齿鲨：选择把 1 张鲭鲨拿回手牌，或抽 1 张牌',
+        [
+            ...makoChoices.map(option => ({
+                id: `${option.sourceZone}-${option.cardUid}`,
+                label: option.label,
+                value: {
+                    action: 'take_mako',
+                    cardUid: option.cardUid,
+                    defId: option.defId,
+                    sourceZone: option.sourceZone,
+                },
+                displayMode: 'card' as const,
+            })),
+            ...(canDraw
+                ? [{ id: 'draw', label: '抽 1 张牌', value: { action: 'draw' }, displayMode: 'button' as const }]
+                : []),
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'titan_sharks_helicoprion_reward', targetType: 'generic' },
+    );
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, interaction),
+    };
+}
+
+function superheroesTheEverythingGloveSpecial(ctx: AbilityContext): AbilityResult {
+    if (getEverythingGloveHighPowerMinionCount(ctx.state, ctx.playerId) < 3) {
+        return { events: [] };
+    }
+    return playTitanFromSetAside(ctx, 'superheroes_the_everything_glove_special');
+}
+
+function superheroesTheEverythingGloveTalent(ctx: AbilityContext): AbilityResult {
+    const titan = getTitanByUid(ctx.state, ctx.cardUid);
+    if (!titan || titan.location.zone !== 'base' || titan.controllerId !== ctx.playerId) {
+        return { events: [] };
+    }
+
+    return {
+        events: [
+            grantExtraMinion(ctx.playerId, 'superheroes_the_everything_glove_talent', ctx.now, ctx.baseIndex, { powerMax: 2 }),
+            grantExtraAction(ctx.playerId, 'superheroes_the_everything_glove_talent', ctx.now),
+        ],
+    };
+}
+
+function tornadosCategory5Special(ctx: AbilityContext): AbilityResult {
+    if ((ctx.state.minionMovesThisTurnByPlayer?.[ctx.playerId] ?? 0) < 2) {
+        return { events: [] };
+    }
+    return playTitanFromSetAside(ctx, 'tornados_category_5_special');
+}
+
+function tornadosCategory5OnMinionMoved(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    if (!ctx.matchState) return [];
+
+    const controllerId = ctx.sourceControllerId ?? ctx.playerId;
+    if (ctx.state.turnOrder[ctx.state.currentPlayerIndex] !== controllerId) return [];
+    if ((ctx.state.minionMovesThisTurnByPlayer?.[controllerId] ?? 0) < 2) return [];
+    if (getTitanByController(ctx.state, controllerId)) return [];
+
+    const titan = getQueuedSetAsideTitanForSourceController(ctx, 'tornados_category_5');
+    if (!titan || !canControllerPlayTitan(ctx.state, controllerId, titan.uid)) return [];
+    if (hasPendingInteractionSource(ctx.matchState, 'titan_tornados_category_5_play')) return [];
+
+    const baseOptions = buildBaseTargetOptions(
+        ctx.state.bases.map((base, baseIndex) => ({
+            baseIndex,
+            label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
+        })),
+        ctx.state,
+    );
+    if (baseOptions.length === 0) return [];
+
+    const interaction = createSimpleChoice(
+        `titan_tornados_category_5_play_${ctx.now}`,
+        controllerId,
+        '五级风暴：选择要进场的基地',
+        [
+            ...baseOptions,
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'titan_tornados_category_5_play', targetType: 'base', autoResolveIfSingle: false },
+    );
+    (interaction.data as { continuationContext?: unknown }).continuationContext = {
+        titanUid: titan.uid,
+        titanDefId: titan.defId,
+    };
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, interaction),
+    };
+}
+
+function tornadosCategory5BeforeScoring(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    const scoringBaseIndex = ctx.baseIndex;
+    if (scoringBaseIndex === undefined) return [];
+
+    const scoringBase = ctx.state.bases[scoringBaseIndex];
+    if (!scoringBase) return [];
+
+    const category5Titans = (ctx.state.titans ?? [])
+        .filter((titan): titan is TitanState & { location: { zone: 'base'; baseIndex: number; enteredAt: number } } =>
+            titan.defId === 'tornados_category_5'
+            && titan.location.zone === 'base'
+            && titan.location.baseIndex !== scoringBaseIndex,
+        )
+        .map(titan => ({
+            titanUid: titan.uid,
+            titanDefId: titan.defId,
+            controllerId: titan.controllerId,
+            fromBaseIndex: titan.location.baseIndex,
+        }));
+    if (category5Titans.length === 0) return [];
+
+    if (!ctx.matchState) {
+        return category5Titans.map(candidate => moveTitan(
+            candidate.titanUid,
+            candidate.titanDefId,
+            candidate.fromBaseIndex,
+            scoringBaseIndex,
+            'tornados_category_5_before_scoring',
+            ctx.now,
+            scoringBase.defId,
+        ));
+    }
+
+    const [first, ...remaining] = category5Titans;
+    const interaction = createSimpleChoice(
+        `titan_tornados_category_5_move_${first.titanUid}_${ctx.now}`,
+        first.controllerId,
+        '五级风暴：是否移动到将要计分的基地？',
+        [
+            { id: 'move', label: '移动到该基地', labelKey: 'ui.move_there', value: { move: true }, displayMode: 'button' as const },
+            { id: 'stay', label: '留在原地', labelKey: 'ui.stay_here', value: { move: false }, displayMode: 'button' as const },
+        ],
+        {
+            sourceId: 'titan_tornados_category_5_move',
+            targetType: 'button',
+            titleKey: 'ui.titan_megabot_move_title',
+            titleParams: {
+                name: 'cards.tornados_category_5.name',
+                baseName: `cards.${scoringBase.defId}.name`,
+            },
+        },
+    );
+    (interaction.data as {
+        continuationContext?: {
+            titanUid: string;
+            titanDefId: string;
+            fromBaseIndex: number;
+            scoringBaseIndex: number;
+            scoringBaseDefId: string;
+            remaining: Array<{
+                titanUid: string;
+                titanDefId: string;
+                controllerId: string;
+                fromBaseIndex: number;
+            }>;
+        };
+    }).continuationContext = {
+        titanUid: first.titanUid,
+        titanDefId: first.titanDefId,
+        fromBaseIndex: first.fromBaseIndex,
+        scoringBaseIndex,
+        scoringBaseDefId: scoringBase.defId,
+        remaining,
+    };
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, interaction),
     };
 }
 
@@ -4762,6 +5177,73 @@ export function registerTitanAbilities(): void {
     registerTitanPowerModifier('mega_troopers_megabot', ({ state, baseIndex, playerId }) =>
         getOwnMinionCountOnBase(state, baseIndex, playerId));
 
+    registerAbility('sharks_helicoprion', 'special', {
+        execute: sharksHelicoprionSpecial,
+        validateUse: (ctx) => {
+            const titan = getTitanByUid(ctx.state, ctx.cardUid);
+            return getHelicoprionCounter(titan) >= 4 ? null : '旋齿鲨的计数还未达到 4';
+        },
+    });
+    registerTitanSpecialValidator('sharks_helicoprion', () =>
+        '旋齿鲨只能在你的回合开始或有随从被消灭后通过特殊能力进场');
+    registerAbility('sharks_helicoprion', 'talent', sharksHelicoprionTalent);
+    registerTitanTalentValidator('sharks_helicoprion', ({ titan }) =>
+        titan.location.zone === 'base' ? null : '该泰坦当前不在场');
+    registerTrigger('sharks_helicoprion', 'onTurnStart', sharksHelicoprionOnTurnStart, {
+        global: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('sharks_helicoprion', 'onMinionDestroyed', sharksHelicoprionOnMinionDestroyed, {
+        global: true,
+        baseScoped: false,
+        playerContext: 'sourceController',
+        canTrigger: (ctx) => {
+            const controllerId = ctx.sourceControllerId ?? ctx.playerId;
+            const titan = getControlledHelicoprionForTrigger(ctx, controllerId);
+            if (!titan || titan.defId !== 'sharks_helicoprion') return false;
+            if (titan.location.zone === 'setaside') return true;
+            return ctx.baseIndex !== undefined
+                && titan.location.zone === 'base'
+                && titan.controllerId === controllerId
+                && titan.location.baseIndex === ctx.baseIndex;
+        },
+    });
+
+    registerAbility('superheroes_the_everything_glove', 'special', superheroesTheEverythingGloveSpecial);
+    registerAbility('superheroes_the_everything_glove', 'talent', superheroesTheEverythingGloveTalent);
+    registerTitanSpecialValidator('superheroes_the_everything_glove', ({ state, playerId, titan }) => {
+        if (titan.location.zone !== 'setaside') return '该泰坦当前不在牌库旁';
+        return getEverythingGloveHighPowerMinionCount(state, playerId) >= 3
+            ? null
+            : '你需要有至少 3 个战力 5 或更高的随从在场';
+    });
+    registerTitanTalentValidator('superheroes_the_everything_glove', ({ titan }) =>
+        titan.location.zone === 'base' ? null : '该泰坦当前不在场');
+    registerProtection('superheroes_the_everything_glove', 'destroy', everythingGloveProtectionChecker);
+    registerProtection('superheroes_the_everything_glove', 'move', everythingGloveProtectionChecker);
+    registerProtection('superheroes_the_everything_glove', 'affect', everythingGloveProtectionChecker);
+
+    registerAbility('tornados_category_5', 'special', tornadosCategory5Special);
+    registerTitanSpecialValidator('tornados_category_5', ({ state, playerId, titan }) => {
+        if (titan.location.zone !== 'setaside') return '该泰坦当前不在牌库旁';
+        if (state.turnOrder[state.currentPlayerIndex] !== playerId) {
+            return '五级风暴只能在你的回合中进场';
+        }
+        return (state.minionMovesThisTurnByPlayer?.[playerId] ?? 0) >= 2
+            ? null
+            : '你本回合至少要移动 2 个随从';
+    });
+    registerTrigger('tornados_category_5', 'onMinionMoved', tornadosCategory5OnMinionMoved, {
+        global: true,
+        optional: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('tornados_category_5', 'beforeScoring', tornadosCategory5BeforeScoring, {
+        playerContext: 'sourceController',
+    });
+    registerTitanPowerModifier('tornados_category_5', ({ state, baseIndex }) =>
+        state.minionMoveEventsByBaseThisTurn?.[baseIndex] ?? 0);
+
     registerAbility('ghosts_creampuff_man', 'special', ghostsCreampuffManSpecial);
     registerAbility('ghosts_creampuff_man', 'talent', ghostsCreampuffManTalent);
     registerTitanSpecialValidator('ghosts_creampuff_man', ({ state, playerId }) =>
@@ -6135,6 +6617,135 @@ export function registerTitanInteractionHandlers(): void {
         };
     });
 
+    registerInteractionHandler('titan_tornados_category_5_move', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { move?: boolean } | undefined;
+        const continuation = (data as {
+            continuationContext?: {
+                titanUid?: string;
+                titanDefId?: string;
+                fromBaseIndex?: number;
+                scoringBaseIndex?: number;
+                scoringBaseDefId?: string;
+                remaining?: Array<{
+                    titanUid: string;
+                    titanDefId: string;
+                    controllerId: string;
+                    fromBaseIndex: number;
+                }>;
+            };
+        } | undefined)?.continuationContext;
+
+        const events: SmashUpEvent[] = [];
+        if (
+            selected?.move
+            && continuation?.titanUid
+            && continuation.titanDefId
+            && continuation.fromBaseIndex !== undefined
+            && continuation.scoringBaseIndex !== undefined
+        ) {
+            const titan = getTitanByUid(state.core, continuation.titanUid);
+            if (
+                !titan
+                || titan.defId !== continuation.titanDefId
+                || titan.controllerId !== playerId
+                || titan.location.zone !== 'base'
+                || titan.location.baseIndex !== continuation.fromBaseIndex
+            ) {
+                return { state, events };
+            }
+            events.push(moveTitan(
+                titan.uid,
+                titan.defId,
+                titan.location.baseIndex,
+                continuation.scoringBaseIndex,
+                'tornados_category_5_before_scoring',
+                timestamp,
+                continuation.scoringBaseDefId,
+            ));
+        }
+
+        const remaining = continuation?.remaining ?? [];
+        if (remaining.length === 0 || continuation?.scoringBaseIndex === undefined || !continuation.scoringBaseDefId) {
+            return { state, events };
+        }
+
+        const [next, ...rest] = remaining;
+        const interaction = createSimpleChoice(
+            `titan_tornados_category_5_move_${next.titanUid}_${timestamp}`,
+            next.controllerId,
+            '五级风暴：是否移动到将要计分的基地？',
+            [
+                { id: 'move', label: '移动到该基地', labelKey: 'ui.move_there', value: { move: true }, displayMode: 'button' as const },
+                { id: 'stay', label: '留在原地', labelKey: 'ui.stay_here', value: { move: false }, displayMode: 'button' as const },
+            ],
+            {
+                sourceId: 'titan_tornados_category_5_move',
+                targetType: 'button',
+                titleKey: 'ui.titan_megabot_move_title',
+                titleParams: {
+                    name: 'cards.tornados_category_5.name',
+                    baseName: `cards.${continuation.scoringBaseDefId}.name`,
+                },
+            },
+        );
+        (interaction.data as {
+            continuationContext?: {
+                titanUid: string;
+                titanDefId: string;
+                fromBaseIndex: number;
+                scoringBaseIndex: number;
+                scoringBaseDefId: string;
+                remaining: Array<{
+                    titanUid: string;
+                    titanDefId: string;
+                    controllerId: string;
+                    fromBaseIndex: number;
+                }>;
+            };
+        }).continuationContext = {
+            titanUid: next.titanUid,
+            titanDefId: next.titanDefId,
+            fromBaseIndex: next.fromBaseIndex,
+            scoringBaseIndex: continuation.scoringBaseIndex,
+            scoringBaseDefId: continuation.scoringBaseDefId,
+            remaining: rest,
+        };
+
+        return {
+            state: queueInteraction(state, interaction),
+            events,
+        };
+    });
+
+    registerInteractionHandler('titan_tornados_category_5_play', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { baseIndex?: number; baseDefId?: string; skip?: boolean } | undefined;
+        if (selected?.skip) {
+            return { state, events: [] };
+        }
+
+        const continuation = (data as {
+            continuationContext?: { titanUid?: string; titanDefId?: string };
+        } | undefined)?.continuationContext;
+        const titan = getLiveSetAsideTitanPlayPromptTitan(state.core, playerId, continuation);
+        if (selected?.baseIndex === undefined || !titan) {
+            return { state, events: [] };
+        }
+
+        return {
+            state,
+            events: [
+                playTitan(
+                    titan,
+                    playerId,
+                    selected.baseIndex,
+                    'tornados_category_5_special',
+                    timestamp,
+                    selected.baseDefId,
+                ),
+            ],
+        };
+    });
+
     registerInteractionHandler('titan_changerbots_mergacon_play', (state, playerId, value, data, _random, timestamp) => {
         const selected = value as { baseIndex?: number; baseDefId?: string; skip?: boolean } | undefined;
         if (selected?.skip) {
@@ -6236,6 +6847,100 @@ export function registerTitanInteractionHandlers(): void {
                     selected.baseDefId,
                 ),
             ],
+        };
+    });
+
+    registerInteractionHandler('titan_sharks_helicoprion_play', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { baseIndex?: number; baseDefId?: string; skip?: boolean } | undefined;
+        if (selected?.skip) {
+            return { state, events: [] };
+        }
+
+        const continuation = (data as {
+            continuationContext?: { titanUid?: string; titanDefId?: string };
+        } | undefined)?.continuationContext;
+        const titan = getLiveSetAsideTitanPlayPromptTitan(state.core, playerId, continuation);
+        if (selected?.baseIndex === undefined || !titan) {
+            return { state, events: [] };
+        }
+
+        return {
+            state,
+            events: [
+                buildHelicoprionMetadataEvent(titan.uid, 0, 'sharks_helicoprion_prompt_play', timestamp),
+                playTitan(
+                    titan,
+                    playerId,
+                    selected.baseIndex,
+                    'sharks_helicoprion_prompt_play',
+                    timestamp,
+                    selected.baseDefId,
+                ),
+            ],
+        };
+    });
+
+    registerInteractionHandler('titan_sharks_helicoprion_reward', (state, playerId, value, _data, random, timestamp) => {
+        const selected = value as {
+            skip?: boolean;
+            action?: 'draw' | 'take_mako';
+            cardUid?: string;
+            defId?: string;
+            sourceZone?: 'deck' | 'discard';
+        } | undefined;
+        if (selected?.skip) {
+            return { state, events: [] };
+        }
+        if (selected?.action === 'draw') {
+            return {
+                state,
+                events: buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
+            };
+        }
+        if (!selected?.cardUid || !selected.defId || !selected.sourceZone) {
+            return { state, events: [] };
+        }
+
+        const player = state.core.players[playerId];
+        if (!player) {
+            return { state, events: [] };
+        }
+
+        if (selected.sourceZone === 'deck') {
+            const liveCard = player.deck.find(card => card.uid === selected.cardUid && card.defId === selected.defId);
+            if (!liveCard) {
+                return { state, events: [] };
+            }
+
+            const events: SmashUpEvent[] = [{
+                type: SU_EVENTS.CARD_TRANSFERRED,
+                payload: {
+                    cardUid: selected.cardUid,
+                    defId: selected.defId,
+                    fromPlayerId: playerId,
+                    toPlayerId: playerId,
+                    reason: 'sharks_helicoprion_reward',
+                },
+                timestamp,
+            } as SmashUpEvent];
+            const shuffledRemaining = random.shuffle(player.deck.filter(card => card.uid !== selected.cardUid));
+            if (shuffledRemaining.length > 0) {
+                events.push({
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: { playerId, deckUids: shuffledRemaining.map(card => card.uid) },
+                    timestamp,
+                } as SmashUpEvent);
+            }
+            return { state, events };
+        }
+
+        const liveCard = player.discard.find(card => card.uid === selected.cardUid && card.defId === selected.defId);
+        if (!liveCard) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: [recoverCardsFromDiscard(playerId, [selected.cardUid], 'sharks_helicoprion_reward', timestamp)],
         };
     });
 

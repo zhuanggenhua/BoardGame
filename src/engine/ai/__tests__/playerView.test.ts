@@ -16,6 +16,18 @@ const engineConfig: GameEngineConfig = {
     systems: [createInteractionSystem()],
 };
 
+const smashUpEngineConfig: GameEngineConfig = {
+    gameId: 'smashup',
+    domain: {
+        gameId: 'smashup',
+        setup: () => ({ turnOrder: ['0', '1'] }),
+        validate: () => ({ valid: true }),
+        execute: () => [],
+        reduce: (state) => state,
+    },
+    systems: [],
+};
+
 describe('applyPlayerViewToState', () => {
     it('returns isolated seat snapshots for owner-only current and queue interactions', () => {
         const authoritativeState: MatchState<{ hp: number }> = {
@@ -130,5 +142,77 @@ describe('applyPlayerViewToState', () => {
 
         expect(authoritativeState.sys.interaction.current.data.cards[0].tags[0]).toBe('attack');
         expect(authoritativeState.sys.interaction.current.data.meta.source.nested.amount).toBe(2);
+    });
+
+    it('SmashUp 视图应先规范化 runtime-guard 脏态，避免把 null 数组和旧对象型 madnessDeck 继续下发', () => {
+        const authoritativeState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '0',
+                currentPlayerIndex: 0,
+                turnOrder: ['0', '1'],
+                turnNumber: 3,
+                nextUid: 5,
+                players: {
+                    '0': {
+                        id: '0',
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                        pendingMinionPlayEffects: null,
+                        usedDiscardPlayAbilities: null,
+                    },
+                    '1': {
+                        id: '1',
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                },
+                bases: [
+                    {
+                        defId: 'base_tortuga',
+                        minions: [],
+                        ongoingActions: [],
+                        buriedCards: null,
+                    },
+                ],
+                baseDeck: [],
+                baseDiscard: [],
+                madnessDeck: [
+                    { uid: 'mad-1', defId: 'special_madness', type: 'action', owner: '0' },
+                    { uid: 'mad-2', defId: 'special_madness', type: 'action', owner: '0' },
+                ],
+            },
+            sys: {
+                phase: 'playCards',
+                turnNumber: 3,
+                eventStream: { entries: [], nextId: 1 },
+                interaction: { current: undefined, queue: [], isBlocked: false },
+                responseWindow: { current: undefined },
+            },
+        } as MatchState<unknown>;
+
+        const ownerView = applyPlayerViewToState(smashUpEngineConfig, authoritativeState, '0') as any;
+        const spectatorView = applyPlayerViewToState(smashUpEngineConfig, authoritativeState, null) as any;
+
+        expect(ownerView.core.players['0'].pendingMinionPlayEffects).toEqual([]);
+        expect(ownerView.core.players['0'].usedDiscardPlayAbilities).toBeUndefined();
+        expect(ownerView.core.bases[0].buriedCards).toEqual([]);
+        expect(ownerView.core.madnessDeck).toEqual(['special_madness', 'special_madness']);
+
+        expect(spectatorView.core.players['0'].pendingMinionPlayEffects).toEqual([]);
+        expect(spectatorView.core.players['0'].usedDiscardPlayAbilities).toBeUndefined();
+        expect(spectatorView.core.bases[0].buriedCards).toEqual([]);
+        expect(spectatorView.core.madnessDeck).toEqual(['special_madness', 'special_madness']);
     });
 });

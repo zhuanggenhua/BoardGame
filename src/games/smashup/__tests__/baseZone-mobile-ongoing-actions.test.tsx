@@ -76,6 +76,9 @@ function renderBaseZone(options?: {
     titans?: Array<Record<string, unknown>>;
     usableOngoingTalentUids?: Set<string>;
     isMobileViewport?: boolean;
+    isMinionSelectMode?: boolean;
+    selectableMinionUids?: Set<string>;
+    onMinionSelect?: (minionUid: string, baseIndex: number) => void;
 }) {
     const dispatch = vi.fn();
     const onViewAction = vi.fn();
@@ -96,10 +99,13 @@ function renderBaseZone(options?: {
             turnOrder: core.turnOrder,
             isMobileViewport: options?.isMobileViewport,
             isDeployMode: false,
+            isMinionSelectMode: options?.isMinionSelectMode,
+            selectableMinionUids: options?.selectableMinionUids,
             isMyTurn: true,
             myPlayerId: '0',
             dispatch,
             onClick: vi.fn(),
+            onMinionSelect: options?.onMinionSelect,
             onViewMinion: vi.fn(),
             onViewAction,
             onViewBase: vi.fn(),
@@ -298,5 +304,62 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         const counter = document.querySelector('[data-testid="su-base-titan-timebox-counter-time-box-live"]');
         expect(counter).not.toBeNull();
         expect(counter).toHaveTextContent('5');
+    });
+
+    it('随从选择模式下不应继续负向堆叠，底部随从仍可单独点击', () => {
+        const onMinionSelect = vi.fn();
+        renderBaseZone({
+            isMinionSelectMode: true,
+            selectableMinionUids: new Set(['m1', 'm2', 'm3']),
+            onMinionSelect,
+            minions: [
+                {
+                    uid: 'm1',
+                    defId: 'pirate_first_mate',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                },
+                {
+                    uid: 'm2',
+                    defId: 'pirate_first_mate',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                },
+                {
+                    uid: 'm3',
+                    defId: 'pirate_first_mate',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                },
+            ],
+        });
+
+        const secondMinion = document.querySelector('[data-minion-uid="m2"]') as HTMLElement | null;
+        const thirdMinion = document.querySelector('[data-minion-uid="m3"]') as HTMLElement | null;
+        expect(secondMinion).not.toBeNull();
+        expect(thirdMinion).not.toBeNull();
+        expect(secondMinion?.style.marginTop).toBe('0vw');
+        expect(thirdMinion?.style.marginTop).toBe('0vw');
+
+        fireEvent.click(thirdMinion as Element);
+        expect(onMinionSelect).toHaveBeenCalledWith('m3', 0);
     });
 });

@@ -74,6 +74,7 @@ import { injectTutorialInteractionId } from './tutorialAiCommand';
 import { resolveSetupPlayerIds } from './setupPlayerOrder';
 import { createScopedLogger } from '../../lib/logger';
 import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoReport';
+import { normalizeSmashUpMatchStateForUi } from '../../games/smashup/ui/normalizeRuntimeState';
 
 import { createCommandBatcher, type CommandBatcher } from './latency/commandBatcher';
 import { EventStreamRollbackContext, type EventStreamRollbackValue } from '../hooks/EventStreamRollbackContext';
@@ -211,6 +212,30 @@ function buildLocalAiSeatStates(
         seatStates[playerId] = state;
     }
     return seatStates;
+}
+
+function normalizeLocalStateForGame(
+    gameId: string | undefined,
+    state: MatchState<unknown>,
+): MatchState<unknown> {
+    if (gameId === 'smashup') {
+        return normalizeSmashUpMatchStateForUi(state as MatchState<any>) as MatchState<unknown>;
+    }
+    return state;
+}
+
+function normalizePersistedLocalStateForGame(
+    gameId: string,
+    state: MatchState<unknown>,
+): MatchState<unknown> {
+    return normalizeLocalStateForGame(gameId, state);
+}
+
+function normalizeReceivedStateForGame(
+    gameId: string | undefined,
+    state: MatchState<unknown>,
+): MatchState<unknown> {
+    return normalizeLocalStateForGame(gameId, state);
 }
 
 // ============================================================================
@@ -453,6 +478,10 @@ export function GameProvider({
             playerID: playerId,
             credentials,
             onStateUpdate: (newState, players, meta, randomMeta) => {
+                const normalizedAuthoritativeState = normalizeReceivedStateForGame(
+                    engineConfig?.gameId,
+                    newState as MatchState<unknown>,
+                );
                 if (!hasReportedStateReadyRef.current) {
                     hasReportedStateReadyRef.current = true;
                     onStateReadyRef.current?.();
@@ -464,7 +493,7 @@ export function GameProvider({
                         console.warn('[GameProvider] 忽略旧状态更新', {
                             receivedStateID: meta.stateID,
                             currentStateID: lastConfirmedStateIDRef.current,
-                            receivedTurnNumber: (newState as MatchState<unknown>).core ? ((newState as MatchState<unknown>).core as { turnNumber?: number }).turnNumber : undefined,
+                            receivedTurnNumber: normalizedAuthoritativeState.core ? (normalizedAuthoritativeState.core as { turnNumber?: number }).turnNumber : undefined,
                         });
                         return; // 忽略旧状态
                     }
@@ -492,7 +521,7 @@ export function GameProvider({
                     // 否则（例如纯对手/AI 事件更新）不应触发 reconcileSeq，
                     // 避免把合法的新事件吞掉导致动画不播放。
                     const hadPendingBeforeReconcile = engine.hasPendingCommands();
-                    const result = engine.reconcile(newState as MatchState<unknown>, meta);
+                    const result = engine.reconcile(normalizedAuthoritativeState, meta);
                     
                     // 更新回滚信号
                     if (result.didRollback && result.optimisticEventWatermark !== null) {
@@ -517,12 +546,12 @@ export function GameProvider({
                     }
 
                 } else {
-                    finalState = newState as MatchState<unknown>;
+                    finalState = normalizedAuthoritativeState;
                 }
 
                 // 传输层 patch 基线必须保持“服务端权威态”，不能混入 reconcile/filter 后的渲染态；
                 // 否则后续 state:patch 会基于被 UI 修饰过的快照 apply，导致 patch 失败并只能靠 resync/刷新恢复。
-                client.updateLatestState(newState);
+                client.updateLatestState(normalizedAuthoritativeState);
 
                 // 实时刷新交互选项（如果策略是 realtime）
                 const refreshedState = refreshInteractionOptions(finalState);
@@ -825,7 +854,10 @@ export function LocalGameProvider({
 
     const [state, setState] = useState<MatchState<unknown>>(() => {
         if (persistedSnapshot?.state) {
-            return setUndoAiSeatIds(persistedSnapshot.state, aiSeatIds);
+            return setUndoAiSeatIds(
+                normalizePersistedLocalStateForGame(config.gameId, persistedSnapshot.state),
+                aiSeatIds,
+            );
         }
         const random = initialRandom;
         
@@ -872,7 +904,10 @@ export function LocalGameProvider({
             // 直接进入 playCards 阶段（测试会通过 setupScene 注入完整状态）。
             // SystemState 已统一使用顶层 `sys.phase`，这里不能再写历史遗留的 `sys.flow.phase`。
             sys.phase = 'playCards';
-            return setUndoAiSeatIds({ sys, core }, aiSeatIds);
+            return setUndoAiSeatIds(
+                normalizeLocalStateForGame(config.gameId, { sys, core }),
+                aiSeatIds,
+            );
         }
         
         const shouldSkipFactionSelect = testConfig?.skipFactionSelect === true &&
@@ -934,7 +969,10 @@ export function LocalGameProvider({
                 
                 currentState = result.state;
             }
-            return setUndoAiSeatIds(currentState, aiSeatIds);
+            return setUndoAiSeatIds(
+                normalizeLocalStateForGame(config.gameId, currentState),
+                aiSeatIds,
+            );
         }
         
         // 正常流程：从 factionSelect 阶段开始
@@ -943,7 +981,10 @@ export function LocalGameProvider({
             setupPlayerIds,
             config.systems as EngineSystem[],
         );
-        return setUndoAiSeatIds({ sys, core }, aiSeatIds);
+        return setUndoAiSeatIds(
+            normalizeLocalStateForGame(config.gameId, { sys, core }),
+            aiSeatIds,
+        );
     });
     const stateRef = useRef(state);
 
@@ -1184,7 +1225,8 @@ export function LocalGameProvider({
             }
 
             // 实时刷新交互选项（如果策略是 realtime）
-            const refreshedState = refreshInteractionOptions(result.state);
+            const normalizedNextState = normalizeLocalStateForGame(config.gameId, result.state);
+            const refreshedState = refreshInteractionOptions(normalizedNextState);
             if (isTutorialAiCommand) {
                 const playerBefore = (prev.core as {
                     players?: Record<string, { hand?: unknown; resources?: Record<string, unknown> }>;
@@ -1766,7 +1808,10 @@ export function LocalGameProvider({
             setupPlayerIds,
             config.systems as EngineSystem[],
         );
-        setState(setUndoAiSeatIds({ sys, core }, aiSeatIds));
+        setState(setUndoAiSeatIds(
+            normalizeLocalStateForGame(config.gameId, { sys, core }),
+            aiSeatIds,
+        ));
     }, [aiSeatIds, config, seed, setupData, setupPlayerIds]);
 
     const matchPlayers = useMemo<MatchPlayerInfo[]>(
@@ -1819,7 +1864,10 @@ export function LocalGameProvider({
         harness.state.register(
             () => stateRef.current,
             (newState) => {
-                const nextState = newState as MatchState<unknown>;
+                const nextState = normalizeLocalStateForGame(
+                    config.gameId,
+                    newState as MatchState<unknown>,
+                );
                 stateRef.current = nextState;
                 setState(nextState);
             },

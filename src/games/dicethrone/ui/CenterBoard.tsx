@@ -8,6 +8,7 @@ import type { AbilityOverlaysHandle } from './AbilityOverlays';
 import { ASSETS } from './assets';
 import { getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlotLayout';
 import type { AbilityCard } from '../types';
+import type { HeroState } from '../domain/types';
 
 export interface CenterBoardProps {
     coreAreaHighlighted: boolean;
@@ -24,6 +25,7 @@ export interface CenterBoardProps {
     activatingAbilityId?: string;
     abilityLevels?: Record<string, number>;
     characterId?: string;
+    playerBoardFace?: HeroState['playerBoardFace'];
     locale?: string;
     onMagnifyImage: (image: string) => void;
     onMagnifyCard: (card: AbilityCard) => void;
@@ -46,6 +48,7 @@ export const CenterBoard = ({
     activatingAbilityId,
     abilityLevels,
     characterId = 'monk',
+    playerBoardFace,
     locale,
     onMagnifyImage,
     onMagnifyCard,
@@ -79,7 +82,7 @@ export const CenterBoard = ({
     const tipToggleButtonOffsetClassName = isTipOpen ? 'right-[0.8vw]' : 'left-[0.1vw]';
     const tipToggleButtonClassName = `absolute top-[55%] z-50 flex p-[0.5vw] text-[inherit] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white/50 transition-[background-color,color,border-color] duration-500 border border-white/8 hover:bg-black/50 hover:text-white hover:border-white/16 ${tipToggleButtonOffsetClassName}`;
 
-    const playerBoardPath = ASSETS.PLAYER_BOARD(characterId);
+    const playerBoardPath = ASSETS.PLAYER_BOARD(characterId, playerBoardFace);
     const tipBoardPath = ASSETS.TIP_BOARD(characterId);
 
     const handleMagnifySurfaceClick = React.useCallback((
@@ -155,6 +158,7 @@ export const CenterBoard = ({
                         activatingAbilityId={activatingAbilityId}
                         abilityLevels={abilityLevels}
                         characterId={characterId}
+                        playerBoardFace={playerBoardFace}
                         locale={locale}
                         onMagnifyCard={onMagnifyCard}
                         playerTokens={playerTokens}

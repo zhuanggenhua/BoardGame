@@ -374,6 +374,37 @@ function getMandatoryFrameTriggers(state: MatchState<SmashUpCore>, frameId: stri
     );
 }
 
+function getReactionSessionForTrigger(
+    state: MatchState<SmashUpCore>,
+    trigger: TriggerInstance,
+): SmashUpReactionSession | undefined {
+    const frameId = trigger.frameId ?? trigger.id;
+    const existingSession = getReactionSessionFromFrameId(state, frameId);
+    if (existingSession) {
+        return existingSession;
+    }
+
+    const activeSession = getSmashUpReactionSession(state);
+    const phase: SmashUpReactionPhase = getMandatoryFrameTriggers(state, frameId).length > 0
+        ? 'mandatory'
+        : 'optional';
+    const currentPlayerId = activeSession?.currentPlayerId ?? getCurrentPlayerId(state.core);
+    const activePlayerId = phase === 'mandatory'
+        ? currentPlayerId
+        : (trigger.ownerPlayerId ?? trigger.sourceControllerId ?? currentPlayerId);
+
+    return normalizeReactionSessionPlayers(state, {
+        frameId,
+        frameKind: activeSession?.frameKind ?? 'generic',
+        phase,
+        activePlayerId,
+        currentPlayerId,
+        consecutivePasses: 0,
+        sourceBaseIndex: trigger.baseIndex ?? trigger.sourceBaseIndex ?? activeSession?.sourceBaseIndex,
+        responseWindowType: activeSession?.responseWindowType,
+    });
+}
+
 function consumeRemainingFrameTriggers(
     state: MatchState<SmashUpCore>,
     frameId: string,
@@ -743,8 +774,16 @@ export function resolveLiveSmashUpReactionChoice(
     now: number,
     random?: RandomFn,
 ): ResolvedSmashUpReactionChoice | undefined {
-    const session = getSmashUpReactionSession(state);
+    let session = getSmashUpReactionSession(state);
     if (!session) return undefined;
+
+    if (value.kind === 'trigger') {
+        const trigger = (state.core.triggerQueue ?? []).find(candidate => candidate.id === value.triggerId);
+        const triggerFrameId = trigger?.frameId ?? trigger?.id;
+        if (trigger && triggerFrameId && triggerFrameId !== session.frameId) {
+            session = getReactionSessionForTrigger(state, trigger) ?? session;
+        }
+    }
 
     const options = buildReactionOptions(state, session, now, random);
     const matchedOption = options.find(option => isSameReactionChoiceValue(option.value, value));

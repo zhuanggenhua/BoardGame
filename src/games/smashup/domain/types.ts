@@ -730,6 +730,8 @@ export interface SmashUpCore {
     titans?: TitanState[];
     /** 房间创建时启用的扩展集合 */
     enabledExpansions?: string[];
+    /** 是否允许查看牌库剩余牌详情 */
+    deckQueryEnabled?: boolean;
     /** 基地牌库（defId 列表） */
     baseDeck: string[];
     /** 基地弃牌堆（defId 列表）。当基地牌库用尽时，会将弃牌堆洗回牌库继续补充。 */
@@ -810,6 +812,10 @@ export interface SmashUpCore {
     playerRestrictionsUntilTurnStart?: PlayerTurnRestriction[];
     /** 本回合每位玩家移动随从到各基地的次数（用于牧场等"首次移动"触发） */
     minionsMovedToBaseThisTurn?: Record<string, Record<number, number>>;
+    /** 本回合每个基地被移动到/离开的随从总次数（Category 5 等按基地累计移动数计算） */
+    minionMoveEventsByBaseThisTurn?: Record<number, number>;
+    /** 本回合各玩家发起的随从移动总次数（用于 Category 5 的进场条件） */
+    minionMovesThisTurnByPlayer?: Record<PlayerId, number>;
     /**
      * 本回合各玩家是否曾把对手随从移动到各基地（你们已经完蛋 POD）
      * key1 = baseIndex, key2 = playerId, value = true

@@ -23,6 +23,7 @@ import {
     getSlotAbilityId,
     getUpgradeCardForAbilityLevel,
 } from './abilityOverlayHelpers';
+import type { HeroState } from '../domain/types';
 
 // 被动能力配置（按角色）
 const PASSIVE_ABILITIES: Record<string, { slotId: string; cardId?: string }[]> = {
@@ -65,6 +66,7 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
         activatingAbilityId?: string;
         abilityLevels?: Record<string, number>;
         characterId?: string;
+        playerBoardFace?: HeroState['playerBoardFace'];
         locale?: string;
         onMagnifyCard?: (card: AbilityCard) => void;
         playerTokens?: Record<string, number>;  // 新增：玩家的 token 状态（用于显示被动能力激活状态）
@@ -81,6 +83,7 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
         activatingAbilityId,
         abilityLevels,
         characterId = 'monk', // 用于查找对应角色的升级卡定义
+        playerBoardFace,
         locale,
         onMagnifyCard,
         playerTokens: _playerTokens,
@@ -258,7 +261,7 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
                     
                     // 方案 A：不再需要计算精灵图位置（col, row, bgX, bgY），玩家面板已包含基础技能
                     const isResolved = resolveAbilityId(slot.id);
-                    const baseAbilityId = getSlotAbilityId(characterId, slot.id);
+                    const baseAbilityId = getSlotAbilityId(characterId, slot.id, playerBoardFace);
                     const level = baseAbilityId ? (abilityLevels?.[baseAbilityId] ?? 1) : 1;
                     const upgradeCard = baseAbilityId && level > 1
                         ? getUpgradeCardForAbilityLevel(characterId, baseAbilityId, level)

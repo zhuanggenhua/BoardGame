@@ -66,4 +66,38 @@ describe('base_mountains_of_madness: 疯狂山脉 - 抽疯狂卡', () => {
 
         expect(result.events).toHaveLength(0);
     });
+
+    it('borrowed Infiltrate 由控制者控制时，应阻止 Mountains of Madness 让控制者自己打出的随从拥有者抽疯狂卡', () => {
+        const state = makeState({
+            bases: [{
+                defId: 'base_mountains_of_madness',
+                minions: [{
+                    uid: 'm2',
+                    defId: 'test_minion',
+                    controller: '0',
+                    owner: '1',
+                    basePower: 3,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                }],
+                ongoingActions: [{ uid: 'inf-mad-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            }],
+            madnessDeck: Array(10).fill('madness_1'),
+        });
+
+        const { events } = triggerBaseAbility('base_mountains_of_madness', 'onMinionPlayed', {
+            state,
+            matchState: makeMatchState(state),
+            baseIndex: 0,
+            baseDefId: 'base_mountains_of_madness',
+            playerId: '0',
+            minionUid: 'm2',
+            now: 1,
+        });
+
+        expect(events).toHaveLength(0);
+    });
 });

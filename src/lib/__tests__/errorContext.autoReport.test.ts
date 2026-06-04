@@ -94,4 +94,48 @@ describe('errorContext 自动反馈', () => {
 
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
+
+    it('音频设备启动失败的 unhandledrejection 不会自动上报，但会保留最近错误上下文', async () => {
+        const { installGlobalErrorContextCapture, getLastErrorContext } = await import('../feedback/errorContext');
+        installGlobalErrorContextCapture();
+
+        const rejectionEvent = new Event('unhandledrejection') as Event & { reason?: unknown };
+        rejectionEvent.reason = Object.assign(new Error('Failed to start the audio device'), {
+            name: 'InvalidStateError',
+        });
+        window.dispatchEvent(rejectionEvent);
+
+        await Promise.resolve();
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getLastErrorContext()).toMatchObject({
+            name: 'InvalidStateError',
+            message: 'Failed to start the audio device',
+            source: 'window.unhandledrejection',
+        });
+    });
+
+    it('Script error. 的 window error 不会自动上报，但会保留最近错误上下文', async () => {
+        const { installGlobalErrorContextCapture, getLastErrorContext } = await import('../feedback/errorContext');
+        installGlobalErrorContextCapture();
+
+        const errorEvent = new Event('error') as Event & {
+            error?: Error;
+            message?: string;
+            filename?: string;
+            lineno?: number;
+            colno?: number;
+        };
+        errorEvent.message = 'Script error.';
+        errorEvent.filename = 'window.error';
+        window.dispatchEvent(errorEvent);
+
+        await Promise.resolve();
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getLastErrorContext()).toMatchObject({
+            name: 'Error',
+            message: 'Script error.',
+        });
+    });
 });

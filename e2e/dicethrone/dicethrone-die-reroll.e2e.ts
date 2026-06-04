@@ -1,5 +1,29 @@
 import { test, expect } from '../framework';
 
+async function dragHandCardToPlay(page: any, cardId: string): Promise<void> {
+    const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+    await expect(handCard).toBeVisible({ timeout: 10000 });
+    const cardBox = await page.evaluate((nextCardId: string) => {
+        const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }, cardId);
+    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
+        throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+    }
+
+    const startX = cardBox.x + (cardBox.width / 2);
+    const startY = cardBox.y + (cardBox.height * 0.78);
+    const endY = Math.max(24, startY - 240);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, endY, { steps: 12 });
+    await page.mouse.up();
+    await page.mouse.move(2, 2);
+}
+
 test.describe('DiceThrone - 选择骰子重投', () => {
     test('card-worthy-of-me 应通过 framework 场景完成单骰重投', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone');
@@ -153,11 +177,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         const initialState = await game.getState();
         const initialDiceValues = (initialState?.core?.dice ?? []).map((die: any) => die.value);
 
-        const wildWestCard = page
-            .locator('[data-card-id="card-wild-west"], [data-card-key^="card-wild-west-"]')
-            .first();
-        await expect(wildWestCard).toBeVisible({ timeout: 5000 });
-        await wildWestCard.click();
+        await dragHandCardToPlay(page, 'card-wild-west');
 
         // 断言：攻击修正徽章应在“打出卡牌后”立即出现（徽章是效果提示，不代表数值已生效）
         const modifierBadgeEarly = page.locator('[data-testid="active-modifier-badge"]').first();
@@ -321,11 +341,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
 
         await game.waitForPhase('offensiveRoll', 10000);
 
-        const wildWestCard = page
-            .locator('[data-card-id="card-wild-west"], [data-card-key^="card-wild-west-"]')
-            .first();
-        await expect(wildWestCard).toBeVisible({ timeout: 5000 });
-        await wildWestCard.click();
+        await dragHandCardToPlay(page, 'card-wild-west');
 
         // 断言：应提示 requireLoaded，而不是进入奖励骰特写
         await expect(page.getByText('需要消耗 1 个装填才能打出此卡')).toBeVisible({ timeout: 5000 });

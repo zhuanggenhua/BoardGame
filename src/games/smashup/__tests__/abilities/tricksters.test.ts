@@ -1192,6 +1192,35 @@ describe('诡术师 ongoing 能力', () => {
 
             expect(result).toBeUndefined();
         });
+
+        it('borrowed Hideout POD 应按控制者而不是真实 owner 阻止其他玩家把随从移动到此基地', () => {
+            const sourceBase = makeBase({
+                minions: [makeMinion('m-1', 'robot_zapbot', '1', 2, { owner: '1' } as any)],
+            });
+            const targetBase = makeBase({
+                ongoingActions: [{
+                    uid: 'ho-borrowed',
+                    defId: 'trickster_hideout_pod',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            });
+            const state = makeState({ bases: [sourceBase, targetBase] });
+
+            const blockedForOtherPlayer = interceptEvent(state, {
+                type: SU_EVENTS.MINION_MOVED,
+                payload: {
+                    minionUid: 'm-1',
+                    minionDefId: 'robot_zapbot',
+                    fromBaseIndex: 0,
+                    toBaseIndex: 1,
+                    reason: 'test_move',
+                },
+                timestamp: 1001,
+            } as any);
+
+            expect(blockedForOtherPlayer).toBeNull();
+        });
     });
 
     describe('trickster_pay_the_piper: 付笛手的钱', () => {

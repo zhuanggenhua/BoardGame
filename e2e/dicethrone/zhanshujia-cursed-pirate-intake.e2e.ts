@@ -32,9 +32,10 @@ import {
     TOKEN_IDS,
     ZHANSHUJIA_DICE_FACE_IDS,
 } from '../../src/games/dicethrone/domain/ids';
+import { getCharacterAbilitiesForFace } from '../../src/games/dicethrone/domain/characters';
 import { CURSED_PIRATE_CARDS } from '../../src/games/dicethrone/heroes/cursed_pirate/cards';
 import { ZHANSHUJIA_CARDS } from '../../src/games/dicethrone/heroes/zhanshujia/cards';
-import { DRUM_MOVEMENT_2, EXPAND_BATTLEFIELD_2, STRATEGIC_SHIFT_2, WAR_MONGER_2 } from '../../src/games/dicethrone/heroes/zhanshujia/abilities';
+import { CARPET_BOMBING_2, DRUM_MOVEMENT_2, EXPAND_BATTLEFIELD_2, SABRE_THRUST_2, STRATEGIC_SHIFT_2, WAR_MONGER_2 } from '../../src/games/dicethrone/heroes/zhanshujia/abilities';
 
 type JsonRecord = Record<string, unknown>;
 type MatchSetup = NonNullable<Awaited<ReturnType<typeof setupOnlineMatch>>>;
@@ -89,6 +90,18 @@ const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: stri
     await page.screenshot({ path, fullPage: false });
     return path;
 };
+
+const setHarnessRandomQueue = async (page: Page, values: number[]): Promise<void> => {
+    await page.evaluate((queueValues) => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: { random?: { setQueue?: (nextValues: number[]) => void } };
+        }).__BG_TEST_HARNESS__;
+        harness?.random?.setQueue?.(queueValues);
+    }, values);
+};
+
+const repeatRandomValue = (value: number, count: number): number[] =>
+    Array.from({ length: count }, () => value);
 
 const setupNewHeroMatch = async (browser: Browser, baseURL: string | undefined): Promise<MatchSetup> => {
     const match = await setupOnlineMatch(browser, baseURL, {
@@ -846,6 +859,87 @@ const setupSabreThrustScenario = async (match: MatchSetup) => {
                 1: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
                 2: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
                 3: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                6: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+            }),
+            rollCount: 1,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
+            pendingDamage: undefined,
+            pendingBonusDiceSettlement: undefined,
+            extraAttackInProgress: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
+const setupSabreThrust2Scenario = async (match: MatchSetup) => {
+    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
+        const hostAbilityLevels = asRecord(host.abilityLevels);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            discard: [],
+            abilities: Array.isArray(host.abilities)
+                ? (host.abilities as JsonRecord[]).map((ability) => (
+                    ability.id === 'sabre-thrust'
+                        ? { ...structuredClone(SABRE_THRUST_2 as unknown as JsonRecord), id: 'sabre-thrust' }
+                        : ability
+                ))
+                : host.abilities,
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            abilityLevels: {
+                ...hostAbilityLevels,
+                'sabre-thrust': 2,
+            },
+            damageShields: [],
+        };
+        players['1'] = {
+            ...guest,
+            hand: [],
+            discard: [],
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '0',
+            phase: 'offensiveRoll',
+            dice: buildDiceForValues('zhanshujia-dice', [1, 1, 1, 6, 6], {
+                1: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
                 6: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
             }),
             rollCount: 1,
@@ -1831,15 +1925,27 @@ const setupSharkBaitScenario = async (
             ...host,
             hand: [],
             discard: [],
+            resources: {
+                ...asRecord(host.resources),
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
             statusEffects: {},
+            damageShields: [],
         };
         players['1'] = {
             ...guest,
             hand: [sharkBaitCard],
             discard: [],
-            resources: { ...guestResources, [RESOURCE_IDS.CP]: 5 },
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
             tokens: {},
             statusEffects: {},
+            damageShields: [],
         };
 
         root.core = {
@@ -1847,20 +1953,23 @@ const setupSharkBaitScenario = async (
             players,
             activePlayerId: '1',
             phase: 'offensiveRoll',
+            dice: buildDiceForValues('cursed_pirate-dice', [1, 1, 1, 4, 5], {
+                1: CURSED_PIRATE_DICE_FACE_IDS.CUTLASS,
+                4: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
+                5: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
+            }),
             rollCount: 1,
             rollLimit: 3,
             rollDiceCount: 5,
             rollConfirmed: true,
-            pendingAttack: {
-                attackerId: '1',
-                defenderId: '0',
-                sourceAbilityId: 'test-attack',
-                isDefendable: true,
-                bonusDamage: 0,
-                attackModifierBonusDamage: 0,
-            },
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
             pendingBonusDiceSettlement: undefined,
             pendingDamage: undefined,
+            lastResolvedAttackDamage: 0,
+            attackResolvedSequence: Number(core.attackResolvedSequence ?? 0),
+            afterAttackResponseWindowSequence: Number(core.afterAttackResponseWindowSequence ?? 0),
         };
         root.sys = {
             ...sys,
@@ -2004,6 +2113,79 @@ const setupUndeadClawScenario = async (
             pendingAttack: undefined,
             pendingBonusDiceSettlement: undefined,
             pendingDamage: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            currentPlayerIndex: 1,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
+const setupHumanVerdictCommandScenario = async (match: MatchSetup) => {
+    await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
+        const guestAbilityLevels = asRecord(guest.abilityLevels);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            discard: [],
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+        players['1'] = {
+            ...guest,
+            hand: [],
+            discard: [],
+            playerBoardFace: 'normal',
+            abilities: structuredClone(getCharacterAbilitiesForFace('cursed_pirate', 'normal') as unknown as JsonRecord[]),
+            abilityLevels: guestAbilityLevels,
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '1',
+            phase: 'offensiveRoll',
+            dice: buildDiceForValues('cursed-pirate-dice', [1, 6, 6, 6, 6], {
+                1: CURSED_PIRATE_DICE_FACE_IDS.CUTLASS,
+                6: CURSED_PIRATE_DICE_FACE_IDS.SKULL,
+            }),
+            rollCount: 1,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
+            pendingBonusDiceSettlement: undefined,
+            pendingDamage: undefined,
+            extraAttackInProgress: undefined,
         };
         root.sys = {
             ...sys,
@@ -2520,6 +2702,91 @@ const setupDrumMovement2Scenario = async (match: MatchSetup) => {
     });
 };
 
+const setupCarpetBombing2StrategyScenario = async (
+    match: MatchSetup,
+    drawCards: JsonRecord[],
+) => {
+    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+        const root = asRecord(state.G ?? state);
+        const core = asRecord(root.core);
+        const sys = asRecord(root.sys);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
+        const hostAbilityLevels = asRecord(host.abilityLevels);
+
+        players['0'] = {
+            ...host,
+            hand: [],
+            deck: drawCards,
+            discard: [],
+            abilities: Array.isArray(host.abilities)
+                ? (host.abilities as JsonRecord[]).map((ability) => (
+                    ability.id === 'carpet-bombing'
+                        ? { ...structuredClone(CARPET_BOMBING_2 as unknown as JsonRecord), id: 'carpet-bombing' }
+                        : ability
+                ))
+                : host.abilities,
+            resources: {
+                ...hostResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            abilityLevels: {
+                ...hostAbilityLevels,
+                'carpet-bombing': 2,
+            },
+            damageShields: [],
+        };
+        players['1'] = {
+            ...guest,
+            hand: [],
+            discard: [],
+            resources: {
+                ...guestResources,
+                [RESOURCE_IDS.CP]: 5,
+                [RESOURCE_IDS.HP]: 50,
+            },
+            tokens: {},
+            statusEffects: {},
+            damageShields: [],
+        };
+
+        root.core = {
+            ...core,
+            players,
+            activePlayerId: '0',
+            phase: 'offensiveRoll',
+            dice: buildDiceForValues('zhanshujia-dice', [4, 4, 4, 4, 1], {
+                1: ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                4: ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+            }),
+            rollCount: 1,
+            rollLimit: 3,
+            rollDiceCount: 5,
+            rollConfirmed: true,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            pendingAttack: undefined,
+            pendingDamage: undefined,
+            pendingBonusDiceSettlement: undefined,
+            extraAttackInProgress: undefined,
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            currentPlayerIndex: 0,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        };
+        return state;
+    });
+};
+
 const setupExpandBattlefield2Scenario = async (match: MatchSetup) => {
     const drawCards = [
         cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], STRATEGIC_DEFENSE_CARD_ID),
@@ -2879,6 +3146,18 @@ const playSharkBaitModifier = async (
     await dismissCardSpotlightIfPresent(match.hostPage);
     await dismissCardSpotlightIfPresent(match.guestPage);
 
+    const soulStabSlot = match.guestPage
+        .locator('[data-testid="player-board-surface"] [data-resolved-ability-id="soul-stab-3"]')
+        .first();
+    await expect(soulStabSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+    await saveEvidenceScreenshot(match.guestPage, testInfo, '97-guest-shark-bait-attack-entry');
+    await soulStabSlot.click();
+    await waitForPendingAttack(match.matchId, match.guestPage, {
+        attackerId: '1',
+        defenderId: '0',
+        sourceAbilityId: 'soul-stab-3',
+    });
+
     await waitForHandCardVisualReady(match.guestPage, SHARK_BAIT_CARD_ID);
     await dispatchDiceThroneCommand(match.guestPage, {
         type: 'PLAY_CARD',
@@ -2892,27 +3171,33 @@ const playSharkBaitModifier = async (
     await expect.poll(async () => {
         const core = await readServerCore(match.matchId, match.guestPage);
         const pendingAttack = asRecord(core.pendingAttack);
+        const players = asRecordMap(core.players);
+        const host = asRecord(players['0']);
         const guest = asRecord(asRecordMap(core.players)['1']);
+        const hostResources = asRecord(host.resources);
+        const guestResources = asRecord(guest.resources);
         const guestDiscard = Array.isArray(guest.discard) ? guest.discard as JsonRecord[] : [];
         return {
+            phase: String(core.phase ?? ''),
             attackerId: pendingAttack.attackerId ?? null,
             defenderId: pendingAttack.defenderId ?? null,
             sourceAbilityId: pendingAttack.sourceAbilityId ?? null,
-            bonusDamage: Number(pendingAttack.bonusDamage ?? 0),
-            attackModifierBonusDamage: Number(pendingAttack.attackModifierBonusDamage ?? 0),
+            hostHp: Number(hostResources[RESOURCE_IDS.HP] ?? 0),
+            guestCp: Number(guestResources[RESOURCE_IDS.CP] ?? 0),
             discardIds: guestDiscard.map(card => card.id),
         };
     }, { timeout: 10000 }).toMatchObject({
+        phase: 'offensiveRoll',
         attackerId: '1',
         defenderId: '0',
-        sourceAbilityId: 'test-attack',
-        bonusDamage: 2,
-        attackModifierBonusDamage: 2,
+        sourceAbilityId: 'soul-stab-3',
+        hostHp: 48,
+        guestCp: 4,
         discardIds: expect.arrayContaining([SHARK_BAIT_CARD_ID]),
     });
 
-    await saveEvidenceScreenshot(match.guestPage, testInfo, '97-guest-shark-bait-modifier-active');
-    await saveEvidenceScreenshot(match.hostPage, testInfo, '98-host-shark-bait-bonus-damage-applied');
+    await saveEvidenceScreenshot(match.guestPage, testInfo, '98-guest-shark-bait-modifier-active');
+    await saveEvidenceScreenshot(match.hostPage, testInfo, '99-host-shark-bait-attack-damage-applied');
 };
 
 const playGainUpperHandUntilMedal = async (
@@ -3146,6 +3431,7 @@ const playWarMonger2BonusBranch = async (
     const overlay = match.hostPage.getByTestId('bonus-die-overlay');
     const warMongerSlot = match.hostPage.locator('[data-testid="player-board-surface"] [data-ability-slot="sky"]').first();
     await setupWarMonger2Scenario(match, drawCard);
+    await setHarnessRandomQueue(match.hostPage, repeatRandomValue(0.99, 8));
     await dismissCardSpotlightIfPresent(match.hostPage);
     await dismissCardSpotlightIfPresent(match.guestPage);
 
@@ -3293,6 +3579,7 @@ const playWeighAnchorUntilSkull = async (
 
     for (let attempt = 1; attempt <= 12; attempt += 1) {
         await setupWeighAnchorScenario(match, weighAnchorCard, drawCard);
+        await setHarnessRandomQueue(match.guestPage, repeatRandomValue(0.99, 8));
         await dismissCardSpotlightIfPresent(match.hostPage);
         await dismissCardSpotlightIfPresent(match.guestPage);
 
@@ -4152,6 +4439,140 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
+    test('真实入口应通过玩家板槽位触发并结算军刀突刺 II 的三同值紧缚链', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await setupSabreThrust2Scenario(match);
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const sabreThrustSlot = match.hostPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="fist"]')
+                .first();
+            await expect(sabreThrustSlot).toHaveAttribute('data-base-ability-id', 'sabre-thrust', { timeout: 10000 });
+            await expect(sabreThrustSlot).toHaveAttribute('data-resolved-ability-id', 'sabre-thrust-2-3', { timeout: 10000 });
+            await expect(sabreThrustSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '100-host-sabre-thrust-2-entry');
+
+            await sabreThrustSlot.click();
+            await waitForPendingAttack(match.matchId, match.hostPage, {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'sabre-thrust-2-3',
+            });
+            await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await dispatchDiceThroneCommand(match.hostPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '0',
+                payload: {},
+            });
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    defenderId: pendingAttack.defenderId ?? null,
+                    defenseAbilityId: pendingAttack.defenseAbilityId ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'defensiveRoll',
+                defenderId: '1',
+                defenseAbilityId: 'still-wet-behind-ears',
+            });
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                root.core = {
+                    ...core,
+                    dice: buildDiceForValues('cursed_pirate-dice', [4, 4, 4, 4, 4], {
+                        4: CURSED_PIRATE_DICE_FACE_IDS.LOOT,
+                    }),
+                    rollCount: 1,
+                    rollLimit: 1,
+                    rollDiceCount: 5,
+                    rollConfirmed: true,
+                };
+                return state;
+            });
+            await dismissDefenseShowcaseIfPresent(match.guestPage);
+            await expect(match.guestPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '101-guest-sabre-thrust-2-defense-entry');
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '1',
+                payload: {},
+            });
+            await waitForAttackResolved(match.matchId, match.guestPage);
+            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.BIND, 1);
+            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 50);
+            await waitForResourceValue(match.matchId, match.guestPage, '1', RESOURCE_IDS.HP, 45);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '102-host-sabre-thrust-2-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应通过玩家板槽位触发并结算地毯式轰炸 II 的旗帜分支', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            const drawCards = [
+                cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], STRATEGIC_DEFENSE_CARD_ID),
+                cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], GAIN_UPPER_HAND_CARD_ID),
+            ];
+            await setupCarpetBombing2StrategyScenario(match, drawCards);
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const carpetBombingSlot = match.hostPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="chi"]')
+                .first();
+            await expect(carpetBombingSlot).toHaveAttribute('data-base-ability-id', 'carpet-bombing', { timeout: 10000 });
+            await expect(carpetBombingSlot).toHaveAttribute('data-resolved-ability-id', 'carpet-bombing-2-strategy', { timeout: 10000 });
+            await expect(carpetBombingSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '103-host-carpet-bombing-2-strategy-entry');
+
+            await carpetBombingSlot.click();
+            const advanceButton = match.hostPage.locator('[data-tutorial-id="advance-phase-button"]');
+            if (await advanceButton.isEnabled({ timeout: 3000 }).catch(() => false)) {
+                await advanceButton.click();
+            }
+
+            await waitForTokenStack(match.matchId, match.hostPage, '0', TOKEN_IDS.TACTICAL_ADVANTAGE, 3);
+            await expect.poll(async () => {
+                const core = await readServerCore(match.matchId, match.hostPage);
+                const players = asRecordMap(core.players);
+                const host = asRecord(players['0']);
+                const hand = Array.isArray(host.hand) ? host.hand as JsonRecord[] : [];
+                const handIds = hand.map(card => String(card.id ?? '')).sort();
+                return {
+                    handCount: hand.length,
+                    handIds,
+                    pendingAttack: Boolean(asRecord(core.pendingAttack).sourceAbilityId),
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                handCount: 2,
+                handIds: [GAIN_UPPER_HAND_CARD_ID, STRATEGIC_DEFENSE_CARD_ID].sort(),
+                pendingAttack: false,
+            });
+            await waitForHandCardVisualReady(match.hostPage, STRATEGIC_DEFENSE_CARD_ID);
+            await waitForHandCardVisualReady(match.hostPage, GAIN_UPPER_HAND_CARD_ID);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '104-host-carpet-bombing-2-strategy-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实入口应通过玩家板槽位触发并结算战略转移 II 的主分支', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -4837,7 +5258,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
-    test('真实入口应展示并写入诱饵的攻击修正加伤', async ({ browser }, testInfo) => {
+    test('真实入口应展示并结算诱饵的 2 点攻击伤害', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const match = await setupNewHeroMatch(browser, baseURL);
@@ -5238,6 +5659,47 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await waitForResourceValue(match.matchId, match.guestPage, '1', RESOURCE_IDS.HP, 50);
             await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.CURSED_COIN, 3);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '53-host-undead-claw-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应通过人类面 lightning 槽位触发并结算判决指令的诅咒金币选择链', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await setupHumanVerdictCommandScenario(match);
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const verdictCommandSlot = match.guestPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="lightning"]')
+                .first();
+            await expect(verdictCommandSlot).toHaveAttribute('data-resolved-ability-id', 'verdict-command', { timeout: 10000 });
+            await expect(verdictCommandSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+
+            await verdictCommandSlot.click();
+
+            const guestModal = match.guestPage.locator('#modal-root');
+            const acceptCursedCoinButton = guestModal.getByRole('button', { name: /^获得诅咒金币$/ });
+            await expect(guestModal).toContainText('是否获得诅咒金币？', { timeout: 10000 });
+            await expect(acceptCursedCoinButton).toBeVisible({ timeout: 10000 });
+            await expect(guestModal.getByRole('button', { name: /^不获得$/ })).toBeVisible({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '105-guest-human-verdict-command-choice');
+
+            await acceptCursedCoinButton.click();
+
+            await expect(guestModal).toBeHidden({ timeout: 10000 });
+            await waitForAttackResolved(match.matchId, match.guestPage);
+            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.CURSED_COIN, 1);
+            await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.PARLEY, 1);
+            await waitForResourceValue(match.matchId, match.guestPage, '0', RESOURCE_IDS.HP, 43);
+            await waitForResourceValue(match.matchId, match.guestPage, '1', RESOURCE_IDS.HP, 50);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '106-host-human-verdict-command-applied');
         } finally {
             await cleanupDTMatch(match);
         }

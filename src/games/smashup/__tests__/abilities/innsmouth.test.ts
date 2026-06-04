@@ -259,6 +259,26 @@ describe('印斯茅斯 ongoing 能力', () => {
 
             expect(isMinionProtected(state, oppMinion, 0, '0', 'affect')).toBe(false);
         });
+
+        test('borrowed in_plain_sight 应按控制者而不是真实 owner 保护控制者的低力量随从不受其他玩家影响', () => {
+            const weakMinion = makeMinion({ defId: 'inn-borrowed-a', uid: 'iba-1', controller: '0', owner: '0', basePower: 2 });
+            const base = makeBase({
+                minions: [weakMinion],
+                ongoingActions: [{
+                    uid: 'ips-borrowed-1',
+                    defId: 'innsmouth_in_plain_sight',
+                    ownerId: '1',
+                    metadata: {
+                        sourcePlayerId: '0',
+                        sourceControllerId: '0',
+                    },
+                }],
+            });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, weakMinion, 0, '1', 'affect')).toBe(true);
+            expect(isMinionProtected(state, weakMinion, 0, '0', 'affect')).toBe(false);
+        });
     });
 
     describe('innsmouth_return_to_the_sea: 回归大海', () => {

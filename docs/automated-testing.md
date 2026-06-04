@@ -424,7 +424,7 @@ if (!result.success) {
 
 > **⚠️ 强制规定**：所有新的 E2E 测试必须使用 GameTestContext API。禁止使用旧的 helper 函数（`setupSmashUpOnlineMatch`、`readCoreState`、`applyCoreState` 等）。旧测试可以保留，但新测试必须用新框架。
 
-> **口径补充（强制）**：本项目默认把 `E2E / 端到端` 理解为**状态注入驱动的浏览器级验证**。也就是允许先用 `game.setupScene(...)` 构造场景，再验证 UI、交互和最终可见结果。只有用户明确要求“真实链路 / 从真实入口打出来”时，才额外要求从真实玩法入口自然走到目标状态；这类用例与 evidence 必须显式标注 `真实链路`。
+> **口径补充（强制）**：本项目默认把 `E2E / 端到端` 理解为**状态注入驱动的浏览器级验证**。也就是允许先用 `game.setupScene(...)` 构造场景，再验证 UI、交互和最终可见结果。只有用户明确要求“真实链路 / 从真实入口打出来”，或本轮需要证明房间创建、联机同步、`setupData -> runtime`、权限/座位/多端同步等跨入口合同时，才额外要求从真实玩法入口自然走到目标状态；这类用例与 evidence 必须显式标注 `真实链路`，并写清它额外证明了什么。
 
 **GameTestContext**（`e2e/framework/GameTestContext.ts`）：
 

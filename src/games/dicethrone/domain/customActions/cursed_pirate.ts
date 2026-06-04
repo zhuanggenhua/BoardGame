@@ -11,7 +11,9 @@ import type {
     HealAppliedEvent,
     InteractionRequestedEvent,
     PendingInteraction,
+    PlayerBoardFaceChangedEvent,
     PreventDamageEvent,
+    StatusRemovedEvent,
 } from '../types';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
@@ -34,9 +36,16 @@ const RANSOM_RESOLVE_CHOICE_ID = 'cursed-pirate-ransom-resolve-choice';
 const CROWS_NEST_VIEW_CHOICE_ID = 'cursed-pirate-crows-nest-view-choice';
 const GO_FISH_POWDER_KEG_CHOICE_ID = 'cursed-pirate-go-fish-powder-keg';
 const SIP_CHOICE_ID = 'cursed-pirate-sip-choice';
+const HUMAN_WALK_THE_PLANK_CHOICE_ID = 'cursed-pirate-human-walk-the-plank-choice';
+const HUMAN_REMOVE_CURSED_COINS_CHOICE_ID = 'cursed-pirate-human-remove-cursed-coins-choice';
+const HUMAN_VERDICT_COMMAND_CHOICE_ID = 'cursed-pirate-human-verdict-command-choice';
+const HUMAN_MERCILESS_PLUNDER_CHOICE_ID = 'cursed-pirate-human-merciless-plunder-choice';
 const RANSOM_PLAYER_FACTOR = 10000;
 const RANSOM_DIE_FACTOR = 100;
 const RANSOM_DECISION_FACTOR = 10;
+const WALK_THE_PLANK_TARGET_FACTOR = 10;
+const WALK_THE_PLANK_STEAL_MODE = 1;
+const WALK_THE_PLANK_DISCARD_MODE = 2;
 
 const countBits = (value: number): number => {
     let count = 0;
@@ -94,6 +103,29 @@ const decodeRansomSelectionValue = (
         attackerId: playerIds[attackerIndex],
         targetId: playerIds[targetIndex],
         dieId,
+    };
+};
+
+const encodeWalkThePlankSelectionValue = (
+    state: CustomActionContext['state'],
+    targetId: string,
+    mode: number,
+): number => {
+    const playerIds = getSortedPlayerIds(state);
+    const targetIndex = Math.max(0, playerIds.indexOf(targetId));
+    return targetIndex * WALK_THE_PLANK_TARGET_FACTOR + mode;
+};
+
+const decodeWalkThePlankSelectionValue = (
+    state: CustomActionContext['state'],
+    value: number,
+): { targetId?: string; mode: number } => {
+    const playerIds = getSortedPlayerIds(state);
+    const normalized = Math.max(0, Math.trunc(value));
+    const targetIndex = Math.floor(normalized / WALK_THE_PLANK_TARGET_FACTOR);
+    return {
+        targetId: playerIds[targetIndex],
+        mode: normalized % WALK_THE_PLANK_TARGET_FACTOR,
     };
 };
 
@@ -589,6 +621,182 @@ function cursedUpkeepSelfDamage({
     } as DamageDealtEvent];
 }
 
+function resolveHumanCursedTurnEnd({
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    const player = state.players[attackerId];
+    if (!player || player.playerBoardFace !== 'normal') return [];
+
+    const cursedCoinStacks = player.statusEffects[STATUS_IDS.CURSED_COIN] ?? 0;
+    if (cursedCoinStacks > 0) {
+        return [{
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: attackerId,
+                statusId: STATUS_IDS.CURSED_COIN,
+                stacks: 1,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as StatusRemovedEvent];
+    }
+
+    return [{
+        type: 'PLAYER_BOARD_FACE_CHANGED',
+        payload: {
+            playerId: attackerId,
+            face: 'cursed',
+            sourceAbilityId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as PlayerBoardFaceChangedEvent];
+}
+
+function requestHumanWalkThePlankChoice({
+    attackerId,
+    targetId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    if (!state.players[targetId]) return [];
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: attackerId,
+            sourceAbilityId,
+            titleKey: 'choices.cursedPirateHumanWalkThePlank.title',
+            options: [
+                {
+                    value: encodeWalkThePlankSelectionValue(state, targetId, WALK_THE_PLANK_STEAL_MODE),
+                    customId: HUMAN_WALK_THE_PLANK_CHOICE_ID,
+                    labelKey: 'choices.cursedPirateHumanWalkThePlank.stealCp',
+                },
+                {
+                    value: encodeWalkThePlankSelectionValue(state, targetId, WALK_THE_PLANK_DISCARD_MODE),
+                    customId: HUMAN_WALK_THE_PLANK_CHOICE_ID,
+                    labelKey: 'choices.cursedPirateHumanWalkThePlank.discardCard',
+                },
+            ],
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function requestHumanRemoveCursedCoinsChoice({
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    const currentStacks = state.players[attackerId]?.statusEffects[STATUS_IDS.CURSED_COIN] ?? 0;
+    if (currentStacks <= 0) return [];
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: attackerId,
+            sourceAbilityId,
+            titleKey: 'choices.cursedPirateHumanRemoveCoins.title',
+            options: Array.from({ length: currentStacks + 1 }, (_, value) => ({
+                value,
+                customId: HUMAN_REMOVE_CURSED_COINS_CHOICE_ID,
+                labelKey: value === 0
+                    ? 'choices.cursedPirateHumanRemoveCoins.keep'
+                    : 'choices.cursedPirateHumanRemoveCoins.remove',
+                labelParams: value === 0 ? undefined : { count: value },
+            })),
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function requestHumanVerdictCommand({
+    attackerId,
+    sourceAbilityId,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: attackerId,
+            sourceAbilityId,
+            titleKey: 'choices.cursedCoinGain.title',
+            options: [
+                {
+                    statusId: STATUS_IDS.CURSED_COIN,
+                    value: 1,
+                    customId: HUMAN_VERDICT_COMMAND_CHOICE_ID,
+                    labelKey: 'choices.cursedCoinGain.accept',
+                },
+                {
+                    value: 0,
+                    customId: HUMAN_VERDICT_COMMAND_CHOICE_ID,
+                    labelKey: 'choices.cursedCoinGain.decline',
+                },
+            ],
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function requestHumanMercilessPlunder({
+    attackerId,
+    sourceAbilityId,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: attackerId,
+            sourceAbilityId,
+            titleKey: 'choices.cursedCoinGain.title',
+            options: [
+                {
+                    statusId: STATUS_IDS.CURSED_COIN,
+                    value: 2,
+                    customId: HUMAN_MERCILESS_PLUNDER_CHOICE_ID,
+                    labelKey: 'choices.cursedCoinGain.accept',
+                },
+                {
+                    value: 0,
+                    customId: HUMAN_MERCILESS_PLUNDER_CHOICE_ID,
+                    labelKey: 'choices.cursedCoinGain.decline',
+                },
+            ],
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function applyPowderKegIfFourOfAKind({
+    targetId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    if (getAttackMaxDuplicateValueCount(state) < 4) return [];
+
+    return buildStatusAppliedOrChoiceEvents({
+        state,
+        targetId,
+        statusId: STATUS_IDS.POWDER_KEG,
+        stacks: 1,
+        sourceAbilityId,
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    });
+}
+
 function resolveStillWetBehindEarsDefense({
     ctx,
     attackerId,
@@ -663,6 +871,85 @@ function resolveStillWetBehindEarsDefense({
             targetId,
             statusId: STATUS_IDS.CURSED_COIN,
             stacks: Math.max(0, newTotal - currentStacks),
+            sourceAbilityId,
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 3,
+        }));
+    }
+
+    return events;
+}
+
+function resolveHumanDefense({
+    ctx,
+    attackerId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    const faceCounts = getActiveDice(state).reduce((counts, die) => {
+        const face = getPlayerDieFace(state, attackerId, die.value);
+        if (face) counts[face] = (counts[face] ?? 0) + 1;
+        return counts;
+    }, {} as Record<string, number>);
+
+    const cutlassCount = faceCounts[CURSED_PIRATE_DICE_FACE_IDS.CUTLASS] ?? 0;
+    const lootCount = faceCounts[CURSED_PIRATE_DICE_FACE_IDS.LOOT] ?? 0;
+    const skullCount = faceCounts[CURSED_PIRATE_DICE_FACE_IDS.SKULL] ?? 0;
+    const events: DiceThroneEvent[] = [];
+
+    if (cutlassCount > 0) {
+        const targetId = ctx.defenderId;
+        const target = state.players[targetId];
+        events.push({
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId,
+                amount: cutlassCount,
+                actualDamage: Math.min(cutlassCount, target?.resources[RESOURCE_IDS.HP] ?? 0),
+                sourceAbilityId,
+                damageScope: 'direct',
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as DamageDealtEvent);
+    }
+
+    if (lootCount > 0) {
+        const currentCp = state.players[attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+        const newValue = Math.min(CP_MAX, currentCp + lootCount);
+        events.push({
+            type: 'CP_CHANGED',
+            payload: {
+                playerId: attackerId,
+                delta: newValue - currentCp,
+                newValue,
+                sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 1,
+        } as CpChangedEvent);
+    }
+
+    if (skullCount > 0) {
+        events.push({
+            type: 'PREVENT_DAMAGE',
+            payload: {
+                targetId: attackerId,
+                amount: skullCount * 2,
+                sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 2,
+        } as PreventDamageEvent);
+    }
+
+    if (cutlassCount >= 2 && skullCount >= 1) {
+        events.push(...buildStatusAppliedOrChoiceEvents({
+            state,
+            targetId: attackerId,
+            statusId: STATUS_IDS.CURSED_COIN,
+            stacks: 1,
             sourceAbilityId,
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp: timestamp + 3,
@@ -861,7 +1148,36 @@ export function registerCursedPirateCustomActions(): void {
     registerCustomActionHandler('cursed-pirate-cursed-upkeep-self-damage', cursedUpkeepSelfDamage, {
         categories: ['damage', 'passive'],
     });
+    registerCustomActionHandler('cursed-pirate-human-cursed-end-turn', resolveHumanCursedTurnEnd, {
+        categories: ['status', 'passive'],
+    });
+    registerCustomActionHandler('cursed-pirate-human-walk-the-plank-choice', requestHumanWalkThePlankChoice, {
+        categories: ['choice', 'resource', 'card'],
+        requiresInteraction: true,
+        requiresSelectedDefender: true,
+    });
+    registerCustomActionHandler('cursed-pirate-human-remove-cursed-coins-choice', requestHumanRemoveCursedCoinsChoice, {
+        categories: ['choice', 'status'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('cursed-pirate-human-verdict-command', requestHumanVerdictCommand, {
+        categories: ['choice', 'status', 'damage'],
+        requiresInteraction: true,
+        requiresSelectedDefender: true,
+    });
+    registerCustomActionHandler('cursed-pirate-human-merciless-plunder', requestHumanMercilessPlunder, {
+        categories: ['choice', 'status'],
+        requiresInteraction: true,
+        requiresSelectedDefender: true,
+    });
+    registerCustomActionHandler('cursed-pirate-human-powder-keg-if-four-kind', applyPowderKegIfFourOfAKind, {
+        categories: ['status'],
+        usesAttackDiceSnapshot: true,
+    });
     registerCustomActionHandler('cursed-pirate-still-wet-behind-ears-defense', resolveStillWetBehindEarsDefense, {
+        categories: ['damage', 'defense', 'resource', 'status'],
+    });
+    registerCustomActionHandler('cursed-pirate-human-defense', resolveHumanDefense, {
         categories: ['damage', 'defense', 'resource', 'status'],
     });
     registerCustomActionHandler('cursed-pirate-merciless-curse-powder-keg-targets', requestMercilessCursePowderKegTargets, {
@@ -913,6 +1229,145 @@ export function registerCursedPirateCustomActions(): void {
 
         events.push(...buildDrawEvents(state, playerId, drawCount, random, 'CHOICE_RESOLVED', timestamp + 1, sourceAbilityId));
         return events;
+    });
+    registerChoiceResolvedEventHandler(HUMAN_WALK_THE_PLANK_CHOICE_ID, ({
+        state,
+        playerId,
+        sourceAbilityId,
+        value,
+        timestamp,
+        random,
+    }) => {
+        if (!sourceAbilityId) return [];
+
+        const { targetId, mode } = decodeWalkThePlankSelectionValue(state, value ?? 0);
+        if (!targetId || !state.players[targetId]) return [];
+
+        if (mode === WALK_THE_PLANK_STEAL_MODE) {
+            return stealOneCp({
+                attackerId: playerId,
+                targetId,
+                sourceAbilityId,
+                state,
+                timestamp,
+            });
+        }
+
+        if (mode === WALK_THE_PLANK_DISCARD_MODE) {
+            return requestOpponentDiscardOneCard({
+                attackerId: playerId,
+                targetId,
+                sourceAbilityId,
+                state,
+                timestamp,
+                random,
+                ctx: {
+                    attackerId: playerId,
+                    defenderId: targetId,
+                    sourceAbilityId,
+                    state,
+                    damageDealt: 0,
+                    timestamp,
+                },
+                action: {
+                    type: 'custom',
+                    target: 'opponent',
+                    customActionId: 'cursed-pirate-human-walk-the-plank-choice',
+                },
+            });
+        }
+
+        return [];
+    });
+    registerChoiceResolvedEventHandler(HUMAN_REMOVE_CURSED_COINS_CHOICE_ID, ({
+        playerId,
+        sourceAbilityId,
+        value,
+        timestamp,
+    }) => {
+        if (!sourceAbilityId) return [];
+
+        const stacks = Math.max(0, Math.trunc(value ?? 0));
+        if (stacks <= 0) return [];
+
+        return [{
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: playerId,
+                statusId: STATUS_IDS.CURSED_COIN,
+                stacks,
+            },
+            sourceCommandType: 'CHOICE_RESOLVED',
+            timestamp,
+        } as StatusRemovedEvent];
+    });
+    registerChoiceResolvedEventHandler(HUMAN_VERDICT_COMMAND_CHOICE_ID, ({
+        state,
+        playerId,
+        sourceAbilityId,
+        timestamp,
+    }) => {
+        if (!sourceAbilityId) return [];
+        const targetId = getOpponents(state, playerId)[0];
+        const target = targetId ? state.players[targetId] : undefined;
+        if (!targetId || !target) return [];
+
+        const hp = target.resources[RESOURCE_IDS.HP] ?? 0;
+        return [
+            ...buildStatusAppliedOrChoiceEvents({
+                state,
+                targetId,
+                statusId: STATUS_IDS.PARLEY,
+                stacks: 1,
+                sourceAbilityId,
+                sourceCommandType: 'CHOICE_RESOLVED',
+                timestamp,
+            }),
+            {
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId,
+                    amount: 7,
+                    actualDamage: Math.min(7, hp),
+                    sourceAbilityId,
+                    damageScope: 'attack',
+                    unblockable: true,
+                },
+                sourceCommandType: 'CHOICE_RESOLVED',
+                timestamp: timestamp + 1,
+            } as DamageDealtEvent,
+        ];
+    });
+    registerChoiceResolvedEventHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({
+        state,
+        playerId,
+        sourceAbilityId,
+        timestamp,
+    }) => {
+        if (!sourceAbilityId) return [];
+        const targetId = getOpponents(state, playerId)[0];
+        if (!targetId || !state.players[targetId]) return [];
+
+        return [
+            ...buildStatusAppliedOrChoiceEvents({
+                state,
+                targetId,
+                statusId: STATUS_IDS.PARLEY,
+                stacks: 1,
+                sourceAbilityId,
+                sourceCommandType: 'CHOICE_RESOLVED',
+                timestamp,
+            }),
+            ...buildStatusAppliedOrChoiceEvents({
+                state,
+                targetId,
+                statusId: STATUS_IDS.POWDER_KEG,
+                stacks: 1,
+                sourceAbilityId,
+                sourceCommandType: 'CHOICE_RESOLVED',
+                timestamp: timestamp + 1,
+            }),
+        ];
     });
     registerChoiceResolvedEventHandler(RANSOM_DIE_CHOICE_ID, ({
         state,

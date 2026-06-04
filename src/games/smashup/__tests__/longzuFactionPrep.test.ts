@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { getAllBaseDefs, getBaseDef, getBaseDefIdsForFactions, getFactionCards } from '../data/cards';
@@ -6,8 +8,15 @@ import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { ActionCardDef, MinionCardDef } from '../domain/types';
 import { isFactionImplementationInProgress } from '../ui/factionMeta';
 
-describe('SmashUp longzu 三派系预接入合同', () => {
-    it('longzu 卡图 atlas 已登记为隐藏预接入入口', () => {
+const LONGZU_CARD_PNG = 'public/assets/i18n/zh-CN/smashup/cards/longzu.png';
+const LONGZU_CARD_WEBP = 'public/assets/i18n/zh-CN/smashup/cards/compressed/longzu.webp';
+const LONGZU_BASE_PNG = 'public/assets/i18n/zh-CN/smashup/base/longzu.png';
+const LONGZU_BASE_WEBP = 'public/assets/i18n/zh-CN/smashup/base/compressed/longzu.webp';
+
+const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
+
+describe('SmashUp longzu 三派系接入合同', () => {
+    it('longzu 卡图 atlas 已登记为三派系运行时入口', () => {
         expect(SMASHUP_ATLAS_DEFINITIONS).toEqual(expect.arrayContaining([
             {
                 id: SMASHUP_ATLAS_IDS.CARDS12,
@@ -16,6 +25,27 @@ describe('SmashUp longzu 三派系预接入合同', () => {
                 grid: { rows: 5, cols: 8 },
             },
         ]));
+    });
+
+    it('cards/longzu 已进入根级与游戏级 manifest，base/longzu 不再保留在正式资源树', () => {
+        const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
+        const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
+
+        expect(rootManifest.files['zh-CN/smashup/cards/longzu'].variants.png.sha256)
+            .toBe(sha256(LONGZU_CARD_PNG));
+        expect(rootManifest.files['zh-CN/smashup/cards/compressed/longzu'].variants.webp.sha256)
+            .toBe(sha256(LONGZU_CARD_WEBP));
+        expect(gameManifest.files['cards/longzu'].variants.png.sha256)
+            .toBe(sha256(LONGZU_CARD_PNG));
+        expect(gameManifest.files['cards/compressed/longzu'].variants.webp.sha256)
+            .toBe(sha256(LONGZU_CARD_WEBP));
+
+        expect(rootManifest.files['zh-CN/smashup/base/longzu']).toBeUndefined();
+        expect(rootManifest.files['zh-CN/smashup/base/compressed/longzu']).toBeUndefined();
+        expect(gameManifest.files['base/longzu']).toBeUndefined();
+        expect(gameManifest.files['base/compressed/longzu']).toBeUndefined();
+        expect(existsSync(LONGZU_BASE_PNG)).toBe(false);
+        expect(existsSync(LONGZU_BASE_WEBP)).toBe(false);
     });
 
     it('三派系卡牌静态数量、拷贝数与图集索引已登记', () => {

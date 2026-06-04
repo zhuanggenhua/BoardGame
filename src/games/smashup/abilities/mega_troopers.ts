@@ -379,6 +379,7 @@ function makePlanForMoreOrderOption(card: { uid: string; defId: string }, index:
         id: `order-${index}`,
         label: `${cardLabel(card.defId)} 放在下一张`,
         value: { cardUid: card.uid, defId: card.defId } satisfies PlanForMoreOrderChoice,
+        displayMode: 'card' as const,
         displayCard: { defId: card.defId, cardUid: card.uid },
     };
 }

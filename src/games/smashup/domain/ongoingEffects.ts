@@ -2097,7 +2097,16 @@ function selectGlobalTriggerSourceLocation(
     ctx?: Omit<TriggerContext, 'timing'>,
     isEligible?: (located: TriggerSourceLocation) => boolean,
 ): TriggerSourceLocation | undefined {
-    if (!isSourceInZones(state, entry.sourceDefId, zones)) {
+    const titanSources = (state.titans ?? [])
+        .filter(titan => titan.defId === entry.sourceDefId)
+        .map(titan => ({
+            uid: titan.uid,
+            titanUid: titan.uid,
+            baseIndex: titan.location.zone === 'base' ? titan.location.baseIndex : undefined,
+            controllerId: titan.controllerId,
+            ownerId: titan.ownerId,
+        }));
+    if (!isSourceInZones(state, entry.sourceDefId, zones) && titanSources.length === 0) {
         if (
             timing === 'onMinionDiscardedFromBase'
             && zones.includes('discard')
@@ -2117,7 +2126,12 @@ function selectGlobalTriggerSourceLocation(
         ctx?.sourceCardUid,
         ctx?.triggerMinionDefId === entry.sourceDefId ? ctx.triggerMinionUid : undefined,
     ].filter((uid): uid is string => typeof uid === 'string' && uid.length > 0);
-    const locatedSources = locateGlobalSources(state, entry.sourceDefId, zones);
+    const locatedSources = [
+        ...locateGlobalSources(state, entry.sourceDefId, zones),
+        ...titanSources.filter(titanSource =>
+            !locateGlobalSources(state, entry.sourceDefId, zones).some(source => source.uid === titanSource.uid),
+        ),
+    ];
     const isCandidateEligible = (candidate: TriggerSourceLocation): boolean => (
         (
             timing !== 'onTurnStart'

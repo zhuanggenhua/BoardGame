@@ -343,7 +343,8 @@ export function CardPreview({
 
     const renderer = getCardPreviewRenderer(previewRef.rendererId);
     if (!renderer) return null;
-    return renderer({ previewRef, locale: effectiveLocale, className, style });
+    const Renderer = renderer;
+    return <Renderer previewRef={previewRef} locale={effectiveLocale} className={className} style={style} />;
 }
 
 // ============================================================================

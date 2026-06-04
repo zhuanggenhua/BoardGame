@@ -116,16 +116,34 @@ function markRecentReport(signature: string) {
     }
 }
 
+function isKnownClientAudioDeviceNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedName = payload.errorName.trim().toLowerCase();
+    if (!normalizedMessage) {
+        return false;
+    }
+    return normalizedMessage.includes('failed to start the audio device')
+        && normalizedName === 'invalidstateerror';
+}
+
+function isGenericScriptErrorNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    return /^script error\.?$/.test(normalizedMessage);
+}
+
 function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
     const normalizedMessage = payload.errorMessage.trim();
     const normalizedName = payload.errorName.trim();
     if (!normalizedMessage && !normalizedName) {
         return true;
     }
-    if (normalizedMessage === 'Script error') {
+    if (isGenericScriptErrorNoise(payload)) {
         return true;
     }
     if (isStaleChunkError(new Error(normalizedMessage || normalizedName))) {
+        return true;
+    }
+    if (isKnownClientAudioDeviceNoise(payload)) {
         return true;
     }
     return false;

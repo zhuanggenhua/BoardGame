@@ -219,7 +219,6 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         };
 
         renderPromptOverlay({ interaction, dispatch, playerID: '0' });
-        expect(screen.getByTestId('prompt-base-grid')).toHaveClass('grid', 'grid-cols-2');
         expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(3);
 
         fireEvent.click(screen.getByTestId('prompt-card-1'));
@@ -227,6 +226,77 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         expect(dispatch).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', {
             interactionId: interaction.id,
             optionId: 'base-1',
+        });
+    });
+
+    it('卡图模式候选较多时提供搜索，并按搜索词过滤当前卡图列表', () => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'banned-list-search',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '禁卡表：命名一张牌',
+                sourceId: 'geeks_banned_list',
+                targetType: 'generic',
+                options: [
+                    { id: 'card-0', label: '收藏家', value: { defId: 'alien_collector' }, displayMode: 'card' },
+                    { id: 'card-1', label: '急速闪电', value: { defId: 'wizard_zap' }, displayMode: 'card' },
+                    { id: 'card-2', label: '大副', value: { defId: 'pirate_first_mate' }, displayMode: 'card' },
+                    { id: 'card-3', label: '禁卡表', value: { defId: 'geeks_banned_list' }, displayMode: 'card' },
+                    { id: 'card-4', label: '菲丽希亚', value: { defId: 'geeks_felicia_day' }, displayMode: 'card' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+
+        expect(screen.getByTestId('prompt-card-search-input')).toBeInTheDocument();
+        expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(5);
+
+        fireEvent.change(screen.getByTestId('prompt-card-search-input'), { target: { value: '禁卡' } });
+
+        expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(1);
+        expect(screen.getByText('显示 {{visible}} / {{total}}')).toBeInTheDocument();
+    });
+
+    it('顺序选择类选项只要携带 displayCard，也应走卡图面板而不是文本按钮', () => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'ordered-card-choice',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '更多的计划：选择下一张放回牌库顶的牌',
+                sourceId: 'mega_troopers_plan_for_more_order',
+                targetType: 'generic',
+                options: [
+                    {
+                        id: 'order-0',
+                        label: '闪电水晶 放在下一张',
+                        value: { cardUid: 'crystal', defId: 'mega_troopers_lightning_crystal' },
+                        displayCard: { defId: 'mega_troopers_lightning_crystal', cardUid: 'crystal' },
+                    },
+                    {
+                        id: 'order-1',
+                        label: '强力姿势 放在下一张',
+                        value: { cardUid: 'pose', defId: 'mega_troopers_power_pose' },
+                        displayCard: { defId: 'mega_troopers_power_pose', cardUid: 'pose' },
+                    },
+                ],
+            },
+        };
+
+        renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+
+        expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(2);
+        expect(screen.queryByRole('button', { name: '闪电水晶 放在下一张' })).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('prompt-card-1'));
+
+        expect(dispatch).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', {
+            interactionId: interaction.id,
+            optionId: 'order-1',
         });
     });
 

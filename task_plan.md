@@ -29,11 +29,14 @@
 - [x] S2 资源链接入：生成正式英文运行时资源、状态图集、卡牌 atlas JSON，重建 manifest。
 - [x] S3 静态英雄接入：新增英雄目录、骰面、Token、能力、卡牌、i18n、注册表、关键图片 resolver。
 - [ ] S4 机制实现：逐子句实现战术优势/紧缚/诅咒金币/火药桶/凋零/休战及面板技能。当前战术优势、紧缚、制胜高地、战争贩子额外进攻投掷阶段、灵魂突刺三同值火药桶、深海潜行偷 CP + 对手自选弃牌交互、咒缚自伤 4 与对手未发起攻击施加火药桶、战术家反制措施防御、战术家 9 张升级牌替换链与代表分支、地毯式轰炸 II 两名不同对手交互、咒缚海盗你还嫩了点防御、死亡印记 2CP 与奖励骰多骰逐颗累计、亡灵之爪金币伤害、无情诅咒至多两名对手施加火药桶、诅咒金币含海盗可选择不获得、火药桶完整维持投骰/爆炸/转交/重复获得爆炸、凋零、休战、咒缚海盗专属手牌大部分已补 L2（诅咒卡牌/封舱/抽筋剥皮/赎金/瞭望台/干票大的/海盗的一生咒缚面治疗 3 与普通面金币分支/送你们去喂鱼/啜呼）；战略防御、送你们去喂鱼、手牌选择、瞭望台弯刀/战利品/骷髅三分支、作战室奖励骰展示、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子/战争贩子 II 奖励骰分支、战争贩子 II 勋章专门链、地毯式轰炸 4 人双敌目标链、抽筋剥皮奖励骰分支、死亡印记奖励骰分支、战术家反制措施防御阶段入口、咒缚海盗你还嫩了点防御阶段入口与深海潜行完整攻击入口已补真实入口交互截图链，但复杂交互 UI 仍未逐项 L3/L4。
+- [ ] S4 机制实现：逐子句实现战术优势/紧缚/诅咒金币/火药桶/凋零/休战及面板技能。当前战术优势、紧缚、制胜高地、战争贩子额外进攻投掷阶段、灵魂突刺三同值火药桶、深海潜行偷 CP + 对手自选弃牌交互、咒缚自伤 4 与对手未发起攻击施加火药桶、战术家反制措施防御、战术家 9 张升级牌替换链与代表分支、地毯式轰炸 II 两名不同对手交互、咒缚海盗你还嫩了点防御、死亡印记 2CP 与奖励骰多骰逐颗累计、亡灵之爪金币伤害、无情诅咒至多两名对手施加火药桶、诅咒金币含海盗可选择不获得、火药桶完整维持投骰/爆炸/转交/重复获得爆炸、凋零、休战、咒缚海盗专属手牌大部分已补 L2（诅咒卡牌/封舱/抽筋剥皮/赎金/瞭望台/干票大的/海盗的一生咒缚面治疗 3 与普通面金币分支/送你们去喂鱼/啜呼）；真实开局已纠偏为 human 面 + 3 个诅咒金币，human 面 9 个对象已接入运行时并补首批 L2，但对象级审计与剩余对象级补证未完成。战略防御、送你们去喂鱼、手牌选择、瞭望台弯刀/战利品/骷髅三分支、作战室奖励骰展示、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子/战争贩子 II 奖励骰分支、战争贩子 II 勋章专门链、地毯式轰炸 4 人双敌目标链、抽筋剥皮奖励骰分支、死亡印记奖励骰分支、战术家反制措施防御阶段入口、咒缚海盗你还嫩了点防御阶段入口与深海潜行完整攻击入口已补真实入口交互截图链，但复杂交互 UI 仍未逐项 L3/L4。
 - [ ] S5 测试与审计：补静态注册、资源、机制行为测试，写 evidence，跑相关验证。当前对象级审计已回写深海潜行攻击入口、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的、战争贩子 II、抽筋剥皮、死亡印记、4 人无情诅咒火药桶链、诅咒卡牌自伤抽牌链、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链与火药桶维持阶段爆炸链，以及 E2E / 上传 / HEAD 证据，但全流程仍因复杂交互 UI 未逐项 L3/L4 不能收口。
 - [x] S6 端到端与上传：真实在线双玩家 E2E、截图核验、资源上传、代表 URL HEAD 回查已完成。
 
 ## Current Notes
 
+- 2026-06-04：已补咒缚海盗 human 面剩余 3 个对象的运行时缺口。`点燃炸药` 显式把伤害归到 `preDefense`；`判决指令` 与 `无情劫掠` 改为本地 choice continuation，在诅咒金币选择完成后继续结算后续 `休战 / 火药桶 / 伤害`。验证：`npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "human 面点燃炸药|human 面判决指令|human 面无情劫掠" --configLoader native` 通过；`npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/ninja-slash-stand-tall-regression.test.ts --configLoader native` 为 `3 files / 67 tests passed`；`npx tsc -p tsconfig.json --noEmit` 通过。当前不能说“规则都实施了”，真实剩余项已从这 3 个对象收窄回对象级彻底审计、复杂交互逐项 L3/L4 与整体 soak 稳定性。
+- 2026-06-04：咒缚海盗双面合同已纠偏到真实现状：开局为 human 面并自带 3 个诅咒金币；诅咒金币维持阶段掉血只作用于非海盗持有者；human 面 9 个对象已接入运行时并补首批 L2。当前不能说“规则都实施了”，真实剩余项是 human 面对象级补证、双面对象级重审计，以及 `implementation_in_progress` 下的 L3/L4 收口。
 - 2026-05-30 16:48:43：已确认 active goal 为本批次；现有 `task_plan.md` 未记录本批次关键词，旧计划视为历史上下文。
 - 2026-05-30 16:48:43：已确认素材目录存在；战术家状态图只有战术优势、紧缚；咒缚海盗状态图包含凋零、休战、炸药、诅咒金币。
 - 2026-05-30 16:48:43：代码注册点包括 `domain/core-types.ts`、`domain/ids.ts`、`domain/characters.ts`、`domain/index.ts`、`heroes/index.ts`、`ui/cardAtlas.ts`、`criticalImageResolver.ts`、`public/locales/*/game-dicethrone.json`。
@@ -89,6 +92,9 @@
   - 当前剩余缺口已从“4 人 readiness 完全阻塞业务断言”收窄为“仍未把 `preDefense` 火药桶选择与最终结算并入同一真实链”；整份 intake E2E 串跑仍有长跑 soak 波动（`test API` 端口拒连、勋章分支随机未命中），但对应单条用例均可通过，因此暂记稳定性风险，不回退当前业务结论。
 - 2026-05-31 12:43：真实在线双玩家 E2E 已通过 `2 passed (3.9m)`；截图已人工核对，战术家与咒缚海盗选角、玩家板、提示板、HUD、手牌 atlas 均可见。
 - 2026-05-31 12:43：`npm run assets:check` 发现 24 个 DiceThrone 新资源缺远端；`npm run assets:upload` 成功上传战术家与咒缚海盗正式资源，并对两名英雄的 `player-board.webp`、`tip.webp`、`ability-cards.webp`、`dice.webp`、`status-icons-atlas.webp` 及 Common 背景/头像做 HEAD 回查，均为 `200`。上传脚本同时上传 1 个既有 SmashUp `pretty_pretty.webp` 远端差异。
+
+- 2026-06-03 09:24：补战术家“军刀突刺 II”对象级真实入口链：新增 `setupSabreThrust2Scenario(...)`，在线场景中显式把 Host 的 `sabre-thrust` 替换为 `SABRE_THRUST_2`，并写入 `abilityLevels['sabre-thrust']=2`；盘面固定为 `3 军刀 + 2 旗帜` 且 3 个军刀骰值同为 `1`，确保 `fist` 槽位真实解析到 `sabre-thrust-2-3`。新增用例“真实入口应通过玩家板槽位触发并结算军刀突刺 II 的三同值紧缚链”，截图 `100-host-sabre-thrust-2-entry.png`、`101-guest-sabre-thrust-2-defense-entry.png`、`102-host-sabre-thrust-2-applied.png` 已落地；服务器状态断言 `Guest HP 50 -> 45`、`Guest bind 0 -> 1`、`Host HP 保持 50`，证明升级后的 `5` 点伤害与“三同值施加紧缚”已经在真实 UI 中闭环。验证：`npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 通过，`npx tsc --noEmit --pretty false` 通过，`node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算军刀突刺 II 的三同值紧缚链"` 为 `1 passed`。当前整批仍不能宣称完成，`implementation_in_progress` 继续保留；下一步优先回到 `地毯式轰炸 II` 的旗帜 4 分支或 shared / representative 条目的逐对象收口。
+- 2026-06-03 09:41：补战术家“地毯式轰炸 II”旗帜 4 分支对象级真实入口链：新增 `setupCarpetBombing2StrategyScenario(...)`，在线场景中显式把 Host 的 `carpet-bombing` 替换为 `CARPET_BOMBING_2`，写入 `abilityLevels['carpet-bombing']=2`，并把牌库固定为 `战略防御！` 与 `占得上风！` 两张可验证抽牌；盘面固定为 `4 旗帜 + 1 军刀`，确保 `chi` 槽位真实解析到 `carpet-bombing-2-strategy`。新增用例“真实入口应通过玩家板槽位触发并结算地毯式轰炸 II 的旗帜分支”，截图 `103-host-carpet-bombing-2-strategy-entry.png`、`104-host-carpet-bombing-2-strategy-applied.png` 已落地；服务器状态断言 `Host 战术优势 0 -> 3`、手牌数 `0 -> 2` 且手牌为 `战略防御！ / 占得上风！`、`pendingAttack` 保持为空，证明这条升级分支已在真实 UI 中完成 `grantToken + draw 2` 闭环。验证：`npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 通过，`npx tsc --noEmit --pretty false` 通过，`node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算地毯式轰炸 II 的旗帜分支"` 为 `1 passed`。当前整批仍不能宣称完成，`implementation_in_progress` 继续保留；下一步应回到 shared / representative 条目的逐对象合法复用登记、复杂交互 L3/L4 覆盖与 runtime 稳定性。
 
 # Task Plan: TDD 行为 seam 与测试结构重构（2026-05-16）
 
@@ -3636,3 +3642,123 @@
 - [x] 当前剩余方向更新
   - `虚张声势！` 已可从独立缺口里移除。
   - 后续对象级高价值缺口继续收窄到：`诱饵`。
+
+## Addendum（2026-06-03 08:45 +08）：`诱饵` 已补到真实攻击修正对象链
+
+- [x] `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts`
+  - 已将 `诱饵` 用例从错误的 `bonusDamage` 口径改为 `真实入口应展示并结算诱饵的 2 点攻击伤害`。
+  - 当前真实链路已锁定为：Guest 先通过真实玩家板 `soul-stab-3` 槽位建立攻击链，再从真实手牌打出 `诱饵`；该卡不会写 `pendingAttack.bonusDamage / attackModifierBonusDamage`，而是在仍处于 `offensiveRoll` 时立即对 Host 写入 `2` 点攻击伤害。
+- [x] 最新定点验证
+  - `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算诱饵的 2 点攻击伤害"` -> `1 passed (2026-06-03)`
+  - `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` -> 通过
+  - `npx tsc --noEmit --pretty false` -> 通过
+- [x] 当前已锁定的对象级事实
+  - `97-guest-shark-bait-attack-entry.png` 证明 Guest 不是 direct injection，而是先通过真实 `soul-stab-3` 攻击入口建立 `pendingAttack`。
+  - `98-guest-shark-bait-modifier-active.png` 证明 Guest 从真实手牌打出 `诱饵` 后，攻击修正徽标会在真实 UI 中出现。
+  - `99-host-shark-bait-attack-damage-applied.png` 对应服务器断言 `phase=offensiveRoll / Host HP=48 / Guest CP=4 / discard 包含 card-cursed-pirate-shark-bait`，证明 `诱饵` 的真实落点是即时 `2` 点攻击伤害，而不是 `pendingAttack.bonusDamage` 写入。
+- [x] 当前剩余方向更新
+  - `诱饵` 已可从独立缺口里移除。
+  - 对象级高价值独立缺口已清空；后续剩余阻塞回到 shared / representative 条目的逐对象合法复用登记、复杂交互 L3/L4 覆盖与 runtime 稳定性，而不是新的单对象首条 direct E2E 缺失。
+
+## Addendum（2026-06-03 10:08 +08）：completion audit 已把两条共享合同矩阵从过时 `partial` 收窄为当前证据口径
+
+- [x] `evidence/dicethrone/zhanshujia-cursed-pirate-object-audit-2026-05-31.md`
+  - 已把 `grantStatus` 特例合同从 `L2 partial` 改成 `L2 passed；... representative L3`。
+  - 已把 `奖励骰/随机` 合同从 `L2 partial` 改成 `L2 passed；... representative L3`。
+  - 已改写 `对象级 L3/L4 | partial` 的剩余原因：
+    - 不再把原因写成“shared / representative 尚未逐对象登记”；
+    - 改为当前真实剩余门禁：大量对象仍停在 `representative L3` 而非逐对象独立 `L3/L4`，以及整份 intake runtime 仍缺少稳定重复通过/soak 证据。
+- [x] 当前已锁定的 completion-audit 事实
+  - `zhanshujia-cursed-pirate-mechanics.test.ts` 已覆盖 `grantStatus` 这批共享消费者需要的关键分支：诅咒金币拒绝/上限/不可移除、火药桶维持与重叠、凋零减攻击伤害、休战阻伤与清理、紧缚 `1CP` 门禁与清理、锁定写入。
+  - 同一份机制测试 + 现有定点 E2E 已足以证明奖励骰共享合同本身不是当前主要缺口；当前缺的是“有多少对象可以只保留 representative L3，哪些还必须补独立 L3/L4”。
+- [x] 当前剩余方向更新
+  - 后续优先级继续停留在 completion audit，而不是再随机补新对象 E2E。
+  - `implementation_in_progress` 继续保留。
+
+## Addendum（2026-06-03 10:20 +08）：runtime risk-watch 已用双人 / 四人简单开局基线收窄
+
+- [x] `e2e/dicethrone/dicethrone-simple-start.e2e.ts`
+  - `Online match: Can start a game successfully` 在当前 isolated single-worker runtime 下通过。
+  - `Online 4-player room: create claim-seat join and start successfully` 也在当前 isolated single-worker runtime 下通过。
+  - 这两条基线说明：当前 runtime 风险已不再是“简单进房/开局稳定失败”，而是更长链路、更多对象与整份 intake 的连续 soak 问题。
+- [x] 当前已锁定的 runtime 事实
+  - 双人和四人简单开局都能在本轮托管 runtime 中落地，说明 4 人 readiness 不是稳定 blocker。
+  - `isolated single-worker DiceThrone runtime 启动稳定性` 的描述应随之收窄为长跑/soak 风险，而不是最小进房必败。
+- [x] 当前剩余方向更新
+  - 后续优先级继续停留在 completion audit 与长跑 soak，而不是再把简单开局当作主阻塞。
+  - `implementation_in_progress` 继续保留。
+
+## Addendum（2026-06-03 10:28 +08）：representative L3 已拆成“可继续复用”与“优先补 L4”两层
+
+- [x] 当前已确认的分层
+  - 纯共享参数差异 / 组合链对象可以继续合法保留 representative L3，不需要把每个都改成独立 direct E2E。
+  - 真正应优先补独立 L4 的，是带明显交互窗、多个选择步骤、跨阶段收口的对象。
+- [x] 后续优先补 L4 的对象
+  - 战术优势
+  - 反制措施 / 你还嫩了点
+  - 无情诅咒
+  - 深海潜行
+  - 瞭望台
+  - 啜呼
+- [x] 当前剩余方向更新
+  - 后续不再把所有 representative L3 混成同一桶。
+  - `implementation_in_progress` 继续保留。
+
+## Addendum（2026-06-03 10:34 +08）：战术优势 C5 守护改为真实选人交互
+
+- [x] `src/games/dicethrone/domain/customActions/zhanshujia.ts`
+  - `zhanshujia-tactical-advantage-grant-protect` 由“直接给自己加守护”改为 `selectPlayer + tokenGrantConfig`。
+  - 该动作现在与 `card-zhanshujia-strategic-defense` 保持同型：先出玩家选择交互，再由引擎结算 `TOKEN_IDS.PROTECT`。
+- [x] `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`
+  - “战术优势可按动作消耗 token 取得 CP、重掷、抽牌、锁定、守护和转移入口” 已同步改成先验交互、再选目标、再验收 token 的链路。
+  - 定点机制测试已重跑通过：`45 passed`。
+- [x] `src/games/dicethrone/rule/战术家录入核对.md`
+  - `tactical_advantage / C5` 已从 `L2 partial` 改为 `L2 passed`。
+
+## Addendum（2026-06-03 11:29 +08）：`紧缚` 旧红链已复核恢复，整份 intake E2E 当前 39/39 通过
+
+- [x] `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts`
+  - `真实入口应展示紧缚在额外投掷中的 CP 门禁与阶段清理` 已在当前托管 isolated runtime 下单跑通过，不再属于环境阻断中的旧红链。
+  - 本轮没有继续改业务逻辑；现状更接近“此前失败为旧结果/运行时噪音，当前用例已可稳定打绿”。
+- [x] 最新验证
+  - `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示紧缚在额外投掷中的 CP 门禁与阶段清理"` -> `1 passed (2026-06-03)`
+  - `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` -> `39 passed (2026-06-03)`
+  - `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` -> 通过
+- [x] 当前结论更新
+  - 旧的“`紧缚` 仍被 2 人 online 加载阻断、暂不能回写代表链”的判断已过时。
+  - 当前剩余门禁继续收敛为：对象级彻底审计、representative L3 到逐对象 L3/L4 的边界，以及整份 intake 的长跑/soak 稳定性。
+  - `implementation_in_progress` 继续保留，不能把这次 `39/39` E2E 收口误报成两名新英雄已完整完成。
+
+## Addendum（2026-06-03 21:05 +08）：咒缚海盗人类面玩家板已接入正式资源链与运行时选图
+
+- [x] 资源链收口
+  - 已把 `public/assets/i18n/zh-CN/dicethrone/images/cursed/人类面板.png` 同步为运行时别名 `human-player-board.png`。
+  - 已生成 `public/assets/i18n/zh-CN/dicethrone/images/cursed/compressed/human-player-board.webp`。
+  - `npm run assets:manifest` 后，`public/assets/i18n/zh-CN/dicethrone/assets-manifest.json` 与 `public/assets/i18n/assets-manifest.json` 已包含：
+    - `images/cursed/human-player-board`
+    - `images/cursed/compressed/human-player-board`
+- [x] 运行时合同收口
+  - `ASSETS.PLAYER_BOARD('cursed_pirate', 'normal')` 现指向 `dicethrone/images/cursed/human-player-board`。
+  - 主棋盘与攻击特写都已消费 `playerBoardFace` 选图；咒缚面继续走 `player-board`，normal 面走 `human-player-board`。
+  - 已核图确认人类面与咒缚面槽位版式同构，继续复用现有 `v2` 技能槽布局，不新增第二套 `abilitySlotLayout` / `abilitySlotMapping`。
+- [x] 当前边界
+  - 这次收口的是“人类面底图正式进资源链并被 UI 消费”，不是“官方双面机制已完整完成”。
+  - 仍未证明 normal 面会在真实流程中自动切换，也未证明其是否存在与咒缚面不同的完整技能语义。
+  - `implementation_in_progress` 继续保留。
+
+## Addendum（2026-06-03，本轮图面对照）：normal 面已确认是独立技能语义，后续必须重录与重审计
+
+- [x] 已确认的新事实
+  - `player-board.png`（咒缚面）与 `人类面板.png`（normal 面）虽然槽位版式同构，但技能标题、数值句子与被动语义并不相同。
+  - 人类面可直接读到 `弯刀突刺 / 做好标记 / 点燃炸药 / 判决指令 / 走跳板 / 惊魂动魄` 等对象；这与当前 runtime 仍在使用的 `灵魂突刺 / 死亡印记 / 死亡吐息 / 灵魂指令 / 深海潜行 / 亡灵之爪` 不是同一套。
+  - 人类面 `咒缚` 被动也改成“回合结束移除 1 个诅咒金币；若没有可移除金币则翻面”，不能再沿用咒缚面的 upkeep 自伤/施桶合同。
+- [ ] 因此必须追加的正式工作
+  - 逐槽重录 normal 面 9 个玩家板技能与被动文本，形成新的真相源/录入核对表。
+  - 为 normal 面建立对应领域实现或双面能力分流，而不是只靠 `playerBoardFace` 选图。
+  - 设计并实现 normal 面 <-> 咒缚面的正式翻面合同。
+  - 按新语义补机制测试、真实入口测试与对象级审计回写。
+- [x] 当前边界更新
+  - “规则都实施完”当前不能成立。
+  - “技能是否需要重录”答案是需要，而且是整套 normal 面玩家板技能与翻面合同。
+  - 现有 audit 只能继续证明“咒缚面主体 + human 面底图接入 + `海盗的一生` 分支”这一阶段，不得再外推成官方双面完整实现。
+  - `implementation_in_progress` 继续保留。

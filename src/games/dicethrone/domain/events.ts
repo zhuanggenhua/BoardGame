@@ -133,6 +133,7 @@ export const DT_EVENTS = defineEvents({
   ABILITY_ACTIVATED: { audio: 'immediate', sound: ABILITY_ACTIVATE_KEY }, // 技能激活（技能自带音效优先，无则用默认）
   ATTACK_RESOLVED: 'fx',         // 攻击结算（技能自带音效）
   ABILITY_REPLACED: 'fx',        // 技能替换（升级卡音效）
+  PLAYER_BOARD_FACE_CHANGED: 'silent', // 双面英雄翻面（内部状态）
 
   // ========== 静默事件 ==========
   HERO_INITIALIZED: 'silent',    // 英雄初始化（内部状态）
@@ -813,6 +814,14 @@ export interface TokenUsedEvent extends GameEvent<'TOKEN_USED'> {
     };
 }
 
+export interface PlayerBoardFaceChangedEvent extends GameEvent<'PLAYER_BOARD_FACE_CHANGED'> {
+    payload: {
+        playerId: PlayerId;
+        face: 'normal' | 'cursed';
+        sourceAbilityId?: string;
+    };
+}
+
 /** Token 响应窗口关闭事件 */
 export interface TokenResponseClosedEvent extends GameEvent<'TOKEN_RESPONSE_CLOSED'> {
     payload: {
@@ -958,6 +967,7 @@ export type DiceThroneEvent =
     | DefenderSelectionResolvedEvent
     | TurnChangedEvent
     | AbilityReplacedEvent
+    | PlayerBoardFaceChangedEvent
     | ResponseWindowOpenedEvent
     | ResponseWindowClosedEvent
     | ResponseWindowResponderChangedEvent

@@ -72,6 +72,16 @@ describe('SmashUp Tutorial Manifest 结构验证', () => {
         expect(defIds).not.toContain('dino_war_raptor');
     });
 
+    it('setup 步骤的 MERGE_STATE 只覆盖玩家手牌，不直接改写 madnessDeck', () => {
+        const setup = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'setup')!;
+        const mergeAction = setup.aiActions!.find(a => a.commandType === CHEAT_COMMANDS.MERGE_STATE)!;
+        const fields = (mergeAction.payload as any).fields;
+
+        expect(fields.players?.['0']?.hand).toBeDefined();
+        expect(fields.madnessDeck).toBeUndefined();
+        expect(fields.players?.['0']?.madnessDeck).toBeUndefined();
+    });
+
     it('至少包含 15 个教学步骤', () => {
         expect(SMASH_UP_BASIC_TUTORIAL.steps.length).toBeGreaterThanOrEqual(15);
     });

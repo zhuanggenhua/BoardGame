@@ -2738,6 +2738,43 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         }
     });
 
+    it('rooted 在旧 pendingBonusDiceSettlement 脏 dice shape 下不应因 reduce/map 崩溃，而应拒绝非法结算', () => {
+        const handler = getChoiceEffectHandler('treant-rooted-resolve');
+        expect(handler).toBeDefined();
+
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1])).core;
+        state.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'slash-3',
+            defenseAbilityId: 'rooted',
+            isDefendable: true,
+            damage: 0,
+        };
+        state.pendingBonusDiceSettlement = {
+            sourceAbilityId: 'rooted',
+            attackerId: '1',
+            targetId: '1',
+            dice: { legacy: true } as any,
+        } as NonNullable<DiceThroneCore['pendingBonusDiceSettlement']>;
+
+        expect(() => handler?.({
+            state,
+            playerId: '1',
+            customId: 'treant-rooted-resolve',
+            sourceAbilityId: 'rooted',
+            value: 10002,
+        })).not.toThrow();
+
+        expect(handler?.({
+            state,
+            playerId: '1',
+            customId: 'treant-rooted-resolve',
+            sourceAbilityId: 'rooted',
+            value: 10002,
+        })).toBeUndefined();
+    });
+
     it('Drink Deep 对已满生命源泉目标不应越过 token 上限', () => {
         const state = createTreantTeamMatchup();
         for (const playerId of state.core.seatingOrder) {

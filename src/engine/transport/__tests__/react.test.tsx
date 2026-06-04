@@ -189,6 +189,114 @@ describe('GameProvider transport baseline', () => {
         }));
     });
 
+    it('normalizes SmashUp authoritative runtime-guard dirty state before patch baseline and render state', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-smashup-runtime-guard-normalize"
+                playerId="0"
+                engineConfig={{ gameId: 'smashup' } as any}
+            >
+                <StateProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const dirtyState = {
+            core: {
+                players: {
+                    '0': {
+                        id: '0',
+                        vp: 0,
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                        factions: ['minions_of_cthulhu', 'innsmouth'],
+                        pendingMinionPlayEffects: null,
+                        usedDiscardPlayAbilities: null,
+                    },
+                },
+                turnOrder: ['0'],
+                currentPlayerIndex: 0,
+                bases: [
+                    {
+                        defId: 'base_tortuga',
+                        minions: [],
+                        ongoingActions: [],
+                        buriedCards: null,
+                    },
+                ],
+                baseDeck: [],
+                baseDiscard: [],
+                turnNumber: 3,
+                nextUid: 5,
+                madnessDeck: [
+                    { uid: 'mad-1', defId: 'special_madness', type: 'action', owner: '0' },
+                    { uid: 'mad-2', defId: 'special_madness', type: 'action', owner: '0' },
+                ],
+            },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(dirtyState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(1);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith({
+            ...dirtyState,
+            core: expect.objectContaining({
+                madnessDeck: ['special_madness', 'special_madness'],
+                players: expect.objectContaining({
+                    '0': expect.objectContaining({
+                        pendingMinionPlayEffects: [],
+                        usedDiscardPlayAbilities: undefined,
+                    }),
+                }),
+                bases: expect.arrayContaining([
+                    expect.objectContaining({
+                        buriedCards: [],
+                    }),
+                ]),
+            }),
+        });
+        expect(client.updateLatestState).toHaveBeenCalledTimes(1);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith({
+            ...dirtyState,
+            core: expect.objectContaining({
+                madnessDeck: ['special_madness', 'special_madness'],
+                players: expect.objectContaining({
+                    '0': expect.objectContaining({
+                        pendingMinionPlayEffects: [],
+                        usedDiscardPlayAbilities: undefined,
+                    }),
+                }),
+                bases: expect.arrayContaining([
+                    expect.objectContaining({
+                        buriedCards: [],
+                    }),
+                ]),
+            }),
+        });
+        expect(screen.getByTestId('state').textContent).toContain('"pendingMinionPlayEffects":[]');
+        expect(screen.getByTestId('state').textContent).not.toContain('"usedDiscardPlayAbilities":null');
+        expect(screen.getByTestId('state').textContent).toContain('"buriedCards":[]');
+        expect(screen.getByTestId('state').textContent).toContain('"madnessDeck":["special_madness","special_madness"]');
+    });
+
     it('clears stale owner-only current prompt from rendered state when authoritative update closes it', () => {
         render(
             <GameProvider

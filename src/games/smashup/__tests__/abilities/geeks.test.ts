@@ -203,9 +203,11 @@ describe('极客派系隐藏实现批', () => {
             currentPlayerIndex: 0,
             players: {
                 '0': makePlayer('0', {
+                    factions: ['geeks', 'wizards'],
                     hand: [makeCard('banned-1', 'geeks_banned_list', 'action', '0')],
                 }),
                 '1': makePlayer('1', {
+                    factions: ['aliens', 'pirates'],
                     hand: [
                         makeCard('collector-a', 'alien_collector', 'minion', '1'),
                         makeCard('collector-b', 'alien_collector_pod', 'minion', '1'),
@@ -250,6 +252,43 @@ describe('极客派系隐藏实现批', () => {
         expect(resolved.events.some((event: any) => event.type === SU_EVENTS.REVEAL_HAND)).toBe(true);
         expect(resolved.finalState.core.players['2'].hand.map((card) => card.uid)).toEqual(['p2-hand-1']);
         expect(resolved.finalState.core.players['2'].deck).toHaveLength(0);
+    });
+
+    it('禁卡表只提供当前对局已选派系的卡牌候选，并使用卡图模式', () => {
+        const state = makeMatchState(makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['geeks', 'wizards'],
+                    hand: [makeCard('banned-1', 'geeks_banned_list', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    factions: ['aliens', 'pirates'],
+                    hand: [makeCard('collector-a', 'alien_collector', 'minion', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            bases: [makeBase('base_a', [])],
+        }));
+
+        const played = runCommand(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'banned-1' },
+        });
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'geeks_banned_list');
+        expect(prompt?.targetType).toBe('generic');
+
+        const optionValues = (prompt?.options ?? []).map((option: any) => option.value?.defId).filter(Boolean);
+        expect(optionValues).toContain('alien_collector');
+        expect(optionValues).toContain('pirate_first_mate');
+        expect(optionValues).toContain('wizard_scry');
+        expect(optionValues).toContain('geeks_banned_list');
+        expect(optionValues).not.toContain('zombie_walker');
+
+        const collectorOption = prompt?.options.find((option: any) => option.value?.defId === 'alien_collector');
+        expect(collectorOption?.displayMode).toBe('card');
     });
 
     it('禁卡表会跳过手牌为空的对手，直接处理下一位', () => {
@@ -300,6 +339,7 @@ describe('极客派系隐藏实现批', () => {
 
         const prompt = getSimpleChoicePrompt(played.finalState, 'geeks_min_maxing_action');
         expect(prompt).toBeTruthy();
+        expect(prompt?.targetType).toBe('generic');
         const resolved = respondToPrompt(played.finalState, 'skip', '0', fixedRandom as any);
 
         expect(resolved.finalState.core.players['1'].hand.map((card) => card.uid)).toEqual(['justice-1']);
@@ -331,6 +371,7 @@ describe('极客派系隐藏实现批', () => {
         });
 
         const prompt = getSimpleChoicePrompt(played.finalState, 'geeks_min_maxing_action');
+        expect(prompt?.targetType).toBe('generic');
         const justiceOption = prompt.options.find((option: any) => option.value?.cardUid === 'justice-1');
         expect(justiceOption).toBeTruthy();
 
@@ -366,6 +407,7 @@ describe('极客派系隐藏实现批', () => {
         });
 
         const actionPrompt = getSimpleChoicePrompt(played.finalState, 'geeks_min_maxing_action');
+        expect(actionPrompt?.targetType).toBe('generic');
         const expandOption = actionPrompt.options.find((option: any) => option.value?.cardUid === 'expand-1');
         expect(expandOption).toBeTruthy();
 

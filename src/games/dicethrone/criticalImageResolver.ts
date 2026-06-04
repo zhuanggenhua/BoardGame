@@ -38,6 +38,9 @@ const COMMON_CRITICAL_PATHS = [
 ] as const;
 
 const HAND_ATLAS_CHARACTER_IDS: ReadonlySet<SelectableCharacterId> = new Set(['gunslinger', 'samurai']);
+const EXTRA_GAMEPLAY_ASSETS_BY_CHARACTER: Partial<Record<SelectableCharacterId, string[]>> = {
+    cursed_pirate: ['human-player-board'],
+};
 
 function dedupePreserveOrder(paths: string[]): string[] {
     return [...new Set(paths.filter(Boolean))];
@@ -52,12 +55,16 @@ function getHandAtlasAssets(charId: SelectableCharacterId): string[] {
     return [getCharAssetPath(charId, 'hand-cards-atlas')];
 }
 
+function getExtraGameplayAssets(charId: SelectableCharacterId): string[] {
+    return (EXTRA_GAMEPLAY_ASSETS_BY_CHARACTER[charId] ?? []).map((assetKey) => getCharAssetPath(charId, assetKey));
+}
+
 function getCharAssetsByTag(charId: SelectableCharacterId, tag: AssetTag): string[] {
     const baseAssets = CHARACTER_ASSET_TYPES
         .filter((asset) => (asset.tags as readonly string[]).includes(tag))
         .map((asset) => getCharAssetPath(charId, asset.key));
     if (tag !== 'gameplay') return baseAssets;
-    return [...baseAssets, ...getHandAtlasAssets(charId)];
+    return [...baseAssets, ...getExtraGameplayAssets(charId), ...getHandAtlasAssets(charId)];
 }
 
 function getAllCharAssets(charId: SelectableCharacterId): string[] {
@@ -203,6 +210,7 @@ export const _testExports = {
     getCharAssetPath,
     getCharAssetsByTag,
     getAllCharAssets,
+    getExtraGameplayAssets,
     getHandAtlasAssets,
 };
 

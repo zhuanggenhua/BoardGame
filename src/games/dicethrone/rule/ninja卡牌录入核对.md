@@ -24,7 +24,7 @@
 
 | slot | cardId | 中文 | `targetAbilityId` | 当前 `newAbilityDef` 状态 | 结论 |
 |---:|---|---|---|---|---|
-| 18 | `upgrade-blink-2` | 瞬身 II | `blink` | 主路线大体接近；仍需核“重掷至多 2 颗”是否已被共享流程覆盖 | **暂未见分支拆错，待补共享流程核对** |
+| 18 | `upgrade-blink-2` | 瞬身 II | `blink` | 2026-06-03 已确认不是升级卡接错，而是升级技能的防御重投合同漏进共享流程；现已补 `trigger.rollLimit = 2` 并以合同测试 + 真实防御 E2E 锁定 | **升级卡接线正确；共享实现漏项已修** |
 | 19 | `upgrade-going-forward-2` | 一往无前 II | `going-forward` | 只替换成单一路线 `GOING_FORWARD_2`；缺 `刀尖舔血`；主路线也没实现投 `2` 骰 / 可重掷 / `<=6` 不可防御 | **错录** |
 | 20 | `upgrade-slash-2` | 斩击 II | `slash` | `SLASH_2` 数值写成 `6/7/8`，缺“3 同点获得 1 忍术” | **错录** |
 | 21 | `upgrade-shadow-step-2` | 暗影步 II | `shadow-step` | `SHADOW_STEP_2` 缺 `勒杀`，主路线伤害也写错 | **错录** |

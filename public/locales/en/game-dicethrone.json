@@ -802,6 +802,9 @@
       "cursedPirateCrowsNestOther": "Crow's Nest: no trigger",
       "cursedPirateHeftyLoot": "Hefty: Loot triggers draw and CP",
       "cursedPirateHeftyOther": "Hefty: no trigger",
+      "cursedPirateHumanMakeYourMarkCutlass": "Make Your Mark: Cutlass deals 2 undefendable damage",
+      "cursedPirateHumanMakeYourMarkLoot": "Make Your Mark: Loot draws 1 card",
+      "cursedPirateHumanMakeYourMarkSkull": "Make Your Mark: Skull gains Cursed Coin",
       "cursedPirateSipHit": "Sip: 3-6, gain Powder Keg and Wither",
       "cursedPirateSipMiss": "Sip: 1-2, nothing happens"
     },
@@ -1066,6 +1069,16 @@
         "title": "Sip: choose whether to roll instead",
         "acceptPowderKeg": "Gain Powder Keg",
         "rollInstead": "Do not gain Powder Keg; roll 1 die instead"
+      },
+      "cursedPirateHumanWalkThePlank": {
+        "title": "Walk the Plank: choose the resolution",
+        "stealCp": "Steal 1 CP",
+        "discardCard": "Make the opponent choose and discard 1 card"
+      },
+      "cursedPirateHumanRemoveCoins": {
+        "title": "Shiver Me Timbers: remove any number of Cursed Coins",
+        "keep": "Do not remove any",
+        "remove": "Remove {{count}} Cursed Coin(s)"
       },
       "powderKegTransfer": {
         "title": "Powder Keg: choose who receives it",
@@ -2586,7 +2599,7 @@
     },
     "blink-2": {
       "name": "Blink II",
-      "description": "Defensive roll 3 dice; deal damage equal to the number of Ninja Blades rolled; if you roll a Shuriken, deal 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb."
+      "description": "Defensive roll 3 dice; you may reroll up to 2 of those dice; deal damage equal to the number of Ninja Blades rolled; if you roll a Shuriken, deal 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb."
     },
     "ninja-assassinate": {
       "name": "Assassinate",
@@ -3462,7 +3475,7 @@
     },
     "upgrade-blink-2": {
       "name": "Blink II",
-      "description": "Upgrade Blink."
+      "description": "Upgrade Blink: defensive roll 3 dice; you may reroll up to 2 of those dice; deal damage equal to the number of Ninja Blades rolled; each Shuriken deals 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb."
     },
     "upgrade-going-forward-2": {
       "name": "Going Forward II",

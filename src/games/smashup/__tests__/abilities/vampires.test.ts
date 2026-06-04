@@ -772,6 +772,97 @@ describe('vampires_pod: Nightstalker POD', () => {
         expect(afterBury.finalState.core.bases[1].buriedCards?.some(card => card.uid === 'fv-hand')).toBe(true);
         expect(afterBury.finalState.core.players['0'].hand.some(card => card.uid === 'fv-hand')).toBe(false);
     });
+
+    it('borrowed Fledgling Vampire POD 从当前玩家手牌埋葬时，仍应保留真实 trueOwnerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('fv-hand', 'vampire_fledgling_vampire_pod', 'minion', '1'),
+                        makeCard('gulp', 'vampire_big_gulp_pod', 'action', '0'),
+                    ],
+                    deck: [makeCard('draw-1', 'robot_microbot', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('fv-board', 'vampire_fledgling_vampire_pod', '0', 2),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_star_portal_pod',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const playBigGulp = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'gulp' } },
+            defaultTestRandom,
+        );
+        const destroyPrompt = getSimpleChoicePrompt(playBigGulp.finalState, 'vampire_big_gulp_pod');
+        const fledglingOption = getPromptOption(
+            destroyPrompt,
+            option => option.value?.minionUid === 'fv-board',
+            'in-play Fledgling destroy option',
+        );
+
+        const afterDestroy = runCommand(
+            playBigGulp.finalState,
+            respondCommand(fledglingOption.id, '0'),
+            defaultTestRandom,
+        );
+        const reactionPrompt = getSimpleChoicePrompt(afterDestroy.finalState, 'smashup_reaction_choose');
+        const reactionOption = getReactionPromptOptionBySourceDefId(
+            afterDestroy.finalState,
+            reactionPrompt,
+            'vampire_fledgling_vampire_pod',
+        );
+
+        const afterReaction = runCommand(
+            afterDestroy.finalState,
+            respondCommand(reactionOption.id, getPromptPlayerId(reactionPrompt)),
+            defaultTestRandom,
+        );
+        const sourcePrompt = getSimpleChoicePrompt(afterReaction.finalState, 'vampire_fledgling_vampire_pod_bury_source');
+        const handSourceOption = getPromptOption(
+            sourcePrompt,
+            option => option.value?.cardUid === 'fv-hand',
+            'borrowed hand Fledgling bury source',
+        );
+
+        const afterSource = runCommand(
+            afterReaction.finalState,
+            respondCommand(handSourceOption.id, '0'),
+            defaultTestRandom,
+        );
+        const basePrompt = getSimpleChoicePrompt(afterSource.finalState, 'vampire_fledgling_vampire_pod_bury_base');
+        const starPortalOption = getPromptOption(
+            basePrompt,
+            option => option.value?.baseIndex === 1,
+            'Star Portal bury base',
+        );
+
+        const afterBury = runCommand(
+            afterSource.finalState,
+            respondCommand(starPortalOption.id, '0'),
+            defaultTestRandom,
+        );
+
+        const buriedCard = afterBury.finalState.core.bases[1].buriedCards?.find(card => card.uid === 'fv-hand');
+        expect(buriedCard).toBeDefined();
+        expect(buriedCard?.controllerId).toBe('0');
+        expect(buriedCard?.trueOwnerId).toBe('1');
+    });
 });
 
 describe('vampires_pod: Buffet POD', () => {
@@ -875,6 +966,63 @@ describe('vampires_pod: The Count POD', () => {
             );
             expect(hasCountTrigger).toBe(true);
         }
+    });
+
+    it('多个 The Count POD 走 direct fireTriggers 时，应按每个 source 继续给各自控制者链式加指示物 prompt', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('count-p0', 'vampire_the_count_pod', '0', 5)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('count-p1', 'vampire_the_count_pod', '1', 5)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_c',
+                    minions: [
+                        makeMinion('target-a', 'robot_microbot', '0', 2),
+                        makeMinion('victim-a', 'ghosts_spectre', '1', 2),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const direct = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 2,
+            triggerMinionUid: 'victim-a',
+            triggerMinionDefId: 'ghosts_spectre',
+            triggerMinion: core.bases[2].minions.find(minion => minion.uid === 'victim-a'),
+            destroyerId: '0',
+            reason: 'test_destroy',
+            random: defaultTestRandom,
+            now: 40,
+        });
+
+        const firstPrompt = getSimpleChoicePrompt(direct.matchState!, 'vampire_the_count_pod_add_counter');
+        expect(getPromptPlayerId(firstPrompt)).toBe('0');
+
+        const afterFirstSkip = respondToPrompt(
+            direct.matchState!,
+            getPromptOption(firstPrompt, option => option.value?.skip === true, 'The Count POD first skip').id,
+            '0',
+            defaultTestRandom,
+        );
+        const secondPrompt = getSimpleChoicePrompt(afterFirstSkip.finalState, 'vampire_the_count_pod_add_counter');
+        expect(getPromptPlayerId(secondPrompt)).toBe('1');
     });
 
     it('talent 的 -1 应持续到自己下回合开始', () => {

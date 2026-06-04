@@ -1173,6 +1173,38 @@ describe('BonusDieOverlay', () => {
         ).toBe(true);
     });
 
+    it('displayOnly 结算的旧脏 dice shape 不应在可见性判断里崩溃', () => {
+        const settlement = {
+            id: 'legacy-display-only',
+            sourceAbilityId: 'volley',
+            attackerId: '1',
+            targetId: '0',
+            dice: { legacy: true },
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            maxRerollCount: 0,
+            readyToSettle: false,
+            displayOnly: true,
+        } as any;
+
+        expect(
+            shouldSuppressPendingDisplayOnlyBonusOverlay({
+                settlement,
+                viewerPlayerId: '0',
+                cardSpotlightQueue: [
+                    {
+                        id: 'legacy-volley-1000',
+                        timestamp: 1000,
+                        playerId: '1',
+                        playerName: '对手',
+                        bonusDice: [],
+                    },
+                ],
+            })
+        ).toBe(false);
+    });
+
     it('displayOnly 结算缺少时间戳时，若卡牌特写已完整绑定骰子也应隐藏重复面板', () => {
         const settlement = {
             id: 'volley-display',
@@ -1811,6 +1843,33 @@ describe('BonusDieOverlay', () => {
             },
             responseWindowState: {
                 current: undefined,
+            },
+        })).toBe(settlement);
+    });
+
+    it('旧脏 interactive pendingBonusDiceSettlement 不应在前台奖励骰弹层链路里崩溃', () => {
+        const settlement = {
+            id: 'legacy-interactive-settlement',
+            sourceAbilityId: 'volley',
+            attackerId: '0',
+            targetId: '1',
+            dice: { legacy: true },
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            maxRerollCount: 1,
+            readyToSettle: false,
+            displayOnly: false,
+        } as any;
+
+        expect(resolveInteractivePendingBonusDiceSettlement({
+            settlement,
+            viewerPlayerId: '0',
+            interactionState: {
+                current: {
+                    kind: 'dt:bonus-dice',
+                    playerId: '0',
+                },
             },
         })).toBe(settlement);
     });

@@ -132,4 +132,65 @@ describe('大杀四方 UI 运行时状态规范化', () => {
         expect(normalized.core?.titans?.[0]?.uid).toBe('titan-1');
         expect(normalized.anomalies).toEqual([]);
     });
+
+    it('会保留合法的 madnessDeck defId 字符串数组，不误报 invalid-entry', () => {
+        const normalized = normalizeSmashUpCoreForUi({
+            players: {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['minions_of_cthulhu', 'innsmouth'],
+                },
+            },
+            turnOrder: ['0'],
+            currentPlayerIndex: 0,
+            bases: [],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 1,
+            madnessDeck: ['special_madness', 'special_madness', 'special_madness'],
+        } as any);
+
+        expect(normalized.core?.madnessDeck).toEqual(['special_madness', 'special_madness', 'special_madness']);
+        expect(normalized.anomalies).toEqual([]);
+    });
+
+    it('会把历史对象型 madnessDeck 夹具收敛为 defId 字符串数组', () => {
+        const normalized = normalizeSmashUpCoreForUi({
+            players: {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['minions_of_cthulhu', 'elder_things'],
+                },
+            },
+            turnOrder: ['0'],
+            currentPlayerIndex: 0,
+            bases: [],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 1,
+            madnessDeck: [
+                { uid: 'md1', defId: 'special_madness', type: 'action', owner: '0' },
+                { uid: 'md2', defId: 'special_madness', type: 'action', owner: '0' },
+            ],
+        } as any);
+
+        expect(normalized.core?.madnessDeck).toEqual(['special_madness', 'special_madness']);
+        expect(normalized.anomalies).toEqual([]);
+    });
 });

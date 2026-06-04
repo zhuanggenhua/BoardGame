@@ -4180,6 +4180,285 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/cursed/人类面板": {
+      "variants": {
+        "png": {
+          "sha256": "c22433ef027f9bb7103a7e3f5493f5b1641550b37c27e9f8e9a32547f6558cc7",
+          "bytes": 9335738,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
+          "bytes": 16513454,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/提示板": {
+      "variants": {
+        "jpg": {
+          "sha256": "f19909890fa8453a7b4a44d867b2468f71909e5855635aa459da99a3f93ceb18",
+          "bytes": 1541631,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/骰子": {
+      "variants": {
+        "jpg": {
+          "sha256": "6eb4477e52e10396ca8d6804b627b8f8e882aff60fd92a617d687e6c063a722b",
+          "bytes": 120704,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "9fe81a7c56552961a7648fdbd88ac2af46523bbca4108fde50cdab14cd894a84",
+          "bytes": 9948505,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
+          "bytes": 16513454,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/人类面板": {
+      "variants": {
+        "webp": {
+          "sha256": "383aaff1120619ce831cfac12950f1dcbc389e1bff894dfe2ff976bc81f9b058",
+          "bytes": 338966,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "c7fda28cb36a60ea32e59260106569039df89e460b00e1bfad1a23f40066d224",
+          "bytes": 402186,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/提示板": {
+      "variants": {
+        "webp": {
+          "sha256": "6b2b2bca95347bdfc898719d8f90d7f9247792fd4ec5e79c0a34510c92212be9",
+          "bytes": 334460,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "f6e6941cd1ced0d8d4b09631b21e5201f6dbc676f2ab75d978b64c407c2ceecb",
+          "bytes": 18542,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "04fbe0261a54e903b8f9d716b3b8122eff4fadf306c0603be51c83bf31de172c",
+          "bytes": 377108,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "c7fda28cb36a60ea32e59260106569039df89e460b00e1bfad1a23f40066d224",
+          "bytes": 402186,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "f6e6941cd1ced0d8d4b09631b21e5201f6dbc676f2ab75d978b64c407c2ceecb",
+          "bytes": 18542,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/human-player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "383aaff1120619ce831cfac12950f1dcbc389e1bff894dfe2ff976bc81f9b058",
+          "bytes": 338966,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "04fbe0261a54e903b8f9d716b3b8122eff4fadf306c0603be51c83bf31de172c",
+          "bytes": 377108,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "4302e07073ddbdc5cb98a31255d7d3fe0af813f9f5f0d14abc1d82104bd2ad4b",
+          "bytes": 39222,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "6b2b2bca95347bdfc898719d8f90d7f9247792fd4ec5e79c0a34510c92212be9",
+          "bytes": 334460,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/dice": {
+      "variants": {
+        "jpg": {
+          "sha256": "6eb4477e52e10396ca8d6804b627b8f8e882aff60fd92a617d687e6c063a722b",
+          "bytes": 120704,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/human-player-board": {
+      "variants": {
+        "png": {
+          "sha256": "c22433ef027f9bb7103a7e3f5493f5b1641550b37c27e9f8e9a32547f6558cc7",
+          "bytes": 9335738,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "9fe81a7c56552961a7648fdbd88ac2af46523bbca4108fde50cdab14cd894a84",
+          "bytes": 9948505,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status-icons-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
+          "bytes": 317204,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
+          "bytes": 604,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/凋零": {
+      "variants": {
+        "png": {
+          "sha256": "9f786ba6cb8ae1b6c90bec0f76dd86a99c0e60875618e77e7141764334577d06",
+          "bytes": 64632,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/休战": {
+      "variants": {
+        "png": {
+          "sha256": "51aac7cb57d742e84d0f08b9827fbfc309b5e6a1c37cae8013cfc1db04d8921d",
+          "bytes": 40862,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/炸药": {
+      "variants": {
+        "png": {
+          "sha256": "55cdff24a5ce8b057d4b80e1718e83fbe89fbb045c64b8be233228df6239f8ac",
+          "bytes": 77380,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/诅咒金币": {
+      "variants": {
+        "png": {
+          "sha256": "ac01167c8e5dc794df31648a5be03d56a7e42974342bf7eefde79c685a9abcec",
+          "bytes": 86639,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/compressed/凋零": {
+      "variants": {
+        "webp": {
+          "sha256": "bb8c259642f136eef1ccec63c7a37c68626f75adada662624e03e96bc3edfed7",
+          "bytes": 8754,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/compressed/休战": {
+      "variants": {
+        "webp": {
+          "sha256": "f6166c3e7750c80b4998ed8d132831e96b89c66b0124ff30d031e992a6a61156",
+          "bytes": 5350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/compressed/炸药": {
+      "variants": {
+        "webp": {
+          "sha256": "1badeb9c191635a2ad4c30ecd3ef72d1abcf64c4a7477451ef71cd73bf49caf7",
+          "bytes": 10170,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币": {
+      "variants": {
+        "webp": {
+          "sha256": "c05e23cf7dea065102dec2b9107148f50271d3b606aacd5006c6bb912d651cc4",
+          "bytes": 11300,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/cursed/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "f19909890fa8453a7b4a44d867b2468f71909e5855635aa459da99a3f93ceb18",
+          "bytes": 1541631,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/gunslinger/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -4870,6 +5149,213 @@
           "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
           "bytes": 789,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
+          "bytes": 14961151,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/提示板": {
+      "variants": {
+        "jpg": {
+          "sha256": "fe950f903c0cd59edb1fa5a53fe21b46f5aec2cdf9e517ee1b57f4fb6c4a8035",
+          "bytes": 1354426,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/骰子": {
+      "variants": {
+        "png": {
+          "sha256": "2e90cf1a758ab20a913683104db4cdc1d938307b008aa1dd914195e6a156ee73",
+          "bytes": 57745,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "99249473964d38b70d26ab97bb85bc90123362c56c3a4d1ff7d9f047f5ca6249",
+          "bytes": 9871576,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
+          "bytes": 14961151,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "e918ab6bca2a9e376d968a041022fd8e189eb37c50c470bc4267b671500c9425",
+          "bytes": 372752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/提示板": {
+      "variants": {
+        "webp": {
+          "sha256": "11323399ce88f0f0436fb0d9b98f3fbe50adad3d2b7fc29e71117e6fa7d2b87b",
+          "bytes": 262658,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "513ac00be1b446db57c33d8387bd9fdbb5824cd2e73e60f7ebc9dea66642c54d",
+          "bytes": 17972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "2c9b8a0c22942dc4aa2b92329bb91904d5c9f1f4a7593a613ae25d76f283af3b",
+          "bytes": 375712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "e918ab6bca2a9e376d968a041022fd8e189eb37c50c470bc4267b671500c9425",
+          "bytes": 372752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "513ac00be1b446db57c33d8387bd9fdbb5824cd2e73e60f7ebc9dea66642c54d",
+          "bytes": 17972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "2c9b8a0c22942dc4aa2b92329bb91904d5c9f1f4a7593a613ae25d76f283af3b",
+          "bytes": 375712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "3b2e6fda8981e00eaec25b51828d36ead3d4b87df17400cf2cd460a3753cc203",
+          "bytes": 17752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "11323399ce88f0f0436fb0d9b98f3fbe50adad3d2b7fc29e71117e6fa7d2b87b",
+          "bytes": 262658,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/dice": {
+      "variants": {
+        "png": {
+          "sha256": "2e90cf1a758ab20a913683104db4cdc1d938307b008aa1dd914195e6a156ee73",
+          "bytes": 57745,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "99249473964d38b70d26ab97bb85bc90123362c56c3a4d1ff7d9f047f5ca6249",
+          "bytes": 9871576,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
+          "bytes": 135997,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
+          "bytes": 370,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status/紧缚": {
+      "variants": {
+        "png": {
+          "sha256": "7c001e38d4a9cdc3683f9b5cc7c8467a884ac22dfcd0a1406e1f406bfce8caf0",
+          "bytes": 79639,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status/战术优势": {
+      "variants": {
+        "png": {
+          "sha256": "0763e121bd7742d11b0124845314184e2c97ef636d7bb6cfe405b60937b2a999",
+          "bytes": 100459,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status/compressed/紧缚": {
+      "variants": {
+        "webp": {
+          "sha256": "5782a864984f2b5e308dd456c8ac676b6b267317bd2a9de189b0afe71aaba377",
+          "bytes": 8876,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/status/compressed/战术优势": {
+      "variants": {
+        "webp": {
+          "sha256": "7f580d391764df39183b2aa0183cdb7e82d25b19b2c1089f1fdc14f7673ca472",
+          "bytes": 11332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/zhanshujia/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "fe950f903c0cd59edb1fa5a53fe21b46f5aec2cdf9e517ee1b57f4fb6c4a8035",
+          "bytes": 1354426,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -6133,11 +6619,29 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/shayu": {
+      "variants": {
+        "webp": {
+          "sha256": "b07ca572651496a2f3490c43472e26e4e496817abc1ce807ffc012b0853c976f",
+          "bytes": 416934,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/compressed/wangling_base": {
       "variants": {
         "webp": {
           "sha256": "ac6bf989362e14fe01b84c86b3ffefb0d00a2a8e711c1ac6a97d1ca225bfa9ad",
           "bytes": 708688,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/yuanhou": {
+      "variants": {
+        "webp": {
+          "sha256": "220cbe4472d819376d280c4e9b62b6cb792fd70a6a113d70b2a3825147d220b7",
+          "bytes": 321544,
           "mime": "image/webp"
         }
       }
@@ -6250,11 +6754,29 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/longzu": {
+      "variants": {
+        "webp": {
+          "sha256": "3850908ee5521dc3e58b77ce142c26a1d5e3909aeb36ca1fe5788ecb207f6e8b",
+          "bytes": 953548,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/compressed/pretty_pretty": {
       "variants": {
         "webp": {
           "sha256": "9acb69320a70f81287570cb7b9b00318192fc4229c90d12016265fcd83776a63",
           "bytes": 2549084,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/shayu": {
+      "variants": {
+        "webp": {
+          "sha256": "50af42a5d52a46eb3caa23bdb8df01b7c4d21fb26fe22fbf381269d4cc61c63d",
+          "bytes": 899018,
           "mime": "image/webp"
         }
       }
@@ -6277,11 +6799,29 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/yuanhou": {
+      "variants": {
+        "webp": {
+          "sha256": "c32bbf6f88f3f7c952d07fa8f573d82aea72daa422861894dfc1df857bf76492",
+          "bytes": 1018858,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/huluwawa_cards": {
       "variants": {
         "png": {
           "sha256": "402e7b2e90216a162a1876c71c2c66efab69663194911c1e4b52fa6a0b9be4c8",
           "bytes": 47501004,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/longzu": {
+      "variants": {
+        "png": {
+          "sha256": "090bbb869f292a94906cb7c45db043482b5ec05438450a7daa290105ef71cf13",
+          "bytes": 42040387,
           "mime": "image/png"
         }
       }

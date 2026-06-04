@@ -7,6 +7,7 @@ import {
     getActiveDice,
     getMaxDuplicateValueCount,
     getOpponents,
+    getPendingBonusSettlementDice,
     getPlayerDieFace,
     getSeatingOrder,
     getTeammateId,
@@ -439,7 +440,7 @@ function getCurrentCardCultivateAmount(
     }
 
     if (sourceAbilityId === 'treant-card-soulfire') {
-        const spiritCount = settlement.dice.reduce(
+        const spiritCount = getPendingBonusSettlementDice(settlement).reduce(
             (count, die) => count + (die.face === TREANT_DICE_FACE_IDS.SPIRIT ? 1 : 0),
             0,
         );
@@ -447,7 +448,7 @@ function getCurrentCardCultivateAmount(
     }
 
     if (sourceAbilityId === 'treant-card-mother-tree') {
-        return settlement.dice.some(die => die.face === TREANT_DICE_FACE_IDS.SPIRIT) ? 4 : undefined;
+        return getPendingBonusSettlementDice(settlement).some(die => die.face === TREANT_DICE_FACE_IDS.SPIRIT) ? 4 : undefined;
     }
 
     return undefined;
@@ -1723,11 +1724,12 @@ registerChoiceEffectHandler(ROOTED_CHOICE_ID, ({ state, playerId, value, sourceA
     const rootedSettlement = state.pendingBonusDiceSettlement;
     if (rootedSettlement?.sourceAbilityId !== 'rooted') return undefined;
     if (rootedSettlement.attackerId !== playerId || rootedSettlement.targetId !== playerId) return undefined;
-    const summaryLeafCount = rootedSettlement.dice.reduce(
+    const rootedDice = getPendingBonusSettlementDice(rootedSettlement);
+    const summaryLeafCount = rootedDice.reduce(
         (count, die) => count + (die.face === TREANT_DICE_FACE_IDS.LEAF ? 1 : 0),
         0,
     );
-    const summarySpiritCount = rootedSettlement.dice.reduce(
+    const summarySpiritCount = rootedDice.reduce(
         (count, die) => count + (die.face === TREANT_DICE_FACE_IDS.SPIRIT ? 1 : 0),
         0,
     );

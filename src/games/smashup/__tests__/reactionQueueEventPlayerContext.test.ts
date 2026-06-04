@@ -5943,6 +5943,66 @@ describe('reaction queue: preserves event player context', () => {
         expect(resolved?.state.core.bases[0]?.minions ?? []).toEqual([]);
     });
 
+    it('borrowed Choking Vines 应按控制者而不是真实 owner 在控制者回合开始消灭宿主', () => {
+        const controllerTurnCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_ancient_ruins', [
+                    {
+                        ...makeMinion('choking-target-borrowed', 'wizard_apprentice', '1', 2),
+                        attachedActions: [{
+                            uid: 'choking-vines-borrowed-a',
+                            defId: 'killer_plant_choking_vines',
+                            ownerId: '1',
+                            metadata: { sourceControllerId: '0' },
+                        }] as any,
+                    } as any,
+                ]),
+            ],
+            turnNumber: 7,
+        });
+
+        const queued = collectTriggers(controllerTurnCore, 'onTurnStart', {
+            state: controllerTurnCore,
+            matchState: makeMatchState(controllerTurnCore),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 1171,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]).toEqual(expect.objectContaining({
+            sourceDefId: 'killer_plant_choking_vines',
+            sourceCardUid: 'choking-vines-borrowed-a',
+            sourceControllerId: '0',
+            ownerPlayerId: '0',
+        }));
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...controllerTurnCore,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            1171,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({
+                minionUid: 'choking-target-borrowed',
+                minionDefId: 'wizard_apprentice',
+                ownerId: '1',
+                reason: 'killer_plant_choking_vines',
+            }),
+        }));
+        expect(resolved?.state.core.bases[0]?.minions ?? []).toEqual([]);
+    });
+
     it('sourceController queued onTurnStart trigger 仍应只在拥有者回合开始让 Entangled 自毁', () => {
         const baseCore = makeState({
             turnOrder: ['0', '1'],
@@ -6005,6 +6065,64 @@ describe('reaction queue: preserves event player context', () => {
             }),
         }));
         expect(resolved?.state.core.bases[0]?.ongoingActions ?? []).toEqual([]);
+    });
+
+    it('borrowed Entangled 应按控制者而不是真实 owner 在控制者回合开始自毁', () => {
+        const controllerTurnCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_ancient_ruins',
+                    ongoingActions: [{
+                        uid: 'entangled-borrowed-a',
+                        defId: 'killer_plant_entangled',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                }),
+            ],
+            turnNumber: 8,
+        });
+
+        const queued = collectTriggers(controllerTurnCore, 'onTurnStart', {
+            state: controllerTurnCore,
+            matchState: makeMatchState(controllerTurnCore),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 171,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]).toEqual(expect.objectContaining({
+            sourceDefId: 'killer_plant_entangled',
+            sourceCardUid: 'entangled-borrowed-a',
+            sourceControllerId: '0',
+            ownerPlayerId: '0',
+        }));
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...controllerTurnCore,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            171,
+        );
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({
+                cardUid: 'entangled-borrowed-a',
+                defId: 'killer_plant_entangled',
+                ownerId: '1',
+                reason: 'killer_plant_entangled_self_destruct',
+            }),
+        }));
+        expect(resolved?.state.core.bases[0]?.ongoingActions ?? []).toEqual([]);
+        expect(resolved?.state.core.players['1']?.discard.map((card: any) => card.uid)).toContain('entangled-borrowed-a');
     });
 
     it('sourceController queued onTurnStart trigger 仍应只在拥有者回合开始让 Entangled POD 自毁', () => {
@@ -6187,6 +6305,63 @@ describe('reaction queue: preserves event player context', () => {
             }),
             defaultTestRandom,
             21,
+        );
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.BREAKPOINT_MODIFIED,
+            payload: expect.objectContaining({
+                baseIndex: 0,
+                baseDefId: 'base_the_jungle',
+                delta: -12,
+                reason: 'killer_plant_overgrowth',
+            }),
+        }));
+        expect(resolved?.state.core.tempBreakpointModifiers?.[0]).toBe(-12);
+    });
+
+    it('borrowed Overgrowth 应按控制者而不是真实 owner 在控制者回合开始降低临界点', () => {
+        const controllerTurnCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_jungle',
+                    ongoingActions: [{
+                        uid: 'overgrowth-borrowed-a',
+                        defId: 'killer_plant_overgrowth',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                }),
+            ],
+            turnNumber: 10,
+        });
+
+        const queued = collectTriggers(controllerTurnCore, 'onTurnStart', {
+            state: controllerTurnCore,
+            matchState: makeMatchState(controllerTurnCore),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 211,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]).toEqual(expect.objectContaining({
+            sourceDefId: 'killer_plant_overgrowth',
+            sourceCardUid: 'overgrowth-borrowed-a',
+            sourceControllerId: '0',
+            ownerPlayerId: '0',
+        }));
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...controllerTurnCore,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            211,
         );
         expect(resolved?.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.BREAKPOINT_MODIFIED,
@@ -7281,6 +7456,66 @@ describe('reaction queue: preserves event player context', () => {
         }));
         expect(resolved?.state.core.bases[0]?.ongoingActions ?? []).toEqual([]);
         expect(resolved?.state.core.players['0']?.discard.map((card: any) => card.uid)).toContain('bear-need-a');
+    });
+
+    it('borrowed bear_cavalry_bear_necessities_pod 应按控制者而不是真实 owner 在下回合开始时自毁', () => {
+        const controllerTurnCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_portal_room',
+                breakpoint: 20,
+                minions: [],
+                ongoingActions: [{
+                    uid: 'bear-need-borrowed-a',
+                    defId: 'bear_cavalry_bear_necessities_pod',
+                    ownerId: '1',
+                    talentUsed: true,
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            }],
+            turnNumber: 19,
+        });
+
+        const queued = collectTriggers(controllerTurnCore, 'onTurnStart', {
+            state: controllerTurnCore,
+            matchState: makeMatchState(controllerTurnCore),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 391,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]).toEqual(expect.objectContaining({
+            sourceDefId: 'bear_cavalry_bear_necessities_pod',
+            sourceCardUid: 'bear-need-borrowed-a',
+            sourceControllerId: '0',
+            ownerPlayerId: '0',
+        }));
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...controllerTurnCore,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            391,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({
+                cardUid: 'bear-need-borrowed-a',
+                defId: 'bear_cavalry_bear_necessities_pod',
+                ownerId: '1',
+                reason: 'bear_cavalry_bear_necessities_pod',
+            }),
+        }));
+        expect(resolved?.state.core.bases[0]?.ongoingActions ?? []).toEqual([]);
+        expect(resolved?.state.core.players['1']?.discard.map((card: any) => card.uid)).toContain('bear-need-borrowed-a');
     });
 
     it('sourceController queued onTurnEnd trigger 仍应只在拥有者回合结束让 Week of Sharks 给拥有者抽牌', () => {

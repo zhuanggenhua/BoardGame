@@ -167,6 +167,40 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(next.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
     });
 
+    it('Blink II 被选为防御技能后应把防御投掷上限提升到 2，以允许重掷至多 2 颗', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].abilities = state.core.players['1'].abilities.map(ability => (
+            ability.id === 'blink' ? BLINK_2 : ability
+        ));
+        state.core.players['1'].abilityLevels.blink = 2;
+        state.core.rollCount = 0;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 0;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shattering-fist',
+            defenseAbilityId: undefined,
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const next = reduce(state.core, {
+            type: 'ABILITY_ACTIVATED',
+            payload: {
+                abilityId: 'blink',
+                playerId: '1',
+                isDefense: true,
+            },
+            sourceCommandType: 'TEST',
+            timestamp: 100,
+        } as DiceThroneEvent);
+
+        expect(next.pendingAttack?.defenseAbilityId).toBe('blink');
+        expect(next.rollDiceCount).toBe(3);
+        expect(next.rollLimit).toBe(2);
+    });
+
     it('upgrade-blink-2 打出后应通过真实升级链替换防御技能并按 Blink II 结算', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.sys.phase = 'main1';

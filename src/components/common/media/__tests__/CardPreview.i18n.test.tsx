@@ -1,12 +1,15 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { useState } from 'react';
 import { CardPreview, getCardAtlasCandidateUrls, registerCardAtlasSource, registerCardPreviewRenderer } from '../CardPreview';
 import type { SpriteAtlasConfig } from '../../../../engine/primitives/spriteAtlas';
 import { getCardAtlasSource, getLazyRegistration, registerLazyCardAtlasSource } from '../cardAtlasRegistry';
 import { clearGameAssetBaseOverrides, markImageLoaded, setAssetsBaseUrl, setGameAssetBaseOverride } from '../../../../core';
 import { __resetAssetLoaderCachesForTests } from '../../../../core/AssetLoader';
 import { OptimizedImage } from '../OptimizedImage';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../../../../lib/i18n';
 
 const TEST_UNIFORM_ATLAS: SpriteAtlasConfig = {
     imageW: 100,
@@ -67,6 +70,58 @@ describe('CardPreview i18n atlas path', () => {
         );
 
         expect(receivedLocale).toBe('zh-CN');
+    });
+
+    it('同一个 CardPreview 在 atlas 与使用 Hooks 的 renderer 之间切换时，不应触发 Hooks 顺序错误', () => {
+        const atlasId = 'test:card-preview:toggle-hook-renderer-atlas';
+        const rendererId = 'test:card-preview:toggle-hook-renderer';
+
+        registerCardAtlasSource(atlasId, {
+            image: 'smashup/cards/cards1',
+            config: TEST_UNIFORM_ATLAS,
+        });
+
+        const img = new Image();
+        Object.defineProperty(img, 'naturalWidth', { value: 100, configurable: true });
+        Object.defineProperty(img, 'naturalHeight', { value: 200, configurable: true });
+        Object.defineProperty(img, 'src', {
+            value: '/assets/i18n/zh-CN/smashup/cards/compressed/cards1.webp',
+            configurable: true,
+        });
+        Object.defineProperty(img, 'currentSrc', {
+            value: '/assets/i18n/zh-CN/smashup/cards/compressed/cards1.webp',
+            configurable: true,
+        });
+        markImageLoaded('smashup/cards/cards1', 'zh-CN', img);
+
+        registerCardPreviewRenderer(rendererId, ({ locale }) => {
+            const [count] = useState(1);
+            return <span data-testid="hook-renderer">{locale}-{count}</span>;
+        });
+
+        const { rerender, getByTestId, container } = render(
+            <I18nextProvider i18n={i18n}>
+                <CardPreview previewRef={{ type: 'atlas', atlasId, index: 0 }} />
+            </I18nextProvider>
+        );
+
+        expect(container.querySelector('[data-card-atlas-frame="true"]')).not.toBeNull();
+
+        rerender(
+            <I18nextProvider i18n={i18n}>
+                <CardPreview previewRef={{ type: 'renderer', rendererId }} />
+            </I18nextProvider>
+        );
+
+        expect(getByTestId('hook-renderer').textContent).toBe('zh-CN-1');
+
+        rerender(
+            <I18nextProvider i18n={i18n}>
+                <CardPreview previewRef={{ type: 'atlas', atlasId, index: 0 }} />
+            </I18nextProvider>
+        );
+
+        expect(container.querySelector('[data-card-atlas-frame="true"]')).not.toBeNull();
     });
 
     it('懒注册图集在图片未预加载时应保持 undefined，交给 AtlasCard fallback 加载', () => {

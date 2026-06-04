@@ -16,6 +16,20 @@ import type { Page, TestInfo } from '@playwright/test';
 import { resolveUseDevServers } from '../../scripts/infra/e2e-mode-config.js';
 import { getCardDef as getSmashUpCardDef, getBaseDef } from '../../src/games/smashup/data/cards';
 import { CHARACTER_DATA_MAP, initHeroState } from '../../src/games/dicethrone/domain/characters';
+import {
+    BARBARIAN_DICE_FACE_IDS,
+    DICE_FACE_IDS,
+    GUNSLINGER_DICE_FACE_IDS,
+    MOON_ELF_DICE_FACE_IDS,
+    NINJA_DICE_FACE_IDS,
+    PALADIN_DICE_FACE_IDS,
+    PYROMANCER_DICE_FACE_IDS,
+    SAMURAI_DICE_FACE_IDS,
+    SHADOW_THIEF_DICE_FACE_IDS,
+    TREANT_DICE_FACE_IDS,
+    ZHANSHUJIA_DICE_FACE_IDS,
+    CURSED_PIRATE_DICE_FACE_IDS,
+} from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import type { AbilityCard, SelectableCharacterId } from '../../src/games/dicethrone/types';
 import { createEmptyTokens } from '../../src/games/splendor/domain/rules';
@@ -278,6 +292,74 @@ function normalizeDiceThronePlayerConfig(
         hand: playerConfig.hand?.map((entry) => normalizeDiceThroneCardEntry(entry, cardCatalog)),
         deck: playerConfig.deck?.map((entry) => normalizeDiceThroneCardEntry(entry, cardCatalog)),
         discard: playerConfig.discard?.map((entry) => normalizeDiceThroneCardEntry(entry, cardCatalog)),
+    };
+}
+
+function normalizeDiceThroneExtraDice(
+    config: SceneConfig,
+    prebuiltPlayers?: Partial<Record<'0' | '1', Record<string, any>>>,
+): Record<string, any> | undefined {
+    const extra = config.extra;
+    if (!extra || !Array.isArray(extra.dice)) {
+        return extra;
+    }
+
+    const selectedCharacters = extra.selectedCharacters as Record<string, SelectableCharacterId> | undefined;
+    const rollerId = String(
+        extra.activePlayerId
+        ?? extra.currentPlayer
+        ?? config.currentPlayer
+        ?? '0',
+    ) as '0' | '1';
+    const characterId = selectedCharacters?.[rollerId]
+        ?? prebuiltPlayers?.[rollerId]?.characterId;
+
+    if (!characterId || characterId === 'unselected') {
+        return extra;
+    }
+
+    const definitionId = CHARACTER_DATA_MAP[characterId]?.diceDefinitionId;
+    const getFaceByValue = (value: number): string | null => {
+        const faceMap: Partial<Record<SelectableCharacterId, string[]>> = {
+            monk: [DICE_FACE_IDS.FIST, DICE_FACE_IDS.FIST, DICE_FACE_IDS.PALM, DICE_FACE_IDS.TAIJI, DICE_FACE_IDS.TAIJI, DICE_FACE_IDS.LOTUS],
+            barbarian: [BARBARIAN_DICE_FACE_IDS.SWORD, BARBARIAN_DICE_FACE_IDS.SWORD, BARBARIAN_DICE_FACE_IDS.SWORD, BARBARIAN_DICE_FACE_IDS.HEART, BARBARIAN_DICE_FACE_IDS.HEART, BARBARIAN_DICE_FACE_IDS.STRENGTH],
+            pyromancer: [PYROMANCER_DICE_FACE_IDS.FIRE, PYROMANCER_DICE_FACE_IDS.FIRE, PYROMANCER_DICE_FACE_IDS.FIRE, PYROMANCER_DICE_FACE_IDS.MAGMA, PYROMANCER_DICE_FACE_IDS.FIERY_SOUL, PYROMANCER_DICE_FACE_IDS.METEOR],
+            moon_elf: [MOON_ELF_DICE_FACE_IDS.BOW, MOON_ELF_DICE_FACE_IDS.BOW, MOON_ELF_DICE_FACE_IDS.BOW, MOON_ELF_DICE_FACE_IDS.FOOT, MOON_ELF_DICE_FACE_IDS.FOOT, MOON_ELF_DICE_FACE_IDS.MOON],
+            shadow_thief: [SHADOW_THIEF_DICE_FACE_IDS.DAGGER, SHADOW_THIEF_DICE_FACE_IDS.DAGGER, SHADOW_THIEF_DICE_FACE_IDS.BAG, SHADOW_THIEF_DICE_FACE_IDS.BAG, SHADOW_THIEF_DICE_FACE_IDS.CARD, SHADOW_THIEF_DICE_FACE_IDS.SHADOW],
+            paladin: [PALADIN_DICE_FACE_IDS.SWORD, PALADIN_DICE_FACE_IDS.SWORD, PALADIN_DICE_FACE_IDS.HELM, PALADIN_DICE_FACE_IDS.HELM, PALADIN_DICE_FACE_IDS.HEART, PALADIN_DICE_FACE_IDS.PRAY],
+            gunslinger: [GUNSLINGER_DICE_FACE_IDS.BULLET, GUNSLINGER_DICE_FACE_IDS.BULLET, GUNSLINGER_DICE_FACE_IDS.BULLET, GUNSLINGER_DICE_FACE_IDS.DASH, GUNSLINGER_DICE_FACE_IDS.DASH, GUNSLINGER_DICE_FACE_IDS.BULLSEYE],
+            samurai: [SAMURAI_DICE_FACE_IDS.KATANA, SAMURAI_DICE_FACE_IDS.KATANA, SAMURAI_DICE_FACE_IDS.KATANA, SAMURAI_DICE_FACE_IDS.HELM, SAMURAI_DICE_FACE_IDS.HELM, SAMURAI_DICE_FACE_IDS.RISING_SUN],
+            treant: [TREANT_DICE_FACE_IDS.BRANCH, TREANT_DICE_FACE_IDS.BRANCH, TREANT_DICE_FACE_IDS.BRANCH, TREANT_DICE_FACE_IDS.LEAF, TREANT_DICE_FACE_IDS.LEAF, TREANT_DICE_FACE_IDS.SPIRIT],
+            ninja: [NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.SHURIKEN, NINJA_DICE_FACE_IDS.SHURIKEN, NINJA_DICE_FACE_IDS.MASK],
+            zhanshujia: [ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.MEDAL],
+            cursed_pirate: [CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.SKULL],
+        };
+        const normalized = Math.max(1, Math.min(6, Math.floor(value))) - 1;
+        return faceMap[characterId]?.[normalized] ?? null;
+    };
+    const normalizedDice = extra.dice.map((die: any, index: number) => {
+        if (!die || typeof die !== 'object') {
+            return die;
+        }
+
+        const value = typeof die.value === 'number' ? die.value : 1;
+        const face = getFaceByValue(value);
+
+        return {
+            ...die,
+            id: die.id ?? index,
+            value,
+            definitionId: die.definitionId ?? definitionId,
+            symbol: die.symbol ?? face,
+            symbols: Array.isArray(die.symbols)
+                ? die.symbols
+                : (face ? [face] : []),
+        };
+    });
+
+    return {
+        ...extra,
+        dice: normalizedDice,
     };
 }
 
@@ -597,15 +679,17 @@ export class GameTestContext {
                     },
                 };
             };
+            const prebuiltPlayers = {
+                '0': buildPrebuiltPlayer('0', config.player0 as DiceThronePlayerConfig | undefined),
+                '1': buildPrebuiltPlayer('1', config.player1 as DiceThronePlayerConfig | undefined),
+            } satisfies Partial<Record<'0' | '1', Record<string, any>>>;
 
             preparedConfig = {
                 ...config,
                 player0: normalizeDiceThronePlayerConfig(config.player0 as DiceThronePlayerConfig | undefined, '0', selectedCharacters),
                 player1: normalizeDiceThronePlayerConfig(config.player1 as DiceThronePlayerConfig | undefined, '1', selectedCharacters),
-                prebuiltPlayers: {
-                    '0': buildPrebuiltPlayer('0', config.player0 as DiceThronePlayerConfig | undefined),
-                    '1': buildPrebuiltPlayer('1', config.player1 as DiceThronePlayerConfig | undefined),
-                },
+                extra: normalizeDiceThroneExtraDice(config, prebuiltPlayers),
+                prebuiltPlayers,
             };
         } else if (config.gameId === 'splendor') {
             preparedConfig = config;

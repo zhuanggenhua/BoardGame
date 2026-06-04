@@ -506,6 +506,23 @@ describe('base_antarctic_base: 南极基地 每回合每基地最多1个随从',
     });
 });
 
+describe('zombie_overrun: 泛滥横行限制', () => {
+    it('borrowed zombie_overrun 应按控制者而不是真实 owner 限制其他玩家打随从到此基地', () => {
+        const state = makeState({
+            bases: [makeBase('base_portal_room', {
+                ongoingActions: [{ uid: 'overrun-1', defId: 'zombie_overrun', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+            })],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+        });
+
+        expect(isOperationRestricted(state, 0, '1', 'play_minion', { basePower: 3 })).toBe(true);
+        expect(isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 3 })).toBe(false);
+    });
+});
+
 // ============================================================================
 // base_north_pole: 北极基地 - 每回合每基地最多1个随从
 // ============================================================================

@@ -51,7 +51,6 @@ export const DRAGONS_MINIONS: MinionCardDef[] = [
     },
 ];
 
-// longzu 当前仍是 intake 阶段：先登记唯一卡面、数量与图集索引，玩法字段后续按基地与规则文本补齐。
 export const DRAGONS_ACTIONS: ActionCardDef[] = [
     {
         id: 'dragons_dangerous_ground',

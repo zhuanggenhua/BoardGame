@@ -12,7 +12,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Check } from 'lucide-react';
+import { Check, Search, X } from 'lucide-react';
 import { logger } from '../../../lib/logger';
 import { GameButton } from './GameButton';
 import { CardMagnifyOverlay, type CardMagnifyTarget } from './CardMagnifyOverlay';
@@ -82,10 +82,14 @@ function cardFrameStyle(widthVw: number, aspectRatio = CARD_ASPECT_RATIO): React
     };
 }
 
-/** 从选项 value 中提取 defId（卡牌/随从/基地） */
+/** 从选项或其 value 中提取 defId（卡牌/随从/基地） */
 function extractDefId(source: unknown): string | undefined {
     if (!source || typeof source !== 'object') return undefined;
     const v = source as Record<string, unknown>;
+    const displayCard = v.displayCard;
+    if (displayCard && typeof displayCard === 'object' && typeof (displayCard as { defId?: unknown }).defId === 'string') {
+        return (displayCard as { defId: string }).defId;
+    }
     if (typeof v.previewDefId === 'string') return v.previewDefId;
     if (typeof v.defId === 'string') return v.defId;
     if (typeof v.minionDefId === 'string') return v.minionDefId;
@@ -95,7 +99,7 @@ function extractDefId(source: unknown): string | undefined {
 }
 
 /** 判断选项是否为卡牌类型：根据 value 中是否包含 defId/minionDefId 自动推断 */
-function isCardOption(option: { value: unknown; displayMode?: 'card' | 'button' }): boolean {
+function isCardOption(option: { value: unknown; displayMode?: 'card' | 'button'; displayCard?: { defId?: string } }): boolean {
     // 显式声明 card 时强制卡牌模式
     if (option.displayMode === 'card') {
         return true;
@@ -272,9 +276,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     const prompt = asSimpleChoice(interaction);
     const { t, i18n } = useTranslation('game-smashup');
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
+    const [cardSearch, setCardSearch] = useState('');
 
     const { ref: revealScrollRef } = useHorizontalDragScroll();
-    const { ref: cardScrollRef } = useHorizontalDragScroll();
     const toast = useToast();
     const promptOwnerName = prompt?.playerId != null
         ? (playerNames?.[prompt.playerId] ?? `P${Number(prompt.playerId) + 1}`)
@@ -304,6 +308,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             sliderSignature,
         ].join('||');
     }, [prompt, promptTitleKey, promptTitleParams]);
+
+    useEffect(() => {
+        setCardSearch('');
+    }, [promptRenderKey]);
 
     // 所有 hooks 必须在条件返回之前调用（React hooks 规则）
     const isMyPrompt = isSmashUpPromptOwnedByPlayer({ currentPrompt: prompt, playerID });
@@ -1256,6 +1264,16 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     if (useCardMode) {
         const cardOptions = nonSkipOptions.filter(opt => isCardOption(opt));
         const textOptions = nonSkipOptions.filter(opt => !isCardOption(opt));
+        const normalizedCardSearch = cardSearch.trim().toLowerCase();
+        const visibleCardOptions = normalizedCardSearch
+            ? cardOptions.filter((option) => {
+                const defId = extractDefId(option);
+                const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
+                const name = def ? resolveCardName(def, t) : option.label;
+                const haystack = [name, option.label, defId].filter(Boolean).join(' ').toLowerCase();
+                return haystack.includes(normalizedCardSearch);
+            })
+            : cardOptions;
         // 提取基地上下文信息（用于高亮和标题显示）
         const contextBaseIndex = (prompt as any)?.continuationContext?.baseIndex;
         const contextBaseDef = contextBaseIndex !== undefined ? getBaseDef(prompt.state?.bases?.[contextBaseIndex]?.defId) : undefined;
@@ -1288,37 +1306,77 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 </span>
                             )}
                         </div>
+                        {cardOptions.length > 4 && (
+                            <div className="mx-auto mt-3 max-w-xl">
+                                <div className="relative min-w-0 flex-1">
+                                    <span
+                                        data-testid="prompt-card-search-leading-icon"
+                                        className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-amber-200/75"
+                                    >
+                                        <Search className="h-4 w-4" strokeWidth={2.1} />
+                                    </span>
+                                    <input
+                                        type="search"
+                                        value={cardSearch}
+                                        onChange={(event) => setCardSearch(event.target.value)}
+                                        placeholder={t('ui.card_search_placeholder', { defaultValue: '搜索卡牌' })}
+                                        data-testid="prompt-card-search-input"
+                                        className="h-10 w-full rounded border border-amber-200/25 bg-black/28 pl-10 pr-10 text-sm font-bold text-white placeholder:text-amber-100/45 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-300/25"
+                                    />
+                                    {cardSearch.trim().length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setCardSearch('')}
+                                            data-testid="prompt-card-search-clear"
+                                            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-amber-50 transition-colors hover:bg-white/20"
+                                            aria-label={t('ui.card_search_clear', { defaultValue: '清空搜索' })}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="mt-2 text-center text-[11px] font-bold text-amber-100/70">
+                                    {t('ui.card_filter_result_count', {
+                                        visible: visibleCardOptions.length,
+                                        total: cardOptions.length,
+                                        defaultValue: '显示 {{visible}} / {{total}}',
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {isMyPrompt && (
-                        <div className="px-4 py-5 bg-slate-950/92 border-b border-slate-800">
+                        <div className="border-b border-slate-800 bg-slate-950/92 px-4 py-5">
                             <div
-                                ref={cardScrollRef}
-                                className="flex gap-4 overflow-x-auto px-2 py-2 smashup-h-scrollbar"
+                                data-testid="prompt-card-grid"
+                                className="max-h-[min(62vh,48rem)] overflow-y-auto px-1 py-1"
                                 style={{ pointerEvents: 'auto' }}
                             >
-                                {cardOptions.map((option, idx) => {
+                                <div className="flex flex-wrap items-start justify-center gap-4 lg:justify-start">
+                                {visibleCardOptions.map((option, idx) => {
                                     const defId = extractDefId(option);
                                     const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
                                     const previewRef = buildRendererPreviewRef(defId);
                                     const name = def ? resolveCardName(def, t) : option.label;
                                     const isSelected = selectedIds.includes(option.id);
                                     const isBase = !!getBaseDef(defId ?? '');
-                                    const cardWidth = isBase ? 'w-[210px] sm:w-[232px] lg:w-[256px]' : 'w-[124px] sm:w-[140px] lg:w-[156px]';
+                                    const cardWidth = isBase ? 'w-[210px] sm:w-[232px] lg:w-[248px]' : 'w-[128px] sm:w-[142px] lg:w-[156px]';
                                     const cardAspect = isBase ? 'aspect-[1.43]' : 'aspect-[0.714]';
-                                    const cardLabelWidth = isBase ? 'max-w-[210px] sm:max-w-[232px] lg:max-w-[256px]' : 'max-w-[124px] sm:max-w-[140px] lg:max-w-[156px]';
+                                    const cardLabelWidth = isBase ? 'max-w-[210px] sm:max-w-[232px] lg:max-w-[248px]' : 'max-w-[128px] sm:max-w-[142px] lg:max-w-[156px]';
 
                                     return (
                                         <motion.div
                                             key={`card-${idx}-${option.id}`}
                                             data-testid={`prompt-card-${idx}`}
                                             data-option-id={option.id}
+                                            data-card-def-id={defId ?? undefined}
                                             initial={{ y: 40, opacity: 0 }}
                                             animate={{ y: 0, opacity: 1 }}
                                             transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
                                             onClick={() => handleAction(option.id, option.disabled)}
                                             className={`
-                                                flex-shrink-0 cursor-pointer relative group
+                                                relative flex-shrink-0 cursor-pointer group
                                                 ${option.disabled ? 'opacity-40 cursor-not-allowed' : ''}
                                                 ${isSelected ? 'scale-[1.03] z-10' : 'hover:scale-[1.02] hover:z-10'}
                                             `}
@@ -1326,12 +1384,12 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 transition: 'transform 180ms, box-shadow 180ms',
                                                 pointerEvents: option.disabled ? 'none' : 'auto',
                                             }}
-                                        >
+                                            >
                                             <div className={`
-                                                rounded-lg shadow-xl overflow-hidden
+                                                rounded-lg bg-slate-950/85 p-2 shadow-[0_14px_28px_rgba(0,0,0,0.45)] transition-[background-color,box-shadow]
                                                 ${isSelected
                                                     ? 'ring-4 ring-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.45)]'
-                                                    : 'ring-2 ring-white/15 group-hover:ring-white/45 group-hover:shadow-2xl'}
+                                                    : 'ring-2 ring-white/15 group-hover:bg-slate-900 group-hover:ring-white/45 group-hover:shadow-2xl'}
                                             `}>
                                                 {previewRef ? (
                                                     <CardPreview
@@ -1375,6 +1433,12 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         </motion.div>
                                     );
                                 })}
+                                {visibleCardOptions.length === 0 && (
+                                    <div className="mx-auto flex min-h-[260px] w-full items-center justify-center rounded-xl border border-dashed border-amber-200/20 bg-black/20 px-6 text-center text-sm font-bold text-amber-100/70">
+                                        {t('ui.card_search_empty', { defaultValue: '没有匹配的卡牌' })}
+                                    </div>
+                                )}
+                            </div>
                             </div>
                         </div>
                     )}

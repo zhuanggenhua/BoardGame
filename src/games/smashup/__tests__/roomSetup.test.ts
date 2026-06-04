@@ -4,6 +4,8 @@ import {
     buildSmashUpPublicRoomSummary,
     readSmashUpDeckQueryEnabled,
     readSmashUpEnabledExpansions,
+    readSmashUpRuntimeSetupConfig,
+    readSmashUpTeamMode,
     SMASHUP_DECK_QUERY_SETUP_VALUE,
 } from '../roomSetup';
 
@@ -48,6 +50,27 @@ describe('SmashUp 房间设置解析', () => {
                 expansions: ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
             },
         })).toBe(true);
+    });
+
+    it('4 人房间配置会统一桥接为运行时 setup 配置对象', () => {
+        expect(readSmashUpRuntimeSetupConfig({
+            setupSelections: {
+                expansions: ['diy', 'titans', SMASHUP_DECK_QUERY_SETUP_VALUE],
+                teamMode: '2v2',
+            },
+        }, { playerCount: 4 })).toEqual({
+            enabledExpansions: ['titans', 'diy'],
+            deckQueryEnabled: true,
+            teamMode: '2v2',
+        });
+    });
+
+    it('非 4 人房间即使传入 2v2 也会回落为 ffa', () => {
+        expect(readSmashUpTeamMode({
+            setupSelections: {
+                teamMode: '2v2',
+            },
+        }, 2)).toBe('ffa');
     });
 
     it('公开房间摘要会带出余牌查询 tag，但不泄露无关私有字段', () => {

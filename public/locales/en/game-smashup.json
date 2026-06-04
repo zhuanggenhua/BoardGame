@@ -1490,6 +1490,18 @@
       "name": "Emperor Penguin",
       "effectText": "Special: At the start of your turn, you may play this titan on a base where you have three or more minions. Ongoing: You may play minions off the top of your deck here instead of your regular minion play. Talent: Reveal a minion of power 3 or less in your hand or discard pile and shuffle it into your deck to place a +1 power counter on this titan."
     },
+    "sharks_helicoprion": {
+      "name": "Helicoprion",
+      "effectText": "Special: At the start of your turn, or after any minion is destroyed, place a counter on this titan if it is not in play. After there are four or more counters on this titan, you may remove the counters and play it. Ongoing: On another player's turn, after any minion here is destroyed, you may search your deck and/or discard pile for a Mako and place it in your hand, OR draw a card. Talent: Play an extra minion."
+    },
+    "superheroes_the_everything_glove": {
+      "name": "The Everything Glove",
+      "effectText": "Special: If you have three or more minions of power 5 or more in play, you may play this titan. Ongoing: Your minions here are not affected by other players' abilities. Talent: Play an extra minion of power 2 or less and/or an extra action until the end of the turn."
+    },
+    "tornados_category_5": {
+      "name": "Category 5",
+      "effectText": "Special: On your turn, after you move two or more minions in a turn, you may play this titan. Ongoing: You have +1 power here for each minion that moved to or from here this turn. Special: Before another base scores, you may move this titan there."
+    },
     "dinosaurs_fort_titanosaurus": {
       "name": "Fort Titanosaurus",
       "effectText": "Special: Instead of your regular minion play, you may destroy one of your minions here to play this titan here and place +1 power counters on it equal to that minion's power. Ongoing: Once per turn after you play an action on one of your minions, you may place a +1 power counter on that minion, this titan, or both. Talent: If this titan has at least 4 +1 power counters, draw a card."

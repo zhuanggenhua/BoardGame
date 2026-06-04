@@ -28,6 +28,18 @@ export function registerTitanOngoingActivationValidator(defId: string, validator
     titanOngoingActivationValidators.set(defId, validator);
 }
 
+export function hasTitanSpecialValidator(defId: string): boolean {
+    return titanSpecialValidators.has(defId);
+}
+
+export function hasTitanTalentValidator(defId: string): boolean {
+    return titanTalentValidators.has(defId);
+}
+
+export function hasTitanOngoingActivationValidator(defId: string): boolean {
+    return titanOngoingActivationValidators.has(defId);
+}
+
 function validateTitanSummonMode(ctx: TitanAbilityValidationContext): string | null {
     if (ctx.titan.location.zone !== 'setaside') return null;
 

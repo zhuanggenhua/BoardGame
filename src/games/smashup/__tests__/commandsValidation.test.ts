@@ -271,10 +271,24 @@ describe('SmashUp command validation', () => {
         expect(result.valid).toBe(true);
     });
 
-    it('supports active titan ongoing validation and respects suppression', () => {
-        registerAbility('dinosaurs_fort_titanosaurus', 'ongoingActivation', () => ({ events: [] }));
+    it('only validates titan ongoing activation for real production executors and respects suppression', () => {
         const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('penguin-top-minion', 'robot_microbot_guard', 'minion', '0')],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                }),
+            },
             titans: [
+                makeTitan({
+                    uid: 'titan-penguin',
+                    defId: 'penguins_emperor_penguin',
+                    faction: 'penguins',
+                    ownerId: '0',
+                    controllerId: '0',
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                }),
                 makeTitan({
                     uid: 'titan-dino',
                     defId: 'dinosaurs_fort_titanosaurus',
@@ -289,13 +303,19 @@ describe('SmashUp command validation', () => {
         const validResult = validate(makeMatchState(core), {
             type: SU_COMMANDS.ACTIVATE_TITAN_ONGOING,
             playerId: '0',
-            payload: { titanUid: 'titan-dino', baseIndex: 0 },
+            payload: { titanUid: 'titan-penguin', baseIndex: 0 },
         } as any);
 
         const suppressedResult = validate(makeMatchState({
             ...core,
-            titanOngoingSuppressedUntilTurnEnd: ['titan-dino'],
+            titanOngoingSuppressedUntilTurnEnd: ['titan-penguin'],
         }), {
+            type: SU_COMMANDS.ACTIVATE_TITAN_ONGOING,
+            playerId: '0',
+            payload: { titanUid: 'titan-penguin', baseIndex: 0 },
+        } as any);
+
+        const missingExecutorResult = validate(makeMatchState(core), {
             type: SU_COMMANDS.ACTIVATE_TITAN_ONGOING,
             playerId: '0',
             payload: { titanUid: 'titan-dino', baseIndex: 0 },
@@ -303,6 +323,180 @@ describe('SmashUp command validation', () => {
 
         expect(validResult.valid).toBe(true);
         expect(suppressedResult.valid).toBe(false);
+        expect(missingExecutorResult).toEqual({
+            valid: false,
+            error: '该泰坦的持续能力不能手动激活',
+        });
+    });
+
+    it('only allows titan special activation for real manual setaside entries', () => {
+        const core = makeState({
+            titans: [
+                makeTitan({
+                    uid: 'titan-mergacon',
+                    defId: 'changerbots_mergacon',
+                    faction: 'changerbots',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-rainboroc',
+                    defId: 'itty_critters_rainboroc',
+                    faction: 'itty_critters',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-kraken',
+                    defId: 'pirates_the_kraken',
+                    faction: 'pirates',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-bride',
+                    defId: 'frankenstein_the_bride',
+                    faction: 'frankenstein',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+            ],
+        });
+
+        expect([
+            'titan-mergacon',
+            'titan-rainboroc',
+            'titan-kraken',
+            'titan-bride',
+        ].every((titanUid) => {
+            const result = validate(makeMatchState(core), {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { titanUid, baseIndex: 0 },
+            } as any);
+            return result.valid === false && result.error === '该泰坦的特殊能力不能手动激活';
+        })).toBe(true);
+    });
+
+    it('preserves real manual titan special activation entries in static metadata', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                    minions: [
+                        makeMinion('ursa-ally', 'ghosts_spectre', '0', 2, '0'),
+                        makeMinion('six-legs-ally', 'ghosts_spectre', '0', 2, {
+                            owner: '0',
+                            powerCounters: 7,
+                        }),
+                    ],
+                }),
+            ],
+            titans: [
+                makeTitan({
+                    uid: 'titan-ghost-real',
+                    defId: 'ghosts_creampuff_man',
+                    faction: 'ghosts',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-ursa-real',
+                    defId: 'bear_cavalry_major_ursa',
+                    faction: 'bear_cavalry',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-six-legs-real',
+                    defId: 'giant_ants_death_on_six_legs',
+                    faction: 'giant_ants',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-category-5-real',
+                    defId: 'tornados_category_5',
+                    faction: 'tornados',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+            ],
+            minionMovesThisTurnByPlayer: { '0': 2 },
+        });
+
+        expect([
+            'ghosts_creampuff_man',
+            'bear_cavalry_major_ursa',
+            'giant_ants_death_on_six_legs',
+            'tornados_category_5',
+        ].every((defId) => hasCardActivatableAbility(defId, {
+            kind: 'special',
+            zone: 'setaside',
+            window: 'playCards',
+        }))).toBe(true);
+
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-ghost-real', baseIndex: 0 },
+        } as any).valid).toBe(true);
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-ursa-real', baseIndex: 0 },
+        } as any).valid).toBe(true);
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-six-legs-real', baseIndex: 0 },
+        } as any).valid).toBe(true);
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-category-5-real', baseIndex: 0 },
+        } as any).valid).toBe(true);
+    });
+
+    it('preserves real manual titan talent activation entries in static metadata', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                }),
+            ],
+            titans: [
+                makeTitan({
+                    uid: 'titan-dino-talent',
+                    defId: 'dinosaurs_fort_titanosaurus',
+                    faction: 'dinosaurs',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 4,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                }),
+            ],
+        });
+
+        expect(hasCardActivatableAbility('dinosaurs_fort_titanosaurus', {
+            kind: 'talent',
+            zone: 'board',
+            window: 'playCards',
+        })).toBe(true);
+
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { titanUid: 'titan-dino-talent', baseIndex: 0 },
+        } as any).valid).toBe(true);
     });
 
     it('uses frame-backed reaction session as the truth source for meFirst minion plays', () => {

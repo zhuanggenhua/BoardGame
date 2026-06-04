@@ -104,4 +104,38 @@ describe('base_moot_site: 集会场 - 当前玩家回合内基地全局首次随
         const { events } = triggerBaseAbility('base_moot_site', 'onMinionPlayed', ctx);
         expect(events.length).toBe(0);
     });
+
+    it('borrowed Infiltrate 由控制者控制时，应阻止 Moot Site 给控制者打出的首个随从 +2 临时力量', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{
+                    defId: 'base_moot_site',
+                    minions: [makeMinion('m4', '0', 3)],
+                    ongoingActions: [{ uid: 'inf-moot-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+                }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.FRANKENSTEIN],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 0 },
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_moot_site',
+            playerId: '0',
+            minionUid: 'm4',
+            now: 1001,
+        };
+
+        const { events } = triggerBaseAbility('base_moot_site', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(0);
+    });
 });

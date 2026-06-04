@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import '../domain';
 import { DICETHRONE_CHARACTER_CATALOG } from '../domain/types';
 import { CHARACTER_DATA_MAP } from '../domain/characters';
+import { getCharacterAbilitiesForFace, initHeroState } from '../domain/characters';
 import { getDiceDefinition } from '../domain/diceRegistry';
 import {
     CURSED_PIRATE_DICE_FACE_IDS,
@@ -20,6 +21,7 @@ import { _testExports as criticalImages } from '../criticalImageResolver';
 import { getAbilitySlotIdForCharacter } from '../ui/abilitySlotMapping';
 import { HERO_CARDS_MAP, getSlotAbilityId } from '../ui/abilityOverlayHelpers';
 import { getPlayerBoardLayoutVersion } from '../ui/abilitySlotLayout';
+import { ASSETS } from '../ui/assets';
 
 const assetRoot = (...parts: string[]) => join(
     process.cwd(),
@@ -158,9 +160,38 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
         expect(getSlotAbilityId('zhanshujia', 'meditate')).toBe('countermeasures');
         expect(getSlotAbilityId('cursed_pirate', 'lotus')).toBe('deep-sea-dive');
         expect(getSlotAbilityId('cursed_pirate', 'meditate')).toBe('still-wet-behind-ears');
+        expect(getSlotAbilityId('cursed_pirate', 'fist', 'normal')).toBe('cutlass-stab');
+        expect(getSlotAbilityId('cursed_pirate', 'chi', 'normal')).toBe('make-your-mark');
+        expect(getSlotAbilityId('cursed_pirate', 'ultimate', 'normal')).toBe('merciless-plunder');
 
         expect(getAbilitySlotIdForCharacter('zhanshujia', 'carpet-bombing-2-main')).toBe('chi');
         expect(getAbilitySlotIdForCharacter('cursed_pirate', 'deep-sea-dive')).toBe('lotus');
+    });
+
+    it('咒缚海盗初始化能力集跟随玩家板朝向选择，并按真实开局进入 human 面', () => {
+        const cursedState = initHeroState('0', 'cursed_pirate', {
+            random: () => 0.5,
+            d: () => 1,
+            range: (min: number) => min,
+            shuffle: <T>(arr: T[]) => [...arr],
+        });
+        expect(cursedState.playerBoardFace).toBe('normal');
+        expect(cursedState.statusEffects[STATUS_IDS.CURSED_COIN]).toBe(3);
+        expect(cursedState.abilities.some(ability => ability.id === 'soul-stab')).toBe(false);
+        expect(cursedState.abilities.some(ability => ability.id === 'cutlass-stab')).toBe(true);
+
+        const normalAbilities = getCharacterAbilitiesForFace('cursed_pirate', 'normal');
+        expect(normalAbilities.map(ability => ability.id)).toEqual([
+            'cutlass-stab',
+            'make-your-mark',
+            'human-cursed',
+            'walk-the-plank',
+            'light-the-fuse',
+            'verdict-command',
+            'astonishing',
+            'human-still-wet-behind-ears',
+            'merciless-plunder',
+        ]);
     });
 
     it('状态图集 JSON 覆盖新增 frameId，并复用既有锁定/守护 ID', () => {
@@ -182,6 +213,10 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
     it('关键图片解析对咒缚海盗使用 cursed 素材目录，且正式压缩资源存在', () => {
         expect(criticalImages.getCharAssetPath('zhanshujia', 'player-board')).toBe('dicethrone/images/zhanshujia/player-board');
         expect(criticalImages.getCharAssetPath('cursed_pirate', 'player-board')).toBe('dicethrone/images/cursed/player-board');
+        expect(ASSETS.PLAYER_BOARD('cursed_pirate', 'cursed')).toBe('dicethrone/images/cursed/player-board');
+        expect(ASSETS.PLAYER_BOARD('cursed_pirate', 'normal')).toBe('dicethrone/images/cursed/human-player-board');
+        expect(existsSync(assetRoot('cursed', 'human-player-board.png')), 'cursed 缺少 human-player-board.png').toBe(true);
+        expect(existsSync(assetRoot('cursed', 'compressed', 'human-player-board.webp')), 'cursed 缺少 human-player-board.webp').toBe(true);
 
         for (const [heroDir, files] of Object.entries({
             zhanshujia: ['player-board.webp', 'tip.webp', 'ability-cards.webp', 'dice.webp', 'status-icons-atlas.webp'],

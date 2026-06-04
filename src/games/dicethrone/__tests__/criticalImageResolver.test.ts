@@ -85,6 +85,16 @@ describe('diceThroneCriticalImageResolver', () => {
         expect(playingResult.critical).not.toContain('dicethrone/images/monk/hand-cards-atlas');
     });
 
+    it('咒缚海盗 gameplay 预加载同时包含咒缚面与人类面玩家板，选角预览仍只展示默认玩家板', () => {
+        const gameplayAssets = getCharAssetsByTag('cursed_pirate', 'gameplay');
+        const selectionAssets = getCharAssetsByTag('cursed_pirate', 'selection');
+
+        expect(gameplayAssets).toContain('dicethrone/images/cursed/human-player-board');
+        expect(gameplayAssets).toContain('dicethrone/images/cursed/player-board');
+        expect(selectionAssets).toContain('dicethrone/images/cursed/player-board');
+        expect(selectionAssets).not.toContain('dicethrone/images/cursed/human-player-board');
+    });
+
     it('playing 阶段有 playerID 时：自己进 critical，对手进 warm', () => {
         const result = diceThroneCriticalImageResolver(
             makeState(true, { '0': 'monk', '1': 'barbarian' }),

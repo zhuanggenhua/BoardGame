@@ -628,10 +628,10 @@ const leafarooPromptProgram = createPromptProgram<LeafarooContext, SmashUpCore, 
                 label: card.label,
                 value: { cardUid: card.uid, defId: card.defId },
                 displayMode: 'card' as const,
-                _source: 'hand' as const,
+                _source: 'discard' as const,
             })),
         ],
-        { sourceId: 'itty_critters_leafaroo', targetType: 'hand', autoResolveIfSingle: false },
+        { sourceId: 'itty_critters_leafaroo', targetType: 'discard', autoResolveIfSingle: false },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {
         const choice = value as CardChoice;

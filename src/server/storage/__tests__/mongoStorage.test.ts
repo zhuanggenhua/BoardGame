@@ -379,6 +379,106 @@ describe('MongoStorage 行为', () => {
         expect((afterDoc?.updatedAt?.getTime() ?? 0)).toBeGreaterThan(beforeDoc?.updatedAt?.getTime() ?? 0);
     });
 
+    it('createMatch/setState 不会把 SmashUp 可选数组字段持久化成 null', async () => {
+        const Match = mongoose.model('Match');
+        const smashupState: StoredMatchState = {
+            G: {
+                sys: {
+                    phase: 'playCards',
+                },
+                core: {
+                    players: {
+                        0: {
+                            id: '0',
+                            vp: 0,
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            minionsPlayed: 0,
+                            minionLimit: 1,
+                            actionsPlayed: 0,
+                            actionLimit: 1,
+                            factions: ['robots', 'zombies'],
+                            usedDiscardPlayAbilities: undefined,
+                            pendingMinionPlayEffects: undefined,
+                        },
+                        1: {
+                            id: '1',
+                            vp: 0,
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            minionsPlayed: 0,
+                            minionLimit: 1,
+                            actionsPlayed: 0,
+                            actionLimit: 1,
+                            factions: ['dinosaurs', 'pirates'],
+                        },
+                    },
+                    bases: [{
+                        defId: 'base_plateau_of_leng',
+                        minions: [],
+                        ongoingActions: [],
+                        buriedCards: undefined,
+                    }],
+                    madnessDeck: undefined,
+                },
+            },
+            _stateID: 1,
+        };
+
+        await mongoStorage.createMatch('match-smashup-null-guard', {
+            initialState: smashupState,
+            metadata: {
+                gameName: 'smashup',
+                players: {
+                    0: { name: 'P0' },
+                    1: { name: 'P1' },
+                },
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            },
+        });
+
+        await mongoStorage.setState('match-smashup-null-guard', {
+            ...smashupState,
+            _stateID: 2,
+        });
+
+        const doc = await Match.findOne({ matchID: 'match-smashup-null-guard' }).lean<{
+            state?: {
+                G?: {
+                    core?: {
+                        players?: Record<string, Record<string, unknown>>;
+                        bases?: Array<Record<string, unknown>>;
+                        madnessDeck?: unknown;
+                    };
+                };
+            } | null;
+        } | null>();
+
+        const player0 = doc?.state?.G?.core?.players?.['0'];
+        const base0 = doc?.state?.G?.core?.bases?.[0];
+        expect(player0).toBeTruthy();
+        expect(player0).not.toHaveProperty('usedDiscardPlayAbilities');
+        expect(player0).not.toHaveProperty('pendingMinionPlayEffects');
+        expect(base0).not.toHaveProperty('buriedCards');
+        expect(doc?.state?.G?.core).not.toHaveProperty('madnessDeck');
+
+        const fetched = await mongoStorage.fetch('match-smashup-null-guard', { state: true });
+        const fetchedCore = (fetched.state?.G as {
+            core?: {
+                players?: Record<string, Record<string, unknown>>;
+                bases?: Array<Record<string, unknown>>;
+                madnessDeck?: unknown;
+            };
+        }).core;
+        expect(fetchedCore?.players?.['0']?.usedDiscardPlayAbilities).toBeUndefined();
+        expect(fetchedCore?.players?.['0']?.pendingMinionPlayEffects).toBeUndefined();
+        expect(fetchedCore?.bases?.[0]?.buriedCards).toBeUndefined();
+        expect(fetchedCore?.madnessDeck).toBeUndefined();
+    });
+
     it('不同 ownerKey 允许创建多个房间', async () => {
         await mongoStorage.createMatch('match-1', buildCreateData('user:1'));
         await expect(mongoStorage.createMatch('match-2', buildCreateData('user:2')))

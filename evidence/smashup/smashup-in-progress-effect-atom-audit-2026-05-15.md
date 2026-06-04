@@ -8,6 +8,244 @@
 
 当前状态：已建立 effect atom 审计口径、shared-contract 初稿，并完成 `yuanhou` 图集四派系对象级 effect atom 台账核销；本轮不再把其他实施中派系混入当前“全面”范围。当前尚未声明的是更广 shared-contract / L4 / transport 边界已全量完成，而不是继续把 yuanhou 对象级台账误记成未展开。
 
+## 2026-06-04 current-worktree focused gate 全仓补回清零（剩余 6 -> 0）
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/abilities/elder-things.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/elder-things.test.ts>)
+  - [`src/games/smashup/__tests__/abilities/frankenstein.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/frankenstein.test.ts>)
+  - [`src/games/smashup/__tests__/abilities/mermaids.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/mermaids.test.ts>)
+  - [`src/games/smashup/__tests__/abilities/vampires.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/vampires.test.ts>)
+  - [`src/games/smashup/__tests__/reactionQueueOrdering.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/reactionQueueOrdering.test.ts>)
+- 权威来源：
+  - 这轮不是新业务修复，而是把旧 evidence 已封账、但当前工作树测试文件正文里还未出现的 6 条 focused gate 全部补回现存专项文件。
+  - 旧 worktree 里的 `onDestroyAbilities / vampiresPod / newFactionAbilities / elderThingsPod` 路径在当前仓库里已经迁移；本轮只按现行文件树重落 dedicated guard，不回退旧文件布局。
+- 本轮结论：
+  - 已在当前工作树补回以下 6 条 focused gate：
+    - `多个 Dunwich Horror POD 走 direct fireTriggers 时，应按每个 source 继续给各自宿主控制者链式抉择 prompt`
+    - `borrowed mermaids_becalmed_shores 使用天赋移动到其他基地时，仍应保留真实 ownerId 与真正移动玩家的 sourcePlayerId`
+    - `mermaids_mermaid_queen 控制一个已被借用的目标直到回合结束后，应恢复给夺控前的控制者而不是真实 owner`
+    - `多个 The Count POD 走 direct fireTriggers 时，应按每个 source 继续给各自控制者链式加指示物 prompt`
+    - `borrowed frankenstein_igor 被消灭时，应按当前 controller 而不是真实 owner 给控制者创建 onDestroy 目标选择`
+    - `borrowed ACTION_PLAYED 在 fromDiscard 场景下应同时暴露 source discard 与 owner discard 写入`
+  - 当前工作树再次用“evidence focused gate -> `src/games/smashup/__tests__/**/*.test.*` 全量 corpus”对账后，缺失计数已从 `6` 清到 `0`。
+- 命中的审计维度：
+  - D1 / D5 / D8 / D34 / D40 / D49
+- 未覆盖风险：
+  - 这轮只完成“旧 evidence focused gate 在当前测试文件树里的 dedicated guard 补回”，不等于 Smash Up 长期审计整体收口，也不外推所有 shared seam / 同族对象 / 相邻 trigger family 已全面核完。
+
+## 2026-06-04 `smashup.smoke` titan stale prompt focused gate 当前工作树二次补回（宽口径剩余 14 -> 0）
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+- 权威来源：
+  - 这轮不是新增业务修复，而是继续做 current-worktree 对账补回。
+  - 上一轮全仓脚本只抓 `新增 focused gate：\`...\`` 这种“单数 + 冒号”写法；但 2026-05-29 那批泰坦 stale seam 里还混有大量 `新增 focused gate \`...\`` / `新增 focused gates \`...\`` 的无冒号旧记法，导致脚本误报 `0`，而当前 `smashup.smoke.test.ts` 仍缺 dedicated guard。
+  - 本轮改用宽口径对账：`/新增 focused gates?：?\\s*`([^`]+)`/g`，只筛 `titan_` focused 标题，再对照当前 `src/games/smashup/__tests__/**/*.test.*` 全量 corpus。
+- 本轮结论：
+  - 已在当前工作树补回以下 14 条泰坦 stale prompt focused gate：
+    - `titan_sphinx_talent 的 source titan 若在响应前已不在基地上，不应继续按过期 baseIndex 埋葬手牌`
+    - `titan_frankenstein_the_bride_talent_add_counter 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 给随从加标记`
+    - `titan_ignobles_the_hill_that_strolls_choose_player 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 交出随从控制权`
+    - `titan_magical_girls_walking_castle_choose_minions 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦与随从`
+    - `titan_changerbots_mergacon_talent 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 压制并移动泰坦`
+    - `titan_itty_critters_rainboroc_choose_base 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦`
+    - `titan_super_spies_moon_zero_three_resolve 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 把牌放到牌库底`
+    - `titan_cthulhu_cthulhu_titan_talent_target 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 把 Madness 交给对手`
+    - `titan_werewolves_great_wolf_spirit_talent 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 给随从 +1 临时力量`
+    - `titan_vampires_ancient_lord_talent 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 给随从加 +1 指示物`
+    - `titan_pirates_the_kraken_talent 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦并给敌方 -1 战力`
+    - `titan_tricksters_big_funny_giant_choose_base 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 消灭随从并移动泰坦`
+    - `titan_pirates_the_kraken_choose_base 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动待救随从`
+    - `titan_tricksters_big_funny_giant_choose_minion 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 进入目标基地选择`
+  - 宽口径 titan focused gate 对账后，缺失计数已从 `14` 清到 `0`。
+- 命中的审计维度：
+  - D1 / D5 / D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_sphinx_talent 的 source titan 若在响应前已不在基地上|titan_frankenstein_the_bride_talent_add_counter 的 source titan 若在响应前已离开基地|titan_ignobles_the_hill_that_strolls_choose_player 的 source titan 若在响应前已离开基地|titan_magical_girls_walking_castle_choose_minions 的 source titan 若在响应前已离开基地|titan_changerbots_mergacon_talent 的 source titan 若在响应前已离开基地|titan_itty_critters_rainboroc_choose_base 的 source titan 若在响应前已离开基地|titan_super_spies_moon_zero_three_resolve 的 source titan 若在响应前已离开基地|titan_cthulhu_cthulhu_titan_talent_target 的 source titan 若在响应前已离开基地|titan_werewolves_great_wolf_spirit_talent 的 source titan 若在响应前已离开基地|titan_vampires_ancient_lord_talent 的 source titan 若在响应前已离开基地|titan_pirates_the_kraken_talent 的 source titan 若在响应前已离开基地|titan_tricksters_big_funny_giant_choose_base 的 source titan 若在响应前已离开基地|titan_pirates_the_kraken_choose_base 的 source titan 若在响应前已离开基地|titan_tricksters_big_funny_giant_choose_minion 的 source titan 若在响应前已离开基地"` -> 当前工作树 `1 file passed, 14 passed`
+  - 宽口径对账脚本：
+    ```powershell
+    @'
+    const fs=require('fs');
+    const path=require('path');
+    const evidence=fs.readFileSync('evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md','utf8');
+    const regex=/新增 focused gates?：?\s*`([^`]+)`/g;
+    const gates=[];
+    let m;
+    while((m=regex.exec(evidence))) gates.push(m[1]);
+    const titanGates=[...new Set(gates.filter(x=>x.startsWith('titan_')))];
+    const root=path.join(process.cwd(),'src','games','smashup','__tests__');
+    const files=[];
+    const walk=d=>{for(const ent of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,ent.name);if(ent.isDirectory()) walk(p); else if(/\.(test|spec)\.[tj]sx?$/.test(ent.name)) files.push(p)}};
+    walk(root);
+    const corpus=files.map(f=>fs.readFileSync(f,'utf8')).join('\n\n');
+    const missing=titanGates.filter(name=>!corpus.includes(name));
+    console.log('TITAN_MISSING_COUNT='+missing.length);
+    if(missing.length) console.log(missing.join('\n'));
+    '@ | node
+    ```
+    - 当前输出：`TITAN_MISSING_COUNT=0`
+- 未覆盖风险：
+  - 这轮只是在当前工作树补回 14 条已封账 titan stale prompt focused smoke 守卫，不等于这些泰坦对象级审计整体收口。
+  - 仍未外推 source 改控制权、目标动态变化、同名 titan 抢占、或更多 queued/runtime sibling seam。
+
+## 2026-06-04 current-worktree 对账补回（`smashup_immediate_extra_minion` borrowed setaside titan）
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts>)
+- 权威来源：
+  - 旧 evidence 这格记的是 `smashup_immediate_extra_minion` 在 borrowed setaside titan 场景下应按当前 `controllerId` 暴露候选，而不是按真实 `ownerId` 静默过滤。
+  - 当前生产实现 [`abilityHelpers.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/domain/abilityHelpers.ts:291>) 已经按 `controllerId === playerId && location.zone==='setaside'` 过滤 `getSetAsideTitansPlayableAs(...)`。
+  - 当前工作树缺的是 dedicated guard，而不是新的业务红灯。
+- 本轮结论：
+  - 在当前工作树补回 focused gate：`smashup_immediate_extra_minion 应允许当前控制者选择 borrowed setaside 泰坦`
+  - 当前 dedicated guard 落在更直接的 [`immediate-extra-action.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts>)，不再强绑旧 worktree 里那条 `afterScoring-rescoring.test.ts` 路径。
+  - 夹具继续保持 evidence 原口径：唯一 setaside titan 为 `borrowed-ursa(ownerId='1', controllerId='0')`，当前玩家 P0 拿到 `smashup_immediate_extra_minion` prompt 后，应能选中这只 borrowed titan，并最终发出 `TITAN_PLAYED(ownerId='1', controllerId='0')`。
+- 命中的审计维度：
+  - D1 / D5 / D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "smashup_immediate_extra_minion 应允许当前控制者选择 borrowed setaside 泰坦|立即额外随从应允许选择可作为随从打出的 setaside 泰坦"` -> 当前工作树 `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这轮只是在当前工作树补回 borrowed setaside titan 的 dedicated guard，不等于所有 `extraPlay` builder 或所有 setaside titan 入口已全面审计完成。
+
+## 2026-06-04 `smashup.smoke` focused gate 当前工作树对账补回（`Invisible Ninja start_turn / Emperor Penguin continuation`）
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 本文档里已封账、但当前工作树此前缺失 dedicated smoke 守卫的 2 条 seam：
+    - `ninjas_invisible_ninja.start_turn_prompt_source_pin`
+    - `penguins_emperor_penguin_talent.prompt_continuation_titan_binding`
+- 权威来源：
+  - `titan_ninjas_invisible_ninja_start_turn` 当前 handler 会复核 `titan.location.zone === 'base' && titan.controllerId === playerId`。
+  - `titan_penguins_emperor_penguin_talent` 当前 handler 会优先读取 `continuationContext.titanUid`，再复核 `defId/location/controllerId`。
+  - 问题仍然只是 evidence 旧结论已经封账，但当前 `smashup.smoke.test.ts` 没把这两条 focused gate 带回来。
+- 本轮结论：
+  - 只把以下 dedicated smoke gate 补回当前工作树，不改业务实现：
+    - `titan_ninjas_invisible_ninja_start_turn 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 自毁或授予额外随从额度`
+    - `第二只 Emperor Penguin 打开的天赋 prompt 结算时，应给 continuationContext.titanUid 那只加标记，而不是第一只 live titan`
+  - `Invisible Ninja start_turn` 继续只锁 stale prompt no-op：source titan 离开 `base` 后，不再发 `TITAN_REMOVED_FROM_PLAY / LIMIT_MODIFIED`。
+  - `Emperor Penguin continuation` 继续只锁 prompt provenance：第二只 live titan 打开的 prompt resolve 后，只给 `continuationContext.titanUid` 指向的那只加标记，不外推整个 Penguins family。
+- 命中的审计维度：
+  - D1 / D5 / D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_ninjas_invisible_ninja_start_turn 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 自毁或授予额外随从额度|第二只 Emperor Penguin 打开的天赋 prompt 结算时，应给 continuationContext.titanUid 那只加标记，而不是第一只 live titan"` -> 当前工作树 `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这轮只是在当前工作树补回 2 条已封账 focused smoke 守卫，不等于 Ninjas / Penguins 对象级审计完成。
+  - 仍未外推 `Invisible Ninja` 其它 queued/sourceController seam、`Emperor Penguin` borrowed owner deck provenance 以外更多 continuation consumer、或整个 Smash Up 长期审计完成。
+
+## 2026-06-04 `smashup.smoke` stale prompt focused gate 当前工作树对账补回（`The Hill That Strolls / The Kraken choose_minion`）
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 本文档里 2026-05-29 已封账、但当前工作树此前缺失 focused smoke 守卫的 2 条泰坦 stale prompt seam：
+    - `ignobles_the_hill_that_strolls.counter_prompt_source_pin`
+    - `pirates_the_kraken.choose_minion_prompt_source_pin`
+- 权威来源：
+  - 这轮不是新增业务红灯，也不是再改生产实现；实现侧当前工作树仍保留对应 handler 的 live source titan 复核：
+    - `titan_ignobles_the_hill_that_strolls_counter` 先走 `getLiveHillTalentContext(...)`
+    - `titan_pirates_the_kraken_choose_minion` 会复核 `defId/controllerId/location.baseIndex===scoringBaseIndex`
+  - 问题仍然是 evidence 旧结论已记成“新增 focused gate + 已验证通过”，但当前 [`smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>) 里没有这两条 dedicated stale guard。
+- 本轮结论：
+  - 只把以下 focused gate 补回当前工作树的 `smashup.smoke.test.ts`，不改业务实现，不扩大到其它 seam：
+    - `titan_ignobles_the_hill_that_strolls_counter 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 给随从加标记`
+    - `titan_pirates_the_kraken_choose_minion 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 进入目标基地选择`
+  - 其中 `Kraken choose_minion` 在当前工作树里的 smoke 守卫表现为：旧 option id 会先被交互层判成 `无效的选择`，因此 focused gate 只锁“不会继续创建第二拍 `choose_base`”，不额外要求这次 stale 响应走到 handler 成功返回。
+  - 断言边界继续保持在“stale prompt 不再继续产生效果/不再进入下一拍”，不把“当前 prompt 必须立即清空”升级成同层验收门槛。
+- 命中的审计维度：
+  - D1 / D5 / D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_ignobles_the_hill_that_strolls_counter 的 source titan 若在响应前已离开基地|titan_pirates_the_kraken_choose_minion 的 source titan 若在响应前已离开基地"` -> 当前工作树 `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这轮只是在当前工作树补回 2 条已封账 stale prompt focused smoke 守卫，不等于 Ignobles / Pirates 对象级审计完成。
+  - 仍未外推 `The Hill That Strolls` 的 give/reclaim 主分支、`The Kraken` 的第二拍 `choose_base` 以外其它 rescue/talent seam、或整个 Smash Up 长期审计完成。
+
+## 2026-06-04 `smashup.smoke` stale prompt focused gate 当前工作树对账补回（`time_box / major_ursa / megabot / fort_titanosaurus`）
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 本文档里 2026-05-29 已封账的 5 条泰坦 stale prompt seam：
+    - `time_travelers_time_box.play_prompt_source_pin`
+    - `bear_cavalry_major_ursa.choose_destination_prompt_source_pin`
+    - `bear_cavalry_major_ursa.choose_minion_prompt_source_pin`
+    - `mega_troopers_megabot.move_prompt_source_pin`
+    - `dinosaurs_fort_titanosaurus.ongoing_prompt_source_pin`
+- 权威来源：
+  - 本轮不是新增业务红灯，也不是再改生产实现；实现侧当前工作树已经保留对应的 live 校验：
+    - `getLiveTimeBoxPlayTitan(...)`
+    - `Major Ursa` 两拍 prompt 的 live source titan 复核
+    - `Megabot beforeScoring move` 的 live source titan 复核
+    - `Fort Titanosaurus ongoing` resolve 前的 live source titan 复核
+  - 问题在于：本文档旧结论已经记成“新增 focused gate + 已验证通过”，但当前工作树 [`smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>) 里缺少这 5 组 focused smoke 守卫，导致“evidence 说已收口、当前 smoke 却无守卫”的断层。
+- 本轮结论：
+  - 只把以下 focused gate 补回当前工作树的 `smashup.smoke.test.ts`，不改业务实现，不扩大到其他泰坦或其他 seam：
+    - `titan_time_travelers_time_box_play 的 source titan 若在响应前失去第 5 枚计数进场资格，不应继续沿旧 prompt 进场或清零计数`
+    - `titan_bear_cavalry_major_ursa_choose_destination 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦`
+    - `titan_bear_cavalry_major_ursa_choose_minion 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 进入目标基地选择`
+    - `titan_mega_troopers_megabot_move 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦`
+    - `titan_dinosaurs_fort_titanosaurus_ongoing 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 放置指示物或写 metadata`
+  - 断言边界继续保持在“stale prompt 不再继续产生效果”，不把“当前 prompt 必须立即清空”误当成同层验收条件；其中 `Major Ursa choose_minion` 仍只锁“不继续排第二拍 `choose_base`”。
+- 命中的审计维度：
+  - D1 / D5 / D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_time_travelers_time_box_play 的 source titan 若在响应前失去第 5 枚计数进场资格|titan_bear_cavalry_major_ursa_choose_destination 的 source titan 若在响应前已离开基地|titan_bear_cavalry_major_ursa_choose_minion 的 source titan 若在响应前已离开基地|titan_mega_troopers_megabot_move 的 source titan 若在响应前已离开基地|titan_dinosaurs_fort_titanosaurus_ongoing 的 source titan 若在响应前已离开基地"` -> 当前工作树 `1 file passed, 5 passed`
+- 未覆盖风险：
+  - 这轮只是在当前工作树补回 5 条已封账 stale prompt focused smoke 守卫，不等于新增业务根因审计完成。
+  - 仍未外推 `time_box / bear_cavalry / mega_troopers / dinosaurs` 其它 effect atom、其它 response seam、或整个 Smash Up 长期审计完成。
+
+## 2026-06-04 `smashup.smoke` stale prompt focused gate 当前工作树对账补回（`Invisible Ninja / Pecos Bill`）
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 本文档里已封账但当前工作树此前缺失的 3 条泰坦 stale prompt seam：
+    - `ninjas_invisible_ninja.ongoing_prompt_source_pin`
+    - `ninjas_invisible_ninja.special_prompt_source_pin`
+    - `pecos_bill.duel_start_prompt_source_pin`
+- 权威来源：
+  - 当前工作树实现侧仍保留这些 response handler 的 live 校验：
+    - `titan_ninjas_invisible_ninja_ongoing` 会复核 `defId/controllerId/location.zone==='base'`
+    - `titan_ninjas_invisible_ninja_special` / `titan_pecos_bill_duel_start` 都统一走 `getLiveSetAsideTitanPlayPromptTitan(...)`
+  - 问题仍然是 evidence 里已经写过 focused gate 与绿证，但当前 `smashup.smoke.test.ts` 没把这 3 条守卫带回来。
+- 本轮结论：
+  - 只补回以下 focused smoke gate，不改业务实现：
+    - `titan_ninjas_invisible_ninja_ongoing 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 抽牌、洗回剩余揭示牌或写 metadata`
+    - `titan_ninjas_invisible_ninja_special 的 source titan 若在响应前已离开牌库旁，不应继续沿旧 prompt 弃牌或进场`
+    - `titan_pecos_bill_duel_start 的 source titan 若在响应前已离开牌库旁，不应继续沿旧 prompt 弃牌、写 metadata 或进场`
+  - 断言继续只锁 stale prompt no-op，不把“prompt 必须立即清空”升级成同层验收门槛。
+- 命中的审计维度：
+  - D1 / D5 / D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_ninjas_invisible_ninja_ongoing 的 source titan 若在响应前已离开基地|titan_ninjas_invisible_ninja_special 的 source titan 若在响应前已离开牌库旁|titan_pecos_bill_duel_start 的 source titan 若在响应前已离开牌库旁"` -> 当前工作树 `1 file passed, 3 passed`
+- 未覆盖风险：
+  - 这轮只是在当前工作树补回 3 条已封账 stale prompt focused smoke 守卫，不等于 Ninjas / Cowboys POD 对象级审计完成。
+  - 仍未外推 `Invisible Ninja` 其它 start-turn / queued source seam、`Pecos Bill` 决斗结束抽牌 / 决斗保护链、或整个 Smash Up 长期审计完成。
+
+## 2026-06-04 `smashup.smoke` stale prompt focused gate 当前工作树对账补回（`Very Large Boulder / The Bride`）
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 本文档里已封账但当前工作树此前缺失的 3 条泰坦 stale prompt seam：
+    - `explorers_very_large_boulder.move_prompt_source_pin`
+    - `explorers_very_large_boulder.destroy_prompt_source_pin`
+    - `frankenstein_the_bride.start_choose_target_prompt_source_pin`
+- 权威来源：
+  - 当前工作树实现侧仍保留这些 response handler 的 live 校验：
+    - `titan_explorers_very_large_boulder_move` 会复核 `defId/controllerId/location.baseIndex===fromBaseIndex`
+    - `titan_explorers_very_large_boulder_destroy` 会复核 `defId/controllerId/location.baseIndex===targetBaseIndex`
+    - `titan_frankenstein_the_bride_start_choose_target` 会先过 `getLiveTheBrideStartTitan(...)`
+  - 问题仍然是 evidence 里已经记过 focused gate 与绿证，但当前 `smashup.smoke.test.ts` 没把这 3 条 dedicated smoke 守卫带回来。
+- 本轮结论：
+  - 只补回以下 focused smoke gate，不改业务实现：
+    - `titan_explorers_very_large_boulder_move 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦`
+    - `titan_explorers_very_large_boulder_destroy 的 source titan 若在响应前已离开目标基地，不应继续沿旧 prompt 消灭随从`
+    - `titan_frankenstein_the_bride_start_choose_target 的 source titan 若在响应前已离开牌库旁，不应继续沿旧 prompt 结算首个效果或进入后续分支`
+  - 断言继续只锁 stale prompt no-op，不把“prompt 必须立即清空”或“整条多拍链必须全部消失”升级成同层验收门槛。
+- 命中的审计维度：
+  - D1 / D5 / D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_explorers_very_large_boulder_move 的 source titan 若在响应前已离开基地|titan_explorers_very_large_boulder_destroy 的 source titan 若在响应前已离开目标基地|titan_frankenstein_the_bride_start_choose_target 的 source titan 若在响应前已离开牌库旁"` -> 当前工作树 `1 file passed, 3 passed`
+- 未覆盖风险：
+  - 这轮只是在当前工作树补回 3 条已封账 stale prompt focused smoke 守卫，不等于 Explorers / Frankenstein 对象级审计完成。
+  - 仍未外推 `Very Large Boulder` 回合结束计数链、`The Bride` 其它 branch/base seam、或整个 Smash Up 长期审计完成。
+
 ## 2026-05-29 `consumable protection self-destruct payload provenance` shared seam
 
 - 审计范围：
@@ -216,6 +454,171 @@
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts -t "titan_sphinx_talent|titan_sphinx_start_turn|狮身人面像天赋会把一张手牌埋葬到它所在的基地|titan_pirates_the_kraken_choose_minion|海怪克拉肯在本基地计分后会创建救出己方随从的交互|大副先结算移动后，海怪克拉肯仍应保留替换基地进场交互" --configLoader native --pool forks --no-file-parallelism --maxWorkers 1` -> `2 files passed, 9 passed`
 - 未覆盖风险：
   - 这格只补 smoke 层级的 stale prompt dedicated 证据，不外推整个 `Sphinx` / `Kraken` family、所有 afterScoring rescue 分支、或长期任务完成。
+
+## 2026-06-04 `sharks_helicoprion` destroy trigger 去重吞链 + `sphinx/pecos_bill` 触发式 special 静态合同回写
+
+- 审计范围：
+  - [`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/titans.ts>)
+  - [`src/games/smashup/domain/reducer.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/domain/reducer.ts>)
+  - [`src/games/smashup/data/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/data/titans.ts>)
+  - [`src/games/smashup/__tests__/abilities/sharks.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/sharks.test.ts>)
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+- 权威来源：
+  - `旋齿鲨` 文本要求它在牌库旁累计计数后进场，进场后在“其他玩家回合里有随从在此处被消灭”时给当前控制者奖励反应入口。
+  - `狮身人面像` 的 special 是“你的回合开始时”触发的埋葬牌回手并进场，不是 `playCards` 手动点按 special。
+  - `Pecos Bill` 的 special 是“你成为 duel challenger 时”触发的弃牌进场，不是 `playCards` 手动点按 special。
+- 旧结论失效与真实根因：
+  - `旋齿鲨` 旧链路里把 `onMinionDestroyed` 拆成两条 `registerTrigger('sharks_helicoprion', 'onMinionDestroyed', ...)`。
+  - 共享 `registerTrigger()` 在 [`src/games/smashup/domain/ongoingEffects.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/domain/ongoingEffects.ts>) 里按 `sourceDefId + timing` 去重，因此第二条 destroy trigger 会被静默吞掉。
+  - 结果不是 reward handler 坏了，而是 live `旋齿鲨` 的奖励 trigger 从未真正入队；此前若把这条链写成“已收口”，旧结论应失效。
+  - 同轮静态台账对照还发现：`TITAN_CARD_DEFS` 里 `sphinx`、`pecos_bill` 都声明了 `activatableAbilities.special(setaside/playCards)`，但命令层 `ACTIVATE_SPECIAL` / reducer 对泰坦 special 是硬依赖 `resolveSpecial(titan.defId)`；这两张并没有 `registerAbility(..., 'special', ...)`，因此旧静态合同会把**触发式 special**误暴露成手动入口空壳。
+- 最小修复：
+  - `旋齿鲨`：
+    - 不改共享 `registerTrigger()` / queued executor 合同。
+    - 改为单条 `registerTrigger('sharks_helicoprion', 'onMinionDestroyed', sharksHelicoprionOnMinionDestroyed, ...)`。
+    - 在 `sharksHelicoprionOnMinionDestroyed()` 里按 titan 当前 live 区域分流：
+      - `setaside`：累计 metadata 计数并在第 4 枚后排 `titan_sharks_helicoprion_play`
+      - `base`：走 `sharksHelicoprionOnMinionDestroyedReward()` 创建奖励反应
+    - `processDestroyTriggers` 补最小 LKI `triggerMinion` 兜底，保证 destroy 后目标已离场时仍保留触发上下文。
+  - `狮身人面像 / Pecos Bill`：
+    - 不伪造新的手动 `special` 执行器。
+    - 直接收窄 [`src/games/smashup/data/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/data/titans.ts>) 静态合同：
+      - `sphinx` 只保留真实可点击的 `talent`
+      - `pecos_bill` 移除全部 `activatableAbilities`
+    - 继续保留它们的 `abilityTags.special`，因为真实触发链仍由 `onTurnStart` / `onDuelStarted` 入队和交互 handler 消费。
+- 命中的审计维度：D1/D5/D34/D49。
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/sharks.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "灰鲭鲨在你消灭随从后，只允许立即额外打出手牌中的灰鲭鲨到该基地|血腥水域在该基地有随从被消灭后，只允许立即额外打出力量≤3随从到该基地|旋齿鲨奖励交互可从牌库拿 1 张鲭鲨进手牌，并重排剩余牌库"` -> `1 file passed, 3 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "旋齿鲨在回合开始得到第 4 枚计数后会创建进场交互，并在选择基地后清零计数并进场|旋齿鲨会在其他玩家回合中有随从在此处被消灭后，为控制者创建奖励反应入口|隐形忍者消灭对手随从后，抽牌反应归属于泰坦控制者并可正常抽牌|Smash Up AI 自动选派系不应列出仍未正式接入的派系"` -> `1 file passed, 4 passed`
+  - `smashup.smoke.test.ts` 新增静态合同断言：
+    - `hasCardActivatableAbility('sphinx', { kind:'special', zone:'setaside', window:'playCards' }) === false`
+    - `hasCardActivatableAbility('pecos_bill', { kind:'special', zone:'setaside', window:'playCards' }) === false`
+- 当前结论：
+  - `旋齿鲨` 旧“奖励链已实现”结论必须以后续 2026-06-04 这条单-trigger 修复与 smoke/合同测试为准，不能继续引用更早的对象级 pass。
+  - `狮身人面像`、`Pecos Bill` 当前不再把触发式 special 冒充为手动 `playCards` 入口；这闭合的是**静态合同过宽**，不是新增一条手动玩法。
+  - 同轮全集对照也把当前 trigger-only titan special 口径显式固定为：`旋齿鲨`、`企鹅帝皇`、`狮身人面像`、`Pecos Bill` 不应暴露 `setaside/playCards` 手动 special；其 special 只允许由 `onTurnStart`、destroy trigger、duel trigger 等运行时链路创建交互。
+- 2026-06-04 补充：`旋齿鲨.reward_handler_branches`
+  - 旧证据不足点：
+    - 之前只证明了 `旋齿鲨` live 区的 destroy trigger 会出现奖励反应入口。
+    - `sharks.test.ts` 里起初只锁了 `take_mako(sourceZone='deck')` 单分支；这不足以证明 reward handler 的 `draw/skip/discard` 分支合同已收口。
+  - 本轮补充：
+    - [`src/games/smashup/__tests__/abilities/sharks.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/sharks.test.ts>) 新增：
+      - `旋齿鲨奖励交互可从弃牌堆拿 1 张鲭鲨回手，且不会错误重排牌库`
+      - `旋齿鲨奖励交互选择抽牌时，会为控制者抽 1 张牌`
+      - `旋齿鲨奖励交互选择跳过时，不会产生任何事件`
+    - `draw` 分支当前共享事件合同只稳定暴露 `su:cards_drawn.payload.playerId/count`，不要求 `drawn` 明细；本轮测试已按真实共享合同收窄断言，避免把不存在的 payload 形状误记成玩法 bug。
+    - `discard` 分支当前共享事件合同走 `su:card_recovered_from_discard`，而不是 `su:card_transferred`；本轮已按真实事件族回写断言，同时锁住“不会额外产生 `su:deck_reordered`”。
+  - 已验证测试/证据：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/sharks.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "旋齿鲨奖励交互"`
+  - 当前边界：
+    - 本轮把 `take_mako(deck)`、`take_mako(discard)`、`draw`、`skip` 四条 reward handler 语义都补到对象级合同测试。
+    - 这格仍只证明 reward handler 分支合同已闭合，不外推 `旋齿鲨` 全部运行时链路或其他 destroy-trigger family 已全面审完。
+- 2026-06-04 补充：`titan_manual_ongoing_static_contract`
+  - 旧证据不足点：
+    - 前一轮只收窄了 `sphinx / Pecos Bill` 的 trigger-only `special` 假手动入口，还没有继续核对泰坦 `ongoing(board/playCards)` 是否同样存在“静态声明了可点击，但生产没有执行器”的空壳。
+    - 运行时对泰坦手动持续入口的真相链路是：`activatableAbilities.ongoing(board/playCards)` → `validate(ACTIVATE_TITAN_ONGOING)` → `resolveOngoingActivation(defId)`；生产注册里当前只有 `penguins_emperor_penguin` 挂了 `registerAbility(..., 'ongoingActivation', ...)`。
+  - 本轮结论：
+    - `data/titans.ts` 里此前有 26 张泰坦声明了 `activatableAbilities.ongoing(board/playCards)`，但生产 `ongoingActivation` 执行器只有 `企鹅帝皇` 一张。
+    - 这意味着旧静态合同会把大量“被动持续 / 自动持续”误暴露成用户可点的手动持续入口空壳；命令层最终会以 `该泰坦的持续能力不能手动激活` 拒绝，属于 D49 / D51 型静态合同过宽。
+  - 最小修复：
+    - 不伪造新的 `ongoingActivation` 空实现。
+    - 直接收窄 [`src/games/smashup/data/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/data/titans.ts>)：仅保留 `penguins_emperor_penguin` 的 `activatableAbilities.ongoing(board/playCards)`，其余泰坦移除这条手动入口；保留它们的 `abilityTags.ongoing` 作为被动/持续语义标签，不把标签误当成可点击入口。
+    - [`src/games/smashup/__tests__/commandsValidation.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/commandsValidation.test.ts>) 改为走生产真链：`企鹅帝皇` 在牌库顶是随从且额度未用尽时可用；`Fort Titanosaurus` 这类无执行器泰坦会被命令层直接拒绝。
+    - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>) 新增静态白名单断言：当前只有 `penguins_emperor_penguin` 仍暴露泰坦手动 `ongoing(board/playCards)` 入口。
+  - 命中的审计维度：
+    - D49 / D51
+  - 已验证测试/证据：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/commandsValidation.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "only validates titan ongoing activation for real production executors and respects suppression"`
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "应包含最新冻结的泰坦静态合同与预览图元数据"`
+  - 当前边界：
+    - 这格只闭合“泰坦手动 `ongoing` 静态入口不得宽于生产执行器”这一条静态合同。
+    - 不外推所有 `abilityTags.ongoing` 的被动语义都已对象级审完，也不外推后续若新增第二张可手动泰坦持续能力时无需再补对象级测试。
+- 2026-06-04 补充：`trigger_only_titan_special_static_contract_expansion`
+  - 旧证据不足点：
+    - 前一轮虽然已经收窄了 `旋齿鲨 / 企鹅帝皇 / 狮身人面像 / Pecos Bill` 的 trigger-only 泰坦 `special` 假手动入口，但还没有继续复核另外几张“真实进场走 trigger/prompt 链、静态数据却仍暴露 `special(setaside/playCards)`”的对象。
+    - 这轮继续核到 `合体机器人 / 彩虹鸟 / 海怪克拉肯 / 新娘`：生产入口分别是 `titan_changerbots_mergacon_play`、`titan_itty_critters_rainboroc_play_replacement`、`titan_pirates_the_kraken_play_replacement`、`titan_frankenstein_the_bride_start_choose_branch`，都不是 `ACTIVATE_SPECIAL(setaside/playCards)` 的直连执行器。
+  - 本轮结论：
+    - `data/titans.ts` 里原先仍把 `彩虹鸟 / 海怪克拉肯 / 新娘` 声明成可手动 `special(setaside/playCards)`；`合体机器人` 已先前收窄为仅保留 `talent`。
+    - 这会让 `activatableAbilities.special(setaside/playCards)` 的消费链把它们误暴露成可点击的手动进场入口，命令层最终只会返回 `该泰坦的特殊能力不能手动激活`；属于 D49 / D51 型静态合同过宽，而不是 atlas 或录入缺图问题。
+  - 最小修复：
+    - 不补空的 `special` 执行器，也不把 trigger/prompt 链硬改成手动入口。
+    - 直接收窄 [`src/games/smashup/data/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/data/titans.ts>)：`合体机器人 / 彩虹鸟 / 海怪克拉肯 / 新娘` 统一只保留真实可点击的 `talent(board/playCards)`。
+    - [`src/games/smashup/__tests__/commandsValidation.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/commandsValidation.test.ts>) 新增负例，锁定这 4 张在 `setaside` 下发 `ACTIVATE_SPECIAL` 时都会被命令层拒绝。
+    - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>) 扩充静态白名单与对象级断言，锁定这 4 张不再暴露 `special(setaside/playCards)` 假入口。
+  - 命中的审计维度：
+    - D49 / D51
+  - 已验证测试/证据：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/commandsValidation.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "only allows titan special activation for real manual setaside entries"`
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "活动泰坦静态契约与当前已接入范围保持一致"`
+  - 当前边界：
+    - 这格只闭合“trigger-only titan special 静态入口不得宽于生产手动入口”这一条扩展 inventory。
+    - 不外推所有泰坦的 trigger/prompt special 链都已全量对象级审完，也不外推 Smash Up 长期审计已完成。
+- 2026-06-04 补充：`manual_titan_special_static_contract_underexposed_entries`
+  - 旧证据不足点：
+    - 前两格连续处理的都是“trigger-only 泰坦被静态数据误暴露成手动入口”的过宽合同，但还没有反向复核“生产里明明有手动 `special` 执行器与 validator，静态数据却没暴露入口”的过窄合同。
+    - 当前工作树里 `奶油泡芙美人 / 大熊座 / 六足死神 / 五级风暴` 都满足这类失配：生产侧存在 `registerAbility(..., 'special', ...) + registerTitanSpecialValidator(...)`，规则抄录也明确它们属于你的回合内手动进场；但 `data/titans.ts` 里却没有对应的 `activatableAbilities.special(setaside/playCards)`。
+  - 本轮结论：
+    - 这 4 张不是 trigger-only，也不是“只走 reaction/prompt 链”的对象；它们本来就应暴露手动 `ACTIVATE_SPECIAL` 入口。
+    - 旧静态合同会把真实可用的手动泰坦进场入口藏掉，导致命令层在进入业务 validator 之前就被 `hasCardActivatableAbility(...)` 提前拒绝；属于 D49 / D51 型静态合同过窄。
+  - 最小修复：
+    - 不改动它们现有的生产 special executor、validator 或后续 prompt 链。
+    - 直接修正 [`src/games/smashup/data/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/data/titans.ts>)：
+      - `bear_cavalry_major_ursa / ghosts_creampuff_man / giant_ants_death_on_six_legs` 恢复 `special(setaside/playCards)`，并继续保留原有 `talent(board/playCards)`
+      - `tornados_category_5` 恢复 `special(setaside/playCards)`
+    - [`src/games/smashup/__tests__/commandsValidation.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/commandsValidation.test.ts>) 新增生产真链正例，锁定这 4 张在满足各自真实条件时不会再被静态门禁误拦。
+    - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>) 回写对象级 `activatableAbilities` 与 `hasCardActivatableAbility(...special...)` 正例，避免后续再把这类真入口误删。
+  - 命中的审计维度：
+    - D49 / D51
+  - 已验证测试/证据：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/commandsValidation.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "preserves real manual titan special activation entries in static metadata"`
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "活动泰坦静态契约与当前已接入范围保持一致"`
+  - 当前边界：
+    - 这格只闭合“真实手动 titan special 入口不得被静态合同误删”这一条反向 inventory。
+    - 不外推所有剩余泰坦的 special/ongoing/talent 三类入口都已穷尽，也不外推 Smash Up 长期审计已完成。
+- 2026-06-04 补充：`manual_titan_talent_static_contract_underexposed_entries`
+  - 旧证据不足点：
+    - 前三格已经分别收窄了 trigger-only `special`、收窄了空壳 `ongoing`，并补回了一批真实手动 `special`；但还没有继续反向复核“生产里已有手动 `talent` 执行器与 validator，静态数据却没暴露入口”的过窄合同。
+    - `Fort Titanosaurus` 当前生产侧已经具备 `registerAbility('dinosaurs_fort_titanosaurus', 'talent', fortTitanosaurusTalent)` 与 `registerTitanTalentValidator('dinosaurs_fort_titanosaurus', ...)`，且既有 smoke 绿证已证明它的真实天赋链会在在场且拥有至少 4 枚力量指示物时进入手动结算；但 `data/titans.ts` 里却缺少 `activatableAbilities.talent(board/playCards)`，连 `abilityTags.talent` 也没有标出来。
+  - 本轮结论：
+    - `Fort Titanosaurus` 不是 trigger-only，也不是只靠内部 reaction/prompt 偷跑的隐藏天赋；它本来就应暴露手动 `USE_TALENT` 入口。
+    - 旧静态合同会让 `hasCardActivatableAbility('dinosaurs_fort_titanosaurus', { kind:'talent', zone:'board', window:'playCards' })` 提前返回 `false`，从而在进入业务 validator 之前就把真实天赋入口拦掉；同时漏掉 `abilityTags.talent` 还会让标签层审计与部分 UI/元数据消费失真。属于 D49 / D51 型静态合同过窄。
+  - 最小修复：
+    - 不改动现有 `fortTitanosaurusTalent` executor、talent validator、ongoing trigger 或 special 进场链。
+    - 直接修正 [`src/games/smashup/data/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/data/titans.ts>)：给 `dinosaurs_fort_titanosaurus` 补回 `abilityTags.talent` 与 `activatableAbilities.talent(board/playCards)`。
+    - [`src/games/smashup/__tests__/commandsValidation.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/commandsValidation.test.ts>) 新增生产真链正例，锁定它在在场且 `powerCounters >= 4` 时不会再被静态门禁误拦。
+    - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>) 回写对象级 `abilityTags`、`activatableAbilities` 与 `hasCardActivatableAbility(...talent...)` 正例，避免后续再把这条真入口误删。
+  - 命中的审计维度：
+    - D49 / D51
+  - 已验证测试/证据：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/commandsValidation.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "preserves real manual titan talent activation entries in static metadata"`
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "活动泰坦静态契约与当前已接入范围保持一致"`
+  - 当前边界：
+    - 这格只闭合 `Fort Titanosaurus` 这条“真实手动 titan talent 入口不得被静态合同误删”的对象级 seam。
+    - 不外推所有剩余泰坦的 talent 都已全量对象级审完，也不外推 Smash Up 长期审计已完成。
+- 2026-06-04 补充：`titan_manual_activation_static_contract_guardrail`
+  - 旧证据不足点：
+    - 前几格虽然已经人工补回/收窄了多条泰坦 `special / talent / ongoing` 静态合同，但这些结论主要靠对象级白名单断言维持；如果后续再新增一张已注册手动 `talent` 或 `ongoingActivation` 的泰坦、或把 trigger-only `special` 误放回静态入口，原有 smoke 不一定会第一时间把“注册侧真相”和“静态合同”失配直接打红。
+    - 本轮手工对照时已经实际暴露出这种治理风险：`Fort Titanosaurus` 的 `talent` 漏项如果没有额外的“运行时注册 ↔ 静态声明”守卫，就只能再次依赖人工扫描 `registerAbility / registerTitan*Validator / data/titans.ts` 三处。
+  - 本轮结论：
+    - 当前应把“运行时已注册的手动 `talent` / `ongoingActivation` 必须同步暴露到静态合同”和“存在泰坦 special validator 但仍故意不暴露手动入口的对象，只能来自已冻结的 trigger-only 例外集合”锁成 smoke 守卫。
+    - 这样后续无论是漏掉新的手动 `talent`/`ongoing`，还是误把 trigger-only `special` 放回 `ACTIVATE_SPECIAL(setaside/playCards)`，都会直接在静态合同测试里暴露，而不是再次等人工盘点。
+  - 最小修复：
+    - [`src/games/smashup/domain/titanAbilityValidators.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/domain/titanAbilityValidators.ts>) 新增只读辅助：`hasTitanSpecialValidator / hasTitanTalentValidator / hasTitanOngoingActivationValidator`，不改运行时语义，只暴露当前 validator 注册真相给审计测试消费。
+    - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>) 在 `活动泰坦静态契约与当前已接入范围保持一致` 内追加两层守卫：
+      - 凡 `resolveTalent(def.id)` 为真，必须同时满足 `abilityTags` 含 `talent` 且静态存在 `talent(board/playCards)`；
+      - 凡 `resolveOngoingActivation(def.id)` 为真，必须静态存在 `ongoing(board/playCards)`；
+      - 凡静态暴露 `special(setaside/playCards)` 的泰坦，必须同时有 special validator 和 `resolveSpecial(def.id)`；
+      - 凡“有 special validator 但故意不暴露手动 `special`”的对象，当前只允许出现在冻结例外集合：`旋齿鲨 / 企鹅帝皇 / 合体机器人 / 彩虹鸟`。
+  - 命中的审计维度：
+    - D49 / D51
+  - 已验证测试/证据：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "活动泰坦静态契约与当前已接入范围保持一致"`
+  - 当前边界：
+    - 这格只把当前 Smash Up 泰坦手动激活静态合同的核心不变量固化成 smoke 守卫。
+    - 不外推所有 trigger/prompt replacement family 已全面审完，也不外推长线 Smash Up 审计已完成。
+- 未覆盖风险：
+  - 本格只闭合 `旋齿鲨.destroy_trigger_dedupe`、`sphinx/pecos_bill.triggered_special_static_contract`、`titan_manual_ongoing_static_contract`、`trigger_only_titan_special_static_contract_expansion`、`manual_titan_special_static_contract_underexposed_entries`、`manual_titan_talent_static_contract_underexposed_entries` 与 `titan_manual_activation_static_contract_guardrail`。
+  - 不外推其他 Titan 的 trigger registry key 设计、所有触发式 special 数据录入、或长期任务完成。
 
 ## 2026-05-29 `ninjas_invisible_ninja` start-turn / `penguins_emperor_penguin` talent dedicated green evidence
 
@@ -839,6 +1242,197 @@
 - 未覆盖风险：
   - 这格只覆盖 `titan_mega_troopers_megabot_move` 在 source titan 离开原基地后的 stale prompt no-op。
   - 不外推 queued `beforeScoring` collector 以外其它 Mega Troopers titan 语义、多个 Megabot 连续 prompt、或长期任务完成。
+
+## 2026-06-04 `tornados_category_5` move prompt source-pin smoke-level dedicated green evidence
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 对照实现：[`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/titans.ts>)
+- 权威来源：
+  - 这轮不是补新的业务修复，而是把 `五级风暴` 的 `beforeScoring` move prompt stale seam 从“只有 happy path”补成 dedicated smoke 绿证。
+  - 当前 `titan_tornados_category_5_move` resolve 端已经显式复核 `controllerId === playerId` 与 `location.zone === 'base' && location.baseIndex === continuation.fromBaseIndex`；若 source titan 已离开原基地，不会继续发 `TITAN_MOVED`。
+- 逐效果原子结论：
+  - 新增 focused gate：`titan_tornados_category_5_move 的 source titan 若在响应前已离开原基地，不应继续沿旧 prompt 移动泰坦`
+  - 夹具为：
+    - `fireTriggers(core, 'beforeScoring', ...)` 真实打开 `titan_tornados_category_5_move`
+    - prompt 打开后，把 `t-category5-stale` 从 `baseIndex=1` 手工挪到 `setaside`
+    - 再由当前玩家响应 `{ move: true }`
+  - 结果直接转绿，没有新的业务红灯：
+    - `resolved.events` 不含 `TITAN_MOVED`
+    - `finalState.core` 仍保持手工构造的 stale core，不会误把旧 prompt 继续结算成移动事件
+  - 因此这轮只把 `tornados_category_5.move_prompt_source_pin` 提升为 smoke-level dedicated green evidence，不宣称命中新的实现缺陷
+- 命中的审计维度：D1/D5/D34/D49。
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_tornados_category_5_move 的 source titan 若在响应前已离开原基地"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "五级风暴会在另一基地计分前创建移动交互，并在选择后移动到计分基地|titan_tornados_category_5_move 的 source titan 若在响应前已离开原基地"` -> `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这格只补 `titan_tornados_category_5_move` 在 source titan 离开原基地后的 stale prompt dedicated 证据。
+  - 不外推整个 Tornados family、多个 `Category 5` 连续 prompt、控制权变化分支、或长期任务完成。
+
+## 2026-06-04 `kaiju_gorgodzolla` draw prompt stale gate 回补到当前工作树
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 对照实现：[`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/titans.ts>)
+- 权威来源：
+  - 旧 evidence 早已把 `kaiju_gorgodzolla.draw_prompt_source_pin` 记成 dedicated 绿格，但当前工作树里缺失这条 focused smoke gate，导致“文档宣称已封账”与“当前自动守卫实际不存在”脱节。
+  - 当前生产实现已经具备这条 seam 的 live 校验：`kaijuGorgodzollaOnActionPlayed()` 会把 `continuationContext.titanUid + titanBaseIndex` 写进 `titan_kaiju_gorgodzolla_draw`；resolve 端也会复核 `defId/controllerId/location.baseIndex`。
+- 逐效果原子结论：
+  - 本轮不改业务逻辑，只把缺失的 focused smoke gate 补回当前工作树：
+    - `titan_kaiju_gorgodzolla_draw 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 抽牌`
+  - 夹具为：
+    - 先走真实 happy path：`PLAY_ACTION(gorg-action, targetBaseIndex=0)` 打开 `titan_kaiju_gorgodzolla_draw`
+    - prompt 打开后，把 `t-gorgodzolla-stale` 从 `base` 手工挪到 `setaside`
+    - 再由当前玩家响应 `{ draw: true }`
+  - 结果直接转绿，没有新的业务红灯：
+    - `drawResult.events` 不含 `CARDS_DRAWN`
+    - `t-gorgodzolla-stale` 仍保持 `location.zone === 'setaside'`
+  - 因此这轮实际收的是“把旧 evidence 已认定的 `kaiju_gorgodzolla.draw_prompt_source_pin` 同步回当前工作树自动守卫”，不是新增业务修复
+- 命中的审计维度：D1/D5/D34/D49。
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_kaiju_gorgodzolla_draw 的 source titan 若在响应前已离开基地"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "哥佐拉在你于本基地打出战术后会获得指示物，并可通过交互抽 1 张牌|titan_kaiju_gorgodzolla_draw 的 source titan 若在响应前已离开基地"` -> `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这格只证明 `titan_kaiju_gorgodzolla_draw` 在 source titan 离开原基地后的 stale prompt no-op 已重新落到当前工作树 smoke。
+  - 不外推 `kaiju_gorgodzolla_special`、`onMinionPlayed` collector、其它 Kaiju Titans、或长期任务完成。
+
+## 2026-06-04 `werewolves_great_wolf_spirit` move prompt stale gate 回补到当前工作树
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 对照实现：[`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/titans.ts>)
+- 权威来源：
+  - 旧 evidence 已把 `werewolves_great_wolf_spirit.move_prompt_source_pin` 记成 dedicated 绿格，但当前工作树没有对应 focused smoke gate，只剩 happy path 与 queued handoff 旁证。
+  - 当前生产实现已带 live 校验：`titan_werewolves_great_wolf_spirit_move` resolve 前会复核 `defId/controllerId/location.zone/baseIndex`，source titan 离开原基地后应直接 no-op。
+- 逐效果原子结论：
+  - 本轮不改业务逻辑，只把缺失的 focused smoke gate 补回当前工作树：
+    - `titan_werewolves_great_wolf_spirit_move 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 移动泰坦`
+  - 夹具为：
+    - `fireTriggers(core, 'onTurnStart', ...)` 真实打开 `titan_werewolves_great_wolf_spirit_move`
+    - prompt 打开后，把 `t-gws-stale` 从 `base` 手工挪到 `setaside`
+    - 再由当前玩家响应 `{ baseIndex: 1, baseDefId }`
+  - 结果直接转绿，没有新的业务红灯：
+    - `resolved.events` 不含 `TITAN_MOVED`
+    - `t-gws-stale` 仍保持 `location.zone === 'setaside'`
+  - 因此这轮实际收的是“把旧 evidence 已认定的 `werewolves_great_wolf_spirit.move_prompt_source_pin` 同步回当前工作树自动守卫”，不是新增业务修复
+- 命中的审计维度：D1/D5/D34/D49。
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_werewolves_great_wolf_spirit_move 的 source titan 若在响应前已离开基地"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "Great Wolf Spirit creates a start-of-turn move interaction and only offers bases where you are strictly ahead|titan_werewolves_great_wolf_spirit_move 的 source titan 若在响应前已离开基地"` -> `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这格只证明 `titan_werewolves_great_wolf_spirit_move` 在 source titan 离开原基地后的 stale prompt no-op 已重新落到当前工作树 smoke。
+  - 不外推 `werewolves_great_wolf_spirit_talent`、queued `onTurnStart` collector、其它 Werewolves Titans、或长期任务完成。
+
+## 2026-06-04 `sphinx` start-turn prompt stale gate 回补到当前工作树
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 对照实现：[`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/titans.ts>)
+- 权威来源：
+  - 旧 evidence 已把 `sphinx.start_turn_prompt_source_pin` 记成 dedicated 绿格，但当前工作树缺这条 focused smoke gate，只剩正向 `onTurnStart -> 回手埋葬牌 -> 进场` 和 queued handoff 旁证。
+  - 当前生产实现已经带 live 校验：`titan_sphinx_start_turn` resolve 时统一走 `getLiveSetAsideTitanPlayPromptTitan(...)`，要求 source titan 仍是当前玩家可进场的 `setaside` 狮身人面像。
+- 逐效果原子结论：
+  - 本轮不改业务逻辑，只把缺失的 focused smoke gate 补回当前工作树：
+    - `titan_sphinx_start_turn 的 source titan 若在响应前已离开牌库旁，不应继续沿旧 prompt 回手埋葬牌或进场`
+  - 夹具为：
+    - `fireTriggers(onTurnStart)` 真实打开 `titan_sphinx_start_turn`
+    - prompt 打开后，把 `t-sphinx-stale` 从 `setaside` 手工挪到 `base`
+    - 再由当前玩家响应待回手埋葬牌 `sphinx-stale-buried`
+  - 结果直接转绿，没有新的业务红灯：
+    - `resolved.events` 不含 `BURIED_CARD_RETURNED_TO_HAND / TITAN_PLAYED`
+    - `t-sphinx-stale` 仍保持手工构造的 `base` 位置
+    - `sphinx-stale-buried` 继续留在基地埋葬区
+  - 因此这轮实际收的是“把旧 evidence 已认定的 `sphinx.start_turn_prompt_source_pin` 同步回当前工作树自动守卫”，不是新增业务修复
+- 命中的审计维度：D1/D5/D34/D49。
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_sphinx_start_turn 的 source titan 若在响应前已离开牌库旁，不应继续沿旧 prompt 回手埋葬牌或进场"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "狮身人面像会在你的回合开始时创建回收埋葬牌并进场的交互|titan_sphinx_start_turn 的 source titan 若在响应前已离开牌库旁，不应继续沿旧 prompt 回手埋葬牌或进场"` -> `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这格只证明 `titan_sphinx_start_turn` 在 source titan 离开 `setaside` 后的 stale prompt no-op 已重新落到当前工作树 smoke。
+  - 不外推 `afterScoring` 埋葬牌回收、其它 Ancient Egyptians titan prompt、或长期任务完成。
+
+## 2026-06-04 `penguins_emperor_penguin` talent prompt stale gate 回补到当前工作树
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 对照实现：[`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/titans.ts>)
+- 权威来源：
+  - 旧 evidence 已把 `penguins_emperor_penguin.talent_prompt_source_pin` 记成 dedicated 绿格，但当前工作树没有对应 focused smoke gate，只剩正常天赋 happy path 与 borrowed/多实例旁证。
+  - 当前生产实现已经带 live 校验：`titan_penguins_emperor_penguin_talent` resolve 前会复核 `defId === 'penguins_emperor_penguin' && location.zone === 'base' && controllerId === playerId`。
+- 逐效果原子结论：
+  - 本轮不改业务逻辑，只把缺失的 focused smoke gate 补回当前工作树：
+    - `titan_penguins_emperor_penguin_talent 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 洗牌或给泰坦加标记`
+  - 夹具为：
+    - 先走真实 happy path：`USE_TALENT(t-emperor-stale)` 打开 `titan_penguins_emperor_penguin_talent`
+    - prompt 打开后，把 `t-emperor-stale` 从 `base` 手工挪到 `setaside`
+    - 再由当前玩家响应手牌低战力随从 `penguin-hand-minion`
+  - 结果直接转绿，没有新的业务红灯：
+    - `resolved.events` 不含 `REVEAL_HAND / CARD_TO_DECK_TOP / DECK_REORDERED / TITAN_POWER_COUNTER_ADDED`
+    - `t-emperor-stale` 仍保持 `location.zone === 'setaside'`
+    - `penguin-hand-minion` 继续留在手牌
+  - 因此这轮实际收的是“把旧 evidence 已认定的 `penguins_emperor_penguin.talent_prompt_source_pin` 同步回当前工作树自动守卫”，不是新增业务修复
+- 命中的审计维度：D1/D5/D34/D49。
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_penguins_emperor_penguin_talent 的 source titan 若在响应前已离开基地"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "企鹅帝皇天赋会把手中的低战力随从洗回牌库，并为泰坦增加 1 枚力量指示物|titan_penguins_emperor_penguin_talent 的 source titan 若在响应前已离开基地"` -> `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这格只证明 `titan_penguins_emperor_penguin_talent` 在 source titan 离开 `base` 后的 stale prompt no-op 已重新落到当前工作树 smoke。
+  - 不外推所有 Penguins prompt、borrowed 手牌/弃牌堆分支、或长期任务完成。
+
+## 2026-06-04 `super_spies_moon_zero_three` choose_player prompt stale gate 回补到当前工作树
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 对照实现：[`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/titans.ts>)
+- 权威来源：
+  - 旧 evidence 已把 `super_spies_moon_zero_three.choose_player_prompt_source_pin` 记成 dedicated 绿格，但当前工作树缺这条 focused smoke gate，只剩正常 talent happy path 和第二拍 `resolve` stale gate 旁证。
+  - 当前生产实现已经带 live 校验：`titan_super_spies_moon_zero_three_choose_player` resolve 前会复核 `defId/controllerId/location.zone==='base'`。
+- 逐效果原子结论：
+  - 本轮不改业务逻辑，只把缺失的 focused smoke gate 补回当前工作树：
+    - `titan_super_spies_moon_zero_three_choose_player 的 source titan 若在响应前已离开基地，不应继续沿旧 prompt 查看牌库顶`
+  - 夹具为：
+    - 先走真实 happy path：`USE_TALENT(t-moon-stale, baseIndex=0)` 打开 `titan_super_spies_moon_zero_three_choose_player`
+    - prompt 打开后，把 `t-moon-stale` 从 `base` 手工挪到 `setaside`
+    - 再由当前玩家响应 `{ targetPlayerId:'1' }`
+  - 结果直接转绿，没有新的业务红灯：
+    - `resolved.events` 不含 `DECK_INSPECTED`
+    - 不会继续排第二拍 `titan_super_spies_moon_zero_three_resolve`
+    - `t-moon-stale` 仍保持 `location.zone === 'setaside'`
+  - 因此这轮实际收的是“把旧 evidence 已认定的 `super_spies_moon_zero_three.choose_player_prompt_source_pin` 同步回当前工作树自动守卫”，不是新增业务修复
+- 命中的审计维度：D1/D5/D34/D49。
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_super_spies_moon_zero_three_choose_player 的 source titan 若在响应前已离开基地"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "三号空间站天赋会查看任一牌库顶并可将其放到牌库底|titan_super_spies_moon_zero_three_choose_player 的 source titan 若在响应前已离开基地"` -> `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这格只证明 `titan_super_spies_moon_zero_three_choose_player` 在 source titan 离开基地后的 stale prompt no-op 已重新落到当前工作树 smoke。
+  - 不外推第二拍 `resolve`、多人 inspect 排序、其它 Super Spies titan 语义、或长期任务完成。
+
+## 2026-06-04 `fairies_spirit_of_the_forest` clash move stale gate 回补到当前工作树
+
+- 审计范围：
+  - [`src/games/smashup/__tests__/smashup.smoke.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts>)
+  - 对照实现：[`src/games/smashup/abilities/titans.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/titans.ts>)
+- 权威来源：
+  - 旧 evidence 已把 `fairies_spirit_of_the_forest.clash_move_prompt_source_pin` 记成 dedicated 绿格，但当前工作树缺这条 focused smoke gate，只剩 clash happy path。
+  - 当前生产实现已经带 live 校验：`titan_fairies_spirit_of_the_forest_clash_move` resolve 前会复核 `defId/controllerId/location.zone/baseIndex === continuation.fromBaseIndex`。
+- 逐效果原子结论：
+  - 本轮不改业务逻辑，只把缺失的 focused smoke gate 补回当前工作树：
+    - `titan_fairies_spirit_of_the_forest_clash_move 的 source titan 若在响应前已离开原基地，不应继续沿旧 prompt 移除当前 live titan`
+  - 夹具为：
+    - `postProcessSystemEvents(TITAN_PLAYED)` 真实打开 `titan_fairies_spirit_of_the_forest_clash_move`
+    - prompt 打开后，把 `spirit-stale` 从 `baseIndex=0` 手工挪到 `baseIndex=1`
+    - 再由当前玩家响应 `skip/照常移除`
+  - 结果直接转绿，没有新的业务红灯：
+    - `resolved.events` 不含 `TITAN_REMOVED_FROM_PLAY / TITAN_MOVED`
+    - `spirit-stale` 继续留在手工构造的 `baseIndex=1`
+  - 因此这轮实际收的是“把旧 evidence 已认定的 `fairies_spirit_of_the_forest.clash_move_prompt_source_pin` 同步回当前工作树自动守卫”，不是新增业务修复
+- 命中的审计维度：D1/D5/D34/D49。
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "titan_fairies_spirit_of_the_forest_clash_move 的 source titan 若在响应前已离开原基地"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "丛林之灵输掉 titan clash 时可以改为移动到另一个基地|titan_fairies_spirit_of_the_forest_clash_move 的 source titan 若在响应前已离开原基地"` -> `1 file passed, 2 passed`
+- 未覆盖风险：
+  - 这格只证明 `titan_fairies_spirit_of_the_forest_clash_move` 在 source titan 离开原基地后的 stale prompt no-op 已重新落到当前工作树 smoke。
+  - 不外推控制权变化分支、移动到别的基地分支、其它 Fairies titan 语义、或长期任务完成。
 
 ## 2026-05-29 `werewolves_great_wolf_spirit` move prompt source-pin seam
 
@@ -19337,3 +19931,361 @@
   - 这格只证明当前 open 反馈指向的 `scoreBases -> ACTIVATE_SPECIAL` 共享合同，已经在 validator / reaction / AI 三层重新对齐。
   - 不外推所有 `responseWindow`、所有 `smashup_reaction_choose`、所有 `scoreBases` 兄弟 gate、或所有游戏的同类多消费者合同都已自动闭合。
   - 后续若继续沿 shared seam 扩审，应优先 grep “同一 helper 被 validator 修过，但 UI/reaction/AI/auto-advance 仍旁路读取旧字段”的家族，而不是把这次 2 条 open 反馈误报成 SmashUp 全量收口。
+
+## 2026-06-04 `ghosts_creampuff_man` stale second prompt focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/smashup.smoke.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里既有 focused gate 清单
+- 权威来源：
+  - 2026-05-28 旧 evidence 已封账 `ghosts_creampuff_man.stale_second_prompt_source_pin`，原 focused gate 为 `ghosts_creampuff_man 的 source titan 若在第二段响应前已离开基地，不应继续沿旧 play prompt 进入目标选择`
+  - 当前任务不是再改 `titans.ts` 业务逻辑，而是把旧 evidence 已存在的 gate 补回现行测试树，避免 current-worktree 对账继续漏这条 dedicated guard
+- 逐效果原子结论：
+  - 现行 [`smashup.smoke.test.ts`](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts) 原本已有奶油泡芙正向链：弃牌 -> `titan_ghosts_creampuff_man_play` -> 额外打出标准行动
+  - 本轮只在同文件补一条 current-worktree dedicated stale gate，不扩到 shared/helper 重构：
+    - 夹具：`cream-stale(zone='base', baseIndex=0)`、手牌 `ghost-cost`、弃牌堆 `bananas-discard`
+    - 首拍弃牌后进入 `titan_ghosts_creampuff_man_play`
+    - 响应前手工把 source titan 挪到 `setaside`
+    - 断言第二拍 no-op：不再创建 `titan_ghosts_creampuff_man_action_target`，也不再发 `ACTION_PLAYED / CARD_TO_DECK_BOTTOM`
+  - 这次补的是 current-worktree 对账缺口，不新增业务修复；真实语义仍以 2026-05-28 那次 source-pin 修复为准
+  - 宽口径 focused gate 对账结果从 `FOCUSED_MISSING_COUNT=45` 降到 `FOCUSED_MISSING_COUNT=44`
+- 命中的审计维度：
+  - D5 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "ghosts_creampuff_man 的 source titan 若在第二段响应前已离开基地，不应继续沿旧 play prompt 进入目标选择"` -> `1 file passed, 1 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=44`
+- 未覆盖风险：
+  - 这格只补回 `ghosts_creampuff_man` 的 current-worktree dedicated stale gate，不外推奶油泡芙整条 borrowed owner/source provenance family 都已重新审完。
+  - 其余仍缺的 `44` 条 focused gate 依旧待补；下一格优先级仍应放在“旧 evidence 已封账、现行测试树缺 dedicated title、且能最小风险补回”的对象上，而不是把这次补账误报成 SmashUp 审计完成。
+
+## 2026-06-04 `killer_plants_killer_kudzu` owner-deck focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/reactionQueueTitanRemovedFromPlay.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/reactionQueueTitanRemovedFromPlay.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已有 focused gate `被他人拥有的弃牌随从仍应洗回其拥有者牌库`
+  - 现行测试树其实已经有等价绿链 `Killer Kudzu 回收被他人拥有的弃牌随从时，应洗回其拥有者牌库`，本轮缺的是与 evidence 精确对齐的 dedicated 标题
+- 逐效果原子结论：
+  - 本轮未改 `killer_plants.ts` / reducer / queue 逻辑，只在现有 [`reactionQueueTitanRemovedFromPlay.test.ts`](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/reactionQueueTitanRemovedFromPlay.test.ts) 补一条 evidence 对齐标题
+  - 夹具与既有绿链保持一致：
+    - `P0.discard` 持有 `owner='1'` 的 `borrowed-sprout`
+    - `Killer Kudzu` 离场后走 `recycle=true`
+    - 断言 `borrowed-sprout` 从 `P0.discard` 移除，并进入 `P1.deck`
+  - 这格补的是 current-worktree dedicated 标题缺口，不是新的业务修复
+  - 宽口径 focused gate 对账结果进一步从 `FOCUSED_MISSING_COUNT=44` 降到 `FOCUSED_MISSING_COUNT=43`
+- 命中的审计维度：
+  - D5 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueTitanRemovedFromPlay.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "被他人拥有的弃牌随从仍应洗回其拥有者牌库"` -> `1 file passed, 1 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=43`
+- 未覆盖风险：
+  - 这格只说明 current-worktree 现在已包含与 evidence 完全对齐的 dedicated gate，不外推 `Killer Kudzu` 其余 owner/controller/runtime seam 都已重审。
+  - 其余仍缺的 `43` 条 focused gate 继续待补；下一格仍应优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的条目。
+
+## 2026-06-04 `pirate_buccaneer` prompt-controller focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已有 focused gate `owner 与 controller 分离时，三基地选择 prompt 应交给当前控制者`
+  - 现行 [`pirates-ongoing.test.ts`](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts) 原本只有基础版三基地 prompt 绿链，缺 owner/controller 分离版 dedicated 标题
+- 逐效果原子结论：
+  - 本轮未改 `pirates.ts` / replacement 流程，只在现有测试文件补一条 evidence 对齐 gate
+  - 夹具沿用旧 evidence 语义：
+    - `pirate_buccaneer` 设置为 `owner='1' / controller='0'`
+    - trigger context 人为给 `playerId='1'`，模拟事件 owner 视角
+    - 三基地场景下仍应只创建 `pirate_buccaneer_move` prompt，不直接移动
+  - 新断言锁两件事：
+    - `result.events` 为空
+    - `prompt.playerId === '0'`，说明 prompt 继续交给 live controller，而不是错误落到真实 owner / event player
+  - 宽口径 focused gate 对账结果进一步从 `FOCUSED_MISSING_COUNT=43` 降到 `FOCUSED_MISSING_COUNT=42`
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "owner 与 controller 分离时，三基地选择 prompt 应交给当前控制者"` -> `1 file passed, 1 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=42`
+- 未覆盖风险：
+  - 这格只补 current-worktree dedicated gate，不外推所有 replacement trigger、所有 `playerContext` 缺省路径、或整个海盗族持续能力都已重新审完。
+  - 其余仍缺的 `42` 条 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。
+
+## 2026-06-04 `super_spies_moon_zero_three` borrowed special focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已有 focused gate `borrowed 三号空间站 special 也应按当前控制者而不是真实 owner 判断合法基地并保留真实 owner`
+  - 现行仓已存在等价绿链 `三号空间站：判定其他玩家随从时应按控制者而非拥有者`，缺的是与 evidence 精确对齐的 dedicated 标题
+- 逐效果原子结论：
+  - 本轮未改 `titans.ts` / validator / special execute 逻辑，只在现有测试文件补一条 exact-title gate
+  - 夹具直接复用现成 controller/owner split 场景：
+    - `base 0` 上只有 `controller='0', owner='1'` 的 borrowed 友方随从
+    - `base 1` 上有 `controller='1'` 的敌方控制随从
+    - `Moon Zero Three` 位于 `setaside`
+  - 新 gate 继续锁住两件事：
+    - `baseIndex=0` 校验通过、`baseIndex=1` 校验拒绝
+    - 真实打出后 titan 仍落到合法基地，且 `ownerId/controllerId` 保持正确
+  - 宽口径 focused gate 对账结果进一步从 `FOCUSED_MISSING_COUNT=42` 降到 `FOCUSED_MISSING_COUNT=41`
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed 三号空间站 special 也应按当前控制者而不是真实 owner 判断合法基地并保留真实 owner"` -> `1 file passed, 1 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=41`
+- 未覆盖风险：
+  - 这格只补 current-worktree dedicated gate，不外推整个 `Moon Zero Three` inspect family、queued runtime source consumption、或 `special` 竞争窗口都已重审。
+  - 其余仍缺的 `41` 条 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。
+
+## 2026-06-04 `magical_girls_walking_castle` borrowed special focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/smashup.smoke.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已有 focused gate `borrowed 移动城堡 special 也应按当前控制者而不是真实 owner 判断合法基地并保留真实 owner`
+  - 现行 [`smashup.smoke.test.ts`](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/smashup.smoke.test.ts) 原本只有基础版 `移动城堡满足本基地有你至少 2 个随从后可通过 special 从牌库旁进场`，缺 borrowed controller/owner split 版 dedicated 标题
+- 逐效果原子结论：
+  - 本轮未改 `titans.ts` / special validator / execute 逻辑，只在现有 smoke 文件补一条 exact-title gate
+  - 夹具直接复用基础版 special 结构，但把 live 对象切成 borrowed 语义：
+    - `base 0` 上两只随从都为 `controller='0', owner='1'`
+    - `base 1` 上只有一只 `controller='0', owner='1'` 的随从，不满足门槛
+    - `Walking Castle` 本体为 `ownerId='1', controllerId='0', zone='setaside'`
+  - 新 gate 继续锁住两件事：
+    - `baseIndex=0` 校验通过、`baseIndex=1` 校验拒绝
+    - 打出后 live titan 仍保留 `ownerId='1' / controllerId='0'`，并落到 `baseIndex=0`
+  - 宽口径 focused gate 对账结果进一步从 `FOCUSED_MISSING_COUNT=41` 降到 `FOCUSED_MISSING_COUNT=40`
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed 移动城堡 special 也应按当前控制者而不是真实 owner 判断合法基地并保留真实 owner"` -> `1 file passed, 1 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=40`
+- 未覆盖风险：
+  - 这格只补 current-worktree dedicated gate，不外推 `Walking Castle` 的 talent 两拍 prompt、protect ongoing、或其它 Magical Girls sibling 都已重审。
+  - 其余仍缺的 `40` 条 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。
+
+## 2026-06-04 `vikings_viking_funeral` borrowed host owner-discard focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/abilities/vikings.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/vikings.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已有 focused gate `vikings_viking_funeral 的 borrowed 宿主被自己控制时仍应移出其拥有者弃牌堆`
+  - 现行 [`abilities/vikings.test.ts`](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/vikings.test.ts) 原本只有基础版 queued discard trigger 绿链，缺 borrowed 宿主 + 真实 owner discard 落点的 dedicated 标题
+- 逐效果原子结论：
+  - 本轮未改 `vikings.ts` / queue / reducer 逻辑，只在现有测试文件补一条 exact-title gate，并把证据从“只看 emitted event”加硬到 reduce 后状态
+  - 夹具沿用 queued discard trigger 路线：
+    - 宿主 `borrowed-host` 为 `controller='0', owner='1'`
+    - 附着行动 `vikings_viking_funeral` 的 `ownerId='0'`
+    - queued resolve 前，把 `borrowed-host` 放入 `P1.discard`
+  - 新 gate 锁三件事：
+    - 仍给 `P0` 奖励 `1 VP`
+    - `CARD_REMOVED_FROM_GAME.payload.playerId === '1'`
+    - reduce 后 `borrowed-host` 从 `P1.discard` 消失，并进入 `P1.removedFromGame`
+  - 宽口径 focused gate 对账结果进一步从 `FOCUSED_MISSING_COUNT=40` 降到 `FOCUSED_MISSING_COUNT=39`
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/vikings.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "vikings_viking_funeral 的 borrowed 宿主被自己控制时仍应移出其拥有者弃牌堆"` -> `1 file passed, 1 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=39`
+- 未覆盖风险：
+  - 这格只补 current-worktree dedicated gate，不外推所有 Vikings attached-action discard trigger、所有 `CARD_REMOVED_FROM_GAME` owner-zone sibling、或整族审计已完成。
+  - 其余仍缺的 `39` 条 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。
+
+## 2026-06-04 `base_star_portal` buried-controller focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/bases/ancient-egyptian-bases.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/ancient-egyptian-bases.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已有 focused gate `base_star_portal 在其他玩家埋牌到这里时让埋葬者抽牌`
+  - 现行 [`ancient-egyptian-bases.test.ts`](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/ancient-egyptian-bases.test.ts) 原本只有基础版 `base_star_portal_pod` 埋牌抽牌链和同玩家 direct trigger 绿链，缺的是与 evidence 精确对齐的 dedicated 标题
+- 逐效果原子结论：
+  - 本轮未改 `ancient_egyptians.ts` / base ability / bury runtime，只在现有测试文件补一条 exact-title gate
+  - 夹具沿用旧 evidence 语义：
+    - `P1.hand` 持有 `bury-me(owner='1')`
+    - `buildBuryCardEvents(...)` 把它埋到 `base_star_portal`
+    - reduce 后再以 `playerId='0'`、`buriedCardControllerId='1'` 触发 `onCardBuried`
+  - 新 gate 继续锁住两件事：
+    - `CARD_BURIED` 真实发生
+    - 抽牌事件继续归 `P1` 而不是 event player `P0`
+  - 这格补的是 current-worktree dedicated 标题缺口，不是新的业务修复
+  - 宽口径 focused gate 对账结果进一步从 `FOCUSED_MISSING_COUNT=39` 降到 `FOCUSED_MISSING_COUNT=38`
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/bases/ancient-egyptian-bases.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "base_star_portal 在其他玩家埋牌到这里时让埋葬者抽牌"` -> `1 file passed, 1 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=38`
+- 未覆盖风险：
+  - 这格只补 current-worktree dedicated gate，不外推 `base_star_portal` 全部 bury family、`pharaoh` 邻近 owner/controller seam、或整个 Ancient Egyptians 基地审计已完成。
+  - 其余仍缺的 `38` 条 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。
+
+## 2026-06-04 `killer_plants onTurnStart borrowed family` focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/abilities/killer_plants.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/killer_plants.ts)
+  - [src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已封账 3 条 focused gate：
+    - `borrowed Overgrowth 应按控制者而不是真实 owner 在控制者回合开始降低临界点`
+    - `borrowed Entangled 应按控制者而不是真实 owner 在控制者回合开始自毁`
+    - `borrowed Choking Vines 应按控制者而不是真实 owner 在控制者回合开始消灭宿主`
+  - 当前工作树已有 owner-turn 基础版 `sourceController queued onTurnStart trigger 仍应只在拥有者回合开始...` 系列，但缺的是与旧 evidence 精确对齐的 borrowed exact-title dedicated 标题
+- 逐效果原子结论：
+  - 本轮先在现有 [`reactionQueueEventPlayerContext.test.ts`](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts) 复用同文件 borrowed 写法补 3 条 exact-title gate；首轮 current-worktree 复跑不是假缺标题，而是 3 条都直接红灯，只产出 `TRIGGER_CONSUMED`，没有继续发真实效果事件
+  - 根因收敛在 [`killer_plants.ts`](/D:/gongzuo/webgame/BoardGame/src/games/smashup/abilities/killer_plants.ts) 的 3 个 `onTurnStart` runtime callback，仍按真实 `ownerId` 判“当前回合玩家”：
+    - `killerPlantChokingVinesTrigger()` 用 `attached.ownerId !== ctx.playerId`
+    - `killerPlantOvergrowthTrigger()` 只统计 `a.ownerId === ctx.playerId`
+    - `killerPlantEntangledDestroyTrigger()` 用 `entangled.ownerId !== ctx.playerId`
+  - 当前最小修复只落在这 3 处 runtime 判定：
+    - `Choking Vines` 改为按 `attached.metadata?.sourceControllerId ?? attached.ownerId` 判 controller，并把 `destroyMinion(... destroyerId)` 同步写成当前 controller
+    - `Overgrowth` 改为按 `ongoing.metadata?.sourceControllerId ?? ongoing.ownerId` 统计当前回合应生效的实例数
+    - `Entangled` 自毁改为按 `metadata.sourceControllerId ?? ownerId` 判控制者，同时继续保留 `ONGOING_DETACHED.ownerId` 为真实 owner
+  - 不扩到 `Entangled` protection checker、`Choking Vines` destroyer provenance sibling、`Overgrowth` same-def source runtime、或 shared onTurnStart framework
+  - `borrowed Choking Vines`：
+    - 宿主 `owner='1'`，附着行动 `ownerId='1', metadata.sourceControllerId='0'`
+    - `P0` 回合开始时仍排出 `ownerPlayerId='0' / sourceControllerId='0'`
+    - resolve 后继续销毁宿主，不把控制权洗回真实 owner
+  - `borrowed Entangled`：
+    - `ongoingActions` 中的 live 卡保持 `ownerId='1', metadata.sourceControllerId='0'`
+    - `P0` 回合开始时仍排出 `ownerPlayerId='0'`
+    - resolve 后 `ONGOING_DETACHED.ownerId` 继续保留真实 owner `1`，并落入 `P1.discard`
+  - `borrowed Overgrowth`：
+    - `P0` 回合开始时仍排出 `ownerPlayerId='0' / sourceControllerId='0'`
+    - resolve 后继续只给当前基地写入 `BREAKPOINT_MODIFIED(delta=-12)`，不把 turn-boundary ownership 洗回真实 owner
+  - 因此这轮不是纯标题补账，而是 current-worktree focused gate 首轮坐实了旧 runtime 仍漏 borrowed controller seam；修复后宽口径 focused gate 对账结果从 `FOCUSED_MISSING_COUNT=38` 进一步降到 `FOCUSED_MISSING_COUNT=35`
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - 首轮：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed Choking Vines 应按控制者而不是真实 owner 在控制者回合开始消灭宿主|borrowed Entangled 应按控制者而不是真实 owner 在控制者回合开始自毁|borrowed Overgrowth 应按控制者而不是真实 owner 在控制者回合开始降低临界点"` -> `1 file failed, 3 failed`
+  - 修复后：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "sourceController queued onTurnStart trigger 仍应只在拥有者回合开始让 Choking Vines 消灭其附着随从|borrowed Choking Vines 应按控制者而不是真实 owner 在控制者回合开始消灭宿主|sourceController queued onTurnStart trigger 仍应只在拥有者回合开始让 Entangled 自毁|borrowed Entangled 应按控制者而不是真实 owner 在控制者回合开始自毁|sourceController queued onTurnStart trigger 仍应只在拥有者回合开始让 Overgrowth 写入 breakpoint modifier|borrowed Overgrowth 应按控制者而不是真实 owner 在控制者回合开始降低临界点"` -> `1 file passed, 6 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=35`
+- 未覆盖风险：
+  - 这格只闭合 `Choking Vines / Entangled / Overgrowth` 的 borrowed turn-start controller seam，不外推 `Entangled` 保护 checker、`Choking Vines` destroyer provenance、`Overgrowth` same-def source runtime、或整个 Killer Plants family 都已重审。
+  - 其余仍缺的 `35` 条 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。
+
+## 2026-06-04 `borrowed zombie_overrun / bear_necessities_pod / Infiltrate base family` focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/baseRestrictions.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/baseRestrictions.test.ts)
+  - [src/games/smashup/__tests__/bases/laboratorium-base.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/laboratorium-base.test.ts)
+  - [src/games/smashup/__tests__/bases/moot-site-base.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/moot-site-base.test.ts)
+  - [src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts)
+  - [src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已有 5 条 focused gate：
+    - `borrowed zombie_overrun 应按控制者而不是真实 owner 限制其他玩家打随从到此基地`
+    - `borrowed bear_cavalry_bear_necessities_pod 应按控制者而不是真实 owner 在下回合开始时自毁`
+    - `borrowed Infiltrate 由控制者控制时，应阻止 Laboratorium 给控制者打出的首个随从放指示物`
+    - `borrowed Infiltrate 由控制者控制时，应阻止 Moot Site 给控制者打出的首个随从 +2 临时力量`
+    - `borrowed Infiltrate 由控制者控制时，应阻止 Mountains of Madness 让控制者自己打出的随从拥有者抽疯狂卡`
+  - 当前工作树已有相邻绿链：
+    - `baseRestrictions.test.ts` 已覆盖 `Tsar’s Palace / Antarctic Base` 的 borrowed Infiltrate controller seam
+    - `baseAbilityIntegration.test.ts` 已覆盖 `Castle Blood`
+    - `reactionQueueEventPlayerContext.test.ts` 已覆盖基础版 `Bear Necessities POD` start-turn 自毁
+    - `zombies.ts / baseAbilities.ts` 的现行实现也已按 `metadata.sourceControllerId ?? ownerId` 读取控制者
+- 逐效果原子结论：
+  - 这轮没有再改实现，只是在现行测试树补 exact-title dedicated gate
+  - `borrowed zombie_overrun`：
+    - 新 gate 直接落在 restriction 侧，而不是误补到 self-destruct 侧
+    - 断言 `playerId='1'` 被拦截、`playerId='0'` 放行，锁住 borrowed restriction 的 controller 语义
+  - `borrowed bear_cavalry_bear_necessities_pod`：
+    - 复用同文件基础版 queued self-destruct 夹具
+    - `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed source 仍在 `P0` 回合开始入队并自毁，但 detached 后继续回到 `P1.discard`
+  - `borrowed Infiltrate -> Laboratorium / Moot Site / Mountains of Madness`：
+    - 三条都复用各自基础版 base ability contract 夹具
+    - 统一锁住 `ownerId='1', metadata.sourceControllerId='0'` 的 borrowed Infiltrate 仍应把“忽略基地能力”的资格给当前控制者 `P0`
+    - 因此分别不再给 `Laboratorium` 放 +1 指示物、不再给 `Moot Site` 加 +2 临时力量、不再让 `Mountains of Madness` 给该随从拥有者抽疯狂卡
+  - 这批都是 current-worktree dedicated 标题补账，不是新的业务修复
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseRestrictions.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed zombie_overrun 应按控制者而不是真实 owner 限制其他玩家打随从到此基地"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/bases/laboratorium-base.test.ts src/games/smashup/__tests__/bases/moot-site-base.test.ts src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed Infiltrate 由控制者控制时，应阻止 Laboratorium 给控制者打出的首个随从放指示物|borrowed Infiltrate 由控制者控制时，应阻止 Moot Site 给控制者打出的首个随从 +2 临时力量|borrowed Infiltrate 由控制者控制时，应阻止 Mountains of Madness 让控制者自己打出的随从拥有者抽疯狂卡"` -> `3 files passed, 3 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed bear_cavalry_bear_necessities_pod 应按控制者而不是真实 owner 在下回合开始时自毁|sourceController queued onTurnStart trigger 仍应只在拥有者回合开始让 Bear Necessities POD 自毁"` -> `1 file passed, 2 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=26`
+- 未覆盖风险：
+  - 这格只补 `borrowed zombie_overrun / bear_cavalry_bear_necessities_pod / Infiltrate-Laboratorium/Moot Site/Mountains of Madness` 这 5 条 dedicated gate，不外推整个 Zombies restriction family、整个 Bear Cavalry family、或全部 Infiltrate 消费者都已重审。
+  - 其余 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。
+
+## 2026-06-04 `skeletons_returned_one / skeletons_place_em_down / Fledgling Vampire POD` trueOwner focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/abilities/skeletons.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/skeletons.test.ts)
+  - [src/games/smashup/__tests__/abilities/vampires.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/vampires.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已封账这 3 条 trueOwner seam：
+    - `skeletons_returned_one 自埋 borrowed 随从时应保留真实 trueOwnerId`
+    - `skeletons_place_em_down 埋葬 borrowed 弃牌堆随从时应保留真实 trueOwnerId`
+    - `borrowed Fledgling Vampire POD 从当前玩家手牌埋葬时，仍应保留真实 trueOwnerId`
+  - 当前工作树里：
+    - `skeletons.ts` 已通过 `getBuryChoiceTrueOwner(...)` 与 `buildDiscardBuryEvents(...)` 读取真实 owner
+    - `vampires.ts` 的 `vampire_fledgling_vampire_pod_bury_source / bury_base` 已把所选手牌的 `owner` 透传到 `trueOwnerId`
+  - 因此这轮优先判断为 current-worktree dedicated gate 补回，而不是预设要再改实现
+- 逐效果原子结论：
+  - 这轮没有再改生产实现，只在现行测试树补 exact-title dedicated gate
+  - `轮回者（skeletons_returned_one）`：
+    - 复用“正常打出后自埋”的原路径，只把手牌来源改成 `owner='1', playerId='0'` 的 borrowed 随从
+    - 断言自埋后 buried card 继续保留 `controllerId='0'` 与 `trueOwnerId='1'`
+  - `往下埋（skeletons_place_em_down）`：
+    - 复用原“先选基地再从弃牌堆埋葬”夹具，只把弃牌堆目标改成 borrowed minion
+    - 断言埋葬后的 buried card 继续保留 `trueOwnerId='1'`
+  - `新生吸血鬼 POD（vampire_fledgling_vampire_pod）`：
+    - 复用现有 `Big Gulp POD -> destroy -> reaction -> bury source -> bury base` 管线
+    - 当前玩家 P0 从自己手牌区位选择 `owner='1'` 的 borrowed `Fledgling POD` 后，最终 buried card 继续保留 `controllerId='0'` 与 `trueOwnerId='1'`
+  - 这 3 条在当前工作树都表现为纯补账绿链，不是新的实现红灯
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/skeletons.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "skeletons_returned_one 自埋 borrowed|skeletons_place_em_down 埋葬 borrowed"` -> `1 file passed, 2 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/vampires.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed Fledgling Vampire POD 从当前玩家手牌埋葬时，仍应保留真实 trueOwnerId"` -> `1 file passed, 1 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=26`
+- 未覆盖风险：
+  - 这格只补 `轮回者 / 往下埋 / 新生吸血鬼 POD` 的 trueOwner dedicated gate，不外推所有 bury/uncover 来源、所有 borrowed hand/discard source、或整个 Skeletons / Vampires family 已重审。
+  - 其余 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。
+
+## 2026-06-04 `skeletons_gravestones / Entangled / Hideout POD` borrowed controller focused gate 当前工作树补回
+
+- 审计范围：
+  - [src/games/smashup/__tests__/abilities/skeletons.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/skeletons.test.ts)
+  - [src/games/smashup/__tests__/abilities/killer-plants.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/killer-plants.test.ts)
+  - [src/games/smashup/__tests__/abilities/tricksters.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/tricksters.test.ts)
+  - 对账基线仍使用 [evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md) 里的 focused gate 清单
+- 权威来源：
+  - 旧 evidence 已封账这 3 条 borrowed controller seam：
+    - `borrowed skeletons_gravestones 应按控制者而不是真实 owner 在计分后把自己埋到另一基地，并保留 true owner`
+    - `borrowed Entangled 在只有控制者随从而没有真实 owner 随从时，也应按控制者触发保护`
+    - `borrowed Hideout POD 应按控制者而不是真实 owner 阻止其他玩家把随从移动到此基地`
+  - 当前工作树里：
+    - `skeletons.ts` 的 `handleSkeletonsGravestonesAfterScoring(...)` 已按 `metadata.sourceControllerId ?? ownerId` 反查 live source，并把 `trueOwnerId` 写成 action 自身 `ownerId`
+    - `killer_plants.ts` 的 `killerPlantEntangledChecker(...)` 当前树已能通过 dedicated gate 证明 borrowed controller protection 语义成立
+    - `tricksters.ts` 的 `trickster_hideout_pod` move interceptor 当前树已按 `metadata.sourceControllerId ?? ownerId` 判阻止移动
+  - 因此这轮先按 current-worktree dedicated gate 补回处理，而不是预设要再改生产实现
+- 逐效果原子结论：
+  - 这轮没有再改生产实现，只在现行测试树补 exact-title dedicated gate
+  - `墓碑（skeletons_gravestones）`：
+    - 复用现有 `afterScoring -> 选择目标基地 -> 埋葬自身` 直链夹具
+    - 只把 ongoing source 改成 `ownerId='1', metadata.sourceControllerId='0'`
+    - 断言计分后由控制者 `P0` 把自己埋到另一基地，且 buried card 继续保留 `controllerId='0' / trueOwnerId='1'`
+  - `纠缠（killer_plant_entangled）`：
+    - 复用现有 move-protection 夹具
+    - 基地上只放控制者 `P0` 的随从与对手 `P1` 的随从，不再放真实 owner `P1` 的己方随从
+    - 断言 borrowed `Entangled(ownerId='1', sourceControllerId='0')` 仍按控制者语义生效，基地上随从继续被“不可移动”保护
+  - `藏身处 POD（trickster_hideout_pod）`：
+    - 复用现有 `MINION_MOVED -> interceptEvent(...)` 拦截器夹具
+    - 目标基地 ongoing source 改成 `ownerId='1', metadata.sourceControllerId='0'`
+    - 断言其他玩家 `P1` 的随从仍会被阻止移动到该基地，不把权限洗回真实 owner
+  - 这 3 条在当前工作树都表现为纯补账绿链，不是新的实现红灯
+- 命中的审计维度：
+  - D34 / D49
+- 已验证测试/证据：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/skeletons.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed skeletons_gravestones 应按控制者而不是真实 owner 在计分后把自己埋到另一基地，并保留 true owner"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/killer-plants.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed Entangled 在只有控制者随从而没有真实 owner 随从时，也应按控制者触发保护"` -> `1 file passed, 1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/tricksters.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "borrowed Hideout POD 应按控制者而不是真实 owner 阻止其他玩家把随从移动到此基地"` -> `1 file passed, 1 passed`
+  - 宽口径 focused gate 对账脚本 -> `FOCUSED_MISSING_COUNT=23`
+- 未覆盖风险：
+  - 这格只补 `墓碑 / 纠缠 / 藏身处 POD` 这 3 条 borrowed controller dedicated gate，不外推整个 Skeletons / Killer Plants / Tricksters family 都已重审。
+  - 其余 focused gate 继续待补；下一格仍优先挑“旧 evidence 已封账、现行仓已有现成绿链或最小夹具可复用”的对象。

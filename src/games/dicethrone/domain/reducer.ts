@@ -10,12 +10,12 @@ import type {
     HeroState,
 } from './types';
 import type { RandomFn } from '../../../engine/types';
-import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getTokenStackLimit, getRollerId } from './rules';
+import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getPendingBonusSettlementDice, getTokenStackLimit, getRollerId } from './rules';
 import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
-import { initHeroState, createCharacterDice } from './characters';
+import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
 import { removeCard } from './utils';
 import { isTreantTreeSpiritToken } from './passiveAbility';
@@ -282,6 +282,7 @@ const handleAbilityActivated: EventHandler<Extract<DiceThroneEvent, { type: 'ABI
     }
 
     let rollDiceCount = state.rollDiceCount;
+    let rollLimit = state.rollLimit;
     let dice = state.dice;
 
     // 防御技能选择后，根据技能定义设置 rollDiceCount
@@ -293,11 +294,17 @@ const handleAbilityActivated: EventHandler<Extract<DiceThroneEvent, { type: 'ABI
             if (a.id === abilityId) return true;
             return a.variants?.some(v => v.id === abilityId);
         });
-        if (ability?.trigger) {
-            const triggerDiceCount = (ability.trigger as { diceCount?: number }).diceCount;
+        const matchedVariant = ability?.variants?.find(variant => variant.id === abilityId);
+        const trigger = matchedVariant?.trigger ?? ability?.trigger;
+        if (trigger) {
+            const triggerDiceCount = (trigger as { diceCount?: number }).diceCount;
             if (triggerDiceCount !== undefined && triggerDiceCount > 0) {
                 rollDiceCount = triggerDiceCount;
                 dice = resetDiceArray(state.dice, triggerDiceCount);
+            }
+            const triggerRollLimit = (trigger as { rollLimit?: number }).rollLimit;
+            if (triggerRollLimit !== undefined && triggerRollLimit > 0) {
+                rollLimit = triggerRollLimit;
             }
         }
     }
@@ -306,6 +313,7 @@ const handleAbilityActivated: EventHandler<Extract<DiceThroneEvent, { type: 'ABI
         ...state,
         activatingAbilityId: abilityId,
         pendingAttack: { ...state.pendingAttack, defenseAbilityId: abilityId },
+        rollLimit,
         rollDiceCount,
         dice,
     };
@@ -886,7 +894,7 @@ const handleBonusDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
     // 更新 pendingBonusDiceSettlement
     let pendingBonusDiceSettlement = state.pendingBonusDiceSettlement;
     if (state.pendingBonusDiceSettlement) {
-        const newDice = state.pendingBonusDiceSettlement.dice.map(d =>
+        const newDice = getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(d =>
             d.index === dieIndex ? { ...d, value: newValue, face: newFace, effectParams } : d);
         pendingBonusDiceSettlement = {
             ...state.pendingBonusDiceSettlement,
@@ -965,6 +973,31 @@ const handleHeroInitialized: EventHandler<Extract<DiceThroneEvent, { type: 'HERO
         ...state,
         players: { ...state.players, [playerId]: heroState },
         dice: shouldCreateDice ? createCharacterDice(characterId) : state.dice,
+    };
+};
+
+const handlePlayerBoardFaceChanged: EventHandler<Extract<DiceThroneEvent, { type: 'PLAYER_BOARD_FACE_CHANGED' }>> = (
+    state,
+    event,
+) => {
+    const { playerId, face } = event.payload;
+    const player = state.players[playerId];
+    if (!player || player.playerBoardFace === face || player.characterId === 'unselected') return state;
+
+    return {
+        ...state,
+        players: {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                playerBoardFace: face,
+                abilities: buildHeroAbilitiesForFace(
+                    player.characterId,
+                    face,
+                    player.abilityLevels,
+                ),
+            },
+        },
     };
 };
 
@@ -1089,6 +1122,8 @@ export const reduce = (
             return handleCharacterSelected(state, event);
         case 'HERO_INITIALIZED':
             return handleHeroInitialized(state, event);
+        case 'PLAYER_BOARD_FACE_CHANGED':
+            return handlePlayerBoardFaceChanged(state, event);
         case 'HOST_STARTED':
             return handleHostStarted(state, event);
         case 'OFFENSIVE_ROLL_ATTEMPTS_RECORDED':

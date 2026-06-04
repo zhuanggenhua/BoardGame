@@ -1,6 +1,7 @@
 import type { MatchState } from '../types';
 import type { EngineSystem } from '../systems/types';
 import type { GameEngineConfig } from '../transport/server';
+import { normalizeSmashUpMatchStateForUi } from '../../games/smashup/ui/normalizeRuntimeState';
 
 const SPECTATOR_PLAYER_ID = '__spectator__';
 
@@ -26,5 +27,9 @@ export function applyPlayerViewToState(
         viewSys = { ...(viewSys as Record<string, unknown>), ...sysPartial };
     }
 
-    return { sys: viewSys, core: viewCore };
+    const viewState = { sys: viewSys, core: viewCore };
+    if (engineConfig.gameId === 'smashup') {
+        return normalizeSmashUpMatchStateForUi(viewState as MatchState<any>) as MatchState<unknown>;
+    }
+    return viewState;
 }

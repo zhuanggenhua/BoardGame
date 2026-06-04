@@ -25,6 +25,7 @@ import type { AbilityEffect } from '../domain/combat';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { GameTestRunner, type TestCase } from '../../../engine/testing';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type { EngineSystem } from '../../../engine/systems/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { initHeroState } from '../domain/characters';
 
@@ -4823,6 +4824,136 @@ describe('王权骰铸流程测试', () => {
     });
 
     describe('阶段推进防护（状态驱动回归测试）', () => {
+        it('loaded 旧奖励骰脏状态在 defensiveRoll 执行 ADVANCE_PHASE 时会先归一化，不再因 dice.map 崩溃', () => {
+            const playerIds: PlayerId[] = ['0', '1'];
+            const random = createQueuedRandom([1]);
+            const state = createInitializedState(playerIds, random);
+
+            state.sys.phase = 'defensiveRoll';
+            state.core.activePlayerId = '0';
+            state.core.rollCount = 1;
+            state.core.rollDiceCount = 5;
+            state.core.rollConfirmed = true;
+            state.core.activatingAbilityId = 'stand-tall';
+            state.core.selectedCharacters['0'] = 'ninja' as any;
+            state.core.selectedCharacters['1'] = 'samurai' as any;
+            state.core.dice = [
+                { id: 0, definitionId: 'samurai-dice', value: 6, symbol: 'rising_sun', symbols: ['rising_sun'], isKept: false },
+                { id: 1, definitionId: 'samurai-dice', value: 6, symbol: 'rising_sun', symbols: ['rising_sun'], isKept: false },
+                { id: 2, definitionId: 'samurai-dice', value: 6, symbol: 'rising_sun', symbols: ['rising_sun'], isKept: false },
+                { id: 3, definitionId: 'samurai-dice', value: 1, symbol: 'katana', symbols: ['katana'], isKept: false },
+                { id: 4, definitionId: 'samurai-dice', value: 1, symbol: 'katana', symbols: ['katana'], isKept: false },
+            ];
+            state.core.pendingAttack = {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'slash-2-4',
+                defenseAbilityId: 'stand-tall',
+                isDefendable: true,
+                damage: 6,
+                preDefenseResolved: true,
+                defenseResolved: false,
+                damageResolved: false,
+                attackDiceValues: [3, 2, 2, 6, 1],
+                attackDiceFaceCounts: {
+                    ninja_katana: 4,
+                    shuriken: 0,
+                    mask: 1,
+                },
+            } as any;
+            state.core.pendingBonusDiceSettlement = {
+                id: 'legacy-loaded-bonus-settlement',
+                sourceAbilityId: 'slash-2-4',
+                attackerId: '0',
+                targetId: '1',
+                dice: { legacy: true } as any,
+                rerollCostTokenId: TOKEN_IDS.NINJUTSU,
+                rerollCostAmount: 0,
+                rerollCount: 0,
+                maxRerollCount: 1,
+                readyToSettle: false,
+            } as any;
+
+            const result = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                state,
+                { ...cmd('ADVANCE_PHASE', '1'), timestamp: Date.now() } as any,
+                random,
+                playerIds,
+            );
+
+            expect(result.success).toBe(true);
+            if (!result.success) {
+                expect(result.error?.message).not.toContain('dice.map');
+                return;
+            }
+            expect(result.state.sys.phase).toBe('main2');
+            expect(result.state.core.pendingAttack).toBeNull();
+        });
+
+        it('authoritative 旧奖励骰脏状态应在 beforeCommand 之前先归一化，避免服务端命令链因 dice.map 崩溃', () => {
+            const playerIds: PlayerId[] = ['0', '1'];
+            const random = createQueuedRandom([1]);
+            const state = createInitializedState(playerIds, random);
+            const probeShapes: string[] = [];
+
+            state.core.pendingBonusDiceSettlement = {
+                id: 'legacy-authoritative-settlement',
+                sourceAbilityId: 'slash-2-4',
+                attackerId: '0',
+                targetId: '1',
+                dice: {
+                    legacy: true,
+                    value: 1,
+                    effectKey: 'bonusDie.effect.ninjaNinjutsu',
+                } as any,
+                displayOnly: true,
+                rerollCount: 0,
+                readyToSettle: false,
+            } as any;
+            state.sys.interaction.current = createSimpleChoice(
+                'legacy-authoritative-choice',
+                '0',
+                '测试服务端 authoritative 旧奖励骰 shape',
+                [
+                    {
+                        id: 'option-0',
+                        label: '继续',
+                        value: { continue: true },
+                    },
+                ],
+                { sourceId: 'slash-2-4' },
+            );
+
+            const probeSystem: EngineSystem<any> = {
+                id: 'legacy-bonus-dice-before-command-probe',
+                name: 'legacy-bonus-dice-before-command-probe',
+                priority: -1000,
+                beforeCommand: (ctx) => {
+                    const dice = (ctx.state.core as any).pendingBonusDiceSettlement?.dice as Array<{ value?: number }>;
+                    probeShapes.push(Array.isArray(dice) ? 'array' : 'not-array');
+                    dice.map((die) => die?.value ?? 0);
+                    return undefined;
+                },
+            };
+
+            const result = executePipeline(
+                { domain: DiceThroneDomain, systems: [probeSystem, ...testSystems] },
+                state,
+                { ...cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }), timestamp: Date.now() } as any,
+                random,
+                playerIds,
+            );
+
+            expect(probeShapes).toEqual(['array']);
+            expect(result.success).toBe(true);
+            if (!result.success) {
+                expect(result.error?.message).not.toContain('dice.map');
+                return;
+            }
+            expect(result.state.sys.interaction.current).toBeUndefined();
+        });
+
         it('main1 阶段 BONUS_DICE_SETTLED 不触发阶段推进', () => {
             // 模拟卡牌效果在 main1 触发奖励骰重掷交互，结算后阶段应停留在 main1
             const random = createQueuedRandom([1, 1, 1, 1, 1]);

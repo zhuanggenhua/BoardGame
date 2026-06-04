@@ -56,6 +56,7 @@ import {
     checkPlayUpgradeCard,
     getAvailableAbilityIds,
     getActiveDice,
+    getPendingBonusSettlementDice,
     getSeatingOrder,
 } from './rules';
 import { RESOURCE_IDS } from './resources';
@@ -477,15 +478,15 @@ const validateToggleDieLock = (
     playerId: PlayerId,
     phase: TurnPhase
 ): ValidationResult => {
-    // 只允许在进攻阶段锁定骰子
-    if (phase !== 'offensiveRoll' && phase !== 'targetingRoll') {
+    if (phase !== 'offensiveRoll' && phase !== 'targetingRoll' && phase !== 'defensiveRoll') {
         return fail('invalid_phase');
     }
-    
-    if (!isMoveAllowed(playerId, state.activePlayerId)) {
+
+    const rollerId = getRollerId(state, phase);
+    if (!isMoveAllowed(playerId, rollerId)) {
         return fail('player_mismatch');
     }
-    
+
     if (state.rollCount === 0) {
         return fail('no_roll_yet');
     }
@@ -1305,7 +1306,7 @@ const validateRerollBonusDie = (
     }
     // 检查骰子索引是否有效
     const dieIndex = cmd.payload.dieIndex;
-    const die = state.pendingBonusDiceSettlement.dice.find(d => d.index === dieIndex);
+    const die = getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).find(d => d.index === dieIndex);
     if (!die) {
         return fail('invalid_die_index');
     }

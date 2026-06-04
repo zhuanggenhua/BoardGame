@@ -149,8 +149,14 @@ async function getLongzuEvidenceState(game: any): Promise<Record<string, any>> {
                 defId: minion.defId,
                 controller: minion.controller,
                 owner: minion.owner,
+                basePower: minion.basePower,
                 powerCounters: minion.powerCounters,
+                powerModifier: minion.powerModifier,
                 tempPowerModifier: minion.tempPowerModifier,
+                effectivePower: (minion.basePower ?? 0)
+                    + (minion.powerCounters ?? 0)
+                    + (minion.powerModifier ?? 0)
+                    + (minion.tempPowerModifier ?? 0),
                 attachedActions: (minion.attachedActions ?? []).map((action: any) => ({
                     uid: action.uid,
                     defId: action.defId,
@@ -288,6 +294,49 @@ test.describe('SmashUp longzu 三派系 L3-L4 真实入口', () => {
         expect(state.players['1'].discard.map((card: any) => card.uid)).toContain('discard-b');
         expect(state.bases[0].minions.map((minion: any) => minion.uid)).toContain('play-minion');
         await game.screenshot('dragons-dangerous-ground-03-resolved', testInfo);
+    });
+
+    test('龙：幼龙会让对手通过卷走移入本基地的随从本回合 -1 力量', async ({ page, game }, testInfo) => {
+        test.setTimeout(180000);
+        await openLongzuScene(game, {
+            currentPlayer: '1',
+            player0: {
+                factions: ['dragons', 'superheroes'],
+            },
+            player1: {
+                factions: ['tornados', 'aliens'],
+                hand: [{ uid: 'carried-away', defId: 'tornados_carried_away', type: 'action', owner: '1' }],
+            },
+            bases: [
+                {
+                    defId: 'base_dragons_lair',
+                    minions: [{ uid: 'hatchling', defId: 'dragons_hatchling', owner: '0', controller: '0', basePower: 2 }],
+                },
+                {
+                    defId: 'base_converted_cave',
+                    minions: [{ uid: 'moving-fan', defId: 'geeks_fan', owner: '1', controller: '1', basePower: 2 }],
+                },
+            ],
+        });
+
+        await game.screenshot('dragons-hatchling-carried-away-01-before-move', testInfo);
+        await dispatchSmashUpCommand(page, 'su:play_action', {
+            cardUid: 'carried-away',
+            targetBaseIndex: 1,
+            targetMinionUid: 'moving-fan',
+        }, '1');
+        await game.waitForInteraction('tornados_carried_away_dest', 10000);
+        await game.screenshot('dragons-hatchling-carried-away-02-destination-choice', testInfo);
+        await chooseOption(page, option => option.value?.baseIndex === 0, '卷走选择有幼龙的龙穴');
+        await game.waitForNoInteraction(10000);
+
+        const state = await getLongzuEvidenceState(game);
+        const targetBase = state.bases[0];
+        const movedMinion = targetBase.minions.find((minion: any) => minion.uid === 'moving-fan');
+        expect(targetBase.minions.map((minion: any) => minion.uid)).toContain('hatchling');
+        expect(movedMinion?.tempPowerModifier).toBe(-1);
+        expect(movedMinion?.effectivePower).toBe(1);
+        await game.screenshot('dragons-hatchling-carried-away-03-after-move-minus-one', testInfo);
     });
 
     test('龙：推倒城墙在计分前 reaction 入口授予该基地额外随从', async ({ page, game }, testInfo) => {

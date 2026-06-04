@@ -12,6 +12,25 @@ const CHARACTER_ASSET_DIR: Record<string, string> = {
 const getCharacterAssetBase = (charId: string = 'monk') => (
     `dicethrone/images/${CHARACTER_ASSET_DIR[charId] ?? charId}`
 );
+
+const getPlayerBoardAssetName = (
+    charId: string,
+    playerBoardFace?: HeroState['playerBoardFace'],
+) => {
+    if (charId === 'cursed_pirate' && playerBoardFace === 'normal') {
+        return 'human-player-board';
+    }
+    return 'player-board';
+};
+
+export const getPlayerBoardAssetPath = (
+    charId: string = 'monk',
+    playerBoardFace?: HeroState['playerBoardFace'],
+) => withExtension(
+    `${getCharacterAssetBase(charId)}/${getPlayerBoardAssetName(charId, playerBoardFace)}`,
+    charId,
+);
+
 const diceAssetsLogger = createScopedLogger('dicethrone:dice-assets');
 
 /**
@@ -22,7 +41,9 @@ const withExtension = (path: string, charId: string) => (
 );
 
 export const ASSETS = {
-    PLAYER_BOARD: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/player-board`, charId),
+    PLAYER_BOARD: (charId: string = 'monk', playerBoardFace?: HeroState['playerBoardFace']) => (
+        getPlayerBoardAssetPath(charId, playerBoardFace)
+    ),
     TIP_BOARD: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/tip`, charId),
     CARDS_ATLAS: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/ability-cards`, charId),
     HAND_CARDS_ATLAS: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/hand-cards-atlas`, charId),

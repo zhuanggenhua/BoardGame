@@ -4,6 +4,9 @@ import type { Page, TestInfo } from '@playwright/test';
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
 import { getEvidenceScreenshotDir, sanitizeEvidencePathSegment } from '../framework/evidenceScreenshots';
+import { BLINK_2 } from '../../src/games/dicethrone/heroes/ninja/abilities';
+import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
+import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 
 type DuelAuditDamageEvent = {
     streamIndex: number;
@@ -342,6 +345,119 @@ async function setupGunslingerShowdownScene(game: GameTestContext): Promise<void
         sourceAbilityId: 'showdown',
         bonusDamage: 0,
         interactionKind: null,
+    });
+}
+
+async function dismissAttackShowcaseIfVisible(page: Page): Promise<void> {
+    const continueButton = page.getByRole('button', { name: /开始防御|继续|Start Defense|Continue/i }).first();
+    if (await continueButton.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await continueButton.click();
+        await expect(continueButton).toBeHidden({ timeout: 5000 }).catch(() => {});
+    }
+}
+
+async function setupNinjaBlink2DefenseScene(page: Page, game: GameTestContext): Promise<void> {
+    await game.openTestGame('dicethrone', { playerID: 1 });
+
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            resources: { CP: 2, HP: 30 },
+        },
+        player1: {
+            resources: { CP: 5, HP: 50 },
+            tokens: { smoke_bomb: 0 },
+        },
+        currentPlayer: '1',
+        phase: 'defensiveRoll',
+        extra: {
+            selectedCharacters: { '0': 'treant', '1': 'ninja' },
+            hostStarted: true,
+            activePlayerId: '1',
+            currentPlayerIndex: 1,
+            currentPlayer: '1',
+            rollCount: 0,
+            rollLimit: 2,
+            rollConfirmed: false,
+            rollDiceCount: 3,
+            dice: [
+                { id: 0, value: 1, isKept: false },
+                { id: 1, value: 2, isKept: false },
+                { id: 2, value: 3, isKept: false },
+                { id: 3, value: 4, isKept: true },
+                { id: 4, value: 5, isKept: true },
+            ],
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'shattering-fist',
+                defenseAbilityId: 'blink',
+                isDefendable: true,
+                damage: 0,
+                bonusDamage: 0,
+            },
+        },
+    });
+
+    await page.evaluate(({ blink2, smokeBombTokenId }) => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => any;
+                    set?: (next: any) => Promise<void>;
+                };
+            };
+        }).__BG_TEST_HARNESS__;
+        const current = harness?.state?.get?.();
+        if (!current || !harness?.state?.set) {
+            throw new Error('TestHarness state 不可用');
+        }
+
+        const players = { ...(current.core?.players ?? {}) };
+        const ninja = { ...(players['1'] ?? {}) };
+        players['1'] = {
+            ...ninja,
+            abilities: Array.isArray(ninja.abilities)
+                ? ninja.abilities.map((ability: any) => (ability?.id === 'blink' ? blink2 : ability))
+                : ninja.abilities,
+            abilityLevels: {
+                ...(ninja.abilityLevels ?? {}),
+                blink: 2,
+            },
+            tokens: {
+                ...(ninja.tokens ?? {}),
+                [smokeBombTokenId]: 0,
+            },
+        };
+
+        return harness.state.set({
+            ...current,
+            core: {
+                ...current.core,
+                players,
+            },
+        });
+    }, { blink2: BLINK_2, smokeBombTokenId: TOKEN_IDS.SMOKE_BOMB });
+
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            phase: state?.sys?.phase ?? null,
+            activePlayerId: state?.core?.activePlayerId ?? null,
+            defenseAbilityId: state?.core?.pendingAttack?.defenseAbilityId ?? null,
+            rollCount: state?.core?.rollCount ?? null,
+            rollLimit: state?.core?.rollLimit ?? null,
+            rollDiceCount: state?.core?.rollDiceCount ?? null,
+            blinkLevel: state?.core?.players?.['1']?.abilityLevels?.blink ?? null,
+        };
+    }, { timeout: 10000 }).toEqual({
+        phase: 'defensiveRoll',
+        activePlayerId: '1',
+        defenseAbilityId: 'blink',
+        rollCount: 0,
+        rollLimit: 2,
+        rollDiceCount: 3,
+        blinkLevel: 2,
     });
 }
 
@@ -717,6 +833,88 @@ test.describe('DiceThrone - 防御技能选择', () => {
         const state = await game.getState();
         expect(state.core.pendingAttack?.defenseAbilityId).toBe('holy-defense');
         await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toBeEnabled({ timeout: 5000 });
+    });
+
+    test('忍者瞬身 II 应在真实防御掷骰界面支持保留 1 颗并重投另外 2 颗', async ({ page, game }, testInfo) => {
+        await setupNinjaBlink2DefenseScene(page, game);
+        await dismissAttackShowcaseIfVisible(page);
+
+        const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]').first();
+        const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]').first();
+        const endDefenseButton = page.getByRole('button', { name: /结束防御|End Defense/i }).first();
+
+        await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
+        await page.evaluate(() => {
+            window.__BG_TEST_HARNESS__?.dice.setValues([1, 4, 6]);
+        });
+
+        await expect(rollButton).toBeEnabled({ timeout: 5000 });
+        await rollButton.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                rollCount: state?.core?.rollCount ?? null,
+                rollLimit: state?.core?.rollLimit ?? null,
+                rollConfirmed: state?.core?.rollConfirmed ?? null,
+                dice: (state?.core?.dice ?? []).slice(0, 3).map((die: any) => die?.value ?? null),
+            };
+        }, { timeout: 5000 }).toEqual({
+            rollCount: 1,
+            rollLimit: 2,
+            rollConfirmed: false,
+            dice: [1, 4, 6],
+        });
+        await game.screenshot('ninja-blink-2-defense-first-roll', testInfo);
+
+        const firstDieButton = page.getByTestId('die-button-0');
+        await expect(firstDieButton).toBeVisible({ timeout: 5000 });
+        await firstDieButton.click();
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state?.core?.dice?.[0]?.isKept ?? null;
+        }, { timeout: 5000 }).toBe(true);
+
+        await page.evaluate(() => {
+            window.__BG_TEST_HARNESS__?.dice.setValues([6, 6]);
+        });
+        await expect(rollButton).toBeEnabled({ timeout: 5000 });
+        await rollButton.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                rollCount: state?.core?.rollCount ?? null,
+                rollLimit: state?.core?.rollLimit ?? null,
+                dice: (state?.core?.dice ?? []).slice(0, 3).map((die: any) => die?.value ?? null),
+            };
+        }, { timeout: 5000 }).toEqual({
+            rollCount: 2,
+            rollLimit: 2,
+            dice: [1, 6, 6],
+        });
+        await game.screenshot('ninja-blink-2-defense-second-roll', testInfo);
+
+        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+        await confirmButton.click();
+        await expect(endDefenseButton).toBeEnabled({ timeout: 5000 });
+        await endDefenseButton.click();
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state?.sys?.phase ?? null,
+                attackerHp: state?.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                smokeBomb: state?.core?.players?.['1']?.tokens?.[TOKEN_IDS.SMOKE_BOMB] ?? 0,
+                pendingAttack: Boolean(state?.core?.pendingAttack),
+            };
+        }, { timeout: 10000 }).toEqual({
+            phase: 'main2',
+            attackerHp: 29,
+            smokeBomb: 1,
+            pendingAttack: false,
+        });
+        await game.screenshot('ninja-blink-2-defense-closeout', testInfo);
     });
 
     test('枪手 Duel 对掷展示窗首次出现时不应半弹后重开', async ({ page, game }, testInfo) => {

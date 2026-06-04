@@ -23,6 +23,8 @@ import { findPlayerAbility } from '../domain/abilityLookup';
 export interface AttackShowcaseData {
     /** 攻击方角色 ID */
     attackerCharacterId: CharacterId;
+    /** 攻击方当前玩家板朝向 */
+    attackerPlayerBoardFace?: DiceThroneCore['players'][PlayerId]['playerBoardFace'];
     /** 进攻技能 ID */
     sourceAbilityId: string;
     /** 技能槽 ID（用于从面板裁切基础技能） */
@@ -112,6 +114,7 @@ function buildShowcaseData(
 
     return {
         attackerCharacterId: attackerCharId,
+        attackerPlayerBoardFace: state.players[pendingAttack.attackerId]?.playerBoardFace,
         sourceAbilityId,
         slotId,
         upgradePreviewRef,

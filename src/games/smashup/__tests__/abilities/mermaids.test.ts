@@ -206,6 +206,59 @@ describe('Mermaids abilities', () => {
         expect(afterTurnEnded.bases[0].minions.find(minion => minion.uid === 'enemy-small')?.controller).toBe('1');
     });
 
+    it('mermaids_mermaid_queen 控制一个已被借用的目标直到回合结束后，应恢复给夺控前的控制者而不是真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('queen-1', 'mermaids_mermaid_queen', 'minion', '0')] }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+            turnOrder: ['0', '1', '2'],
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('borrowed-small', 'robot_microbot_alpha', '1', 1, { owner: '2', powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('enemy-other', 'robot_microbot_beta', '1', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'queen-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const modePrompt = getSimpleChoicePrompt(played.finalState, 'mermaids_mermaid_queen_mode');
+        const controlMode = getPromptOption(modePrompt, entry => entry.value?.mode === 'control', 'control mode');
+
+        const afterMode = respondToPrompt(played.finalState, controlMode.id, '0', defaultTestRandom);
+        const controlPrompt = getSimpleChoicePrompt(afterMode.finalState, 'mermaids_mermaid_queen_control');
+        const controlOption = getPromptOption(
+            controlPrompt,
+            entry => entry.value?.minionUid === 'borrowed-small',
+            'borrowed control target',
+        );
+
+        const resolved = respondToPrompt(afterMode.finalState, controlOption.id, '0', defaultTestRandom);
+        const controlled = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'borrowed-small');
+        expect(controlled?.controller).toBe('0');
+        expect(controlled?.owner).toBe('2');
+
+        const afterTurnEnded = reduce(resolved.finalState.core, {
+            type: SU_EVENTS.TURN_ENDED,
+            payload: { playerId: '0', nextPlayerIndex: 1 },
+            timestamp: 3702,
+        } as any);
+        const restored = afterTurnEnded.bases[0].minions.find(minion => minion.uid === 'borrowed-small');
+        expect(restored?.controller).toBe('1');
+        expect(restored?.owner).toBe('2');
+    });
+
     it('mermaids_mermaid_queen 也可选择把其他玩家的一个仆从移到这里', () => {
         const core = makeState({
             players: {
@@ -325,6 +378,51 @@ describe('Mermaids abilities', () => {
         });
         expect(reused.valid).toBe(false);
         expect(reused.error).toBe('本回合天赋已使用');
+    });
+
+    it('borrowed mermaids_becalmed_shores 使用天赋移动到其他基地时，仍应保留真实 ownerId 与真正移动玩家的 sourcePlayerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [{
+                        uid: 'becalm-borrowed-1',
+                        defId: 'mermaids_becalmed_shores',
+                        ownerId: '1',
+                        talentUsed: false,
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { ongoingCardUid: 'becalm-borrowed-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getSimpleChoicePrompt(used.finalState, 'mermaids_becalmed_shores');
+        const option = getPromptOption(prompt, entry => entry.value?.baseIndex === 1, 'destination base');
+
+        const resolved = respondToPrompt(used.finalState, option.id, '0', defaultTestRandom);
+        const attachedEvent = resolved.events.find(event => event.type === SU_EVENTS.ONGOING_ATTACHED) as any;
+        expect(attachedEvent?.payload?.ownerId).toBe('1');
+        expect(attachedEvent?.payload?.sourcePlayerId).toBe('0');
+
+        const moved = resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'becalm-borrowed-1');
+        expect(moved?.ownerId).toBe('1');
+        expect(moved?.talentUsed).toBe(true);
+        expect(moved?.metadata?.sourceControllerId).toBe('0');
     });
 
     it('mermaids_siren_song 会把每位其他玩家各一个随从移动到同一个你有随从的基地', () => {

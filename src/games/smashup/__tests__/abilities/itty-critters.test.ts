@@ -631,6 +631,15 @@ describe('Itty Critters 代表性玩法行为', () => {
             playerId: '0',
             payload: { cardUid: 'leaf', baseIndex: 0 },
         } as any);
+        const leafPrompt = getSimpleChoicePrompt(leafPlay.finalState, 'itty_critters_leafaroo');
+        expect(leafPrompt.targetType).toBe('discard');
+        const leafPromptOption = getPromptOption(
+            leafPrompt,
+            option => option.value?.cardUid === 'discard-1',
+            'Leafaroo discard option',
+        );
+        expect(leafPromptOption._source).toBe('discard');
+
         const leafResolved = resolveInteractionChain(leafPlay.finalState, (prompt) => {
             const card = getPromptOption(prompt, option => option.value?.cardUid === 'discard-1', 'Leafaroo discard option');
             return { optionId: card.id };

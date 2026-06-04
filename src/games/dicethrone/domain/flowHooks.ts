@@ -1774,7 +1774,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
 
                 // 3. 诅咒金币 (cursed_coin) — 每层在维持阶段造成 1 点伤害，不自动移除层数
                 const cursedCoinStacks = player.statusEffects[STATUS_IDS.CURSED_COIN] ?? 0;
-                if (cursedCoinStacks > 0) {
+                if (cursedCoinStacks > 0 && player.characterId !== 'cursed_pirate') {
                     const damageCalc = createDamageCalculation({
                         source: { playerId: 'system', abilityId: 'upkeep-cursed-coin' },
                         target: { playerId: activeId },

@@ -281,6 +281,42 @@ describe('龙派系可复用实现批', () => {
         expect(movedMinion && getEffectivePower(finalCore, movedMinion, 0)).toBe(1);
     });
 
+    it('幼龙会响应真实行动交互产生的移入事件', () => {
+        const state = makeMatchState(makeState({
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    hand: [makeCard('move-action', 'tornados_carried_away', 'action', '1')],
+                }),
+            },
+            bases: [
+                makeBase('base_ninja_dojo', [
+                    makeMinion('hatch-1', 'dragons_hatchling', '0', 2),
+                ]),
+                makeBase('base_pirate_cove', [
+                    makeMinion('move-1', 'pirate_first_mate', '1', 2),
+                ]),
+            ],
+        }));
+
+        const play = runCommand(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '1',
+            payload: { cardUid: 'move-action', targetBaseIndex: 1, targetMinionUid: 'move-1' },
+        } as any);
+        expect(play.success).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(play.finalState, 'tornados_carried_away_dest');
+        const targetBase = getPromptOption(prompt, option => option.value?.baseIndex === 0, '卷走目标基地选项');
+        const resolved = runCommand(play.finalState, respondCommand(targetBase.id, '1'));
+
+        expect(resolved.success).toBe(true);
+        const movedMinion = resolved.finalState.core.bases[0].minions.find((minion) => minion.uid === 'move-1');
+        expect(movedMinion?.tempPowerModifier).toBe(-1);
+        expect(movedMinion && getEffectivePower(resolved.finalState.core, movedMinion, 0)).toBe(1);
+    });
+
     it('险地会让其他玩家在这里打出随从后自动弃掉唯一剩余手牌', () => {
         const state = makeMatchState(makeState({
             currentPlayerIndex: 1,

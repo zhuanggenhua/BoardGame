@@ -109,6 +109,18 @@ export const getActiveDice = (state: DiceThroneCore): Die[] => {
 };
 
 /**
+ * 兼容旧/脏快照中的奖励骰 shape。
+ * 线上历史反馈里 `pendingBonusDiceSettlement.dice` 可能不是数组，
+ * 服务器命令管线必须先归一化，避免直接 `.map/.find/.reduce` 崩溃。
+ */
+export const getPendingBonusSettlementDice = (
+    settlement: DiceThroneCore['pendingBonusDiceSettlement'] | null | undefined,
+): Array<NonNullable<DiceThroneCore['pendingBonusDiceSettlement']>['dice'][number]> => {
+    const rawDice = settlement?.dice;
+    return Array.isArray(rawDice) ? rawDice : [];
+};
+
+/**
  * 计算给定骰子点数数组里的最大重复次数（用于 N-of-a-kind 的“相同数字”判定）
  */
 export const getMaxDuplicateValueCountFromValues = (values: number[]): number => {

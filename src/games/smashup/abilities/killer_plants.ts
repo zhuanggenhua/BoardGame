@@ -419,9 +419,10 @@ function killerPlantChokingVinesTrigger(ctx: TriggerContext): SmashUpEvent[] {
         for (const m of base.minions) {
             const attached = m.attachedActions.find(a => a.defId.startsWith('killer_plant_choking_vines'));
             if (!attached) continue;
-            if (attached.ownerId !== ctx.playerId) continue;
+            const attachedControllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
+            if (attachedControllerId !== ctx.playerId) continue;
             // 消灭附着的随从
-            events.push(destroyMinion(m.uid, m.defId, i, m.owner, attached.ownerId, 'killer_plant_choking_vines', ctx.now));
+            events.push(destroyMinion(m.uid, m.defId, i, m.owner, attachedControllerId, 'killer_plant_choking_vines', ctx.now));
         }
     }
     return events;
@@ -890,7 +891,8 @@ export function killerPlantOvergrowthTrigger(ctx: TriggerContext): SmashUpEvent[
         const base = ctx.state.bases[i];
         // 统计属于当前回合玩家的过度生长张数（多张叠加）
         const count = base.ongoingActions.filter(
-            a => a.defId.startsWith('killer_plant_overgrowth') && a.ownerId === ctx.playerId
+            a => a.defId.startsWith('killer_plant_overgrowth')
+                && (((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === ctx.playerId)
         ).length;
         if (count === 0) continue;
         const baseDef = getBaseDef(base.defId);
@@ -938,7 +940,8 @@ function killerPlantEntangledDestroyTrigger(ctx: TriggerContext): SmashUpEvent[]
         const base = ctx.state.bases[i];
         const entangled = base.ongoingActions.find(a => a.defId.startsWith('killer_plant_entangled'));
         if (!entangled) continue;
-        if (entangled.ownerId !== ctx.playerId) continue;
+        const controllerId = (entangled.metadata?.sourceControllerId as PlayerId | undefined) ?? entangled.ownerId;
+        if (controllerId !== ctx.playerId) continue;
         events.push({
             type: SU_EVENTS.ONGOING_DETACHED,
             payload: {

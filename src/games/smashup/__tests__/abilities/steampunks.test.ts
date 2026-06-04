@@ -490,6 +490,45 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(events[0].type).toBe(SU_EVENTS.MINION_RETURNED);
             expect(events[0].payload.minionUid).toBe('m1');
         });
+
+        test('borrowed Escape Hatch 不应被同基地其他玩家的同名 ongoing 抢走 source', () => {
+            const borrowedMinion = makeMinion({
+                defId: 'steampunk_a',
+                uid: 'sa-borrowed',
+                controller: '0',
+                owner: '1',
+            });
+            const base = makeBase({
+                minions: [borrowedMinion],
+                ongoingActions: [
+                    { uid: 'opponent-hatch', defId: 'steampunk_escape_hatch', ownerId: '1' } as any,
+                    { uid: 'borrowed-hatch', defId: 'steampunk_escape_hatch', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const state = makeState([base]);
+
+            const events = steampunkEscapeHatchTrigger({
+                state,
+                playerId: '0',
+                baseIndex: 0,
+                triggerMinionUid: 'sa-borrowed',
+                sourceCardUid: 'borrowed-hatch',
+                random: dummyRandom,
+                now: 2,
+            } as any) as any[];
+
+            expect(events).toHaveLength(1);
+            expect(events[0]).toEqual(expect.objectContaining({
+                type: SU_EVENTS.MINION_RETURNED,
+                payload: expect.objectContaining({
+                    minionUid: 'sa-borrowed',
+                    minionDefId: 'steampunk_a',
+                    toPlayerId: '1',
+                    sourcePlayerId: '0',
+                    reason: 'steampunk_escape_hatch',
+                }),
+            }));
+        });
     });
 
     describe('steampunk_mechanic: 机械师', () => {

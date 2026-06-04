@@ -3375,6 +3375,7 @@ export class GameTransportServer {
         }
 
         const markerBefore = buildAiProgressMarker(match.state);
+        const recoveryFingerprintBefore = this.buildOnlineAiRecoveryFingerprint(match, candidate, markerBefore);
         const executedCommandTypes: string[] = [];
         for (const command of resolution.action.commands) {
             const success = await this.executeCommandInternal(
@@ -3402,7 +3403,8 @@ export class GameTransportServer {
         }
 
         const markerAfter = buildAiProgressMarker(match.state);
-        if (markerAfter === markerBefore) {
+        const recoveryFingerprintAfter = this.buildOnlineAiRecoveryFingerprint(match, candidate, markerAfter);
+        if (markerAfter === markerBefore && recoveryFingerprintAfter === recoveryFingerprintBefore) {
             tracker.autoSubmittedAt = null;
             return {
                 applied: false,

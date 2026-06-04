@@ -12,6 +12,7 @@ import { TREANT_CARDS } from '../heroes/treant/cards';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
 import { ZHANSHUJIA_CARDS } from '../heroes/zhanshujia/cards';
 import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
+import type { HeroState } from '../domain/types';
 
 export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     monk: MONK_CARDS,
@@ -161,7 +162,26 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
     },
 };
 
-export function getSlotAbilityId(characterId: string, slotId: string): string | undefined {
+const CURSED_PIRATE_NORMAL_SLOT_TO_ABILITY: Record<string, string> = {
+    fist: 'cutlass-stab',
+    chi: 'make-your-mark',
+    sky: 'human-cursed',
+    lotus: 'walk-the-plank',
+    combo: 'light-the-fuse',
+    lightning: 'verdict-command',
+    calm: 'astonishing',
+    meditate: 'human-still-wet-behind-ears',
+    ultimate: 'merciless-plunder',
+};
+
+export function getSlotAbilityId(
+    characterId: string,
+    slotId: string,
+    playerBoardFace?: HeroState['playerBoardFace'],
+): string | undefined {
+    if (characterId === 'cursed_pirate' && playerBoardFace === 'normal') {
+        return CURSED_PIRATE_NORMAL_SLOT_TO_ABILITY[slotId];
+    }
     return HERO_SLOT_TO_ABILITY[characterId]?.[slotId];
 }
 

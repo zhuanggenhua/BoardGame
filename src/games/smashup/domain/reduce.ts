@@ -1710,6 +1710,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 veryLargeBoulderTriggeredTurnByTitan: undefined,
                 // 清空本回合移动追踪
                 minionsMovedToBaseThisTurn: undefined,
+                minionMoveEventsByBaseThisTurn: undefined,
+                minionMovesThisTurnByPlayer: undefined,
                 movedToBasesThisTurn: undefined,
                 // 清空海盗 POD：私掠者每回合一次追踪
                 buccaneerPodUsedUids: undefined,
@@ -2436,9 +2438,16 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     ...prevMoves,
                     [mover]: { ...playerMoves, [resolvedToBaseIndex]: (playerMoves[resolvedToBaseIndex] ?? 0) + 1 },
                 };
+                const moveEventCounts = { ...(state.minionMoveEventsByBaseThisTurn ?? {}) };
+                moveEventCounts[fromBaseIndex] = (moveEventCounts[fromBaseIndex] ?? 0) + 1;
+                moveEventCounts[resolvedToBaseIndex] = (moveEventCounts[resolvedToBaseIndex] ?? 0) + 1;
+                const currentPlayerId = state.turnOrder[state.currentPlayerIndex];
+                const updatedMoveCountsByPlayer = {
+                    ...(state.minionMovesThisTurnByPlayer ?? {}),
+                    [currentPlayerId]: ((state.minionMovesThisTurnByPlayer ?? {})[currentPlayerId] ?? 0) + 1,
+                };
 
                 // 你们已经完蛋 POD：追踪“本回合是否把对手随从移动到该基地”
-                const currentPlayerId = state.turnOrder[state.currentPlayerIndex];
                 const movedOpponentMinion = movedMinion.controller !== currentPlayerId;
                 const updatedMovedOpp = movedOpponentMinion
                     ? {
@@ -2453,6 +2462,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 return {
                     ...state,
                     minionsMovedToBaseThisTurn: updatedMoves,
+                    minionMoveEventsByBaseThisTurn: moveEventCounts,
+                    minionMovesThisTurnByPlayer: updatedMoveCountsByPlayer,
                     movedToBasesThisTurn: updatedMovedOpp,
                     basePowerDecreasedPlayersThisTurn,
                     buccaneerPodUsedUids,

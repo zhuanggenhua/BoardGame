@@ -67,6 +67,38 @@ describe('Skeletons abilities', () => {
         expect((resolved.finalState.core.bases[0].buriedCards ?? []).some(card => card.uid === 'returned-one')).toBe(true);
     });
 
+    it('skeletons_returned_one 自埋 borrowed 随从时应保留真实 trueOwnerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('returned-one', 'skeletons_returned_one', 'minion', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'returned-one', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getSimpleChoicePrompt(played.finalState, 'skeletons_returned_one');
+        const selfOption = getPromptOption(prompt, entry => entry.value?.cardUid === 'returned-one', 'borrowed returned one self bury');
+
+        const resolved = respondToPrompt(
+            played.finalState,
+            selfOption.id,
+            '0',
+            defaultTestRandom,
+        );
+
+        const buriedCard = resolved.finalState.core.bases[0].buriedCards?.find(card => card.uid === 'returned-one');
+        expect(buriedCard).toBeDefined();
+        expect(buriedCard?.controllerId).toBe('0');
+        expect(buriedCard?.trueOwnerId).toBe('1');
+    });
+
     it('skeletons_returned_one 被挖掘后可再挖同基地另一张埋葬牌', () => {
         const core = makeState({
             players: {
@@ -188,6 +220,53 @@ describe('Skeletons abilities', () => {
         const buried = resolved.finalState.core.bases[1].buriedCards ?? [];
         expect(buried.some(card => card.uid === 'discard-a')).toBe(true);
         expect(buried.some(card => card.uid === 'discard-b')).toBe(true);
+    });
+
+    it('skeletons_place_em_down 埋葬 borrowed 弃牌堆随从时应保留真实 trueOwnerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('place-1', 'skeletons_place_em_down', 'action', '0')],
+                    discard: [
+                        makeCard('discard-a', 'robot_microbot_alpha', 'minion', '1'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'base_a', minions: [], ongoingActions: [] },
+                { defId: 'base_b', minions: [], ongoingActions: [] },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'place-1' } },
+            defaultTestRandom,
+        );
+        const basePrompt = getSimpleChoicePrompt(played.finalState, 'skeletons_place_em_down_base');
+        const baseOption = getPromptOption(basePrompt, entry => entry.value?.baseIndex === 1, 'baseOption');
+
+        const afterBase = respondToPrompt(
+            played.finalState,
+            baseOption.id,
+            '0',
+            defaultTestRandom,
+        );
+        const cardsPrompt = getSimpleChoicePrompt(afterBase.finalState, 'skeletons_place_em_down_cards');
+        const borrowedOption = getPromptOption(cardsPrompt, entry => entry.value?.cardUid === 'discard-a', 'borrowed discard-a');
+
+        const resolved = respondToPromptOptions(
+            afterBase.finalState,
+            [borrowedOption.id],
+            '0',
+            defaultTestRandom,
+        );
+
+        const buriedCard = resolved.finalState.core.bases[1].buriedCards?.find(card => card.uid === 'discard-a');
+        expect(buriedCard).toBeDefined();
+        expect(buriedCard?.controllerId).toBe('0');
+        expect(buriedCard?.trueOwnerId).toBe('1');
     });
 
     it('skeletons_dig_em_up 可选择基地后挖掘最多三张', () => {
@@ -984,6 +1063,59 @@ describe('Skeletons abilities', () => {
         );
 
         expect((resolved.finalState.core.bases[1].buriedCards ?? []).some(card => card.uid === 'gravestones-1')).toBe(true);
+    });
+
+    it('borrowed skeletons_gravestones 应按控制者而不是真实 owner 在计分后把自己埋到另一基地，并保留 true owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [{
+                        uid: 'gravestones-1',
+                        defId: 'skeletons_gravestones',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const triggered = fireTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 0, vp: 0 }],
+            sourceCardUid: 'gravestones-1',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            random: defaultTestRandom,
+            now: 3903,
+        });
+        const prompt = getSimpleChoicePrompt(triggered.matchState ?? makeMatchState(core), 'skeletons_gravestones_after_scoring');
+        const baseOption = getPromptOption(prompt, entry => entry.value?.baseIndex === 1, 'baseOption');
+
+        const resolved = respondToPrompt(
+            triggered.matchState ?? makeMatchState(core),
+            baseOption.id,
+            '0',
+            defaultTestRandom,
+        );
+
+        const buriedCard = resolved.finalState.core.bases[1].buriedCards?.find(card => card.uid === 'gravestones-1');
+        expect(buriedCard).toBeDefined();
+        expect(buriedCard?.controllerId).toBe('0');
+        expect(buriedCard?.trueOwnerId).toBe('1');
     });
 
     it('skeletons_gravestones 在对手计分后仍应把 queued afterScoring 选择权交给来源控制者', () => {

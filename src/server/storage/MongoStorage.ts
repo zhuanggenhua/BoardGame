@@ -79,6 +79,24 @@ const isPlainRecord = (value: unknown): value is Record<string, unknown> => (
     Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
 
+const stripUndefinedForStorage = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => stripUndefinedForStorage(item))
+            .filter((item) => typeof item !== 'undefined');
+    }
+
+    if (!isPlainRecord(value)) {
+        return value;
+    }
+
+    const entries = Object.entries(value)
+        .map(([key, entryValue]) => [key, stripUndefinedForStorage(entryValue)] as const)
+        .filter(([, entryValue]) => typeof entryValue !== 'undefined');
+
+    return Object.fromEntries(entries);
+};
+
 const resolveCorruptMatchReason = (metadata: unknown): string | null => {
     if (!isPlainRecord(metadata)) {
         return 'metadata_not_object';
@@ -184,11 +202,12 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
         // 存储层应保持纯粹，只负责数据持久化
         
         const expiresAt = calculateExpiresAt(ttlSeconds);
+        const initialStateToSave = this.sanitizeStateForStorage(data.initialState);
 
         await Match.create({
             matchID,
             gameName: data.metadata.gameName,
-            state: data.initialState,
+            state: initialStateToSave,
             metadata: data.metadata,
             ttlSeconds,
             expiresAt,
@@ -224,20 +243,18 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
             logger.warn('[MongoStorage] sanitize: state 不是对象');
             return state;
         }
+        const cleanedState = stripUndefinedForStorage(state) as StoredMatchState;
         // 状态结构是 { G: { sys, core }, _stateID, ... }
         // 游戏状态在 G 里面，G 的结构是 { sys, core }
-        const G = (state as { G?: Record<string, unknown> }).G;
-        if (!G) {
-            logger.warn('[MongoStorage] sanitize: G 不存在');
-            return state;
+        const G = (cleanedState as { G?: Record<string, unknown> }).G;
+        if (!isPlainRecord(G)) {
+            return cleanedState;
         }
-        
-        const sys = G.sys as Record<string, unknown> | undefined;
-        if (!sys) {
-            logger.warn('[MongoStorage] sanitize: sys 不存在');
-            return state;
+
+        const sys = G.sys;
+        if (!isPlainRecord(sys)) {
+            return cleanedState;
         }
-        
 
         // 裁剪 undo 快照（只保留最近 1 条）
         const sanitizedSys = { ...sys };
@@ -253,7 +270,7 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
         // LogSystem 已移除，log.entries 始终为空，无需裁剪
 
         const sanitizedState: StoredMatchState = {
-            ...state,
+            ...cleanedState,
             G: {
                 ...G,
                 sys: sanitizedSys,

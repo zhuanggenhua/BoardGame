@@ -44,7 +44,7 @@ import { DICETHRONE_COMMANDS } from './domain/ids';
 import { DICETHRONE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
 import { findPlayerAbility, getPlayerAbilityBaseDamage, getPlayerAbilityEffects } from './domain/abilityLookup';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
-import { areTeammates, getOpponents, getRollerId } from './domain/rules';
+import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
 import { getTokenEffectValue, type EffectAction, type RollDieConditionalEffect, type RollDieDefaultEffect } from './domain/tokenTypes';
@@ -1693,7 +1693,7 @@ const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLe
     // 否则会把纯展示特写误当成真实 blocker，导致 watchdog / 本地 AI 继续围绕它“决策”。
     if (!settlement || settlement.attackerId !== playerId || settlement.displayOnly === true) return actions;
 
-    for (const die of settlement.dice) {
+    for (const die of getPendingBonusSettlementDice(settlement)) {
         appendAction(actions, state, playerId, {
             actionId: createAiLegalActionId('bonus-die', 'reroll', die.index),
             kind: 'bonus-die-reroll',
@@ -2734,7 +2734,7 @@ const bonusDieScorer: LocalAiActionScorer = {
         const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
         if (!settlement) return null;
         const currentValue = evaluateBonusDiceSettlementValue(state, settlement);
-        const bestRerollDelta = settlement.dice.reduce((best, die) => {
+        const bestRerollDelta = getPendingBonusSettlementDice(settlement).reduce((best, die) => {
             const expectedValue = evaluateExpectedBonusDieRerollValue(state, settlement, die.index);
             if (expectedValue === null) return best;
             return Math.max(best, expectedValue - currentValue);
@@ -2745,7 +2745,7 @@ const bonusDieScorer: LocalAiActionScorer = {
                 ? action.metadata.dieIndex
                 : null;
             const die = dieIndex !== null
-                ? settlement.dice.find((item) => item.index === dieIndex)
+                ? getPendingBonusSettlementDice(settlement).find((item) => item.index === dieIndex)
                 : null;
             if (!die) return null;
             const expectedValue = evaluateExpectedBonusDieRerollValue(state, settlement, die.index);
@@ -3434,7 +3434,7 @@ const evaluateBonusDiceSettlementValue = (
     settlement: PendingBonusDiceSettlement,
     diceOverride?: PendingBonusDiceSettlement['dice'],
 ): number => {
-    const dice = diceOverride ?? settlement.dice;
+    const dice = diceOverride ?? getPendingBonusSettlementDice(settlement);
     const total = dice.reduce((sum, die) => sum + die.value, 0);
     const thresholdTriggered = settlement.threshold ? total >= settlement.threshold : false;
 
@@ -3469,11 +3469,12 @@ const evaluateExpectedBonusDieRerollValue = (
     settlement: PendingBonusDiceSettlement,
     dieIndex: number,
 ): number | null => {
-    const die = settlement.dice.find((item) => item.index === dieIndex);
+    const settlementDice = getPendingBonusSettlementDice(settlement);
+    const die = settlementDice.find((item) => item.index === dieIndex);
     if (!die) return null;
 
     const outcomes = [1, 2, 3, 4, 5, 6].map((value) => {
-        const projectedDice = settlement.dice.map((item) => (
+        const projectedDice = settlementDice.map((item) => (
             item.index === dieIndex ? { ...item, value } : item
         ));
         return evaluateBonusDiceSettlementValue(state, settlement, projectedDice);

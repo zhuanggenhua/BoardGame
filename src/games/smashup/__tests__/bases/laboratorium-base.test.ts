@@ -104,4 +104,38 @@ describe('base_laboratorium: 实验工坊 - 当前玩家回合内基地全局首
         const { events } = triggerBaseAbility('base_laboratorium', 'onMinionPlayed', ctx);
         expect(events.length).toBe(0);
     });
+
+    it('borrowed Infiltrate 由控制者控制时，应阻止 Laboratorium 给控制者打出的首个随从放指示物', () => {
+        const ctx: BaseAbilityContext = {
+            state: makeState({
+                bases: [{
+                    defId: 'base_laboratorium',
+                    minions: [makeMinion('m4', '0', 3)],
+                    ongoingActions: [{ uid: 'inf-lab-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+                }],
+                players: {
+                    '0': {
+                        id: '0', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 1 },
+                        factions: [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.WEREWOLVES],
+                    },
+                    '1': {
+                        id: '1', vp: 0, hand: [], deck: [], discard: [],
+                        minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
+                        minionsPlayedPerBase: { 0: 0 },
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.VAMPIRES],
+                    },
+                } as any,
+            }),
+            baseIndex: 0,
+            baseDefId: 'base_laboratorium',
+            playerId: '0',
+            minionUid: 'm4',
+            now: 1001,
+        };
+
+        const { events } = triggerBaseAbility('base_laboratorium', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(0);
+    });
 });

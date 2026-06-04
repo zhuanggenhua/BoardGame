@@ -6,7 +6,7 @@ import { RESOURCE_IDS } from './domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
 import type { DiceThroneCore } from './domain';
 import { getUsableTokenAmountForTiming, getUsableTokensForTiming } from './domain/tokenResponse';
-import { getPlayableCardsInResponseWindow, getAvailableAbilityIds, getSeatingOrder, getOpponents, areTeammates, getUpgradeTargetAbilityId } from './domain/rules';
+import { getPlayableCardsInResponseWindow, getAvailableAbilityIds, getPendingBonusSettlementDice, getSeatingOrder, getOpponents, areTeammates, getUpgradeTargetAbilityId } from './domain/rules';
 import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
@@ -800,7 +800,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             currentPlayerId: rootPid,
             rerollCount: settlement?.rerollCount,
             maxRerollCount: settlement?.maxRerollCount,
-            diceValues: settlement?.dice?.map(die => die.value),
+            diceValues: settlement ? getPendingBonusSettlementDice(settlement).map(die => die.value) : undefined,
         });
         handleBonusDieClose();
 
@@ -1345,7 +1345,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 isVisible={true}
                 onClose={() => handlePendingBonusSettlementClose(interactiveBonusDiceSettlement)}
                 locale={locale}
-                bonusDice={interactiveBonusDiceSettlement?.dice}
+                bonusDice={interactiveBonusDiceSettlement ? getPendingBonusSettlementDice(interactiveBonusDiceSettlement) : undefined}
                 canReroll={Boolean(
                     interactiveBonusDiceSettlement &&
                     (player.tokens?.[interactiveBonusDiceSettlement.rerollCostTokenId] ?? 0) >= (interactiveBonusDiceSettlement.rerollCostAmount ?? 1) &&
@@ -1898,6 +1898,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         activatingAbilityId={activatingAbilityId}
                         abilityLevels={viewPlayer.abilityLevels}
                         characterId={viewPlayer.characterId}
+                        playerBoardFace={viewPlayer.playerBoardFace}
                         locale={locale}
                         onMagnifyImage={(image) => setMagnifiedImage(image)}
                         onMagnifyCard={(card) => setMagnifiedCard(card)}

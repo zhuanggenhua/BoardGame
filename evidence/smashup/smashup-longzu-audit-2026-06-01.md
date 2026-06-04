@@ -1,6 +1,13 @@
 # SmashUp longzu 三派系统一审计（2026-06-01）
 
 > 2026-06-01 收口回写：本文件代表 longzu 三派系的统一完成态汇总。对象级逐项证明以 [smashup-longzu-deep-audit-2026-06-01.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-longzu-deep-audit-2026-06-01.md) 为准。
+>
+> 2026-06-03 资源链纠偏：
+>
+> - `base/longzu` 不属于当前三派系运行时合同；本地正式资源已删除。
+> - longzu 当前唯一新增运行时 atlas 是 `smashup/cards/longzu`。
+> - 远端 `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/longzu.webp` 已补传并回查 `HEAD 200`。
+> - 根级 `public/assets/i18n/assets-manifest.json` 与游戏级 `public/assets/i18n/zh-CN/smashup/assets-manifest.json` 均已包含 `cards/longzu` 条目。
 
 ## 审计范围
 
@@ -71,7 +78,7 @@
 
 - 当前 longzu 玩法审计残余：`无`
 - 仍可继续做但不阻塞本轮审计完成的事项：
-  - `base/longzu.png` 后续如需换成 longzu 独立基地图集，可另起资源迁移任务；当前 6 个基地已合法复用 `shayu` 合同
+  - 如后续确实要给 longzu 建独立基地图集，应另起“共享基地合同迁移”任务；不能再把候选基地图直接放回当前运行时资源树
   - `npm run i18n:check` 的 DiceThrone 缺 key 需要在对应游戏单独修复
 
 ## 当前审计结论

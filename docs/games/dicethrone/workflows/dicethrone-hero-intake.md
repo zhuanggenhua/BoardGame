@@ -55,6 +55,12 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 
 只要用户要求“新增角色 / 新增派系 / 两个新角色一起做 / 数据录入、上传、审计、端到端全流程”，不得把“可选角 + 资源能显示 + 少量 smoke 测试通过”误报为完成。
 
+默认执行口径补充：
+
+- **Dice Throne 新英雄 intake 默认就是全面审计留档**：只要任务语义是“新增英雄 / 新角色接入 / 新派系从素材做到可玩”，且用户没有明确缩成“只录入 / 只修一个点 / 只做静态接入”，就必须默认产出对象级审计 evidence，不需要再次询问“要不要补审 / 要不要把其他能力也审掉”。
+- **发现单点漏项时必须自动扩审兄弟对象**：如果某张升级技、防御技、Token、状态、奖励骰对象暴露出录入错、共享消费合同错、实现漏项或旧审计失效，默认必须继续回扫同英雄、同批次、同共享链的兄弟对象，并把残余范围或修复结果同步回写到 evidence；不能修完用户点名对象就停下。
+- **未形成对象矩阵结论前不得称为 intake 完成**：只要同英雄下还有对象没有明确写成 `passed / blocked / scoped-debt(经用户确认冻结)`，就只能汇报为“局部修复完成”或“当前仍有残余范围”，不得写成“新英雄已完成”。
+
 必须同时清空以下门禁，才允许对外说“已完成”：
 
 1. **数据录入门禁**
@@ -69,6 +75,7 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
    - 原始图、正式压缩图、atlas JSON、manifest、运行时代码引用必须逐项对上。
    - 若 `public/**/*.webp` 被 `.gitignore` 忽略，必须在证据文档里单列“忽略但必须存在/已上传”的资源清单；不得只看 `git status`。
    - 共享资源（如 `Common/compressed/background.webp`、`character-portraits.webp`）也必须在隔离 worktree 中存在并被截图证明，否则 E2E 图像证据无效。
+   - 新增或修改 Token / 状态图标时，资源审计不能只查 `webp`、manifest、上传结果；必须逐项核对 `status-icons-atlas.json` 是否被运行时真实消费，并证明对应徽章命中 sprite，而不是退成纯色 fallback。
 4. **上传门禁**
    - `npm run assets:upload` 成功只是必要条件；必须对本轮新增/依赖的代表性远端 URL 做 `HEAD` 回查。
    - atlas JSON 若按项目现有规则不上传，必须明确写“本地 `/assets/atlas-configs/**` 加载”，并验证构建产物能引用，不得误报“atlas 已上传”。
@@ -81,6 +88,12 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
    - 只要最终回复说 E2E 通过，必须给出本轮实际核对过的截图绝对路径。
 
 如果任何一项未满足，当前状态只能汇报为“已完成某层 / 未完成全流程”，不得停止长期任务。
+
+- **防御重投专项门禁（强制）**：凡防御技卡面写有“可重掷 / 可再投 / 至多 N 颗 / 再次投掷”之类语义，不能只验证 `diceCount` 和最终结算。必须额外逐项留证：
+  - 触发定义是否显式声明了共享消费字段（如 `rollLimit` 或等价字段）；
+  - `ABILITY_ACTIVATED -> defensiveRoll` 后的权威状态是否真的把 `rollLimit` 提升到预期值；
+  - 真实 UI 是否允许“保留部分骰子后继续重投其余骰子”，而不是只在代码里看起来可配。
+- **禁止收口口径**：如果只证明“防御掷出了 3 颗骰并按结果结算”，还不能说这张防御升级技已实现；含重投语义的防御技必须把“可继续投”的窗口单独验收。
 
 补充口径：
 
@@ -286,6 +299,10 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - 手牌类别合同：老角色里哪些是“直接结算行动牌”，哪些是“升级基础技能的升级牌”；禁止把两类都混叫成“技能牌”后再做实现
 - 升级卡状态落点：是否和老角色一样落在 `abilityLevels` / `upgradeCardByAbilityId`，而不是混进 `discard`
 - `previewRef` / atlas：是否仍沿用老角色手牌预览合同，而不是临时发明新的 atlas 语义
+- Token / 状态图标运行时消费链：只要新增或修改 `tokens.ts`、状态、`statusAtlasId`、`statusAtlasPath` 或 `status-icons-atlas.*`，必须和至少 1 个成熟老角色逐项对比下面链路，不能只看资源文件存在：
+  `TokenDef.frameId / atlasId -> ALL_TOKEN_DEFINITIONS -> STATUS_EFFECT_META / TOKEN_META / getVisualMetaById -> CHARACTER_DATA_MAP.statusAtlasId / statusAtlasPath -> loadStatusAtlases -> getStatusEffectIconNode -> StatusEffectsContainer / TokensContainer -> 血条上方徽章 hasSprite=true`
+- `status-icons-atlas.json` 是本地配置文件，应走 `/assets/i18n/<locale>/...` 或等价本地路径加载；它不属于必须上传到 R2 的媒体资源。旧角色远端 JSON 404 不能直接推导为“资源缺失”，必须回到本地 JSON 加载链和真实 DOM 消费结果核对。
+- Token / 状态图标核对必须覆盖 frame key 与定义 ID 是否一致，例如 `frameId`、`atlasId`、`statusAtlasId`、`statusAtlasPath`、JSON `frames` key 是否能被 `getVisualMetaById` 命中；只验证“徽章数量存在 / 可见 / 可点击”不得算图标显示通过。
 - 通用卡索引：如果顺序和老角色不同，是否已有显式映射与专项 evidence
 - AI / 阶段门禁：响应牌、roll 牌、main 牌是否仍走共享验证函数
 - UI 消费链：技能槽升级展示、card spotlight、magnify overlay 是否仍吃同一组状态字段
@@ -396,6 +413,7 @@ npm run assets:upload
    - 两个新角色都能在选角入口选中。
    - Host 和 Guest 都能进入对局。
    - Host/Guest 截图分别看到对应新角色玩家面板、提示板、手牌/卡图、HUD。
+   - 如果新角色有 Token / 状态图标，必须至少有一条真实 DOM 断言证明血条上方 `[data-tutorial-id="status-tokens"]` 内的徽章命中 `status-icons-atlas` sprite，且父徽章不含纯色 fallback 类（如 `bg-gradient-to-br`）。只证明 token/status 徽章可见，不得算图标显示通过。
 
 若机制实现超出 L1/L2，还必须补对应 L3/L4 成功路径截图；不能用“进入对局成功”替代复杂机制验证。
 

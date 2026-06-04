@@ -19,6 +19,24 @@ export interface SmashUpRuntimeStateNormalizationResult {
     anomalies: SmashUpRuntimeStateAnomaly[];
 }
 
+export function normalizeSmashUpMatchStateForUi<TState extends { core?: SmashUpCore; sys?: unknown } | null | undefined>(
+    state: TState,
+): TState {
+    if (!state || !state.core) {
+        return state;
+    }
+
+    const normalized = normalizeSmashUpCoreForUi(state.core);
+    if (!normalized.core) {
+        return state;
+    }
+
+    return {
+        ...state,
+        core: normalized.core,
+    };
+}
+
 function pushArrayAnomaly(
     anomalies: SmashUpRuntimeStateAnomaly[],
     path: string,
@@ -55,6 +73,32 @@ function asObjectArray<T extends object>(
 
 function normalizeCardArray(value: unknown, path: string, anomalies: SmashUpRuntimeStateAnomaly[]): CardInstance[] {
     return asObjectArray<CardInstance>(value, path, anomalies);
+}
+
+function normalizeMadnessDeck(
+    value: unknown,
+    path: string,
+    anomalies: SmashUpRuntimeStateAnomaly[],
+): string[] {
+    pushArrayAnomaly(anomalies, path, value);
+    if (!Array.isArray(value)) return [];
+
+    const normalized: string[] = [];
+    value.forEach((item, index) => {
+        if (typeof item === 'string') {
+            normalized.push(item);
+            return;
+        }
+        if (item && typeof item === 'object' && typeof (item as { defId?: unknown }).defId === 'string') {
+            normalized.push((item as { defId: string }).defId);
+            return;
+        }
+        anomalies.push({
+            path: `${path}[${index}]`,
+            actual: 'invalid-entry',
+        });
+    });
+    return normalized;
 }
 
 function normalizeAttachedActions(
@@ -180,7 +224,7 @@ export function normalizeSmashUpCoreForUi(core: SmashUpCore | null | undefined):
         titans: normalizeTitans(core.titans, anomalies),
         madnessDeck: core.madnessDeck === undefined
             ? undefined
-            : normalizeCardArray(core.madnessDeck, 'madnessDeck', anomalies),
+            : normalizeMadnessDeck(core.madnessDeck, 'madnessDeck', anomalies),
     };
 
     if (core.turnOrder !== undefined && !Array.isArray(core.turnOrder)) {

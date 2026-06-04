@@ -2,7 +2,7 @@ import { createBonusDiceWithReroll, createDisplayOnlySettlement, registerCustomA
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
-import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getOpponents, getPlayerDieFace, getSeatingOrder, getTokenStackLimit } from '../rules';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getSeatingOrder, getTokenStackLimit } from '../rules';
 import { reduce } from '../reducer';
 import { applyEvents } from '../utils';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
@@ -491,7 +491,7 @@ function handleNinjutsuUse(ctx: CustomActionContext): DiceThroneEvent[] {
 
 export function registerNinjaCustomActions(): void {
     registerBonusDiceSettlementHandler(GOING_FORWARD_2_SETTLEMENT_ID, ({ settlement, timestamp }) => {
-        const totalDamage = settlement.dice.reduce((sum, die) => sum + die.value, 0);
+        const totalDamage = getPendingBonusSettlementDice(settlement).reduce((sum, die) => sum + die.value, 0);
         return {
             totalDamage,
             followupEvents: totalDamage <= 6
@@ -504,7 +504,7 @@ export function registerNinjaCustomActions(): void {
         let katanaCount = 0;
         let shurikenCount = 0;
         let maskCount = 0;
-        for (const die of settlement.dice) {
+        for (const die of getPendingBonusSettlementDice(settlement)) {
             if (die.face === NINJA_DICE_FACE_IDS.KATANA) katanaCount += 1;
             if (die.face === NINJA_DICE_FACE_IDS.SHURIKEN) shurikenCount += 1;
             if (die.face === NINJA_DICE_FACE_IDS.MASK) maskCount += 1;

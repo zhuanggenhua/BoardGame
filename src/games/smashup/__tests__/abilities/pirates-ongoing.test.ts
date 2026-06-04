@@ -500,6 +500,37 @@ describe('pirate_buccaneer onMinionDestroyed', () => {
         expect(getPromptSourceId(prompt)).toBe('pirate_buccaneer_move');
     });
 
+    it('owner 与 controller 分离时，三基地选择 prompt 应交给当前控制者', () => {
+        const state = makeState({
+            bases: [
+                makeBase({ minions: [makeMinion('buc-borrowed', 'pirate_buccaneer', '0', 4, '1')] }),
+                makeBase(),
+                makeBase(),
+            ],
+        });
+        const matchState = {
+            core: state,
+            playerIds: ['0', '1'],
+            sys: { interaction: { current: null, queue: [] }, gameover: null, eventStream: { entries: [], nextId: 0 } },
+        } as any;
+
+        const result = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            matchState,
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'buc-borrowed',
+            triggerMinionDefId: 'pirate_buccaneer',
+            random: dummyRandom,
+            now: 2,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'pirate_buccaneer_move');
+        expect(getPromptSourceId(prompt)).toBe('pirate_buccaneer_move');
+        expect(prompt.playerId).toBe('0');
+    });
+
     it('MINION_MOVED reducer 正确移动 Buccaneer', () => {
         const state = makeState({
             bases: [

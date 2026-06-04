@@ -18,6 +18,7 @@ import {
     getPromptsBySourceId,
     getPromptOptions,
     getPromptSourceId,
+    resolveDestroyedMinions,
     respondToPromptOption,
     withOnlyCurrentPrompt,
 } from '../helpers';
@@ -786,6 +787,50 @@ describe('frankenstein_igor 基地结算弃置触发', () => {
         const prompt = getSimpleChoicePrompt(result.matchState!, 'frankenstein_igor');
         expect(getPromptSourceId(prompt)).toBe('frankenstein_igor');
         expect(getPromptOptions(prompt)).toHaveLength(2);
+    });
+
+    it('borrowed frankenstein_igor 被消灭时，应按当前 controller 而不是真实 owner 给控制者创建 onDestroy 目标选择', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('igor-borrowed', 'frankenstein_igor', '0', 2, { owner: '1', powerModifier: 0 }),
+                        makeMinion('ally-same-base', 'test_minion', '0', 3, { powerModifier: 0 }),
+                        makeMinion('enemy-same-base', 'test_enemy', '1', 4, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ally-other-base', 'test_ally', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = resolveDestroyedMinions(
+            makeMatchState(core),
+            '0',
+            [{
+                minionUid: 'igor-borrowed',
+                minionDefId: 'frankenstein_igor',
+                fromBaseIndex: 0,
+                ownerId: '1',
+                destroyerId: '0',
+            }],
+            defaultTestRandom,
+            100,
+        );
+
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'frankenstein_igor');
+        expect(prompt.playerId).toBe('0');
+        const optionUids = getPromptOptions(prompt).map(option => option.value?.minionUid);
+        expect(optionUids).toEqual(expect.arrayContaining(['ally-same-base', 'ally-other-base']));
+        expect(optionUids).not.toContain('igor-borrowed');
+        expect(optionUids).not.toContain('enemy-same-base');
     });
 
     it('Igor 自身被弃时，同基地其他己方随从可作为候选目标', () => {

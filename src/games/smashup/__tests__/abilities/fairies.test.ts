@@ -445,6 +445,42 @@ describe('Fairies abilities', () => {
         expect(getEffectivePower(resolved.finalState.core, targetMinion!, 0)).toBe(2);
     });
 
+    it('borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-enchantment-1', 'fairies_enchantment', 'action', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 3, { powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'borrowed-enchantment-1', targetBaseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'fairies_enchantment');
+        const minusOption = getPromptOption(prompt, entry => entry.value?.branchId === 'minus', 'minus branch');
+
+        const resolved = respondToPrompt(played.finalState, minusOption.id, '0', defaultTestRandom);
+
+        const enchantment = resolved.finalState.core.bases[0].ongoingActions.find(action => action.uid === 'borrowed-enchantment-1');
+        const targetMinion = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1');
+        expect(enchantment?.ownerId).toBe('1');
+        expect(enchantment?.metadata?.fairiesEnchantmentMode).toBe('minus');
+        expect(enchantment?.metadata?.sourcePlayerId).toBe('0');
+        expect(enchantment?.metadata?.sourceControllerId).toBe('0');
+        expect(targetMinion).toBeDefined();
+        expect(getEffectivePower(resolved.finalState.core, targetMinion!, 0)).toBe(2);
+    });
+
     it('fairies_puck 在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过', () => {
         const core = makeState({
             turnNumber: 1,

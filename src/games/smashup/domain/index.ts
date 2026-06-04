@@ -61,6 +61,7 @@ import {
     startSmashUpReactionSession,
 } from './reactionSession';
 import { getSmashUpReactionWindowContext } from './reactionWindowState';
+import { readSmashUpRuntimeSetupConfig } from '../roomSetup';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
@@ -82,7 +83,6 @@ import {
     getSmashUpTeamMembers,
     getSmashUpTeamScores,
     isSmashUpTwoVsTwoMode,
-    readSmashUpTeamMode,
 } from './teamMode';
 import { triggerBaseAbility, triggerExtendedBaseAbility, hasBaseAbility } from './baseAbilities';
 import { collectBaseAbilityTriggers, collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
@@ -1151,29 +1151,8 @@ function processImmediateStartTurnMinionTriggers(
 // Setup
 // ============================================================================
 
-const DEFAULT_SMASHUP_EXPANSIONS = ['titans', 'diy'];
-
 function isAiSeatControllerType(type: unknown): boolean {
     return type === 'local-ai' || type === 'remote-ai';
-}
-
-function readEnabledExpansions(setupData?: Record<string, unknown>): string[] {
-    if (Array.isArray(setupData?.expansions)) {
-        return setupData.expansions.filter((value): value is string => typeof value === 'string');
-    }
-
-    const setupSelections = setupData?.setupSelections;
-    if (
-        setupSelections
-        && typeof setupSelections === 'object'
-        && !Array.isArray(setupSelections)
-        && Array.isArray((setupSelections as Record<string, unknown>).expansions)
-    ) {
-        return ((setupSelections as Record<string, unknown>).expansions as unknown[])
-            .filter((value): value is string => typeof value === 'string');
-    }
-
-    return [...DEFAULT_SMASHUP_EXPANSIONS];
 }
 
 function getSetupBaseDefIds(enabledExpansions: readonly string[]): string[] {
@@ -1185,9 +1164,9 @@ function getSetupBaseDefIds(enabledExpansions: readonly string[]): string[] {
 
 function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {
     const nextUid = 1;
-    const enabledExpansions = readEnabledExpansions(setupData);
+    const runtimeSetup = readSmashUpRuntimeSetupConfig(setupData, { playerCount: playerIds.length });
+    const { enabledExpansions, deckQueryEnabled, teamMode } = runtimeSetup;
     const seatOrder = [...playerIds];
-    const teamMode = readSmashUpTeamMode(setupData, playerIds.length);
 
     const players: Record<PlayerId, PlayerState> = {};
     const playerSelections: Record<PlayerId, string[]> = {};
@@ -1268,6 +1247,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         bases: activeBases,
         titans: [],
         enabledExpansions,
+        deckQueryEnabled,
         baseDeck,
         baseDiscard: [],
         triggerQueue: undefined,
@@ -1281,6 +1261,131 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         },
         cardsPlayedThisTurn: 0,
         powerCountersPlacedOnMinionsThisTurn: 0,
+    };
+}
+
+function normalizeSmashUpRuntimeObjectArray<T extends object>(
+    value: T[] | null | undefined,
+): T[] | undefined {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value)) return [];
+
+    let changed = false;
+    const normalized: T[] = [];
+    value.forEach((entry) => {
+        if (entry && typeof entry === 'object') {
+            normalized.push(entry);
+            return;
+        }
+        changed = true;
+    });
+
+    return changed ? normalized : value;
+}
+
+function normalizeSmashUpRuntimeStringArray(
+    value: string[] | null | undefined,
+): string[] | undefined {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value)) return undefined;
+
+    let changed = false;
+    const normalized: string[] = [];
+    value.forEach((entry) => {
+        if (typeof entry === 'string') {
+            normalized.push(entry);
+            return;
+        }
+        changed = true;
+    });
+
+    return changed ? normalized : value;
+}
+
+function normalizeSmashUpRuntimeMadnessDeck(
+    value: SmashUpCore['madnessDeck'],
+): SmashUpCore['madnessDeck'] {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value)) return [];
+
+    let changed = false;
+    const normalized: string[] = [];
+    value.forEach((entry) => {
+        if (typeof entry === 'string') {
+            normalized.push(entry);
+            return;
+        }
+        if (entry && typeof entry === 'object' && typeof (entry as { defId?: unknown }).defId === 'string') {
+            normalized.push((entry as { defId: string }).defId);
+            changed = true;
+            return;
+        }
+        changed = true;
+    });
+
+    return changed ? normalized : value;
+}
+
+function normalizeLegacySmashUpMatchState(
+    state: MatchState<SmashUpCore>,
+): MatchState<SmashUpCore> {
+    const core = state.core;
+    let changed = false;
+
+    const normalizedPlayers = Object.fromEntries(
+        Object.entries(core.players).map(([playerId, player]) => {
+            const pendingMinionPlayEffects = normalizeSmashUpRuntimeObjectArray(
+                player.pendingMinionPlayEffects,
+            );
+            const usedDiscardPlayAbilities = normalizeSmashUpRuntimeStringArray(
+                player.usedDiscardPlayAbilities,
+            );
+
+            if (
+                pendingMinionPlayEffects === player.pendingMinionPlayEffects
+                && usedDiscardPlayAbilities === player.usedDiscardPlayAbilities
+            ) {
+                return [playerId, player];
+            }
+
+            changed = true;
+            return [playerId, {
+                ...player,
+                pendingMinionPlayEffects,
+                usedDiscardPlayAbilities,
+            }];
+        }),
+    ) as SmashUpCore['players'];
+
+    const normalizedBases = core.bases.map((base) => {
+        const buriedCards = normalizeSmashUpRuntimeObjectArray(base.buriedCards);
+        if (buriedCards === base.buriedCards) {
+            return base;
+        }
+        changed = true;
+        return {
+            ...base,
+            buriedCards,
+        };
+    });
+
+    const normalizedMadnessDeck = normalizeSmashUpRuntimeMadnessDeck(core.madnessDeck);
+    if (normalizedMadnessDeck !== core.madnessDeck) {
+        changed = true;
+    }
+
+    if (!changed) {
+        return state;
+    }
+
+    return {
+        ...state,
+        core: {
+            ...core,
+            players: normalizedPlayers,
+            bases: normalizedBases,
+            madnessDeck: normalizedMadnessDeck,
+        },
     };
 }
 
@@ -2757,6 +2862,7 @@ registerSmashUpReactionPostProcessor(postProcessSystemEvents);
 export const SmashUpDomain: DomainCore<SmashUpCore, SmashUpCommand, SmashUpEvent> = {
     gameId: 'smashup',
     setup,
+    normalizeRuntimeState: normalizeLegacySmashUpMatchState,
     validate,
     execute,
     reduce,

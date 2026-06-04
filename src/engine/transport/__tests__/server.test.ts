@@ -10826,6 +10826,75 @@ describe('GameTransportServer（离座与重连）', () => {
         expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-dt-bonus-dice-fingerprint-drift')).toBe(false);
     });
 
+    it('online AI watchdog 读取 DiceThrone 旧脏 bonus settlement 时仍能生成候选与 fingerprint，不会因 dice shape 异常崩溃', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-watchdog-dt-bonus-dice-legacy-dice-shape', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'offensiveRoll',
+                pendingBonusDiceSettlement: {
+                    id: 'bonus-settlement-legacy',
+                    attackerId: '1',
+                    displayOnly: false,
+                    rerollCount: 0,
+                    dice: { legacy: true } as any,
+                },
+                interaction: {
+                    current: {
+                        id: 'bonus-dice-legacy',
+                        playerId: '1',
+                        kind: 'dt:bonus-dice',
+                        data: {
+                            sourceId: 'bonus-roll',
+                            title: '是否重掷奖励骰',
+                        },
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+            }) as StoredMatchState,
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'dicethrone' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('dicethrone')],
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            buildOnlineAiRecoveryFingerprint: (match: any, candidate: any, progressMarker: string) => string;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-dt-bonus-dice-legacy-dice-shape');
+        const seatControllers = {
+            '0': { type: 'human' as const },
+            '1': { type: 'local-ai' as const },
+        };
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: match.state,
+            seatControllers,
+            seatStates: {},
+            gameId: 'dicethrone',
+        });
+
+        expect(candidate).not.toBeNull();
+        expect(candidate?.reason).toBe('visible-interaction');
+        expect(candidate?.fingerprintHint).toContain('dt:bonus-dice');
+
+        const fingerprint = serverInternal.buildOnlineAiRecoveryFingerprint(
+            match,
+            candidate,
+            buildAiProgressMarker(match.state),
+        );
+
+        expect(typeof fingerprint).toBe('string');
+        expect(fingerprint.length).toBeGreaterThan(0);
+    });
+
     it('online AI watchdog 在 visible simple-choice 的 sourceId/title/options 相同但 slider 配置漂移时，也必须丢弃旧 tracker', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -11217,6 +11286,193 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(tryRecoverSpy).toHaveBeenCalledTimes(2);
         expect(feedbackReporter).not.toHaveBeenCalled();
         expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-simple-choice-slider-sequence-drift')).toBe(false);
+    });
+
+    it('online AI watchdog 在 visible simple-choice 的 option value 漂移但 progress marker 未变时，应继续沿新 prompt 收口而不是上报 no_progress', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        const baseChoice = createSimpleChoice(
+            'smashup-counter-choice-sequence',
+            '1',
+            '选择一个反应动作',
+            [
+                {
+                    id: 'counter-0',
+                    label: '维尔的力量',
+                    value: {
+                        cardUid: 'force-1',
+                        defId: 'geeks_force_of_wil',
+                        cardType: 'action',
+                    },
+                },
+                {
+                    id: 'pass',
+                    label: '让过',
+                    value: { pass: true },
+                },
+            ],
+            {
+                sourceId: 'smashup_action_counter_choose',
+                targetType: 'generic',
+            },
+        );
+
+        const driftedChoice = createSimpleChoice(
+            'smashup-counter-choice-sequence',
+            '1',
+            '选择一个反应动作',
+            [
+                {
+                    id: 'counter-0',
+                    label: '维尔的力量',
+                    value: {
+                        cardUid: 'force-1b',
+                        defId: 'geeks_force_of_wil',
+                        cardType: 'action',
+                    },
+                },
+                {
+                    id: 'pass',
+                    label: '让过',
+                    value: { pass: true },
+                },
+            ],
+            {
+                sourceId: 'smashup_action_counter_choose',
+                targetType: 'generic',
+            },
+        );
+
+        await storage.createMatch('match-watchdog-simple-choice-value-sequence-drift', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '0',
+                phase: 'scoreBases',
+                interaction: {
+                    current: baseChoice,
+                    queue: [],
+                    isBlocked: false,
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('smashup')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoverySequence: (
+                match: any,
+                tracker: any,
+                candidate: any,
+                progressMarkerBeforeRecovery: string,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+            ) => Promise<void>;
+            resolveOnlineAiRecoveryCandidate: (
+                match: any,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+            ) => Promise<any>;
+            tryRecoverOnlineAiWithLegalAction: (
+                match: any,
+                candidate: any,
+                tracker: any,
+                seatControllers: any,
+            ) => Promise<{
+                applied: boolean;
+                resolved: boolean;
+                blockedReason: 'missing-visible-state' | 'missing-private-overlay' | 'stale-private-overlay' | null;
+                executedCommandTypes: string[];
+                outcome: 'applied' | 'blocked' | 'no-legal-action' | 'legal-action-command-failed';
+                reportedAction?: null;
+            }>;
+        };
+
+        const seatControllers = {
+            '0': { type: 'human' as const },
+            '1': { type: 'local-ai' as const },
+        };
+        const match = await serverInternal.loadMatch('match-watchdog-simple-choice-value-sequence-drift');
+        const candidate = await serverInternal.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+        expect(candidate?.reason).toBe('visible-interaction');
+
+        const tracker = {
+            key: `${candidate.playerId}:${candidate.reason}:${candidate.fingerprintHint}`,
+            firstSeenAt: Date.now(),
+            autoSubmittedAt: Date.now(),
+            lastReportedFailureReason: null,
+            failureCount: 0,
+        };
+        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+
+        let recoveryCallCount = 0;
+        const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch) => {
+            recoveryCallCount += 1;
+            if (recoveryCallCount === 1) {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        interaction: {
+                            current: driftedChoice,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                    },
+                };
+                return {
+                    applied: true,
+                    resolved: false,
+                    blockedReason: null,
+                    executedCommandTypes: [INTERACTION_COMMANDS.RESPOND],
+                    outcome: 'applied',
+                    reportedAction: null,
+                };
+            }
+            if (recoveryCallCount === 2) {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                    },
+                };
+                return {
+                    applied: true,
+                    resolved: true,
+                    blockedReason: null,
+                    executedCommandTypes: [INTERACTION_COMMANDS.RESPOND],
+                    outcome: 'applied',
+                    reportedAction: null,
+                };
+            }
+
+            throw new Error(`Unexpected legal-action recovery attempt after value drift: ${recoveryCallCount}`);
+        });
+
+        await serverInternal.runOnlineAiRecoverySequence(
+            match,
+            tracker,
+            candidate,
+            buildAiProgressMarker(match.state),
+            seatControllers,
+        );
+
+        expect(tryRecoverSpy).toHaveBeenCalledTimes(2);
+        expect(feedbackReporter).not.toHaveBeenCalled();
+        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-simple-choice-value-sequence-drift')).toBe(false);
     });
 
     it('online AI watchdog 在 response-window 仅切到新的 window id 且 progress marker 未变时，应继续沿新窗口收口而不是上报 no_progress', async () => {
@@ -15387,6 +15643,186 @@ describe('GameTransportServer（离座与重连）', () => {
                 outcome: 'applied',
             });
             expect(match.state.sys.responseWindow?.current).toBeUndefined();
+        } finally {
+            resolutionSpy.mockRestore();
+        }
+    });
+
+    it('tryRecoverOnlineAiWithLegalAction 在 visible simple-choice 仅 option value 漂移且 progress marker 不变时，也应视为已推进', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-watchdog-visible-simple-choice-value-drift-progress', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '0',
+                phase: 'scoreBases',
+                interaction: {
+                    current: createSimpleChoice(
+                        'smashup-counter-choice-1',
+                        '1',
+                        '选择一个反应动作',
+                        [
+                            {
+                                id: 'counter-0',
+                                label: '维尔的力量',
+                                value: {
+                                    cardUid: 'force-1',
+                                    defId: 'geeks_force_of_wil',
+                                    cardType: 'action',
+                                },
+                            },
+                            {
+                                id: 'pass',
+                                label: '让过',
+                                value: { pass: true },
+                            },
+                        ],
+                        {
+                            sourceId: 'smashup_action_counter_choose',
+                            targetType: 'generic',
+                        },
+                    ),
+                    queue: [],
+                    isBlocked: false,
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'action',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'watchdog-visible-simple-choice-value-drift',
+                source: 'local-ai',
+                action: {
+                    actionId: 'respond-counter-0',
+                    kind: 'interaction-respond',
+                    label: '响应第一张反制牌',
+                    commands: [{
+                        type: INTERACTION_COMMANDS.RESPOND,
+                        payload: {
+                            interactionId: 'smashup-counter-choice-1',
+                            optionId: 'counter-0',
+                        },
+                    }],
+                },
+            },
+        });
+
+        try {
+            const server = new GameTransportServer({
+                io: io as unknown as any,
+                storage,
+                games: [createEngineConfigWithId('smashup')],
+                onlineAiRecoveryTickMs: 0,
+                onlineAiRecoveryTimeoutMs: 0,
+            });
+
+            const serverInternal = server as unknown as {
+                loadMatch: (matchID: string) => Promise<any>;
+                tryRecoverOnlineAiWithLegalAction: (
+                    match: any,
+                    candidate: any,
+                    tracker: any,
+                    seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+                ) => Promise<{
+                    applied: boolean;
+                    resolved: boolean;
+                    blockedReason: 'missing-visible-state' | 'missing-private-overlay' | 'stale-private-overlay' | null;
+                    executedCommandTypes: string[];
+                    outcome: 'applied' | 'blocked' | 'no-legal-action' | 'legal-action-command-failed';
+                }>;
+                executeCommandInternal: (
+                    match: any,
+                    playerID: string,
+                    commandType: string,
+                    payload: unknown,
+                    options?: unknown,
+                ) => Promise<boolean>;
+                broadcastState: (match: any) => void;
+            };
+
+            const match = await serverInternal.loadMatch('match-watchdog-visible-simple-choice-value-drift-progress');
+            const seatControllers = {
+                '0': { type: 'human' as const },
+                '1': { type: 'local-ai' as const },
+            };
+            const candidate = resolveForceEndTurnForStalledAi({
+                sharedState: match.state,
+                seatControllers,
+                seatStates: {},
+            });
+            expect(candidate?.reason).toBe('visible-interaction');
+
+            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
+                expect(playerID).toBe('1');
+                expect(commandType).toBe(INTERACTION_COMMANDS.RESPOND);
+                expect(payload).toEqual({
+                    interactionId: 'smashup-counter-choice-1',
+                    optionId: 'counter-0',
+                });
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        interaction: {
+                            current: createSimpleChoice(
+                                'smashup-counter-choice-1',
+                                '1',
+                                '选择一个反应动作',
+                                [
+                                    {
+                                        id: 'counter-0',
+                                        label: '维尔的力量',
+                                        value: {
+                                            cardUid: 'force-1b',
+                                            defId: 'geeks_force_of_wil',
+                                            cardType: 'action',
+                                        },
+                                    },
+                                    {
+                                        id: 'pass',
+                                        label: '让过',
+                                        value: { pass: true },
+                                    },
+                                ],
+                                {
+                                    sourceId: 'smashup_action_counter_choose',
+                                    targetType: 'generic',
+                                },
+                            ),
+                            queue: [],
+                            isBlocked: false,
+                        },
+                    },
+                };
+                return true;
+            });
+            const broadcastSpy = vi.spyOn(serverInternal, 'broadcastState');
+
+            const result = await serverInternal.tryRecoverOnlineAiWithLegalAction(
+                match,
+                candidate!,
+                {
+                    key: `1:visible-interaction:${candidate?.fingerprintHint ?? ''}`,
+                    firstSeenAt: Date.now(),
+                    autoSubmittedAt: Date.now(),
+                    lastReportedFailureReason: null,
+                    failureCount: 0,
+                },
+                seatControllers,
+            );
+
+            expect(executeSpy).toHaveBeenCalledTimes(1);
+            expect(broadcastSpy).toHaveBeenCalledTimes(1);
+            expect(result).toMatchObject({
+                applied: true,
+                resolved: true,
+                blockedReason: null,
+                executedCommandTypes: [INTERACTION_COMMANDS.RESPOND],
+                outcome: 'applied',
+            });
         } finally {
             resolutionSpy.mockRestore();
         }

@@ -5,9 +5,12 @@ import {
     getPromptOption,
     getPromptOptions,
     getPromptPlayerId,
+    getReactionPromptOptionBySourceDefId,
+    getReactionPromptSourceDefIds,
     getPromptSourceId,
     getPromptsBySourceId,
     getSimpleChoicePrompt,
+    invokeRegisteredInteractionHandlerContract,
     makeBase,
     makeCard,
     makeMatchState,
@@ -133,6 +136,171 @@ describe('鲨鱼代表性玩法行为', () => {
 
         const hammer = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'hammer');
         expect(hammer?.powerCounters).toBe(2);
+    });
+
+    it('旋齿鲨奖励交互可从牌库拿 1 张鲭鲨进手牌，并重排剩余牌库', () => {
+        const state = makeMatchState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('mako-top', 'sharks_mako', 'minion', '0'),
+                        makeCard('deck-rest', 'ghosts_spectre', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            bases: [makeBase('base_the_deep')],
+            baseDeck: [],
+            turnNumber: 3,
+            nextUid: 100,
+        } as any);
+
+        const result = invokeRegisteredInteractionHandlerContract(
+            'titan_sharks_helicoprion_reward',
+            state,
+            '0',
+            {
+                action: 'take_mako',
+                cardUid: 'mako-top',
+                defId: 'sharks_mako',
+                sourceZone: 'deck',
+            },
+            {},
+            200,
+        );
+
+        expect(result.events.map(event => event.type)).toEqual([
+            'su:card_transferred',
+            'su:deck_reordered',
+        ]);
+        expect(result.events[0]).toMatchObject({
+            payload: {
+                cardUid: 'mako-top',
+                defId: 'sharks_mako',
+                fromPlayerId: '0',
+                toPlayerId: '0',
+                reason: 'sharks_helicoprion_reward',
+            },
+        });
+        expect(result.events[1]).toMatchObject({
+            payload: {
+                playerId: '0',
+                deckUids: ['deck-rest'],
+            },
+        });
+    });
+
+    it('旋齿鲨奖励交互可从弃牌堆拿 1 张鲭鲨回手，且不会错误重排牌库', () => {
+        const state = makeMatchState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-rest', 'ghosts_spectre', 'minion', '0')],
+                    discard: [makeCard('mako-discard', 'sharks_mako', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            bases: [makeBase('base_the_deep')],
+            baseDeck: [],
+            turnNumber: 3,
+            nextUid: 100,
+        } as any);
+
+        const result = invokeRegisteredInteractionHandlerContract(
+            'titan_sharks_helicoprion_reward',
+            state,
+            '0',
+            {
+                action: 'take_mako',
+                cardUid: 'mako-discard',
+                defId: 'sharks_mako',
+                sourceZone: 'discard',
+            },
+            {},
+            200,
+        );
+
+        expect(result.events).toHaveLength(1);
+        expect(result.events[0]).toMatchObject({
+            type: 'su:card_recovered_from_discard',
+            payload: {
+                reason: 'sharks_helicoprion_reward',
+            },
+        });
+        expect(result.events.map(event => event.type)).not.toContain('su:deck_reordered');
+    });
+
+    it('旋齿鲨奖励交互选择抽牌时，会为控制者抽 1 张牌', () => {
+        const state = makeMatchState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('draw-top', 'ghosts_spectre', 'minion', '0'),
+                        makeCard('draw-rest', 'sharks_mako', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            bases: [makeBase('base_the_deep')],
+            baseDeck: [],
+            turnNumber: 3,
+            nextUid: 100,
+        } as any);
+
+        const result = invokeRegisteredInteractionHandlerContract(
+            'titan_sharks_helicoprion_reward',
+            state,
+            '0',
+            {
+                action: 'draw',
+            },
+            {},
+            200,
+        );
+
+        expect(result.events).toHaveLength(1);
+        expect(result.events[0]).toMatchObject({
+            type: 'su:cards_drawn',
+            payload: {
+                playerId: '0',
+                count: 1,
+            },
+        });
+    });
+
+    it('旋齿鲨奖励交互选择跳过时，不会产生任何事件', () => {
+        const state = makeMatchState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('draw-top', 'ghosts_spectre', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            bases: [makeBase('base_the_deep')],
+            baseDeck: [],
+            turnNumber: 3,
+            nextUid: 100,
+        } as any);
+
+        const result = invokeRegisteredInteractionHandlerContract(
+            'titan_sharks_helicoprion_reward',
+            state,
+            '0',
+            {
+                action: 'skip',
+            },
+            {},
+            200,
+        );
+
+        expect(result.events).toEqual([]);
     });
 
     it('飞鲨通过真实行动入口先选择己方随从，再选择另一个基地并消灭低力量随从', () => {
@@ -451,10 +619,18 @@ describe('鲨鱼代表性玩法行为', () => {
 
         expect(play.success).toBe(true);
         let chosenExtra = false;
-        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+        const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
             const sourceId = getPromptSourceId(prompt);
             if (sourceId === 'sharks_torn_apart') {
                 return chooseOptionBySource(prompt, 'sharks_torn_apart', option => option.value?.minionUid === 'victim');
+            }
+            if (sourceId === 'smashup_reaction_choose') {
+                expect(getReactionPromptSourceDefIds(state, prompt)).toContain('sharks_mako');
+                const reactionOption = getReactionPromptOptionBySourceDefId(state, prompt, 'sharks_mako');
+                return { optionId: reactionOption.id };
+            }
+            if (sourceId === 'base_shark_reef') {
+                return { optionId: getPromptOption(prompt, (option: any) => option.value?.skip, 'skip shark reef option').id };
             }
             if (sourceId === 'smashup_immediate_extra_minion_base') {
                 expect(getPromptOptions(prompt).some((option: any) => option.value?.baseIndex === 1)).toBe(false);
@@ -582,10 +758,18 @@ describe('鲨鱼代表性玩法行为', () => {
 
         expect(play.success).toBe(true);
         let chosenExtra = false;
-        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+        const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
             const sourceId = getPromptSourceId(prompt);
             if (sourceId === 'sharks_torn_apart') {
                 return chooseOptionBySource(prompt, 'sharks_torn_apart', option => option.value?.minionUid === 'victim');
+            }
+            if (sourceId === 'smashup_reaction_choose') {
+                expect(getReactionPromptSourceDefIds(state, prompt)).toContain('sharks_blood_in_the_water');
+                const reactionOption = getReactionPromptOptionBySourceDefId(state, prompt, 'sharks_blood_in_the_water');
+                return { optionId: reactionOption.id };
+            }
+            if (sourceId === 'base_shark_reef') {
+                return { optionId: getPromptOption(prompt, (option: any) => option.value?.skip, 'skip shark reef option').id };
             }
             if (sourceId === 'smashup_immediate_extra_minion_base') {
                 expect(getPromptOptions(prompt).some((option: any) => option.value?.baseIndex === 1)).toBe(false);

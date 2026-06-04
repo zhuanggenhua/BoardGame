@@ -1341,6 +1341,52 @@ describe('elder_things_pod 专项行为', () => {
         expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
     });
 
+    it('多个 Dunwich Horror POD 走 direct fireTriggers 时，应按每个 source 继续给各自宿主控制者链式抉择 prompt', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    {
+                        ...makeMinion('host-p0', 'robot_microbot', '0', 3),
+                        attachedActions: [{ uid: 'dh-p0', defId: 'elder_thing_dunwich_horror_pod', ownerId: '0' }],
+                    } as any,
+                    {
+                        ...makeMinion('host-p1', 'robot_microbot_alpha', '1', 2),
+                        attachedActions: [{ uid: 'dh-p1', defId: 'elder_thing_dunwich_horror_pod', ownerId: '1' }],
+                    } as any,
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const direct = fireTriggers(core, 'beforeScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            random: defaultRandom,
+            now: 41,
+        });
+
+        const firstPrompt = getSimpleChoicePrompt(direct.matchState!, 'elder_thing_dunwich_horror_pod_choice');
+        expect(firstPrompt.playerId).toBe('0');
+
+        const afterFirstDraw = respondToPromptOption(
+            direct.matchState!,
+            option => option.value?.choice === 'draw',
+            'first Dunwich Horror POD draw option',
+            '0',
+            defaultRandom,
+        );
+        const secondPrompt = getSimpleChoicePrompt(afterFirstDraw.finalState, 'elder_thing_dunwich_horror_pod_choice');
+        expect(secondPrompt.playerId).toBe('1');
+    });
+
     it('The Price of Power POD：before scoring 只统计该基地相关玩家并按疯狂卡数加指示物', () => {
         const core = makeState({
             players: {

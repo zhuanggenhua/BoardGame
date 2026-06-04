@@ -60,13 +60,14 @@ function getSlotAspectRatio(slot: { w: number; h: number }, playerBoardAspectRat
  */
 const AbilitySlotCrop: React.FC<{
     characterId: string;
+    playerBoardFace?: AttackShowcaseData['attackerPlayerBoardFace'];
     slotId: string;
     locale?: string;
-}> = ({ characterId, slotId, locale }) => {
+}> = ({ characterId, playerBoardFace, slotId, locale }) => {
     const slot = getAbilitySlotLayoutForCharacter(characterId).find(s => s.id === slotId);
     if (!slot) return null;
 
-    const boardPath = ASSETS.PLAYER_BOARD(characterId);
+    const boardPath = ASSETS.PLAYER_BOARD(characterId, playerBoardFace);
     const backgroundImage = buildLocalizedImageSet(boardPath, locale);
 
     // 将百分比坐标转换为 background-position 和 background-size
@@ -174,6 +175,7 @@ export const AttackShowcaseOverlay: React.FC<AttackShowcaseOverlayProps> = ({
                             ) : data.slotId ? (
                                 <AbilitySlotCrop
                                     characterId={data.attackerCharacterId}
+                                    playerBoardFace={data.attackerPlayerBoardFace}
                                     slotId={data.slotId}
                                     locale={locale}
                                 />

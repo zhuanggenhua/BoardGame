@@ -1371,10 +1371,22 @@ export function processDestroyTriggers(
         const { minionUid, minionDefId, fromBaseIndex, ownerId: eventOwnerId, destroyerId: eventDestroyerId, reason } = de.payload;
         const base = currentCore.bases[fromBaseIndex];
         const minion = base?.minions.find(m => m.uid === minionUid);
-        const triggerMinionPower = minion ? getEffectivePower(currentCore, minion, fromBaseIndex) : undefined;
+        const triggerMinion = minion ?? {
+            uid: minionUid,
+            defId: minionDefId,
+            owner: eventOwnerId,
+            controller: eventOwnerId,
+            basePower: getMinionLikePower(minionDefId) ?? 0,
+            powerCounters: 0,
+            powerModifier: 0,
+            tempPowerModifier: 0,
+            attachedActions: [],
+            metadata: undefined,
+        };
+        const triggerMinionPower = minion ? getEffectivePower(currentCore, minion, fromBaseIndex) : triggerMinion.basePower;
         // ✅ 优先从 state 读取 owner（兜底修复：即使事件中的 ownerId 错了也能修复）
         const ownerId = minion?.owner ?? eventOwnerId;
-        const triggerPlayerId = minion?.controller ?? ownerId;
+        const triggerPlayerId = minion?.controller ?? triggerMinion.controller ?? ownerId;
         // "you destroyed" 类触发只能信任事件显式声明的 destroyerId。
         // 不能把当前回合玩家/目标控制者兜底成消灭者，否则会把中性或缺失归因的消灭误判为玩家造成。
         const destroyerId = eventDestroyerId;
@@ -1388,19 +1400,19 @@ export function processDestroyTriggers(
         const saveEvents: SmashUpEvent[] = [];
 
         // 2. 触发 ongoing 拦截器 onMinionDestroyed（replacement：如雄蜂防止消灭、逃生舱回手牌）
-        const ongoingDestroyEvents = fireTriggers(currentCore, 'onMinionDestroyed', {
-            state: currentCore,
-            matchState: ms ?? currentMS_save,
-            playerId: triggerPlayerId,
-            baseIndex: fromBaseIndex,
-            triggerMinionUid: minionUid,
-            triggerMinionDefId: minionDefId,
-            triggerMinion: minion,
-            triggerMinionPower,
-            controllerId: triggerPlayerId,
-            destroyerId,
-            reason: de.payload.reason,
-            random,
+            const ongoingDestroyEvents = fireTriggers(currentCore, 'onMinionDestroyed', {
+                state: currentCore,
+                matchState: ms ?? currentMS_save,
+                playerId: triggerPlayerId,
+                baseIndex: fromBaseIndex,
+                triggerMinionUid: minionUid,
+                triggerMinionDefId: minionDefId,
+                triggerMinion,
+                triggerMinionPower,
+                controllerId: triggerPlayerId,
+                destroyerId,
+                reason: de.payload.reason,
+                random,
             now,
         }, { phase: 'replacement' });
         saveEvents.push(...ongoingDestroyEvents.events);
@@ -1498,7 +1510,7 @@ export function processDestroyTriggers(
                 baseIndex: fromBaseIndex,
                 triggerMinionUid: minionUid,
                 triggerMinionDefId: minionDefId,
-                triggerMinion: minion,
+                triggerMinion,
                 triggerMinionPower,
                 controllerId: triggerPlayerId,
                 destroyerId,

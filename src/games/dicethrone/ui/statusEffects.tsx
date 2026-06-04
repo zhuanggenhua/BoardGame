@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
-import { buildLocalizedImageSet, getLocalizedAssetPath, getLocalizedLocalAssetPath } from '../../../core';
+import { buildLocalizedImageSet, getLocalizedLocalAssetPath } from '../../../core';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
 import { resolveI18nList } from './utils';
 
@@ -69,8 +69,6 @@ const getStatusAtlasJsonCandidates = (path: string, locale?: string) => {
     const fallbackLocale = getAtlasFallbackLocale(effectiveLocale);
 
     return dedupeUrls([
-        getLocalizedAssetPath(path, effectiveLocale),
-        getLocalizedAssetPath(path, fallbackLocale),
         getLocalizedLocalAssetPath(path, effectiveLocale),
         getLocalizedLocalAssetPath(path, fallbackLocale),
     ]);

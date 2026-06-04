@@ -68,21 +68,24 @@ function grantProtectWithTacticalAdvantage({
     state,
     timestamp,
 }: CustomActionContext): DiceThroneEvent[] {
-    const currentAmount = state.players[attackerId]?.tokens[TOKEN_IDS.PROTECT] ?? 0;
-    const maxStacks = getTokenStackLimit(state, attackerId, TOKEN_IDS.PROTECT);
-    const newTotal = Math.min(currentAmount + 1, maxStacks);
+    const interaction: PendingInteraction = {
+        id: `${sourceAbilityId}-${timestamp}`,
+        playerId: attackerId,
+        sourceCardId: sourceAbilityId,
+        type: 'selectPlayer',
+        titleKey: 'interaction.selectPlayer',
+        selectCount: 1,
+        selected: [],
+        targetPlayerIds: Object.keys(state.players),
+        tokenGrantConfig: { tokenId: TOKEN_IDS.PROTECT, amount: 1 },
+    };
+
     return [{
-        type: 'TOKEN_GRANTED',
-        payload: {
-            targetId: attackerId,
-            tokenId: TOKEN_IDS.PROTECT,
-            amount: Math.max(0, newTotal - currentAmount),
-            newTotal,
-            sourceAbilityId,
-        },
+        type: 'INTERACTION_REQUESTED',
+        payload: { interaction },
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
-    } as TokenGrantedEvent];
+    } as InteractionRequestedEvent];
 }
 
 function increaseTacticalAdvantageLimitAndFill({

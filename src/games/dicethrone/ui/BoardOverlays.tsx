@@ -23,6 +23,7 @@ import {
     getAbilitySlotLayoutForCharacter,
     getPlayerBoardAspectRatio,
 } from './abilitySlotLayout';
+import { getPendingBonusSettlementDice } from '../domain/rules';
 import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScroll';
 import { getSlotAbilityId, getUpgradeCardPreviewRef } from './abilityOverlayHelpers';
 import { createScopedLogger } from '../../../lib/logger';
@@ -40,6 +41,8 @@ export interface BoardOverlaysProps {
     abilityLevels?: Record<string, number>;
     /** 当前视角玩家的角色 ID */
     viewCharacterId?: string;
+    /** 当前视角玩家的面板朝向 */
+    viewPlayerBoardFace?: HeroState['playerBoardFace'];
 
     players: Record<PlayerId, HeroState>;
     currentPlayerId: PlayerId;
@@ -109,14 +112,15 @@ export interface BoardOverlaysProps {
 const MagnifyUpgradeOverlay: React.FC<{
     characterId: string;
     abilityLevels: Record<string, number>;
+    playerBoardFace?: HeroState['playerBoardFace'];
     locale: string;
-}> = ({ characterId, abilityLevels, locale }) => {
+}> = ({ characterId, abilityLevels, playerBoardFace, locale }) => {
     const slots = getAbilitySlotLayoutForCharacter(characterId);
     return (
         <div className="absolute inset-0 pointer-events-none">
             {slots.map((slot) => {
                 if (slot.id === 'ultimate') return null;
-                const baseAbilityId = getSlotAbilityId(characterId, slot.id);
+                const baseAbilityId = getSlotAbilityId(characterId, slot.id, playerBoardFace);
                 const level = baseAbilityId ? (abilityLevels[baseAbilityId] ?? 1) : 1;
                 if (!baseAbilityId || level <= 1) return null;
                 const previewRef = getUpgradeCardPreviewRef(characterId, baseAbilityId, level);
@@ -244,6 +248,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                     <MagnifyUpgradeOverlay
                                         characterId={props.viewCharacterId}
                                         abilityLevels={props.abilityLevels}
+                                        playerBoardFace={props.viewPlayerBoardFace}
                                         locale={props.locale}
                                     />
                                 )}
@@ -263,7 +268,9 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         isVisible={shouldShowBonusDieOverlay}
                         onClose={props.onBonusDieClose}
                         locale={props.locale}
-                        bonusDice={props.pendingBonusDiceSettlement?.dice ?? props.bonusDie.bonusDice}
+                        bonusDice={props.pendingBonusDiceSettlement
+                            ? getPendingBonusSettlementDice(props.pendingBonusDiceSettlement)
+                            : props.bonusDie.bonusDice}
                         presentationKey={
                             props.pendingBonusDiceSettlement
                                 ? `${props.pendingBonusDiceSettlement.id}:reroll-${props.pendingBonusDiceSettlement.rerollCount}`

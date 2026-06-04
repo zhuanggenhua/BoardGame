@@ -291,4 +291,76 @@ describe('立即额外行动交互', () => {
             baseIndex: 1,
         });
     });
+
+    it('smashup_immediate_extra_minion 应允许当前控制者选择 borrowed setaside 泰坦', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_secret_garden',
+                    minions: [makeMinion('ally-0', 'zombie_walker', '0', 2)],
+                    ongoingActions: [],
+                }),
+                makeBase({
+                    defId: 'base_the_jungle',
+                    minions: [makeMinion('ally-1', 'alien_invader', '0', 3)],
+                    ongoingActions: [],
+                }),
+            ],
+        });
+        const matchState = makeMatchState(state);
+        matchState.core.titans = [{
+            uid: 'borrowed-ursa',
+            defId: 'bear_cavalry_major_ursa',
+            faction: 'bear_cavalry',
+            ownerId: '1',
+            controllerId: '0',
+            powerCounters: 0,
+            talentUsed: false,
+            location: { zone: 'setaside' },
+        } satisfies TitanState];
+
+        const result = resolveInteractionChain(
+            queueImmediateExtraMinion(matchState),
+            prompt => {
+                const sourceId = getPromptSourceId(prompt);
+                if (sourceId === 'smashup_immediate_extra_minion') {
+                    const option = getPromptOption(
+                        prompt,
+                        candidate => candidate?.value?.titanUid === 'borrowed-ursa',
+                        'borrowed immediate extra minion titan option',
+                    );
+                    return { optionId: option.id };
+                }
+                if (sourceId === 'smashup_immediate_extra_minion_base') {
+                    const option = getPromptOption(
+                        prompt,
+                        candidate => candidate?.value?.baseIndex === 1,
+                        'borrowed immediate extra minion titan base option',
+                    );
+                    return { optionId: option.id };
+                }
+                throw new Error(`unexpected prompt source: ${String(sourceId)}`);
+            },
+        );
+
+        const titanPlayed = result.events.find(event => event.type === SU_EVENTS.TITAN_PLAYED);
+        expect(titanPlayed).toBeDefined();
+        expect((titanPlayed as any).payload).toMatchObject({
+            titanUid: 'borrowed-ursa',
+            defId: 'bear_cavalry_major_ursa',
+            ownerId: '1',
+            controllerId: '0',
+            baseIndex: 1,
+            reason: 'bear_cavalry_major_ursa_special',
+        });
+
+        expect((result.finalState.core.titans ?? []).find(titan => titan.uid === 'borrowed-ursa')?.location).toMatchObject({
+            zone: 'base',
+            baseIndex: 1,
+        });
+    });
 });

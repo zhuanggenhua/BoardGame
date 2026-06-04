@@ -25,6 +25,11 @@ description: "Smash Up 新增派系端到端流程。用于用户说“新增派
 - Git 默认只提交代码、数据、manifest、atlas 注册、locale、测试与 evidence；不要建议 `git add -f` 大图，除非用户明确要求或项目规范另有硬性例外。
 - 上传完成后必须记录远端验证证据：至少包含 R2/CDN URL、`HEAD`/等价请求结果、manifest 条目、atlas grid 尺寸。
 - 如果远端验证失败，只能汇报“资源上传/回查未完成”，不得用本地图片存在或压缩成功冒充素材链路完成。
+- Smash Up 新 atlas 进入运行时前，必须同时核对两层 manifest：
+  - `public/assets/i18n/zh-CN/smashup/assets-manifest.json`
+  - `public/assets/i18n/assets-manifest.json`
+  只更新游戏级 manifest 不算资源链完成；根级 i18n manifest 漏新键时，运行时候选链会缺索引。
+- 如果基地实际复用旧 atlas（例如新派系直接复用既有 `base` 合同），就不得再保留一个同名“候选基地图集”在 `public/assets/i18n/zh-CN/smashup/base/`。这种图只能放临时目录，或在判定不进入运行时后立刻从正式资源树删除，避免后续 `assets:upload` 误传。
 
 ## 必读文档
 

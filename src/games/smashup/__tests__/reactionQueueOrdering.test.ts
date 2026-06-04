@@ -18,7 +18,7 @@ import { clearOngoingEffectRegistry, registerTrigger, collectTriggers } from '..
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
-import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
+import { resolveSmashUpReactionChoice, startSmashUpReactionSession } from '../domain/reactionSession';
 import { processAffectTriggers, processDeckInspectionTriggers, processMoveTriggers } from '../domain/reducer';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import {
@@ -180,6 +180,27 @@ describe('Smash Up reaction resource footprint inference', () => {
     const footprint = deriveFootprintFromInteraction(interaction);
     expect(footprint?.fallbackReason).toBeUndefined();
     expect(footprint?.writes.length).toBeGreaterThan(0);
+  });
+
+  it('borrowed ACTION_PLAYED 在 fromDiscard 场景下应同时暴露 source discard 与 owner discard 写入', () => {
+    const footprint = deriveFootprintFromEvent({
+      type: SU_EVENTS.ACTION_PLAYED,
+      payload: {
+        playerId: '0',
+        ownerId: '1',
+        cardUid: 'borrowed-action-a',
+        defId: 'test_action',
+        fromDiscard: true,
+        baseIndex: 0,
+      },
+      timestamp: 1,
+    } as SmashUpEvent);
+
+    const writes = new Set(footprint.writes.map(reactionResourceKey));
+    expect(writes).toContain('cardInstance:borrowed-action-a');
+    expect(writes).toContain('playerDiscard:0');
+    expect(writes).toContain('playerDiscard:1');
+    expect(writes).toContain('playerPlayLimit:0');
   });
 
   it('交互 option 无结构化目标时只标记明确 fallback，不伪造成全局冲突', () => {
@@ -700,6 +721,60 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(trigger.frameId).toBe('minion-moved-frame:moved1:0:1:7');
     expect(trigger.moveFromBaseIndex).toBe(0);
     expect(trigger.moveToBaseIndex).toBe(1);
+  });
+
+  it('强制触发按钮所属 frame 与当前 afterScoring session 漂移时，仍应按按钮 trigger frame 消费', () => {
+    registerTrigger('test_discard_from_base_watcher', 'onMinionDiscardedFromBase', () => ([{
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'discard_from_base_resolved' },
+      timestamp: 2,
+    } as any]), {});
+
+    const triggerFrameId = 'onMinionDiscardedFromBase:onMinionDiscardedFromBase:0';
+    const trigger: TriggerInstance = {
+      id: `${triggerFrameId}:test_discard_from_base_watcher:0`,
+      timing: 'onMinionDiscardedFromBase',
+      playerContext: 'sourceController',
+      sourceDefId: 'test_discard_from_base_watcher',
+      sourceCardUid: 'discard-watcher',
+      sourceControllerId: '0',
+      sourceOwnerPlayerId: '0',
+      mandatory: true,
+      resolutionClass: 'mandatory',
+      frameId: triggerFrameId,
+      sourceEventId: 'onMinionDiscardedFromBase:0',
+      ownerPlayerId: '0',
+      eventPlayerId: '0',
+      baseIndex: 0,
+      triggerMinionUid: 'discarded-host',
+      triggerMinionDefId: 'test_host',
+      triggerMinionPower: 3,
+    } as TriggerInstance;
+    const core = baseCore({
+      triggerQueue: [trigger],
+    });
+    const state = startSmashUpReactionSession(makeMatchState(core), {
+      frameId: 'score-after:0:0',
+      frameKind: 'score-after',
+      responseWindowType: 'afterScoring',
+    });
+
+    const resolved = resolveSmashUpReactionChoice(
+      state,
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      2,
+      { kind: 'trigger', triggerId: trigger.id },
+    );
+
+    expect(resolved.events).toContainEqual(expect.objectContaining({
+      type: SU_EVENTS.TRIGGER_CONSUMED,
+      payload: { triggerId: trigger.id },
+    }));
+    expect(resolved.events).toContainEqual(expect.objectContaining({
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: expect.objectContaining({ messageKey: 'discard_from_base_resolved' }),
+    }));
+    expect(resolved.state.core.triggerQueue ?? []).toHaveLength(0);
   });
 
   it('processAffectTriggers stamps queued onMinionAffected reactions with explicit frame ids', () => {

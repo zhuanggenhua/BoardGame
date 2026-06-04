@@ -1,4 +1,4 @@
-import { getAllCardDefs, getBaseDef, getCardDef } from '../data/cards';
+import { getAllCardDefs, getBaseDef, getCardDef, getCardDefsByFaction } from '../data/cards';
 import { registerAbilityProgram, registerSimpleAbility, type AbilityContext } from '../domain/abilityRegistry';
 import { getCurrentTrackedCardTopSnapshot, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
@@ -41,6 +41,7 @@ import {
     normalizePodDefId,
 } from '../domain/utils';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import { getResolvedPlayerFactionIds } from '../aiProfiles';
 
 type GeeksPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -343,9 +344,18 @@ function getCurrentDeckTopSnapshotCards<T extends { uid: string; defId: string }
     return getCurrentTrackedCardTopSnapshot(state.players[playerId]?.deck ?? [], trackedCards);
 }
 
-function buildGeeksBannedListNameOptions(): PromptOption<GeeksBannedListChoice>[] {
+function buildGeeksBannedListNameOptions(
+    matchState: MatchState<SmashUpCore>,
+): PromptOption<GeeksBannedListChoice>[] {
+    const currentFactionIds = Array.from(new Set(
+        Object.keys(matchState.core.players).flatMap((playerId) => getResolvedPlayerFactionIds(matchState, playerId as PlayerId)),
+    ));
     const seen = new Set<string>();
-    return getAllCardDefs()
+    const candidateCards = currentFactionIds.length > 0
+        ? currentFactionIds.flatMap((factionId) => getCardDefsByFaction(factionId))
+        : getAllCardDefs();
+
+    return candidateCards
         .filter((card) => card.type === 'minion' || card.type === 'action' || card.type === 'fusion')
         .filter((card) => {
             const normalized = normalizePodDefId(card.id) ?? card.id;
@@ -358,7 +368,7 @@ function buildGeeksBannedListNameOptions(): PromptOption<GeeksBannedListChoice>[
             id: `card-name-${index}`,
             label: card.name ?? card.id,
             value: { defId: normalizePodDefId(card.id) ?? card.id },
-            displayMode: 'button',
+            displayMode: 'card',
         }));
 }
 
@@ -1574,10 +1584,10 @@ const geeksBannedListPromptProgram = createPromptProgram<GeeksBannedListPromptCo
         `geeks_banned_list_${context.targetPlayerId}_${context.now}`,
         context.playerId,
         `禁卡表：为${getPlayerLabel(context.targetPlayerId)}命名一张牌`,
-        buildGeeksBannedListNameOptions(),
+        buildGeeksBannedListNameOptions(context.matchState),
         {
             sourceId: 'geeks_banned_list',
-            targetType: 'button',
+            targetType: 'generic',
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -1751,7 +1761,7 @@ const geeksMinMaxingActionPromptProgram = createPromptProgram<GeeksMinMaxingActi
             ),
             {
                 sourceId: 'geeks_min_maxing_action',
-                targetType: 'hand',
+                targetType: 'generic',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
             },

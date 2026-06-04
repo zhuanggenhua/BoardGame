@@ -414,8 +414,8 @@ describe('SmashUp UI 交互验证', () => {
             rendererId: 'smashup-card-renderer',
             payload: { defId: 'zombie_lord_pod' },
         });
-        expect(preview.style.width).toBe('8.5vw');
-        expect(preview.style.height).toContain('vw');
+        expect(preview.className).toContain('aspect-[0.714]');
+        expect(preview.className).toContain('bg-slate-900');
     });
 
     it('PromptOverlay 的排序卡牌选项只要带 defId，就应显示对应卡面而不是占位块', async () => {

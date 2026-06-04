@@ -149,4 +149,40 @@ describe('clientAutoReport', () => {
 
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
+
+    it('音频设备启动失败噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-device-invalid-state', {
+            content: '[auto][unhandledrejection] Failed to start the audio device',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'InvalidStateError',
+            errorMessage: 'Failed to start the audio device',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('Script error. 浏览器通用噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('generic-script-error', {
+            content: '[auto][window.error] Script error.',
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'Script error.',
+            errorSource: 'window.error',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
 });

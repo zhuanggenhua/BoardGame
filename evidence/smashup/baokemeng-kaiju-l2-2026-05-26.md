@@ -18,7 +18,7 @@
 | `kaiju_they_say_hes_got_to_go` | 移动一个泰坦到另一个基地 | `src/games/smashup/abilities/kaiju.ts` | `They Say He’s Got to Go 会移动一个泰坦到另一个基地` |
 | `kaiju_there_goes_tokyo` | Gorgodzolla 在场时，移动它，清掉原基地并替换 | `src/games/smashup/abilities/kaiju.ts` | `There Goes Tokyo 移动 Gorgodzolla、清掉原基地并正常替换新基地` |
 | `kaiju_oh_no` | 打出或移动 Gorgodzolla 到此；持续 +2 总力量 | `src/games/smashup/abilities/kaiju.ts`、`abilities/ongoing_modifiers.ts` | `Oh, No! 可把牌库旁的 Gorgodzolla 打到目标基地`；Stomp 用例覆盖同类 +2 total power 查询 |
-| `kaiju_radioactive_breath` | 可选消灭任意数量不由你控制的力量 2 或以下随从 | `src/games/smashup/abilities/kaiju.ts` | `Radioactive Breath 可选消灭任意数量不由你控制的力量 2 或以下随从` |
+| `kaiju_radioactive_breath` | 可选消灭任意数量不由你控制的力量 2 或以下随从；持续 +3 总力量 | `src/games/smashup/abilities/kaiju.ts`、`abilities/ongoing_modifiers.ts` | `Radioactive Breath 可选消灭任意数量不由你控制的力量 2 或以下随从，并持续给你在这里 +3 总力量` |
 | `kaiju_tail_smash` | 消灭这里一个不由你控制的力量 3 或以下随从；持续 +4 总力量 | `src/games/smashup/abilities/kaiju.ts`、`abilities/ongoing_modifiers.ts` | `Tail Smash 强制消灭这里一个不由你控制的力量 3 或以下随从` |
 | `kaiju_stomp` | 本基地 breakpoint -3；持续 +2 总力量 | `src/games/smashup/abilities/kaiju.ts`、`abilities/ongoing_modifiers.ts` | `Stomp 降低目标基地临界点，持续给拥有者在该基地 +2 总力量` |
 | `kaiju_wade_through_the_buildings` | 摧毁这里所有其他玩家行动；持续 +4 总力量 | `src/games/smashup/abilities/kaiju.ts`、`abilities/ongoing_modifiers.ts` | `Wade Through the Buildings 会摧毁这里所有其他玩家行动牌` |
@@ -31,6 +31,7 @@
 ## 裁定记录
 
 - `kaiju_radioactive_breath` 中英 locale 存在差异：英文为“任意数量这里力量≤2随从”，中文图面/locale 为“不由你控制的 2 或更低”。本轮实现按中文图面口径执行，仅允许选择其他玩家控制的力量 2 或以下随从。
+- 2026-06-03 回写：旧 L2 文档遗漏了 `kaiju_radioactive_breath` 的持续 `+3 总力量` 子句，且 `registerKaijuModifiers()` 也漏登记该 ongoing 加成。现已补齐行为测试与消费链，旧“只验证消灭效果”的结论失效。
 - `base_tokyo` 不能复用 ongoing base power 注册表，因为它不是附着行动卡，而是基地 `onActionPlayed` 触发后的本回合临时玩家-基地总力量。已新增 `TEMP_BASE_POWER_MODIFIED` 事件和 `tempBasePowerModifiers` 共享通道，由总力量计算统一消费，并在 `TURN_STARTED` 清空，沿用现有临时力量/临界点生命周期。
 - `kaiju_the_folly_of_men` 裁定为 action-only 保护：阻止其他玩家行动牌摧毁己方随从，不阻止非行动来源摧毁。已用 `itty_critters_super_effective` 作为跨派系行动来源回归。
 - `kaiju_johnny` 需要“从基地持续行动区回手，而不是脱离后进弃牌堆”，因此 `ONGOING_DETACHED` 增加可选 `destination: 'hand'`；默认仍为 `discard`，保持旧行动摧毁/脱离语义不变。

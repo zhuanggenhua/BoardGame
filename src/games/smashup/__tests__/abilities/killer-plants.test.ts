@@ -195,6 +195,27 @@ describe('killer_plant_entangled 移动保护与回合开始自毁', () => {
         expect(isMinionProtected(state, enemyMinion, 0, '0', 'move')).toBe(true);
     });
 
+    it('borrowed Entangled 在只有控制者随从而没有真实 owner 随从时，也应按控制者触发保护', () => {
+        const controllerMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const state = makeState({
+            bases: [
+                makeBase({
+                    minions: [controllerMinion, enemyMinion],
+                    ongoingActions: [{
+                        uid: 'ent-borrowed',
+                        defId: 'killer_plant_entangled',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                }),
+            ],
+        });
+
+        expect(isMinionProtected(state, controllerMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, enemyMinion, 0, '1', 'move')).toBe(true);
+    });
+
     it('控制者回合开始时会自毁', () => {
         const state = makeState({
             bases: [

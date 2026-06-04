@@ -309,7 +309,7 @@ describe('StatusEffectsIcons', () => {
         expect(html).toContain('https://old-cdn.example.com/i18n/zh-CN/dicethrone/images/moon_elf/compressed/dice.webp');
     });
 
-    it('状态图集 JSON 在远程资源模式下应优先走官方资源域名', async () => {
+    it('状态图集 JSON 在远程资源模式下仍应只走本地 /assets', async () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
 
         const fetchMock = vi.fn(async (_input: RequestInfo | URL) => ({
@@ -327,16 +327,16 @@ describe('StatusEffectsIcons', () => {
 
         expect(Object.keys(atlases).length).toBeGreaterThan(0);
         expect(fetchMock).toHaveBeenCalled();
-        expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('https://assets.easyboardgame.top/official/'))).toBe(true);
+        expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('/assets/'))).toBe(true);
         expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/i18n/zh-CN/'))).toBe(true);
     });
 
-    it('远端状态图集 JSON 缺失时应回退到本地 /assets', async () => {
+    it('状态图集 JSON 应按当前语言和备用语言查找本地路径', async () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
 
         const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
             const url = String(input);
-            if (url.startsWith('https://assets.easyboardgame.top/official/')) {
+            if (url.includes('/i18n/zh-CN/')) {
                 return {
                     ok: false,
                     json: async () => null,
@@ -358,6 +358,68 @@ describe('StatusEffectsIcons', () => {
 
         expect(Object.keys(atlases).length).toBeGreaterThan(0);
         expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/assets/'))).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/i18n/en/'))).toBe(true);
+    });
+
+    it('新英雄状态图集应从本地 zh-CN JSON 加载坐标', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url.includes('/i18n/zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json')) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        meta: { image: 'status-icons-atlas.png', size: { w: 512, h: 256 } },
+                        frames: {
+                            tactical_advantage: { frame: { x: 0, y: 0, w: 256, h: 256 } },
+                            bind: { frame: { x: 256, y: 0, w: 256, h: 256 } },
+                        },
+                    }),
+                };
+            }
+            if (url.includes('/i18n/zh-CN/dicethrone/images/cursed/status-icons-atlas.json')) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        meta: { image: 'status-icons-atlas.png', size: { w: 1024, h: 256 } },
+                        frames: {
+                            wither: { frame: { x: 0, y: 0, w: 256, h: 256 } },
+                            parley: { frame: { x: 256, y: 0, w: 256, h: 256 } },
+                            powder_keg: { frame: { x: 512, y: 0, w: 256, h: 256 } },
+                            cursed_coin: { frame: { x: 768, y: 0, w: 256, h: 256 } },
+                        },
+                    }),
+                };
+            }
+            return {
+                ok: false,
+                json: async () => null,
+            };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const atlases = await loadStatusAtlases('zh-CN');
+
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA]?.frames.tactical_advantage).toEqual({
+            x: 0,
+            y: 0,
+            w: 256,
+            h: 256,
+        });
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA]?.frames.bind).toEqual({
+            x: 256,
+            y: 0,
+            w: 256,
+            h: 256,
+        });
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.CURSED_PIRATE]?.frames.cursed_coin).toEqual({
+            x: 768,
+            y: 0,
+            w: 256,
+            h: 256,
+        });
+        expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('/assets/'))).toBe(true);
     });
 
     it('骰图切片坐标应匹配 3x3 atlas（使用下两行）', () => {

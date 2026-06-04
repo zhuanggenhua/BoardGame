@@ -22,6 +22,7 @@ import {
 } from '../helpers/dicethrone';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
+import { BLINK_2 } from '../../src/games/dicethrone/heroes/ninja/abilities';
 import { NINJA_CARDS } from '../../src/games/dicethrone/heroes/ninja/cards';
 import { TREANT_CARDS } from '../../src/games/dicethrone/heroes/treant/cards';
 
@@ -2677,11 +2678,11 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
         }
     });
 
-    test('忍者升级闪现后应在真实防御链路中按 Blink II 结算', async ({ browser }, testInfo) => {
+    test('忍者瞬身 II 应在真实防御链路中支持保留1颗并重投另外2颗', async ({ browser }, testInfo) => {
         test.setTimeout(180000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const match = await setupTreantNinjaMatch(browser, baseURL);
-        const testName = '忍者升级闪现后应在真实防御链路中按BlinkII结算';
+        const testName = '忍者瞬身II应在真实防御链路中支持保留1颗并重投另外2颗';
 
         try {
             await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
@@ -2697,22 +2698,43 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     ...p1,
                     resources: { ...resources, [RESOURCE_IDS.CP]: 5, [RESOURCE_IDS.HP]: 50 },
                     tokens: { ...tokens, [TOKEN_IDS.SMOKE_BOMB]: 0 },
-                    hand: [cloneNinjaCard('upgrade-blink-2')],
-                    discard: [],
+                    abilities: Array.isArray(p1.abilities)
+                        ? p1.abilities.map((ability) => {
+                            const current = asRecord(ability);
+                            return current.id === 'blink'
+                                ? structuredClone(BLINK_2) as unknown as JsonRecord
+                                : current;
+                        })
+                        : p1.abilities,
+                    abilityLevels: {
+                        ...asRecord(p1.abilityLevels),
+                        blink: 2,
+                    },
                 };
                 root.core = {
                     ...core,
                     players,
-                    activePlayerId: '1',
-                    phase: 'main1',
-                    pendingAttack: null,
+                    activePlayerId: '0',
+                    phase: 'offensiveRoll',
+                    rollDiceCount: 5,
+                    rollCount: 1,
+                    rollLimit: 3,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '0',
+                        defenderId: '1',
+                        sourceAbilityId: 'shattering-fist',
+                        defenseAbilityId: undefined,
+                        isDefendable: true,
+                        damage: 0,
+                    },
                     pendingDamage: null,
                     pendingBonusDiceSettlement: undefined,
                 };
                 root.sys = {
                     ...sys,
-                    phase: 'main1',
-                    currentPlayerIndex: 1,
+                    phase: 'offensiveRoll',
+                    currentPlayerIndex: 0,
                     interaction: { ...asRecord(sys.interaction), current: undefined },
                     responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
                 };
@@ -2720,10 +2742,6 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             });
             await closeDebugPanelIfOpen(match.guestPage);
             await closeCardSpotlightIfOpen(match.guestPage);
-            await expect(match.guestPage.locator('[data-testid="hand-area"] [data-card-id="upgrade-blink-2"]').first()).toBeVisible({ timeout: 10000 });
-            await screenshot(match.guestPage, testName, '01-upgrade-blink-2-before-drag.png');
-
-            await dragHandCardToPlay(match.guestPage, 'upgrade-blink-2');
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
                 const p1 = asRecord(asRecordMap(core.players)['1']);
@@ -2733,8 +2751,8 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     cp: resources[RESOURCE_IDS.CP],
                     blinkLevel: abilityLevels.blink,
                 };
-            }, { timeout: 10000 }).toEqual({ cp: 3, blinkLevel: 2 });
-            await screenshot(match.guestPage, testName, '02-upgrade-blink-2-after-play.png');
+            }, { timeout: 10000 }).toEqual({ cp: 5, blinkLevel: 2 });
+            await screenshot(match.guestPage, testName, '01-blink-2-defense-state-prepared.png');
 
             await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
                 const root = asRecord(state.G ?? state);
@@ -2743,25 +2761,6 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 const players = asRecordMap(core.players);
                 const p0 = asRecord(players['0']);
                 const p1 = asRecord(players['1']);
-                const dice = Array.isArray(core.dice) ? [...core.dice] : [];
-
-                const blinkValues = [1, 4, 6];
-                const blinkSymbols = [
-                    NINJA_DICE_FACE_IDS.KATANA,
-                    NINJA_DICE_FACE_IDS.SHURIKEN,
-                    NINJA_DICE_FACE_IDS.MASK,
-                ];
-
-                for (let index = 0; index < blinkValues.length; index += 1) {
-                    dice[index] = {
-                        ...asRecord(dice[index]),
-                        id: index,
-                        value: blinkValues[index],
-                        symbol: blinkSymbols[index],
-                        ownerId: '1',
-                        isKept: false,
-                    };
-                }
 
                 players['0'] = {
                     ...p0,
@@ -2774,33 +2773,23 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 root.core = {
                     ...core,
                     players,
-                    dice,
                     activePlayerId: '0',
-                    phase: 'defensiveRoll',
-                    rollLimit: 1,
-                    rollDiceCount: 3,
+                    phase: 'offensiveRoll',
+                    rollDiceCount: 5,
                     rollCount: 1,
+                    rollLimit: 3,
                     rollConfirmed: true,
-                    pendingAttack: {
-                        attackerId: '0',
-                        defenderId: '1',
-                        sourceAbilityId: 'shattering-fist',
-                        defenseAbilityId: 'blink',
-                        isDefendable: true,
-                        damage: 0,
-                    },
-                    pendingDamage: undefined,
-                    pendingBonusDiceSettlement: undefined,
                 };
-                root.sys = forceFixedDieQueue({
+                root.sys = {
                     ...sys,
-                    phase: 'defensiveRoll',
+                    phase: 'offensiveRoll',
                     currentPlayerIndex: 0,
                     interaction: { ...asRecord(sys.interaction), current: undefined },
-                }, []);
+                    responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
+                };
                 return state;
             });
-            await screenshot(match.guestPage, testName, '03-blink-2-before-defense-advance.png');
+            await screenshot(match.guestPage, testName, '02-before-enter-defensive-roll.png');
 
             await expect.poll(async () => {
                 const root = await readHarnessState(match.guestPage);
@@ -2808,14 +2797,82 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 const sys = asRecord(root.sys);
                 return {
                     phase: sys.phase ?? core.phase,
-                    rollDiceCount: core.rollDiceCount,
-                    defenseAbilityId: asRecord(core.pendingAttack).defenseAbilityId,
+                    pendingAttackSource: asRecord(core.pendingAttack).sourceAbilityId ?? null,
                 };
-            }, { timeout: 10000 }).toEqual({ phase: 'defensiveRoll', rollDiceCount: 3, defenseAbilityId: 'blink' });
-            await expect(match.guestPage.getByRole('button', { name: '开始防御' })).toBeVisible({ timeout: 10000 });
-            await match.guestPage.getByRole('button', { name: '开始防御' }).click();
-            await expect(match.guestPage.getByRole('button', { name: '开始防御' })).toBeHidden({ timeout: 10000 });
-            await clickAdvancePhase(match.guestPage, '1');
+            }, { timeout: 10000 }).toEqual({ phase: 'offensiveRoll', pendingAttackSource: 'shattering-fist' });
+
+            await clickAdvancePhase(match.hostPage, '0');
+            await expect.poll(async () => {
+                const root = await readHarnessState(match.guestPage);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                return {
+                    phase: sys.phase ?? core.phase,
+                    rollLimit: core.rollLimit ?? null,
+                    rollDiceCount: core.rollDiceCount ?? null,
+                    defenseAbilityId: asRecord(core.pendingAttack).defenseAbilityId ?? null,
+                };
+            }, { timeout: 10000 }).toEqual({
+                phase: 'defensiveRoll',
+                rollLimit: 2,
+                rollDiceCount: 3,
+                defenseAbilityId: 'blink',
+            });
+            await screenshot(match.guestPage, testName, '03-entered-defensive-roll-with-reroll-window.png');
+
+            const defenseRollButton = match.guestPage.locator('[data-tutorial-id="dice-roll-button"]');
+            const defenseConfirmButton = match.guestPage.locator('[data-tutorial-id="dice-confirm-button"]');
+            const endDefenseButton = match.guestPage.getByRole('button', { name: /结束防御|End Defense/i }).first();
+
+            await match.guestPage.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
+            await match.guestPage.evaluate(() => {
+                window.__BG_TEST_HARNESS__?.dice.setValues([1, 4, 6]);
+            });
+            await expect(defenseRollButton).toBeEnabled({ timeout: 10000 });
+            await defenseRollButton.click();
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                return {
+                    rollCount: core.rollCount ?? null,
+                    rollLimit: core.rollLimit ?? null,
+                    rollConfirmed: core.rollConfirmed ?? null,
+                    dieValues: Array.isArray(core.dice) ? core.dice.slice(0, 3).map((die) => asRecord(die).value ?? null) : [],
+                };
+            }, { timeout: 10000 }).toEqual({
+                rollCount: 1,
+                rollLimit: 2,
+                rollConfirmed: false,
+                dieValues: [1, 4, 6],
+            });
+            await screenshot(match.guestPage, testName, '04-after-first-defense-roll-reroll-still-available.png');
+
+            const keepFirstDie = match.guestPage.getByTestId('die-button-0');
+            await expect(keepFirstDie).toBeVisible({ timeout: 10000 });
+            await keepFirstDie.click();
+            await match.guestPage.evaluate(() => {
+                window.__BG_TEST_HARNESS__?.dice.setValues([6, 6]);
+            });
+            await expect(defenseRollButton).toBeEnabled({ timeout: 10000 });
+            await defenseRollButton.click();
+
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                return {
+                    rollCount: core.rollCount ?? null,
+                    rollLimit: core.rollLimit ?? null,
+                    dieValues: Array.isArray(core.dice) ? core.dice.slice(0, 3).map((die) => asRecord(die).value ?? null) : [],
+                };
+            }, { timeout: 10000 }).toEqual({
+                rollCount: 2,
+                rollLimit: 2,
+                dieValues: [1, 6, 6],
+            });
+            await screenshot(match.guestPage, testName, '05-after-reroll-two-defense-dice.png');
+
+            await expect(defenseConfirmButton).toBeEnabled({ timeout: 10000 });
+            await defenseConfirmButton.click();
+            await expect(endDefenseButton).toBeEnabled({ timeout: 10000 });
+            await endDefenseButton.click();
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
                 const players = asRecordMap(core.players);
@@ -2829,11 +2886,11 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     pendingAttack: Boolean(core.pendingAttack),
                 };
             }, { timeout: 10000 }).toEqual({
-                attackerHp: 27,
-                smokeBomb: 0,
+                attackerHp: 29,
+                smokeBomb: 1,
                 pendingAttack: false,
             });
-            await screenshot(match.guestPage, testName, '04-blink-2-after-defense-resolve.png');
+            await screenshot(match.guestPage, testName, '06-after-defense-reroll-closeout.png');
         } finally {
             await closeMatchContexts(match);
         }

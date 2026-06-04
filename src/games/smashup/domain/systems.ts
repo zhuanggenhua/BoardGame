@@ -8,7 +8,7 @@
 
 import type { GameEvent, MatchState, SystemState } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
-import { createSimpleChoice, INTERACTION_EVENTS, queueInteraction, resolveInteraction } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_EVENTS, queueInteraction, resolveInteraction } from '../../../engine/systems/InteractionSystem';
 import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
 import type {
     SmashUpCore,
@@ -138,6 +138,25 @@ function getPureDeckReorderPlayerIds(events: readonly SmashUpEvent[]): string[] 
         .filter((playerId): playerId is string => typeof playerId === 'string')));
 }
 
+function getPromptResultTriggerQueue(
+    resultState: MatchState<SmashUpCore>,
+    emittedEvents: readonly SmashUpEvent[],
+): SmashUpCore['triggerQueue'] {
+    const consumedTriggerIds = new Set(emittedEvents
+        .filter((event) => event.type === SU_EVENT_TYPES.TRIGGER_CONSUMED)
+        .map((event) => (event.payload as { triggerId?: unknown } | undefined)?.triggerId)
+        .filter((triggerId): triggerId is string => typeof triggerId === 'string'));
+
+    if (consumedTriggerIds.size === 0) {
+        return resultState.core.triggerQueue;
+    }
+
+    const next = (resultState.core.triggerQueue ?? []).filter(
+        (trigger) => !consumedTriggerIds.has(trigger.id),
+    );
+    return next.length > 0 ? next : undefined;
+}
+
 function mergePromptResultCoreWithPreEventState(
     resultState: MatchState<SmashUpCore>,
     coreBeforeHandler: SmashUpCore,
@@ -179,6 +198,9 @@ function mergePromptResultCoreWithPreEventState(
         ...coreBeforeHandler,
         bases,
         players,
+        // 交互处理器可能会先消费 triggerQueue，再把后续领域事件交给 pipeline 统一 reduce。
+        // 这里若沿用 handler 前的 triggerQueue，会把已选择的强制触发还原，导致同一“先结算”弹窗反复出现。
+        triggerQueue: getPromptResultTriggerQueue(resultState, emittedEvents),
         timedPowerModifiers: resultState.core.timedPowerModifiers,
     };
 }

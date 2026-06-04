@@ -1,5 +1,13 @@
 # Smash Up longzu intake contract（2026-05-31）
 
+> 2026-06-03 纠偏：本文保留为 **2026-05-31 的历史 intake 快照**。其中“`base/longzu` 是当前批次阻塞项”的结论已失效。
+>
+> 当前真实口径：
+>
+> - longzu 三派系运行时基地合法复用 `shayu` 的 `smashup:base7`，不是 `base/longzu`。
+> - `public/assets/i18n/zh-CN/smashup/base/longzu.png` 与 `base/compressed/longzu.webp` 已从正式资源树删除。
+> - 本批真实资源 gate 是 `cards/longzu`：需要同时补齐根级/游戏级 manifest，并保证远端 `official/i18n/zh-CN/smashup/cards/compressed/longzu.webp` 可 `HEAD 200`。
+
 ## 范围
 
 本轮用户已替换卡牌图集，当前素材位于：

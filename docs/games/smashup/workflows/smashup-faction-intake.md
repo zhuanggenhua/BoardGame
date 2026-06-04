@@ -237,6 +237,12 @@ npm run assets:check
 
 如果只想上传本次新增 atlas，建议用最小上传脚本或定向上传，避免把无关文件一起推送。
 
+额外门禁：
+
+- 新增 `cards/<atlas>` 或 `base/<atlas>` 后，除了游戏级 `public/assets/i18n/zh-CN/smashup/assets-manifest.json`，还必须确认根级 `public/assets/i18n/assets-manifest.json` 也已经出现对应键；不能只看 incremental validate 通过。
+- 如果经旧派系对照确认某批基地实际复用既有 atlas，就不要再把“候选 longzu 基地图”留在 `public/assets/i18n/zh-CN/smashup/base/` 等正式运行时目录。错图/候选图必须移出或删除，再执行上传。
+- 真实发布阻塞以运行时会请求的 URL 为准。像手牌卡图这类运行时 atlas，最终必须给出远端 `HEAD 200` 的完整路径，不能只证明本地 PNG/WebP 存在。
+
 本次实际上传对象：
 
 - `official/i18n/zh-CN/smashup/cards/compressed/aiji.webp`

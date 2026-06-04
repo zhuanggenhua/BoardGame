@@ -14,7 +14,7 @@ import type {
     DamageDealtEvent,
     StatusAppliedEvent,
 } from './types';
-import { getPlayerDieFace } from './rules';
+import { getPendingBonusSettlementDice, getPlayerDieFace } from './rules';
 import { reduce } from './reducer';
 import { RESOURCE_IDS } from './resources';
 import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
@@ -365,7 +365,8 @@ export function executeTokenCommand(
                 break;
             }
             
-            const die = settlement.dice.find(d => d.index === dieIndex);
+            const settlementDice = getPendingBonusSettlementDice(settlement);
+            const die = settlementDice.find(d => d.index === dieIndex);
             if (!die) {
                 console.warn('[DiceThrone] REROLL_BONUS_DIE: die not found');
                 break;
@@ -411,7 +412,8 @@ export function executeTokenCommand(
             }
             
             // 计算最终伤害；特殊技能可覆盖“点数和即伤害”的默认收口。
-            const defaultTotalDamage = settlement.dice.reduce((sum, d) => sum + d.value, 0);
+            const settlementDice = getPendingBonusSettlementDice(settlement);
+            const defaultTotalDamage = settlementDice.reduce((sum, d) => sum + d.value, 0);
             const settlementHandler = settlement.customResolutionId
                 ? getBonusDiceSettlementHandler(settlement.customResolutionId)
                 : undefined;
@@ -426,7 +428,7 @@ export function executeTokenCommand(
             events.push({
                 type: 'BONUS_DICE_SETTLED',
                 payload: {
-                    finalDice: settlement.dice,
+                    finalDice: settlementDice,
                     totalDamage,
                     thresholdTriggered,
                     attackerId: settlement.attackerId,

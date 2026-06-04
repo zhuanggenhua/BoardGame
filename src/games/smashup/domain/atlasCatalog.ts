@@ -27,7 +27,6 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.CARDS9, kind: 'card', image: 'smashup/cards/shayu', grid: { rows: 5, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.CARDS10, kind: 'card', image: 'smashup/cards/baokemeng', grid: { rows: 7, cols: 9 } },
     { id: SMASHUP_ATLAS_IDS.CARDS11, kind: 'card', image: 'smashup/cards/yuanhou', grid: { rows: 6, cols: 8 } },
-    // longzu 当前只完成卡图 intake；基地未替换前先保留为实施中隐藏入口。
     { id: SMASHUP_ATLAS_IDS.CARDS12, kind: 'card', image: 'smashup/cards/longzu', grid: { rows: 5, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_CARDS, kind: 'card', image: 'smashup/cards/huluwawa_cards', grid: { rows: 3, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, kind: 'card', image: 'smashup/taitan/huluwawa_titan', grid: { rows: 1, cols: 1 } },

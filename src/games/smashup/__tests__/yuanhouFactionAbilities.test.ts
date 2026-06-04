@@ -13432,6 +13432,70 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         });
     });
 
+    it('borrowed 三号空间站 special 也应按当前控制者而不是真实 owner 判断合法基地并保留真实 owner', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_secret_volcano_headquarters', [
+                    makeMinion('moon-borrowed-a', 'sharks_mako', '0', 2, '1'),
+                ]),
+                makeBase('base_portal_room', [
+                    makeMinion('moon-enemy-controlled-a', 'robot_microbot_guard', '1', 1),
+                ]),
+            ],
+            titans: [{
+                uid: 'moon-zero-controller-check',
+                defId: 'super_spies_moon_zero_three',
+                faction: 'super_spies',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' as const },
+            }],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const state = makeMatchState(core);
+        const borrowedBaseCommand = {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'moon-zero-controller-check', baseIndex: 0 },
+            timestamp: 1004,
+        } as any;
+        const enemyControlledBaseCommand = {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'moon-zero-controller-check', baseIndex: 1 },
+            timestamp: 1005,
+        } as any;
+
+        expect(validate(state, borrowedBaseCommand).valid).toBe(true);
+        expect(validate(state, enemyControlledBaseCommand)).toMatchObject({
+            valid: false,
+            error: '你只能将三号空间站打出到没有其他玩家随从的基地',
+        });
+
+        const result = runCommand(state, borrowedBaseCommand);
+        expect(result.success).toBe(true);
+        const titan = result.finalState.core.titans?.find(candidate => candidate.uid === 'moon-zero-controller-check');
+        expect(titan?.location).toMatchObject({
+            zone: 'base',
+            baseIndex: 0,
+        });
+        expect(titan).toEqual(expect.objectContaining({
+            ownerId: '0',
+            controllerId: '0',
+        }));
+    });
+
     it('三号空间站：与时间盒子同时可从牌库旁发动时，先打出时间盒子后应统一阻止三号空间站继续发动', () => {
         const core = {
             players: {

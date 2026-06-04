@@ -202,13 +202,13 @@ describe('Kaiju 代表性玩法行为', () => {
         expect(filterProtectedDestroyEvents([nonActionDestroy], core, '1')).toEqual([nonActionDestroy]);
     });
 
-    it('Radioactive Breath 可选消灭任意数量不由你控制的力量 2 或以下随从', () => {
+    it('Radioactive Breath 可选消灭任意数量不由你控制的力量 2 或以下随从，并持续给你在这里 +3 总力量', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', { hand: [makeCard('breath', 'kaiju_radioactive_breath', 'action', '0')] }),
                 '1': makePlayer('1'),
             },
-            bases: [makeBase('base_tokyo', [
+            bases: [makeBase('base_itty_city', [
                 makeMinion('enemy-low-1', 'itty_critters_leafaroo', '1', 2),
                 makeMinion('enemy-low-2', 'itty_critters_flooffairy', '1', 2),
                 makeMinion('enemy-high', 'kaiju_kaijookey', '1', 4),
@@ -228,12 +228,15 @@ describe('Kaiju 代表性玩法行为', () => {
             .filter(option => ['enemy-low-1', 'enemy-low-2'].includes(option.value?.minionUid))
             .map(option => option.id);
         expect(optionIds).toHaveLength(2);
+        expect(play.finalState.core.bases[0].ongoingActions.map(action => action.defId)).toContain('kaiju_radioactive_breath');
+        expect(getPlayerEffectivePowerOnBase(play.finalState.core, play.finalState.core.bases[0], 0, '0')).toBe(5);
         expect(getPromptOptions(prompt).some(option => option.value?.minionUid === 'enemy-high')).toBe(false);
         expect(getPromptOptions(prompt).some(option => option.value?.minionUid === 'own-low')).toBe(false);
 
         const destroy = respondToPromptOptions(play.finalState, optionIds, '0', FIXED_RANDOM);
         expect(destroy.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(2);
         expect(destroy.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['enemy-high', 'own-low']);
+        expect(getPlayerEffectivePowerOnBase(destroy.finalState.core, destroy.finalState.core.bases[0], 0, '0')).toBe(5);
     });
 
     it('Tail Smash 强制消灭这里一个不由你控制的力量 3 或以下随从', () => {

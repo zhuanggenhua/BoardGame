@@ -2,9 +2,16 @@ export const SMASHUP_DECK_QUERY_SETUP_VALUE = 'deckQuery' as const;
 export const DEFAULT_SMASHUP_EXPANSIONS = ['titans', 'diy'] as const;
 const SMASHUP_PUBLIC_EXPANSION_ORDER = ['titans', 'diy'] as const;
 const SMASHUP_PUBLIC_ROOM_TAG_ORDER = ['titans', SMASHUP_DECK_QUERY_SETUP_VALUE, 'diy'] as const;
+const DEFAULT_SMASHUP_TEAM_MODE = 'ffa' as const;
 
 export interface SmashUpPublicRoomSummary {
     enabledExpansions: string[];
+}
+
+export interface SmashUpRuntimeSetupConfig {
+    enabledExpansions: string[];
+    deckQueryEnabled: boolean;
+    teamMode: 'ffa' | '2v2';
 }
 
 function normalizeExpansionOrder(
@@ -73,6 +80,37 @@ export function readSmashUpDeckQueryEnabled(setupData?: Record<string, unknown>)
     }
 
     return true;
+}
+
+export function readSmashUpTeamMode(
+    setupData?: Record<string, unknown>,
+    playerCount = 0,
+): 'ffa' | '2v2' {
+    if (playerCount !== 4) {
+        return DEFAULT_SMASHUP_TEAM_MODE;
+    }
+
+    if (setupData?.teamMode === '2v2') {
+        return '2v2';
+    }
+
+    const selectedValue = readSetupSelectionValue(setupData, 'teamMode');
+    if (selectedValue === '2v2') {
+        return '2v2';
+    }
+
+    return DEFAULT_SMASHUP_TEAM_MODE;
+}
+
+export function readSmashUpRuntimeSetupConfig(
+    setupData?: Record<string, unknown>,
+    options?: { playerCount?: number },
+): SmashUpRuntimeSetupConfig {
+    return {
+        enabledExpansions: readSmashUpEnabledExpansions(setupData),
+        deckQueryEnabled: readSmashUpDeckQueryEnabled(setupData),
+        teamMode: readSmashUpTeamMode(setupData, options?.playerCount ?? 0),
+    };
 }
 
 function readSmashUpPublicRoomTags(setupData?: Record<string, unknown>): string[] {

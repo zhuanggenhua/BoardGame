@@ -835,6 +835,9 @@
       "cursedPirateCrowsNestOther": "瞭望台：未触发",
       "cursedPirateHeftyLoot": "干票大的：战利品触发抽牌与 CP",
       "cursedPirateHeftyOther": "干票大的：未触发",
+      "cursedPirateHumanMakeYourMarkCutlass": "做好标记：弯刀造成 2 点不可防御伤害",
+      "cursedPirateHumanMakeYourMarkLoot": "做好标记：战利品抽 1 张牌",
+      "cursedPirateHumanMakeYourMarkSkull": "做好标记：骷髅获得诅咒金币",
       "cursedPirateSipHit": "啜呼：3-6，获得火药桶和凋零",
       "cursedPirateSipMiss": "啜呼：1-2，无事发生"
     },
@@ -1099,6 +1102,16 @@
         "title": "啜呼：选择是否改为投骰",
         "acceptPowderKeg": "获得火药桶",
         "rollInstead": "不获得火药桶，改为投 1 骰"
+      },
+      "cursedPirateHumanWalkThePlank": {
+        "title": "走跳板：选择结算方式",
+        "stealCp": "偷取 1CP",
+        "discardCard": "令对手选择弃掉 1 张牌"
+      },
+      "cursedPirateHumanRemoveCoins": {
+        "title": "惊魂动魄：你可以移除任意数量的诅咒金币",
+        "keep": "不移除",
+        "remove": "移除 {{count}} 个诅咒金币"
       },
       "powderKegTransfer": {
         "title": "火药桶：选择转交目标",
@@ -2642,7 +2655,7 @@
     },
     "blink-2": {
       "name": "瞬身 II",
-      "description": "防御掷 3 骰；造成等同于忍刀数量的伤害；若投出手里剑，造成 2 点伤害；若投出 2 个面具，获得 1 个烟雾弹。"
+      "description": "防御掷 3 骰；可重掷至多 2 颗；造成等同于忍刀数量的伤害；若投出手里剑，造成 2 点伤害；若投出 2 个面具，获得 1 个烟雾弹。"
     },
     "ninja-assassinate": {
       "name": "忍杀",
@@ -2752,11 +2765,47 @@
       "name": "你还嫩了点",
       "description": "防御掷 5 骰；弯刀反击，战利品获得，骷髅防止伤害；弯刀+骷髅施加诅咒金币。精确防御结算仍在实施中。"
     },
-    "merciless-curse": {
-      "name": "无情诅咒",
-      "description": "终极：造成 13，施加休战、诅咒金币和凋零；对至多两名对手施加火药桶。额外目标仍在实施中。"
-    }
-  },
+      "merciless-curse": {
+        "name": "无情诅咒",
+        "description": "终极：造成 13，施加休战、诅咒金币和凋零；对至多两名对手施加火药桶。额外目标仍在实施中。"
+      },
+      "cutlass-stab": {
+        "name": "弯刀突刺",
+        "description": "human 面待正式录入：当前仅接入名称与槽位映射。"
+      },
+      "make-your-mark": {
+        "name": "做好标记",
+        "description": "human 面待正式录入：当前仅接入名称与槽位映射。"
+      },
+      "human-cursed": {
+        "name": "咒缚",
+        "description": "回合结束时，移除 1 个诅咒金币；若没有可移除的诅咒金币，则将英雄面板翻到另一面。完整机制待正式录入。"
+      },
+      "walk-the-plank": {
+        "name": "走跳板",
+        "description": "human 面待正式录入：当前仅接入名称与槽位映射。"
+      },
+      "light-the-fuse": {
+        "name": "点燃炸药",
+        "description": "human 面待正式录入：当前仅接入名称与槽位映射。"
+      },
+      "verdict-command": {
+        "name": "判决指令",
+        "description": "human 面待正式录入：当前仅接入名称与槽位映射。"
+      },
+      "astonishing": {
+        "name": "惊魂动魄",
+        "description": "human 面待正式录入：当前仅接入名称与槽位映射。"
+      },
+      "human-still-wet-behind-ears": {
+        "name": "你还嫩了点",
+        "description": "human 面待正式录入：当前仅接入名称与槽位映射。"
+      },
+      "merciless-plunder": {
+        "name": "无情劫掠！",
+        "description": "human 面待正式录入：当前仅接入名称与槽位映射。"
+      }
+    },
   "cards": {
     "card-energetic": {
       "name": "精力充沛！",
@@ -3518,7 +3567,7 @@
     },
     "upgrade-blink-2": {
       "name": "瞬身 II",
-      "description": "升级瞬身：防御掷 3 骰；造成等同于忍刀数量的伤害；每个手里剑造成 2 点伤害；若投出 2 个面具，获得 1 个烟雾弹。"
+      "description": "升级瞬身：防御掷 3 骰；可重掷至多 2 颗；造成等同于忍刀数量的伤害；每个手里剑造成 2 点伤害；若投出 2 个面具，获得 1 个烟雾弹。"
     },
     "upgrade-going-forward-2": {
       "name": "一往无前 II",
