@@ -7,13 +7,15 @@ import {
 describe('staleChunkReloadGuard', () => {
     it('detects known stale chunk error signatures', () => {
         expect(isStaleChunkError(new Error('Failed to fetch dynamically imported module'))).toBe(true);
+        expect(isStaleChunkError(new Error('error loading dynamically imported module: https://easyboardgame.top/assets/cursor-BonIRdwH.js'))).toBe(true);
         expect(isStaleChunkError('ChunkLoadError: Loading chunk 42 failed')).toBe(true);
         expect(isStaleChunkError('Importing a module script failed')).toBe(true);
         expect(isStaleChunkError(new Error('Expected a JavaScript module script but the server responded with text/html'))).toBe(true);
+        expect(isStaleChunkError(new Error("'text/html' is not a valid JavaScript MIME type."))).toBe(true);
         expect(isStaleChunkError(new Error('Network request failed'))).toBe(false);
     });
 
-    it('reloads once per location and records the guard key before reload', () => {
+    it('reloads once per reason and location and records the guard key before reload', () => {
         let stored: string | null = null;
         const reload = vi.fn();
         const warn = vi.fn();
@@ -40,9 +42,52 @@ describe('staleChunkReloadGuard', () => {
 
         expect(first).toBe(true);
         expect(second).toBe(false);
-        expect(stored).toBe('/ranked?tab=1#deck');
+        expect(stored).toBe('vite:preloadError\n/ranked?tab=1#deck');
         expect(reload).toHaveBeenCalledTimes(1);
         expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows a second reload on the same route for a different stale chunk reason', () => {
+        let stored: string | null = null;
+        const reload = vi.fn();
+        const warn = vi.fn();
+        const currentLocation = '/play/dicethrone/match/abc?playerID=0';
+
+        const first = reloadForStaleChunkOnceWithDeps('react-error-boundary', {
+            currentLocation,
+            getStoredLocation: () => stored,
+            setStoredLocation: (value) => {
+                stored = value;
+            },
+            reload,
+            warn,
+        });
+
+        const second = reloadForStaleChunkOnceWithDeps('game-runtime-load-failed:dicethrone', {
+            currentLocation,
+            getStoredLocation: () => stored,
+            setStoredLocation: (value) => {
+                stored = value;
+            },
+            reload,
+            warn,
+        });
+
+        const third = reloadForStaleChunkOnceWithDeps('game-runtime-load-failed:dicethrone', {
+            currentLocation,
+            getStoredLocation: () => stored,
+            setStoredLocation: (value) => {
+                stored = value;
+            },
+            reload,
+            warn,
+        });
+
+        expect(first).toBe(true);
+        expect(second).toBe(true);
+        expect(third).toBe(false);
+        expect(reload).toHaveBeenCalledTimes(2);
+        expect(warn).toHaveBeenCalledTimes(2);
     });
 
     it('still reloads when storage is unavailable', () => {

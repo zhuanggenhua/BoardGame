@@ -7,8 +7,10 @@ export const isStaleChunkError = (value: unknown): boolean => {
 
     const normalized = message.toLowerCase();
     return normalized.includes('failed to fetch dynamically imported module')
+        || normalized.includes('error loading dynamically imported module')
         || normalized.includes('importing a module script failed')
         || normalized.includes('expected a javascript module script')
+        || normalized.includes('is not a valid javascript mime type')
         || normalized.includes('chunkloaderror')
         || normalized.includes('loading chunk');
 };
@@ -30,10 +32,11 @@ export const reloadForStaleChunkOnceWithDeps = (reason: string, deps: ReloadOnce
 
     try {
         const previous = deps.getStoredLocation();
-        if (previous === deps.currentLocation) {
+        const guardValue = `${reason}\n${deps.currentLocation}`;
+        if (previous === guardValue) {
             return false;
         }
-        deps.setStoredLocation(deps.currentLocation);
+        deps.setStoredLocation(guardValue);
     } catch {
         // sessionStorage 不可用时降级为直接刷新一次
     }

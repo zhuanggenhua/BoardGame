@@ -3,6 +3,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { reportClientAutoFeedbackOnce } from "../../lib/feedback/clientAutoReport";
 import { setLastErrorContext } from "../../lib/feedback/errorContext";
+import { isStaleChunkError, reloadForStaleChunkOnce } from "../../lib/staleChunkReloadGuard";
 
 interface Props {
     children: ReactNode;
@@ -33,6 +34,12 @@ export class GlobalErrorBoundary extends Component<Props, State> {
             stack,
             source: 'react.error_boundary',
         });
+        if (isStaleChunkError(error)) {
+            const reloaded = reloadForStaleChunkOnce('react-error-boundary', window);
+            if (reloaded) {
+                return;
+            }
+        }
         const signature = `react-error-boundary:${error.name}:${error.message}`;
         void reportClientAutoFeedbackOnce(signature, {
             content: `[auto][react.error_boundary] ${error.message || 'React render error'}`,

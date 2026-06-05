@@ -60,6 +60,15 @@ vi.mock('react', async () => {
     };
 });
 
+vi.mock('../../../lib/staleChunkReloadGuard', async () => {
+    const actual = await vi.importActual<any>('../../../lib/staleChunkReloadGuard');
+    return {
+        ...actual,
+        isStaleChunkError: vi.fn(actual.isStaleChunkError),
+        reloadForStaleChunkOnce: vi.fn(actual.reloadForStaleChunkOnce),
+    };
+});
+
 describe('GlobalErrorBoundary', () => {
     it('Should be a React Component class', () => {
         expect(GlobalErrorBoundary).toBeDefined();
@@ -73,6 +82,28 @@ describe('GlobalErrorBoundary', () => {
         const error = new Error('Test Error');
         const state = GlobalErrorBoundary.getDerivedStateFromError(error);
         expect(state).toEqual({ hasError: true, error, errorInfo: null });
+    });
+
+    it('stale chunk 渲染错误会触发自动刷新而不是停留在错误页', async () => {
+        const staleChunkReloadGuard = await import('../../../lib/staleChunkReloadGuard');
+        vi.mocked(staleChunkReloadGuard.reloadForStaleChunkOnce).mockReturnValue(true);
+
+        const error = new Error('Failed to fetch dynamically imported module');
+        const errorInfo = {
+            componentStack: '\n    at MatchRoomWithAudio',
+        } as React.ErrorInfo;
+
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        try {
+            const boundary = new GlobalErrorBoundary({ children: null });
+            boundary.componentDidCatch(error, errorInfo);
+
+            expect(staleChunkReloadGuard.isStaleChunkError).toHaveBeenCalledWith(error);
+            expect(staleChunkReloadGuard.reloadForStaleChunkOnce).toHaveBeenCalledWith('react-error-boundary', window);
+            expect(consoleErrorSpy).not.toHaveBeenCalled();
+        } finally {
+            consoleErrorSpy.mockRestore();
+        }
     });
 });
 
