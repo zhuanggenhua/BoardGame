@@ -362,6 +362,13 @@ const createOnlineAiRecoveryState = (overrides?: {
                     hand: [],
                     deck: [],
                     discard: [],
+                    discardPile: [],
+                    resources: { hp: 50, cp: 0 },
+                    statusEffects: {},
+                    tokens: {},
+                    abilities: [],
+                    abilityLevels: {},
+                    upgradeCardByAbilityId: {},
                     vp: 0,
                     minionsPlayed: 0,
                     minionLimit: 1,
@@ -374,6 +381,13 @@ const createOnlineAiRecoveryState = (overrides?: {
                     hand: [],
                     deck: [],
                     discard: [],
+                    discardPile: [],
+                    resources: { hp: 50, cp: 0 },
+                    statusEffects: {},
+                    tokens: {},
+                    abilities: [],
+                    abilityLevels: {},
+                    upgradeCardByAbilityId: {},
                     vp: 0,
                     minionsPlayed: 0,
                     minionLimit: 1,
@@ -383,6 +397,11 @@ const createOnlineAiRecoveryState = (overrides?: {
             },
             bases: [],
             baseDeck: [],
+            dice: [],
+            rollDiceCount: 0,
+            rollCount: 0,
+            pendingAttack: null,
+            pendingDamage: null,
         },
         sys: {
             phase: overrides?.phase ?? 'main2',
@@ -2487,6 +2506,132 @@ describe('GameTransportServer（离座与重连）', () => {
         const syncedState = syncEvent?.args[1] as { core?: unknown; sys?: unknown } | undefined;
         expect(syncedState?.core).toBeTruthy();
         expect(syncedState?.sys).toBeTruthy();
+        expect(hasEvent(socket, 'error')).toBe(false);
+    });
+
+    it('dicethrone sync 不应因 playerView 包装错误而在发送 state:sync 前崩溃', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-sync-dicethrone-player-view', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '0',
+                        startingPlayerId: '0',
+                        hostPlayerId: '0',
+                        hostStarted: true,
+                        turnNumber: 1,
+                        selectedCharacters: {
+                            '0': 'cursed_pirate',
+                            '1': 'ninja',
+                        },
+                        readyPlayers: {
+                            '0': true,
+                            '1': true,
+                        },
+                        players: {
+                            '0': {
+                                id: 'player-0',
+                                characterId: 'cursed_pirate',
+                                resources: {},
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                            '1': {
+                                id: 'player-1',
+                                characterId: 'ninja',
+                                resources: {},
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                        },
+                        tokenDefinitions: [],
+                        turnOrder: ['0', '1'],
+                        rollLimit: 3,
+                        rollDiceCount: 5,
+                        rollCount: 0,
+                        rollConfirmed: false,
+                        dice: [],
+                        pendingAttack: null,
+                        lastEffectSourceByPlayerId: {},
+                        attackResolvedSequence: 0,
+                        afterAttackResponseWindowSequence: 0,
+                    },
+                    sys: {
+                        phase: 'main2',
+                        turnNumber: 1,
+                        eventStream: { entries: [], maxEntries: 200, nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: {
+                gameName: 'dicethrone',
+                players: {
+                    '0': {
+                        name: '玩家0',
+                        credentials: 'cred-0',
+                        isConnected: false,
+                    },
+                    '1': {
+                        name: '玩家1',
+                        credentials: 'cred-1',
+                        isConnected: false,
+                    },
+                },
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                setupData: {
+                    seatControllers: {
+                        '0': { type: 'human' },
+                        '1': { type: 'human' },
+                    },
+                },
+            },
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [diceThroneEngineConfig],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-sync-dicethrone-player-view');
+        io.gameNamespace.connectSocket(socket);
+
+        await socket.clientEmit('sync', 'match-sync-dicethrone-player-view', '0', 'cred-0');
+
+        expect(hasEvent(socket, 'state:sync')).toBe(true);
         expect(hasEvent(socket, 'error')).toBe(false);
     });
 

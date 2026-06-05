@@ -1346,6 +1346,10 @@ export class GameTransportServer {
         if (!isHumanActiveOffTurnRollPhase && !isPublicPregameSetup) {
             return null;
         }
+        const pendingAttack = (match.state.core as { pendingAttack?: { defenderId?: unknown } } | undefined)?.pendingAttack;
+        if (currentPhase === 'defensiveRoll' && pendingAttack?.defenderId === currentPlayerId) {
+            return null;
+        }
 
         const currentInteraction = match.state.sys?.interaction as { current?: unknown; isBlocked?: unknown } | undefined;
         if (currentInteraction?.current || currentInteraction?.isBlocked === true) {
