@@ -23,6 +23,7 @@ import type {
 } from '../storage';
 import type { TrainingDataRecorder, TrainingDecisionSample } from '../trainingData';
 import smashUpEngineConfig, { smashUpSystemsForTest } from '../../../games/smashup/game';
+import diceThroneEngineConfig from '../../../games/dicethrone/game';
 import { smashUpAiRuntime } from '../../../games/smashup/ai';
 import { splendorAiRuntime } from '../../../games/splendor/ai';
 import { startSmashUpReactionSession } from '../../../games/smashup/domain/reactionSession';
@@ -2373,6 +2374,120 @@ describe('GameTransportServer（离座与重连）', () => {
 
         resolvePersist?.();
         await syncPromise;
+    });
+
+    it('dicethrone sync 遇到存储里的 bare core 旧形状时，也应补回 MatchState 包装并发送 state:sync', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-sync-dicethrone-legacy-bare-core', {
+            initialState: {
+                G: {
+                    activePlayerId: '0',
+                    startingPlayerId: '0',
+                    hostPlayerId: '0',
+                    hostStarted: false,
+                    turnNumber: 1,
+                    selectedCharacters: {
+                        '0': 'unselected',
+                        '1': 'unselected',
+                    },
+                    readyPlayers: {
+                        '0': false,
+                        '1': false,
+                    },
+                    players: {
+                        '0': {
+                            id: 'player-0',
+                            characterId: 'unselected',
+                            resources: {},
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            statusEffects: {},
+                            tokens: {},
+                            tokenStackLimits: {},
+                            damageShields: [],
+                            abilities: [],
+                            abilityLevels: {},
+                            upgradeCardByAbilityId: {},
+                        },
+                        '1': {
+                            id: 'player-1',
+                            characterId: 'unselected',
+                            resources: {},
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            statusEffects: {},
+                            tokens: {},
+                            tokenStackLimits: {},
+                            damageShields: [],
+                            abilities: [],
+                            abilityLevels: {},
+                            upgradeCardByAbilityId: {},
+                        },
+                    },
+                    tokenDefinitions: [],
+                    rollLimit: 3,
+                    rollDiceCount: 5,
+                    rollCount: 0,
+                    rollConfirmed: false,
+                    dice: [],
+                    pendingAttack: null,
+                    lastEffectSourceByPlayerId: {},
+                    attackResolvedSequence: 0,
+                    afterAttackResponseWindowSequence: 0,
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: {
+                gameName: 'dicethrone',
+                players: {
+                    '0': {
+                        name: '玩家0',
+                        credentials: 'cred-0',
+                        isConnected: false,
+                    },
+                    '1': {
+                        name: '玩家1',
+                        credentials: 'cred-1',
+                        isConnected: false,
+                    },
+                },
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                setupData: {
+                    seatControllers: {
+                        '0': { type: 'human' },
+                        '1': { type: 'human' },
+                    },
+                },
+            },
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [diceThroneEngineConfig],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-sync-dicethrone-legacy-bare-core');
+        io.gameNamespace.connectSocket(socket);
+
+        await socket.clientEmit('sync', 'match-sync-dicethrone-legacy-bare-core', '0', 'cred-0');
+
+        const syncEvent = socket.sent.find((event) => event.event === 'state:sync');
+        expect(syncEvent).toBeTruthy();
+        const syncedState = syncEvent?.args[1] as { core?: unknown; sys?: unknown } | undefined;
+        expect(syncedState?.core).toBeTruthy();
+        expect(syncedState?.sys).toBeTruthy();
+        expect(hasEvent(socket, 'error')).toBe(false);
     });
 
     it('sync 发出的 state:sync 必须按 seat view 过滤 owner-only prompt，非 owner 不得直接拿到私有交互', async () => {

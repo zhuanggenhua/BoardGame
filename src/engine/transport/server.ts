@@ -770,6 +770,66 @@ const resolveStoredRandomCursor = (state: StoredMatchState): number => {
     return Math.floor(storedCursor);
 };
 
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => (
+    Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const looksLikeLegacyCoreState = (value: Record<string, unknown>): boolean => (
+    'players' in value
+    || 'activePlayerId' in value
+    || 'hostPlayerId' in value
+    || 'currentPlayer' in value
+    || 'currentPlayerIndex' in value
+    || 'selectedCharacters' in value
+);
+
+const rehydrateStoredMatchState = (
+    matchID: string,
+    engineConfig: GameEngineConfig,
+    storedState: unknown,
+    playerIds: PlayerId[],
+): MatchState<unknown> => {
+    const fallbackSys = createInitialSystemState(
+        playerIds,
+        engineConfig.systems as EngineSystem[],
+        matchID,
+    );
+
+    if (isPlainRecord(storedState)) {
+        const rawCore = isPlainRecord(storedState.core) ? storedState.core : null;
+        const rawSys = isPlainRecord(storedState.sys) ? storedState.sys : null;
+
+        if (rawCore) {
+            if (!rawSys) {
+                logger.warn('[GameTransport] rehydrating match state without sys wrapper', {
+                    matchID,
+                    gameId: engineConfig.gameId,
+                });
+            }
+            return {
+                core: rawCore,
+                sys: rawSys ?? fallbackSys,
+            };
+        }
+
+        if (looksLikeLegacyCoreState(storedState)) {
+            logger.warn('[GameTransport] rehydrating legacy bare core state', {
+                matchID,
+                gameId: engineConfig.gameId,
+            });
+            return {
+                core: storedState,
+                sys: fallbackSys,
+            };
+        }
+    }
+
+    return {
+        core: {},
+        sys: fallbackSys,
+    };
+};
+
 const createTrackedRandom = (seed: string, initialCursor = 0): { random: RandomFn; getCursor: () => number } => {
     const base = createSeededRandom(seed);
     const normalizedCursor = Number.isFinite(initialCursor) && initialCursor > 0
@@ -3885,7 +3945,12 @@ export class GameTransportServer {
             return;
         }
 
-        match.state = result.state.G as MatchState<unknown>;
+        match.state = rehydrateStoredMatchState(
+            match.matchID,
+            match.engineConfig,
+            result.state.G,
+            match.playerIds,
+        );
         match.stateID = targetStateID;
 
         // 广播回滚后的状态
@@ -4672,11 +4737,16 @@ export class GameTransportServer {
         const engineConfig = this.gameIndex.get(gameId);
         if (!engineConfig) return undefined;
 
+        const playerIds = Object.keys(result.metadata.players) as PlayerId[];
         const state = setUndoAiSeatIds(
-            result.state.G as MatchState<unknown>,
+            rehydrateStoredMatchState(
+                matchID,
+                engineConfig,
+                result.state.G,
+                playerIds,
+            ),
             getAiSeatIds(extractSetupSeatControllers(result.metadata.setupData)),
         );
-        const playerIds = Object.keys(result.metadata.players) as PlayerId[];
 
         const randomSeed = resolveStoredRandomSeed(result.state, matchID);
         const randomCursor = resolveStoredRandomCursor(result.state);
