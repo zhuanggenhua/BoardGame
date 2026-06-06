@@ -78,7 +78,7 @@
 2. 寺庙上有多个大副，部分被移除
 3. `_deferredPostScoringEvents` 传递
 
-**详细报告**：`evidence/p2-temple-firstmate-verification.md`
+**详细报告**：`evidence/smashup/p2-temple-firstmate-verification.md`
 
 **建议**：⭐⭐⭐ **强烈建议立即恢复**
 
@@ -114,7 +114,7 @@
 
 **步骤**：
 1. 创建测试文件：`src/games/smashup/__tests__/temple-firstmate-afterscore.test.ts`
-2. 实现 3 个测试用例（见 `evidence/p2-temple-firstmate-verification.md`）
+2. 实现 3 个测试用例（见 `evidence/smashup/p2-temple-firstmate-verification.md`）
 3. 运行测试验证
 4. 如果测试失败，分析原因并修复
 
@@ -195,12 +195,12 @@ P2 采用了更智能的验证方法：
 
 ### 已创建的文档
 
-1. `evidence/p2-restoration-plan.md` - P2 测试恢复计划
+1. `evidence/_shared/p2-restoration-plan.md` - P2 测试恢复计划
 2. `evidence/p2-manual-verification-summary.md` - P2 手动验证总结
 3. `evidence/p2-ultimate-shield-immunity-loss.md` - Ultimate 护盾免疫功能缺失分析
 4. `evidence/p2-ultimate-shield-restoration-complete.md` - Ultimate 护盾免疫恢复总结
 5. `evidence/p2-token-tests-status.md` - Token 执行测试状态
-6. `evidence/p2-temple-firstmate-verification.md` - Temple + First Mate 时序测试验证
+6. `evidence/smashup/p2-temple-firstmate-verification.md` - Temple + First Mate 时序测试验证
 7. `evidence/p2-verification-progress.md` - P2 验证进度总结
 8. `evidence/p2-high-priority-complete.md` - 本文档
 

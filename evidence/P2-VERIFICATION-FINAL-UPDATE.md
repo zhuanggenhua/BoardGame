@@ -118,8 +118,8 @@
 1. `evidence/p2-verification-final-summary.md` - Complete P2 verification
 2. `evidence/p2-ultimate-shield-immunity-loss.md` - Problem analysis
 3. `evidence/p2-ultimate-shield-restoration-complete.md` - Restoration summary
-4. `evidence/p2-temple-firstmate-verification.md` - Temple+FirstMate verification
-5. `evidence/TEMPLE-FIRSTMATE-TESTS-PASSED.md` - Test results
+4. `evidence/smashup/p2-temple-firstmate-verification.md` - Temple+FirstMate verification
+5. `evidence/smashup/TEMPLE-FIRSTMATE-TESTS-PASSED.md` - Test results
 6. `evidence/P2-VERIFICATION-FINAL-UPDATE.md` - This document
 
 ## Conclusion

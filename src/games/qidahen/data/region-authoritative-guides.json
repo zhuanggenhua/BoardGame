@@ -1,5 +1,189 @@
-{
-  "regionIds": [
-    "jinzhou"
-  ]
-}
+[
+  {
+    "runtimeRegionId": "city-region-2",
+    "label": "外喀尔喀部",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png + qidahen-map-crop-top_center_clean.png"
+  },
+  {
+    "runtimeRegionId": "city-region-3",
+    "label": "科尔沁部",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png + qidahen-map-crop-top_center_clean.png"
+  },
+  {
+    "runtimeRegionId": "city-region-4",
+    "label": "乌喇部",
+    "confidence": "high",
+    "source": "qidahen-top-right-crop.png"
+  },
+  {
+    "runtimeRegionId": "city-region-5",
+    "label": "辉发部",
+    "confidence": "high",
+    "source": "qidahen-top-right-crop.png"
+  },
+  {
+    "runtimeRegionId": "city-region-6",
+    "label": "扎鲁特部",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png + qidahen-map-crop-top_center_clean.png"
+  },
+  {
+    "runtimeRegionId": "city-region-7",
+    "label": "叶赫部",
+    "confidence": "high",
+    "source": "qidahen-label-crop-center_right.png"
+  },
+  {
+    "runtimeRegionId": "city-region-8",
+    "label": "巴林部",
+    "confidence": "high",
+    "source": "qidahen-map-crop-top_center_clean.png"
+  },
+  {
+    "runtimeRegionId": "city-region-9",
+    "label": "哈达部",
+    "confidence": "high",
+    "source": "qidahen-label-crop-center_right.png"
+  },
+  {
+    "runtimeRegionId": "city-region-10",
+    "label": "内喀尔喀部",
+    "confidence": "high",
+    "source": "qidahen-map-crop-top_center_clean.png"
+  },
+  {
+    "runtimeRegionId": "city-region-11",
+    "label": "长白",
+    "confidence": "high",
+    "source": "qidahen-top-right-crop.png"
+  },
+  {
+    "runtimeRegionId": "city-region-13",
+    "label": "建州",
+    "confidence": "high",
+    "source": "qidahen-label-crop-center_right.png"
+  },
+  {
+    "runtimeRegionId": "city-region-14",
+    "label": "察哈尔部",
+    "confidence": "high",
+    "source": "qidahen-label-crop-center_left.png"
+  },
+  {
+    "runtimeRegionId": "city-region-15",
+    "label": "辽北",
+    "confidence": "medium",
+    "source": "qidahen-r15-jinzhou-clean-crop.png",
+    "note": "seed 更靠近辽北字样；同一粗区域附近还能看到辽东字样，后续需继续核对是否存在运行时合并。"
+  },
+  {
+    "runtimeRegionId": "city-region-16",
+    "label": "克什克腾部",
+    "confidence": "high",
+    "source": "qidahen-label-crop-center_left.png"
+  },
+  {
+    "runtimeRegionId": "city-region-17",
+    "label": "奈曼部",
+    "confidence": "high",
+    "source": "qidahen-r17-r19-crop.png"
+  },
+  {
+    "runtimeRegionId": "city-region-19",
+    "label": "敖汉部",
+    "confidence": "high",
+    "source": "qidahen-r17-r19-crop.png"
+  },
+  {
+    "runtimeRegionId": "city-region-20",
+    "label": "土默特部",
+    "confidence": "high",
+    "source": "qidahen-label-crop-left_lower.png"
+  },
+  {
+    "runtimeRegionId": "city-region-22",
+    "label": "东江",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  },
+  {
+    "runtimeRegionId": "city-region-24",
+    "label": "宣府",
+    "confidence": "high",
+    "source": "r24-precise-clean.png"
+  },
+  {
+    "runtimeRegionId": "city-region-25",
+    "label": "山海关",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png + r25-clean.png"
+  },
+  {
+    "runtimeRegionId": "city-region-26",
+    "label": "鄂尔多斯部",
+    "confidence": "high",
+    "source": "qidahen-label-crop-left_lower.png"
+  },
+  {
+    "runtimeRegionId": "city-region-27",
+    "label": "保定",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  },
+  {
+    "runtimeRegionId": "city-region-28",
+    "label": "顺天",
+    "confidence": "high",
+    "source": "r28-precise-clean.png"
+  },
+  {
+    "runtimeRegionId": "city-region-29",
+    "label": "汉城",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  },
+  {
+    "runtimeRegionId": "city-region-30",
+    "label": "山西",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  },
+  {
+    "runtimeRegionId": "city-region-31",
+    "label": "延绥",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  },
+  {
+    "runtimeRegionId": "city-region-32",
+    "label": "登莱",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  },
+  {
+    "runtimeRegionId": "city-region-33",
+    "label": "山东",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  },
+  {
+    "runtimeRegionId": "jinzhou",
+    "label": "锦州",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  },
+  {
+    "runtimeRegionId": "song-jin",
+    "label": "皮岛",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  },
+  {
+    "runtimeRegionId": "xian-xing",
+    "label": "咸兴",
+    "confidence": "high",
+    "source": "qidahen-region-node-labels.png"
+  }
+]

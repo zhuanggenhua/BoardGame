@@ -118,6 +118,6 @@ if (type === 'RESPONSE_WINDOW_OPENED' || type === 'RESPONSE_WINDOW_CLOSED') {
 - `src/games/dicethrone/audio.config.ts` - 音效隐藏
 - `src/games/dicethrone/ui/AutoResponseToggle.tsx` - autoResponse 组件
 - `src/games/dicethrone/ui/LeftSidebar.tsx` - autoResponse 集成
-- `evidence/POD-AUTORESPONSE-RECOVERY.md` - autoResponse 恢复详情
-- `evidence/dicethrone-response-window-stealth-mode.md` - 隐身模式详情
+- `evidence/dicethrone/POD-AUTORESPONSE-RECOVERY.md` - autoResponse 恢复详情
+- `evidence/dicethrone/dicethrone-response-window-stealth-mode.md` - 隐身模式详情
 - `evidence/POD-RECOVERY-FINAL-STATUS.md` - 完整恢复状态报告

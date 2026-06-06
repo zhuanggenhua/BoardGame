@@ -14,7 +14,7 @@
 
 **推断结论**：P2 的 120 个文件中绝大多数（如果不是全部）都无需恢复。
 
-**详细验证报告**：见 `evidence/p2-verification-complete.md`
+**详细验证报告**：见 `evidence/smashup/p2-verification-complete.md`
 
 ---
 
@@ -172,6 +172,6 @@
 ## 相关文档
 
 - `evidence/audit-priority-definition.md` - 优先级定义
-- `evidence/audit-scope-complete.md` - 完整审计范围
-- `evidence/p0-audit-progress.md` - P0 审计进度
+- `evidence/_shared/audit-scope-complete.md` - 完整审计范围
+- `evidence/_shared/p0-audit-progress.md` - P0 审计进度
 - `evidence/p1-audit-progress.md` - P1 审计进度

@@ -156,7 +156,7 @@ git show 6ea1f9f --numstat
 
 ## 相关文档
 
-- `evidence/audit-scope-complete.md` - 完整审计范围（336 个文件的详细列表）
+- `evidence/_shared/audit-scope-complete.md` - 完整审计范围（336 个文件的详细列表）
 - `evidence/audit-priority-definition.md` - 优先级定义（按重要性分类）
 - `evidence/audit-coverage-summary.md` - 审计覆盖范围总结
 

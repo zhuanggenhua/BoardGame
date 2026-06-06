@@ -73,10 +73,10 @@ Tests  3 passed (3)
 1. `evidence/p2-verification-final-summary.md` - Complete P2 verification
 2. `evidence/p2-ultimate-shield-immunity-loss.md` - Problem analysis
 3. `evidence/p2-ultimate-shield-restoration-complete.md` - Restoration summary
-4. `evidence/p2-temple-firstmate-verification.md` - Temple+FirstMate verification
+4. `evidence/smashup/p2-temple-firstmate-verification.md` - Temple+FirstMate verification
 5. `evidence/temple-firstmate-test-status.md` - Test creation status
 6. `evidence/temple-firstmate-test-complete.md` - Test completion summary
-7. `evidence/TEMPLE-FIRSTMATE-TESTS-PASSED.md` - Test results
+7. `evidence/smashup/TEMPLE-FIRSTMATE-TESTS-PASSED.md` - Test results
 8. `evidence/P2-VERIFICATION-FINAL-UPDATE.md` - P2 final update
 9. `evidence/FINAL-WORK-COMPLETE.md` - This document
 

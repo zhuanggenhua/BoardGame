@@ -104,9 +104,9 @@
 ## 审计文档索引
 
 ### P0 审计文档
-- ✅ `evidence/p0-audit-progress.md` - P0 审计进度跟踪
+- ✅ `evidence/_shared/p0-audit-progress.md` - P0 审计进度跟踪
 - ✅ `evidence/p0-audit-summary.md` - P0 审计总结
-- ✅ `evidence/p0-audit-batch2.md` - P0 第二批审计
+- ✅ `evidence/_shared/p0-audit-batch2.md` - P0 第二批审计
 
 ### P1 审计文档
 - ⏳ `evidence/p1-audit-progress.md` - 待创建
@@ -267,6 +267,6 @@
 
 ## 相关文档
 
-- `evidence/audit-scope-complete.md` - 完整审计范围
-- `evidence/p0-audit-progress.md` - P0 审计进度
+- `evidence/_shared/audit-scope-complete.md` - 完整审计范围
+- `evidence/_shared/p0-audit-progress.md` - P0 审计进度
 - `evidence/deletions-complete-report.md` - 删除内容完整报告

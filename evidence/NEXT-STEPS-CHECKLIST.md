@@ -80,12 +80,12 @@ git commit -m "fix: POD 审计第二阶段 - 调试工具恢复 + 调试日志 +
 - 单元测试验证业务逻辑
 
 ## 相关文档
-- evidence/POD-AUDIT-MISSING-ITEMS.md
+- evidence/_shared/POD-AUDIT-MISSING-ITEMS.md
 - evidence/POD-AUDIT-RECOVERY-PHASE-2.md
 - evidence/POD-RECOVERY-AND-STEALTH-MODE-COMPLETE.md
 - evidence/POD-RECOVERY-VERIFICATION-COMPLETE.md
 - evidence/POD-RECOVERY-FINAL-SUMMARY.md
-- evidence/rematch-button-debug.md"
+- evidence/dicethrone/rematch-button-debug.md"
 
 git push
 ```
@@ -134,7 +134,7 @@ POD 恢复工作已完全完成，可以继续正常开发。
 ### ✅ 第一阶段：POD Commit 审计
 - 修复 15 个测试失败
 - 测试通过率 100%
-- 证据：`evidence/POD-AUDIT-COMPLETE.md`
+- 证据：`evidence/_shared/POD-AUDIT-COMPLETE.md`
 
 ### ✅ 第二阶段：用户全面恢复
 - Commit 1c8ca12
@@ -150,7 +150,7 @@ POD 恢复工作已完全完成，可以继续正常开发。
 ### ✅ 第四阶段：调试日志增强
 - RematchActions 日志
 - RematchContext 日志
-- 证据：`evidence/rematch-button-debug-logs-added.md`
+- 证据：`evidence/_shared/rematch-button-debug-logs-added.md`
 
 ### ✅ 第五阶段：响应窗口隐身模式
 - UI 提示隐藏
@@ -167,22 +167,22 @@ POD 恢复工作已完全完成，可以继续正常开发。
 ## 文档索引
 
 ### POD 审计
-- `evidence/POD-AUDIT-COMPLETE.md` - 第一阶段审计报告
+- `evidence/_shared/POD-AUDIT-COMPLETE.md` - 第一阶段审计报告
 - `evidence/POD-AUDIT-USER-CHANGES-CHECK.md` - 用户修改检查
-- `evidence/GAME-LOGIC-BUGS-FIXED.md` - 游戏逻辑修复
+- `evidence/dicethrone/GAME-LOGIC-BUGS-FIXED.md` - 游戏逻辑修复
 - `evidence/ALL-TESTS-PASSED.md` - 测试结果
 
 ### POD 恢复
 - `evidence/POD-RECOVERY-FINAL-STATUS.md` - 最终恢复状态
-- `evidence/POD-AUDIT-MISSING-ITEMS.md` - 遗漏项目报告
+- `evidence/_shared/POD-AUDIT-MISSING-ITEMS.md` - 遗漏项目报告
 - `evidence/POD-AUDIT-RECOVERY-PHASE-2.md` - 第二阶段恢复
 - `evidence/POD-RECOVERY-AND-STEALTH-MODE-COMPLETE.md` - 恢复 + 隐身模式
 - `evidence/POD-RECOVERY-VERIFICATION-COMPLETE.md` - 验证完整性
 - `evidence/POD-RECOVERY-FINAL-SUMMARY.md` - 最终总结
 
 ### 调试指南
-- `evidence/rematch-button-debug.md` - 再来一局按钮排查指南
-- `evidence/rematch-button-debug-logs-added.md` - 调试日志说明
+- `evidence/dicethrone/rematch-button-debug.md` - 再来一局按钮排查指南
+- `evidence/_shared/rematch-button-debug-logs-added.md` - 调试日志说明
 
 ### 本文档
 - `evidence/NEXT-STEPS-CHECKLIST.md` - 下一步行动清单（当前文档）

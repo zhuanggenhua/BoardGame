@@ -44,7 +44,6 @@ src/
 │   ├── pipeline.ts           # 执行管线
 │   └── types.ts              # 引擎类型
 ├── games/                   # 具体游戏实现
-│   ├── assetslicer/                 # 工具型模块
 │   ├── dicethrone/                  # DiceThrone 实现
 │   ├── tictactoe/                   # 井字棋实现
 │   ├── manifest.client.tsx          # 客户端清单入口
@@ -57,6 +56,10 @@ src/
 │   ├── manifest.ts                  # 游戏元数据清单
 │   ├── manifest.types.ts            # 清单类型
 │   └── registry.ts                  # 实现注册与一致性校验
+├── tools/                   # 工具型模块 manifest/thumbnail
+│   ├── assetslicer/
+│   ├── audiobrowser/
+│   └── ...
 ├── components/              # 通用 UI 组件
 │   ├── auth/                 # 认证相关 UI
 │   ├── common/               # 通用组件

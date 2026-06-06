@@ -343,10 +343,10 @@ if (needRestore.length > 0) {
 ## 相关文档
 
 - `evidence/audit-final-status.md` - 审计最终状态报告
-- `evidence/audit-methodology.md` - 审计方法论
+- `evidence/dicethrone/audit-methodology.md` - 审计方法论
 - `evidence/p0-audit-final-complete.md` - P0 审计报告
 - `evidence/p1-verification-complete.md` - P1 验证报告
-- `evidence/p2-verification-complete.md` - P2 验证报告
+- `evidence/smashup/p2-verification-complete.md` - P2 验证报告
 
 ---
 

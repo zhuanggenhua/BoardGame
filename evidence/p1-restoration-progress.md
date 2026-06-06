@@ -156,7 +156,7 @@
 - `evidence/p1-restoration-plan.md` - P1 恢复计划（已废弃）
 - `evidence/p1-restoration-complete.md` - P1 恢复完成报告
 - `evidence/p1-audit-complete.md` - P1 审计完成报告
-- `evidence/p0-restoration-complete.md` - P0 恢复完成报告
+- `evidence/_shared/p0-restoration-complete.md` - P0 恢复完成报告
 
 ---
 

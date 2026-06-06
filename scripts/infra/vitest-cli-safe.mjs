@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import { existsSync, readdirSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
 import { installViteWindowsNetUseBypass } from './vite-windows-net-use-bypass.mjs';
+import { resolveWorkspaceNodeModuleFile } from './node-module-resolver.mjs';
 
 const installBrokenPipeGuard = (stream) => {
     stream.on('error', (error) => {
@@ -50,7 +52,11 @@ await assertChildProcessSupport('Vitest CLI', {
     probeFork: shouldProbeFork(),
 });
 
-const vitestRootUrl = new URL('../../node_modules/vitest/', import.meta.url);
+const vitestPackageInfo = resolveWorkspaceNodeModuleFile('vitest/package.json', {
+    label: 'Vitest package',
+    cwd: process.cwd(),
+});
+const vitestRootUrl = pathToFileURL(path.dirname(vitestPackageInfo.filePath) + path.sep);
 const legacyEntryUrl = new URL('vitest.mjs', vitestRootUrl);
 
 if (existsSync(fileURLToPath(legacyEntryUrl))) {

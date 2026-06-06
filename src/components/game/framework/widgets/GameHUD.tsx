@@ -167,6 +167,7 @@ export const GameHUD = ({
     const undoRequestPayload = undoState?.isLocalMode ? { localAutoApprove: true } : undefined;
     const isNativeAndroid = isNativeAndroidRuntime();
     const isSmashUp = _gameId === 'smashup';
+    const suppressGlobalFab = _gameId === 'qidahen';
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
 
     // 聊天逻辑
@@ -1071,12 +1072,14 @@ export const GameHUD = ({
                     name={opponentName}
                 />
             )}
-            <FabMenu
-                isDark={true}
-                items={items}
-                position="bottom-right"
-                zIndex={GAME_HUD_FAB_Z_INDEX}
-            />
+            {!suppressGlobalFab ? (
+                <FabMenu
+                    isDark={true}
+                    items={items}
+                    position="bottom-right"
+                    zIndex={GAME_HUD_FAB_Z_INDEX}
+                />
+            ) : null}
 
             {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
             {showFeedback && (

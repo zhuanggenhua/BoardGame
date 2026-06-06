@@ -77,7 +77,7 @@
 
 这是 **便衣忍者交互 UI 未显示** 的问题，与之前的两个 bug 完全相同:
 
-1. `docs/bugs/smashup-ninja-hidden-ninja-interaction-not-visible.md` (2026/2/27)
+1. `docs/bugs/smashup/smashup-ninja-hidden-ninja-interaction-not-visible.md` (2026/2/27)
 2. `docs/bugs/smashup-tortuga-无法结束回合-analysis.md` (2026/2/28)
 
 ### 问题链条
@@ -201,7 +201,7 @@ const interaction = createSimpleChoice(
 
 ## 相关文档
 
-- `docs/bugs/smashup-ninja-hidden-ninja-interaction-not-visible.md` - 之前的修复（2026/2/27）
+- `docs/bugs/smashup/smashup-ninja-hidden-ninja-interaction-not-visible.md` - 之前的修复（2026/2/27）
 - `docs/bugs/smashup-tortuga-无法结束回合-analysis.md` - 类似问题分析
 - `docs/interaction-ui-modes.md` - UI 渲染模式详解
 - `e2e/ninja-hidden-ninja-skip-option.e2e.ts` - E2E 测试

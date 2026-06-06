@@ -71,7 +71,7 @@
         var el = document.getElementById('initial-loader');
         if (!el) return;
         var p = location.pathname;
-        var isGame = p.indexOf('/play/') === 0 || p.indexOf('/dev/') === 0;
+        var isGame = p.indexOf('/play/') === 0;
         function showFriendlyFallback() {
           var current = document.getElementById('initial-loader');
           if (!current || !isGame) return;

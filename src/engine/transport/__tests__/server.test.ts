@@ -2450,6 +2450,9 @@ describe('GameTransportServer（离座与重连）', () => {
                 io: io as unknown as any,
                 storage,
                 games: [createEngineConfigWithGameOver()],
+                gameManifests: {
+                    'test-game': GAME_MANIFEST_BY_ID['test-game'],
+                },
                 trainingDataRecorder: recorder,
                 authenticate: async (_matchID, playerID, credentials, metadata) => {
                     return metadata.players[playerID]?.credentials === credentials;
@@ -2615,6 +2618,9 @@ describe('GameTransportServer（离座与重连）', () => {
             io: io as unknown as any,
             storage,
             games: [createEngineConfigWithId(gameId)],
+            gameManifests: {
+                [gameId]: GAME_MANIFEST_BY_ID[gameId],
+            },
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
             onlineAiFeedbackReporter: feedbackReporter,

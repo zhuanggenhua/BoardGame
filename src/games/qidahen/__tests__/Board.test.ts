@@ -8,9 +8,17 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-map-layer"',
     'data-testid="qidahen-map-hitmap-canvas"',
     'data-testid="qidahen-map-overlay"',
-    'data-testid={`qidahen-map-region-${shape.id}`}',
+    'data-testid="qidahen-map-region-mask-overlay"',
+    'data-testid="qidahen-map-region-movement-preview"',
+    'data-testid="qidahen-runtime-region-graph"',
+    'data-testid={`qidahen-runtime-region-edge-${edge.id}`}',
+    "import qidahenRegionMaskUrl from './data/region-mask.png?url'",
+    'QIDAHEN_REGION_GRAPH_EDGES',
+    'QIDAHEN_REGION_ID_BY_MASK_COLOR',
+    'getQidahenDirectedPassage',
     "mainMap: 'qidahen/board/qidahen-main-map'",
     'data-testid="qidahen-player-float"',
+    'data-testid={`qidahen-armaments-${faction.id}`}',
     'data-testid="qidahen-action-wheel"',
     'data-testid="qidahen-action-wheel-asset"',
     'data-testid={`qidahen-year-card-slot-${card.id}`}',
@@ -32,9 +40,14 @@ const REQUIRED_TEST_IDS = [
     '新年 &gt;&gt;&gt;',
     '年中',
     'data-testid="qidahen-raid-intent"',
+    'data-testid="qidahen-post-battle-selection"',
+    'data-testid={`qidahen-post-battle-choice-${choice.id}`}',
+    'data-testid="qidahen-wheel-dispatch-selection"',
+    'data-testid={`qidahen-wheel-dispatch-target-${candidate.targetRuntimeRegionId}`}',
     'data-testid="qidahen-actions-zone"',
     'data-testid="qidahen-action-rail"',
     'data-testid={`qidahen-action-${action.id}`}',
+    'data-testid="qidahen-turn-banner"',
     'data-testid="qidahen-bottom-dock"',
     'data-testid="qidahen-draw-anchor"',
     'data-testid="qidahen-hand-zone"',
@@ -43,8 +56,17 @@ const REQUIRED_TEST_IDS = [
     'onExecuteAction',
     'data-testid={`qidahen-hand-card-${card.id}`}',
     'data-testid="qidahen-discard-anchor"',
+    'data-testid="qidahen-resolve-pending-action"',
+    'data-testid="qidahen-pending-casualty-priority"',
+    'data-testid={`qidahen-${group.id}-casualty-priority`}',
+    'data-testid={`qidahen-${group.id}-casualty-${option.id}`}',
+    'data-testid="qidahen-upkeep-attrition-priority"',
+    'data-testid={`qidahen-upkeep-attrition-${option.id}`}',
     'testId="qidahen-draw-pile"',
     'testId="qidahen-discard-pile"',
+    'const currentFaction = core.factions[currentFactionId];',
+    'count={currentFaction.drawPileCount}',
+    'count={currentFaction.discardPileCount}',
     'EXECUTE_ACTION',
     'raid',
 ];
@@ -71,6 +93,8 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
     'qidahen-wheel-move-${choice.id}',
     'data-testid="qidahen-wheel-summary"',
     'WheelMoveChoiceButton',
+    'QIDAHEN_MAP_REGION_SHAPES',
+    'mapPath(shape)',
     'data-testid="qidahen-wheel-step-controls"',
     'data-testid="qidahen-payment-panel"',
     'data-testid="qidahen-execute-action"',
@@ -104,8 +128,13 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
 ];
 
 const boardSource = readFileSync(resolve(__dirname, '..', 'Board.tsx'), 'utf-8');
+const cardAtlasSource = readFileSync(resolve(__dirname, '..', 'ui', 'cardAtlas.ts'), 'utf-8');
 
 describe('Qidahen Board 结构门禁', () => {
+    it('纪年卡预览继续绑定纪年图集而不是蒙古图集', () => {
+        expect(cardAtlasSource).toContain("image: 'qidahen/cards/atlases/chronology-deck-atlas'");
+    });
+
     for (const testId of REQUIRED_TEST_IDS) {
         it(`保留关键结构标识 ${testId}`, () => {
             expect(boardSource).toContain(testId);

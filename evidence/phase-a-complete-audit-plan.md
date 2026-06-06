@@ -106,7 +106,7 @@
 - ❓ `heroes/` 所有英雄文件有哪些能力被删除？
 - ❓ `__tests__/` 30+ 个测试文件有哪些测试被修改？
 
-**文件清单**: 见 `evidence/dicethrone-files.txt`
+**文件清单**: 见 `evidence/dicethrone/dicethrone-files.txt`
 
 ---
 
@@ -238,7 +238,7 @@
    - 通用 UI 组件
    - 游戏核心逻辑
 
-**输出**: `evidence/audit-report-smashup.md`
+**输出**: `evidence/_shared/audit-report-smashup.md`
 
 ---
 
@@ -338,15 +338,15 @@
 
 ### 已生成
 
-- ✅ `evidence/pod-commit-all-files.txt` - 所有 512 个文件
-- ✅ `evidence/pod-commit-detailed-stats.txt` - 详细统计
-- ✅ `evidence/dicethrone-files.txt` - DiceThrone 106 个文件
+- ✅ `evidence/_shared/pod-commit-all-files.txt` - 所有 512 个文件
+- ✅ `evidence/_shared/pod-commit-detailed-stats.txt` - 详细统计
+- ✅ `evidence/dicethrone/dicethrone-files.txt` - DiceThrone 106 个文件
 
 ### 待生成
 
 - ⏳ `evidence/dicethrone-files-detailed.md` - DiceThrone 详细分析
-- ⏳ `evidence/smashup-files.txt` - SmashUp 119 个文件
-- ⏳ `evidence/summonerwars-files.txt` - SummonerWars 18 个文件
+- ⏳ `evidence/smashup/smashup-files.txt` - SmashUp 119 个文件
+- ⏳ `evidence/summonerwars/summonerwars-files.txt` - SummonerWars 18 个文件
 - ⏳ `evidence/engine-files.txt` - 引擎层 20 个文件
 - ⏳ `evidence/other-files.txt` - 其他文件
 
@@ -396,7 +396,7 @@
    - 文件: `ui/BoardOverlays.tsx`
    - 影响: 游戏结束后没有结算画面
    - 严重程度: 🔴 严重
-   - 详情: `evidence/dicethrone-endgame-ui-deletion.md`
+   - 详情: `evidence/dicethrone/dicethrone-endgame-ui-deletion.md`
 
 3. ❌ **自动响应功能** - 待修复
    - 文件: 待确认
@@ -517,7 +517,7 @@
 **Step 1: 生成文件清单（5 分钟）**
 
 ```bash
-git show --name-status 6ea1f9f | grep "src/games/smashup/" > evidence/smashup-files.txt
+git show --name-status 6ea1f9f | grep "src/games/smashup/" > evidence/smashup/smashup-files.txt
 ```
 
 **Step 2: 分类文件（1 小时）**
@@ -537,7 +537,7 @@ git show --name-status 6ea1f9f | grep "src/games/smashup/" > evidence/smashup-fi
 **Step 4: 创建详细报告（30 分钟）**
 
 输出文档:
-- `evidence/audit-report-smashup.md`
+- `evidence/_shared/audit-report-smashup.md`
 
 ---
 
@@ -562,7 +562,7 @@ git show --name-status 6ea1f9f | grep "src/games/smashup/" > evidence/smashup-fi
 **Step 1: 生成详细清单（5 分钟）**
 
 ```bash
-git show --name-status 6ea1f9f | grep "src/games/summonerwars/" > evidence/summonerwars-files.txt
+git show --name-status 6ea1f9f | grep "src/games/summonerwars/" > evidence/summonerwars/summonerwars-files.txt
 ```
 
 **Step 2: 逐文件审计（1-2 小时）**
@@ -575,7 +575,7 @@ git show --name-status 6ea1f9f | grep "src/games/summonerwars/" > evidence/summo
 **Step 3: 创建详细报告（30 分钟）**
 
 输出文档:
-- `evidence/audit-report-summonerwars.md`
+- `evidence/_shared/audit-report-summonerwars.md`
 
 ---
 

@@ -11,6 +11,7 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 
 > 本 skill 只做“分阶段流程 + 验收门禁 + 最小闭环”。
 > 任何**规范/红线/最佳实践**若在下列文档中已有定义，必须以它们为准；本 skill 不重复展开。
+> 若本文与下列权威文档出现路径、组件、命令或门禁冲突，先按权威文档执行，并立即修正本文，不得用本文内的旧示例覆盖实施规范。
 
 - 总则：`AGENTS.md`
 - 引擎/系统/move/command：`docs/ai-rules/engine-systems.md`
@@ -23,6 +24,22 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 - 工具脚本：`docs/tools.md`
 - 图片 intake 复刻案例：`docs/games/smashup/workflows/smashup-faction-intake.md`
 - 不确定该读哪份：`docs/ai-rules/doc-index.md`
+
+## 实施规范接入门禁（强制）
+
+进入任何目录创建、素材落盘、压缩、资源引用、`thumbnail.tsx`、`criticalImageResolver` 或 manifest 资源字段之前，先执行对应实施规范；本 skill 不允许自带第二套路由。
+
+- 图片/缩略图/图集/音频落盘与引用：以 `docs/ai-rules/asset-pipeline.md` 为单一实施合同。
+- UI 组件与布局：以 `docs/ai-rules/ui-ux.md` 为实施合同。
+- 引擎、系统、move/command：以 `docs/ai-rules/engine-systems.md` 为实施合同。
+- React 白屏、Hook、函数提升、注册时机：以 `docs/ai-rules/golden-rules.md` 为实施合同。
+
+资源实施最低门禁：
+
+1. 新游戏图片默认进入 `public/assets/i18n/zh-CN/<gameId>/...`；`public/assets/<gameId>/...` 只作为历史兼容或 `asset-pipeline` 明确允许的例外，不得作为新资源默认落点。
+2. 缩略图也属于图片资源，默认落到 `public/assets/i18n/zh-CN/<gameId>/thumbnails/`，运行时由 `ManifestGameThumbnail` / `OptimizedImage` 解析。
+3. 代码里传资源路径只传相对逻辑路径，例如 `<gameId>/thumbnails/cover`；禁止硬编码 `/assets/`、`compressed/`、`.webp` 或版本参数。
+4. 如果必须偏离上述公共链路，必须在当前任务证据中写明原因、影响范围和验收方式。
 
 ## 前置 0：环境与来源确认（强制）
 
@@ -147,10 +164,20 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 2. **素材盘点**
    - 生成 `temp/<gameId>-intake/image-inventory.tsv` 或等价清单，至少包含原文件名、尺寸、类型、疑似用途。
    - 能可靠识别用途的图片，按本 skill 的资源目录与语义命名落正式目录；不能可靠识别的只登记为待裁定，不强行命名。
+   - 必须单独识别 `player aid / 帮助卡 / 提示板 / reference sheet / setup sheet`。这些不是普通插图，既是数据录入来源，也是 UI/UX 拆解来源：它们通常暴露玩家实际会执行的高层动作、按钮分组、回合摘要、地形/图标解释和常查规则。
+   - **进入实现阶段后，真实素材优先于占位实现**：如果主棋盘、牌背、卡面 atlas、token、帮助卡已经存在于正式资源树或可稳定落盘，就必须先用真实素材搭桌面端；不得继续用通用色块、占位卡面、模糊遮罩或“先摆个结构以后再换图”的长期占位路线。
+   - 正式运行时资源只保留必要素材。TTS/Workshop 材质色块、重复提示卡、下载残留图、仅用于识别的中间裁图默认不得进入正式 `public/assets/**`；需要留存时放 `temp/<gameId>-intake/` 或在清单标为 `intake-only`。
 3. **资源闭环**
    - 正式图片落盘后运行最小必要压缩命令。
    - 运行 `npm run assets:manifest` 与 `npm run assets:validate`。
    - 若本轮新增运行时资源，执行 `npm run assets:check`；发现远端缺失时继续 `npm run assets:upload`，并抽查代表性远端 URL 返回 200。
+   - **运行时真相源优先级**：`public/assets/**` 当前实际存在的资源树高于 intake 清单里的历史命名。进入实现前必须先核实正式资源树的真实文件名和目录结构；不能只看 intake 文档里的旧命名就开始写代码或生造别名。
+
+## 当前范围与长期规范的边界（强制）
+
+- 用户当轮若明确收窄范围，例如“先只做桌面端”“手机先不管”“先做实现不要管部署”，这是**当前执行范围**，必须直接体现在当前任务实施里。
+- 这类范围限定默认**不写入长期 skill / 设计规范**，除非用户明确要求把它沉淀成长期规则，或它已经被证明是跨任务、跨游戏、可复用的不变量。
+- 需要留痕时，优先写进当前任务的 `task_plan.md`、`findings.md`、`progress.md` 或专项 evidence，不要把一次性的范围裁决升级成通用工作流。
 4. **可行性分析**
    - 在 `evidence/<gameId>/<gameId>-feasibility-<date>.md` 写结论，至少覆盖：核心机制、引擎原语映射、状态模型难点、UI/资源难点、MVP 切分、主要风险与建议阶段。
    - 结论必须区分“可做”与“建议怎么做”：复杂游戏默认先给 MVP 边界，不承诺一次性全规则自动化。
@@ -181,7 +208,7 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 2. 先读图识别对象，再判断现有文件名是否明显随机/无语义：
    - 若是随机名、默认导出名、批量下载残留名，则按**图片内容语义**自动重命名并移动到正式目录。
    - 若现有文件名看起来是用户有意命名的语义名，则默认不改名，只询问是否需要统一为项目规范命名。
-3. 原图落盘后立即运行 `npm run compress:images -- public/assets/<gameId>` 或最小必要子目录。
+3. 原图落盘后立即运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>` 或最小必要子目录。
 4. 若用户给的是“位置/顺序”，则直接建立索引映射和命名合同，不等待后续手工整理。
 5. 若默认运行态依赖远端资源，数据录入或图片 intake 完成后必须跑 `npm run assets:check`；只要本轮新增/变更了运行时资源且远端有缺口，就必须继续执行上传闭环，直到远端对象可访问，不能停留在“本地已落盘”。
 
@@ -189,11 +216,12 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 
 | 素材类型 | 默认命名 | 默认目录 |
 |---------|---------|---------|
-| 缩略图 | `cover.png` | `public/assets/<gameId>/thumbnails/` |
+| 缩略图 | `cover.png` | `public/assets/i18n/zh-CN/<gameId>/thumbnails/` |
 | 卡牌 atlas | `<batch>.png` | `public/assets/i18n/zh-CN/<gameId>/cards/` |
 | 基地 atlas | `<batch>_base.png` | `public/assets/i18n/zh-CN/<gameId>/base/` |
 | 角色/英雄面板 | `<entityId>-board.png` | `public/assets/i18n/zh-CN/<gameId>/hero/` |
 | 棋盘/地图/公共插图 | 按语义命名 | `public/assets/i18n/zh-CN/<gameId>/board/` 或 `common/` |
+| 玩家帮助卡/提示板 | `player-aid-<faction>.png` / `turn-reference.png` / `setup-reference.png` | `public/assets/i18n/zh-CN/<gameId>/aids/` |
 | 图集配置 | `<name>.atlas.json` | `public/assets/atlas-configs/<gameId>/` |
 
 若用户没有给命名方案，AI 默认采用上述语义命名；若用户已给命名规则，以用户规则为准。
@@ -216,6 +244,24 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 6. **只有明显随机名才默认自动改**
    - “明显随机名”指随机字符串、设备默认导出名、截图默认名、扫描仪流水号、下载站无语义序号等。
    - 只要文件名存在明确语义且看起来是用户主动命名，就应先询问，不要默认替换。
+
+### 素材保留与剔除裁决（强制）
+
+在把素材落入正式资源树前，必须先给每张图片一个保留等级：
+
+| 等级 | 含义 | 处理 |
+| --- | --- | --- |
+| `runtime-essential` | 游戏运行首屏或常用交互必须使用：主棋盘/地图、牌背、卡牌 atlas、玩家面板、关键 token、玩家帮助卡 | 进入正式 `public/assets/**` 并规范命名 |
+| `runtime-optional` | 运行时可通过弹层查看或后续阶段才需要：剧本设置表、规则速查表、FAQ 图 | 可进入 `aids/`，但必须命名清楚并在代码里按需加载 |
+| `intake-only` | 只用于录入、OCR、核对，不应被游戏运行时直接引用 | 放 `temp/<gameId>-intake/`，不进正式资源树 |
+| `drop-candidate` | TTS 材质色块、重复图、空白占位、下载残留、不可识别且无规则来源 | 不落正式资源树；若已落盘，先在清单标记，未获确认不删除 |
+
+帮助卡/提示板必须进入规则和 UI 设计判断：
+
+- 如果提示板把动作分成少数高层按钮，UI 草稿应先采用这些高层入口。
+- 提示板里的子项通常是展开菜单、详情页或状态解释，不自动升格为主界面常驻按钮。
+- 如果规则书和提示板冲突，先记录冲突并用规则原文裁决；不得只凭 UI 想象增删按钮。
+- 重复提示卡要按内容合并：同内容不同分辨率只保留最清晰/最适合运行时的一张，其他标 `drop-candidate` 或 `intake-only`。
 
 ---
 
@@ -400,9 +446,10 @@ export default <GameId>Board;
 ### 1.9 资源目录
 
 ```
-public/assets/<gameId>/
+public/assets/i18n/zh-CN/<gameId>/
   thumbnails/.gitkeep
-  images/.gitkeep
+  board/.gitkeep
+  cards/.gitkeep
 ```
 
 ### 1.10 i18n 文件
@@ -1034,6 +1081,38 @@ npm run dev                  # 游戏可从大厅创建对局，基础回合可�
    - 地图类游戏必须说明拖拽缩放、双指缩放、触控查看、HUD 让位策略。
 5. **与通用规范的关系**：`design-system/game-ui/MASTER.md` 中的交互原则（反馈/状态清晰/动画时长等）仍然适用，但配色/字体/视觉风格以游戏专属规范为准。
 
+### 5.0.1 冻结设计稿到前端实现的布局合同（强制）
+
+当用户确认或冻结 UI 设计稿后，进入前端实现前必须先把设计稿转成“布局合同”，不能直接凭肉眼把现有 Board 微调到相似。
+
+1. **先拆层级，再写代码**
+   - 必须明确：主舞台/地图层、地图坐标 overlay、屏幕 HUD、底部实体 dock、侧边 action rail、临时支付/目标 overlay 分别属于哪一层。
+   - 大地图/大棋盘/大桌面类游戏默认采用 `Scene/MapLayer + ScreenHudLayer` 分治；地图缩放/拖拽只影响地图层，顶部状态、侧边 rail、底部手牌 dock 默认不随地图缩放。
+   - 如果主素材可缩放/可平移，HUD 不得绑定在素材像素流里一起漂移；地图 token/区域命中必须绑定地图坐标系。
+2. **冻结稿约束的是空间关系**
+   - 必须把设计稿中的主舞台比例、顶部高度、侧边宽度、底部 dock 中心线、牌堆/弃牌/手牌完整簇、当前交互态、选中态和支付态写成可验收的空间合同。
+   - 禁止只追求局部颜色、边框、贴图相似，而让主对象偏心、底部簇贴角、侧栏挤压主行、或 HUD 与地图层混在同一坐标系。
+3. **真实素材接入先于视觉占位**
+   - 进入实现阶段后，逐类核实并接入正式资源：主地图/主棋盘、独立交互部件、牌背、卡牌正面 atlas、公共牌堆、token/marker、玩家帮助卡。
+   - 已有正式素材时，禁止继续用通用色块、伪牌背、伪卡面、模糊遮罩或“以后再换图”的长期占位实现。
+4. **旧版图元素与前端交互所有权必须裁决**
+   - 如果主图里已有印刷轮盘、槽位、轨道或牌堆，但冻结稿/规则要求它成为独立前端交互对象，必须把它从“背景文字/底图噪声”提升为前端组件或 overlay；不能继续让主图里的旧印刷元素承担主要交互反馈。
+   - 反过来，若素材已有对象只需轻量增强，不得再做第二套同义 HUD。
+5. **失败截图触发结构重做**
+   - 截图验收若发现主舞台构图、底部完整簇居中、侧边对象顺序、素材真实性或交互层级任一不达标，必须回到布局合同重构。
+   - 禁止用遮罩、压暗、糊层、局部补按钮、改几个绝对定位数值来掩盖结构错误。
+6. **最小可玩流程先于 UI 收口**
+   - 新游戏 Board 初版不能只完成静态布局、占位 testid 或单张“页面出现”截图；必须至少模拟一条真实玩家基础流程。
+   - 最小流程必须覆盖：当前玩家看得到下一步主交互对象、点击/拖拽/选择后进入明确状态、核心状态字段或可见结果发生变化。
+   - 若游戏存在主棋盘/地图/转盘/骰子/手牌/资源堆等核心实体，E2E 必须直接操作实体本体或其前端 overlay，不能只点击旁边说明按钮冒充可玩。
+   - 只有当基础流程 E2E 与截图同时证明“玩家知道点哪里、点完发生什么、下一步还能继续”时，才允许把 Board/UI 阶段标为收口。
+
+验收最低证据：
+
+- `1920x1080` 桌面截图必须能肉眼核对主舞台、顶部状态、侧边 rail、底部完整实体簇与冻结稿处于同一空间关系。
+- 至少 1 条 E2E 必须从真实游戏入口进入 Board，执行一段基础玩家流程，并断言点击前后关键状态或可见文本变化。
+- 证据文档必须写明“实际看到什么”和“是否达标”；不达标就不能用单测/typecheck 通过作为 UI 收口依据。
+
 ### 5.1 Board.tsx 主组件
 
 **三个游戏的 Board 共同模式**：
@@ -1190,9 +1269,10 @@ UI 侧使用 `TutorialSelectionGate`（框架组件）或自定义选择组件�
    - 自动移动到正确目录
    - 自动运行最小必要范围的压缩命令
 2. 缩略图默认流程：
-   - 原图放入 `public/assets/<gameId>/thumbnails/cover.png`
-   - 运行 `npm run compress:images -- public/assets/<gameId>/thumbnails`
+   - 原图放入 `public/assets/i18n/zh-CN/<gameId>/thumbnails/cover.png`
+   - 运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>/thumbnails`
    - `manifest.ts` 中 `thumbnailPath` 使用 `<gameId>/thumbnails/cover`
+   - `thumbnail.tsx` 使用 `ManifestGameThumbnail`，禁止自写 `<img src="/assets/...">`
 3. 图集 / 运行时图片默认流程：
    - 原图按业务语义落到 `public/assets/i18n/zh-CN/<gameId>/<category>/`
    - 图集配置落到 `public/assets/atlas-configs/<gameId>/`
@@ -1271,4 +1351,5 @@ export default function Thumbnail() {
 ```
 
 - `manifest.ts` 中配置 `thumbnailPath: '<gameId>/thumbnails/cover'`（不含扩展名、不含 `compressed/`）。
-- 用户提供图片后，运行 `npm run compress:images -- public/assets/<gameId>/thumbnails` 压缩。
+- 用户提供图片后，运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>/thumbnails` 压缩。
+- 禁止在 `thumbnail.tsx` 中硬编码 `/assets/<gameId>/.../compressed/*.webp`；如需定制视觉，在 `ManifestGameThumbnail` 或公共缩略图组件层扩展。

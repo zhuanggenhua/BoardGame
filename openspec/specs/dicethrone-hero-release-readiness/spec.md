@@ -43,3 +43,16 @@ The project SHALL keep residual scope explicit when only part of a new hero's in
 - **WHEN** some interaction families still lack role-level audit or representative E2E
 - **THEN** the project MUST report those remaining families as residual scope
 - **AND** it MUST NOT describe the two heroes as exhaustively complete
+
+#### Scenario: Role-board ability closure does not erase card-level residual scope
+- **GIVEN** Gunslinger and Samurai role-board abilities have all received runtime audit coverage
+- **WHEN** some card interactions or real-click entry paths still remain outside the current audited set
+- **THEN** the project MAY report "role-board abilities audited complete" as a narrower fact
+- **AND** it MUST continue to list the remaining card-level or E2E residual scope explicitly
+- **AND** it MUST NOT rewrite that narrower fact as "the two heroes are exhaustively complete"
+
+#### Scenario: Full-scope hero audit can clear hero-specific residual scope
+- **GIVEN** Gunslinger and Samurai have runtime audit coverage across `token + hand + abilities + upgrades`
+- **WHEN** representative regressions and required real-click evidence have also been completed
+- **THEN** the project MAY declare those two heroes complete for the current audited release scope
+- **AND** it MUST record that the earlier card-level residual scope for those two heroes has been cleared

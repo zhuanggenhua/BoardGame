@@ -136,7 +136,7 @@ for (const [moduleName, moduleFiles] of Object.entries(modules)) {
   md += `- **${moduleName}**: ${moduleFiles.length} 文件\n`;
 }
 
-writeFileSync('evidence/audit-scope-complete.md', md, 'utf-8');
-console.log('✅ 已生成完整审查范围文档: evidence/audit-scope-complete.md');
+writeFileSync('evidence/_shared/audit-scope-complete.md', md, 'utf-8');
+console.log('✅ 已生成完整审查范围文档: evidence/_shared/audit-scope-complete.md');
 console.log(`已审查: ${totalAudited} 文件 (${(totalAudited / files.length * 100).toFixed(1)}%)`);
 console.log(`待审查: ${totalRemaining} 文件 (${(totalRemaining / files.length * 100).toFixed(1)}%)`);

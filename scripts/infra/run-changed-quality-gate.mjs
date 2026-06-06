@@ -353,18 +353,9 @@ function ensurePassWithNoTests(vitestArgs) {
 }
 
 function resolveRunnableVitestWorkspaceTarget(file) {
-  const normalized = normalizeFile(file);
-  const candidates = normalized.startsWith('e2e/src/')
-    ? [normalized.slice('e2e/'.length), normalized]
-    : [normalized];
-
-  for (const candidate of candidates) {
-    if (candidate.startsWith('e2e/src/')) continue;
-    if (!isRunnableVitestTestFile(candidate)) continue;
-    if (fileExistsInWorkspace(candidate)) return candidate;
-  }
-
-  return null;
+    const normalized = normalizeFile(file);
+    if (!isRunnableVitestTestFile(normalized)) return null;
+    return fileExistsInWorkspace(normalized) ? normalized : null;
 }
 
 function collectRunnableVitestWorkspaceTargets(files) {
@@ -642,7 +633,7 @@ function affectsCoreArea(file) {
 }
 
 function isGameFile(file) {
-  return file.startsWith('src/games/') || file.startsWith('e2e/src/games/');
+  return file.startsWith('src/games/');
 }
 
 function isGameSourceFile(file) {
@@ -678,7 +669,7 @@ function collectGameIds(files, { sourceOnly = false } = {}) {
   const ids = new Set();
   for (const file of files) {
     if (sourceOnly && !isGameSourceFile(file)) continue;
-    const match = file.match(/^(?:src|e2e\/src)\/games\/([^/]+)\//);
+    const match = file.match(/^src\/games\/([^/]+)\//);
     if (match && KNOWN_GAME_IDS.has(match[1])) ids.add(match[1]);
   }
   return [...ids];
@@ -756,14 +747,7 @@ function collectScopedVitestTargets(files, targets) {
 }
 
 function toWorkspaceScopeFile(file) {
-  const normalized = normalizeFile(file);
-  if (normalized.startsWith('e2e/src/')) {
-    const workspacePath = normalized.slice('e2e/'.length);
-    if (fileExistsInWorkspace(workspacePath)) {
-      return workspacePath;
-    }
-  }
-  return normalized;
+  return normalizeFile(file);
 }
 
 function createScopedGameTestCommands(files, vitestArgs) {

@@ -304,7 +304,7 @@
 
 ## 相关文档
 
-- `evidence/p0-audit-progress.md` - P0 审计进度详情
+- `evidence/_shared/p0-audit-progress.md` - P0 审计进度详情
 - `evidence/p0-audit-summary.md` - P0 审计总结
 - `evidence/audit-tracking-overview.md` - 全局审计跟踪
 - `evidence/audit-priority-definition.md` - 优先级定义

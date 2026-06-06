@@ -42,6 +42,60 @@ export type RegionComponentSummary = {
     totalPixelCount: number;
 };
 
+export type ClosedBoundaryInteriorComponent = {
+    mask: Uint8Array;
+    pixelCount: number;
+    bounds: BinaryMaskBounds;
+    center: {
+        x: number;
+        y: number;
+    };
+};
+
+export type BoundaryPartitionComponent = {
+    mask: Uint8Array;
+    pixelCount: number;
+    bounds: BinaryMaskBounds;
+    center: {
+        x: number;
+        y: number;
+    };
+    seedIndexes: number[];
+};
+
+export type OpenBoundaryComponentHint = {
+    pixelCount: number;
+    bounds: BinaryMaskBounds;
+    center: {
+        x: number;
+        y: number;
+    };
+    endpoints: readonly [
+        { x: number; y: number },
+        { x: number; y: number },
+    ];
+};
+
+export type OpenBoundaryComponentAnalysis = {
+    openComponentCount: number;
+    largestOpenPixelCount: number;
+    hints: OpenBoundaryComponentHint[];
+};
+
+export type OpenBoundaryHintTarget = {
+    id: string;
+    name: string;
+    seed: {
+        x: number;
+        y: number;
+    } | null;
+};
+
+export type RankedOpenBoundaryComponentHint = OpenBoundaryComponentHint & {
+    nearestTarget: OpenBoundaryHintTarget | null;
+    distanceToNearestTarget: number | null;
+};
+
 export type BinaryMaskBounds = {
     left: number;
     top: number;
@@ -65,6 +119,34 @@ export type BoundaryChainAnalysis = {
     largestRejectedSpan: number;
     largestRejectedAverageThickness: number;
     largestRejectedSupportContactRatio: number;
+};
+
+export type BoundarySnapToSupportResult = {
+    mask: Uint8Array;
+    sourcePixelCount: number;
+    matchedSourcePixelCount: number;
+    matchedSupportPixelCount: number;
+    keptOriginalPixelCount: number;
+    supportComponentCount: number;
+    keptSupportComponentCount: number;
+};
+
+export type ClosedBoundaryPixelFilterResult = {
+    mask: Uint8Array;
+    closedFaceCount: number;
+    anchoredClosedFaceCount: number;
+    keptPixelCount: number;
+    discardedPixelCount: number;
+    largestClosedFacePixelCount: number;
+};
+
+export type BoundaryPartitionPixelFilterResult = {
+    mask: Uint8Array;
+    partitionCount: number;
+    anchoredPartitionCount: number;
+    keptPixelCount: number;
+    discardedPixelCount: number;
+    largestPartitionPixelCount: number;
 };
 
 type SeedColorProfile = {
@@ -1078,6 +1160,135 @@ export const keepMaskBoundaryChainsNearSupport = (options: BoundaryChainSupportO
     analyzeMaskBoundaryChainsNearSupport(options).mask
 );
 
+export const snapBoundaryMaskToSupport = ({
+    sourceMask,
+    supportMask,
+    width,
+    clipMask,
+    maxDistance,
+    minPixels = 6,
+    minSpan = 6,
+    maxAverageThickness = 3,
+    gapClosingIterations = 1,
+    preserveUnmatched = true,
+}: {
+    sourceMask: Uint8Array;
+    supportMask: Uint8Array;
+    width: number;
+    clipMask: Uint8Array;
+    maxDistance: number;
+    minPixels?: number;
+    minSpan?: number;
+    maxAverageThickness?: number;
+    gapClosingIterations?: number;
+    preserveUnmatched?: boolean;
+}): BoundarySnapToSupportResult => {
+    const empty = new Uint8Array(sourceMask.length);
+    if (
+        width <= 0
+        || sourceMask.length === 0
+        || sourceMask.length !== supportMask.length
+        || sourceMask.length !== clipMask.length
+        || maxDistance < 0
+    ) {
+        return {
+            mask: empty,
+            sourcePixelCount: 0,
+            matchedSourcePixelCount: 0,
+            matchedSupportPixelCount: 0,
+            keptOriginalPixelCount: 0,
+            supportComponentCount: 0,
+            keptSupportComponentCount: 0,
+        };
+    }
+
+    const supportAnalysis = analyzeMaskBoundaryChainsNearSupport({
+        mask: supportMask,
+        width,
+        clipMask,
+        supportMask: sourceMask,
+        maxDistance,
+        minPixels,
+        minSpan,
+        maxAverageThickness,
+        gapClosingIterations,
+    });
+    const next = supportAnalysis.mask.slice();
+
+    const height = Math.floor(sourceMask.length / width);
+    const distances = new Int16Array(sourceMask.length);
+    distances.fill(-1);
+    const queue = new Uint32Array(sourceMask.length);
+    let head = 0;
+    let tail = 0;
+    for (let index = 0; index < supportMask.length; index += 1) {
+        if (supportMask[index] === 0 || clipMask[index] === 0) {
+            continue;
+        }
+        distances[index] = 0;
+        queue[tail] = index;
+        tail += 1;
+    }
+
+    while (head < tail) {
+        const index = queue[head];
+        head += 1;
+        const distance = distances[index];
+        if (distance >= maxDistance) {
+            continue;
+        }
+        const x = index % width;
+        const y = (index / width) | 0;
+        const candidates = [
+            x > 0 ? index - 1 : -1,
+            x < width - 1 ? index + 1 : -1,
+            y > 0 ? index - width : -1,
+            y < height - 1 ? index + width : -1,
+        ];
+        for (const nextIndex of candidates) {
+            if (
+                nextIndex < 0
+                || clipMask[nextIndex] === 0
+                || distances[nextIndex] >= 0
+            ) {
+                continue;
+            }
+            distances[nextIndex] = distance + 1;
+            queue[tail] = nextIndex;
+            tail += 1;
+        }
+    }
+
+    let sourcePixelCount = 0;
+    let matchedSourcePixelCount = 0;
+    let keptOriginalPixelCount = 0;
+    for (let index = 0; index < sourceMask.length; index += 1) {
+        if (sourceMask[index] === 0 || clipMask[index] === 0) {
+            continue;
+        }
+        sourcePixelCount += 1;
+        const nearSupport = distances[index] >= 0 && distances[index] <= maxDistance;
+        if (nearSupport) {
+            matchedSourcePixelCount += 1;
+            continue;
+        }
+        if (preserveUnmatched) {
+            next[index] = 1;
+            keptOriginalPixelCount += 1;
+        }
+    }
+
+    return {
+        mask: next,
+        sourcePixelCount,
+        matchedSourcePixelCount,
+        matchedSupportPixelCount: countMaskPixels(supportAnalysis.mask),
+        keptOriginalPixelCount,
+        supportComponentCount: supportAnalysis.componentCount,
+        keptSupportComponentCount: supportAnalysis.keptComponentCount,
+    };
+};
+
 export const createMaskClippedBarrier = ({
     barrierMask,
     clipMask,
@@ -1511,6 +1722,994 @@ export const filterSmallMaskComponents = ({
     }
 
     return filtered;
+};
+
+export const keepBoundaryComponentsSealingInterior = ({
+    mask,
+    width,
+    minInteriorPixels = 1,
+    anchors = [],
+}: {
+    mask: Uint8Array;
+    width: number;
+    minInteriorPixels?: number;
+    anchors?: ReadonlyArray<readonly [number, number]>;
+}): Uint8Array => {
+    const height = width > 0 ? Math.floor(mask.length / width) : 0;
+    if (width <= 0 || height <= 0 || mask.length === 0) {
+        return new Uint8Array(mask.length);
+    }
+
+    const outside = new Uint8Array(mask.length);
+    const queue = new Uint32Array(mask.length);
+    let head = 0;
+    let tail = 0;
+
+    const enqueueOutside = (index: number) => {
+        if (index < 0 || index >= mask.length || mask[index] !== 0 || outside[index] !== 0) {
+            return;
+        }
+        outside[index] = 1;
+        queue[tail] = index;
+        tail += 1;
+    };
+
+    for (let x = 0; x < width; x += 1) {
+        enqueueOutside(x);
+        enqueueOutside(((height - 1) * width) + x);
+    }
+    for (let y = 0; y < height; y += 1) {
+        enqueueOutside(y * width);
+        enqueueOutside((y * width) + width - 1);
+    }
+
+    while (head < tail) {
+        const index = queue[head];
+        head += 1;
+        const x = index % width;
+        const y = (index / width) | 0;
+        enqueueOutside(x > 0 ? index - 1 : -1);
+        enqueueOutside(x < width - 1 ? index + 1 : -1);
+        enqueueOutside(y > 0 ? index - width : -1);
+        enqueueOutside(y < height - 1 ? index + width : -1);
+        enqueueOutside(x > 0 && y > 0 ? index - width - 1 : -1);
+        enqueueOutside(x < width - 1 && y > 0 ? index - width + 1 : -1);
+        enqueueOutside(x > 0 && y < height - 1 ? index + width - 1 : -1);
+        enqueueOutside(x < width - 1 && y < height - 1 ? index + width + 1 : -1);
+    }
+
+    const interior = new Uint8Array(mask.length);
+    let interiorPixelCount = 0;
+    for (let index = 0; index < mask.length; index += 1) {
+        if (mask[index] === 0 && outside[index] === 0) {
+            interior[index] = 1;
+            interiorPixelCount += 1;
+        }
+    }
+
+    if (interiorPixelCount < minInteriorPixels) {
+        return new Uint8Array(mask.length);
+    }
+
+    const filtered = new Uint8Array(mask.length);
+    const visited = new Uint8Array(mask.length);
+    const componentQueue = new Uint32Array(mask.length);
+    const componentPixels = new Uint32Array(mask.length);
+
+    const touchesInterior = (index: number) => {
+        const x = index % width;
+        const y = (index / width) | 0;
+        for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+            const nextY = y + offsetY;
+            if (nextY < 0 || nextY >= height) {
+                continue;
+            }
+            for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+                if (offsetX === 0 && offsetY === 0) {
+                    continue;
+                }
+                const nextX = x + offsetX;
+                if (nextX < 0 || nextX >= width) {
+                    continue;
+                }
+                if (interior[(nextY * width) + nextX] !== 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    for (let startIndex = 0; startIndex < mask.length; startIndex += 1) {
+        if (mask[startIndex] === 0 || visited[startIndex] !== 0) {
+            continue;
+        }
+
+        let componentHead = 0;
+        let componentTail = 0;
+        let componentPixelCount = 0;
+        let sealsInterior = false;
+        let minX = width - 1;
+        let minY = height - 1;
+        let maxX = 0;
+        let maxY = 0;
+        visited[startIndex] = 1;
+        componentQueue[componentTail] = startIndex;
+        componentTail += 1;
+
+        while (componentHead < componentTail) {
+            const index = componentQueue[componentHead];
+            componentHead += 1;
+            componentPixels[componentPixelCount] = index;
+            componentPixelCount += 1;
+
+            if (!sealsInterior && touchesInterior(index)) {
+                sealsInterior = true;
+            }
+
+            const x = index % width;
+            const y = (index / width) | 0;
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+            const candidates = [
+                x > 0 ? index - 1 : -1,
+                x < width - 1 ? index + 1 : -1,
+                y > 0 ? index - width : -1,
+                y < height - 1 ? index + width : -1,
+                x > 0 && y > 0 ? index - width - 1 : -1,
+                x < width - 1 && y > 0 ? index - width + 1 : -1,
+                x > 0 && y < height - 1 ? index + width - 1 : -1,
+                x < width - 1 && y < height - 1 ? index + width + 1 : -1,
+            ];
+
+            for (const nextIndex of candidates) {
+                if (nextIndex < 0 || mask[nextIndex] === 0 || visited[nextIndex] !== 0) {
+                    continue;
+                }
+                visited[nextIndex] = 1;
+                componentQueue[componentTail] = nextIndex;
+                componentTail += 1;
+            }
+        }
+
+        if (!sealsInterior) {
+            continue;
+        }
+        if (anchors.length > 0) {
+            const left = Math.max(0, minX - 1);
+            const top = Math.max(0, minY - 1);
+            const right = Math.min(width - 1, maxX + 1);
+            const bottom = Math.min(height - 1, maxY + 1);
+            const boxWidth = (right - left) + 1;
+            const boxHeight = (bottom - top) + 1;
+            const boxMask = new Uint8Array(boxWidth * boxHeight);
+            for (let index = 0; index < componentPixelCount; index += 1) {
+                const pixelIndex = componentPixels[index];
+                const x = (pixelIndex % width) - left;
+                const y = ((pixelIndex / width) | 0) - top;
+                boxMask[(y * boxWidth) + x] = 1;
+            }
+
+            const boxOutside = new Uint8Array(boxMask.length);
+            const boxQueue = new Uint32Array(boxMask.length);
+            let boxHead = 0;
+            let boxTail = 0;
+            const enqueueBoxOutside = (index: number) => {
+                if (index < 0 || index >= boxMask.length || boxMask[index] !== 0 || boxOutside[index] !== 0) {
+                    return;
+                }
+                boxOutside[index] = 1;
+                boxQueue[boxTail] = index;
+                boxTail += 1;
+            };
+            for (let x = 0; x < boxWidth; x += 1) {
+                enqueueBoxOutside(x);
+                enqueueBoxOutside(((boxHeight - 1) * boxWidth) + x);
+            }
+            for (let y = 0; y < boxHeight; y += 1) {
+                enqueueBoxOutside(y * boxWidth);
+                enqueueBoxOutside((y * boxWidth) + boxWidth - 1);
+            }
+            while (boxHead < boxTail) {
+                const index = boxQueue[boxHead];
+                boxHead += 1;
+                const x = index % boxWidth;
+                const y = (index / boxWidth) | 0;
+                enqueueBoxOutside(x > 0 ? index - 1 : -1);
+                enqueueBoxOutside(x < boxWidth - 1 ? index + 1 : -1);
+                enqueueBoxOutside(y > 0 ? index - boxWidth : -1);
+                enqueueBoxOutside(y < boxHeight - 1 ? index + boxWidth : -1);
+            }
+
+            const containsAnchor = anchors.some(([anchorX, anchorY]) => {
+                if (anchorX < left || anchorX > right || anchorY < top || anchorY > bottom) {
+                    return false;
+                }
+                const localIndex = ((anchorY - top) * boxWidth) + (anchorX - left);
+                return boxMask[localIndex] === 0 && boxOutside[localIndex] === 0;
+            });
+            if (!containsAnchor) {
+                continue;
+            }
+        }
+        for (let index = 0; index < componentPixelCount; index += 1) {
+            filtered[componentPixels[index]] = 1;
+        }
+    }
+
+    return filtered;
+};
+
+export const keepBoundaryPixelsTouchingClosedInteriors = ({
+    mask,
+    width,
+    minInteriorPixels = 1,
+    maxInteriorPixels = Number.POSITIVE_INFINITY,
+    anchors = [],
+    keepThicknessIterations = 1,
+}: {
+    mask: Uint8Array;
+    width: number;
+    minInteriorPixels?: number;
+    maxInteriorPixels?: number;
+    anchors?: ReadonlyArray<readonly [number, number]>;
+    keepThicknessIterations?: number;
+}): ClosedBoundaryPixelFilterResult => {
+    const height = width > 0 ? Math.floor(mask.length / width) : 0;
+    if (width <= 0 || height <= 0 || mask.length === 0) {
+        return {
+            mask: new Uint8Array(mask.length),
+            closedFaceCount: 0,
+            anchoredClosedFaceCount: 0,
+            keptPixelCount: 0,
+            discardedPixelCount: countMaskPixels(mask),
+            largestClosedFacePixelCount: 0,
+        };
+    }
+
+    const closedFaces = extractClosedBoundaryInteriorComponents({
+        barrierMask: mask,
+        width,
+        minPixels: minInteriorPixels,
+        maxPixels: maxInteriorPixels,
+    });
+    const keptBoundary = new Uint8Array(mask.length);
+    let anchoredClosedFaceCount = 0;
+
+    const shouldKeepFace = (face: ClosedBoundaryInteriorComponent): boolean => {
+        if (anchors.length === 0) {
+            return true;
+        }
+        return anchors.some(([anchorX, anchorY]) => maskContainsPoint({
+            mask: face.mask,
+            width,
+            x: anchorX,
+            y: anchorY,
+        }));
+    };
+
+    for (const face of closedFaces) {
+        if (!shouldKeepFace(face)) {
+            continue;
+        }
+        anchoredClosedFaceCount += 1;
+        for (let index = 0; index < face.mask.length; index += 1) {
+            if (face.mask[index] === 0) {
+                continue;
+            }
+            const x = index % width;
+            const y = (index / width) | 0;
+            for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+                const nextY = y + offsetY;
+                if (nextY < 0 || nextY >= height) {
+                    continue;
+                }
+                for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+                    if (offsetX === 0 && offsetY === 0) {
+                        continue;
+                    }
+                    const nextX = x + offsetX;
+                    if (nextX < 0 || nextX >= width) {
+                        continue;
+                    }
+                    const nextIndex = (nextY * width) + nextX;
+                    if (mask[nextIndex] !== 0) {
+                        keptBoundary[nextIndex] = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    const thickenedBoundary = keepThicknessIterations > 0
+        ? intersectBinaryMasks(
+            expandBinaryMask({
+                mask: keptBoundary,
+                width,
+                height,
+                iterations: keepThicknessIterations,
+            }),
+            mask,
+        )
+        : keptBoundary;
+    const keptPixelCount = countMaskPixels(thickenedBoundary);
+    const sourcePixelCount = countMaskPixels(mask);
+
+    return {
+        mask: thickenedBoundary,
+        closedFaceCount: closedFaces.length,
+        anchoredClosedFaceCount,
+        keptPixelCount,
+        discardedPixelCount: Math.max(0, sourcePixelCount - keptPixelCount),
+        largestClosedFacePixelCount: closedFaces[0]?.pixelCount ?? 0,
+    };
+};
+
+export const keepBoundaryPixelsTouchingSeedPartitions = ({
+    mask,
+    width,
+    fillableMask = null,
+    seeds = [],
+    minPartitionPixels = 1,
+    keepThicknessIterations = 1,
+}: {
+    mask: Uint8Array;
+    width: number;
+    fillableMask?: Uint8Array | null;
+    seeds?: ReadonlyArray<{ x: number; y: number }>;
+    minPartitionPixels?: number;
+    keepThicknessIterations?: number;
+}): BoundaryPartitionPixelFilterResult => {
+    const height = width > 0 ? Math.floor(mask.length / width) : 0;
+    if (width <= 0 || height <= 0 || mask.length === 0) {
+        return {
+            mask: new Uint8Array(mask.length),
+            partitionCount: 0,
+            anchoredPartitionCount: 0,
+            keptPixelCount: 0,
+            discardedPixelCount: countMaskPixels(mask),
+            largestPartitionPixelCount: 0,
+        };
+    }
+
+    const partitions = extractBoundaryPartitionComponents({
+        barrierMask: mask,
+        width,
+        fillableMask,
+        seeds,
+        minPixels: minPartitionPixels,
+    });
+    const partitionLabelByPixel = new Int32Array(mask.length);
+    partitionLabelByPixel.fill(-1);
+    const anchoredPartitionLabels = new Set<number>();
+    let anchoredPartitionCount = 0;
+
+    partitions.forEach((partition, partitionIndex) => {
+        if (partition.seedIndexes.length === 1) {
+            anchoredPartitionCount += 1;
+            anchoredPartitionLabels.add(partitionIndex);
+        }
+        for (let index = 0; index < partition.mask.length; index += 1) {
+            if (partition.mask[index] !== 0) {
+                partitionLabelByPixel[index] = partitionIndex;
+            }
+        }
+    });
+
+    const keptBoundary = new Uint8Array(mask.length);
+    const visitedBoundary = new Uint8Array(mask.length);
+    const componentQueue = new Uint32Array(mask.length);
+    const componentPixels = new Uint32Array(mask.length);
+    for (let startIndex = 0; startIndex < mask.length; startIndex += 1) {
+        if (mask[startIndex] === 0 || visitedBoundary[startIndex] !== 0) {
+            continue;
+        }
+        const labels = new Set<number>();
+        const anchoredLabels = new Set<number>();
+        let touchesFillBoundary = false;
+
+        let head = 0;
+        let tail = 0;
+        let componentPixelCount = 0;
+        visitedBoundary[startIndex] = 1;
+        componentQueue[tail] = startIndex;
+        tail += 1;
+
+        while (head < tail) {
+            const index = componentQueue[head];
+            head += 1;
+            componentPixels[componentPixelCount] = index;
+            componentPixelCount += 1;
+            const x = index % width;
+            const y = (index / width) | 0;
+
+            for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+                const nextY = y + offsetY;
+                if (nextY < 0 || nextY >= height) {
+                    touchesFillBoundary = true;
+                    continue;
+                }
+                for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+                    if (offsetX === 0 && offsetY === 0) {
+                        continue;
+                    }
+                    const nextX = x + offsetX;
+                    if (nextX < 0 || nextX >= width) {
+                        touchesFillBoundary = true;
+                        continue;
+                    }
+                    const nextIndex = (nextY * width) + nextX;
+                    if (mask[nextIndex] !== 0 && visitedBoundary[nextIndex] === 0) {
+                        visitedBoundary[nextIndex] = 1;
+                        componentQueue[tail] = nextIndex;
+                        tail += 1;
+                    }
+                    if (fillableMask != null && fillableMask[nextIndex] === 0) {
+                        touchesFillBoundary = true;
+                        continue;
+                    }
+                    const label = partitionLabelByPixel[nextIndex];
+                    if (label >= 0) {
+                        labels.add(label);
+                        if (anchoredPartitionLabels.has(label)) {
+                            anchoredLabels.add(label);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (anchoredLabels.size > 0 && (labels.size >= 2 || touchesFillBoundary)) {
+            for (let componentIndex = 0; componentIndex < componentPixelCount; componentIndex += 1) {
+                keptBoundary[componentPixels[componentIndex]] = 1;
+            }
+        }
+    }
+
+    const thickenedBoundary = keepThicknessIterations > 0
+        ? intersectBinaryMasks(
+            expandBinaryMask({
+                mask: keptBoundary,
+                width,
+                height,
+                iterations: keepThicknessIterations,
+            }),
+            mask,
+        )
+        : keptBoundary;
+    const keptPixelCount = countMaskPixels(thickenedBoundary);
+    const sourcePixelCount = countMaskPixels(mask);
+
+    return {
+        mask: thickenedBoundary,
+        partitionCount: partitions.length,
+        anchoredPartitionCount,
+        keptPixelCount,
+        discardedPixelCount: Math.max(0, sourcePixelCount - keptPixelCount),
+        largestPartitionPixelCount: partitions[0]?.pixelCount ?? 0,
+    };
+};
+
+export const extractClosedBoundaryInteriorComponents = ({
+    barrierMask,
+    width,
+    minPixels = 1,
+    maxPixels = Number.POSITIVE_INFINITY,
+}: {
+    barrierMask: Uint8Array;
+    width: number;
+    minPixels?: number;
+    maxPixels?: number;
+}): ClosedBoundaryInteriorComponent[] => {
+    const height = width > 0 ? Math.floor(barrierMask.length / width) : 0;
+    if (width <= 0 || height <= 0 || barrierMask.length === 0) {
+        return [];
+    }
+
+    const outside = new Uint8Array(barrierMask.length);
+    const queue = new Uint32Array(barrierMask.length);
+    let head = 0;
+    let tail = 0;
+    const enqueueOutside = (index: number) => {
+        if (
+            index < 0
+            || index >= barrierMask.length
+            || barrierMask[index] !== 0
+            || outside[index] !== 0
+        ) {
+            return;
+        }
+        outside[index] = 1;
+        queue[tail] = index;
+        tail += 1;
+    };
+
+    for (let x = 0; x < width; x += 1) {
+        enqueueOutside(x);
+        enqueueOutside(((height - 1) * width) + x);
+    }
+    for (let y = 0; y < height; y += 1) {
+        enqueueOutside(y * width);
+        enqueueOutside((y * width) + width - 1);
+    }
+
+    while (head < tail) {
+        const index = queue[head];
+        head += 1;
+        const x = index % width;
+        const y = (index / width) | 0;
+        enqueueOutside(x > 0 ? index - 1 : -1);
+        enqueueOutside(x < width - 1 ? index + 1 : -1);
+        enqueueOutside(y > 0 ? index - width : -1);
+        enqueueOutside(y < height - 1 ? index + width : -1);
+        enqueueOutside(x > 0 && y > 0 ? index - width - 1 : -1);
+        enqueueOutside(x < width - 1 && y > 0 ? index - width + 1 : -1);
+        enqueueOutside(x > 0 && y < height - 1 ? index + width - 1 : -1);
+        enqueueOutside(x < width - 1 && y < height - 1 ? index + width + 1 : -1);
+    }
+
+    const visited = new Uint8Array(barrierMask.length);
+    const componentQueue = new Uint32Array(barrierMask.length);
+    const components: ClosedBoundaryInteriorComponent[] = [];
+
+    for (let startIndex = 0; startIndex < barrierMask.length; startIndex += 1) {
+        if (
+            barrierMask[startIndex] !== 0
+            || outside[startIndex] !== 0
+            || visited[startIndex] !== 0
+        ) {
+            continue;
+        }
+
+        let componentHead = 0;
+        let componentTail = 0;
+        let pixelCount = 0;
+        let sumX = 0;
+        let sumY = 0;
+        let left = width - 1;
+        let right = 0;
+        let top = height - 1;
+        let bottom = 0;
+        visited[startIndex] = 1;
+        componentQueue[componentTail] = startIndex;
+        componentTail += 1;
+
+        while (componentHead < componentTail) {
+            const index = componentQueue[componentHead];
+            componentHead += 1;
+            const x = index % width;
+            const y = (index / width) | 0;
+            pixelCount += 1;
+            sumX += x;
+            sumY += y;
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+
+            const candidates = [
+                x > 0 ? index - 1 : -1,
+                x < width - 1 ? index + 1 : -1,
+                y > 0 ? index - width : -1,
+                y < height - 1 ? index + width : -1,
+                x > 0 && y > 0 ? index - width - 1 : -1,
+                x < width - 1 && y > 0 ? index - width + 1 : -1,
+                x > 0 && y < height - 1 ? index + width - 1 : -1,
+                x < width - 1 && y < height - 1 ? index + width + 1 : -1,
+            ];
+
+            for (const nextIndex of candidates) {
+                if (
+                    nextIndex < 0
+                    || barrierMask[nextIndex] !== 0
+                    || outside[nextIndex] !== 0
+                    || visited[nextIndex] !== 0
+                ) {
+                    continue;
+                }
+                visited[nextIndex] = 1;
+                componentQueue[componentTail] = nextIndex;
+                componentTail += 1;
+            }
+        }
+
+        if (pixelCount < minPixels || pixelCount > maxPixels) {
+            continue;
+        }
+
+        const mask = new Uint8Array(barrierMask.length);
+        for (let index = 0; index < componentTail; index += 1) {
+            mask[componentQueue[index]] = 1;
+        }
+        components.push({
+            mask,
+            pixelCount,
+            bounds: { left, top, right, bottom },
+            center: {
+                x: Math.round(sumX / pixelCount),
+                y: Math.round(sumY / pixelCount),
+            },
+        });
+    }
+
+    return components.sort((a, b) => b.pixelCount - a.pixelCount);
+};
+
+export const extractBoundaryPartitionComponents = ({
+    barrierMask,
+    width,
+    fillableMask = null,
+    seeds = [],
+    minPixels = 1,
+    maxPixels = Number.POSITIVE_INFINITY,
+}: {
+    barrierMask: Uint8Array;
+    width: number;
+    fillableMask?: Uint8Array | null;
+    seeds?: ReadonlyArray<{ x: number; y: number }>;
+    minPixels?: number;
+    maxPixels?: number;
+}): BoundaryPartitionComponent[] => {
+    const height = width > 0 ? Math.floor(barrierMask.length / width) : 0;
+    if (
+        width <= 0
+        || height <= 0
+        || barrierMask.length === 0
+        || (fillableMask != null && fillableMask.length !== barrierMask.length)
+    ) {
+        return [];
+    }
+
+    const seedIndexesByPixel = new Map<number, number[]>();
+    seeds.forEach((seed, seedIndex) => {
+        if (seed.x < 0 || seed.y < 0 || seed.x >= width || seed.y >= height) {
+            return;
+        }
+        const pixelIndex = (seed.y * width) + seed.x;
+        const list = seedIndexesByPixel.get(pixelIndex);
+        if (list) {
+            list.push(seedIndex);
+        } else {
+            seedIndexesByPixel.set(pixelIndex, [seedIndex]);
+        }
+    });
+
+    const canFill = (index: number) => (
+        index >= 0
+        && index < barrierMask.length
+        && barrierMask[index] === 0
+        && (fillableMask == null || fillableMask[index] !== 0)
+    );
+
+    const visited = new Uint8Array(barrierMask.length);
+    const queue = new Uint32Array(barrierMask.length);
+    const components: BoundaryPartitionComponent[] = [];
+
+    for (let startIndex = 0; startIndex < barrierMask.length; startIndex += 1) {
+        if (!canFill(startIndex) || visited[startIndex] !== 0) {
+            continue;
+        }
+
+        let head = 0;
+        let tail = 0;
+        let pixelCount = 0;
+        let sumX = 0;
+        let sumY = 0;
+        let left = width - 1;
+        let right = 0;
+        let top = height - 1;
+        let bottom = 0;
+        const seedIndexes: number[] = [];
+
+        visited[startIndex] = 1;
+        queue[tail] = startIndex;
+        tail += 1;
+
+        while (head < tail) {
+            const index = queue[head];
+            head += 1;
+            const x = index % width;
+            const y = (index / width) | 0;
+            pixelCount += 1;
+            sumX += x;
+            sumY += y;
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+
+            const currentSeedIndexes = seedIndexesByPixel.get(index);
+            if (currentSeedIndexes) {
+                seedIndexes.push(...currentSeedIndexes);
+            }
+
+            const candidates = [
+                x > 0 ? index - 1 : -1,
+                x < width - 1 ? index + 1 : -1,
+                y > 0 ? index - width : -1,
+                y < height - 1 ? index + width : -1,
+            ];
+
+            for (const nextIndex of candidates) {
+                if (nextIndex < 0 || visited[nextIndex] !== 0 || !canFill(nextIndex)) {
+                    continue;
+                }
+                visited[nextIndex] = 1;
+                queue[tail] = nextIndex;
+                tail += 1;
+            }
+        }
+
+        if (pixelCount < minPixels || pixelCount > maxPixels) {
+            continue;
+        }
+
+        const mask = new Uint8Array(barrierMask.length);
+        for (let index = 0; index < tail; index += 1) {
+            mask[queue[index]] = 1;
+        }
+        components.push({
+            mask,
+            pixelCount,
+            bounds: { left, top, right, bottom },
+            center: {
+                x: Math.round(sumX / pixelCount),
+                y: Math.round(sumY / pixelCount),
+            },
+            seedIndexes,
+        });
+    }
+
+    return components.sort((a, b) => b.pixelCount - a.pixelCount);
+};
+
+export const analyzeOpenBoundaryComponents = ({
+    barrierMask,
+    width,
+    minPixels = 16,
+    maxHints = 8,
+}: {
+    barrierMask: Uint8Array;
+    width: number;
+    minPixels?: number;
+    maxHints?: number;
+}): OpenBoundaryComponentAnalysis => {
+    const height = width > 0 ? Math.floor(barrierMask.length / width) : 0;
+    if (width <= 0 || height <= 0 || barrierMask.length === 0) {
+        return { openComponentCount: 0, largestOpenPixelCount: 0, hints: [] };
+    }
+
+    const outside = new Uint8Array(barrierMask.length);
+    const outsideQueue = new Uint32Array(barrierMask.length);
+    let outsideHead = 0;
+    let outsideTail = 0;
+    const enqueueOutside = (index: number) => {
+        if (
+            index < 0
+            || index >= barrierMask.length
+            || barrierMask[index] !== 0
+            || outside[index] !== 0
+        ) {
+            return;
+        }
+        outside[index] = 1;
+        outsideQueue[outsideTail] = index;
+        outsideTail += 1;
+    };
+
+    for (let x = 0; x < width; x += 1) {
+        enqueueOutside(x);
+        enqueueOutside(((height - 1) * width) + x);
+    }
+    for (let y = 0; y < height; y += 1) {
+        enqueueOutside(y * width);
+        enqueueOutside((y * width) + width - 1);
+    }
+
+    while (outsideHead < outsideTail) {
+        const index = outsideQueue[outsideHead];
+        outsideHead += 1;
+        const x = index % width;
+        const y = (index / width) | 0;
+        enqueueOutside(x > 0 ? index - 1 : -1);
+        enqueueOutside(x < width - 1 ? index + 1 : -1);
+        enqueueOutside(y > 0 ? index - width : -1);
+        enqueueOutside(y < height - 1 ? index + width : -1);
+        enqueueOutside(x > 0 && y > 0 ? index - width - 1 : -1);
+        enqueueOutside(x < width - 1 && y > 0 ? index - width + 1 : -1);
+        enqueueOutside(x > 0 && y < height - 1 ? index + width - 1 : -1);
+        enqueueOutside(x < width - 1 && y < height - 1 ? index + width + 1 : -1);
+    }
+
+    const touchesInterior = (index: number) => {
+        const x = index % width;
+        const y = (index / width) | 0;
+        for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+            const nextY = y + offsetY;
+            if (nextY < 0 || nextY >= height) {
+                continue;
+            }
+            for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+                if (offsetX === 0 && offsetY === 0) {
+                    continue;
+                }
+                const nextX = x + offsetX;
+                if (nextX < 0 || nextX >= width) {
+                    continue;
+                }
+                const nextIndex = (nextY * width) + nextX;
+                if (barrierMask[nextIndex] === 0 && outside[nextIndex] === 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    const findFarthestPixel = (fromIndex: number, pixels: Uint32Array, pixelCount: number) => {
+        const fromX = fromIndex % width;
+        const fromY = (fromIndex / width) | 0;
+        let farthestIndex = fromIndex;
+        let farthestDistance = -1;
+        for (let index = 0; index < pixelCount; index += 1) {
+            const pixelIndex = pixels[index];
+            const x = pixelIndex % width;
+            const y = (pixelIndex / width) | 0;
+            const distance = ((x - fromX) * (x - fromX)) + ((y - fromY) * (y - fromY));
+            if (distance > farthestDistance) {
+                farthestDistance = distance;
+                farthestIndex = pixelIndex;
+            }
+        }
+        return farthestIndex;
+    };
+
+    const visited = new Uint8Array(barrierMask.length);
+    const componentQueue = new Uint32Array(barrierMask.length);
+    const componentPixels = new Uint32Array(barrierMask.length);
+    const hints: OpenBoundaryComponentHint[] = [];
+    let openComponentCount = 0;
+    let largestOpenPixelCount = 0;
+
+    for (let startIndex = 0; startIndex < barrierMask.length; startIndex += 1) {
+        if (barrierMask[startIndex] === 0 || visited[startIndex] !== 0) {
+            continue;
+        }
+
+        let componentHead = 0;
+        let componentTail = 0;
+        let componentPixelCount = 0;
+        let sumX = 0;
+        let sumY = 0;
+        let touchesClosedInterior = false;
+        let left = width - 1;
+        let right = 0;
+        let top = height - 1;
+        let bottom = 0;
+        visited[startIndex] = 1;
+        componentQueue[componentTail] = startIndex;
+        componentTail += 1;
+
+        while (componentHead < componentTail) {
+            const index = componentQueue[componentHead];
+            componentHead += 1;
+            componentPixels[componentPixelCount] = index;
+            componentPixelCount += 1;
+
+            const x = index % width;
+            const y = (index / width) | 0;
+            sumX += x;
+            sumY += y;
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+            if (!touchesClosedInterior && touchesInterior(index)) {
+                touchesClosedInterior = true;
+            }
+
+            const candidates = [
+                x > 0 ? index - 1 : -1,
+                x < width - 1 ? index + 1 : -1,
+                y > 0 ? index - width : -1,
+                y < height - 1 ? index + width : -1,
+                x > 0 && y > 0 ? index - width - 1 : -1,
+                x < width - 1 && y > 0 ? index - width + 1 : -1,
+                x > 0 && y < height - 1 ? index + width - 1 : -1,
+                x < width - 1 && y < height - 1 ? index + width + 1 : -1,
+            ];
+
+            for (const nextIndex of candidates) {
+                if (nextIndex < 0 || barrierMask[nextIndex] === 0 || visited[nextIndex] !== 0) {
+                    continue;
+                }
+                visited[nextIndex] = 1;
+                componentQueue[componentTail] = nextIndex;
+                componentTail += 1;
+            }
+        }
+
+        if (touchesClosedInterior || componentPixelCount < minPixels) {
+            continue;
+        }
+
+        openComponentCount += 1;
+        largestOpenPixelCount = Math.max(largestOpenPixelCount, componentPixelCount);
+        if (hints.length >= maxHints) {
+            continue;
+        }
+        const firstEndpoint = findFarthestPixel(componentPixels[0], componentPixels, componentPixelCount);
+        const secondEndpoint = findFarthestPixel(firstEndpoint, componentPixels, componentPixelCount);
+        hints.push({
+            pixelCount: componentPixelCount,
+            bounds: { left, top, right, bottom },
+            center: {
+                x: Math.round(sumX / componentPixelCount),
+                y: Math.round(sumY / componentPixelCount),
+            },
+            endpoints: [
+                { x: firstEndpoint % width, y: (firstEndpoint / width) | 0 },
+                { x: secondEndpoint % width, y: (secondEndpoint / width) | 0 },
+            ],
+        });
+    }
+
+    hints.sort((a, b) => b.pixelCount - a.pixelCount);
+    return { openComponentCount, largestOpenPixelCount, hints };
+};
+
+export const rankOpenBoundaryHintsForTargets = ({
+    hints,
+    targets,
+}: {
+    hints: OpenBoundaryComponentHint[];
+    targets: OpenBoundaryHintTarget[];
+}): RankedOpenBoundaryComponentHint[] => {
+    const activeTargets = targets.filter((target) => target.seed != null);
+    const distanceToHint = (hint: OpenBoundaryComponentHint, seed: { x: number; y: number }) => {
+        const points = [hint.center, hint.endpoints[0], hint.endpoints[1]];
+        let minDistance = Number.POSITIVE_INFINITY;
+        for (const point of points) {
+            const dx = point.x - seed.x;
+            const dy = point.y - seed.y;
+            minDistance = Math.min(minDistance, Math.sqrt((dx * dx) + (dy * dy)));
+        }
+        return minDistance;
+    };
+
+    return hints.map((hint) => {
+        let nearestTarget: OpenBoundaryHintTarget | null = null;
+        let distanceToNearestTarget: number | null = null;
+        for (const target of activeTargets) {
+            if (!target.seed) {
+                continue;
+            }
+            const distance = distanceToHint(hint, target.seed);
+            if (distanceToNearestTarget == null || distance < distanceToNearestTarget) {
+                nearestTarget = target;
+                distanceToNearestTarget = distance;
+            }
+        }
+        return {
+            ...hint,
+            nearestTarget,
+            distanceToNearestTarget,
+        };
+    }).sort((left, right) => {
+        if (left.distanceToNearestTarget != null && right.distanceToNearestTarget != null) {
+            const distanceDelta = left.distanceToNearestTarget - right.distanceToNearestTarget;
+            if (Math.abs(distanceDelta) > 0.001) {
+                return distanceDelta;
+            }
+        } else if (left.distanceToNearestTarget != null) {
+            return -1;
+        } else if (right.distanceToNearestTarget != null) {
+            return 1;
+        }
+        return right.pixelCount - left.pixelCount;
+    });
 };
 
 export const floodFillContiguousArea = ({

@@ -164,7 +164,7 @@ Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:6173/play/smas
 1. `evidence/framework-migration-complete.md` - 初步完成总结
 2. `evidence/framework-migration-final-summary.md` - 详细总结
 3. `evidence/framework-migration-route-fix-success.md` - 路由修复验证
-4. `evidence/framework-migration-verification.md` - 静态验证
+4. `evidence/_shared/framework-migration-verification.md` - 静态验证
 5. `evidence/framework-migration-complete-final.md` - 最终确认（本文档）
 
 ## 教训

@@ -167,8 +167,8 @@ newDamageShields = [...statusShields, ...newDamageShieldsArray];
 
 ### 文档
 
-- `docs/bugs/dicethrone-shield-consumption-bug.md` - 问题详细分析
-- `docs/bugs/dicethrone-shield-logging-issue.md` - 日志缺失问题分析
+- `docs/bugs/dicethrone/dicethrone-shield-consumption-bug.md` - 问题详细分析
+- `docs/bugs/dicethrone/dicethrone-shield-logging-issue.md` - 日志缺失问题分析
 - `docs/bugs/dicethrone-shield-fix-summary.md` - 本文档
 
 ## 后续工作

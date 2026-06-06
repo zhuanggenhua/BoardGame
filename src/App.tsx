@@ -63,6 +63,7 @@ const DevToolsFxPreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./
 const DevToolsAudioBrowser = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/AudioBrowser')) : null;
 const DevToolsArchView = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/ArchitectureView')) : null;
 const DevToolsQidahenRegionMask = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRegionMaskTool')) : null;
+const DevToolsQidahenRuntimePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRuntimePreview')) : null;
 const UgcBuilderPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UnifiedBuilderWithAudio')) : null;
 const UgcSandboxPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UGCSandbox')) : null;
 const UgcRuntimeViewPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/runtime/RuntimeViewPage')) : null;
@@ -102,7 +103,7 @@ const AppContent = () => {
     installGlobalErrorContextCapture();
     const initialLoader = document.getElementById('initial-loader');
     const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-    const shouldKeepBootstrapLoader = pathname.startsWith('/play/') || pathname.startsWith('/dev/');
+    const shouldKeepBootstrapLoader = pathname.startsWith('/play/');
     if (initialLoader && !shouldKeepBootstrapLoader) {
       initialLoader.remove();
     }
@@ -167,6 +168,9 @@ const AppContent = () => {
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && DevToolsQidahenRegionMask && (
                       <Route path="/dev/qidahen-region-mask" element={<React.Suspense fallback={null}><DevToolsQidahenRegionMask /></React.Suspense>} />
+                    )}
+                    {ENABLE_INTERNAL_DEVTOOLS && DevToolsQidahenRuntimePreview && (
+                      <Route path="/dev/qidahen-runtime-preview" element={<React.Suspense fallback={null}><DevToolsQidahenRuntimePreview /></React.Suspense>} />
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && HomeV2AuthoringPage && (
                       <Route path="/dev/home-v2-authoring" element={<React.Suspense fallback={null}><HomeV2AuthoringPage /></React.Suspense>} />

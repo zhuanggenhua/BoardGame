@@ -23,7 +23,7 @@
 
 ### 1. 刷新所有基地后
 
-![刷新所有基地后](assets/refresh-base-e2e/01-refresh-all-bases-after-apply.png)
+![刷新所有基地后](smashup/assets/refresh-base-e2e/01-refresh-all-bases-after-apply.png)
 
 审查结论：
 
@@ -33,7 +33,7 @@
 
 ### 2. 基地牌堆不足时部分刷新后
 
-![基地牌堆不足时部分刷新后](assets/refresh-base-e2e/02-refresh-all-bases-partial-refresh.png)
+![基地牌堆不足时部分刷新后](smashup/assets/refresh-base-e2e/02-refresh-all-bases-partial-refresh.png)
 
 审查结论：
 

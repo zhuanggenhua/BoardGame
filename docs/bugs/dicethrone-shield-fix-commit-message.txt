@@ -42,7 +42,7 @@ newDamageShields = statusShields;  // 丢弃所有 damageShields
 - src/games/dicethrone/domain/reduceCombat.ts
 - src/games/dicethrone/__tests__/shield-multiple-consumption.test.ts
 - src/games/dicethrone/__tests__/shield-cleanup.test.ts
-- docs/bugs/dicethrone-shield-consumption-bug.md
+- docs/bugs/dicethrone/dicethrone-shield-consumption-bug.md
 - docs/bugs/dicethrone-shield-fix-summary.md
 
 ## 后续工作

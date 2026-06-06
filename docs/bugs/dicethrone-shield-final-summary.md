@@ -7,7 +7,7 @@
 - **用户案例**：下次一定(6点) + 神圣防御(3点) vs 8点伤害 → 实际受到2点伤害（期望0点）
 - **根本原因**：`reduceCombat.ts` 中为了修复"护盾双重扣减 bug"而引入的简化逻辑过度简化
 - **修复方案**：改为循环消耗所有护盾，按顺序（先进先出）消耗，固定值护盾未完全消耗时保留剩余值
-- **详细文档**：`docs/bugs/dicethrone-shield-consumption-bug.md`
+- **详细文档**：`docs/bugs/dicethrone/dicethrone-shield-consumption-bug.md`
 
 ### 2. 护盾减伤日志显示问题（已修复）
 - **问题**：游戏日志中没有显示护盾减伤记录，tooltip 顶部显示基础伤害而非最终伤害
@@ -19,7 +19,7 @@
   1. 在 `DAMAGE_DEALT` 事件的 payload 中添加 `shieldsConsumed` 字段，reducer 层回填
   2. 分离百分比护盾和固定值护盾，先处理百分比护盾，再处理固定值护盾
   3. 完全移除对 `attackResolved.payload.totalDamage` 的依赖，始终基于当前事件数据计算
-- **详细文档**：`docs/bugs/dicethrone-shield-logging-fix-summary.md`
+- **详细文档**：`docs/bugs/dicethrone/dicethrone-shield-logging-fix-summary.md`
 
 ## 修改的文件
 
@@ -141,6 +141,6 @@ if (breakdownSeg.type === 'breakdown' && shieldsConsumed && shieldsConsumed.leng
 
 ## 相关文档
 
-- [护盾消耗 bug 修复](./dicethrone-shield-consumption-bug.md)
-- [护盾减伤日志修复总结](./dicethrone-shield-logging-fix-summary.md)
-- [护盾日志撤回问题修复](./dicethrone-shield-undo-fix.md)
+- [护盾消耗 bug 修复](./dicethrone/dicethrone-shield-consumption-bug.md)
+- [护盾减伤日志修复总结](./dicethrone/dicethrone-shield-logging-fix-summary.md)
+- [护盾日志撤回问题修复](./dicethrone/dicethrone-shield-undo-fix.md)

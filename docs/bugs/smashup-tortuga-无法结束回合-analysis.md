@@ -229,7 +229,7 @@ registerAbility('pirate_king', 'beforeScoring', (ctx) => {
 
 ### 确认的根因：便衣忍者交互 UI 未显示
 
-根据代码分析和之前的 bug 修复经验（`docs/bugs/smashup-ninja-hidden-ninja-interaction-not-visible.md`），这个 bug 的根因是：
+根据代码分析和之前的 bug 修复经验（`docs/bugs/smashup/smashup-ninja-hidden-ninja-interaction-not-visible.md`），这个 bug 的根因是：
 
 **便衣忍者交互创建了，但 UI 层未显示**
 
@@ -323,7 +323,7 @@ registerAbility('pirate_king', 'beforeScoring', (ctx) => {
 
 #### 与之前的 bug 对比
 
-这个 bug 与 `docs/bugs/smashup-ninja-hidden-ninja-interaction-not-visible.md` 中描述的问题完全相同：
+这个 bug 与 `docs/bugs/smashup/smashup-ninja-hidden-ninja-interaction-not-visible.md` 中描述的问题完全相同：
 
 **之前的修复**（2026/2/27）：
 - 问题：便衣忍者交互未显示
@@ -493,7 +493,7 @@ const isHandDiscardPrompt = useMemo(() => {
 
 ## 相关 Bug
 
-- `docs/bugs/smashup-ninja-hidden-ninja-interaction-not-visible.md` - 之前的便衣忍者 UI bug（2026/2/27 修复）
+- `docs/bugs/smashup/smashup-ninja-hidden-ninja-interaction-not-visible.md` - 之前的便衣忍者 UI bug（2026/2/27 修复）
 - 当前 bug 是同一问题的延续：之前的修复引入了 `targetType: 'hand'`，但没有考虑到 UI 层的渲染逻辑
 
 ## 教训

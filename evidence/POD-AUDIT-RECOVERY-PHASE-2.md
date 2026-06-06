@@ -151,11 +151,11 @@ npm test -- --run
 
 ## 证据文档
 
-- `evidence/POD-AUDIT-MISSING-ITEMS.md` - 遗漏项目详细报告
-- `evidence/rematch-button-debug.md` - 再来一局按钮排查指南
-- `evidence/rematch-button-debug-logs-added.md` - 调试日志说明
-- `evidence/POD-AUDIT-COMPLETE.md` - 第一阶段审计报告
-- `evidence/GAME-LOGIC-BUGS-FIXED.md` - 游戏逻辑修复报告
+- `evidence/_shared/POD-AUDIT-MISSING-ITEMS.md` - 遗漏项目详细报告
+- `evidence/dicethrone/rematch-button-debug.md` - 再来一局按钮排查指南
+- `evidence/_shared/rematch-button-debug-logs-added.md` - 调试日志说明
+- `evidence/_shared/POD-AUDIT-COMPLETE.md` - 第一阶段审计报告
+- `evidence/dicethrone/GAME-LOGIC-BUGS-FIXED.md` - 游戏逻辑修复报告
 - `evidence/ALL-TESTS-PASSED.md` - 第一阶段测试结果
 
 ## 总结

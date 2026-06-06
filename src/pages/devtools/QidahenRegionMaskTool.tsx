@@ -1,6 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { unzipSync, zipSync } from 'fflate';
+import defaultRegionMaskRegionsData from '../../games/qidahen/data/region-mask-regions.json';
 import {
+    Download,
     Eraser,
     Eye,
     EyeOff,
@@ -9,6 +12,7 @@ import {
     Plus,
     RotateCcw,
     Route,
+    ScanSearch,
     Save,
     Upload,
     WandSparkles,
@@ -35,6 +39,9 @@ import {
     countMaskPixels,
     createRegionAssignments,
     expandBinaryMask,
+    analyzeOpenBoundaryComponents,
+    rankOpenBoundaryHintsForTargets,
+    extractBoundaryPartitionComponents,
     fillMaskInternalHoles,
     floodFillColorBoundedArea,
     floodFillContiguousArea,
@@ -46,15 +53,19 @@ import {
     expandMaskColorBoundedArea,
     intersectBinaryMasks,
     isMagicSelectionUsable,
+    keepBoundaryPixelsTouchingClosedInteriors,
+    keepBoundaryPixelsTouchingSeedPartitions,
     keepMaskComponentsTouchingSupportMask,
     keepMaskComponentsTouchingSupportMaskWithThreshold,
     maskContainsPoint,
     scoreMaskBoundaryAlignment,
+    type PixelBounds,
     type RgbColor,
     rasterizePolygonMask,
     rasterizeStrokeMask,
     replaceRegionWithSelection,
     sampleRegionBoundaryPoints,
+    snapBoundaryMaskToSupport,
     unionBinaryMasks,
 } from './qidahenRegionMaskToolUtils';
 
@@ -63,12 +74,20 @@ type MaskPoint = {
     y: number;
 };
 
+type DefaultRegionMaskRegionsData = {
+    regions?: Array<{
+        id?: string;
+        seed?: MaskPoint | null;
+    }>;
+};
+
 type PainterRegion = {
     id: string;
     name: string;
     color: string;
     seed: MaskPoint | null;
     links: string[];
+    acceptance?: RegionAcceptanceReview | null;
 };
 
 type ToolMode = 'wand' | 'chain' | 'paint' | 'erase' | 'barrier' | 'path';
@@ -82,6 +101,7 @@ type PassageEdge = {
     from: string;
     to: string;
     boundaryType: PassageBoundaryType;
+    travelCost: number;
 };
 
 type RegionGraphNode = MaskPoint & {
@@ -96,6 +116,249 @@ type BoundaryPreset = {
     label: string;
     rgb: RgbColor;
     enabled: boolean;
+};
+
+type BoundaryDraftExtractionMode = 'auto-map' | 'hand-drawn';
+
+type BoundaryDraftExtractionStats = {
+    mode: BoundaryDraftExtractionMode;
+    writeMode?: 'read-only' | 'candidate-reference' | 'editable-draft' | 'boundary-source';
+    activeRuleCount: number;
+    matchedPixelCount: number;
+    drawnChangedPixelCount?: number;
+    boundedPixelCount: number;
+    sealedPixelCount: number;
+    keptPixelCount: number;
+    discardedPixelCount: number;
+    guidePixelCount?: number;
+    decorationExcludedPixelCount?: number;
+    componentCount?: number;
+    keptComponentCount?: number;
+    usable?: boolean;
+    usabilityReason?: string | null;
+};
+
+type RegionGenerationResult = {
+    regionId: string;
+    regionName: string;
+    status: 'generated' | 'skipped' | 'leaked' | 'overlap-only';
+    pixelCount: number;
+    seed: MaskPoint | null;
+    note: string;
+};
+
+type RegionGenerationWorkflow = 'boundary' | 'region-draft' | 'region-path-quick-start';
+
+type RealMapRegionColorDraftReport = {
+    regionId: string;
+    regionName: string;
+    status: 'generated' | 'skipped' | 'overlap-only';
+    pixelCount: number;
+    shapeOverlapPixels: number;
+    seed: MaskPoint | null;
+    sampledColor: RgbColor | null;
+    note: string;
+};
+
+type BoundaryQualityRegionDetail = {
+    regionId: string;
+    regionName: string;
+    label: string;
+    toneClass: string;
+    note: string;
+};
+
+type BoundaryNormalityRegionCoverage = {
+    regionId: string;
+    regionName: string;
+    pixelCount: number;
+    expectedPixelCount: number | null;
+    coverageRatio: number | null;
+    label: string;
+    currentSignature: string;
+    acceptanceState: 'not-generated' | 'blocked' | 'pending' | 'approved' | 'stale';
+    acceptanceLabel: string;
+    reviewedAt: string | null;
+};
+
+type BoundaryNormalityReport = {
+    state: 'not-ready' | 'suspicious' | 'needs-visual-review' | 'accepted';
+    label: string;
+    detail: string;
+    toneClass: string;
+    blockers: string[];
+    approvedCount: number;
+    requiredApprovalCount: number;
+    realMapFit: BoundaryRealMapFitReport;
+    shape: BoundaryShapeReport;
+    regionCoverages: BoundaryNormalityRegionCoverage[];
+};
+
+type BoundaryRealMapFitReport = {
+    state: 'unknown' | 'blocked' | 'passed';
+    boundaryPixelCount: number;
+    supportedBoundaryPixelCount: number;
+    supportRatio: number;
+    minSupportRatio: number;
+    minSupportedBoundaryPixels: number;
+    minRegionSupportRatio: number;
+    regionReports: BoundaryRealMapFitRegionReport[];
+    weakRegionNames: string[];
+    note: string;
+};
+
+type BoundaryRealMapFitRegionReport = {
+    regionId: string;
+    regionName: string;
+    boundaryPixelCount: number;
+    supportedBoundaryPixelCount: number;
+    unsupportedBoundaryPixelCount: number;
+    supportRatio: number;
+    weakBoundaryPoint: MaskPoint | null;
+    weakBoundaryBounds: { left: number; top: number; right: number; bottom: number } | null;
+    state: 'not-generated' | 'weak' | 'passed';
+};
+
+type BoundaryShapeReport = {
+    state: 'unknown' | 'blocked' | 'passed';
+    boundaryPixelCount: number;
+    straightSupportedPixelCount: number;
+    straightSupportRatio: number;
+    maxStraightSupportRatio: number;
+    minBoundaryPixelCount: number;
+    note: string;
+};
+
+type BoundaryCandidateReadinessReport = {
+    state: 'missing' | 'unsafe' | 'ready';
+    label: string;
+    closedFaceCount: number;
+    matchedSeedCount: number;
+    requiredSeedCount: number;
+    uiPixelCount: number;
+    blockers: string[];
+    canLoadAsDraft: boolean;
+};
+
+type RegionAcceptanceReview = {
+    status: 'approved';
+    signature: string;
+    reviewedAt: string;
+};
+
+type RegionAcceptanceCropRect = {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+};
+
+type RegionAcceptancePreview = {
+    regionId: string;
+    regionName: string;
+    signature: string;
+    dataUrl: string;
+    pixelCount: number;
+    crop: RegionAcceptanceCropRect;
+};
+
+type BoundaryRepairPreview = {
+    kind: 'unmatched-seed' | 'open-boundary' | 'weak-support';
+    title: string;
+    detail: string;
+    dataUrl: string;
+    crop: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    };
+};
+
+type BoundaryClosureDiagnostics = {
+    closedFaceCount: number;
+    matchedSeedCount: number;
+    unmatchedRegionNames: string[];
+    unmatchedRegions: Array<{
+        id: string;
+        name: string;
+        seed: MaskPoint | null;
+        connectedRegionNames?: string[];
+        leakTargetName?: string | null;
+        leakTargetSeed?: MaskPoint | null;
+        leakPath?: MaskPoint[];
+        leakDistancePixels?: number | null;
+    }>;
+    matchedPartitions: Array<{
+        regionId: string;
+        regionName: string;
+        color: string;
+        pixelCount: number;
+        mask: Uint8Array;
+    }>;
+    largestFacePixelCount: number;
+};
+
+type SeedLeakPathResult = {
+    path: MaskPoint[];
+    distancePixels: number;
+};
+
+type LeakSupportSuggestion = {
+    mask: Uint8Array;
+    pixelCount: number;
+    componentCount: number;
+    largestComponentPixelCount: number;
+    cropPixelCount: number;
+};
+
+type BoundaryOpenDiagnostics = {
+    openComponentCount: number;
+    largestOpenPixelCount: number;
+    hints: Array<{
+        pixelCount: number;
+        nearestRegionName: string | null;
+        distanceToNearestSeed: number | null;
+        endpoints: readonly [
+            { x: number; y: number },
+            { x: number; y: number },
+        ];
+    }>;
+};
+
+type BoundaryQualityReport = {
+    state: 'missing-boundary' | 'blocked' | 'needs-fix' | 'ready-to-generate' | 'generated-partial' | 'generated-ready';
+    label: string;
+    detail: string;
+    toneClass: string;
+    missingSeedNames: string[];
+    boundaryUiPixels: number;
+    maskUiPixels: number;
+    unmatchedCount: number;
+    openComponentCount: number;
+    unexplainedOpenComponentCount: number;
+    generatedCount: number;
+    formalRegionCount: number;
+    regionDetails: BoundaryQualityRegionDetail[];
+    normality: BoundaryNormalityReport;
+};
+
+type RegionTraceImportOutcome = {
+    targetRegion: PainterRegion;
+    nextBoundaryMask: Uint8Array;
+    writtenPixelCount: number;
+    rejectedUiPixelCount: number;
+    matchedPixelCount: number;
+};
+
+type BarrierHistorySnapshot = {
+    addMask: Uint8Array;
+    removeMask: Uint8Array;
+};
+
+type BarrierHistoryState = {
+    canUndo: boolean;
+    canRedo: boolean;
 };
 
 type DiagnosticSample = {
@@ -122,17 +385,24 @@ type DiagnosticPreview = {
     comparisonLabel: string | null;
 };
 
+type PersistedWorkspaceState = 'empty' | 'populated';
+
 const DEFAULT_MAP_PATH = getLocalAssetPath('i18n/zh-CN/qidahen/board/qidahen-main-map.png');
 const MASK_WIDTH = 1265;
 const MASK_HEIGHT = 893;
-const DEFAULT_BRUSH_SIZE = 16;
+const DEFAULT_BRUSH_SIZE = 3;
 const DEFAULT_ZOOM = 1;
+const MAX_BARRIER_HISTORY_STEPS = 30;
 const MIN_FIT_ZOOM = 0.52;
 const MAX_FIT_ZOOM = 1.35;
 const DEFAULT_BOUNDARY_TOLERANCE = 14;
 const DEFAULT_BOUNDARY_EXPANSION = 2;
 const DEFAULT_BOUNDARY_COMPONENT_MIN_PIXELS = 12;
+const HAND_DRAWN_SOURCE_DIFF_THRESHOLD = 6;
+const HAND_DRAWN_SOURCE_DIFF_EXPANSION = 2;
 const DEFAULT_REGION_COLOR_TOLERANCE = 32;
+const REGION_TRACE_TEMPLATE_WIDTH = 560;
+const REGION_TRACE_TEMPLATE_HEIGHT = 420;
 const MAX_MAGIC_FILL_RATIO = 0.22;
 const HEURISTIC_BARRIER_BLUR_RADIUS = 1;
 const HEURISTIC_BARRIER_LINE_FILTER = {
@@ -140,6 +410,85 @@ const HEURISTIC_BARRIER_LINE_FILTER = {
     minSpan: 10,
     maxAverageThickness: 4.6,
 } as const;
+
+const binaryMasksEqual = (left: Uint8Array, right: Uint8Array) => {
+    if (left.length !== right.length) {
+        return false;
+    }
+    for (let index = 0; index < left.length; index += 1) {
+        if (left[index] !== right[index]) {
+            return false;
+        }
+    }
+    return true;
+};
+
+const barrierHistorySnapshotsEqual = (left: BarrierHistorySnapshot, right: BarrierHistorySnapshot) => (
+    binaryMasksEqual(left.addMask, right.addMask)
+    && binaryMasksEqual(left.removeMask, right.removeMask)
+);
+
+const AUTO_MAP_USABILITY_GUARD = {
+    minKeptPixels: 1000,
+    minKeptComponents: 8,
+    minBoundsWidth: 420,
+    minBoundsHeight: 260,
+} as const;
+const AUTO_MAP_PRINTED_UI_EXCLUSION_RECTS: ReadonlyArray<{
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    label: string;
+}> = [
+    { left: 0, top: 0, right: MASK_WIDTH - 1, bottom: 50, label: 'top printed frame' },
+    { left: 0, top: 0, right: 390, bottom: 365, label: 'left wheel and setup table' },
+    { left: 0, top: 0, right: 110, bottom: MASK_HEIGHT - 1, label: 'left printed margin' },
+    { left: 1120, top: 0, right: MASK_WIDTH - 1, bottom: MASK_HEIGHT - 1, label: 'right card boxes' },
+    { left: 540, top: 720, right: 1140, bottom: MASK_HEIGHT - 1, label: 'bottom cards and action strip' },
+    { left: 135, top: 820, right: 455, bottom: MASK_HEIGHT - 1, label: 'bottom year track' },
+];
+const AUTO_MAP_COMPONENT_FILTER = {
+    minPixels: 120,
+    minSpan: 64,
+    maxAverageThickness: 100,
+} as const;
+const REAL_MAP_REGION_GUIDED_LONG_LINE_FILTER = {
+    minPixels: 24,
+    minSpan: 50,
+    maxAverageThickness: 8,
+} as const;
+const REAL_MAP_COLOR_LINE_DRAFT_MAX_TOLERANCE = 8;
+const REAL_MAP_FIXED_COLOR_CONNECTED_FILTER = {
+    minPixels: 32,
+    minSpan: 30,
+    maxAverageThickness: 8,
+} as const;
+const REAL_MAP_FIXED_COLOR_CLOSE_ITERATIONS = 1;
+const ROUGH_SHAPE_OUTLINE_DRAFT_RADIUS = 1;
+const ROUGH_SHAPE_OUTLINE_SNAP_RADIUS = 22;
+const ROUGH_SHAPE_HULL_EXPANSION_STEPS = [20, 32, 44, 56, 68] as const;
+const ROUGH_SHAPE_HULL_CLOSE_ITERATIONS = 3;
+const ROUGH_SHAPE_PARTITION_SHAPE_BONUS = 0.78;
+const REAL_MAP_REGION_BOUNDARY_SUPPORT_RADIUS = 14;
+const REAL_MAP_REGION_BOUNDARY_CLIP_RADIUS = 52;
+const REAL_MAP_REGION_BOUNDARY_MAX_DISTANCE = 38;
+const REAL_MAP_DECORATION_EXCLUSION_EXPANSION = 4;
+const REAL_MAP_BOUNDARY_SUPPORT_SNAP_RADIUS = 18;
+const REAL_MAP_BOUNDARY_PATH_BRIDGE_MAX_DISTANCE = 140;
+const REAL_MAP_BOUNDARY_PATH_BRIDGE_EXPANSION = 2;
+const REAL_MAP_LEAK_SUPPORT_SUGGESTION_RADIUS = 72;
+const REAL_MAP_LEAK_SUPPORT_SUGGESTION_MIN_PIXELS = 18;
+const REAL_MAP_LEAK_SUPPORT_SUGGESTION_MIN_SPAN = 10;
+const REAL_MAP_LEAK_SUPPORT_SUGGESTION_MAX_AVERAGE_THICKNESS = 24;
+const REAL_MAP_GRADIENT_CANDIDATE = {
+    strongGradientThreshold: 45,
+    darkLuminanceThreshold: 145,
+    lowChromaThreshold: 85,
+} as const;
+const AUTO_MAP_CANDIDATE_REFERENCE_ENABLED = true;
+const BEST_AVAILABLE_BOUNDARY_WORKSPACE = 'best-available-boundary-v3';
+const BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE = 'best-available-move-cost-ready';
 const HEURISTIC_GRADIENT_BARRIER = {
     blurRadius: 1,
     strongGradientThreshold: 26,
@@ -162,14 +511,16 @@ const MAGIC_GUIDE_LOCAL_SEARCH_EXPANSION = 3;
 const MAGIC_RADIAL_SCORE_MARGIN = 0.04;
 const MAGIC_RADIAL_UNGUIDED_SCORE_MARGIN = 0.08;
 const MAGIC_SHAPE_SUPPORT_EXPANSION = 12;
-const BARRIER_HINT_ADD_COLOR: RgbColor = [110, 231, 183];
+const BARRIER_HINT_ADD_COLOR: RgbColor = [239, 68, 68];
 const BARRIER_HINT_REMOVE_COLOR: RgbColor = [244, 114, 182];
-const HEURISTIC_BARRIER_COLOR: RgbColor = [56, 189, 248];
+const HEURISTIC_BARRIER_COLOR: RgbColor = [239, 68, 68];
+const REAL_MAP_BOUNDARY_SUPPORT_COLOR: RgbColor = [251, 191, 36];
 const DIAGNOSTIC_PREVIEW_WIDTH = 180;
 const DIAGNOSTIC_PREVIEW_HEIGHT = 132;
 const LOAD_ENDPOINT = '/devtools/qidahen-region-mask/load';
 const SAVE_ENDPOINT = '/devtools/qidahen-region-mask/save';
-const DATA_OUTPUT_DIR = 'src/games/qidahen/data';
+const DEFAULT_DATA_OUTPUT_DIR = 'src/games/qidahen/data';
+const LAST_WORKSPACE_STORAGE_KEY = 'qidahen-region-mask:last-workspace';
 const DIAGNOSTIC_REGION_PREFIX = '__diagnostic__:';
 
 const DEFAULT_REGION_COLORS = [
@@ -183,12 +534,59 @@ const DEFAULT_REGION_COLORS = [
     '#bf7844',
 ] as const;
 
+const clampColorChannel = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
+
+const colorChannelToHex = (value: number) => clampColorChannel(value).toString(16).padStart(2, '0');
+
+const hslToHex = (hue: number, saturationPercent: number, lightnessPercent: number) => {
+    const saturation = saturationPercent / 100;
+    const lightness = lightnessPercent / 100;
+    const chroma = (1 - Math.abs((2 * lightness) - 1)) * saturation;
+    const huePrime = ((hue % 360) + 360) % 360 / 60;
+    const x = chroma * (1 - Math.abs((huePrime % 2) - 1));
+    const [red1, green1, blue1] = huePrime < 1
+        ? [chroma, x, 0]
+        : huePrime < 2
+            ? [x, chroma, 0]
+            : huePrime < 3
+                ? [0, chroma, x]
+                : huePrime < 4
+                    ? [0, x, chroma]
+                    : huePrime < 5
+                        ? [x, 0, chroma]
+                        : [chroma, 0, x];
+    const match = lightness - (chroma / 2);
+    return `#${colorChannelToHex((red1 + match) * 255)}${colorChannelToHex((green1 + match) * 255)}${colorChannelToHex((blue1 + match) * 255)}`;
+};
+
+const getGeneratedRegionColorCandidate = (index: number) => (
+    DEFAULT_REGION_COLORS[index]
+    ?? hslToHex((index * 137.508) % 360, 62, index % 2 === 0 ? 57 : 48)
+);
+
 const DEFAULT_BOUNDARY_PRESETS: readonly BoundaryPreset[] = [
     { id: 'painted-slate-line', label: '实画边界 1', rgb: [61, 69, 66], enabled: true },
     { id: 'painted-brown-line', label: '实画边界 2', rgb: [126, 97, 56], enabled: true },
     { id: 'painted-ochre-line', label: '实画边界 3', rgb: [128, 104, 62], enabled: true },
     { id: 'painted-ink-line', label: '实画边界 4', rgb: [43, 36, 34], enabled: true },
 ] as const;
+const REAL_MAP_COLOR_AUTO_EXTRACTION_VERDICT = {
+    state: 'not-fit-for-auto-completion',
+    requiredSeedCount: 5,
+    bestObservedMatchedSeedCount: 2,
+    evaluatedToleranceRange: [8, 32],
+    evaluatedBoundaryExpansionRange: [0, 12],
+    note: '真实底图颜色抽线参数扫描最多只能分出 2/5 个独立 seed；高容差会大量命中印刷 UI，低容差保留下来的长线不能分区。因此该层只能作为外部补边底稿，不能自动生成正常成果。',
+} as const;
+
+const sanitizeWorkspaceKey = (value: string) => (
+    value
+        .trim()
+        .replace(/[^a-zA-Z0-9._-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 80)
+);
 
 const getRegionShapeCenterPoint = (regionName: string, fallbackPoint: MaskPoint): MaskPoint => {
     const shape = QIDAHEN_MAP_REGION_SHAPES.find((item) => item.name === regionName);
@@ -241,23 +639,32 @@ const DIAGNOSTIC_SAMPLES: readonly DiagnosticSample[] = [
     },
 ] as const;
 
-const PASSAGE_BOUNDARY_TYPES: ReadonlyArray<{ id: PassageBoundaryType; label: string; note: string; width: number; color: string }> = [
-    { id: 'plain', label: '平原', note: '战场宽度 3', width: 3, color: '#e8c46d' },
-    { id: 'mountain', label: '山脉', note: '战场宽度 2', width: 2, color: '#9fb7a7' },
-    { id: 'river', label: '河流', note: '战场宽度 2', width: 2, color: '#67b4d8' },
-    { id: 'coast', label: '海岸/水路', note: '船锚区相邻，最多 2 部队', width: 2, color: '#5fa7e8' },
-    { id: 'wall-convex', label: '攻入长城', note: '凸面战场宽度 1', width: 1, color: '#c48f55' },
-    { id: 'wall-flat', label: '出长城', note: '平面战场宽度 3', width: 3, color: '#b8875e' },
-    { id: 'city', label: '攻城', note: '战场宽度 1', width: 1, color: '#d86a4a' },
-    { id: 'shanhaiguan', label: '山海关特殊', note: '破关时视为平原', width: 1, color: '#d8d0a2' },
+const PASSAGE_BOUNDARY_TYPES: ReadonlyArray<{ id: PassageBoundaryType; label: string; note: string; width: number; color: string; travelCost: number }> = [
+    { id: 'plain', label: '平原', note: '战场宽度 3', width: 3, color: '#e8c46d', travelCost: 1 },
+    { id: 'mountain', label: '山脉', note: '战场宽度 2', width: 2, color: '#9fb7a7', travelCost: 2 },
+    { id: 'river', label: '河流', note: '战场宽度 2', width: 2, color: '#67b4d8', travelCost: 2 },
+    { id: 'coast', label: '海岸/水路', note: '船锚区相邻，最多 2 部队', width: 2, color: '#5fa7e8', travelCost: 2 },
+    { id: 'wall-convex', label: '攻入长城', note: '凸面战场宽度 1', width: 1, color: '#c48f55', travelCost: 1 },
+    { id: 'wall-flat', label: '出长城', note: '平面战场宽度 3', width: 3, color: '#b8875e', travelCost: 1 },
+    { id: 'city', label: '攻城', note: '战场宽度 1', width: 1, color: '#d86a4a', travelCost: 1 },
+    { id: 'shanhaiguan', label: '山海关特殊', note: '破关时视为平原', width: 1, color: '#d8d0a2', travelCost: 1 },
 ] as const;
+
+const DEFAULT_REGION_SEED_BY_ID = new Map<string, MaskPoint>(
+    ((defaultRegionMaskRegionsData as DefaultRegionMaskRegionsData).regions ?? [])
+        .flatMap((region) => (
+            region.id && region.seed
+                ? [[region.id, { x: region.seed.x, y: region.seed.y }] as const]
+                : []
+        )),
+);
 
 const createDefaultRegions = (): PainterRegion[] =>
     QIDAHEN_MAP_REGION_SHAPES.map((shape, index) => ({
         id: shape.id,
         name: shape.name,
         color: DEFAULT_REGION_COLORS[index % DEFAULT_REGION_COLORS.length],
-        seed: null,
+        seed: DEFAULT_REGION_SEED_BY_ID.get(shape.id) ?? null,
         links: [],
     }));
 
@@ -300,6 +707,382 @@ const buildMaskDataUrl = (mask: Uint8Array) => {
     return canvas.toDataURL('image/png');
 };
 
+const buildMaskCropDataUrl = ({
+    mask,
+    crop,
+}: {
+    mask: Uint8Array | null;
+    crop: { left: number; top: number; width: number; height: number };
+}) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建局部补边透明层画布');
+    }
+    const pixels = new Uint8ClampedArray(crop.width * crop.height * 4);
+    if (mask) {
+        for (let localY = 0; localY < crop.height; localY += 1) {
+            const y = crop.top + localY;
+            for (let localX = 0; localX < crop.width; localX += 1) {
+                const x = crop.left + localX;
+                const sourceIndex = (y * MASK_WIDTH) + x;
+                if (mask[sourceIndex] === 0) {
+                    continue;
+                }
+                const offset = ((localY * crop.width) + localX) * 4;
+                pixels[offset] = 255;
+                pixels[offset + 1] = 255;
+                pixels[offset + 2] = 255;
+                pixels[offset + 3] = 255;
+            }
+        }
+    }
+    context.putImageData(new ImageData(pixels, crop.width, crop.height), 0, 0);
+    return canvas.toDataURL('image/png');
+};
+
+const buildColoredMaskCropDataUrl = ({
+    mask,
+    crop,
+    color,
+    alpha = 255,
+}: {
+    mask: Uint8Array | null;
+    crop: { left: number; top: number; width: number; height: number };
+    color: RgbColor;
+    alpha?: number;
+}) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建局部建议透明层画布');
+    }
+    const pixels = new Uint8ClampedArray(crop.width * crop.height * 4);
+    if (mask) {
+        for (let localY = 0; localY < crop.height; localY += 1) {
+            const y = crop.top + localY;
+            for (let localX = 0; localX < crop.width; localX += 1) {
+                const x = crop.left + localX;
+                const sourceIndex = (y * MASK_WIDTH) + x;
+                if (mask[sourceIndex] === 0) {
+                    continue;
+                }
+                const offset = ((localY * crop.width) + localX) * 4;
+                pixels[offset] = color[0];
+                pixels[offset + 1] = color[1];
+                pixels[offset + 2] = color[2];
+                pixels[offset + 3] = alpha;
+            }
+        }
+    }
+    context.putImageData(new ImageData(pixels, crop.width, crop.height), 0, 0);
+    return canvas.toDataURL('image/png');
+};
+
+const buildLeakSupportSuggestion = ({
+    candidateMask,
+    barrierMask,
+    leakPath,
+    crop,
+    exclusionMask,
+}: {
+    candidateMask: Uint8Array | null | undefined;
+    barrierMask: Uint8Array | null | undefined;
+    leakPath: readonly MaskPoint[];
+    crop: { left: number; top: number; width: number; height: number };
+    exclusionMask: Uint8Array;
+}): LeakSupportSuggestion | null => {
+    if (!candidateMask || countMaskPixels(candidateMask) === 0 || leakPath.length < 2) {
+        return null;
+    }
+    const leakNeighborhood = rasterizeStrokeMask({
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        points: leakPath.map((point) => [point.x, point.y] as const),
+        radius: REAL_MAP_LEAK_SUPPORT_SUGGESTION_RADIUS,
+    });
+    const rawSuggestionMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+    for (let index = 0; index < rawSuggestionMask.length; index += 1) {
+        if (
+            candidateMask[index] !== 0
+            && leakNeighborhood[index] !== 0
+            && (!barrierMask || barrierMask[index] === 0)
+            && exclusionMask[index] === 0
+        ) {
+            rawSuggestionMask[index] = 1;
+        }
+    }
+    const suggestionMask = keepBoundaryDraftComponents({
+        mask: rawSuggestionMask,
+        width: MASK_WIDTH,
+        minPixels: REAL_MAP_LEAK_SUPPORT_SUGGESTION_MIN_PIXELS,
+        minSpan: REAL_MAP_LEAK_SUPPORT_SUGGESTION_MIN_SPAN,
+        maxAverageThickness: REAL_MAP_LEAK_SUPPORT_SUGGESTION_MAX_AVERAGE_THICKNESS,
+        connectivity: 8,
+    });
+    const pixelCount = countMaskPixels(suggestionMask);
+    if (pixelCount === 0) {
+        return null;
+    }
+    let cropPixelCount = 0;
+    for (let localY = 0; localY < crop.height; localY += 1) {
+        const y = crop.top + localY;
+        for (let localX = 0; localX < crop.width; localX += 1) {
+            const x = crop.left + localX;
+            if (suggestionMask[(y * MASK_WIDTH) + x] !== 0) {
+                cropPixelCount += 1;
+            }
+        }
+    }
+    if (cropPixelCount === 0) {
+        return null;
+    }
+    const summary = summarizeBinaryComponents(suggestionMask, MASK_WIDTH);
+    return {
+        mask: suggestionMask,
+        pixelCount,
+        componentCount: summary.componentCount,
+        largestComponentPixelCount: summary.largestPixelCount,
+        cropPixelCount,
+    };
+};
+
+const buildWeakSupportOverlayDataUrl = (reports: readonly BoundaryRealMapFitRegionReport[]) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = MASK_WIDTH;
+    canvas.height = MASK_HEIGHT;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建弱支撑标记导出画布');
+    }
+
+    context.font = '900 18px sans-serif';
+    context.textBaseline = 'top';
+    for (const report of reports) {
+        const point = report.weakBoundaryPoint;
+        if (!point) {
+            continue;
+        }
+        if (report.weakBoundaryBounds) {
+            const { left, top, right, bottom } = report.weakBoundaryBounds;
+            context.lineWidth = 4;
+            context.strokeStyle = 'rgba(14, 165, 233, 0.95)';
+            context.strokeRect(left, top, Math.max(1, right - left + 1), Math.max(1, bottom - top + 1));
+        }
+        context.beginPath();
+        context.arc(point.x, point.y, 12, 0, Math.PI * 2);
+        context.fillStyle = 'rgba(14, 165, 233, 0.32)';
+        context.fill();
+        context.lineWidth = 5;
+        context.strokeStyle = 'rgba(14, 165, 233, 0.98)';
+        context.stroke();
+        const label = `${report.regionName} 弱支撑段`;
+        context.lineWidth = 6;
+        context.strokeStyle = 'rgba(5, 20, 16, 0.92)';
+        context.strokeText(label, point.x + 16, point.y - 8);
+        context.fillStyle = 'rgba(224, 242, 254, 0.98)';
+        context.fillText(label, point.x + 16, point.y - 8);
+    }
+    return canvas.toDataURL('image/png');
+};
+
+const buildBoundaryTraceTemplateDataUrl = ({
+    sourcePixels,
+    regions,
+}: {
+    sourcePixels: Uint8ClampedArray;
+    regions: readonly PainterRegion[];
+}) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = MASK_WIDTH;
+    canvas.height = MASK_HEIGHT;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建描边参考模板画布');
+    }
+
+    context.putImageData(new ImageData(new Uint8ClampedArray(sourcePixels), MASK_WIDTH, MASK_HEIGHT), 0, 0);
+    context.save();
+    context.fillStyle = 'rgba(244, 63, 94, 0.18)';
+    context.strokeStyle = 'rgba(244, 63, 94, 0.82)';
+    context.lineWidth = 3;
+    for (const rect of AUTO_MAP_PRINTED_UI_EXCLUSION_RECTS) {
+        const width = (rect.right - rect.left) + 1;
+        const height = (rect.bottom - rect.top) + 1;
+        context.fillRect(rect.left, rect.top, width, height);
+        context.strokeRect(rect.left + 1.5, rect.top + 1.5, Math.max(0, width - 3), Math.max(0, height - 3));
+    }
+
+    context.font = '700 18px sans-serif';
+    context.textBaseline = 'middle';
+    for (const region of regions) {
+        if (isDiagnosticRegionId(region.id)) {
+            continue;
+        }
+        const seed = region.seed;
+        if (!seed) {
+            continue;
+        }
+        context.beginPath();
+        context.arc(seed.x, seed.y, 11, 0, Math.PI * 2);
+        context.fillStyle = 'rgba(16, 185, 129, 0.9)';
+        context.fill();
+        context.lineWidth = 4;
+        context.strokeStyle = 'rgba(5, 20, 16, 0.95)';
+        context.stroke();
+        context.lineWidth = 2;
+        context.strokeStyle = 'rgba(236, 253, 245, 0.96)';
+        context.stroke();
+
+        const labelX = Math.min(MASK_WIDTH - 180, Math.max(12, seed.x + 16));
+        const labelY = Math.min(MASK_HEIGHT - 18, Math.max(18, seed.y));
+        context.lineWidth = 5;
+        context.strokeStyle = 'rgba(5, 20, 16, 0.86)';
+        context.strokeText(region.name, labelX, labelY);
+        context.fillStyle = 'rgba(236, 253, 245, 0.98)';
+        context.fillText(region.name, labelX, labelY);
+    }
+    context.restore();
+    return canvas.toDataURL('image/png');
+};
+
+const calculateRegionTraceCrop = (region: PainterRegion) => {
+    const seed = region.seed;
+    if (!seed) {
+        return null;
+    }
+    const cropWidth = Math.min(REGION_TRACE_TEMPLATE_WIDTH, MASK_WIDTH);
+    const cropHeight = Math.min(REGION_TRACE_TEMPLATE_HEIGHT, MASK_HEIGHT);
+    return {
+        seed,
+        crop: {
+            left: Math.max(0, Math.min(MASK_WIDTH - cropWidth, seed.x - Math.floor(cropWidth / 2))),
+            top: Math.max(0, Math.min(MASK_HEIGHT - cropHeight, seed.y - Math.floor(cropHeight / 2))),
+            width: cropWidth,
+            height: cropHeight,
+        },
+    };
+};
+
+const buildRegionTraceTemplateDataUrl = ({
+    sourcePixels,
+    region,
+}: {
+    sourcePixels: Uint8ClampedArray;
+    region: PainterRegion;
+}) => {
+    const cropResult = calculateRegionTraceCrop(region);
+    if (!cropResult) {
+        throw new Error(`${region.name} 没有设置 seed，不能导出局部描边底稿`);
+    }
+    const { seed, crop } = cropResult;
+    const cropLeft = crop.left;
+    const cropTop = crop.top;
+    const cropWidth = crop.width;
+    const cropHeight = crop.height;
+
+    const sourceCanvas = document.createElement('canvas');
+    sourceCanvas.width = MASK_WIDTH;
+    sourceCanvas.height = MASK_HEIGHT;
+    const sourceContext = sourceCanvas.getContext('2d');
+    if (!sourceContext) {
+        throw new Error('无法创建局部描边源画布');
+    }
+    sourceContext.putImageData(new ImageData(new Uint8ClampedArray(sourcePixels), MASK_WIDTH, MASK_HEIGHT), 0, 0);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建局部描边参考模板画布');
+    }
+    context.drawImage(sourceCanvas, cropLeft, cropTop, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+    context.save();
+    context.fillStyle = 'rgba(244, 63, 94, 0.2)';
+    context.strokeStyle = 'rgba(244, 63, 94, 0.9)';
+    context.lineWidth = 3;
+    for (const rect of AUTO_MAP_PRINTED_UI_EXCLUSION_RECTS) {
+        const left = Math.max(rect.left, cropLeft);
+        const top = Math.max(rect.top, cropTop);
+        const right = Math.min(rect.right, cropLeft + cropWidth - 1);
+        const bottom = Math.min(rect.bottom, cropTop + cropHeight - 1);
+        if (right < left || bottom < top) {
+            continue;
+        }
+        const x = left - cropLeft;
+        const y = top - cropTop;
+        const width = (right - left) + 1;
+        const height = (bottom - top) + 1;
+        context.fillRect(x, y, width, height);
+        context.strokeRect(x + 1.5, y + 1.5, Math.max(0, width - 3), Math.max(0, height - 3));
+    }
+
+    const seedX = seed.x - cropLeft;
+    const seedY = seed.y - cropTop;
+    context.beginPath();
+    context.arc(seedX, seedY, 12, 0, Math.PI * 2);
+    context.fillStyle = 'rgba(16, 185, 129, 0.92)';
+    context.fill();
+    context.lineWidth = 4;
+    context.strokeStyle = 'rgba(5, 20, 16, 0.96)';
+    context.stroke();
+    context.lineWidth = 2;
+    context.strokeStyle = 'rgba(236, 253, 245, 0.98)';
+    context.stroke();
+
+    context.font = '700 18px sans-serif';
+    context.textBaseline = 'middle';
+    const labelX = Math.min(cropWidth - 180, Math.max(12, seedX + 18));
+    const labelY = Math.min(cropHeight - 18, Math.max(18, seedY));
+    context.lineWidth = 5;
+    context.strokeStyle = 'rgba(5, 20, 16, 0.86)';
+    context.strokeText(region.name, labelX, labelY);
+    context.fillStyle = 'rgba(236, 253, 245, 0.98)';
+    context.fillText(region.name, labelX, labelY);
+    context.restore();
+
+    return {
+        dataUrl: canvas.toDataURL('image/png'),
+        seed,
+        crop,
+    };
+};
+
+const dataUrlToUint8Array = async (dataUrl: string) => {
+    const response = await fetch(dataUrl);
+    return new Uint8Array(await response.arrayBuffer());
+};
+
+const makeSourceCanvas = (sourcePixels: Uint8ClampedArray) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = MASK_WIDTH;
+    canvas.height = MASK_HEIGHT;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建底图画布');
+    }
+    context.putImageData(new ImageData(new Uint8ClampedArray(sourcePixels), MASK_WIDTH, MASK_HEIGHT), 0, 0);
+    return canvas;
+};
+
+const drawImageDataOverlay = (context: CanvasRenderingContext2D, imageData: ImageData) => {
+    const overlayCanvas = document.createElement('canvas');
+    overlayCanvas.width = imageData.width;
+    overlayCanvas.height = imageData.height;
+    const overlayContext = overlayCanvas.getContext('2d');
+    if (!overlayContext) {
+        throw new Error('无法创建叠加层画布');
+    }
+    overlayContext.putImageData(imageData, 0, 0);
+    context.drawImage(overlayCanvas, 0, 0);
+};
+
 const buildMaskDataUrlFromAssignments = ({
     assignments,
     regions,
@@ -324,16 +1107,536 @@ const buildMaskDataUrlFromAssignments = ({
     return canvas.toDataURL('image/png');
 };
 
+const buildRegionAcceptanceCrop = ({
+    sourcePixels,
+    assignments,
+    barrierMask,
+    region,
+    regionIndex,
+}: {
+    sourcePixels: Uint8ClampedArray;
+    assignments: Int16Array;
+    barrierMask: Uint8Array | null;
+    region: PainterRegion;
+    regionIndex: number;
+}) => {
+    const regionMask = buildRegionMaskFromAssignments(assignments, regionIndex);
+    const bounds = regionMask ? getBinaryMaskBounds(regionMask, MASK_WIDTH) : null;
+    const fallbackSeed = region.seed ?? { x: Math.floor(MASK_WIDTH / 2), y: Math.floor(MASK_HEIGHT / 2) };
+    const crop = bounds
+        ? {
+            left: Math.max(0, bounds.left - 72),
+            top: Math.max(0, bounds.top - 72),
+            right: Math.min(MASK_WIDTH - 1, bounds.right + 72),
+            bottom: Math.min(MASK_HEIGHT - 1, bounds.bottom + 72),
+        }
+        : {
+            left: Math.max(0, Math.min(MASK_WIDTH - REGION_TRACE_TEMPLATE_WIDTH, fallbackSeed.x - Math.floor(REGION_TRACE_TEMPLATE_WIDTH / 2))),
+            top: Math.max(0, Math.min(MASK_HEIGHT - REGION_TRACE_TEMPLATE_HEIGHT, fallbackSeed.y - Math.floor(REGION_TRACE_TEMPLATE_HEIGHT / 2))),
+            right: 0,
+            bottom: 0,
+        };
+    if (!bounds) {
+        crop.right = crop.left + REGION_TRACE_TEMPLATE_WIDTH - 1;
+        crop.bottom = crop.top + REGION_TRACE_TEMPLATE_HEIGHT - 1;
+    }
+    const cropWidth = crop.right - crop.left + 1;
+    const cropHeight = crop.bottom - crop.top + 1;
+    const sourceCanvas = makeSourceCanvas(sourcePixels);
+    const canvas = document.createElement('canvas');
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建区域验收裁图画布');
+    }
+    context.drawImage(sourceCanvas, crop.left, crop.top, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+    const [r, g, b] = hexToRgb(region.color);
+    const overlay = context.createImageData(cropWidth, cropHeight);
+    for (let localY = 0; localY < cropHeight; localY += 1) {
+        const y = crop.top + localY;
+        for (let localX = 0; localX < cropWidth; localX += 1) {
+            const x = crop.left + localX;
+            const globalIndex = (y * MASK_WIDTH) + x;
+            const offset = ((localY * cropWidth) + localX) * 4;
+            if (assignments[globalIndex] === regionIndex) {
+                overlay.data[offset] = r;
+                overlay.data[offset + 1] = g;
+                overlay.data[offset + 2] = b;
+                overlay.data[offset + 3] = 118;
+            }
+            if (barrierMask?.[globalIndex]) {
+                overlay.data[offset] = 230;
+                overlay.data[offset + 1] = 245;
+                overlay.data[offset + 2] = 255;
+                overlay.data[offset + 3] = 230;
+            }
+        }
+    }
+    drawImageDataOverlay(context, overlay);
+    if (region.seed) {
+        const seedX = region.seed.x - crop.left;
+        const seedY = region.seed.y - crop.top;
+        context.beginPath();
+        context.arc(seedX, seedY, 10, 0, Math.PI * 2);
+        context.fillStyle = 'rgba(16, 185, 129, 0.95)';
+        context.fill();
+        context.lineWidth = 3;
+        context.strokeStyle = 'rgba(5, 20, 16, 0.95)';
+        context.stroke();
+    }
+    context.font = '700 18px sans-serif';
+    context.textBaseline = 'top';
+    context.lineWidth = 5;
+    context.strokeStyle = 'rgba(5, 20, 16, 0.92)';
+    context.strokeText(`${region.name} ${region.id}`, 12, 10);
+    context.fillStyle = 'rgba(255, 255, 255, 0.98)';
+    context.fillText(`${region.name} ${region.id}`, 12, 10);
+    const pixelCount = regionMask ? countMaskPixels(regionMask) : 0;
+    context.font = '700 13px sans-serif';
+    context.strokeText(`${pixelCount.toLocaleString()} px`, 12, 34);
+    context.fillText(`${pixelCount.toLocaleString()} px`, 12, 34);
+    return {
+        dataUrl: canvas.toDataURL('image/png'),
+        pixelCount,
+        crop,
+    };
+};
+
+const buildAcceptanceOverviewDataUrl = ({
+    sourcePixels,
+    assignments,
+    barrierMask,
+    regions,
+}: {
+    sourcePixels: Uint8ClampedArray;
+    assignments: Int16Array;
+    barrierMask: Uint8Array | null;
+    regions: readonly PainterRegion[];
+}) => {
+    const sourceCanvas = makeSourceCanvas(sourcePixels);
+    const canvas = document.createElement('canvas');
+    canvas.width = MASK_WIDTH;
+    canvas.height = MASK_HEIGHT;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建区域验收总览画布');
+    }
+    context.drawImage(sourceCanvas, 0, 0);
+    const overlay = context.createImageData(MASK_WIDTH, MASK_HEIGHT);
+    const palette = regions.map((region) => hexToRgb(region.color));
+    for (let index = 0; index < assignments.length; index += 1) {
+        const offset = index * 4;
+        const regionIndex = assignments[index];
+        if (regionIndex >= 0 && regionIndex < palette.length) {
+            const [r, g, b] = palette[regionIndex];
+            overlay.data[offset] = r;
+            overlay.data[offset + 1] = g;
+            overlay.data[offset + 2] = b;
+            overlay.data[offset + 3] = 104;
+        }
+        if (barrierMask?.[index]) {
+            overlay.data[offset] = 230;
+            overlay.data[offset + 1] = 245;
+            overlay.data[offset + 2] = 255;
+            overlay.data[offset + 3] = 230;
+        }
+    }
+    drawImageDataOverlay(context, overlay);
+    context.font = '700 15px sans-serif';
+    context.textBaseline = 'middle';
+    for (const region of regions) {
+        if (!region.seed || isDiagnosticRegionId(region.id)) {
+            continue;
+        }
+        context.beginPath();
+        context.arc(region.seed.x, region.seed.y, 8, 0, Math.PI * 2);
+        context.fillStyle = 'rgba(16, 185, 129, 0.95)';
+        context.fill();
+        context.lineWidth = 3;
+        context.strokeStyle = 'rgba(5, 20, 16, 0.95)';
+        context.stroke();
+        context.lineWidth = 4;
+        context.strokeStyle = 'rgba(5, 20, 16, 0.92)';
+        context.strokeText(region.name, region.seed.x + 12, region.seed.y - 12);
+        context.fillStyle = 'rgba(255, 255, 255, 0.98)';
+        context.fillText(region.name, region.seed.x + 12, region.seed.y - 12);
+    }
+    return canvas.toDataURL('image/png');
+};
+
+const buildPartitionPreviewDataUrl = ({
+    sourcePixels,
+    barrierMask,
+    regions,
+    matchedPartitions,
+    openHints,
+}: {
+    sourcePixels: Uint8ClampedArray;
+    barrierMask: Uint8Array | null;
+    regions: readonly PainterRegion[];
+    matchedPartitions: ReadonlyArray<BoundaryClosureDiagnostics['matchedPartitions'][number]>;
+    openHints: ReadonlyArray<BoundaryOpenDiagnostics['hints'][number]>;
+}) => {
+    const sourceCanvas = makeSourceCanvas(sourcePixels);
+    const canvas = document.createElement('canvas');
+    canvas.width = MASK_WIDTH;
+    canvas.height = MASK_HEIGHT;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建分区预览导出画布');
+    }
+    context.drawImage(sourceCanvas, 0, 0);
+
+    const overlay = context.createImageData(MASK_WIDTH, MASK_HEIGHT);
+    for (const partition of matchedPartitions) {
+        const [r, g, b] = hexToRgb(partition.color);
+        for (let index = 0; index < partition.mask.length; index += 1) {
+            if (partition.mask[index] === 0) {
+                continue;
+            }
+            const offset = index * 4;
+            overlay.data[offset] = r;
+            overlay.data[offset + 1] = g;
+            overlay.data[offset + 2] = b;
+            overlay.data[offset + 3] = 92;
+        }
+    }
+    if (barrierMask) {
+        for (let index = 0; index < barrierMask.length; index += 1) {
+            if (barrierMask[index] === 0) {
+                continue;
+            }
+            const offset = index * 4;
+            overlay.data[offset] = 230;
+            overlay.data[offset + 1] = 245;
+            overlay.data[offset + 2] = 255;
+            overlay.data[offset + 3] = 230;
+        }
+    }
+    drawImageDataOverlay(context, overlay);
+
+    const matchedRegionIds = new Set(matchedPartitions.map((partition) => partition.regionId));
+    context.font = '700 15px sans-serif';
+    context.textBaseline = 'middle';
+    for (const region of regions) {
+        if (!region.seed || isDiagnosticRegionId(region.id)) {
+            continue;
+        }
+        const matched = matchedRegionIds.has(region.id);
+        context.beginPath();
+        context.arc(region.seed.x, region.seed.y, matched ? 9 : 11, 0, Math.PI * 2);
+        context.fillStyle = matched ? 'rgba(16, 185, 129, 0.96)' : 'rgba(244, 63, 94, 0.88)';
+        context.fill();
+        context.lineWidth = 3;
+        context.strokeStyle = 'rgba(5, 20, 16, 0.95)';
+        context.stroke();
+        context.lineWidth = 4;
+        context.strokeText(`${region.name} · ${matched ? '独立' : '未独立'}`, region.seed.x + 12, region.seed.y - 12);
+        context.fillStyle = matched ? 'rgba(209, 250, 229, 0.98)' : 'rgba(255, 228, 230, 0.98)';
+        context.fillText(`${region.name} · ${matched ? '独立' : '未独立'}`, region.seed.x + 12, region.seed.y - 12);
+    }
+
+    for (const hint of openHints.slice(0, 8)) {
+        for (const endpoint of hint.endpoints) {
+            context.beginPath();
+            context.arc(endpoint.x, endpoint.y, 10, 0, Math.PI * 2);
+            context.fillStyle = 'rgba(245, 158, 11, 0.2)';
+            context.fill();
+            context.lineWidth = 4;
+            context.strokeStyle = 'rgba(245, 158, 11, 0.95)';
+            context.stroke();
+        }
+    }
+
+    context.font = '900 20px sans-serif';
+    context.textBaseline = 'top';
+    context.lineWidth = 6;
+    context.strokeStyle = 'rgba(5, 20, 16, 0.92)';
+    context.strokeText(`七大恨分区预览 · 独立 seed ${matchedPartitions.length}/${regions.filter((region) => !isDiagnosticRegionId(region.id)).length}`, 18, 16);
+    context.fillStyle = 'rgba(255, 255, 255, 0.98)';
+    context.fillText(`七大恨分区预览 · 独立 seed ${matchedPartitions.length}/${regions.filter((region) => !isDiagnosticRegionId(region.id)).length}`, 18, 16);
+    return canvas.toDataURL('image/png');
+};
+
+const buildBoundaryRepairCropDataUrl = ({
+    sourcePixels,
+    barrierMask,
+    supportSuggestionMask,
+    point,
+    label,
+    markers = [],
+    paths = [],
+}: {
+    sourcePixels: Uint8ClampedArray;
+    barrierMask: Uint8Array | null;
+    supportSuggestionMask?: Uint8Array | null;
+    point: MaskPoint;
+    label: string;
+    markers?: ReadonlyArray<{ point: MaskPoint; label: string; tone: 'seed' | 'open-end' | 'weak-boundary' | 'connected-seed' }>;
+    paths?: ReadonlyArray<{ points: ReadonlyArray<MaskPoint>; label?: string }>;
+}) => {
+    const cropWidth = Math.min(360, MASK_WIDTH);
+    const cropHeight = Math.min(260, MASK_HEIGHT);
+    const crop = {
+        left: Math.max(0, Math.min(MASK_WIDTH - cropWidth, point.x - Math.floor(cropWidth / 2))),
+        top: Math.max(0, Math.min(MASK_HEIGHT - cropHeight, point.y - Math.floor(cropHeight / 2))),
+        width: cropWidth,
+        height: cropHeight,
+    };
+    const sourceCanvas = makeSourceCanvas(sourcePixels);
+    const canvas = document.createElement('canvas');
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        throw new Error('无法创建补边问题裁图画布');
+    }
+    context.drawImage(sourceCanvas, crop.left, crop.top, crop.width, crop.height, 0, 0, crop.width, crop.height);
+
+    const overlay = context.createImageData(crop.width, crop.height);
+    if (barrierMask) {
+        for (let localY = 0; localY < crop.height; localY += 1) {
+            const y = crop.top + localY;
+            for (let localX = 0; localX < crop.width; localX += 1) {
+                const x = crop.left + localX;
+                const index = (y * MASK_WIDTH) + x;
+                if (barrierMask[index] === 0) {
+                    continue;
+                }
+                const offset = ((localY * crop.width) + localX) * 4;
+                overlay.data[offset] = 230;
+                overlay.data[offset + 1] = 245;
+                overlay.data[offset + 2] = 255;
+                overlay.data[offset + 3] = 230;
+            }
+        }
+    }
+    if (supportSuggestionMask) {
+        for (let localY = 0; localY < crop.height; localY += 1) {
+            const y = crop.top + localY;
+            for (let localX = 0; localX < crop.width; localX += 1) {
+                const x = crop.left + localX;
+                const index = (y * MASK_WIDTH) + x;
+                if (supportSuggestionMask[index] === 0) {
+                    continue;
+                }
+                const offset = ((localY * crop.width) + localX) * 4;
+                overlay.data[offset] = 34;
+                overlay.data[offset + 1] = 197;
+                overlay.data[offset + 2] = 94;
+                overlay.data[offset + 3] = 205;
+            }
+        }
+    }
+    drawImageDataOverlay(context, overlay);
+
+    for (const path of paths) {
+        const visiblePoints = path.points
+            .map((pathPoint) => ({
+                x: pathPoint.x - crop.left,
+                y: pathPoint.y - crop.top,
+            }))
+            .filter((pathPoint) => (
+                pathPoint.x >= -24
+                && pathPoint.y >= -24
+                && pathPoint.x <= crop.width + 24
+                && pathPoint.y <= crop.height + 24
+            ));
+        if (visiblePoints.length < 2) {
+            continue;
+        }
+        context.save();
+        context.lineJoin = 'round';
+        context.lineCap = 'round';
+        context.setLineDash([10, 7]);
+        context.beginPath();
+        visiblePoints.forEach((pathPoint, index) => {
+            if (index === 0) {
+                context.moveTo(pathPoint.x, pathPoint.y);
+            } else {
+                context.lineTo(pathPoint.x, pathPoint.y);
+            }
+        });
+        context.lineWidth = 8;
+        context.strokeStyle = 'rgba(20, 9, 4, 0.82)';
+        context.stroke();
+        context.lineWidth = 4;
+        context.strokeStyle = 'rgba(251, 146, 60, 0.96)';
+        context.stroke();
+        context.restore();
+    }
+
+    context.font = '900 15px sans-serif';
+    context.textBaseline = 'top';
+    context.lineWidth = 5;
+    context.strokeStyle = 'rgba(5, 20, 16, 0.9)';
+    context.strokeText(label, 10, 10);
+    context.fillStyle = 'rgba(255, 255, 255, 0.98)';
+    context.fillText(label, 10, 10);
+
+    context.font = '800 12px sans-serif';
+    context.textBaseline = 'middle';
+    for (const marker of markers) {
+        const x = marker.point.x - crop.left;
+        const y = marker.point.y - crop.top;
+        if (x < -16 || y < -16 || x > crop.width + 16 || y > crop.height + 16) {
+            continue;
+        }
+        context.beginPath();
+        context.arc(x, y, marker.tone === 'seed' ? 11 : 9, 0, Math.PI * 2);
+        context.fillStyle = marker.tone === 'seed'
+            ? 'rgba(244, 63, 94, 0.28)'
+            : marker.tone === 'weak-boundary'
+                ? 'rgba(14, 165, 233, 0.26)'
+                : marker.tone === 'connected-seed'
+                    ? 'rgba(251, 146, 60, 0.28)'
+                    : 'rgba(245, 158, 11, 0.24)';
+        context.fill();
+        context.lineWidth = 4;
+        context.strokeStyle = marker.tone === 'seed'
+            ? 'rgba(244, 63, 94, 0.95)'
+            : marker.tone === 'weak-boundary'
+                ? 'rgba(14, 165, 233, 0.95)'
+                : marker.tone === 'connected-seed'
+                    ? 'rgba(251, 146, 60, 0.95)'
+                    : 'rgba(245, 158, 11, 0.95)';
+        context.stroke();
+        context.lineWidth = 4;
+        context.strokeStyle = 'rgba(5, 20, 16, 0.92)';
+        context.strokeText(marker.label, x + 13, y - 2);
+        context.fillStyle = marker.tone === 'seed'
+            ? 'rgba(255, 228, 230, 0.98)'
+            : marker.tone === 'weak-boundary'
+                ? 'rgba(224, 242, 254, 0.98)'
+                : marker.tone === 'connected-seed'
+                    ? 'rgba(255, 237, 213, 0.98)'
+                    : 'rgba(255, 247, 237, 0.98)';
+        context.fillText(marker.label, x + 13, y - 2);
+    }
+
+    return {
+        dataUrl: canvas.toDataURL('image/png'),
+        crop,
+    };
+};
+
+const findSeedLeakPathInMask = ({
+    mask,
+    width,
+    start,
+    targets,
+    maxSamplePoints = 140,
+}: {
+    mask: Uint8Array;
+    width: number;
+    start: MaskPoint;
+    targets: ReadonlyArray<MaskPoint>;
+    maxSamplePoints?: number;
+}): SeedLeakPathResult | null => {
+    const height = width > 0 ? Math.floor(mask.length / width) : 0;
+    if (width <= 0 || height <= 0 || targets.length === 0) {
+        return null;
+    }
+    if (start.x < 0 || start.y < 0 || start.x >= width || start.y >= height) {
+        return null;
+    }
+    const startIndex = (start.y * width) + start.x;
+    if (mask[startIndex] === 0) {
+        return null;
+    }
+    const targetIndexes = new Set<number>();
+    for (const target of targets) {
+        if (target.x < 0 || target.y < 0 || target.x >= width || target.y >= height) {
+            continue;
+        }
+        const targetIndex = (target.y * width) + target.x;
+        if (mask[targetIndex] !== 0) {
+            targetIndexes.add(targetIndex);
+        }
+    }
+    if (targetIndexes.size === 0) {
+        return null;
+    }
+
+    const queue = new Uint32Array(mask.length);
+    const parent = new Int32Array(mask.length);
+    parent.fill(-1);
+    let head = 0;
+    let tail = 0;
+    let foundIndex = -1;
+    parent[startIndex] = startIndex;
+    queue[tail] = startIndex;
+    tail += 1;
+
+    while (head < tail) {
+        const index = queue[head];
+        head += 1;
+        if (targetIndexes.has(index)) {
+            foundIndex = index;
+            break;
+        }
+        const x = index % width;
+        const candidates = [
+            x > 0 ? index - 1 : -1,
+            x < width - 1 ? index + 1 : -1,
+            index >= width ? index - width : -1,
+            index < mask.length - width ? index + width : -1,
+        ];
+        for (const nextIndex of candidates) {
+            if (nextIndex < 0 || parent[nextIndex] !== -1 || mask[nextIndex] === 0) {
+                continue;
+            }
+            parent[nextIndex] = index;
+            queue[tail] = nextIndex;
+            tail += 1;
+        }
+    }
+
+    if (foundIndex < 0) {
+        return null;
+    }
+
+    const reversedPath: MaskPoint[] = [];
+    let cursor = foundIndex;
+    while (cursor !== startIndex) {
+        reversedPath.push({ x: cursor % width, y: (cursor / width) | 0 });
+        cursor = parent[cursor];
+        if (cursor < 0) {
+            return null;
+        }
+    }
+    reversedPath.push(start);
+    reversedPath.reverse();
+    const distancePixels = Math.max(0, reversedPath.length - 1);
+    if (reversedPath.length <= maxSamplePoints) {
+        return { path: reversedPath, distancePixels };
+    }
+    const sampledPath: MaskPoint[] = [];
+    const denominator = Math.max(1, maxSamplePoints - 1);
+    for (let sampleIndex = 0; sampleIndex < maxSamplePoints; sampleIndex += 1) {
+        const sourceIndex = Math.round((sampleIndex * (reversedPath.length - 1)) / denominator);
+        const point = reversedPath[sourceIndex];
+        if (point) {
+            sampledPath.push(point);
+        }
+    }
+    return { path: sampledPath, distancePixels };
+};
+
 const buildBarrierDebugPixelBuffer = ({
     heuristicMask,
     addMask,
     removeMask,
+    realMapSupportMask,
     width,
     height,
 }: {
     heuristicMask: Uint8Array | null;
     addMask: Uint8Array;
     removeMask: Uint8Array;
+    realMapSupportMask?: Uint8Array | null;
     width: number;
     height: number;
 }) => {
@@ -347,9 +1650,21 @@ const buildBarrierDebugPixelBuffer = ({
         pixelBuffer[offset + 3] = alpha;
     };
 
+    const displayHeuristicMask = heuristicMask
+        ? expandBinaryMask({
+            mask: heuristicMask,
+            width,
+            height,
+            iterations: 1,
+        })
+        : null;
+
     for (let index = 0; index < width * height; index += 1) {
-        if (heuristicMask?.[index] !== 0) {
-            paint(index, HEURISTIC_BARRIER_COLOR, 170);
+        if (realMapSupportMask && realMapSupportMask[index] !== 0) {
+            paint(index, REAL_MAP_BOUNDARY_SUPPORT_COLOR, 150);
+        }
+        if (displayHeuristicMask && displayHeuristicMask[index] !== 0) {
+            paint(index, HEURISTIC_BARRIER_COLOR, 205);
         }
         if (addMask[index] !== 0) {
             paint(index, BARRIER_HINT_ADD_COLOR, 235);
@@ -445,6 +1760,1863 @@ for (const sample of DIAGNOSTIC_SAMPLES) {
     );
 }
 
+const NORMAL_REGION_MIN_GUIDE_COVERAGE_RATIO = 0.45;
+const REAL_MAP_BOUNDARY_FIT_SUPPORT_EXPANSION = 9;
+const REAL_MAP_BOUNDARY_FIT_MIN_SUPPORT_RATIO = 0.18;
+const REAL_MAP_BOUNDARY_FIT_MIN_SUPPORTED_PIXELS = 320;
+const REAL_MAP_BOUNDARY_FIT_MIN_REGION_SUPPORT_RATIO = 0.12;
+const REAL_MAP_BOUNDARY_FIT_MIN_REGION_BOUNDARY_PIXELS = 160;
+const BOUNDARY_SHAPE_MIN_PIXEL_COUNT = 1200;
+const BOUNDARY_SHAPE_STRAIGHT_PROBE_PIXELS = 18;
+const BOUNDARY_SHAPE_MIN_STRAIGHT_RUN_PIXELS = 28;
+const BOUNDARY_SHAPE_MAX_STRAIGHT_SUPPORT_RATIO = 0.36;
+const HAND_DRAWN_REGION_FILL_CLOSE_ITERATIONS = 4;
+const HAND_DRAWN_REGION_FILL_SEAL_ITERATIONS = 4;
+const HAND_DRAWN_REGION_FILL_EDGE_SEAL_DISTANCE = 96;
+const NORMAL_REGION_EXPECTED_PIXEL_COUNT_BY_ID = new Map<string, number>(
+    QIDAHEN_MAP_REGION_SHAPES.map((shape) => {
+        const shapeMask = STATIC_BOOTSTRAP_SHAPE_MASKS.get(shape.id);
+        return [shape.id, shapeMask ? countMaskPixels(shapeMask) : 0] as const;
+    }),
+);
+
+const buildRectMask = (
+    rects: typeof AUTO_MAP_PRINTED_UI_EXCLUSION_RECTS,
+): Uint8Array => {
+    const mask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+    for (const rect of rects) {
+        const left = Math.max(0, Math.min(MASK_WIDTH - 1, rect.left));
+        const right = Math.max(0, Math.min(MASK_WIDTH - 1, rect.right));
+        const top = Math.max(0, Math.min(MASK_HEIGHT - 1, rect.top));
+        const bottom = Math.max(0, Math.min(MASK_HEIGHT - 1, rect.bottom));
+        for (let y = top; y <= bottom; y += 1) {
+            for (let x = left; x <= right; x += 1) {
+                mask[(y * MASK_WIDTH) + x] = 1;
+            }
+        }
+    }
+    return mask;
+};
+
+const bridgeMaskLine = (
+    mask: Uint8Array,
+    from: MaskPoint,
+    to: MaskPoint,
+) => {
+    const deltaX = to.x - from.x;
+    const deltaY = to.y - from.y;
+    const steps = Math.max(Math.abs(deltaX), Math.abs(deltaY));
+    if (steps <= 0) {
+        mask[(from.y * MASK_WIDTH) + from.x] = 1;
+        return;
+    }
+    for (let step = 0; step <= steps; step += 1) {
+        const x = Math.round(from.x + ((deltaX * step) / steps));
+        const y = Math.round(from.y + ((deltaY * step) / steps));
+        if (x >= 0 && y >= 0 && x < MASK_WIDTH && y < MASK_HEIGHT) {
+            mask[(y * MASK_WIDTH) + x] = 1;
+        }
+    }
+};
+
+const bridgeNearEdgeBoundaryClusters = (
+    mask: Uint8Array,
+    edgeDistance: number,
+) => {
+    const visited = new Uint8Array(mask.length);
+    const queue = new Uint32Array(mask.length);
+    const sides = [
+        {
+            contains: (x: number, _y: number) => x <= edgeDistance,
+            distance: (x: number, _y: number) => x,
+            target: (point: MaskPoint) => ({ x: 0, y: point.y }),
+        },
+        {
+            contains: (x: number, _y: number) => x >= MASK_WIDTH - 1 - edgeDistance,
+            distance: (x: number, _y: number) => MASK_WIDTH - 1 - x,
+            target: (point: MaskPoint) => ({ x: MASK_WIDTH - 1, y: point.y }),
+        },
+        {
+            contains: (_x: number, y: number) => y <= edgeDistance,
+            distance: (_x: number, y: number) => y,
+            target: (point: MaskPoint) => ({ x: point.x, y: 0 }),
+        },
+        {
+            contains: (_x: number, y: number) => y >= MASK_HEIGHT - 1 - edgeDistance,
+            distance: (_x: number, y: number) => MASK_HEIGHT - 1 - y,
+            target: (point: MaskPoint) => ({ x: point.x, y: MASK_HEIGHT - 1 }),
+        },
+    ];
+
+    for (const side of sides) {
+        visited.fill(0);
+        for (let startY = 0; startY < MASK_HEIGHT; startY += 1) {
+            for (let startX = 0; startX < MASK_WIDTH; startX += 1) {
+                const startIndex = (startY * MASK_WIDTH) + startX;
+                if (
+                    mask[startIndex] === 0
+                    || visited[startIndex] !== 0
+                    || !side.contains(startX, startY)
+                ) {
+                    continue;
+                }
+
+                let head = 0;
+                let tail = 1;
+                let bestPoint: MaskPoint = { x: startX, y: startY };
+                let bestDistance = side.distance(startX, startY);
+                queue[0] = startIndex;
+                visited[startIndex] = 1;
+
+                while (head < tail) {
+                    const index = queue[head];
+                    head += 1;
+                    const x = index % MASK_WIDTH;
+                    const y = (index / MASK_WIDTH) | 0;
+                    const distance = side.distance(x, y);
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        bestPoint = { x, y };
+                    }
+
+                    for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+                        for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+                            if (offsetX === 0 && offsetY === 0) {
+                                continue;
+                            }
+                            const nextX = x + offsetX;
+                            const nextY = y + offsetY;
+                            if (
+                                nextX < 0
+                                || nextY < 0
+                                || nextX >= MASK_WIDTH
+                                || nextY >= MASK_HEIGHT
+                                || !side.contains(nextX, nextY)
+                            ) {
+                                continue;
+                            }
+                            const nextIndex = (nextY * MASK_WIDTH) + nextX;
+                            if (mask[nextIndex] === 0 || visited[nextIndex] !== 0) {
+                                continue;
+                            }
+                            visited[nextIndex] = 1;
+                            queue[tail] = nextIndex;
+                            tail += 1;
+                        }
+                    }
+                }
+
+                if (bestDistance > 0 && bestDistance <= edgeDistance) {
+                    bridgeMaskLine(mask, bestPoint, side.target(bestPoint));
+                }
+            }
+        }
+    }
+};
+
+const buildRegionFillBarrierMask = (boundaryMask: Uint8Array): Uint8Array => {
+    const closedBoundaryMask = closeBinaryMask({
+        mask: boundaryMask,
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        iterations: HAND_DRAWN_REGION_FILL_CLOSE_ITERATIONS,
+    });
+    const fillBarrierMask = expandBinaryMask({
+        mask: closedBoundaryMask,
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        iterations: HAND_DRAWN_REGION_FILL_SEAL_ITERATIONS,
+    });
+
+    for (let x = 0; x < MASK_WIDTH; x += 1) {
+        fillBarrierMask[x] = 1;
+        fillBarrierMask[((MASK_HEIGHT - 1) * MASK_WIDTH) + x] = 1;
+    }
+    for (let y = 0; y < MASK_HEIGHT; y += 1) {
+        fillBarrierMask[y * MASK_WIDTH] = 1;
+        fillBarrierMask[(y * MASK_WIDTH) + MASK_WIDTH - 1] = 1;
+    }
+
+    const edgeDistance = HAND_DRAWN_REGION_FILL_EDGE_SEAL_DISTANCE;
+    bridgeNearEdgeBoundaryClusters(fillBarrierMask, edgeDistance);
+
+    return fillBarrierMask;
+};
+
+const AUTO_MAP_PRINTED_UI_EXCLUSION_MASK = buildRectMask(AUTO_MAP_PRINTED_UI_EXCLUSION_RECTS);
+const EMPTY_MAP_ARTIFACT_EXCLUSION_MASK = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+const AUTO_MAP_REGION_FILLABLE_MASK = (() => {
+    const mask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+    for (let index = 0; index < mask.length; index += 1) {
+        mask[index] = AUTO_MAP_PRINTED_UI_EXCLUSION_MASK[index] === 0 ? 1 : 0;
+    }
+    return mask;
+})();
+const REAL_MAP_REGION_COLOR_DRAFT_GUIDE_MARGIN = 32;
+const REAL_MAP_REGION_COLOR_DRAFT_SAMPLE_INSET = 6;
+const REAL_MAP_REGION_COLOR_DRAFT_TOLERANCE = 68;
+const REAL_MAP_REGION_COLOR_DRAFT_MIN_PIXELS = 300;
+const REAL_MAP_REGION_COLOR_DRAFT_MIN_SHAPE_OVERLAP_RATIO = 0.08;
+const REAL_MAP_GEODESIC_PRIOR_EXPANSION = 16;
+const REAL_MAP_GEODESIC_ALLOWED_EXPANSION = 20;
+const REAL_MAP_GEODESIC_ALLOWED_CLOSE_ITERATIONS = 8;
+const REAL_MAP_GEODESIC_PRIOR_SOFT_EXPANSION = 14;
+const REAL_MAP_GEODESIC_PRIOR_MID_EXPANSION = 32;
+const REAL_MAP_GEODESIC_PRIOR_HARD_EXPANSION = 54;
+const REAL_MAP_GEODESIC_GRADIENT_WEIGHT = 14;
+const REAL_MAP_GEODESIC_DARK_WEIGHT = 1.5;
+const REAL_MAP_GEODESIC_SUPPORT_COST = 8;
+const REAL_MAP_GEODESIC_SEA_COST = 22;
+const REAL_MAP_GEODESIC_PRIOR_SOFT_COST = 3;
+const REAL_MAP_GEODESIC_PRIOR_MID_COST = 8;
+const REAL_MAP_GEODESIC_PRIOR_HARD_COST = 18;
+const REAL_MAP_GEODESIC_PRIOR_OUTSIDE_COST = 42;
+const REAL_MAP_GEODESIC_VISIBLE_CLIP_EXPANSION = 12;
+const REAL_MAP_VISIBLE_REGION_FALLBACK_POLYGONS = new Map<string, ReadonlyArray<readonly [number, number]>>([
+    ['jinzhou', [
+        [711, 414],
+        [708, 398],
+        [715, 384],
+        [728, 375],
+        [736, 363],
+        [758, 376],
+        [762, 350],
+        [776, 355],
+        [793, 342],
+        [804, 356],
+        [816, 364],
+        [826, 375],
+        [831, 388],
+        [838, 400],
+        [841, 414],
+        [833, 427],
+        [830, 440],
+        [822, 450],
+        [814, 461],
+        [806, 475],
+        [789, 470],
+        [776, 477],
+        [763, 474],
+        [748, 473],
+        [735, 466],
+        [725, 455],
+        [718, 442],
+        [706, 430],
+    ]],
+    ['song-jin', [
+        [690, 565],
+        [694, 555],
+        [688, 540],
+        [693, 528],
+        [694, 508],
+        [713, 512],
+        [724, 501],
+        [739, 509],
+        [753, 503],
+        [767, 506],
+        [776, 519],
+        [784, 529],
+        [790, 540],
+        [800, 551],
+        [799, 565],
+        [796, 578],
+        [788, 588],
+        [788, 604],
+        [778, 614],
+        [765, 618],
+        [754, 631],
+        [739, 631],
+        [725, 628],
+        [715, 615],
+        [703, 610],
+        [690, 604],
+        [685, 591],
+        [675, 579],
+    ]],
+    ['shan-hai-guan', [
+        [548, 542],
+        [554, 518],
+        [568, 496],
+        [590, 482],
+        [620, 476],
+        [650, 486],
+        [670, 508],
+        [680, 538],
+        [675, 566],
+        [660, 592],
+        [634, 612],
+        [604, 616],
+        [576, 604],
+        [556, 578],
+        [546, 552],
+    ]],
+    ['xian-xing', [
+        [958, 472],
+        [975, 455],
+        [969, 434],
+        [996, 431],
+        [1007, 420],
+        [1019, 413],
+        [1029, 390],
+        [1048, 370],
+        [1070, 374],
+        [1086, 393],
+        [1107, 399],
+        [1119, 415],
+        [1109, 443],
+        [1111, 458],
+        [1119, 472],
+        [1119, 488],
+        [1110, 502],
+        [1111, 522],
+        [1098, 535],
+        [1087, 552],
+        [1067, 554],
+        [1048, 565],
+        [1030, 552],
+        [1009, 553],
+        [1000, 532],
+        [987, 521],
+        [977, 506],
+        [968, 490],
+    ]],
+    ['shou-cheng', [
+        [954, 632],
+        [952, 610],
+        [958, 590],
+        [970, 570],
+        [998, 554],
+        [1030, 558],
+        [1056, 568],
+        [1084, 582],
+        [1104, 604],
+        [1110, 632],
+        [1106, 660],
+        [1092, 690],
+        [1062, 714],
+        [1028, 712],
+        [996, 698],
+        [974, 674],
+        [958, 648],
+    ]],
+]);
+const REAL_MAP_VISIBLE_REGION_FALLBACK_MASKS = new Map<string, Uint8Array>(
+    Array.from(REAL_MAP_VISIBLE_REGION_FALLBACK_POLYGONS.entries()).map(([regionId, polygon]) => [
+        regionId,
+        rasterizePolygonMask({
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            polygon,
+        }),
+    ]),
+);
+const BOUNDARY_REGION_FILLABLE_EXPANSION = 18;
+
+const buildClosedRegionShapePolylines = () => (
+    QIDAHEN_MAP_REGION_SHAPES.map((shape) => [...shape.polygon, shape.polygon[0]])
+);
+
+const smoothClosedPolyline = (
+    points: readonly (readonly [number, number])[],
+    iterations = 2,
+): ReadonlyArray<readonly [number, number]> => {
+    let current = points.map(([x, y]) => [x, y] as const);
+    for (let iteration = 0; iteration < iterations; iteration += 1) {
+        if (current.length < 3) {
+            break;
+        }
+        const next: Array<readonly [number, number]> = [];
+        for (let index = 0; index < current.length; index += 1) {
+            const [x1, y1] = current[index];
+            const [x2, y2] = current[(index + 1) % current.length];
+            next.push([
+                Math.round((0.75 * x1) + (0.25 * x2)),
+                Math.round((0.75 * y1) + (0.25 * y2)),
+            ] as const);
+            next.push([
+                Math.round((0.25 * x1) + (0.75 * x2)),
+                Math.round((0.25 * y1) + (0.75 * y2)),
+            ] as const);
+        }
+        current = next;
+    }
+    return current;
+};
+
+const buildRoughShapeOutlineBoundaryMask = (): Uint8Array => unionBinaryMasks(
+    ...QIDAHEN_MAP_REGION_SHAPES.map((shape) => {
+        const smoothed = smoothClosedPolyline(shape.polygon);
+        const closed = [...smoothed, smoothed[0] ?? smoothed.at(-1) ?? shape.polygon[0]];
+        return rasterizeStrokeMask({
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        points: closed,
+        radius: ROUGH_SHAPE_OUTLINE_DRAFT_RADIUS,
+        });
+    }),
+);
+
+const buildExpandedRoughShapeHullMask = (exclusionMask: Uint8Array): Uint8Array => {
+    const baseMask = unionBinaryMasks(
+        ...QIDAHEN_MAP_REGION_SHAPES
+            .map((shape) => STATIC_BOOTSTRAP_SHAPE_MASKS.get(shape.id) ?? null)
+            .filter((mask): mask is Uint8Array => mask != null),
+    );
+    let bestMask = removeExcludedPixels(baseMask, exclusionMask);
+    for (const iterations of ROUGH_SHAPE_HULL_EXPANSION_STEPS) {
+        const expanded = removeExcludedPixels(
+            fillMaskInternalHoles({
+                mask: closeBinaryMask({
+                    mask: expandBinaryMask({
+                        mask: baseMask,
+                        width: MASK_WIDTH,
+                        height: MASK_HEIGHT,
+                        iterations,
+                    }),
+                    width: MASK_WIDTH,
+                    height: MASK_HEIGHT,
+                    iterations: ROUGH_SHAPE_HULL_CLOSE_ITERATIONS,
+                }),
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+            }),
+            exclusionMask,
+        );
+        if (countMaskPixels(expanded) === 0) {
+            continue;
+        }
+        bestMask = expanded;
+        if (summarizeBinaryComponents(expanded, MASK_WIDTH).componentCount <= 1) {
+            break;
+        }
+    }
+    return bestMask;
+};
+
+const buildSeedPartitionRoughBoundaryMask = ({
+    regionSeeds,
+    exclusionMask,
+}: {
+    regionSeeds: ReadonlyArray<{
+        id: string;
+        point: MaskPoint;
+    }>;
+    exclusionMask: Uint8Array;
+}): Uint8Array => {
+    if (regionSeeds.length === 0) {
+        return buildRoughShapeOutlineBoundaryMask();
+    }
+
+    const hullMask = buildExpandedRoughShapeHullMask(exclusionMask);
+    const assignments = new Int16Array(MASK_WIDTH * MASK_HEIGHT);
+    assignments.fill(EMPTY_REGION);
+    const partitionMasks = regionSeeds.map(() => new Uint8Array(MASK_WIDTH * MASK_HEIGHT));
+    const shapeMasks = regionSeeds.map((region) => STATIC_BOOTSTRAP_SHAPE_MASKS.get(region.id) ?? null);
+
+    for (let index = 0; index < hullMask.length; index += 1) {
+        if (hullMask[index] === 0 || exclusionMask[index] !== 0) {
+            continue;
+        }
+        const x = index % MASK_WIDTH;
+        const y = (index / MASK_WIDTH) | 0;
+        let bestRegionIndex = EMPTY_REGION;
+        let bestDistance = Number.POSITIVE_INFINITY;
+
+        for (let regionIndex = 0; regionIndex < regionSeeds.length; regionIndex += 1) {
+            const region = regionSeeds[regionIndex];
+            const dx = x - region.point.x;
+            const dy = y - region.point.y;
+            let distance = (dx * dx) + (dy * dy);
+            if (shapeMasks[regionIndex]?.[index] !== 0) {
+                distance *= ROUGH_SHAPE_PARTITION_SHAPE_BONUS;
+            }
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestRegionIndex = regionIndex;
+            }
+        }
+
+        if (bestRegionIndex < 0) {
+            continue;
+        }
+        assignments[index] = bestRegionIndex;
+        partitionMasks[bestRegionIndex][index] = 1;
+    }
+
+    const boundaryMask = unionBinaryMasks(
+        buildMaskBoundaryRing({
+            mask: hullMask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            expandIterations: 0,
+        }),
+        ...partitionMasks.map((mask) => buildMaskBoundaryRing({
+            mask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            expandIterations: 0,
+        })),
+    );
+    return removeExcludedPixels(boundaryMask, exclusionMask);
+};
+
+const smoothFilledMaskByMajority = ({
+    mask,
+    width,
+    height,
+    iterations,
+    preservePoint = null,
+}: {
+    mask: Uint8Array;
+    width: number;
+    height: number;
+    iterations: number;
+    preservePoint?: MaskPoint | null;
+}): Uint8Array => {
+    if (iterations <= 0 || width <= 2 || height <= 2 || mask.length === 0) {
+        return mask;
+    }
+
+    let current = mask.slice();
+    let next = mask.slice();
+    for (let iteration = 0; iteration < iterations; iteration += 1) {
+        next.set(current);
+        for (let y = 1; y < height - 1; y += 1) {
+            for (let x = 1; x < width - 1; x += 1) {
+                const index = (y * width) + x;
+                let occupiedNeighbors = 0;
+                for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+                    for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+                        if (current[index + (offsetY * width) + offsetX] !== 0) {
+                            occupiedNeighbors += 1;
+                        }
+                    }
+                }
+                next[index] = occupiedNeighbors >= 5 ? 1 : 0;
+            }
+        }
+        if (preservePoint) {
+            next[(preservePoint.y * width) + preservePoint.x] = 1;
+        }
+        const previous = current;
+        current = next;
+        next = previous;
+    }
+
+    return current;
+};
+
+const buildBoundaryMaskFromRegionAssignments = ({
+    assignments,
+    regionIndexes,
+    exclusionMask,
+    regionSeedByIndex = null,
+    smoothRegionFillIterations = 0,
+}: {
+    assignments: Int16Array;
+    regionIndexes: readonly number[];
+    exclusionMask: Uint8Array;
+    regionSeedByIndex?: ReadonlyMap<number, MaskPoint> | null;
+    smoothRegionFillIterations?: number;
+}): Uint8Array => {
+    const boundaryMasks = regionIndexes
+        .map((regionIndex) => {
+            const rawMask = buildRegionMaskFromAssignments(assignments, regionIndex);
+            if (!rawMask) {
+                return null;
+            }
+            let regionMask = fillMaskInternalHoles({
+                mask: rawMask,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+            });
+            if (smoothRegionFillIterations > 0) {
+                regionMask = smoothFilledMaskByMajority({
+                    mask: regionMask,
+                    width: MASK_WIDTH,
+                    height: MASK_HEIGHT,
+                    iterations: smoothRegionFillIterations,
+                    preservePoint: regionSeedByIndex?.get(regionIndex) ?? null,
+                });
+            }
+            return removeExcludedPixels(regionMask, exclusionMask);
+        })
+        .filter((mask): mask is Uint8Array => mask != null)
+        .map((mask) => buildMaskBoundaryRing({
+            mask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            expandIterations: smoothRegionFillIterations > 0 ? 0 : 1,
+        }));
+    if (boundaryMasks.length === 0) {
+        return new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+    }
+    return removeExcludedPixels(unionBinaryMasks(...boundaryMasks), exclusionMask);
+};
+
+const REAL_MAP_REGION_BOUNDARY_SUPPORT_MASK = unionBinaryMasks(
+    ...buildClosedRegionShapePolylines().map((points) => rasterizeStrokeMask({
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        points,
+        radius: REAL_MAP_REGION_BOUNDARY_SUPPORT_RADIUS,
+    })),
+);
+
+const REAL_MAP_REGION_BOUNDARY_CLIP_MASK = unionBinaryMasks(
+    ...buildClosedRegionShapePolylines().map((points) => rasterizeStrokeMask({
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        points,
+        radius: REAL_MAP_REGION_BOUNDARY_CLIP_RADIUS,
+    })),
+);
+
+const removeExcludedPixels = (mask: Uint8Array, exclusionMask: Uint8Array): Uint8Array => {
+    const next = mask.slice();
+    const length = Math.min(next.length, exclusionMask.length);
+    for (let index = 0; index < length; index += 1) {
+        if (exclusionMask[index] !== 0) {
+            next[index] = 0;
+        }
+    }
+    return next;
+};
+const REAL_MAP_BOUNDARY_REGION_FILLABLE_MASK = removeExcludedPixels(
+    unionBinaryMasks(
+        ...Array.from(REAL_MAP_VISIBLE_REGION_FALLBACK_MASKS.values()).map((mask) => expandBinaryMask({
+            mask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            iterations: BOUNDARY_REGION_FILLABLE_EXPANSION,
+        })),
+        ...Array.from(STATIC_BOOTSTRAP_SHAPE_MASKS.values()).map((mask) => expandBinaryMask({
+            mask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            iterations: Math.max(10, BOUNDARY_REGION_FILLABLE_EXPANSION - 4),
+        })),
+    ),
+    AUTO_MAP_PRINTED_UI_EXCLUSION_MASK,
+);
+
+const countMaskOverlapPixels = (mask: Uint8Array, overlapMask: Uint8Array): number => {
+    const length = Math.min(mask.length, overlapMask.length);
+    let count = 0;
+    for (let index = 0; index < length; index += 1) {
+        if (mask[index] !== 0 && overlapMask[index] !== 0) {
+            count += 1;
+        }
+    }
+    return count;
+};
+
+const removeLikelyPrintedStraightLineComponents = ({
+    mask,
+    width,
+    minSpan = 72,
+    maxAverageThickness = 3.2,
+    minLinearity = 0.995,
+}: {
+    mask: Uint8Array;
+    width: number;
+    minSpan?: number;
+    maxAverageThickness?: number;
+    minLinearity?: number;
+}) => {
+    const height = Math.floor(mask.length / width);
+    const next = mask.slice();
+    const visited = new Uint8Array(mask.length);
+    const queue = new Uint32Array(mask.length);
+    const componentPixels = new Uint32Array(mask.length);
+    let removedPixelCount = 0;
+    let removedComponentCount = 0;
+
+    for (let startIndex = 0; startIndex < mask.length; startIndex += 1) {
+        if (mask[startIndex] === 0 || visited[startIndex] !== 0) {
+            continue;
+        }
+
+        let head = 0;
+        let tail = 0;
+        let componentPixelCount = 0;
+        let minX = width;
+        let maxX = 0;
+        let minY = height;
+        let maxY = 0;
+        let sumX = 0;
+        let sumY = 0;
+        let sumXX = 0;
+        let sumYY = 0;
+        let sumXY = 0;
+
+        visited[startIndex] = 1;
+        queue[tail] = startIndex;
+        tail += 1;
+
+        while (head < tail) {
+            const index = queue[head];
+            head += 1;
+            componentPixels[componentPixelCount] = index;
+            componentPixelCount += 1;
+
+            const x = index % width;
+            const y = (index / width) | 0;
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+            sumX += x;
+            sumY += y;
+            sumXX += x * x;
+            sumYY += y * y;
+            sumXY += x * y;
+
+            for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+                const nextY = y + offsetY;
+                if (nextY < 0 || nextY >= height) {
+                    continue;
+                }
+                for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+                    if (offsetX === 0 && offsetY === 0) {
+                        continue;
+                    }
+                    const nextX = x + offsetX;
+                    if (nextX < 0 || nextX >= width) {
+                        continue;
+                    }
+                    const nextIndex = (nextY * width) + nextX;
+                    if (mask[nextIndex] === 0 || visited[nextIndex] !== 0) {
+                        continue;
+                    }
+                    visited[nextIndex] = 1;
+                    queue[tail] = nextIndex;
+                    tail += 1;
+                }
+            }
+        }
+
+        const spanX = (maxX - minX) + 1;
+        const spanY = (maxY - minY) + 1;
+        const longestSpan = Math.max(spanX, spanY);
+        const averageThickness = longestSpan > 0 ? componentPixelCount / longestSpan : componentPixelCount;
+        const meanX = sumX / componentPixelCount;
+        const meanY = sumY / componentPixelCount;
+        const covarianceXX = (sumXX / componentPixelCount) - (meanX * meanX);
+        const covarianceYY = (sumYY / componentPixelCount) - (meanY * meanY);
+        const covarianceXY = (sumXY / componentPixelCount) - (meanX * meanY);
+        const trace = covarianceXX + covarianceYY;
+        const determinant = (covarianceXX * covarianceYY) - (covarianceXY * covarianceXY);
+        const eigenDelta = Math.max(0, (trace * trace) - (4 * determinant));
+        const lambdaMax = (trace + Math.sqrt(eigenDelta)) / 2;
+        const linearity = trace > 0 ? lambdaMax / trace : 0;
+        const isLikelyPrintedStraightLine = longestSpan >= minSpan
+            && averageThickness <= maxAverageThickness
+            && linearity >= minLinearity;
+
+        if (!isLikelyPrintedStraightLine) {
+            continue;
+        }
+
+        for (let index = 0; index < componentPixelCount; index += 1) {
+            next[componentPixels[index]] = 0;
+        }
+        removedPixelCount += componentPixelCount;
+        removedComponentCount += 1;
+    }
+
+    return {
+        mask: next,
+        removedPixelCount,
+        removedComponentCount,
+    };
+};
+
+const buildBoundaryRegionClipMask = ({
+    regionId,
+    seedPoint,
+    exclusionMask,
+}: {
+    regionId: string;
+    seedPoint: MaskPoint;
+    exclusionMask: Uint8Array;
+}): Uint8Array | null => {
+    const baseMask = REAL_MAP_VISIBLE_REGION_FALLBACK_MASKS.get(regionId) ?? STATIC_BOOTSTRAP_SHAPE_MASKS.get(regionId) ?? null;
+    if (!baseMask) {
+        return null;
+    }
+    const expandedMask = removeExcludedPixels(
+        expandBinaryMask({
+            mask: baseMask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            iterations: BOUNDARY_REGION_FILLABLE_EXPANSION,
+        }),
+        exclusionMask,
+    );
+    if (seedPoint.x < 0 || seedPoint.y < 0 || seedPoint.x >= MASK_WIDTH || seedPoint.y >= MASK_HEIGHT) {
+        return expandedMask;
+    }
+    const seedIndex = (seedPoint.y * MASK_WIDTH) + seedPoint.x;
+    if (expandedMask[seedIndex] !== 0 || exclusionMask[seedIndex] !== 0) {
+        return expandedMask;
+    }
+    const next = expandedMask.slice();
+    for (let offsetY = -10; offsetY <= 10; offsetY += 1) {
+        const y = seedPoint.y + offsetY;
+        if (y < 0 || y >= MASK_HEIGHT) {
+            continue;
+        }
+        for (let offsetX = -10; offsetX <= 10; offsetX += 1) {
+            const x = seedPoint.x + offsetX;
+            if (x < 0 || x >= MASK_WIDTH || (offsetX * offsetX) + (offsetY * offsetY) > 100) {
+                continue;
+            }
+            const index = (y * MASK_WIDTH) + x;
+            if (exclusionMask[index] === 0) {
+                next[index] = 1;
+            }
+        }
+    }
+    return next;
+};
+
+const rgbLuminance = (color: RgbColor): number => (
+    (0.2126 * color[0]) + (0.7152 * color[1]) + (0.0722 * color[2])
+);
+
+const rgbChroma = (color: RgbColor): number => (
+    Math.max(color[0], color[1], color[2]) - Math.min(color[0], color[1], color[2])
+);
+
+const rgbDistance = (left: RgbColor, right: RgbColor): number => Math.hypot(
+    left[0] - right[0],
+    left[1] - right[1],
+    left[2] - right[2],
+);
+
+const sampleSourceRgb = (sourcePixels: Uint8ClampedArray, x: number, y: number): RgbColor => {
+    const offset = ((y * MASK_WIDTH) + x) * 4;
+    return [
+        sourcePixels[offset],
+        sourcePixels[offset + 1],
+        sourcePixels[offset + 2],
+    ];
+};
+
+const medianNumber = (values: number[]): number | null => {
+    if (values.length === 0) {
+        return null;
+    }
+    const sorted = [...values].sort((left, right) => left - right);
+    return sorted[Math.floor(sorted.length / 2)] ?? null;
+};
+
+const isPointInsidePolygon = (
+    x: number,
+    y: number,
+    polygon: readonly (readonly [number, number])[],
+): boolean => {
+    let inside = false;
+    for (let index = 0, previousIndex = polygon.length - 1; index < polygon.length; previousIndex = index, index += 1) {
+        const [currentX, currentY] = polygon[index];
+        const [previousX, previousY] = polygon[previousIndex];
+        const crosses = (currentY > y) !== (previousY > y);
+        if (!crosses) {
+            continue;
+        }
+        const intersectionX = ((previousX - currentX) * (y - currentY)) / Math.max(0.0001, previousY - currentY) + currentX;
+        if (x < intersectionX) {
+            inside = !inside;
+        }
+    }
+    return inside;
+};
+
+const distanceToSegment = (
+    pointX: number,
+    pointY: number,
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+): number => {
+    const deltaX = endX - startX;
+    const deltaY = endY - startY;
+    const lengthSquared = (deltaX * deltaX) + (deltaY * deltaY);
+    const t = lengthSquared > 0
+        ? Math.max(0, Math.min(1, (((pointX - startX) * deltaX) + ((pointY - startY) * deltaY)) / lengthSquared))
+        : 0;
+    const closestX = startX + (t * deltaX);
+    const closestY = startY + (t * deltaY);
+    return Math.hypot(pointX - closestX, pointY - closestY);
+};
+
+const distanceToPolygonBoundary = (
+    x: number,
+    y: number,
+    polygon: readonly (readonly [number, number])[],
+): number => {
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (let index = 0; index < polygon.length; index += 1) {
+        const [startX, startY] = polygon[index];
+        const [endX, endY] = polygon[(index + 1) % polygon.length];
+        bestDistance = Math.min(bestDistance, distanceToSegment(x, y, startX, startY, endX, endY));
+    }
+    return bestDistance;
+};
+
+const selectBestRegionColorDraftComponent = ({
+    candidateMask,
+    shapeMask,
+    seed,
+    minShapeOverlapPixels,
+}: {
+    candidateMask: Uint8Array;
+    shapeMask: Uint8Array;
+    seed: MaskPoint;
+    minShapeOverlapPixels: number;
+}): {
+    mask: Uint8Array;
+    pixelCount: number;
+    shapeOverlapPixels: number;
+    nearestSeedDistance: number;
+} | null => {
+    const visited = new Uint8Array(candidateMask.length);
+    const queue = new Uint32Array(candidateMask.length);
+    let best: {
+        pixels: number[];
+        pixelCount: number;
+        shapeOverlapPixels: number;
+        nearestSeedDistance: number;
+        score: number;
+    } | null = null;
+
+    for (let startIndex = 0; startIndex < candidateMask.length; startIndex += 1) {
+        if (candidateMask[startIndex] === 0 || visited[startIndex] !== 0) {
+            continue;
+        }
+        let head = 0;
+        let tail = 0;
+        let pixelCount = 0;
+        let shapeOverlapPixels = 0;
+        let nearestSeedDistanceSquared = Number.POSITIVE_INFINITY;
+        const pixels: number[] = [];
+        visited[startIndex] = 1;
+        queue[tail] = startIndex;
+        tail += 1;
+
+        while (head < tail) {
+            const index = queue[head];
+            head += 1;
+            pixels.push(index);
+            pixelCount += 1;
+            if (shapeMask[index] !== 0) {
+                shapeOverlapPixels += 1;
+            }
+            const x = index % MASK_WIDTH;
+            const y = (index / MASK_WIDTH) | 0;
+            const distanceSquared = ((x - seed.x) * (x - seed.x)) + ((y - seed.y) * (y - seed.y));
+            nearestSeedDistanceSquared = Math.min(nearestSeedDistanceSquared, distanceSquared);
+
+            const neighbors = [
+                x > 0 ? index - 1 : -1,
+                x < MASK_WIDTH - 1 ? index + 1 : -1,
+                y > 0 ? index - MASK_WIDTH : -1,
+                y < MASK_HEIGHT - 1 ? index + MASK_WIDTH : -1,
+            ];
+            for (const nextIndex of neighbors) {
+                if (
+                    nextIndex < 0
+                    || candidateMask[nextIndex] === 0
+                    || visited[nextIndex] !== 0
+                ) {
+                    continue;
+                }
+                visited[nextIndex] = 1;
+                queue[tail] = nextIndex;
+                tail += 1;
+            }
+        }
+
+        if (shapeOverlapPixels < minShapeOverlapPixels) {
+            continue;
+        }
+        const nearestSeedDistance = Math.sqrt(nearestSeedDistanceSquared);
+        const score = (shapeOverlapPixels * 3) + pixelCount - (nearestSeedDistance * 8);
+        if (!best || score > best.score) {
+            best = {
+                pixels,
+                pixelCount,
+                shapeOverlapPixels,
+                nearestSeedDistance,
+                score,
+            };
+        }
+    }
+
+    if (!best) {
+        return null;
+    }
+    const mask = new Uint8Array(candidateMask.length);
+    for (const index of best.pixels) {
+        mask[index] = 1;
+    }
+    return {
+        mask,
+        pixelCount: best.pixelCount,
+        shapeOverlapPixels: best.shapeOverlapPixels,
+        nearestSeedDistance: best.nearestSeedDistance,
+    };
+};
+
+const buildPixelsChangedFromBaseMask = ({
+    source,
+    base,
+    threshold,
+}: {
+    source: Uint8ClampedArray;
+    base: Uint8ClampedArray;
+    threshold: number;
+}): Uint8Array => {
+    const mask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+    for (let index = 0; index < MASK_WIDTH * MASK_HEIGHT; index += 1) {
+        const offset = index * 4;
+        const redDiff = Math.abs(source[offset] - base[offset]);
+        const greenDiff = Math.abs(source[offset + 1] - base[offset + 1]);
+        const blueDiff = Math.abs(source[offset + 2] - base[offset + 2]);
+        const alphaDiff = Math.abs(source[offset + 3] - base[offset + 3]);
+        if (Math.max(redDiff, greenDiff, blueDiff, alphaDiff) >= threshold) {
+            mask[index] = 1;
+        }
+    }
+    return mask;
+};
+
+const countMaskPixelsSupportedByMask = (mask: Uint8Array, supportMask: Uint8Array): number => {
+    const length = Math.min(mask.length, supportMask.length);
+    let count = 0;
+    for (let index = 0; index < length; index += 1) {
+        if (mask[index] !== 0 && supportMask[index] !== 0) {
+            count += 1;
+        }
+    }
+    return count;
+};
+
+const buildBoundaryRealMapFitRegionReports = ({
+    boundaryMask,
+    supportMask,
+    assignments,
+    regions,
+}: {
+    boundaryMask: Uint8Array;
+    supportMask: Uint8Array;
+    assignments: Int16Array;
+    regions: readonly PainterRegion[];
+}): BoundaryRealMapFitRegionReport[] => {
+    const countsByRegionIndex = new Map<number, {
+        boundaryPixelCount: number;
+        supportedBoundaryPixelCount: number;
+        unsupportedBoundaryPixelCount: number;
+        unsupportedSumX: number;
+        unsupportedSumY: number;
+        weakBoundaryBounds: { left: number; top: number; right: number; bottom: number } | null;
+    }>();
+    const addRegionIndex = (targetIndexes: number[], regionIndex: number) => {
+        if (targetIndexes.includes(regionIndex)) {
+            return;
+        }
+        targetIndexes.push(regionIndex);
+    };
+    for (let y = 0; y < MASK_HEIGHT; y += 1) {
+        for (let x = 0; x < MASK_WIDTH; x += 1) {
+            const index = (y * MASK_WIDTH) + x;
+            if (boundaryMask[index] === 0) {
+                continue;
+            }
+            const adjacentRegionIndexes: number[] = [];
+            for (let dy = -1; dy <= 1; dy += 1) {
+                const nextY = y + dy;
+                if (nextY < 0 || nextY >= MASK_HEIGHT) {
+                    continue;
+                }
+                for (let dx = -1; dx <= 1; dx += 1) {
+                    if (dx === 0 && dy === 0) {
+                        continue;
+                    }
+                    const nextX = x + dx;
+                    if (nextX < 0 || nextX >= MASK_WIDTH) {
+                        continue;
+                    }
+                    const regionIndex = assignments[(nextY * MASK_WIDTH) + nextX];
+                    if (regionIndex < 0) {
+                        continue;
+                    }
+                    const region = regions[regionIndex];
+                    if (!region || isDiagnosticRegionId(region.id)) {
+                        continue;
+                    }
+                    addRegionIndex(adjacentRegionIndexes, regionIndex);
+                }
+            }
+            for (const regionIndex of adjacentRegionIndexes) {
+                const current = countsByRegionIndex.get(regionIndex) ?? {
+                    boundaryPixelCount: 0,
+                    supportedBoundaryPixelCount: 0,
+                    unsupportedBoundaryPixelCount: 0,
+                    unsupportedSumX: 0,
+                    unsupportedSumY: 0,
+                    weakBoundaryBounds: null,
+                };
+                current.boundaryPixelCount += 1;
+                if (supportMask[index] !== 0) {
+                    current.supportedBoundaryPixelCount += 1;
+                } else {
+                    current.unsupportedBoundaryPixelCount += 1;
+                    current.unsupportedSumX += x;
+                    current.unsupportedSumY += y;
+                    current.weakBoundaryBounds = current.weakBoundaryBounds
+                        ? {
+                            left: Math.min(current.weakBoundaryBounds.left, x),
+                            top: Math.min(current.weakBoundaryBounds.top, y),
+                            right: Math.max(current.weakBoundaryBounds.right, x),
+                            bottom: Math.max(current.weakBoundaryBounds.bottom, y),
+                        }
+                        : { left: x, top: y, right: x, bottom: y };
+                }
+                countsByRegionIndex.set(regionIndex, current);
+            }
+        }
+    }
+    return regions
+        .map((region, regionIndex): BoundaryRealMapFitRegionReport | null => {
+            if (isDiagnosticRegionId(region.id)) {
+                return null;
+            }
+            const counts = countsByRegionIndex.get(regionIndex) ?? {
+                boundaryPixelCount: 0,
+                supportedBoundaryPixelCount: 0,
+                unsupportedBoundaryPixelCount: 0,
+                unsupportedSumX: 0,
+                unsupportedSumY: 0,
+                weakBoundaryBounds: null,
+            };
+            const supportRatio = counts.boundaryPixelCount > 0
+                ? counts.supportedBoundaryPixelCount / counts.boundaryPixelCount
+                : 0;
+            const generated = counts.boundaryPixelCount >= REAL_MAP_BOUNDARY_FIT_MIN_REGION_BOUNDARY_PIXELS;
+            const weakBoundaryPoint = counts.unsupportedBoundaryPixelCount > 0
+                ? {
+                    x: Math.round(counts.unsupportedSumX / counts.unsupportedBoundaryPixelCount),
+                    y: Math.round(counts.unsupportedSumY / counts.unsupportedBoundaryPixelCount),
+                }
+                : null;
+            return {
+                regionId: region.id,
+                regionName: region.name,
+                boundaryPixelCount: counts.boundaryPixelCount,
+                supportedBoundaryPixelCount: counts.supportedBoundaryPixelCount,
+                unsupportedBoundaryPixelCount: counts.unsupportedBoundaryPixelCount,
+                supportRatio,
+                weakBoundaryPoint,
+                weakBoundaryBounds: counts.weakBoundaryBounds,
+                state: !generated
+                    ? 'not-generated'
+                    : supportRatio >= REAL_MAP_BOUNDARY_FIT_MIN_REGION_SUPPORT_RATIO
+                        ? 'passed'
+                        : 'weak',
+            };
+        })
+        .filter((report): report is BoundaryRealMapFitRegionReport => report != null);
+};
+
+const buildRealMapBoundaryLongLineCandidateMaskFromSourcePixels = ({
+    sourcePixels,
+    boundaryPresets,
+    boundaryTolerance,
+}: {
+    sourcePixels: Uint8ClampedArray;
+    boundaryPresets: readonly BoundaryPreset[];
+    boundaryTolerance: number;
+}): Uint8Array => {
+    const activeRules = boundaryPresets
+        .filter((preset) => preset.enabled)
+        .map((preset) => ({
+            id: preset.id,
+            rgb: preset.rgb,
+            tolerance: Math.max(boundaryTolerance, 16),
+            enabled: true,
+        }));
+    const rawColorMask = activeRules.length > 0
+        ? buildBarrierMask({
+            source: sourcePixels,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            rules: activeRules,
+            expansion: 0,
+            minComponentPixels: 0,
+            blurRadius: 0,
+            lineFilter: null,
+        })
+        : new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+    const rawGradientMask = buildGradientBarrierMask({
+        source: sourcePixels,
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        blurRadius: 0,
+        strongGradientThreshold: REAL_MAP_GRADIENT_CANDIDATE.strongGradientThreshold,
+        moderateGradientThreshold: REAL_MAP_GRADIENT_CANDIDATE.strongGradientThreshold,
+        darkLuminanceThreshold: REAL_MAP_GRADIENT_CANDIDATE.darkLuminanceThreshold,
+        lowChromaThreshold: REAL_MAP_GRADIENT_CANDIDATE.lowChromaThreshold,
+        lineFilter: null,
+    });
+    const decorationExclusionMask = buildCompactPrintedDecorationExclusionMask(sourcePixels);
+    const printableLineSignalMask = removeExcludedPixels(
+        removeExcludedPixels(
+            unionBinaryMasks(rawColorMask, rawGradientMask),
+            AUTO_MAP_PRINTED_UI_EXCLUSION_MASK,
+        ),
+        decorationExclusionMask,
+    );
+    const regionGuidedAnalysis = analyzeMaskBoundaryChainsNearSupport({
+        mask: printableLineSignalMask,
+        width: MASK_WIDTH,
+        clipMask: REAL_MAP_REGION_BOUNDARY_CLIP_MASK,
+        supportMask: REAL_MAP_REGION_BOUNDARY_SUPPORT_MASK,
+        maxDistance: REAL_MAP_REGION_BOUNDARY_MAX_DISTANCE,
+        minPixels: REAL_MAP_REGION_GUIDED_LONG_LINE_FILTER.minPixels,
+        minSpan: REAL_MAP_REGION_GUIDED_LONG_LINE_FILTER.minSpan,
+        maxAverageThickness: REAL_MAP_REGION_GUIDED_LONG_LINE_FILTER.maxAverageThickness,
+        gapClosingIterations: 0,
+    });
+    const longLineMask = keepBoundaryDraftComponents({
+        mask: regionGuidedAnalysis.mask,
+        width: MASK_WIDTH,
+        ...REAL_MAP_REGION_GUIDED_LONG_LINE_FILTER,
+        connectivity: 8,
+    });
+    return removeExcludedPixels(longLineMask, AUTO_MAP_PRINTED_UI_EXCLUSION_MASK);
+};
+
+const buildRealMapBoundarySupportMaskFromSourcePixels = ({
+    sourcePixels,
+    boundaryPresets,
+    boundaryTolerance,
+}: {
+    sourcePixels: Uint8ClampedArray;
+    boundaryPresets: readonly BoundaryPreset[];
+    boundaryTolerance: number;
+}): Uint8Array => {
+    const longLineMask = buildRealMapBoundaryLongLineCandidateMaskFromSourcePixels({
+        sourcePixels,
+        boundaryPresets,
+        boundaryTolerance,
+    });
+    return removeExcludedPixels(
+        expandBinaryMask({
+            mask: longLineMask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            iterations: REAL_MAP_BOUNDARY_FIT_SUPPORT_EXPANSION,
+        }),
+        AUTO_MAP_PRINTED_UI_EXCLUSION_MASK,
+    );
+};
+
+const scoreBoundaryRealMapFit = ({
+    boundaryMask,
+    supportMask,
+    assignments,
+    regions,
+}: {
+    boundaryMask: Uint8Array | null | undefined;
+    supportMask: Uint8Array | null | undefined;
+    assignments?: Int16Array | null;
+    regions?: readonly PainterRegion[] | null;
+}): BoundaryRealMapFitReport => {
+    const boundaryPixelCount = boundaryMask ? countMaskPixels(boundaryMask) : 0;
+    if (!boundaryMask || boundaryPixelCount === 0) {
+        return {
+            state: 'unknown',
+            boundaryPixelCount: 0,
+            supportedBoundaryPixelCount: 0,
+            supportRatio: 0,
+            minSupportRatio: REAL_MAP_BOUNDARY_FIT_MIN_SUPPORT_RATIO,
+            minSupportedBoundaryPixels: REAL_MAP_BOUNDARY_FIT_MIN_SUPPORTED_PIXELS,
+            minRegionSupportRatio: REAL_MAP_BOUNDARY_FIT_MIN_REGION_SUPPORT_RATIO,
+            regionReports: [],
+            weakRegionNames: [],
+            note: '还没有边界图，无法检查是否贴合真实底图线条。',
+        };
+    }
+    if (!supportMask || countMaskPixels(supportMask) === 0) {
+        return {
+            state: 'unknown',
+            boundaryPixelCount,
+            supportedBoundaryPixelCount: 0,
+            supportRatio: 0,
+            minSupportRatio: REAL_MAP_BOUNDARY_FIT_MIN_SUPPORT_RATIO,
+            minSupportedBoundaryPixels: REAL_MAP_BOUNDARY_FIT_MIN_SUPPORTED_PIXELS,
+            minRegionSupportRatio: REAL_MAP_BOUNDARY_FIT_MIN_REGION_SUPPORT_RATIO,
+            regionReports: [],
+            weakRegionNames: [],
+            note: '真实底图像素还没形成可用支撑线，暂时不能放行正常成果。',
+        };
+    }
+    const supportedBoundaryPixelCount = countMaskPixelsSupportedByMask(boundaryMask, supportMask);
+    const supportRatio = supportedBoundaryPixelCount / boundaryPixelCount;
+    const regionReports = assignments && regions
+        ? buildBoundaryRealMapFitRegionReports({
+            boundaryMask,
+            supportMask,
+            assignments,
+            regions,
+        })
+        : [];
+    const weakRegionNames = regionReports
+        .filter((report) => report.state === 'weak')
+        .map((report) => report.regionName);
+    const passed = supportRatio >= REAL_MAP_BOUNDARY_FIT_MIN_SUPPORT_RATIO
+        && supportedBoundaryPixelCount >= REAL_MAP_BOUNDARY_FIT_MIN_SUPPORTED_PIXELS
+        && weakRegionNames.length === 0;
+    return {
+        state: passed ? 'passed' : 'blocked',
+        boundaryPixelCount,
+        supportedBoundaryPixelCount,
+        supportRatio,
+        minSupportRatio: REAL_MAP_BOUNDARY_FIT_MIN_SUPPORT_RATIO,
+        minSupportedBoundaryPixels: REAL_MAP_BOUNDARY_FIT_MIN_SUPPORTED_PIXELS,
+        minRegionSupportRatio: REAL_MAP_BOUNDARY_FIT_MIN_REGION_SUPPORT_RATIO,
+        regionReports,
+        weakRegionNames,
+        note: passed
+            ? `边界有 ${(supportRatio * 100).toFixed(1)}% 贴近真实底图长线候选。`
+            : weakRegionNames.length > 0
+                ? `边界全局贴合 ${(supportRatio * 100).toFixed(1)}%，但 ${weakRegionNames.join('、')} 的局部边界缺少真实底图支撑，不能用一段候选线替整图背书。`
+                : `边界只有 ${(supportRatio * 100).toFixed(1)}% 贴近真实底图长线候选，像直线/多边形夹具，不能当正常成果。`,
+    };
+};
+
+const scoreBoundaryShape = ({
+    boundaryMask,
+}: {
+    boundaryMask: Uint8Array | null | undefined;
+}): BoundaryShapeReport => {
+    const boundaryPixelCount = boundaryMask ? countMaskPixels(boundaryMask) : 0;
+    if (!boundaryMask || boundaryPixelCount === 0) {
+        return {
+            state: 'unknown',
+            boundaryPixelCount: 0,
+            straightSupportedPixelCount: 0,
+            straightSupportRatio: 0,
+            maxStraightSupportRatio: BOUNDARY_SHAPE_MAX_STRAIGHT_SUPPORT_RATIO,
+            minBoundaryPixelCount: BOUNDARY_SHAPE_MIN_PIXEL_COUNT,
+            note: '还没有边界图，无法检查是否主要由直线段构成。',
+        };
+    }
+    if (boundaryPixelCount < BOUNDARY_SHAPE_MIN_PIXEL_COUNT) {
+        return {
+            state: 'unknown',
+            boundaryPixelCount,
+            straightSupportedPixelCount: 0,
+            straightSupportRatio: 0,
+            maxStraightSupportRatio: BOUNDARY_SHAPE_MAX_STRAIGHT_SUPPORT_RATIO,
+            minBoundaryPixelCount: BOUNDARY_SHAPE_MIN_PIXEL_COUNT,
+            note: `边界像素只有 ${boundaryPixelCount.toLocaleString()} px，暂不做直线形态放行判断。`,
+        };
+    }
+    const directions = [
+        [1, 0],
+        [0, 1],
+        [1, 1],
+        [1, -1],
+    ] as const;
+    const hasBoundaryAt = (x: number, y: number): boolean => (
+        x >= 0
+        && x < MASK_WIDTH
+        && y >= 0
+        && y < MASK_HEIGHT
+        && boundaryMask[(y * MASK_WIDTH) + x] !== 0
+    );
+    const countDirectionRun = (x: number, y: number, dx: number, dy: number): number => {
+        let run = 1;
+        for (let step = 1; step <= BOUNDARY_SHAPE_STRAIGHT_PROBE_PIXELS; step += 1) {
+            if (!hasBoundaryAt(x + (dx * step), y + (dy * step))) {
+                break;
+            }
+            run += 1;
+        }
+        for (let step = 1; step <= BOUNDARY_SHAPE_STRAIGHT_PROBE_PIXELS; step += 1) {
+            if (!hasBoundaryAt(x - (dx * step), y - (dy * step))) {
+                break;
+            }
+            run += 1;
+        }
+        return run;
+    };
+    let straightSupportedPixelCount = 0;
+    for (let index = 0; index < boundaryMask.length; index += 1) {
+        if (boundaryMask[index] === 0) {
+            continue;
+        }
+        const x = index % MASK_WIDTH;
+        const y = (index / MASK_WIDTH) | 0;
+        let isStraightSupported = false;
+        for (const [dx, dy] of directions) {
+            if (countDirectionRun(x, y, dx, dy) >= BOUNDARY_SHAPE_MIN_STRAIGHT_RUN_PIXELS) {
+                isStraightSupported = true;
+                break;
+            }
+        }
+        if (isStraightSupported) {
+            straightSupportedPixelCount += 1;
+        }
+    }
+    const straightSupportRatio = straightSupportedPixelCount / boundaryPixelCount;
+    const blocked = straightSupportRatio > BOUNDARY_SHAPE_MAX_STRAIGHT_SUPPORT_RATIO;
+    return {
+        state: blocked ? 'blocked' : 'passed',
+        boundaryPixelCount,
+        straightSupportedPixelCount,
+        straightSupportRatio,
+        maxStraightSupportRatio: BOUNDARY_SHAPE_MAX_STRAIGHT_SUPPORT_RATIO,
+        minBoundaryPixelCount: BOUNDARY_SHAPE_MIN_PIXEL_COUNT,
+        note: blocked
+            ? `边界有 ${(straightSupportRatio * 100).toFixed(1)}% 像素落在长直线段上，像直线/多边形夹具，不能当正常成果。`
+            : `边界直线段占比 ${(straightSupportRatio * 100).toFixed(1)}%，未触发直线夹具门禁。`,
+    };
+};
+
+const scoreBoundaryCandidateReadiness = ({
+    candidateMask,
+    regions,
+}: {
+    candidateMask: Uint8Array | null | undefined;
+    regions: readonly PainterRegion[];
+}): BoundaryCandidateReadinessReport => {
+    const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+    if (!candidateMask || countMaskPixels(candidateMask) === 0) {
+        return {
+            state: 'missing',
+            label: '候选未生成',
+            closedFaceCount: 0,
+            matchedSeedCount: 0,
+            requiredSeedCount: formalRegions.length,
+            uiPixelCount: 0,
+            blockers: ['真实底图候选还没有生成。'],
+            canLoadAsDraft: false,
+        };
+    }
+
+    const uiPixelCount = countMaskOverlapPixels(candidateMask, AUTO_MAP_PRINTED_UI_EXCLUSION_MASK);
+    const seedRecords: Array<{ region: PainterRegion; seedPoint: MaskPoint }> = [];
+    const missingSeedRegionNames: string[] = [];
+    for (const region of formalRegions) {
+        const preferredSeed = region.seed;
+        if (!preferredSeed) {
+            missingSeedRegionNames.push(region.name);
+            continue;
+        }
+        const seedPoint = findBestInteriorSeedPoint(preferredSeed, candidateMask, 18)
+            ?? findNearestNonBarrierPoint(preferredSeed, candidateMask, 36);
+        if (!seedPoint) {
+            missingSeedRegionNames.push(region.name);
+            continue;
+        }
+        seedRecords.push({ region, seedPoint });
+    }
+    const partitionComponents = extractBoundaryPartitionComponents({
+        barrierMask: candidateMask,
+        width: MASK_WIDTH,
+        fillableMask: AUTO_MAP_REGION_FILLABLE_MASK,
+        seeds: seedRecords.map((record) => record.seedPoint),
+        minPixels: 48,
+    });
+    const matchedSeedIndexes = new Set<number>();
+    const connectedSeedNames = new Set<string>();
+    for (const component of partitionComponents) {
+        if (component.seedIndexes.length === 1) {
+            matchedSeedIndexes.add(component.seedIndexes[0]);
+            continue;
+        }
+        if (component.seedIndexes.length > 1) {
+            component.seedIndexes.forEach((seedIndex) => {
+                const record = seedRecords[seedIndex];
+                if (record) {
+                    connectedSeedNames.add(record.region.name);
+                }
+            });
+        }
+    }
+    for (let seedRecordIndex = 0; seedRecordIndex < seedRecords.length; seedRecordIndex += 1) {
+        if (!matchedSeedIndexes.has(seedRecordIndex)) {
+            missingSeedRegionNames.push(seedRecords[seedRecordIndex].region.name);
+        }
+    }
+    const matchedSeedCount = matchedSeedIndexes.size;
+
+    const blockers: string[] = [];
+    if (uiPixelCount > 0) {
+        blockers.push(`候选仍命中印刷 UI ${uiPixelCount.toLocaleString()} px。`);
+    }
+    if (matchedSeedCount < formalRegions.length) {
+        const connectedNote = connectedSeedNames.size > 0
+            ? `；其中 ${Array.from(connectedSeedNames).join('、')} 仍连在同一分区`
+            : '';
+        blockers.push(`候选只分出 ${matchedSeedCount}/${formalRegions.length} 个独立 seed：${missingSeedRegionNames.join('、') || '未知区域'}${connectedNote}。`);
+    }
+    const canLoadAsDraft = blockers.length === 0;
+    return {
+        state: canLoadAsDraft ? 'ready' : 'unsafe',
+        label: canLoadAsDraft ? '候选可载入' : '候选不达标',
+        closedFaceCount: partitionComponents.length,
+        matchedSeedCount,
+        requiredSeedCount: formalRegions.length,
+        uiPixelCount,
+        blockers,
+        canLoadAsDraft,
+    };
+};
+
+const buildCompactPrintedDecorationExclusionMask = (sourcePixels: Uint8ClampedArray): Uint8Array => {
+    const rawTokenMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+    for (let index = 0; index < rawTokenMask.length; index += 1) {
+        const offset = index * 4;
+        const red = sourcePixels[offset];
+        const green = sourcePixels[offset + 1];
+        const blue = sourcePixels[offset + 2];
+        const chroma = Math.max(red, green, blue) - Math.min(red, green, blue);
+        const isRedArrowOrMarker = red > 145
+            && green < 100
+            && blue < 95
+            && red - green > 80
+            && red - blue > 75;
+        const isLightCardOrNumberToken = red > 175
+            && green > 175
+            && blue > 175
+            && chroma < 70;
+        if (isRedArrowOrMarker || isLightCardOrNumberToken) {
+            rawTokenMask[index] = 1;
+        }
+    }
+
+    const tokenMask = new Uint8Array(rawTokenMask.length);
+    const visited = new Uint8Array(rawTokenMask.length);
+    const queue = new Uint32Array(rawTokenMask.length);
+    for (let startIndex = 0; startIndex < rawTokenMask.length; startIndex += 1) {
+        if (rawTokenMask[startIndex] === 0 || visited[startIndex] !== 0) {
+            continue;
+        }
+        let head = 0;
+        let tail = 0;
+        let minX = MASK_WIDTH - 1;
+        let maxX = 0;
+        let minY = MASK_HEIGHT - 1;
+        let maxY = 0;
+        visited[startIndex] = 1;
+        queue[tail] = startIndex;
+        tail += 1;
+
+        while (head < tail) {
+            const index = queue[head];
+            head += 1;
+            const x = index % MASK_WIDTH;
+            const y = (index / MASK_WIDTH) | 0;
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+
+            const candidates = [
+                x > 0 ? index - 1 : -1,
+                x < MASK_WIDTH - 1 ? index + 1 : -1,
+                y > 0 ? index - MASK_WIDTH : -1,
+                y < MASK_HEIGHT - 1 ? index + MASK_WIDTH : -1,
+            ];
+            for (const nextIndex of candidates) {
+                if (nextIndex < 0 || rawTokenMask[nextIndex] === 0 || visited[nextIndex] !== 0) {
+                    continue;
+                }
+                visited[nextIndex] = 1;
+                queue[tail] = nextIndex;
+                tail += 1;
+            }
+        }
+
+        const boundsWidth = (maxX - minX) + 1;
+        const boundsHeight = (maxY - minY) + 1;
+        const density = tail / Math.max(1, boundsWidth * boundsHeight);
+        const compactPrintedDecoration = tail >= 8
+            && tail <= 4500
+            && boundsWidth <= 180
+            && boundsHeight <= 160
+            && density >= 0.03;
+        if (!compactPrintedDecoration) {
+            continue;
+        }
+        for (let index = 0; index < tail; index += 1) {
+            tokenMask[queue[index]] = 1;
+        }
+    }
+
+    const compactTokenMask = expandBinaryMask({
+        mask: tokenMask,
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        iterations: REAL_MAP_DECORATION_EXCLUSION_EXPANSION,
+    });
+    const highConfidenceTokenCoreMask = expandBinaryMask({
+        mask: rawTokenMask,
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        iterations: 1,
+    });
+
+    return unionBinaryMasks(compactTokenMask, highConfidenceTokenCoreMask);
+};
+
+const countAssignmentPixelsInMask = (assignments: Int16Array, guardMask: Uint8Array): number => {
+    const length = Math.min(assignments.length, guardMask.length);
+    let count = 0;
+    for (let index = 0; index < length; index += 1) {
+        if (assignments[index] !== EMPTY_REGION && guardMask[index] !== 0) {
+            count += 1;
+        }
+    }
+    return count;
+};
+
+const summarizeBinaryComponents = (mask: Uint8Array, width: number) => {
+    const height = width > 0 ? Math.floor(mask.length / width) : 0;
+    const visited = new Uint8Array(mask.length);
+    const queue = new Uint32Array(mask.length);
+    let componentCount = 0;
+    let largestPixelCount = 0;
+
+    if (width <= 0 || height <= 0) {
+        return { componentCount, largestPixelCount };
+    }
+
+    for (let startIndex = 0; startIndex < mask.length; startIndex += 1) {
+        if (mask[startIndex] === 0 || visited[startIndex] !== 0) {
+            continue;
+        }
+        componentCount += 1;
+        let head = 0;
+        let tail = 0;
+        let pixelCount = 0;
+        visited[startIndex] = 1;
+        queue[tail] = startIndex;
+        tail += 1;
+
+        while (head < tail) {
+            const index = queue[head];
+            head += 1;
+            pixelCount += 1;
+            const x = index % width;
+            const y = (index / width) | 0;
+            const candidates = [
+                x > 0 ? index - 1 : -1,
+                x < width - 1 ? index + 1 : -1,
+                y > 0 ? index - width : -1,
+                y < height - 1 ? index + width : -1,
+            ];
+
+            for (const nextIndex of candidates) {
+                if (nextIndex < 0 || mask[nextIndex] === 0 || visited[nextIndex] !== 0) {
+                    continue;
+                }
+                visited[nextIndex] = 1;
+                queue[tail] = nextIndex;
+                tail += 1;
+            }
+        }
+        largestPixelCount = Math.max(largestPixelCount, pixelCount);
+    }
+
+    return { componentCount, largestPixelCount };
+};
+
+const keepBoundaryDraftComponents = ({
+    mask,
+    width,
+    minPixels,
+    minSpan,
+    maxSpan = null,
+    maxAverageThickness,
+    maxStraightSupportRatio = null,
+    minPixelsForStraightRatio = 0,
+    maxAxisAlignedRunPixels = null,
+    connectivity = 4,
+}: {
+    mask: Uint8Array;
+    width: number;
+    minPixels: number;
+    minSpan: number;
+    maxSpan?: number | null;
+    maxAverageThickness: number;
+    maxStraightSupportRatio?: number | null;
+    minPixelsForStraightRatio?: number;
+    maxAxisAlignedRunPixels?: number | null;
+    connectivity?: 4 | 8;
+}): Uint8Array => {
+    const height = width > 0 ? Math.floor(mask.length / width) : 0;
+    const filtered = new Uint8Array(mask.length);
+    const visited = new Uint8Array(mask.length);
+    const queue = new Uint32Array(mask.length);
+
+    if (width <= 0 || height <= 0) {
+        return filtered;
+    }
+
+    for (let startIndex = 0; startIndex < mask.length; startIndex += 1) {
+        if (mask[startIndex] === 0 || visited[startIndex] !== 0) {
+            continue;
+        }
+        let head = 0;
+        let tail = 0;
+        let minX = width - 1;
+        let maxX = 0;
+        let minY = height - 1;
+        let maxY = 0;
+        visited[startIndex] = 1;
+        queue[tail] = startIndex;
+        tail += 1;
+
+        while (head < tail) {
+            const index = queue[head];
+            head += 1;
+            const x = index % width;
+            const y = (index / width) | 0;
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+            const candidates = connectivity === 8
+                ? [
+                    x > 0 ? index - 1 : -1,
+                    x < width - 1 ? index + 1 : -1,
+                    y > 0 ? index - width : -1,
+                    y < height - 1 ? index + width : -1,
+                    x > 0 && y > 0 ? index - width - 1 : -1,
+                    x < width - 1 && y > 0 ? index - width + 1 : -1,
+                    x > 0 && y < height - 1 ? index + width - 1 : -1,
+                    x < width - 1 && y < height - 1 ? index + width + 1 : -1,
+                ]
+                : [
+                    x > 0 ? index - 1 : -1,
+                    x < width - 1 ? index + 1 : -1,
+                    y > 0 ? index - width : -1,
+                    y < height - 1 ? index + width : -1,
+                ];
+
+            for (const nextIndex of candidates) {
+                if (nextIndex < 0 || mask[nextIndex] === 0 || visited[nextIndex] !== 0) {
+                    continue;
+                }
+                visited[nextIndex] = 1;
+                queue[tail] = nextIndex;
+                tail += 1;
+            }
+        }
+
+        const span = Math.max((maxX - minX) + 1, (maxY - minY) + 1);
+        const averageThickness = span > 0 ? tail / span : tail;
+        if (
+            tail < minPixels
+            || span < minSpan
+            || (maxSpan != null && span > maxSpan)
+            || averageThickness > maxAverageThickness
+        ) {
+            continue;
+        }
+        const needsShapeFiltering = (
+            (maxStraightSupportRatio != null && tail >= minPixelsForStraightRatio)
+            || maxAxisAlignedRunPixels != null
+        );
+        const componentPixels = needsShapeFiltering
+            ? new Set(Array.from(queue.subarray(0, tail)))
+            : null;
+        if (maxAxisAlignedRunPixels != null && componentPixels) {
+            let longestAxisAlignedRun = 0;
+            for (let y = minY; y <= maxY; y += 1) {
+                let run = 0;
+                for (let x = minX; x <= maxX; x += 1) {
+                    if (componentPixels.has((y * width) + x)) {
+                        run += 1;
+                        longestAxisAlignedRun = Math.max(longestAxisAlignedRun, run);
+                    } else {
+                        run = 0;
+                    }
+                }
+            }
+            for (let x = minX; x <= maxX; x += 1) {
+                let run = 0;
+                for (let y = minY; y <= maxY; y += 1) {
+                    if (componentPixels.has((y * width) + x)) {
+                        run += 1;
+                        longestAxisAlignedRun = Math.max(longestAxisAlignedRun, run);
+                    } else {
+                        run = 0;
+                    }
+                }
+            }
+            if (longestAxisAlignedRun > maxAxisAlignedRunPixels) {
+                continue;
+            }
+        }
+        if (maxStraightSupportRatio != null && tail >= minPixelsForStraightRatio) {
+            let straightSupportedPixelCount = 0;
+            const hasBoundaryAt = (x: number, y: number): boolean => (
+                x >= 0
+                && x < width
+                && y >= 0
+                && y < height
+                && (componentPixels?.has((y * width) + x) ?? mask[(y * width) + x] !== 0)
+            );
+            const countDirectionRun = (x: number, y: number, dx: number, dy: number): number => {
+                let run = 1;
+                for (let step = 1; step <= BOUNDARY_SHAPE_STRAIGHT_PROBE_PIXELS; step += 1) {
+                    if (!hasBoundaryAt(x + (dx * step), y + (dy * step))) {
+                        break;
+                    }
+                    run += 1;
+                }
+                for (let step = 1; step <= BOUNDARY_SHAPE_STRAIGHT_PROBE_PIXELS; step += 1) {
+                    if (!hasBoundaryAt(x - (dx * step), y - (dy * step))) {
+                        break;
+                    }
+                    run += 1;
+                }
+                return run;
+            };
+            for (let index = 0; index < tail; index += 1) {
+                const pixelIndex = queue[index];
+                const x = pixelIndex % width;
+                const y = (pixelIndex / width) | 0;
+                const straightSupported = (
+                    countDirectionRun(x, y, 1, 0) >= BOUNDARY_SHAPE_MIN_STRAIGHT_RUN_PIXELS
+                    || countDirectionRun(x, y, 0, 1) >= BOUNDARY_SHAPE_MIN_STRAIGHT_RUN_PIXELS
+                    || countDirectionRun(x, y, 1, 1) >= BOUNDARY_SHAPE_MIN_STRAIGHT_RUN_PIXELS
+                    || countDirectionRun(x, y, 1, -1) >= BOUNDARY_SHAPE_MIN_STRAIGHT_RUN_PIXELS
+                );
+                if (straightSupported) {
+                    straightSupportedPixelCount += 1;
+                }
+            }
+            if (straightSupportedPixelCount / tail > maxStraightSupportRatio) {
+                continue;
+            }
+        }
+        for (let index = 0; index < tail; index += 1) {
+            filtered[queue[index]] = 1;
+        }
+    }
+
+    return filtered;
+};
+
 const measureMaskOverlap = (
     mask: Uint8Array | null,
     guideMask: Uint8Array | null,
@@ -477,6 +3649,38 @@ const measureMaskOverlap = (
         recall: guidePixelCount > 0 ? intersection / guidePixelCount : 0,
         precision: maskPixelCount > 0 ? intersection / maskPixelCount : 0,
     };
+};
+
+const evaluateAutoMapBoundaryDraftUsability = ({
+    keptPixelCount,
+    keptComponentCount,
+    bounds,
+}: {
+    keptPixelCount: number;
+    keptComponentCount: number;
+    bounds: ReturnType<typeof getBinaryMaskBounds>;
+}): { usable: boolean; reason: string } => {
+    const boundsWidth = bounds ? (bounds.right - bounds.left + 1) : 0;
+    const boundsHeight = bounds ? (bounds.bottom - bounds.top + 1) : 0;
+    if (keptPixelCount < AUTO_MAP_USABILITY_GUARD.minKeptPixels) {
+        return {
+            usable: false,
+            reason: `边界链只剩 ${keptPixelCount.toLocaleString()} px，低于可微调底稿门槛 ${AUTO_MAP_USABILITY_GUARD.minKeptPixels.toLocaleString()} px`,
+        };
+    }
+    if (keptComponentCount < AUTO_MAP_USABILITY_GUARD.minKeptComponents) {
+        return {
+            usable: false,
+            reason: `只保留了 ${keptComponentCount} 条边界链，低于门槛 ${AUTO_MAP_USABILITY_GUARD.minKeptComponents} 条`,
+        };
+    }
+    if (boundsWidth < AUTO_MAP_USABILITY_GUARD.minBoundsWidth || boundsHeight < AUTO_MAP_USABILITY_GUARD.minBoundsHeight) {
+        return {
+            usable: false,
+            reason: `边界覆盖范围只有 ${boundsWidth} x ${boundsHeight}，不足以当整图初稿`,
+        };
+    }
+    return { usable: true, reason: '当前实验底稿已达到最小可微调门槛' };
 };
 
 const buildCropDataUrl = ({
@@ -586,6 +3790,14 @@ const loadImageFromSource = (src: string) => new Promise<HTMLImageElement>((reso
     image.src = src;
 });
 
+const getReadbackCanvasContext = (canvas: HTMLCanvasElement, errorMessage: string) => {
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) {
+        throw new Error(errorMessage);
+    }
+    return context;
+};
+
 const readBinaryMaskFromImageSource = async (src: string | null): Promise<Uint8Array> => {
     if (!src) {
         return new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
@@ -594,10 +3806,7 @@ const readBinaryMaskFromImageSource = async (src: string | null): Promise<Uint8A
     const canvas = document.createElement('canvas');
     canvas.width = MASK_WIDTH;
     canvas.height = MASK_HEIGHT;
-    const context = canvas.getContext('2d');
-    if (!context) {
-        throw new Error('无法创建边界提示读取画布');
-    }
+    const context = getReadbackCanvasContext(canvas, '无法创建边界提示读取画布');
     context.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
     context.drawImage(image, 0, 0, MASK_WIDTH, MASK_HEIGHT);
     const source = context.getImageData(0, 0, MASK_WIDTH, MASK_HEIGHT).data;
@@ -618,6 +3827,48 @@ const readBinaryMaskFromFile = (file: File): Promise<Uint8Array> => new Promise(
         .finally(() => URL.revokeObjectURL(objectUrl));
 });
 
+const readImagePixelsFromFile = (file: File): Promise<Uint8ClampedArray> => new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    loadImageFromSource(objectUrl)
+        .then((image) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = MASK_WIDTH;
+            canvas.height = MASK_HEIGHT;
+            const context = getReadbackCanvasContext(canvas, '无法创建边界图像读取画布');
+            context.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
+            context.drawImage(image, 0, 0, MASK_WIDTH, MASK_HEIGHT);
+            resolve(context.getImageData(0, 0, MASK_WIDTH, MASK_HEIGHT).data);
+        })
+        .catch(reject)
+        .finally(() => URL.revokeObjectURL(objectUrl));
+});
+
+const readNativeImagePixelsFromFile = (file: File): Promise<{
+    pixels: Uint8ClampedArray;
+    width: number;
+    height: number;
+}> => new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    loadImageFromSource(objectUrl)
+        .then((image) => {
+            const width = image.naturalWidth || image.width;
+            const height = image.naturalHeight || image.height;
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const context = getReadbackCanvasContext(canvas, '无法创建原始尺寸图像读取画布');
+            context.clearRect(0, 0, width, height);
+            context.drawImage(image, 0, 0, width, height);
+            resolve({
+                pixels: context.getImageData(0, 0, width, height).data,
+                width,
+                height,
+            });
+        })
+        .catch(reject)
+        .finally(() => URL.revokeObjectURL(objectUrl));
+});
+
 const readAssignmentsFromImageSource = async ({
     src,
     regions,
@@ -629,10 +3880,7 @@ const readAssignmentsFromImageSource = async ({
     const canvas = document.createElement('canvas');
     canvas.width = MASK_WIDTH;
     canvas.height = MASK_HEIGHT;
-    const context = canvas.getContext('2d');
-    if (!context) {
-        throw new Error('无法创建 mask 读取画布');
-    }
+    const context = getReadbackCanvasContext(canvas, '无法创建 mask 读取画布');
     context.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
     context.drawImage(image, 0, 0, MASK_WIDTH, MASK_HEIGHT);
     const source = context.getImageData(0, 0, MASK_WIDTH, MASK_HEIGHT).data;
@@ -668,6 +3916,31 @@ const isMaskPoint = (value: unknown): value is MaskPoint => {
     return Number.isFinite(candidate.x) && Number.isFinite(candidate.y);
 };
 
+const normalizeRegionAcceptanceReview = (value: unknown): RegionAcceptanceReview | null => {
+    if (typeof value !== 'object' || value == null) {
+        return null;
+    }
+    const candidate = value as {
+        status?: unknown;
+        signature?: unknown;
+        reviewedAt?: unknown;
+    };
+    if (
+        candidate.status !== 'approved'
+        || typeof candidate.signature !== 'string'
+        || candidate.signature.length === 0
+        || typeof candidate.reviewedAt !== 'string'
+        || candidate.reviewedAt.length === 0
+    ) {
+        return null;
+    }
+    return {
+        status: 'approved',
+        signature: candidate.signature,
+        reviewedAt: candidate.reviewedAt,
+    };
+};
+
 const normalizeLoadedRegions = (value: unknown): PainterRegion[] => {
     if (!Array.isArray(value)) {
         return [];
@@ -682,6 +3955,7 @@ const normalizeLoadedRegions = (value: unknown): PainterRegion[] => {
             color?: unknown;
             seed?: unknown;
             links?: unknown;
+            acceptance?: unknown;
         };
         if (typeof region.id !== 'string' || typeof region.name !== 'string' || typeof region.color !== 'string') {
             return [];
@@ -696,6 +3970,7 @@ const normalizeLoadedRegions = (value: unknown): PainterRegion[] => {
             links: Array.isArray(region.links)
                 ? region.links.filter((item): item is string => typeof item === 'string')
                 : [],
+            acceptance: normalizeRegionAcceptanceReview(region.acceptance),
         }];
     });
 };
@@ -713,6 +3988,7 @@ const normalizeLoadedPassages = (value: unknown): PassageEdge[] => {
             from?: unknown;
             to?: unknown;
             boundaryType?: unknown;
+            travelCost?: unknown;
         };
         if (typeof edge.id !== 'string' || typeof edge.from !== 'string' || typeof edge.to !== 'string') {
             return [];
@@ -720,11 +3996,16 @@ const normalizeLoadedPassages = (value: unknown): PassageEdge[] => {
         const boundaryType = PASSAGE_BOUNDARY_TYPES.some((item) => item.id === edge.boundaryType)
             ? edge.boundaryType as PassageBoundaryType
             : 'plain';
+        const defaultTravelCost = getBoundaryTypeMeta(boundaryType).travelCost;
+        const travelCost = Number.isFinite(edge.travelCost)
+            ? Math.max(1, Math.floor(Number(edge.travelCost)))
+            : defaultTravelCost;
         return [{
             id: edge.id,
             from: edge.from,
             to: edge.to,
             boundaryType,
+            travelCost,
         }];
     });
 };
@@ -755,18 +4036,6 @@ const normalizeLoadedBoundaryPresets = (value: unknown): BoundaryPreset[] => {
     });
 };
 
-const parseBoundaryColorInput = (value: string): RgbColor => {
-    const normalized = value.trim();
-    const rgbMatch = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/iu.exec(normalized);
-    if (rgbMatch) {
-        const rgb = rgbMatch.slice(1).map((channel) => Number.parseInt(channel, 10));
-        if (rgb.every((channel) => channel >= 0 && channel <= 255)) {
-            return rgb as RgbColor;
-        }
-    }
-    return hexToRgb(normalized);
-};
-
 const normalizeLoadedAuthoritativeGuideIds = (value: unknown) => {
     if (!Array.isArray(value)) {
         return [];
@@ -787,8 +4056,8 @@ const extractBoundaryTolerance = (value: unknown) => {
     return typeof firstRule?.tolerance === 'number' ? firstRule.tolerance : null;
 };
 
-const mapClientPointToCanvas = (canvas: HTMLCanvasElement, clientX: number, clientY: number) => {
-    const rect = canvas.getBoundingClientRect();
+const mapClientPointToCanvas = (element: Element, clientX: number, clientY: number) => {
+    const rect = element.getBoundingClientRect();
     return {
         x: Math.max(0, Math.min(MASK_WIDTH - 1, Math.floor(((clientX - rect.left) / rect.width) * MASK_WIDTH))),
         y: Math.max(0, Math.min(MASK_HEIGHT - 1, Math.floor(((clientY - rect.top) / rect.height) * MASK_HEIGHT))),
@@ -983,11 +4252,747 @@ const findNearestBarrierPoint = (
     return best?.point ?? null;
 };
 
+type BoundarySupportPathResult = {
+    points: MaskPoint[];
+    snappedStart: MaskPoint;
+    snappedEnd: MaskPoint;
+    usedCandidatePixels: number;
+};
+
+const findBoundarySupportPath = ({
+    start,
+    end,
+    supportMask,
+}: {
+    start: MaskPoint;
+    end: MaskPoint;
+    supportMask: Uint8Array | null | undefined;
+}): BoundarySupportPathResult | null => {
+    if (!supportMask || countMaskPixels(supportMask) === 0) {
+        return null;
+    }
+    const snappedStart = findNearestBarrierPoint(start, supportMask, REAL_MAP_BOUNDARY_SUPPORT_SNAP_RADIUS);
+    const snappedEnd = findNearestBarrierPoint(end, supportMask, REAL_MAP_BOUNDARY_SUPPORT_SNAP_RADIUS);
+    if (!snappedStart || !snappedEnd) {
+        return null;
+    }
+    const directDistance = Math.hypot(snappedEnd.x - snappedStart.x, snappedEnd.y - snappedStart.y);
+    if (directDistance > REAL_MAP_BOUNDARY_PATH_BRIDGE_MAX_DISTANCE) {
+        return null;
+    }
+
+    const pathMask = expandBinaryMask({
+        mask: supportMask,
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        iterations: REAL_MAP_BOUNDARY_PATH_BRIDGE_EXPANSION,
+    });
+    const margin = REAL_MAP_BOUNDARY_SUPPORT_SNAP_RADIUS + REAL_MAP_BOUNDARY_PATH_BRIDGE_EXPANSION + 8;
+    const left = Math.max(0, Math.min(snappedStart.x, snappedEnd.x) - margin);
+    const right = Math.min(MASK_WIDTH - 1, Math.max(snappedStart.x, snappedEnd.x) + margin);
+    const top = Math.max(0, Math.min(snappedStart.y, snappedEnd.y) - margin);
+    const bottom = Math.min(MASK_HEIGHT - 1, Math.max(snappedStart.y, snappedEnd.y) + margin);
+    const localWidth = (right - left) + 1;
+    const localHeight = (bottom - top) + 1;
+    const localSize = localWidth * localHeight;
+    const startLocal = ((snappedStart.y - top) * localWidth) + (snappedStart.x - left);
+    const endLocal = ((snappedEnd.y - top) * localWidth) + (snappedEnd.x - left);
+    const distance = new Float64Array(localSize);
+    distance.fill(Number.POSITIVE_INFINITY);
+    const previous = new Int32Array(localSize);
+    previous.fill(-1);
+    const visited = new Uint8Array(localSize);
+    const heap: Array<{ index: number; cost: number }> = [];
+    const pushHeap = (entry: { index: number; cost: number }) => {
+        heap.push(entry);
+        let child = heap.length - 1;
+        while (child > 0) {
+            const parent = (child - 1) >> 1;
+            if (heap[parent].cost <= entry.cost) {
+                break;
+            }
+            heap[child] = heap[parent];
+            child = parent;
+        }
+        heap[child] = entry;
+    };
+    const popHeap = () => {
+        if (heap.length === 0) {
+            return null;
+        }
+        const first = heap[0];
+        const last = heap.pop();
+        if (last && heap.length > 0) {
+            let parent = 0;
+            while (true) {
+                const leftChild = (parent * 2) + 1;
+                const rightChild = leftChild + 1;
+                if (leftChild >= heap.length) {
+                    break;
+                }
+                const bestChild = rightChild < heap.length && heap[rightChild].cost < heap[leftChild].cost
+                    ? rightChild
+                    : leftChild;
+                if (heap[bestChild].cost >= last.cost) {
+                    break;
+                }
+                heap[parent] = heap[bestChild];
+                parent = bestChild;
+            }
+            heap[parent] = last;
+        }
+        return first;
+    };
+    const isPassable = (globalX: number, globalY: number) => {
+        const globalIndex = (globalY * MASK_WIDTH) + globalX;
+        return pathMask[globalIndex] !== 0
+            && AUTO_MAP_PRINTED_UI_EXCLUSION_MASK[globalIndex] === 0;
+    };
+    if (!isPassable(snappedStart.x, snappedStart.y) || !isPassable(snappedEnd.x, snappedEnd.y)) {
+        return null;
+    }
+
+    distance[startLocal] = 0;
+    pushHeap({ index: startLocal, cost: 0 });
+    const directions = [
+        [-1, -1, Math.SQRT2],
+        [0, -1, 1],
+        [1, -1, Math.SQRT2],
+        [-1, 0, 1],
+        [1, 0, 1],
+        [-1, 1, Math.SQRT2],
+        [0, 1, 1],
+        [1, 1, Math.SQRT2],
+    ] as const;
+
+    while (heap.length > 0) {
+        const current = popHeap();
+        if (!current || visited[current.index] !== 0) {
+            continue;
+        }
+        visited[current.index] = 1;
+        if (current.index === endLocal) {
+            break;
+        }
+        const localX = current.index % localWidth;
+        const localY = (current.index / localWidth) | 0;
+        for (const [dx, dy, stepCost] of directions) {
+            const nextLocalX = localX + dx;
+            const nextLocalY = localY + dy;
+            if (nextLocalX < 0 || nextLocalX >= localWidth || nextLocalY < 0 || nextLocalY >= localHeight) {
+                continue;
+            }
+            const globalX = left + nextLocalX;
+            const globalY = top + nextLocalY;
+            if (!isPassable(globalX, globalY)) {
+                continue;
+            }
+            const nextIndex = (nextLocalY * localWidth) + nextLocalX;
+            if (visited[nextIndex] !== 0) {
+                continue;
+            }
+            const globalIndex = (globalY * MASK_WIDTH) + globalX;
+            const onCandidate = supportMask[globalIndex] !== 0;
+            const nextCost = current.cost + (stepCost * (onCandidate ? 1 : 4));
+            if (nextCost >= distance[nextIndex]) {
+                continue;
+            }
+            distance[nextIndex] = nextCost;
+            previous[nextIndex] = current.index;
+            pushHeap({ index: nextIndex, cost: nextCost });
+        }
+    }
+
+    if (!Number.isFinite(distance[endLocal])) {
+        return null;
+    }
+    const reversedPoints: MaskPoint[] = [];
+    let currentIndex = endLocal;
+    let usedCandidatePixels = 0;
+    while (currentIndex >= 0) {
+        const localX = currentIndex % localWidth;
+        const localY = (currentIndex / localWidth) | 0;
+        const point = { x: left + localX, y: top + localY };
+        if (supportMask[(point.y * MASK_WIDTH) + point.x] !== 0) {
+            usedCandidatePixels += 1;
+        }
+        reversedPoints.push(point);
+        if (currentIndex === startLocal) {
+            break;
+        }
+        currentIndex = previous[currentIndex];
+    }
+    if (reversedPoints.at(-1)?.x !== snappedStart.x || reversedPoints.at(-1)?.y !== snappedStart.y) {
+        return null;
+    }
+    const points = reversedPoints.reverse();
+    if (points.length < 2 || usedCandidatePixels / points.length < 0.55) {
+        return null;
+    }
+    return {
+        points,
+        snappedStart,
+        snappedEnd,
+        usedCandidatePixels,
+    };
+};
+
+const buildSnappedRoughShapeOutlineBoundaryMask = ({
+    regionSeeds,
+    supportMask,
+    exclusionMask,
+}: {
+    regionSeeds: ReadonlyArray<{
+        id: string;
+        point: MaskPoint;
+    }>;
+    supportMask: Uint8Array | null | undefined;
+    exclusionMask: Uint8Array;
+}): Uint8Array => {
+    const partitionMask = buildSeedPartitionRoughBoundaryMask({
+        regionSeeds,
+        exclusionMask,
+    });
+    if (!supportMask || countMaskPixels(supportMask) === 0) {
+        return partitionMask;
+    }
+
+    const snappedMask = new Uint8Array(partitionMask.length);
+    for (let index = 0; index < partitionMask.length; index += 1) {
+        if (partitionMask[index] === 0) {
+            continue;
+        }
+        const sourcePoint = {
+            x: index % MASK_WIDTH,
+            y: (index / MASK_WIDTH) | 0,
+        };
+        const snappedPoint = findNearestBarrierPoint(sourcePoint, supportMask, ROUGH_SHAPE_OUTLINE_SNAP_RADIUS);
+        if (
+            snappedPoint
+            && exclusionMask[(snappedPoint.y * MASK_WIDTH) + snappedPoint.x] === 0
+        ) {
+            snappedMask[(snappedPoint.y * MASK_WIDTH) + snappedPoint.x] = 1;
+            continue;
+        }
+        snappedMask[index] = 1;
+    }
+
+    return removeExcludedPixels(
+        unionBinaryMasks(
+            partitionMask,
+            closeBinaryMask({
+                mask: snappedMask,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                iterations: 1,
+            }),
+        ),
+        exclusionMask,
+    );
+};
+
+const isSeaLikeMapPixel = (color: RgbColor): boolean => (
+    color[2] > color[0] + 8
+    && color[2] > color[1] + 8
+    && rgbLuminance(color) < 120
+);
+
+const buildGeodesicPriorRegionDraftMasks = ({
+    sourcePixels,
+    formalRegionSeeds,
+    priorMaskByRegionId,
+    exclusionMask,
+    supportMask,
+}: {
+    sourcePixels: Uint8ClampedArray;
+    formalRegionSeeds: ReadonlyArray<{
+        id: string;
+        point: MaskPoint;
+    }>;
+    priorMaskByRegionId: Map<string, Uint8Array>;
+    exclusionMask: Uint8Array;
+    supportMask: Uint8Array | null | undefined;
+}): Map<string, Uint8Array> => {
+    if (formalRegionSeeds.length === 0 || priorMaskByRegionId.size === 0) {
+        return new Map<string, Uint8Array>();
+    }
+
+    const expandedSupportMask = supportMask && countMaskPixels(supportMask) > 0
+        ? expandBinaryMask({
+            mask: supportMask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            iterations: 2,
+        })
+        : null;
+    const expandedPriorByRegionId = new Map<string, {
+        base: Uint8Array;
+        soft: Uint8Array;
+        mid: Uint8Array;
+        hard: Uint8Array;
+    }>();
+    const priorMasks: Uint8Array[] = [];
+
+    for (const seed of formalRegionSeeds) {
+        const rawPrior = priorMaskByRegionId.get(seed.id) ?? STATIC_BOOTSTRAP_SHAPE_MASKS.get(seed.id) ?? null;
+        if (!rawPrior) {
+            continue;
+        }
+        const base = removeExcludedPixels(
+            fillMaskInternalHoles({
+                mask: expandBinaryMask({
+                    mask: rawPrior,
+                    width: MASK_WIDTH,
+                    height: MASK_HEIGHT,
+                    iterations: REAL_MAP_GEODESIC_PRIOR_EXPANSION,
+                }),
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+            }),
+            exclusionMask,
+        );
+        if (countMaskPixels(base) === 0) {
+            continue;
+        }
+        const soft = removeExcludedPixels(expandBinaryMask({
+            mask: base,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            iterations: REAL_MAP_GEODESIC_PRIOR_SOFT_EXPANSION,
+        }), exclusionMask);
+        const mid = removeExcludedPixels(expandBinaryMask({
+            mask: soft,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            iterations: Math.max(1, REAL_MAP_GEODESIC_PRIOR_MID_EXPANSION - REAL_MAP_GEODESIC_PRIOR_SOFT_EXPANSION),
+        }), exclusionMask);
+        const hard = removeExcludedPixels(expandBinaryMask({
+            mask: mid,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            iterations: Math.max(1, REAL_MAP_GEODESIC_PRIOR_HARD_EXPANSION - REAL_MAP_GEODESIC_PRIOR_MID_EXPANSION),
+        }), exclusionMask);
+        expandedPriorByRegionId.set(seed.id, { base, soft, mid, hard });
+        priorMasks.push(base);
+    }
+
+    if (priorMasks.length === 0) {
+        return new Map<string, Uint8Array>();
+    }
+
+    const allowedMask = removeExcludedPixels(
+        fillMaskInternalHoles({
+            mask: closeBinaryMask({
+                mask: expandBinaryMask({
+                    mask: unionBinaryMasks(...priorMasks),
+                    width: MASK_WIDTH,
+                    height: MASK_HEIGHT,
+                    iterations: REAL_MAP_GEODESIC_ALLOWED_EXPANSION,
+                }),
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                iterations: REAL_MAP_GEODESIC_ALLOWED_CLOSE_ITERATIONS,
+            }),
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+        }),
+        exclusionMask,
+    );
+    const allowedBounds = getBinaryMaskBounds(allowedMask, MASK_WIDTH);
+    if (!allowedBounds) {
+        return new Map<string, Uint8Array>();
+    }
+
+    const left = allowedBounds.left;
+    const top = allowedBounds.top;
+    const localWidth = (allowedBounds.right - allowedBounds.left) + 1;
+    const localHeight = (allowedBounds.bottom - allowedBounds.top) + 1;
+    const localSize = localWidth * localHeight;
+    const allowedLocal = new Uint8Array(localSize);
+    const localStepCost = new Float64Array(localSize);
+
+    for (let localY = 0; localY < localHeight; localY += 1) {
+        const globalY = top + localY;
+        for (let localX = 0; localX < localWidth; localX += 1) {
+            const globalX = left + localX;
+            const globalIndex = (globalY * MASK_WIDTH) + globalX;
+            const localIndex = (localY * localWidth) + localX;
+            if (allowedMask[globalIndex] === 0) {
+                localStepCost[localIndex] = Number.POSITIVE_INFINITY;
+                continue;
+            }
+            allowedLocal[localIndex] = 1;
+            const color = sampleSourceRgb(sourcePixels, globalX, globalY);
+            const luminance = rgbLuminance(color);
+            let maxGradient = 0;
+            const neighbourOffsets = [
+                [1, 0],
+                [0, 1],
+                [1, 1],
+                [1, -1],
+            ] as const;
+            for (const [offsetX, offsetY] of neighbourOffsets) {
+                const nextX = globalX + offsetX;
+                const nextY = globalY + offsetY;
+                if (nextX < left || nextX > allowedBounds.right || nextY < top || nextY > allowedBounds.bottom) {
+                    continue;
+                }
+                const neighbourLuminance = rgbLuminance(sampleSourceRgb(sourcePixels, nextX, nextY));
+                maxGradient = Math.max(maxGradient, Math.abs(luminance - neighbourLuminance));
+            }
+            let stepCost = 1
+                + ((maxGradient / 255) * REAL_MAP_GEODESIC_GRADIENT_WEIGHT)
+                + (Math.max(0, (150 - luminance) / 150) * REAL_MAP_GEODESIC_DARK_WEIGHT);
+            if (expandedSupportMask && expandedSupportMask[globalIndex] !== 0) {
+                stepCost += REAL_MAP_GEODESIC_SUPPORT_COST;
+            }
+            if (isSeaLikeMapPixel(color)) {
+                stepCost += REAL_MAP_GEODESIC_SEA_COST;
+            }
+            localStepCost[localIndex] = stepCost;
+        }
+    }
+
+    const bestRegionIndex = new Int16Array(localSize);
+    bestRegionIndex.fill(EMPTY_REGION);
+    const bestTotalCost = new Float64Array(localSize);
+    bestTotalCost.fill(Number.POSITIVE_INFINITY);
+    const directions = [
+        [-1, -1, Math.SQRT2],
+        [0, -1, 1],
+        [1, -1, Math.SQRT2],
+        [-1, 0, 1],
+        [1, 0, 1],
+        [-1, 1, Math.SQRT2],
+        [0, 1, 1],
+        [1, 1, Math.SQRT2],
+    ] as const;
+
+    const runWeightedDistance = (seed: { x: number; y: number }, penalties: {
+        base: Uint8Array;
+        soft: Uint8Array;
+        mid: Uint8Array;
+        hard: Uint8Array;
+    }) => {
+        const distance = new Float64Array(localSize);
+        distance.fill(Number.POSITIVE_INFINITY);
+        const visited = new Uint8Array(localSize);
+        const heap: Array<{ index: number; cost: number }> = [];
+        const pushHeap = (entry: { index: number; cost: number }) => {
+            heap.push(entry);
+            let child = heap.length - 1;
+            while (child > 0) {
+                const parent = (child - 1) >> 1;
+                if (heap[parent].cost <= entry.cost) {
+                    break;
+                }
+                heap[child] = heap[parent];
+                child = parent;
+            }
+            heap[child] = entry;
+        };
+        const popHeap = () => {
+            if (heap.length === 0) {
+                return null;
+            }
+            const first = heap[0];
+            const last = heap.pop();
+            if (last && heap.length > 0) {
+                let parent = 0;
+                while (true) {
+                    const leftChild = (parent * 2) + 1;
+                    const rightChild = leftChild + 1;
+                    if (leftChild >= heap.length) {
+                        break;
+                    }
+                    const bestChild = rightChild < heap.length && heap[rightChild].cost < heap[leftChild].cost
+                        ? rightChild
+                        : leftChild;
+                    if (heap[bestChild].cost >= last.cost) {
+                        break;
+                    }
+                    heap[parent] = heap[bestChild];
+                    parent = bestChild;
+                }
+                heap[parent] = last;
+            }
+            return first;
+        };
+        const seedLocalX = seed.x - left;
+        const seedLocalY = seed.y - top;
+        if (seedLocalX < 0 || seedLocalX >= localWidth || seedLocalY < 0 || seedLocalY >= localHeight) {
+            return distance;
+        }
+        const seedLocalIndex = (seedLocalY * localWidth) + seedLocalX;
+        distance[seedLocalIndex] = 0;
+        pushHeap({ index: seedLocalIndex, cost: 0 });
+
+        while (heap.length > 0) {
+            const current = popHeap();
+            if (!current || visited[current.index] !== 0) {
+                continue;
+            }
+            visited[current.index] = 1;
+            const localX = current.index % localWidth;
+            const localY = (current.index / localWidth) | 0;
+            for (const [offsetX, offsetY, stepScale] of directions) {
+                const nextLocalX = localX + offsetX;
+                const nextLocalY = localY + offsetY;
+                if (nextLocalX < 0 || nextLocalX >= localWidth || nextLocalY < 0 || nextLocalY >= localHeight) {
+                    continue;
+                }
+                const nextLocalIndex = (nextLocalY * localWidth) + nextLocalX;
+                if (allowedLocal[nextLocalIndex] === 0) {
+                    continue;
+                }
+                const globalX = left + nextLocalX;
+                const globalY = top + nextLocalY;
+                const globalIndex = (globalY * MASK_WIDTH) + globalX;
+                const priorPenalty = penalties.base[globalIndex] !== 0
+                    ? 0
+                    : penalties.soft[globalIndex] !== 0
+                        ? REAL_MAP_GEODESIC_PRIOR_SOFT_COST
+                        : penalties.mid[globalIndex] !== 0
+                            ? REAL_MAP_GEODESIC_PRIOR_MID_COST
+                            : penalties.hard[globalIndex] !== 0
+                                ? REAL_MAP_GEODESIC_PRIOR_HARD_COST
+                                : REAL_MAP_GEODESIC_PRIOR_OUTSIDE_COST;
+                const nextCost = current.cost + (localStepCost[nextLocalIndex] * stepScale) + priorPenalty;
+                if (nextCost >= distance[nextLocalIndex]) {
+                    continue;
+                }
+                distance[nextLocalIndex] = nextCost;
+                pushHeap({ index: nextLocalIndex, cost: nextCost });
+            }
+        }
+
+        return distance;
+    };
+
+    for (let regionIndex = 0; regionIndex < formalRegionSeeds.length; regionIndex += 1) {
+        const seed = formalRegionSeeds[regionIndex];
+        const penalties = expandedPriorByRegionId.get(seed.id);
+        if (!penalties) {
+            continue;
+        }
+        const distance = runWeightedDistance(seed.point, penalties);
+        for (let localIndex = 0; localIndex < localSize; localIndex += 1) {
+            if (allowedLocal[localIndex] === 0 || distance[localIndex] >= bestTotalCost[localIndex]) {
+                continue;
+            }
+            bestTotalCost[localIndex] = distance[localIndex];
+            bestRegionIndex[localIndex] = regionIndex;
+        }
+    }
+
+    const result = new Map<string, Uint8Array>();
+    for (const seed of formalRegionSeeds) {
+        result.set(seed.id, new Uint8Array(MASK_WIDTH * MASK_HEIGHT));
+    }
+    for (let localIndex = 0; localIndex < localSize; localIndex += 1) {
+        const regionIndex = bestRegionIndex[localIndex];
+        if (regionIndex === EMPTY_REGION) {
+            continue;
+        }
+        const seed = formalRegionSeeds[regionIndex];
+        const mask = result.get(seed.id);
+        if (!mask) {
+            continue;
+        }
+        const globalX = left + (localIndex % localWidth);
+        const globalY = top + ((localIndex / localWidth) | 0);
+        mask[(globalY * MASK_WIDTH) + globalX] = 1;
+    }
+
+    return result;
+};
+
 const normalizeEdgeId = (from: string, to: string) => [from, to].sort().join('::');
+
+const AUTO_PASSAGE_NEARBY_RADIUS = 14;
+const AUTO_PASSAGE_MIN_NEARBY_SCORE = 10;
+const AUTO_PASSAGE_CENTER_FALLBACK_DISTANCE = 260;
+const AUTO_PASSAGE_CENTER_FALLBACK_NEAREST_COUNT = 2;
+const PATH_DRAG_ACTIVATION_DISTANCE = 8;
+
+const AUTO_PASSAGE_NEARBY_OFFSETS = (() => {
+    const offsets: Array<{ dx: number; dy: number }> = [];
+    for (let dy = -AUTO_PASSAGE_NEARBY_RADIUS; dy <= AUTO_PASSAGE_NEARBY_RADIUS; dy += 1) {
+        for (let dx = -AUTO_PASSAGE_NEARBY_RADIUS; dx <= AUTO_PASSAGE_NEARBY_RADIUS; dx += 1) {
+            if (dx === 0 && dy === 0) {
+                continue;
+            }
+            if ((dx * dx) + (dy * dy) > AUTO_PASSAGE_NEARBY_RADIUS * AUTO_PASSAGE_NEARBY_RADIUS) {
+                continue;
+            }
+            offsets.push({ dx, dy });
+        }
+    }
+    return offsets;
+})();
+
+const createPlainPassage = (from: string, to: string): PassageEdge => ({
+    id: normalizeEdgeId(from, to),
+    from,
+    to,
+    boundaryType: 'plain',
+    travelCost: getBoundaryTypeMeta('plain').travelCost,
+});
+
+const buildAutoPassagesFromAssignments = ({
+    assignments,
+    regions,
+    existingPassages,
+}: {
+    assignments: Int16Array;
+    regions: readonly PainterRegion[];
+    existingPassages: readonly PassageEdge[];
+}): { passages: PassageEdge[]; detectedCount: number; addedCount: number } => {
+    const formalRegionIndexes = new Set<number>();
+    const formalRegionIdSet = new Set<string>();
+    const generatedRegionIndexes = new Set<number>();
+    for (let index = 0; index < regions.length; index += 1) {
+        const region = regions[index];
+        if (!region || isDiagnosticRegionId(region.id)) {
+            continue;
+        }
+        formalRegionIndexes.add(index);
+        formalRegionIdSet.add(region.id);
+    }
+    for (const assignment of assignments) {
+        if (formalRegionIndexes.has(assignment)) {
+            generatedRegionIndexes.add(assignment);
+        }
+    }
+
+    const pairScores = new Map<string, number>();
+    const addPairScore = (leftIndex: number, rightIndex: number, score: number) => {
+        if (leftIndex === rightIndex) {
+            return;
+        }
+        if (!generatedRegionIndexes.has(leftIndex) || !generatedRegionIndexes.has(rightIndex)) {
+            return;
+        }
+        const leftRegion = regions[leftIndex];
+        const rightRegion = regions[rightIndex];
+        if (!leftRegion || !rightRegion) {
+            return;
+        }
+        const id = normalizeEdgeId(leftRegion.id, rightRegion.id);
+        pairScores.set(id, (pairScores.get(id) ?? 0) + score);
+    };
+
+    const boundaryPixels: Array<{ x: number; y: number; regionIndex: number }> = [];
+    for (let y = 0; y < MASK_HEIGHT; y += 1) {
+        for (let x = 0; x < MASK_WIDTH; x += 1) {
+            const index = (y * MASK_WIDTH) + x;
+            const regionIndex = assignments[index];
+            if (!generatedRegionIndexes.has(regionIndex)) {
+                continue;
+            }
+            let touchesOutside = x === 0 || y === 0 || x === MASK_WIDTH - 1 || y === MASK_HEIGHT - 1;
+            const right = x + 1 < MASK_WIDTH ? assignments[index + 1] : EMPTY_REGION;
+            const down = y + 1 < MASK_HEIGHT ? assignments[index + MASK_WIDTH] : EMPTY_REGION;
+            if (generatedRegionIndexes.has(right) && right !== regionIndex) {
+                addPairScore(regionIndex, right, 24);
+            }
+            if (generatedRegionIndexes.has(down) && down !== regionIndex) {
+                addPairScore(regionIndex, down, 24);
+            }
+            if (!touchesOutside) {
+                touchesOutside = (
+                    assignments[index - 1] !== regionIndex
+                    || assignments[index + 1] !== regionIndex
+                    || assignments[index - MASK_WIDTH] !== regionIndex
+                    || assignments[index + MASK_WIDTH] !== regionIndex
+                );
+            }
+            if (touchesOutside) {
+                boundaryPixels.push({ x, y, regionIndex });
+            }
+        }
+    }
+
+    for (const pixel of boundaryPixels) {
+        for (const offset of AUTO_PASSAGE_NEARBY_OFFSETS) {
+            const x = pixel.x + offset.dx;
+            const y = pixel.y + offset.dy;
+            if (x < 0 || y < 0 || x >= MASK_WIDTH || y >= MASK_HEIGHT) {
+                continue;
+            }
+            const targetRegionIndex = assignments[(y * MASK_WIDTH) + x];
+            if (generatedRegionIndexes.has(targetRegionIndex) && targetRegionIndex !== pixel.regionIndex) {
+                addPairScore(pixel.regionIndex, targetRegionIndex, 1);
+            }
+        }
+    }
+
+    const generatedCenters = computeRegionCenters({
+        assignments,
+        width: MASK_WIDTH,
+        regionCount: regions.length,
+    }).filter((center) => generatedRegionIndexes.has(center.regionIndex) && center.pixelCount > 0);
+    for (const center of generatedCenters) {
+        const nearestCenters = generatedCenters
+            .filter((candidate) => candidate.regionIndex !== center.regionIndex)
+            .map((candidate) => ({
+                ...candidate,
+                distance: Math.hypot(candidate.x - center.x, candidate.y - center.y),
+            }))
+            .filter((candidate) => candidate.distance <= AUTO_PASSAGE_CENTER_FALLBACK_DISTANCE)
+            .sort((left, right) => left.distance - right.distance)
+            .slice(0, AUTO_PASSAGE_CENTER_FALLBACK_NEAREST_COUNT);
+        for (const nearest of nearestCenters) {
+            addPairScore(center.regionIndex, nearest.regionIndex, AUTO_PASSAGE_MIN_NEARBY_SCORE);
+        }
+    }
+
+    const existingById = new Map(
+        existingPassages
+            .filter((passage) => formalRegionIdSet.has(passage.from) && formalRegionIdSet.has(passage.to))
+            .map((passage) => [passage.id, passage]),
+    );
+    const detectedIds = [...pairScores.entries()]
+        .filter(([, score]) => score >= AUTO_PASSAGE_MIN_NEARBY_SCORE)
+        .map(([id]) => id)
+        .sort();
+    let addedCount = 0;
+    for (const id of detectedIds) {
+        if (existingById.has(id)) {
+            continue;
+        }
+        const [from, to] = id.split('::');
+        if (from && to) {
+            existingById.set(id, createPlainPassage(from, to));
+            addedCount += 1;
+        }
+    }
+
+    return {
+        passages: [...existingById.values()].sort((left, right) => left.id.localeCompare(right.id)),
+        detectedCount: detectedIds.length,
+        addedCount,
+    };
+};
 
 const getBoundaryTypeMeta = (boundaryType: PassageBoundaryType) => (
     PASSAGE_BOUNDARY_TYPES.find((item) => item.id === boundaryType) ?? PASSAGE_BOUNDARY_TYPES[0]
 );
+
+const clampPassageTravelCost = (value: number) => Math.max(1, Math.floor(value));
+
+const updateHash = (hash: number, value: number) => {
+    let nextHash = hash ^ (value & 0xff);
+    nextHash = Math.imul(nextHash, 16777619) >>> 0;
+    nextHash ^= (value >>> 8) & 0xff;
+    nextHash = Math.imul(nextHash, 16777619) >>> 0;
+    nextHash ^= (value >>> 16) & 0xff;
+    nextHash = Math.imul(nextHash, 16777619) >>> 0;
+    nextHash ^= (value >>> 24) & 0xff;
+    return Math.imul(nextHash, 16777619) >>> 0;
+};
+
+const formatHash = (hash: number) => hash.toString(16).padStart(8, '0');
 
 const buildGraphPayload = (
     regions: readonly PainterRegion[],
@@ -1000,6 +5005,7 @@ const buildGraphPayload = (
             id: boundaryType.id,
             label: boundaryType.label,
             note: boundaryType.note,
+            travelCost: boundaryType.travelCost,
             battleWidth: boundaryType.width,
         })),
         nodes: regions.map((region) => {
@@ -1021,6 +5027,7 @@ const buildGraphPayload = (
                 bidirectional: true,
                 boundaryType: edge.boundaryType,
                 boundaryLabel: boundaryType.label,
+                travelCost: clampPassageTravelCost(edge.travelCost),
                 battleWidth: boundaryType.width,
                 ruleNote: boundaryType.note,
             };
@@ -1130,13 +5137,20 @@ const buildSubsetAssignments = ({
 
 const QidahenRegionMaskTool: React.FC = () => {
     const bgCanvasRef = React.useRef<HTMLCanvasElement>(null);
+    const boundarySourceReferenceCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const maskCanvasRef = React.useRef<HTMLCanvasElement>(null);
+    const partitionPreviewCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const outlineCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const barrierCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const graphSvgRef = React.useRef<SVGSVGElement>(null);
+    const sidebarScrollRef = React.useRef<HTMLDivElement>(null);
     const viewportRef = React.useRef<HTMLDivElement>(null);
     const importInputRef = React.useRef<HTMLInputElement>(null);
     const boundaryMaskInputRef = React.useRef<HTMLInputElement>(null);
+    const boundarySourceInputRef = React.useRef<HTMLInputElement>(null);
+    const boundaryRepairZipInputRef = React.useRef<HTMLInputElement>(null);
+    const regionTraceInputRef = React.useRef<HTMLInputElement>(null);
+    const regionTraceZipInputRef = React.useRef<HTMLInputElement>(null);
     const drawingRef = React.useRef(false);
     const chainPointsRef = React.useRef<MaskPoint[]>([]);
     const assignmentsRef = React.useRef<Int16Array>(createRegionAssignments(MASK_WIDTH, MASK_HEIGHT));
@@ -1151,6 +5165,13 @@ const QidahenRegionMaskTool: React.FC = () => {
     const barrierMaskRef = React.useRef<Uint8Array | null>(null);
     const manualBarrierAddRef = React.useRef<Uint8Array>(new Uint8Array(MASK_WIDTH * MASK_HEIGHT));
     const manualBarrierRemoveRef = React.useRef<Uint8Array>(new Uint8Array(MASK_WIDTH * MASK_HEIGHT));
+    const barrierHistoryUndoRef = React.useRef<BarrierHistorySnapshot[]>([]);
+    const barrierHistoryRedoRef = React.useRef<BarrierHistorySnapshot[]>([]);
+    const barrierBrushStrokeSnapshotRef = React.useRef<BarrierHistorySnapshot | null>(null);
+    const barrierBrushPendingRebuildRef = React.useRef(false);
+    const lastBarrierBrushPointRef = React.useRef<MaskPoint | null>(null);
+    const skipNextAssignmentsRenderEffectRef = React.useRef(false);
+    const skipNextGraphSyncEffectRef = React.useRef(false);
     const rebuildBarrierMaskRef = React.useRef<() => void>(() => undefined);
     const pendingSeedNormalizationRef = React.useRef(false);
 
@@ -1169,29 +5190,970 @@ const QidahenRegionMaskTool: React.FC = () => {
     const [zoom, setZoom] = React.useState<number>(DEFAULT_ZOOM);
     const [fitZoom, setFitZoom] = React.useState<number>(1);
     const [showMask, setShowMask] = React.useState<boolean>(true);
-    const [showBarrier, setShowBarrier] = React.useState<boolean>(false);
+    const [showBarrier, setShowBarrier] = React.useState<boolean>(true);
+    const [showSelectedOutline, setShowSelectedOutline] = React.useState<boolean>(true);
+    const [showRealMapBoundarySupportOverlay, setShowRealMapBoundarySupportOverlay] = React.useState<boolean>(false);
+    const [snapBarrierBrushToRealMapSupport, setSnapBarrierBrushToRealMapSupport] = React.useState<boolean>(false);
+    const [showForbiddenUiOverlay, setShowForbiddenUiOverlay] = React.useState<boolean>(false);
+    const [showSeedStatusOverlay, setShowSeedStatusOverlay] = React.useState<boolean>(false);
+    const [allowSeedStatusOverlayInFormalEmpty, setAllowSeedStatusOverlayInFormalEmpty] = React.useState<boolean>(false);
+    const [showPartitionPreviewOverlay, setShowPartitionPreviewOverlay] = React.useState<boolean>(true);
+    const [boundarySourceReferenceDataUrl, setBoundarySourceReferenceDataUrl] = React.useState<string | null>(null);
+    const [boundarySourceReferenceImage, setBoundarySourceReferenceImage] = React.useState<HTMLImageElement | null>(null);
+    const [showBoundarySourceReference, setShowBoundarySourceReference] = React.useState<boolean>(false);
+    const [boundarySourceReferenceOpacity, setBoundarySourceReferenceOpacity] = React.useState<number>(0.42);
     const [boundaryPresets, setBoundaryPresets] = React.useState<BoundaryPreset[]>([...DEFAULT_BOUNDARY_PRESETS]);
-    const [boundaryColorInput, setBoundaryColorInput] = React.useState<string>('');
     const [paintedBoundaryOnly, setPaintedBoundaryOnly] = React.useState<boolean>(true);
+    const [manualBlankBoundaryBase, setManualBlankBoundaryBase] = React.useState<boolean>(false);
     const [boundaryTolerance, setBoundaryTolerance] = React.useState<number>(DEFAULT_BOUNDARY_TOLERANCE);
     const [boundaryExpansion, setBoundaryExpansion] = React.useState<number>(DEFAULT_BOUNDARY_EXPANSION);
     const [regionColorTolerance, setRegionColorTolerance] = React.useState<number>(DEFAULT_REGION_COLOR_TOLERANCE);
     const [authoritativeGuideRegionIds, setAuthoritativeGuideRegionIds] = React.useState<string[]>([]);
+    const [sourcePixelsVersion, setSourcePixelsVersion] = React.useState<number>(0);
     const [assignmentsVersion, setAssignmentsVersion] = React.useState<number>(0);
+    const [barrierMaskVersion, setBarrierMaskVersion] = React.useState<number>(0);
     const [graphNodes, setGraphNodes] = React.useState<RegionGraphNode[]>([]);
     const [passages, setPassages] = React.useState<PassageEdge[]>([]);
+    const [selectedPassageId, setSelectedPassageId] = React.useState<string | null>(null);
     const [pathDragStartId, setPathDragStartId] = React.useState<string | null>(null);
     const [pathDraftPoint, setPathDraftPoint] = React.useState<MaskPoint | null>(null);
+    const pathDragSessionRef = React.useRef<{
+        nodeId: string;
+        pointerId: number;
+        start: MaskPoint;
+        activated: boolean;
+    } | null>(null);
     const [boundaryDraftPixelCount, setBoundaryDraftPixelCount] = React.useState<number>(0);
     const [barrierPixelCount, setBarrierPixelCount] = React.useState<number>(0);
     const [manualBarrierAddCount, setManualBarrierAddCount] = React.useState<number>(0);
     const [manualBarrierRemoveCount, setManualBarrierRemoveCount] = React.useState<number>(0);
+    const [barrierHistoryState, setBarrierHistoryState] = React.useState<BarrierHistoryState>({ canUndo: false, canRedo: false });
+    const [lastBoundaryExtractionStats, setLastBoundaryExtractionStats] = React.useState<BoundaryDraftExtractionStats | null>(null);
+    const [lastRegionGenerationResults, setLastRegionGenerationResults] = React.useState<RegionGenerationResult[]>([]);
+    const [lastRegionGenerationWorkflow, setLastRegionGenerationWorkflow] = React.useState<RegionGenerationWorkflow | null>(null);
     const [activeDiagnosticSampleId, setActiveDiagnosticSampleId] = React.useState<string>('beijing');
     const [diagnosticPreview, setDiagnosticPreview] = React.useState<DiagnosticPreview | null>(null);
-    const [statusMessage, setStatusMessage] = React.useState<string>('魔棒负责初选；锁链沿已选区域边界做局部加/减，提交前会拒绝碎岛。');
+    const [persistedWorkspaceState, setPersistedWorkspaceState] = React.useState<PersistedWorkspaceState>('empty');
+    const [showAdvancedWorkbench, setShowAdvancedWorkbench] = React.useState<boolean>(true);
+    const [showFormalEmptyToolPanel, setShowFormalEmptyToolPanel] = React.useState<boolean>(false);
+    const [lastAcceptancePackageSignature, setLastAcceptancePackageSignature] = React.useState<string | null>(null);
+    const [viewedRegionAcceptanceSignatures, setViewedRegionAcceptanceSignatures] = React.useState<Record<string, string>>({});
+    const [regionAcceptancePreview, setRegionAcceptancePreview] = React.useState<RegionAcceptancePreview | null>(null);
+    const [boundaryRepairPreview, setBoundaryRepairPreview] = React.useState<BoundaryRepairPreview | null>(null);
+    const workspaceQuery = React.useMemo(() => {
+        if (typeof window === 'undefined') {
+            return '';
+        }
+        const params = new URLSearchParams(window.location.search);
+        const workspace = params.get('workspace')?.trim();
+        if (!workspace) {
+            return '';
+        }
+        const normalized = new URLSearchParams();
+        normalized.set('workspace', workspace);
+        return `?${normalized.toString()}`;
+    }, []);
+    const isIsolatedWorkspace = workspaceQuery.length > 0;
+    const currentWorkspaceKey = React.useMemo(() => {
+        if (typeof window === 'undefined') {
+            return '';
+        }
+        const params = new URLSearchParams(window.location.search);
+        return sanitizeWorkspaceKey(params.get('workspace')?.trim() ?? '');
+    }, []);
+    const usePrimaryMapEditor = currentWorkspaceKey !== '__legacy-debug-workbench__';
+    const initialDataOutputDir = React.useMemo(() => {
+        if (typeof window === 'undefined') {
+            return DEFAULT_DATA_OUTPUT_DIR;
+        }
+        const params = new URLSearchParams(window.location.search);
+        const workspace = sanitizeWorkspaceKey(params.get('workspace')?.trim() ?? '');
+        return workspace ? `temp/devtools/qidahen-region-mask-workspaces/${workspace}` : DEFAULT_DATA_OUTPUT_DIR;
+    }, []);
+    const [dataOutputDir, setDataOutputDir] = React.useState<string>(initialDataOutputDir);
+    const [statusMessage, setStatusMessage] = React.useState<string>('正在读取上次保存的边界、区域和连线。');
     const displayScale = fitZoom * zoom;
+    const shouldShowBestAvailableWorkspaceSwitcher = showAdvancedWorkbench && isIsolatedWorkspace && currentWorkspaceKey.startsWith('best-available-');
+    React.useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const params = new URLSearchParams(window.location.search);
+        const queryWorkspace = sanitizeWorkspaceKey(params.get('workspace')?.trim() ?? '');
+        if (queryWorkspace) {
+            window.localStorage.setItem(LAST_WORKSPACE_STORAGE_KEY, queryWorkspace);
+            return;
+        }
+        const lastWorkspace = sanitizeWorkspaceKey(window.localStorage.getItem(LAST_WORKSPACE_STORAGE_KEY) ?? '');
+        if (!lastWorkspace) {
+            return;
+        }
+        params.set('workspace', lastWorkspace);
+        window.location.replace(`${window.location.pathname}?${params.toString()}`);
+    }, []);
+    const openWorkspaceRoute = React.useCallback((workspaceKey: string) => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const normalizedKey = sanitizeWorkspaceKey(workspaceKey);
+        if (!normalizedKey) {
+            return;
+        }
+        window.localStorage.setItem(LAST_WORKSPACE_STORAGE_KEY, normalizedKey);
+        const nextUrl = `${window.location.pathname}?workspace=${encodeURIComponent(normalizedKey)}`;
+        window.location.assign(nextUrl);
+    }, []);
+    const openRuntimePreviewRoute = React.useCallback((workspaceKey: string) => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const normalizedKey = sanitizeWorkspaceKey(workspaceKey);
+        if (!normalizedKey) {
+            return;
+        }
+        window.location.assign(`/dev/qidahen-runtime-preview?workspace=${encodeURIComponent(normalizedKey)}`);
+    }, []);
     const selectedRegion = regions.find((region) => region.id === selectedRegionId) ?? regions[0];
     const selectedRegionIndex = regions.findIndex((region) => region.id === selectedRegionId);
+    const lastRegionGenerationSummary = React.useMemo(() => ({
+        generated: lastRegionGenerationResults.filter((result) => result.status === 'generated').length,
+        leaked: lastRegionGenerationResults.filter((result) => result.status === 'leaked').length,
+        skipped: lastRegionGenerationResults.filter((result) => result.status === 'skipped').length,
+        overlapOnly: lastRegionGenerationResults.filter((result) => result.status === 'overlap-only').length,
+    }), [lastRegionGenerationResults]);
+    const regionTruthWorkflowActive = lastRegionGenerationResults.length > 0
+        && (
+            lastRegionGenerationWorkflow === 'region-draft'
+            || lastRegionGenerationWorkflow === 'region-path-quick-start'
+        );
+    const simplifiedBoundaryWorkflow = usePrimaryMapEditor || !showAdvancedWorkbench;
+    const hasBoundaryDraft = boundaryDraftPixelCount > 0 || manualBarrierAddCount > 0 || manualBarrierRemoveCount > 0;
+    const hasGeneratedRegions = lastRegionGenerationSummary.generated > 0;
+    const hasLeakedRegions = lastRegionGenerationSummary.leaked > 0;
+    const buildSeedPartitionDiagnosticsForBoundaryMask = React.useCallback((barrierMask: Uint8Array | null | undefined): BoundaryClosureDiagnostics => {
+        if (!barrierMask || countMaskPixels(barrierMask) === 0) {
+            return {
+                closedFaceCount: 0,
+                matchedSeedCount: 0,
+                unmatchedRegionNames: [],
+                unmatchedRegions: [],
+                matchedPartitions: [],
+                largestFacePixelCount: 0,
+            };
+        }
+        const unmatchedRegionNames: string[] = [];
+        const unmatchedRegions: BoundaryClosureDiagnostics['unmatchedRegions'] = [];
+        const matchedPartitions: BoundaryClosureDiagnostics['matchedPartitions'] = [];
+        const seedRecords: Array<{ region: PainterRegion; seedPoint: MaskPoint }> = [];
+        for (const region of regions) {
+            if (!region || isDiagnosticRegionId(region.id)) {
+                continue;
+            }
+            const preferredSeed = region.seed;
+            if (!preferredSeed) {
+                unmatchedRegionNames.push(region.name);
+                unmatchedRegions.push({
+                    id: region.id,
+                    name: region.name,
+                    seed: null,
+                });
+                continue;
+            }
+            const seedPoint = findBestInteriorSeedPoint(preferredSeed, barrierMask, 18)
+                ?? findNearestNonBarrierPoint(preferredSeed, barrierMask, 36);
+            if (!seedPoint) {
+                unmatchedRegionNames.push(region.name);
+                unmatchedRegions.push({
+                    id: region.id,
+                    name: region.name,
+                    seed: preferredSeed,
+                });
+                continue;
+            }
+            seedRecords.push({ region, seedPoint });
+        }
+        const partitionComponents = extractBoundaryPartitionComponents({
+            barrierMask,
+            width: MASK_WIDTH,
+            fillableMask: REAL_MAP_BOUNDARY_REGION_FILLABLE_MASK,
+            seeds: seedRecords.map((record) => record.seedPoint),
+            minPixels: 48,
+        });
+        const matchedSeedIndexes = new Set<number>();
+        const leakHintBySeedIndex = new Map<number, {
+            connectedRegionNames: string[];
+            targetRegionName: string | null;
+            targetSeed: MaskPoint | null;
+            path: MaskPoint[];
+            distancePixels: number | null;
+        }>();
+        for (const component of partitionComponents) {
+            if (component.seedIndexes.length === 1) {
+                const seedRecordIndex = component.seedIndexes[0];
+                matchedSeedIndexes.add(seedRecordIndex);
+                const record = seedRecords[seedRecordIndex];
+                if (record) {
+                    matchedPartitions.push({
+                        regionId: record.region.id,
+                        regionName: record.region.name,
+                        color: record.region.color,
+                        pixelCount: component.pixelCount,
+                        mask: component.mask,
+                    });
+                }
+                continue;
+            }
+            if (component.seedIndexes.length > 1) {
+                const connectedRegionNames = component.seedIndexes
+                    .map((seedIndex) => seedRecords[seedIndex]?.region.name)
+                    .filter((name): name is string => Boolean(name));
+                for (const seedIndex of component.seedIndexes) {
+                    const record = seedRecords[seedIndex];
+                    if (!record) {
+                        continue;
+                    }
+                    const otherSeedIndexes = component.seedIndexes.filter((otherIndex) => otherIndex !== seedIndex);
+                    const otherSeeds = otherSeedIndexes
+                        .map((otherIndex) => seedRecords[otherIndex]?.seedPoint)
+                        .filter((seedPoint): seedPoint is MaskPoint => Boolean(seedPoint));
+                    const pathResult = findSeedLeakPathInMask({
+                        mask: component.mask,
+                        width: MASK_WIDTH,
+                        start: record.seedPoint,
+                        targets: otherSeeds,
+                    });
+                    const pathEnd = pathResult?.path[pathResult.path.length - 1] ?? null;
+                    const targetSeedIndex = pathEnd
+                        ? otherSeedIndexes.find((otherIndex) => {
+                            const otherSeed = seedRecords[otherIndex]?.seedPoint;
+                            return otherSeed?.x === pathEnd.x && otherSeed.y === pathEnd.y;
+                        })
+                        : undefined;
+                    const targetRecord = targetSeedIndex == null ? undefined : seedRecords[targetSeedIndex];
+                    leakHintBySeedIndex.set(seedIndex, {
+                        connectedRegionNames,
+                        targetRegionName: targetRecord?.region.name ?? connectedRegionNames.find((name) => name !== record.region.name) ?? null,
+                        targetSeed: targetRecord?.seedPoint ?? null,
+                        path: pathResult?.path ?? [],
+                        distancePixels: pathResult?.distancePixels ?? null,
+                    });
+                }
+            }
+        }
+        for (let seedRecordIndex = 0; seedRecordIndex < seedRecords.length; seedRecordIndex += 1) {
+            if (matchedSeedIndexes.has(seedRecordIndex)) {
+                continue;
+            }
+            const record = seedRecords[seedRecordIndex];
+            unmatchedRegionNames.push(record.region.name);
+            unmatchedRegions.push({
+                id: record.region.id,
+                name: record.region.name,
+                seed: record.seedPoint,
+                connectedRegionNames: leakHintBySeedIndex.get(seedRecordIndex)?.connectedRegionNames,
+                leakTargetName: leakHintBySeedIndex.get(seedRecordIndex)?.targetRegionName,
+                leakTargetSeed: leakHintBySeedIndex.get(seedRecordIndex)?.targetSeed,
+                leakPath: leakHintBySeedIndex.get(seedRecordIndex)?.path,
+                leakDistancePixels: leakHintBySeedIndex.get(seedRecordIndex)?.distancePixels,
+            });
+        }
+        return {
+            closedFaceCount: partitionComponents.length,
+            matchedSeedCount: matchedSeedIndexes.size,
+            unmatchedRegionNames,
+            unmatchedRegions,
+            matchedPartitions,
+            largestFacePixelCount: partitionComponents[0]?.pixelCount ?? 0,
+        };
+    }, [regions]);
+    const boundaryClosureDiagnostics = React.useMemo<BoundaryClosureDiagnostics>(() => {
+        void barrierMaskVersion;
+        if (simplifiedBoundaryWorkflow) {
+            return {
+                closedFaceCount: 0,
+                matchedSeedCount: 0,
+                unmatchedRegionNames: [],
+                unmatchedRegions: [],
+                matchedPartitions: [],
+                largestFacePixelCount: 0,
+            };
+        }
+        return buildSeedPartitionDiagnosticsForBoundaryMask(barrierMaskRef.current);
+    }, [barrierMaskVersion, buildSeedPartitionDiagnosticsForBoundaryMask, simplifiedBoundaryWorkflow]);
+    const boundaryOpenDiagnostics = React.useMemo<BoundaryOpenDiagnostics>(() => {
+        void barrierMaskVersion;
+        const barrierMask = barrierMaskRef.current;
+        if (simplifiedBoundaryWorkflow || !barrierMask || barrierPixelCount === 0) {
+            return { openComponentCount: 0, largestOpenPixelCount: 0, hints: [] };
+        }
+        const analysis = analyzeOpenBoundaryComponents({
+            barrierMask,
+            width: MASK_WIDTH,
+            minPixels: 24,
+            maxHints: 48,
+        });
+        const rankedHints = rankOpenBoundaryHintsForTargets({
+            hints: analysis.hints,
+            targets: boundaryClosureDiagnostics.unmatchedRegions,
+        }).slice(0, 6);
+        return {
+            openComponentCount: analysis.openComponentCount,
+            largestOpenPixelCount: analysis.largestOpenPixelCount,
+            hints: rankedHints.map((hint) => ({
+                pixelCount: hint.pixelCount,
+                nearestRegionName: hint.nearestTarget?.name ?? null,
+                distanceToNearestSeed: hint.distanceToNearestTarget,
+                endpoints: hint.endpoints,
+            })),
+        };
+    }, [barrierMaskVersion, barrierPixelCount, boundaryClosureDiagnostics.unmatchedRegions, simplifiedBoundaryWorkflow]);
+    const unexplainedBoundaryOpenDiagnostics = React.useMemo<BoundaryOpenDiagnostics>(() => {
+        void barrierMaskVersion;
+        const barrierMask = barrierMaskRef.current;
+        if (simplifiedBoundaryWorkflow || !barrierMask || barrierPixelCount === 0) {
+            return { openComponentCount: 0, largestOpenPixelCount: 0, hints: [] };
+        }
+        const formalSeeds = regions
+            .filter((region) => !isDiagnosticRegionId(region.id))
+            .flatMap((region) => (region.seed ? [{ x: region.seed.x, y: region.seed.y }] : []));
+        const explainedPartitionBoundary = keepBoundaryPixelsTouchingSeedPartitions({
+            mask: barrierMask,
+            width: MASK_WIDTH,
+            fillableMask: AUTO_MAP_REGION_FILLABLE_MASK,
+            seeds: formalSeeds,
+            minPartitionPixels: 48,
+            keepThicknessIterations: Math.max(1, Math.min(2, boundaryExpansion)),
+        });
+        const unexplainedMask = removeExcludedPixels(barrierMask, explainedPartitionBoundary.mask);
+        const analysis = analyzeOpenBoundaryComponents({
+            barrierMask: unexplainedMask,
+            width: MASK_WIDTH,
+            minPixels: 24,
+            maxHints: 48,
+        });
+        const rankedHints = rankOpenBoundaryHintsForTargets({
+            hints: analysis.hints,
+            targets: boundaryClosureDiagnostics.unmatchedRegions,
+        }).slice(0, 6);
+        return {
+            openComponentCount: analysis.openComponentCount,
+            largestOpenPixelCount: analysis.largestOpenPixelCount,
+            hints: rankedHints.map((hint) => ({
+                pixelCount: hint.pixelCount,
+                nearestRegionName: hint.nearestTarget?.name ?? null,
+                distanceToNearestSeed: hint.distanceToNearestTarget,
+                endpoints: hint.endpoints,
+            })),
+        };
+    }, [barrierMaskVersion, barrierPixelCount, boundaryClosureDiagnostics.unmatchedRegions, boundaryExpansion, regions, simplifiedBoundaryWorkflow]);
+    const unmatchedRegionIdSet = React.useMemo(() => (
+        new Set(boundaryClosureDiagnostics.unmatchedRegions.map((region) => region.id))
+    ), [boundaryClosureDiagnostics.unmatchedRegions]);
+    const seedStatusRegions = React.useMemo(() => (
+        regions
+            .filter((region) => !isDiagnosticRegionId(region.id))
+            .filter((region): region is PainterRegion & { seed: MaskPoint } => region.seed != null)
+            .map((region) => {
+                return {
+                    ...region,
+                    status: barrierPixelCount === 0
+                        ? 'empty'
+                        : unmatchedRegionIdSet.has(region.id)
+                            ? 'unmatched'
+                            : 'matched',
+                } as const;
+            })
+    ), [barrierPixelCount, regions, unmatchedRegionIdSet]);
+    const seedStatusByRegionId = React.useMemo(() => (
+        new Map(seedStatusRegions.map((region) => [region.id, region] as const))
+    ), [seedStatusRegions]);
+    const realMapBoundarySupportMask = React.useMemo(() => {
+        void sourcePixelsVersion;
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels || simplifiedBoundaryWorkflow) {
+            return null;
+        }
+        return buildRealMapBoundarySupportMaskFromSourcePixels({
+            sourcePixels,
+            boundaryPresets: DEFAULT_BOUNDARY_PRESETS,
+            boundaryTolerance: DEFAULT_BOUNDARY_TOLERANCE,
+        });
+    }, [sourcePixelsVersion, simplifiedBoundaryWorkflow]);
+    const realMapBoundarySupportPixelCount = React.useMemo(
+        () => realMapBoundarySupportMask ? countMaskPixels(realMapBoundarySupportMask) : 0,
+        [realMapBoundarySupportMask],
+    );
+    const realMapBoundaryCandidateMask = React.useMemo(() => {
+        void sourcePixelsVersion;
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels || (simplifiedBoundaryWorkflow && !showRealMapBoundarySupportOverlay && !snapBarrierBrushToRealMapSupport)) {
+            return null;
+        }
+        return buildRealMapBoundaryLongLineCandidateMaskFromSourcePixels({
+            sourcePixels,
+            boundaryPresets: DEFAULT_BOUNDARY_PRESETS,
+            boundaryTolerance: DEFAULT_BOUNDARY_TOLERANCE,
+        });
+    }, [showRealMapBoundarySupportOverlay, simplifiedBoundaryWorkflow, snapBarrierBrushToRealMapSupport, sourcePixelsVersion]);
+    const realMapBoundaryCandidatePixelCount = React.useMemo(
+        () => realMapBoundaryCandidateMask ? countMaskPixels(realMapBoundaryCandidateMask) : 0,
+        [realMapBoundaryCandidateMask],
+    );
+    const realMapBoundaryCandidateReadiness = React.useMemo(
+        () => (
+            simplifiedBoundaryWorkflow
+                ? scoreBoundaryCandidateReadiness({
+                    candidateMask: null,
+                    regions: [],
+                })
+                : scoreBoundaryCandidateReadiness({
+                    candidateMask: realMapBoundaryCandidateMask,
+                    regions,
+                })
+        ),
+        [realMapBoundaryCandidateMask, regions, simplifiedBoundaryWorkflow],
+    );
+    const currentMapArtifactExclusionMask = React.useMemo(() => {
+        void sourcePixelsVersion;
+        if (simplifiedBoundaryWorkflow) {
+            return EMPTY_MAP_ARTIFACT_EXCLUSION_MASK;
+        }
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            return AUTO_MAP_PRINTED_UI_EXCLUSION_MASK;
+        }
+        return unionBinaryMasks(
+            AUTO_MAP_PRINTED_UI_EXCLUSION_MASK,
+            buildCompactPrintedDecorationExclusionMask(sourcePixels),
+        );
+    }, [sourcePixelsVersion, simplifiedBoundaryWorkflow]);
+    const boundaryQualityReport = React.useMemo<BoundaryQualityReport>(() => {
+        void assignmentsVersion;
+        const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+        if (simplifiedBoundaryWorkflow) {
+            const realMapFit = scoreBoundaryRealMapFit({
+                boundaryMask: null,
+                supportMask: null,
+            });
+            const shape = scoreBoundaryShape({ boundaryMask: null });
+            return {
+                state: hasBoundaryDraft ? 'ready-to-generate' : 'missing-boundary',
+                label: hasBoundaryDraft ? '轻量手工模式' : '等待边界图',
+                detail: hasBoundaryDraft
+                    ? '默认界面已跳过整图诊断，保证画笔可操作；点生成区域时再做必要分区检查。'
+                    : '先初始化或导入边界图。',
+                toneClass: hasBoundaryDraft
+                    ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100'
+                    : 'border-stone-700 bg-stone-950/50 text-stone-300',
+                missingSeedNames: [],
+                boundaryUiPixels: 0,
+                maskUiPixels: 0,
+                unmatchedCount: 0,
+                openComponentCount: 0,
+                unexplainedOpenComponentCount: 0,
+                generatedCount: lastRegionGenerationSummary.generated,
+                formalRegionCount: formalRegions.length,
+                regionDetails: [],
+                normality: {
+                    state: 'not-ready',
+                    label: '轻量模式未验收',
+                    detail: '轻量模式不在每次画笔移动后跑验收；需要正式验收时展开高级面板或生成区域。',
+                    toneClass: 'border-cyan-500/25 bg-cyan-500/10 text-cyan-100',
+                    blockers: ['轻量模式跳过实时整图验收。'],
+                    approvedCount: 0,
+                    requiredApprovalCount: formalRegions.length,
+                    realMapFit,
+                    shape,
+                    regionCoverages: [],
+                },
+            };
+        }
+        const missingSeedNames = formalRegions
+            .filter((region) => !region.seed)
+            .map((region) => region.name);
+        const boundaryMask = barrierMaskRef.current;
+        const boundaryUiPixels = boundaryMask
+            ? countMaskOverlapPixels(boundaryMask, AUTO_MAP_PRINTED_UI_EXCLUSION_MASK)
+            : 0;
+        const realMapFit = scoreBoundaryRealMapFit({
+            boundaryMask,
+            supportMask: realMapBoundarySupportMask,
+            assignments: assignmentsRef.current,
+            regions,
+        });
+        const boundaryShape = scoreBoundaryShape({ boundaryMask });
+        const maskUiPixels = countAssignmentPixelsInMask(assignmentsRef.current, AUTO_MAP_PRINTED_UI_EXCLUSION_MASK);
+        const unmatchedCount = boundaryClosureDiagnostics.unmatchedRegions.length;
+        const openComponentCount = boundaryOpenDiagnostics.openComponentCount;
+        const unexplainedOpenComponentCount = unexplainedBoundaryOpenDiagnostics.openComponentCount;
+        const formalRegionCount = formalRegions.length;
+        const assignmentPixelCountByRegionId = new Map<string, number>();
+        const assignmentHashByRegionId = new Map<string, number>();
+        let boundaryHash = 2166136261;
+        if (boundaryMask) {
+            for (let index = 0; index < boundaryMask.length; index += 1) {
+                if (boundaryMask[index] !== 0) {
+                    boundaryHash = updateHash(boundaryHash, index);
+                }
+            }
+        }
+        for (let index = 0; index < assignmentsRef.current.length; index += 1) {
+            const regionIndex = assignmentsRef.current[index];
+            if (regionIndex < 0) {
+                continue;
+            }
+            const region = regions[regionIndex];
+            if (!region || isDiagnosticRegionId(region.id)) {
+                continue;
+            }
+            assignmentPixelCountByRegionId.set(region.id, (assignmentPixelCountByRegionId.get(region.id) ?? 0) + 1);
+            assignmentHashByRegionId.set(region.id, updateHash(assignmentHashByRegionId.get(region.id) ?? 2166136261, index));
+        }
+        const boundaryHashText = formatHash(boundaryHash);
+        const generatedCount = lastRegionGenerationResults.length > 0
+            ? lastRegionGenerationSummary.generated
+            : formalRegions.filter((region) => (assignmentPixelCountByRegionId.get(region.id) ?? 0) > 0).length;
+        const unmatchedIdSetForReport = new Set(boundaryClosureDiagnostics.unmatchedRegions.map((region) => region.id));
+        const generationResultByRegionId = new Map(lastRegionGenerationResults.map((result) => [result.regionId, result] as const));
+        const normalityRegionCoverages = formalRegions.map<BoundaryNormalityRegionCoverage>((region) => {
+            const expectedPixelCount = NORMAL_REGION_EXPECTED_PIXEL_COUNT_BY_ID.get(region.id) ?? null;
+            const pixelCount = assignmentPixelCountByRegionId.get(region.id) ?? 0;
+            const coverageRatio = expectedPixelCount && expectedPixelCount > 0
+                ? pixelCount / expectedPixelCount
+                : null;
+            const currentSignature = `${pixelCount}:${formatHash(assignmentHashByRegionId.get(region.id) ?? 2166136261)}:${boundaryHashText}`;
+            const label = pixelCount === 0
+                ? '未生成'
+                : coverageRatio == null
+                ? '无粗范围基线'
+                : coverageRatio < NORMAL_REGION_MIN_GUIDE_COVERAGE_RATIO
+                    ? '疑似小圈'
+                    : '面积通过粗检';
+            const acceptanceState = pixelCount === 0
+                ? 'not-generated'
+                : label === '疑似小圈'
+                    ? 'blocked'
+                    : region.acceptance?.status === 'approved'
+                        ? region.acceptance.signature === currentSignature
+                            ? 'approved'
+                            : 'stale'
+                        : 'pending';
+            const acceptanceLabel = acceptanceState === 'approved'
+                ? '已验收'
+                : acceptanceState === 'stale'
+                    ? '验收失效'
+                    : acceptanceState === 'blocked'
+                        ? '不可验收'
+                        : acceptanceState === 'not-generated'
+                            ? '未生成'
+                            : '待验收';
+            return {
+                regionId: region.id,
+                regionName: region.name,
+                pixelCount,
+                expectedPixelCount,
+                coverageRatio,
+                label,
+                currentSignature,
+                acceptanceState,
+                acceptanceLabel,
+                reviewedAt: region.acceptance?.reviewedAt ?? null,
+            };
+        });
+        const suspiciousSmallRegions = normalityRegionCoverages.filter((coverage) => (
+            coverage.pixelCount > 0
+            && coverage.coverageRatio != null
+            && coverage.coverageRatio < NORMAL_REGION_MIN_GUIDE_COVERAGE_RATIO
+        ));
+        const normalityBlockers = [
+            ...suspiciousSmallRegions.map((coverage) => (
+                `${coverage.regionName} 生成面积 ${coverage.pixelCount.toLocaleString()} px，仅为粗范围 ${(coverage.coverageRatio! * 100).toFixed(1)}%`
+            )),
+            realMapFit.state === 'blocked' ? realMapFit.note : null,
+            realMapFit.state === 'unknown' && generatedCount >= formalRegionCount ? realMapFit.note : null,
+            boundaryShape.state === 'blocked' ? boundaryShape.note : null,
+        ].filter((blocker): blocker is string => Boolean(blocker));
+        const hasRealMapFitBlocker = realMapFit.state !== 'passed';
+        const hasBoundaryShapeBlocker = boundaryShape.state === 'blocked';
+        const approvedNormalRegionCount = normalityRegionCoverages.filter((coverage) => coverage.acceptanceState === 'approved').length;
+        const normality: BoundaryNormalityReport = generatedCount < formalRegionCount
+            ? {
+                state: 'not-ready',
+                label: '正常成果未生成',
+                detail: `当前只生成 ${generatedCount}/${formalRegionCount} 个正式区域；还不能讨论边界是否正常。`,
+                toneClass: 'border-stone-700 bg-stone-950/70 text-stone-200',
+                blockers: normalityBlockers,
+                approvedCount: approvedNormalRegionCount,
+                requiredApprovalCount: formalRegionCount,
+                realMapFit,
+                shape: boundaryShape,
+                regionCoverages: normalityRegionCoverages,
+            }
+            : suspiciousSmallRegions.length > 0 || hasRealMapFitBlocker || hasBoundaryShapeBlocker
+                ? {
+                    state: 'suspicious',
+                    label: '正常成果未证明',
+                    detail: `已生成 ${generatedCount}/${formalRegionCount}，但边界形态或底图贴合仍不可信。generated-ready 只代表链路跑通，不能当正常边界成果。`,
+                    toneClass: 'border-amber-500/45 bg-amber-500/10 text-amber-100',
+                    blockers: normalityBlockers,
+                    approvedCount: approvedNormalRegionCount,
+                    requiredApprovalCount: formalRegionCount,
+                    realMapFit,
+                    shape: boundaryShape,
+                    regionCoverages: normalityRegionCoverages,
+                }
+                : approvedNormalRegionCount === formalRegionCount
+                    ? {
+                        state: 'accepted',
+                        label: '正常成果已人工验收',
+                        detail: `5 个正式区域均已逐区看图验收，且当前 mask/边界签名与验收时一致。`,
+                        toneClass: 'border-emerald-400/45 bg-emerald-500/10 text-emerald-100',
+                        blockers: [],
+                        approvedCount: approvedNormalRegionCount,
+                        requiredApprovalCount: formalRegionCount,
+                        realMapFit,
+                        shape: boundaryShape,
+                        regionCoverages: normalityRegionCoverages,
+                    }
+                : {
+                    state: 'needs-visual-review',
+                    label: '待逐区看图验收',
+                    detail: `面积粗检通过，但仍必须打开验收包逐区核对真实地图边界；自动检查不能替代人工验图。已验收 ${approvedNormalRegionCount}/${formalRegionCount}。`,
+                    toneClass: 'border-sky-500/40 bg-sky-500/10 text-sky-100',
+                    blockers: [],
+                    approvedCount: approvedNormalRegionCount,
+                    requiredApprovalCount: formalRegionCount,
+                    realMapFit,
+                    shape: boundaryShape,
+                    regionCoverages: normalityRegionCoverages,
+                };
+        const regionDetails = formalRegions.map<BoundaryQualityRegionDetail>((region) => {
+            const generationResult = generationResultByRegionId.get(region.id);
+            const assignedPixelCount = assignmentPixelCountByRegionId.get(region.id) ?? 0;
+            if (!region.seed) {
+                return {
+                    regionId: region.id,
+                    regionName: region.name,
+                    label: '缺 seed',
+                    note: '没有显式 seed，不能导出局部底稿，也不会用旧 shape 中心代替。',
+                    toneClass: 'border-rose-500/35 bg-rose-500/10 text-rose-100',
+                };
+            }
+            if (generationResult) {
+                const generationTone = generationResult.status === 'generated'
+                    ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-100'
+                    : generationResult.status === 'leaked'
+                        ? 'border-rose-500/35 bg-rose-500/10 text-rose-100'
+                        : 'border-amber-500/35 bg-amber-500/10 text-amber-100';
+                const generationLabel = generationResult.status === 'generated'
+                    ? '已生成'
+                    : generationResult.status === 'leaked'
+                        ? '漏边跳过'
+                        : generationResult.status === 'overlap-only'
+                            ? '被占用'
+                            : '未生成';
+                return {
+                    regionId: region.id,
+                    regionName: region.name,
+                    label: generationLabel,
+                    note: generationResult.note,
+                    toneClass: generationTone,
+                };
+            }
+            if (lastRegionGenerationResults.length === 0 && assignedPixelCount > 0) {
+                return {
+                    regionId: region.id,
+                    regionName: region.name,
+                    label: '已生成',
+                    note: `已从保存的 mask 回读 ${assignedPixelCount.toLocaleString()} px；仍需逐区看图验收。`,
+                    toneClass: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-100',
+                };
+            }
+            if (!hasBoundaryDraft) {
+                return {
+                    regionId: region.id,
+                    regionName: region.name,
+                    label: '待描',
+                    note: '还没有真实边界图。先导出局部底稿或导入完成边界图。',
+                    toneClass: 'border-stone-700 bg-stone-900/70 text-stone-300',
+                };
+            }
+            if (unmatchedIdSetForReport.has(region.id)) {
+                return {
+                    regionId: region.id,
+                    regionName: region.name,
+                    label: '未分区',
+                    note: `seed ${region.seed.x}, ${region.seed.y} 还没有进入独立分区。继续补边；无法连成有效分割的线可清洗舍弃。`,
+                    toneClass: 'border-rose-500/35 bg-rose-500/10 text-rose-100',
+                };
+            }
+            return {
+                regionId: region.id,
+                regionName: region.name,
+                label: unexplainedOpenComponentCount > 0 ? '分区待清洗' : '可生成',
+                note: unexplainedOpenComponentCount > 0
+                    ? 'seed 已进入独立分区，但边界图仍有未解释开放噪声；建议先点“只保留有效分区边界”。'
+                    : 'seed 已进入独立分区，可以按边界图生成初始区域。',
+                toneClass: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-100',
+            };
+        });
+        const common = {
+            missingSeedNames,
+            boundaryUiPixels,
+            maskUiPixels,
+            unmatchedCount,
+            openComponentCount,
+            unexplainedOpenComponentCount,
+            generatedCount,
+            formalRegionCount,
+            regionDetails,
+            normality,
+        };
+        if (!hasBoundaryDraft) {
+            return {
+                ...common,
+                state: 'missing-boundary',
+                label: '还没有真实边界图',
+                detail: '当前不能生成正常成果。先导入完成边界图、带底图描线图，或从空白边界开始手绘。',
+                toneClass: 'border-stone-700 bg-stone-950/70 text-stone-200',
+            };
+        }
+        if (boundaryUiPixels > 0 || maskUiPixels > 0 || missingSeedNames.length > 0) {
+            const reasons = [
+                boundaryUiPixels > 0 ? `边界落入 UI 禁区 ${boundaryUiPixels.toLocaleString()} px` : null,
+                maskUiPixels > 0 ? `mask 落入 UI 禁区 ${maskUiPixels.toLocaleString()} px` : null,
+                missingSeedNames.length > 0 ? `缺 seed：${missingSeedNames.slice(0, 3).join('、')}${missingSeedNames.length > 3 ? ` 等 ${missingSeedNames.length} 个` : ''}` : null,
+            ].filter(Boolean);
+            return {
+                ...common,
+                state: 'blocked',
+                label: '不能生成正常成果',
+                detail: `${reasons.join('；')}。先修这些硬问题，再生成区域。`,
+                toneClass: 'border-rose-500/45 bg-rose-500/10 text-rose-100',
+            };
+        }
+        if (unmatchedCount > 0 || unexplainedOpenComponentCount > 0) {
+            const reasons = [
+                unmatchedCount > 0 ? `未进入独立分区 seed ${unmatchedCount} 个` : null,
+                unexplainedOpenComponentCount > 0 ? `未解释开放线段 ${unexplainedOpenComponentCount} 条` : null,
+            ].filter(Boolean);
+            return {
+                ...common,
+                state: 'needs-fix',
+                label: '边界还没分区完',
+                detail: `${reasons.join('；')}。继续按提示补边，让每个 seed 进入独立分区；没有参与 seed 分区的开放线直接舍弃。`,
+                toneClass: 'border-amber-500/45 bg-amber-500/10 text-amber-100',
+            };
+        }
+        if (generatedCount === 0) {
+            return {
+                ...common,
+                state: 'ready-to-generate',
+                label: '边界可用于生成',
+                detail: '所有显式 seed 已被边界分割成独立分区，图上预览色就是即将生成的区域。下一步按边界图生成初始区域，再逐区看图验收。',
+                toneClass: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-100',
+            };
+        }
+        if (generatedCount < formalRegionCount) {
+            return {
+                ...common,
+                state: 'generated-partial',
+                label: '只生成了部分区域',
+                detail: `已生成 ${generatedCount}/${formalRegionCount} 个区域。未生成的区域仍需补 seed 或补边后重试。`,
+                toneClass: 'border-amber-500/45 bg-amber-500/10 text-amber-100',
+            };
+        }
+        return {
+            ...common,
+            state: 'generated-ready',
+            label: '生成链路已跑通',
+            detail: `已生成 ${generatedCount}/${formalRegionCount} 个区域。仍需逐区看图确认边界贴合真实地图后再当正式成果。`,
+            toneClass: 'border-emerald-500/45 bg-emerald-500/10 text-emerald-100',
+        };
+    }, [
+        assignmentsVersion,
+        boundaryClosureDiagnostics.unmatchedRegions,
+        boundaryOpenDiagnostics.openComponentCount,
+        unexplainedBoundaryOpenDiagnostics.openComponentCount,
+        hasBoundaryDraft,
+        lastRegionGenerationResults,
+        lastRegionGenerationSummary.generated,
+        realMapBoundarySupportMask,
+        regions,
+        simplifiedBoundaryWorkflow,
+    ]);
+    const weakRealMapFitRegionReports = React.useMemo(
+        () => boundaryQualityReport.normality.realMapFit.regionReports.filter((report) => report.state === 'weak'),
+        [boundaryQualityReport.normality.realMapFit.regionReports],
+    );
+    const formalRegionSaveBlocked = !isIsolatedWorkspace
+        && boundaryQualityReport.generatedCount > 0
+        && boundaryQualityReport.normality.state !== 'accepted';
+    const acceptancePackageReviewSignature = React.useMemo(() => (
+        boundaryQualityReport.normality.regionCoverages
+            .map((coverage) => `${coverage.regionId}:${coverage.currentSignature}`)
+            .join('|')
+    ), [boundaryQualityReport.normality.regionCoverages]);
+    const isCurrentAcceptancePackageExported = lastAcceptancePackageSignature === acceptancePackageReviewSignature;
+    const hasViewedRegionAcceptanceCrop = React.useCallback((coverage: BoundaryNormalityRegionCoverage) => (
+        viewedRegionAcceptanceSignatures[coverage.regionId] === coverage.currentSignature
+    ), [viewedRegionAcceptanceSignatures]);
+    const openRegionAcceptancePreview = React.useCallback((coverage: BoundaryNormalityRegionCoverage) => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setStatusMessage('地图像素还没加载完成，暂时不能打开区域验收裁图。');
+            return;
+        }
+        const regionIndex = regions.findIndex((region) => region.id === coverage.regionId);
+        const region = regions[regionIndex];
+        if (!region || regionIndex < 0) {
+            setStatusMessage(`找不到 ${coverage.regionName} 的区域定义，无法打开验收裁图。`);
+            return;
+        }
+        const artifact = buildRegionAcceptanceCrop({
+            sourcePixels,
+            assignments: assignmentsRef.current,
+            barrierMask: barrierMaskRef.current,
+            region,
+            regionIndex,
+        });
+        setViewedRegionAcceptanceSignatures((current) => ({
+            ...current,
+            [coverage.regionId]: coverage.currentSignature,
+        }));
+        setRegionAcceptancePreview({
+            regionId: coverage.regionId,
+            regionName: coverage.regionName,
+            signature: coverage.currentSignature,
+            dataUrl: artifact.dataUrl,
+            pixelCount: artifact.pixelCount,
+            crop: artifact.crop,
+        });
+        setStatusMessage(`已打开 ${coverage.regionName} 的区域验收裁图。请核对真实底图、边界线和区域覆盖后再标记看图通过。`);
+    }, [regions]);
+    const nextActionHint = React.useMemo(() => {
+        if (!hasBoundaryDraft) {
+            return '先导入完成边界图、导入带底图描线图，或直接在图上补边，把真实边界图做出来。';
+        }
+        if (boundaryClosureDiagnostics.unmatchedRegions.length > 0) {
+            return `先处理未独立 seed：${boundaryClosureDiagnostics.unmatchedRegionNames.slice(0, 3).join('、')}。点“定位未独立 seed”后沿真实边界补线，不能成线的碎线直接舍弃。`;
+        }
+        if (unexplainedBoundaryOpenDiagnostics.hints.length > 0) {
+            return '边界图里还有未解释开放线段。先定位断点，能沿真实边界补就补；连不上的直接用“只保留有效分区边界”舍弃。';
+        }
+        if (weakRealMapFitRegionReports.length > 0) {
+            return `还有 ${weakRealMapFitRegionReports.length} 个区域底图弱支撑。先点弱支撑问题裁图，对照真实地图重画这些边界段。`;
+        }
+        if (persistedWorkspaceState !== 'populated') {
+            return '边界图已经有了。下一步先保存工作区，确保刷新后还能继续补边。';
+        }
+        if (!hasGeneratedRegions) {
+            return '工作区已保存。下一步按边界图生成区域，先看哪些区域已经独立分区。';
+        }
+        if (hasLeakedRegions) {
+            return `优先补掉“漏边跳过”的区域，再重新生成。当前已生成 ${lastRegionGenerationSummary.generated} 个，漏边 ${lastRegionGenerationSummary.leaked} 个。`;
+        }
+        return `当前区域生成链已经跑通。已生成 ${lastRegionGenerationSummary.generated} 个区域，可以继续微调边界和路径图。`;
+    }, [
+        boundaryClosureDiagnostics.unmatchedRegionNames,
+        boundaryClosureDiagnostics.unmatchedRegions.length,
+        hasBoundaryDraft,
+        hasGeneratedRegions,
+        hasLeakedRegions,
+        lastRegionGenerationSummary.generated,
+        lastRegionGenerationSummary.leaked,
+        persistedWorkspaceState,
+        unexplainedBoundaryOpenDiagnostics.hints.length,
+        weakRealMapFitRegionReports.length,
+    ]);
+    const boundaryRepairProblemCount = boundaryClosureDiagnostics.unmatchedRegions.length
+        + unexplainedBoundaryOpenDiagnostics.hints.length
+        + weakRealMapFitRegionReports.length;
+    const boundaryRepairActionHint = React.useMemo(() => {
+        if (!hasBoundaryDraft) {
+            return '还没有边界图。先导入完成边界图，或用边界修正画笔从空白边界开始手绘。';
+        }
+        if (boundaryClosureDiagnostics.unmatchedRegions.length > 0) {
+            const firstName = boundaryClosureDiagnostics.unmatchedRegions[0]?.name ?? '第一个未独立区域';
+            return `优先补 ${firstName}：seed 没进入独立分区，说明周围边界还没闭合或被错误连通。`;
+        }
+        if (unexplainedBoundaryOpenDiagnostics.hints.length > 0) {
+            return '优先处理开放线段：定位后只沿真实边界补线；如果只是碎线，不用强行封口。';
+        }
+        if (weakRealMapFitRegionReports.length > 0) {
+            const firstName = weakRealMapFitRegionReports[0]?.regionName ?? '弱支撑区域';
+            return `优先重画 ${firstName} 的弱支撑边界段；它已经成区，但不够贴真实底图。`;
+        }
+        if (boundaryClosureDiagnostics.matchedSeedCount < boundaryQualityReport.formalRegionCount) {
+            return `当前独立 seed ${boundaryClosureDiagnostics.matchedSeedCount}/${boundaryQualityReport.formalRegionCount}。继续补闭合边界，不要用粗轮廓替代。`;
+        }
+        return '当前没有补边队列。可以保存工作区、按边界生成区域，再导出验收包逐区看图。';
+    }, [
+        boundaryClosureDiagnostics.matchedSeedCount,
+        boundaryClosureDiagnostics.unmatchedRegions,
+        boundaryQualityReport.formalRegionCount,
+        hasBoundaryDraft,
+        unexplainedBoundaryOpenDiagnostics.hints.length,
+        weakRealMapFitRegionReports,
+    ]);
+    const shouldShowMoveCostDetourCard = showAdvancedWorkbench
+        && hasBoundaryDraft
+        && !regionTruthWorkflowActive
+        && !hasGeneratedRegions
+        && (
+            boundaryClosureDiagnostics.matchedSeedCount < boundaryQualityReport.formalRegionCount
+            || unexplainedBoundaryOpenDiagnostics.openComponentCount > 0
+        );
+    const updateRegionAcceptance = React.useCallback((regionId: string, nextAcceptance: RegionAcceptanceReview | null) => {
+        setRegions((current) => current.map((region) => (
+            region.id === regionId
+                ? { ...region, acceptance: nextAcceptance }
+                : region
+        )));
+    }, []);
+    const markRegionAcceptanceApproved = React.useCallback((coverage: BoundaryNormalityRegionCoverage) => {
+        if (coverage.acceptanceState === 'blocked' || coverage.acceptanceState === 'not-generated') {
+            setStatusMessage(`${coverage.regionName} 还不能验收：${coverage.label}。先修边界并重新生成。`);
+            return;
+        }
+        if (boundaryQualityReport.normality.state !== 'needs-visual-review' && boundaryQualityReport.normality.state !== 'accepted') {
+            setStatusMessage('当前还没进入逐区验收阶段。必须先生成完整区域且通过面积粗检。');
+            return;
+        }
+        if (!isCurrentAcceptancePackageExported) {
+            setStatusMessage('当前签名的区域验收包还没导出。先导出验收包 ZIP 并逐张看图，再标记看图通过。');
+            return;
+        }
+        if (!hasViewedRegionAcceptanceCrop(coverage)) {
+            setStatusMessage(`${coverage.regionName} 当前签名的验收裁图还没在工具内打开。先点“查看裁图”，看完再标记通过。`);
+            return;
+        }
+        updateRegionAcceptance(coverage.regionId, {
+            status: 'approved',
+            signature: coverage.currentSignature,
+            reviewedAt: new Date().toISOString(),
+        });
+        setStatusMessage(`${coverage.regionName} 已标记为看图验收通过。若后续修改 mask 或边界，验收会自动失效。`);
+    }, [boundaryQualityReport.normality.state, hasViewedRegionAcceptanceCrop, isCurrentAcceptancePackageExported, updateRegionAcceptance]);
+    const revokeRegionAcceptance = React.useCallback((regionId: string, regionName: string) => {
+        updateRegionAcceptance(regionId, null);
+        setStatusMessage(`${regionName} 的人工验收标记已撤销。`);
+    }, [updateRegionAcceptance]);
+    const showFormalEmptyWorkspaceGuide = !isIsolatedWorkspace
+        && persistedWorkspaceState === 'empty'
+        && boundaryDraftPixelCount === 0
+        && barrierPixelCount === 0
+        && lastRegionGenerationResults.length === 0;
+    React.useEffect(() => {
+        if (showFormalEmptyWorkspaceGuide) {
+            setAllowSeedStatusOverlayInFormalEmpty(false);
+            setShowSeedStatusOverlay(false);
+            setShowAdvancedWorkbench(false);
+            setShowFormalEmptyToolPanel(false);
+        }
+    }, [showFormalEmptyWorkspaceGuide]);
+    const seedStatusOverlayVisible = showSeedStatusOverlay
+        && (!showFormalEmptyWorkspaceGuide || allowSeedStatusOverlayInFormalEmpty);
     const authoritativeGuideRegionIdSet = React.useMemo(
         () => new Set(authoritativeGuideRegionIds),
         [authoritativeGuideRegionIds],
@@ -1249,7 +6211,7 @@ const QidahenRegionMaskTool: React.FC = () => {
     const buildMagicSelection = React.useCallback((
         point: MaskPoint,
         regionId?: string | null,
-        options?: { disableTruthGuide?: boolean },
+        options?: { disableTruthGuide?: boolean; allowStaticBootstrap?: boolean },
     ) => {
         const barrierMask = barrierMaskRef.current;
         const rawBarrierMask = rawBarrierMaskRef.current;
@@ -1299,16 +6261,20 @@ const QidahenRegionMaskTool: React.FC = () => {
                 iterations: MAGIC_BOOTSTRAP_GUIDE_EXPANSION,
             })
             : null;
+        const diagnosticTruthGuide = regionId && isDiagnosticRegionId(regionId)
+            ? (DIAGNOSTIC_SAMPLES.find((sample) => buildDiagnosticRegionId(sample.id) === regionId)?.truthGuide ?? false)
+            : false;
+        const allowStaticBootstrap = options?.allowStaticBootstrap === true || Boolean(diagnosticTruthGuide);
         const authoritativeBootstrapGuideMaskRaw = regionId
             ? (authoritativeBootstrapGuideMasks.get(regionId) ?? null)
             : null;
         const authoritativeTruthMaskRaw = regionId
             ? (authoritativeTruthMasks.get(regionId) ?? null)
             : null;
-        const staticBootstrapGuideMaskRaw = regionId
+        const staticBootstrapGuideMaskRaw = allowStaticBootstrap && regionId
             ? (STATIC_BOOTSTRAP_GUIDE_MASKS.get(regionId) ?? null)
             : null;
-        const staticBootstrapShapeMaskRaw = regionId
+        const staticBootstrapShapeMaskRaw = allowStaticBootstrap && regionId
             ? (STATIC_BOOTSTRAP_SHAPE_MASKS.get(regionId) ?? null)
             : null;
         const persistedStaticOverlap = measureMaskOverlap(
@@ -1377,9 +6343,6 @@ const QidahenRegionMaskTool: React.FC = () => {
                 ? 'persisted'
                 : null;
         const guideRejected = (persistedRegionMaskRaw != null || staticBootstrapGuideMaskRaw != null) && bootstrapGuideMask == null;
-        const diagnosticTruthGuide = regionId && isDiagnosticRegionId(regionId)
-            ? (DIAGNOSTIC_SAMPLES.find((sample) => buildDiagnosticRegionId(sample.id) === regionId)?.truthGuide ?? false)
-            : false;
         const boundedColorMask = bootstrapGuideMask
             ? intersectBinaryMasks(colorMask, bootstrapGuideMask)
             : colorMask;
@@ -2742,14 +7705,14 @@ const QidahenRegionMaskTool: React.FC = () => {
         image.src = DEFAULT_MAP_PATH;
     }, []);
 
-    const renderAssignments = React.useCallback(() => {
+    const renderAssignments = React.useCallback((sourceRegions: readonly PainterRegion[] = regions) => {
         const canvas = maskCanvasRef.current;
         const context = canvas?.getContext('2d');
         if (!canvas || !context) {
             return;
         }
 
-        const palette = regions.map((region) => hexToRgb(region.color));
+        const palette = sourceRegions.map((region) => hexToRgb(region.color));
         const pixels = buildMaskPixelBuffer({
             assignments: assignmentsRef.current,
             palette,
@@ -2759,6 +7722,71 @@ const QidahenRegionMaskTool: React.FC = () => {
         context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
     }, [regions]);
 
+    const renderPartitionPreview = React.useCallback(() => {
+        const canvas = partitionPreviewCanvasRef.current;
+        const context = canvas?.getContext('2d');
+        if (!canvas || !context) {
+            return;
+        }
+        context.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
+        if (
+            !showPartitionPreviewOverlay
+            || !hasBoundaryDraft
+            || hasGeneratedRegions
+            || boundaryClosureDiagnostics.matchedPartitions.length === 0
+        ) {
+            return;
+        }
+
+        const pixels = new Uint8ClampedArray(MASK_WIDTH * MASK_HEIGHT * 4);
+        for (const partition of boundaryClosureDiagnostics.matchedPartitions) {
+            const color = hexToRgb(partition.color);
+            for (let index = 0; index < partition.mask.length; index += 1) {
+                if (partition.mask[index] === 0) {
+                    continue;
+                }
+                const offset = index * 4;
+                pixels[offset] = color[0];
+                pixels[offset + 1] = color[1];
+                pixels[offset + 2] = color[2];
+                pixels[offset + 3] = 72;
+            }
+        }
+        context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
+    }, [boundaryClosureDiagnostics.matchedPartitions, hasBoundaryDraft, hasGeneratedRegions, showPartitionPreviewOverlay]);
+
+    const renderBoundarySourceReference = React.useCallback(() => {
+        const canvas = boundarySourceReferenceCanvasRef.current;
+        const context = canvas?.getContext('2d');
+        if (!canvas || !context) {
+            return;
+        }
+        context.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
+        if (!boundarySourceReferenceImage) {
+            return;
+        }
+        context.drawImage(boundarySourceReferenceImage, 0, 0, MASK_WIDTH, MASK_HEIGHT);
+    }, [boundarySourceReferenceImage]);
+
+    const applyBoundarySourceReferenceDataUrl = React.useCallback(async (dataUrl: string | null, options?: { visible?: boolean }) => {
+        if (!dataUrl) {
+            setBoundarySourceReferenceDataUrl(null);
+            setBoundarySourceReferenceImage(null);
+            setShowBoundarySourceReference(false);
+            return;
+        }
+        const image = await loadImageFromSource(dataUrl);
+        setBoundarySourceReferenceDataUrl(dataUrl);
+        setBoundarySourceReferenceImage(image);
+        setShowBoundarySourceReference(options?.visible ?? true);
+    }, []);
+
+    const clearBoundarySourceReference = React.useCallback(() => {
+        void applyBoundarySourceReferenceDataUrl(null);
+        setBoundarySourceReferenceOpacity(0.42);
+        setStatusMessage('已清除参考层；边界图和微调层保持不变。保存工作区后，下次刷新不会再回读这张参考图。');
+    }, [applyBoundarySourceReferenceDataUrl]);
+
     const renderSelectedOutline = React.useCallback(() => {
         const canvas = outlineCanvasRef.current;
         const context = canvas?.getContext('2d');
@@ -2766,7 +7794,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             return;
         }
         context.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
-        if (selectedRegionIndex < 0) {
+        if (!showSelectedOutline || selectedRegionIndex < 0) {
             return;
         }
 
@@ -2776,17 +7804,17 @@ const QidahenRegionMaskTool: React.FC = () => {
             height: MASK_HEIGHT,
             regionIndex: selectedRegionIndex,
             color: [23, 17, 12],
-            thickness: 6,
-            alpha: 180,
+            thickness: 10,
+            alpha: 220,
         });
         const glowPixels = buildRegionOutlinePixelBuffer({
             assignments: assignmentsRef.current,
             width: MASK_WIDTH,
             height: MASK_HEIGHT,
             regionIndex: selectedRegionIndex,
-            color: [255, 217, 136],
-            thickness: 3,
-            alpha: 220,
+            color: [255, 196, 77],
+            thickness: 6,
+            alpha: 245,
         });
         const pixels = buildRegionOutlinePixelBuffer({
             assignments: assignmentsRef.current,
@@ -2794,13 +7822,13 @@ const QidahenRegionMaskTool: React.FC = () => {
             height: MASK_HEIGHT,
             regionIndex: selectedRegionIndex,
             color: [255, 244, 214],
-            thickness: 1,
+            thickness: 2,
             alpha: 255,
         });
         context.putImageData(new ImageData(outerPixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
         context.putImageData(new ImageData(glowPixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
         context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
-    }, [selectedRegionIndex]);
+    }, [selectedRegionIndex, showSelectedOutline]);
 
     const renderBarrierOverlay = React.useCallback(() => {
         const canvas = barrierCanvasRef.current;
@@ -2810,6 +7838,8 @@ const QidahenRegionMaskTool: React.FC = () => {
         }
         context.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
         if (
+            !showRealMapBoundarySupportOverlay
+            &&
             !boundaryDraftMaskRef.current
             && !heuristicBarrierMaskRef.current
             && manualBarrierAddRef.current.every((value) => value === 0)
@@ -2818,15 +7848,49 @@ const QidahenRegionMaskTool: React.FC = () => {
             return;
         }
 
-        const pixels = buildBarrierDebugPixelBuffer({
-            heuristicMask: boundaryDraftMaskRef.current ?? heuristicBarrierMaskRef.current,
+        const visibleBoundaryMask = composeBarrierMask({
+            baseMask: boundaryDraftMaskRef.current ?? heuristicBarrierMaskRef.current ?? new Uint8Array(MASK_WIDTH * MASK_HEIGHT),
             addMask: manualBarrierAddRef.current,
             removeMask: manualBarrierRemoveRef.current,
+        });
+        const emptyEditMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+        const pixels = buildBarrierDebugPixelBuffer({
+            heuristicMask: visibleBoundaryMask,
+            addMask: emptyEditMask,
+            removeMask: emptyEditMask,
+            realMapSupportMask: showRealMapBoundarySupportOverlay ? realMapBoundaryCandidateMask : null,
             width: MASK_WIDTH,
             height: MASK_HEIGHT,
         });
         context.putImageData(new ImageData(pixels, MASK_WIDTH, MASK_HEIGHT), 0, 0);
-    }, []);
+    }, [realMapBoundaryCandidateMask, showRealMapBoundarySupportOverlay]);
+
+    const renderBarrierBrushPreviewStroke = React.useCallback((from: MaskPoint, to: MaskPoint, operation: BarrierHintOperation) => {
+        const canvas = barrierCanvasRef.current;
+        const context = canvas?.getContext('2d');
+        if (!canvas || !context) {
+            return;
+        }
+        context.save();
+        context.globalCompositeOperation = operation === 'subtract' ? 'destination-out' : 'source-over';
+        context.strokeStyle = 'rgba(239, 68, 68, 0.9)';
+        context.fillStyle = 'rgba(239, 68, 68, 0.9)';
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.lineWidth = Math.max(1, brushSize * 2);
+        context.beginPath();
+        context.moveTo(from.x, from.y);
+        context.lineTo(to.x, to.y);
+        context.stroke();
+        context.beginPath();
+        context.arc(to.x, to.y, brushSize, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+    }, [brushSize]);
+
+    React.useEffect(() => {
+        renderBarrierOverlay();
+    }, [renderBarrierOverlay]);
 
     const rebuildBarrierMask = React.useCallback(() => {
         if (!sourcePixelsRef.current) {
@@ -2837,6 +7901,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             rawBarrierMaskRef.current = null;
             barrierMaskRef.current = null;
             setBarrierPixelCount(0);
+            setBarrierMaskVersion((current) => current + 1);
             renderBarrierOverlay();
             return;
         }
@@ -2850,58 +7915,83 @@ const QidahenRegionMaskTool: React.FC = () => {
                 enabled: true,
             }));
 
-        const colorBarrierMask = buildBarrierMask({
-            source: sourcePixelsRef.current,
-            width: MASK_WIDTH,
-            height: MASK_HEIGHT,
-            rules: activeRules,
-            expansion: boundaryExpansion,
-            minComponentPixels: DEFAULT_BOUNDARY_COMPONENT_MIN_PIXELS,
-            blurRadius: HEURISTIC_BARRIER_BLUR_RADIUS,
-            lineFilter: HEURISTIC_BARRIER_LINE_FILTER,
-        });
-        const colorLineBarrierMask = buildBarrierMask({
-            source: sourcePixelsRef.current,
-            width: MASK_WIDTH,
-            height: MASK_HEIGHT,
-            rules: activeRules,
-            expansion: 0,
-            minComponentPixels: DEFAULT_BOUNDARY_COMPONENT_MIN_PIXELS,
-            blurRadius: HEURISTIC_BARRIER_BLUR_RADIUS,
-            lineFilter: HEURISTIC_BARRIER_LINE_FILTER,
-        });
-        const rawColorBarrierMask = buildBarrierMask({
-            source: sourcePixelsRef.current,
-            width: MASK_WIDTH,
-            height: MASK_HEIGHT,
-            rules: activeRules,
-            expansion: boundaryExpansion,
-            minComponentPixels: DEFAULT_BOUNDARY_COMPONENT_MIN_PIXELS,
-            blurRadius: HEURISTIC_BARRIER_BLUR_RADIUS,
-            lineFilter: null,
-        });
-        const gradientBarrierMask = buildGradientBarrierMask({
-            source: sourcePixelsRef.current,
-            width: MASK_WIDTH,
-            height: MASK_HEIGHT,
-            ...HEURISTIC_GRADIENT_BARRIER,
-        });
-        const rawGradientBarrierMask = buildGradientBarrierMask({
-            source: sourcePixelsRef.current,
-            width: MASK_WIDTH,
-            height: MASK_HEIGHT,
-            ...HEURISTIC_GRADIENT_BARRIER,
-            lineFilter: null,
-        });
         const boundaryDraftMask = boundaryDraftMaskRef.current;
-        const rawBarrierMask = boundaryDraftMask
+        const manualAddPixelCount = countMaskPixels(manualBarrierAddRef.current);
+        const manualRemovePixelCount = countMaskPixels(manualBarrierRemoveRef.current);
+        const suppressImplicitBarrier = paintedBoundaryOnly
+            && !boundaryDraftMask
+            && manualAddPixelCount === 0
+            && manualRemovePixelCount === 0;
+        const useBlankBoundaryBase = manualBlankBoundaryBase && !boundaryDraftMask;
+        const shouldUseImplicitSourceBarrier = !suppressImplicitBarrier && !useBlankBoundaryBase && !boundaryDraftMask;
+        const emptyBarrierMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+        const colorBarrierMask = shouldUseImplicitSourceBarrier
+            ? buildBarrierMask({
+                source: sourcePixelsRef.current,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                rules: activeRules,
+                expansion: boundaryExpansion,
+                minComponentPixels: DEFAULT_BOUNDARY_COMPONENT_MIN_PIXELS,
+                blurRadius: HEURISTIC_BARRIER_BLUR_RADIUS,
+                lineFilter: HEURISTIC_BARRIER_LINE_FILTER,
+            })
+            : emptyBarrierMask;
+        const colorLineBarrierMask = shouldUseImplicitSourceBarrier
+            ? buildBarrierMask({
+                source: sourcePixelsRef.current,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                rules: activeRules,
+                expansion: 0,
+                minComponentPixels: DEFAULT_BOUNDARY_COMPONENT_MIN_PIXELS,
+                blurRadius: HEURISTIC_BARRIER_BLUR_RADIUS,
+                lineFilter: HEURISTIC_BARRIER_LINE_FILTER,
+            })
+            : emptyBarrierMask;
+        const rawColorBarrierMask = shouldUseImplicitSourceBarrier
+            ? buildBarrierMask({
+                source: sourcePixelsRef.current,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                rules: activeRules,
+                expansion: boundaryExpansion,
+                minComponentPixels: DEFAULT_BOUNDARY_COMPONENT_MIN_PIXELS,
+                blurRadius: HEURISTIC_BARRIER_BLUR_RADIUS,
+                lineFilter: null,
+            })
+            : emptyBarrierMask;
+        const gradientBarrierMask = shouldUseImplicitSourceBarrier && !paintedBoundaryOnly
+            ? buildGradientBarrierMask({
+                source: sourcePixelsRef.current,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                ...HEURISTIC_GRADIENT_BARRIER,
+            })
+            : emptyBarrierMask;
+        const rawGradientBarrierMask = shouldUseImplicitSourceBarrier && !paintedBoundaryOnly
+            ? buildGradientBarrierMask({
+                source: sourcePixelsRef.current,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                ...HEURISTIC_GRADIENT_BARRIER,
+                lineFilter: null,
+            })
+            : emptyBarrierMask;
+        const rawBarrierMask = suppressImplicitBarrier
+            || useBlankBoundaryBase
+            ? new Uint8Array(MASK_WIDTH * MASK_HEIGHT)
+            : boundaryDraftMask
             ? boundaryDraftMask
             : (
                 paintedBoundaryOnly
                     ? rawColorBarrierMask
                     : unionBinaryMasks(rawColorBarrierMask, rawGradientBarrierMask)
             );
-        const barrierMask = boundaryDraftMask
+        const barrierMask = suppressImplicitBarrier
+            || useBlankBoundaryBase
+            ? new Uint8Array(MASK_WIDTH * MASK_HEIGHT)
+            : boundaryDraftMask
             ? boundaryDraftMask
             : (
                 paintedBoundaryOnly
@@ -2937,22 +8027,93 @@ const QidahenRegionMaskTool: React.FC = () => {
         });
         setBoundaryDraftPixelCount(boundaryDraftMask ? countMaskPixels(boundaryDraftMask) : 0);
         setBarrierPixelCount(countMaskPixels(barrierMaskRef.current));
-        setManualBarrierAddCount(countMaskPixels(manualBarrierAddRef.current));
-        setManualBarrierRemoveCount(countMaskPixels(manualBarrierRemoveRef.current));
+        setManualBarrierAddCount(manualAddPixelCount);
+        setManualBarrierRemoveCount(manualRemovePixelCount);
+        setBarrierMaskVersion((current) => current + 1);
         renderBarrierOverlay();
-    }, [boundaryExpansion, boundaryPresets, boundaryTolerance, paintedBoundaryOnly, renderBarrierOverlay]);
+    }, [boundaryExpansion, boundaryPresets, boundaryTolerance, manualBlankBoundaryBase, paintedBoundaryOnly, renderBarrierOverlay]);
 
     React.useEffect(() => {
         rebuildBarrierMaskRef.current = rebuildBarrierMask;
     }, [rebuildBarrierMask]);
+
+    const syncBarrierHistoryState = React.useCallback(() => {
+        setBarrierHistoryState({
+            canUndo: barrierHistoryUndoRef.current.length > 0,
+            canRedo: barrierHistoryRedoRef.current.length > 0,
+        });
+    }, []);
+
+    const captureBarrierHistorySnapshot = React.useCallback<() => BarrierHistorySnapshot>(() => ({
+        addMask: manualBarrierAddRef.current.slice(),
+        removeMask: manualBarrierRemoveRef.current.slice(),
+    }), []);
+
+    const pushBarrierHistorySnapshot = React.useCallback((snapshot: BarrierHistorySnapshot) => {
+        const undoStack = barrierHistoryUndoRef.current;
+        const lastSnapshot = undoStack.at(-1);
+        if (lastSnapshot && barrierHistorySnapshotsEqual(lastSnapshot, snapshot)) {
+            return;
+        }
+        undoStack.push(snapshot);
+        if (undoStack.length > MAX_BARRIER_HISTORY_STEPS) {
+            undoStack.shift();
+        }
+        barrierHistoryRedoRef.current = [];
+        syncBarrierHistoryState();
+    }, [syncBarrierHistoryState]);
+
+    const clearBarrierHistory = React.useCallback(() => {
+        barrierHistoryUndoRef.current = [];
+        barrierHistoryRedoRef.current = [];
+        barrierBrushStrokeSnapshotRef.current = null;
+        barrierBrushPendingRebuildRef.current = false;
+        syncBarrierHistoryState();
+    }, [syncBarrierHistoryState]);
+
+    const restoreBarrierHistorySnapshot = React.useCallback((snapshot: BarrierHistorySnapshot) => {
+        manualBarrierAddRef.current = snapshot.addMask.slice();
+        manualBarrierRemoveRef.current = snapshot.removeMask.slice();
+        rebuildBarrierMaskRef.current();
+    }, []);
+
+    const undoBarrierHints = React.useCallback(() => {
+        const previousSnapshot = barrierHistoryUndoRef.current.pop();
+        if (!previousSnapshot) {
+            setStatusMessage('没有可撤销的边界微调。');
+            syncBarrierHistoryState();
+            return;
+        }
+        barrierHistoryRedoRef.current.push(captureBarrierHistorySnapshot());
+        restoreBarrierHistorySnapshot(previousSnapshot);
+        syncBarrierHistoryState();
+        setStatusMessage('已撤销上一步边界微调。');
+    }, [captureBarrierHistorySnapshot, restoreBarrierHistorySnapshot, syncBarrierHistoryState]);
+
+    const redoBarrierHints = React.useCallback(() => {
+        const nextSnapshot = barrierHistoryRedoRef.current.pop();
+        if (!nextSnapshot) {
+            setStatusMessage('没有可重做的边界微调。');
+            syncBarrierHistoryState();
+            return;
+        }
+        barrierHistoryUndoRef.current.push(captureBarrierHistorySnapshot());
+        restoreBarrierHistorySnapshot(nextSnapshot);
+        syncBarrierHistoryState();
+        setStatusMessage('已重做边界微调。');
+    }, [captureBarrierHistorySnapshot, restoreBarrierHistorySnapshot, syncBarrierHistoryState]);
 
     React.useEffect(() => {
         let cancelled = false;
 
         const loadPersistedRegionData = async () => {
             try {
-                const response = await fetch(LOAD_ENDPOINT);
+                const response = await fetch(LOAD_ENDPOINT + workspaceQuery);
                 if (response.status === 404) {
+                    clearBarrierHistory();
+                    setPersistedWorkspaceState('empty');
+                    setDataOutputDir(initialDataOutputDir);
+                    setStatusMessage(`当前工作区还没有保存过真实边界成果。请先导入完成边界图或带底图描线图，再开始修边。`);
                     return;
                 }
                 if (!response.ok) {
@@ -2961,6 +8122,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 }
 
                 const payload = await response.json() as {
+                    outputDir?: unknown;
                     maskPngDataUrl?: unknown;
                     boundaryMaskPngDataUrl?: unknown;
                     barrierHints?: {
@@ -2971,6 +8133,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                         maskPngDataUrl?: unknown;
                         regionIds?: unknown;
                     } | null;
+                    boundarySourceReferencePngDataUrl?: unknown;
                     regions?: {
                         boundaryRules?: unknown;
                         boundaryExpansion?: unknown;
@@ -2982,31 +8145,42 @@ const QidahenRegionMaskTool: React.FC = () => {
                         edges?: unknown;
                     };
                 };
-
                 if (typeof payload.maskPngDataUrl !== 'string') {
                     throw new Error('缺少已保存的 mask PNG');
                 }
+                setDataOutputDir(typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR);
                 const loadedAuthoritativeGuideIds = normalizeLoadedAuthoritativeGuideIds(payload.authoritativeGuides?.regionIds ?? null);
 
                 const loadedRegions = normalizeLoadedRegions(payload.regions?.regions);
                 if (loadedRegions.length === 0) {
                     throw new Error('已保存区域定义为空');
                 }
-                const [nextAssignments, nextBoundaryDraftMask, nextBarrierAddMask, nextBarrierRemoveMask] = await Promise.all([
-                    readAssignmentsFromImageSource({
-                        src: payload.maskPngDataUrl,
-                        regions: loadedRegions,
-                    }),
-                    readBinaryMaskFromImageSource(typeof payload.boundaryMaskPngDataUrl === 'string' ? payload.boundaryMaskPngDataUrl : null),
-                    readBinaryMaskFromImageSource(payload.barrierHints?.addPngDataUrl ?? null),
-                    readBinaryMaskFromImageSource(payload.barrierHints?.removePngDataUrl ?? null),
-                ]);
+                // 保存后刷新/回读工作区时，串行读取几张大 PNG，避免同一时刻堆四个 getImageData 峰值。
+                const nextAssignments = await readAssignmentsFromImageSource({
+                    src: payload.maskPngDataUrl,
+                    regions: loadedRegions,
+                });
+                let nextBoundaryDraftMask = await readBinaryMaskFromImageSource(
+                    typeof payload.boundaryMaskPngDataUrl === 'string' ? payload.boundaryMaskPngDataUrl : null,
+                );
+                const nextBarrierAddMask = await readBinaryMaskFromImageSource(payload.barrierHints?.addPngDataUrl ?? null);
+                const nextBarrierRemoveMask = await readBinaryMaskFromImageSource(payload.barrierHints?.removePngDataUrl ?? null);
 
                 const loadedCenters = computeRegionCenters({
                     assignments: nextAssignments,
                     width: MASK_WIDTH,
                     regionCount: loadedRegions.length,
                 });
+                const hasAssignedPixels = nextAssignments.some((value) => value >= 0);
+                let hasBoundaryDraftPixels = countMaskPixels(nextBoundaryDraftMask) > 0;
+                const hasBarrierAddPixels = countMaskPixels(nextBarrierAddMask) > 0;
+                const hasBarrierRemovePixels = countMaskPixels(nextBarrierRemoveMask) > 0;
+                const hasAuthoritativeGuides = loadedAuthoritativeGuideIds.length > 0;
+                const hasBoundarySourceReference = typeof payload.boundarySourceReferencePngDataUrl === 'string' && payload.boundarySourceReferencePngDataUrl.length > 0;
+                const hasSavedPassages = normalizeLoadedPassages(payload.graph?.edges).length > 0;
+                const shouldResumeBoundaryEditing = !hasAssignedPixels && (hasBoundaryDraftPixels || hasBarrierAddPixels || hasBarrierRemovePixels);
+                const shouldResumeRegionPathEditing = hasAssignedPixels && hasSavedPassages;
+                const shouldResumeRegionPainting = hasAssignedPixels && !hasSavedPassages;
                 let mismatchedSeedCount = 0;
                 const normalizedRegions = loadedRegions.map((region, regionIndex) => {
                     const loadedCenter = loadedCenters[regionIndex] ?? null;
@@ -3015,9 +8189,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                         ? { x: loadedCenter.x, y: loadedCenter.y }
                         : region.seed
                             ? { x: region.seed.x, y: region.seed.y }
-                            : getRegionShapeCenterPoint(region.name, { x: 0, y: 0 });
+                            : null;
                     if (
-                        staticShapeMask
+                        nextSeed
+                        && staticShapeMask
                         && !maskContainsPoint({
                             mask: staticShapeMask,
                             width: MASK_WIDTH,
@@ -3032,22 +8207,111 @@ const QidahenRegionMaskTool: React.FC = () => {
                         seed: nextSeed,
                     };
                 });
+                let autoDerivedBoundaryFromSavedRegions = false;
+                if (hasAssignedPixels && !hasBoundaryDraftPixels && !hasBarrierAddPixels && !hasBarrierRemovePixels) {
+                    const derivedBoundaryMask = buildBoundaryMaskFromRegionAssignments({
+                        assignments: nextAssignments,
+                        regionIndexes: normalizedRegions
+                            .map((region, regionIndex) => (isDiagnosticRegionId(region.id) ? -1 : regionIndex))
+                            .filter((regionIndex) => regionIndex >= 0),
+                        exclusionMask: currentMapArtifactExclusionMask,
+                        regionSeedByIndex: new Map(
+                            normalizedRegions
+                                .map((region, regionIndex) => [regionIndex, region.seed] as const)
+                                .filter((entry): entry is [number, MaskPoint] => entry[1] != null),
+                        ),
+                        smoothRegionFillIterations: 3,
+                    });
+                    if (countMaskPixels(derivedBoundaryMask) > 0) {
+                        nextBoundaryDraftMask = derivedBoundaryMask;
+                        hasBoundaryDraftPixels = true;
+                        autoDerivedBoundaryFromSavedRegions = true;
+                    }
+                }
+                const workspaceHasPersistedArtifacts =
+                    hasAssignedPixels
+                    || hasBoundaryDraftPixels
+                    || hasBarrierAddPixels
+                    || hasBarrierRemovePixels
+                    || hasAuthoritativeGuides
+                    || hasBoundarySourceReference
+                    || hasSavedPassages;
 
                 if (cancelled) {
                     return;
                 }
 
+                const resumedRegionGenerationResults: RegionGenerationResult[] = hasAssignedPixels
+                    ? normalizedRegions
+                        .filter((region) => !isDiagnosticRegionId(region.id))
+                        .map((region, regionIndex) => {
+                            const loadedCenter = loadedCenters[regionIndex] ?? null;
+                            const pixelCount = loadedCenter?.pixelCount ?? 0;
+                            return {
+                                regionId: region.id,
+                                regionName: region.name,
+                                status: pixelCount > 0 ? 'generated' : 'skipped',
+                                pixelCount,
+                                seed: region.seed ?? null,
+                                note: pixelCount > 0
+                                    ? `已从已保存工作区回读 ${pixelCount.toLocaleString()} px。`
+                                    : '当前工作区里该区域没有已保存像素。',
+                            };
+                        })
+                    : [];
+
                 assignmentsRef.current = nextAssignments;
                 boundaryDraftMaskRef.current = countMaskPixels(nextBoundaryDraftMask) > 0 ? nextBoundaryDraftMask : null;
                 manualBarrierAddRef.current = nextBarrierAddMask;
                 manualBarrierRemoveRef.current = nextBarrierRemoveMask;
-                pendingSeedNormalizationRef.current = true;
+                clearBarrierHistory();
+                setManualBlankBoundaryBase(false);
+                setShowBarrier(hasBoundaryDraftPixels || hasBarrierAddPixels || hasBarrierRemovePixels);
+                setShowMask(hasAssignedPixels);
+                setMode(
+                    shouldResumeBoundaryEditing
+                        ? 'barrier'
+                        : shouldResumeRegionPathEditing
+                            ? 'path'
+                            : shouldResumeRegionPainting
+                                ? 'paint'
+                                : 'wand',
+                );
+                setBarrierHintOperation('add');
+                setBarrierEditMode('brush');
+                setShowForbiddenUiOverlay(false);
+                setShowSeedStatusOverlay(!usePrimaryMapEditor);
+                setShowPartitionPreviewOverlay(!usePrimaryMapEditor);
+                setBoundarySourceReferenceOpacity((hasBoundaryDraftPixels || hasBarrierAddPixels || hasBarrierRemovePixels) && hasBoundarySourceReference ? 0.38 : 0.42);
+                pendingSeedNormalizationRef.current = !usePrimaryMapEditor;
+                setPersistedWorkspaceState(workspaceHasPersistedArtifacts ? 'populated' : 'empty');
                 setAuthoritativeGuideRegionIds(loadedAuthoritativeGuideIds.filter((regionId) => loadedRegions.some((region) => region.id === regionId)));
                 setRegions(normalizedRegions);
+                setGraphNodes(
+                    loadedCenters.flatMap((center) => {
+                        const region = normalizedRegions[center.regionIndex];
+                        if (!region || isDiagnosticRegionId(region.id) || center.pixelCount <= 0) {
+                            return [];
+                        }
+                        return [{
+                            id: region.id,
+                            name: region.name,
+                            color: region.color,
+                            x: center.x,
+                            y: center.y,
+                            pixelCount: center.pixelCount,
+                        }];
+                    }),
+                );
                 setSelectedRegionId(normalizedRegions.find((region) => region.seed)?.id ?? normalizedRegions[0].id);
                 setPassages(normalizeLoadedPassages(payload.graph?.edges));
+                setLastRegionGenerationWorkflow(
+                    hasAssignedPixels
+                        ? (hasSavedPassages ? 'region-path-quick-start' : 'region-draft')
+                        : null,
+                );
+                setLastRegionGenerationResults(resumedRegionGenerationResults);
                 setBoundaryPresets(normalizeLoadedBoundaryPresets(payload.regions?.boundaryRules));
-
                 const loadedTolerance = extractBoundaryTolerance(payload.regions?.boundaryRules);
                 if (loadedTolerance != null) {
                     setBoundaryTolerance(loadedTolerance);
@@ -3066,7 +8330,24 @@ const QidahenRegionMaskTool: React.FC = () => {
                 const correctedSeedNote = mismatchedSeedCount > 0
                     ? ` 已保留 ${mismatchedSeedCount} 个与 static shape 不一致的现有 seed；静态 shape 仅作 bootstrap 参考。`
                     : '';
-                setStatusMessage(`已自动读取 ${DATA_OUTPUT_DIR} 中的区域数据；刷新后继续在上次结果上修边。${correctedSeedNote}`);
+                const derivedBoundaryNote = autoDerivedBoundaryFromSavedRegions
+                    ? ' 已从已保存区域边缘反推红线显示；如需改边界，可直接画边界/擦边界后保存。'
+                    : '';
+                setStatusMessage(
+                    workspaceHasPersistedArtifacts
+                        ? shouldResumeRegionPathEditing
+                            ? `已自动读取 ${typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR} 中的区域/通路结果；刷新后直接继续改移动代价。${derivedBoundaryNote}${correctedSeedNote}`
+                            : shouldResumeRegionPainting
+                                ? `已自动读取 ${typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR} 中的区域结果；刷新后继续在上次区域稿上微调。${derivedBoundaryNote}${correctedSeedNote}`
+                                : `已自动读取 ${typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR} 中的区域数据；刷新后继续在上次结果上修边。${derivedBoundaryNote}${correctedSeedNote}`
+                        : `当前工作区还没有保存过真实边界成果。请先导入完成边界图或带底图描线图，再开始修边。${correctedSeedNote}`,
+                );
+                // 参考层只影响叠图显示，不该阻塞整个工作区回读。
+                void applyBoundarySourceReferenceDataUrl(
+                    typeof payload.boundarySourceReferencePngDataUrl === 'string'
+                        ? payload.boundarySourceReferencePngDataUrl
+                        : null,
+                );
             } catch (error: unknown) {
                 if (cancelled) {
                     return;
@@ -3080,11 +8361,11 @@ const QidahenRegionMaskTool: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [applyBoundarySourceReferenceDataUrl, clearBarrierHistory, currentMapArtifactExclusionMask, initialDataOutputDir, usePrimaryMapEditor, workspaceQuery]);
 
     React.useEffect(() => {
         const canvas = bgCanvasRef.current;
-        const context = canvas?.getContext('2d');
+        const context = canvas?.getContext('2d', { willReadFrequently: true });
         if (!canvas || !context || !mapImage) {
             return;
         }
@@ -3092,6 +8373,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         context.clearRect(0, 0, MASK_WIDTH, MASK_HEIGHT);
         context.drawImage(mapImage, 0, 0, MASK_WIDTH, MASK_HEIGHT);
         sourcePixelsRef.current = context.getImageData(0, 0, MASK_WIDTH, MASK_HEIGHT).data;
+        setSourcePixelsVersion((current) => current + 1);
         rebuildBarrierMask();
     }, [mapImage, rebuildBarrierMask]);
 
@@ -3100,12 +8382,27 @@ const QidahenRegionMaskTool: React.FC = () => {
     }, [rebuildBarrierMask]);
 
     React.useEffect(() => {
+        renderBoundarySourceReference();
+    }, [renderBoundarySourceReference]);
+
+    React.useEffect(() => {
+        if (skipNextAssignmentsRenderEffectRef.current) {
+            skipNextAssignmentsRenderEffectRef.current = false;
+            renderPartitionPreview();
+            renderSelectedOutline();
+            return;
+        }
         renderAssignments();
+        renderPartitionPreview();
         renderSelectedOutline();
-    }, [regions, renderAssignments, renderSelectedOutline]);
+    }, [regions, renderAssignments, renderPartitionPreview, renderSelectedOutline]);
 
     React.useEffect(() => {
         if (!pendingSeedNormalizationRef.current) {
+            return;
+        }
+        if (simplifiedBoundaryWorkflow) {
+            pendingSeedNormalizationRef.current = false;
             return;
         }
         const barrierMask = barrierMaskRef.current;
@@ -3124,14 +8421,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                 if (!guideMask) {
                     return region;
                 }
-                const anchorPoint = region.seed && maskContainsPoint({
-                    mask: guideMask,
-                    width: MASK_WIDTH,
-                    x: region.seed.x,
-                    y: region.seed.y,
-                })
-                    ? region.seed
-                    : getRegionShapeCenterPoint(region.name, region.seed ?? { x: 0, y: 0 });
+                if (!region.seed) {
+                    return region;
+                }
+                const anchorPoint = region.seed;
                 const nextSeed = findBestInteriorSeedPointInMask(anchorPoint, barrierMask, guideMask)
                     ?? findBestInteriorSeedPoint(anchorPoint, barrierMask, 24, guideMask)
                     ?? findNearestNonBarrierPoint(anchorPoint, barrierMask, 32, guideMask);
@@ -3151,7 +8444,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         if (correctedSeedCount > 0) {
             setStatusMessage(`已把 ${correctedSeedCount} 个 formal 区域 seed 校正到 guide 内可用内部点，fresh 首击将直接使用更新后的种子。`);
         }
-    }, [bootstrapGuideMasks, bootstrapShapeMasks, regions]);
+    }, [bootstrapGuideMasks, bootstrapShapeMasks, regions, simplifiedBoundaryWorkflow]);
 
     React.useEffect(() => {
         renderSelectedOutline();
@@ -3195,22 +8488,31 @@ const QidahenRegionMaskTool: React.FC = () => {
     }, [maskOpacity, showMask]);
 
     React.useEffect(() => {
+        const canvas = boundarySourceReferenceCanvasRef.current;
+        if (!canvas) {
+            return;
+        }
+        canvas.style.opacity = showBoundarySourceReference ? String(boundarySourceReferenceOpacity) : '0';
+    }, [boundarySourceReferenceOpacity, showBoundarySourceReference]);
+
+    React.useEffect(() => {
         const canvas = barrierCanvasRef.current;
         if (!canvas) {
             return;
         }
-        canvas.style.opacity = showBarrier ? '0.55' : '0';
-    }, [showBarrier]);
+        const barrierOpacity = showBoundarySourceReference ? '0.82' : '0.55';
+        canvas.style.opacity = showBarrier || showRealMapBoundarySupportOverlay ? barrierOpacity : '0';
+    }, [showBarrier, showBoundarySourceReference, showRealMapBoundarySupportOverlay]);
 
-    const syncGraphNodes = React.useCallback(() => {
+    const syncGraphNodes = React.useCallback((sourceRegions: readonly PainterRegion[] = regions) => {
         const centers = computeRegionCenters({
             assignments: assignmentsRef.current,
             width: MASK_WIDTH,
-            regionCount: regions.length,
+            regionCount: sourceRegions.length,
         });
         setGraphNodes(
             centers.flatMap((center) => {
-                const region = regions[center.regionIndex];
+                const region = sourceRegions[center.regionIndex];
                 if (!region || isDiagnosticRegionId(region.id)) {
                     return [];
                 }
@@ -3227,10 +8529,31 @@ const QidahenRegionMaskTool: React.FC = () => {
     }, [regions]);
 
     React.useEffect(() => {
+        if (skipNextGraphSyncEffectRef.current) {
+            skipNextGraphSyncEffectRef.current = false;
+            return;
+        }
         syncGraphNodes();
     }, [syncGraphNodes]);
 
     const graphNodeMap = React.useMemo(() => new Map(graphNodes.map((node) => [node.id, node])), [graphNodes]);
+    React.useEffect(() => {
+        if (passages.length === 0) {
+            if (selectedPassageId !== null) {
+                setSelectedPassageId(null);
+            }
+            return;
+        }
+        if (!selectedPassageId || !passages.some((passage) => passage.id === selectedPassageId)) {
+            setSelectedPassageId(passages[0]?.id ?? null);
+        }
+    }, [passages, selectedPassageId]);
+    const selectedPassage = React.useMemo(() => (
+        passages.find((passage) => passage.id === selectedPassageId)
+        ?? passages[0]
+        ?? null
+    ), [passages, selectedPassageId]);
+    const selectedPassageBoundaryMeta = selectedPassage ? getBoundaryTypeMeta(selectedPassage.boundaryType) : null;
     const refreshBoundaryControlPoints = React.useCallback(() => {
         if (selectedRegionIndex < 0) {
             setBoundaryControlPoints([]);
@@ -3243,11 +8566,13 @@ const QidahenRegionMaskTool: React.FC = () => {
             maxPoints: 18,
         }));
     }, [selectedRegionIndex]);
-    const markAssignmentsChanged = React.useCallback(() => {
+    const markAssignmentsChanged = React.useCallback((sourceRegions?: readonly PainterRegion[], options?: { renderOutline?: boolean }) => {
         setAssignmentsVersion((current) => current + 1);
-        syncGraphNodes();
+        syncGraphNodes(sourceRegions);
         refreshBoundaryControlPoints();
-        renderSelectedOutline();
+        if (options?.renderOutline !== false) {
+            renderSelectedOutline();
+        }
     }, [refreshBoundaryControlPoints, renderSelectedOutline, syncGraphNodes]);
 
     React.useEffect(() => {
@@ -3297,6 +8622,341 @@ const QidahenRegionMaskTool: React.FC = () => {
             behavior: 'smooth',
         });
     }, [displayScale, regions]);
+
+    const openUnmatchedSeedRepairPreview = React.useCallback((
+        region: PainterRegion,
+        barrierMaskOverride?: Uint8Array,
+        unmatchedOverride?: BoundaryClosureDiagnostics['unmatchedRegions'][number],
+    ) => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels || !region.seed) {
+            setBoundaryRepairPreview(null);
+            return;
+        }
+        const unmatchedDiagnostic = unmatchedOverride
+            ?? boundaryClosureDiagnostics.unmatchedRegions.find((item) => item.id === region.id);
+        const fallbackLeakDiagnostic = (() => {
+            if (unmatchedDiagnostic?.leakPath && unmatchedDiagnostic.leakPath.length > 1) {
+                return null;
+            }
+            const activeBarrierMask = barrierMaskOverride ?? barrierMaskRef.current;
+            if (!activeBarrierMask) {
+                return null;
+            }
+            const leakableMask = new Uint8Array(activeBarrierMask.length);
+            for (let index = 0; index < activeBarrierMask.length; index += 1) {
+                if (activeBarrierMask[index] === 0 && AUTO_MAP_REGION_FILLABLE_MASK[index] !== 0) {
+                    leakableMask[index] = 1;
+                }
+            }
+            const targetRegions = regions.filter((item): item is PainterRegion & { seed: MaskPoint } => (
+                !isDiagnosticRegionId(item.id)
+                && item.id !== region.id
+                && item.seed != null
+            ));
+            const pathResult = findSeedLeakPathInMask({
+                mask: leakableMask,
+                width: MASK_WIDTH,
+                start: region.seed,
+                targets: targetRegions.map((item) => item.seed),
+            });
+            const pathEnd = pathResult?.path[pathResult.path.length - 1] ?? null;
+            const targetRegion = pathEnd
+                ? targetRegions.find((item) => item.seed.x === pathEnd.x && item.seed.y === pathEnd.y) ?? null
+                : null;
+            if (!pathResult || !targetRegion) {
+                return null;
+            }
+            return {
+                targetRegionName: targetRegion.name,
+                targetSeed: targetRegion.seed,
+                path: pathResult.path,
+                distancePixels: pathResult.distancePixels,
+            };
+        })();
+        const leakTargetName = unmatchedDiagnostic?.leakTargetName ?? fallbackLeakDiagnostic?.targetRegionName ?? null;
+        const leakTargetSeed = unmatchedDiagnostic?.leakTargetSeed ?? fallbackLeakDiagnostic?.targetSeed ?? null;
+        const leakPath = unmatchedDiagnostic?.leakPath && unmatchedDiagnostic.leakPath.length > 1
+            ? unmatchedDiagnostic.leakPath
+            : fallbackLeakDiagnostic?.path ?? [];
+        const leakDistancePixels = unmatchedDiagnostic?.leakDistancePixels ?? fallbackLeakDiagnostic?.distancePixels ?? null;
+        const connectedMarkers: Array<{ point: MaskPoint; label: string; tone: 'connected-seed' }> = unmatchedDiagnostic?.leakTargetSeed
+            ? [{
+                point: unmatchedDiagnostic.leakTargetSeed,
+                label: unmatchedDiagnostic.leakTargetName ? `连到 ${unmatchedDiagnostic.leakTargetName}` : '连到其它 seed',
+                tone: 'connected-seed',
+            }]
+            : leakTargetSeed
+                ? [{
+                    point: leakTargetSeed,
+                    label: leakTargetName ? `连到 ${leakTargetName}` : '连到其它 seed',
+                    tone: 'connected-seed',
+                }]
+            : [];
+        const leakTargetText = leakTargetName
+            ? `；当前仍与 ${leakTargetName} 连通${leakDistancePixels != null ? `，泄漏路径约 ${leakDistancePixels.toLocaleString()} px` : ''}`
+            : unmatchedDiagnostic?.connectedRegionNames && unmatchedDiagnostic.connectedRegionNames.length > 1
+                ? `；当前仍与 ${unmatchedDiagnostic.connectedRegionNames.filter((name) => name !== region.name).join('、')} 连通`
+                : '';
+        const baseArtifact = buildBoundaryRepairCropDataUrl({
+            sourcePixels,
+            barrierMask: barrierMaskOverride ?? barrierMaskRef.current,
+            point: region.seed,
+            label: `${region.name} 未独立 seed`,
+            markers: [
+                { point: region.seed, label: 'seed', tone: 'seed' },
+                ...connectedMarkers,
+            ],
+            paths: leakPath.length > 1
+                ? [{ points: leakPath, label: '泄漏路径' }]
+                : [],
+        });
+        const supportSuggestion = buildLeakSupportSuggestion({
+            candidateMask: realMapBoundaryCandidateMask,
+            barrierMask: barrierMaskOverride ?? barrierMaskRef.current,
+            leakPath,
+            crop: baseArtifact.crop,
+            exclusionMask: currentMapArtifactExclusionMask,
+        });
+        const artifact = supportSuggestion
+            ? buildBoundaryRepairCropDataUrl({
+                sourcePixels,
+                barrierMask: barrierMaskOverride ?? barrierMaskRef.current,
+                supportSuggestionMask: supportSuggestion.mask,
+                point: region.seed,
+                label: `${region.name} 未独立 seed`,
+                markers: [
+                    { point: region.seed, label: 'seed', tone: 'seed' },
+                    ...connectedMarkers,
+                ],
+                paths: leakPath.length > 1
+                    ? [{ points: leakPath, label: '泄漏路径' }]
+                    : [],
+            })
+            : baseArtifact;
+        const supportSuggestionText = supportSuggestion
+            ? `；绿色为泄漏路径附近真实底图支撑线建议 ${supportSuggestion.cropPixelCount.toLocaleString()} px，只能临摹参考`
+            : '';
+        setBoundaryRepairPreview({
+            kind: 'unmatched-seed',
+            title: `${region.name} 未独立 seed`,
+            detail: `seed ${region.seed.x}, ${region.seed.y}${leakTargetText}${supportSuggestionText}；沿真实地图边界补线，先切断橙色泄漏路径，不要画直线硬封口，连不上的线直接舍弃。`,
+            dataUrl: artifact.dataUrl,
+            crop: artifact.crop,
+        });
+    }, [boundaryClosureDiagnostics.unmatchedRegions, currentMapArtifactExclusionMask, realMapBoundaryCandidateMask, regions]);
+
+    const openBoundaryBreakRepairPreview = React.useCallback((hint: BoundaryOpenDiagnostics['hints'][number]) => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setBoundaryRepairPreview(null);
+            return;
+        }
+        const center = {
+            x: Math.round((hint.endpoints[0].x + hint.endpoints[1].x) / 2),
+            y: Math.round((hint.endpoints[0].y + hint.endpoints[1].y) / 2),
+        };
+        const artifact = buildBoundaryRepairCropDataUrl({
+            sourcePixels,
+            barrierMask: barrierMaskRef.current,
+            point: center,
+            label: hint.nearestRegionName ? `${hint.nearestRegionName} 未解释开放线段` : '未解释开放线段',
+            markers: [
+                { point: hint.endpoints[0], label: '断点 A', tone: 'open-end' },
+                { point: hint.endpoints[1], label: '断点 B', tone: 'open-end' },
+            ],
+        });
+        setBoundaryRepairPreview({
+            kind: 'open-boundary',
+            title: hint.nearestRegionName ? `${hint.nearestRegionName} 开放线段` : '开放线段',
+            detail: `${hint.endpoints[0].x},${hint.endpoints[0].y} ↔ ${hint.endpoints[1].x},${hint.endpoints[1].y}；能沿真实边界补就补，不能成线就舍弃。`,
+            dataUrl: artifact.dataUrl,
+            crop: artifact.crop,
+        });
+    }, []);
+
+    const openWeakSupportRepairPreview = React.useCallback((region: PainterRegion, report: BoundaryRealMapFitRegionReport) => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels || !region.seed) {
+            setBoundaryRepairPreview(null);
+            return;
+        }
+        const focusPoint = report.weakBoundaryPoint ?? region.seed;
+        const markers: Array<{ point: MaskPoint; label: string; tone: 'seed' | 'open-end' | 'weak-boundary' }> = [];
+        if (report.weakBoundaryPoint) {
+            markers.push({ point: report.weakBoundaryPoint, label: '弱支撑段', tone: 'weak-boundary' });
+        }
+        const weakPointSeedDistance = report.weakBoundaryPoint
+            ? Math.hypot(report.weakBoundaryPoint.x - region.seed.x, report.weakBoundaryPoint.y - region.seed.y)
+            : Number.POSITIVE_INFINITY;
+        if (!report.weakBoundaryPoint || weakPointSeedDistance >= 24) {
+            markers.push({ point: region.seed, label: 'seed', tone: 'seed' });
+        }
+        const weakBounds = report.weakBoundaryBounds
+            ? `；弱支撑范围 ${report.weakBoundaryBounds.left},${report.weakBoundaryBounds.top} - ${report.weakBoundaryBounds.right},${report.weakBoundaryBounds.bottom}`
+            : '';
+        const artifact = buildBoundaryRepairCropDataUrl({
+            sourcePixels,
+            barrierMask: barrierMaskRef.current,
+            point: focusPoint,
+            label: `${region.name} 底图弱支撑`,
+            markers,
+        });
+        setBoundaryRepairPreview({
+            kind: 'weak-support',
+            title: `${region.name} 底图弱支撑`,
+            detail: `局部边界支撑 ${(report.supportRatio * 100).toFixed(1)}%（${report.supportedBoundaryPixelCount.toLocaleString()}/${report.boundaryPixelCount.toLocaleString()} px），未支撑 ${report.unsupportedBoundaryPixelCount.toLocaleString()} px${weakBounds}。这块边界需要沿真实地图线重画；不能靠其它区域的一段候选线通过验收。`,
+            dataUrl: artifact.dataUrl,
+            crop: artifact.crop,
+        });
+    }, []);
+
+    const focusWeakSupportRegionForTracing = React.useCallback((report: BoundaryRealMapFitRegionReport) => {
+        const region = regions.find((item) => item.id === report.regionId) ?? null;
+        if (!region || !region.seed) {
+            setBoundaryRepairPreview(null);
+            setStatusMessage(`${report.regionName} 缺少 seed，暂时不能打开底图弱支撑裁图。`);
+            return;
+        }
+        const viewport = viewportRef.current;
+        const nextZoom = Math.max(zoom, 1.35);
+        const nextDisplayScale = fitZoom * nextZoom;
+        setSelectedRegionId(region.id);
+        setZoom(nextZoom);
+        setMode('barrier');
+        setBarrierHintOperation('add');
+        setBarrierEditMode('brush');
+        setShowBarrier(true);
+        setShowForbiddenUiOverlay(false);
+        setShowSeedStatusOverlay(true);
+        openWeakSupportRepairPreview(region, report);
+        setStatusMessage(`${region.name} 局部边界支撑不足：${(report.supportRatio * 100).toFixed(1)}%。请沿真实地图边界重画这一块，不能用其它区域候选线替它背书。`);
+        if (!viewport) {
+            return;
+        }
+        const targetLeft = (region.seed.x * nextDisplayScale) - (viewport.clientWidth / 2) + 16;
+        const targetTop = (region.seed.y * nextDisplayScale) - (viewport.clientHeight / 2) + 16;
+        viewport.scrollTo({
+            left: clampScroll(targetLeft),
+            top: clampScroll(targetTop),
+            behavior: 'smooth',
+        });
+    }, [fitZoom, openWeakSupportRepairPreview, regions, zoom]);
+
+    const focusRegionSeedForTracing = React.useCallback((region: PainterRegion, reason: 'selected' | 'unmatched' = 'selected') => {
+        const seed = region.seed;
+        if (!seed) {
+            setSelectedRegionId(region.id);
+            setMode('barrier');
+            setBarrierHintOperation('add');
+            setBarrierEditMode('brush');
+            setShowBarrier(true);
+            setShowForbiddenUiOverlay(reason === 'selected');
+            setShowSeedStatusOverlay(true);
+            setBoundaryRepairPreview(null);
+            setStatusMessage(`${region.name} 没有设置 seed，不能用旧 shape 中心代替。请先在区域内部点选/生成 seed，再导出局部底稿。`);
+            return;
+        }
+        const viewport = viewportRef.current;
+        const nextZoom = Math.max(zoom, 1.35);
+        const nextDisplayScale = fitZoom * nextZoom;
+        setSelectedRegionId(region.id);
+        setZoom(nextZoom);
+        setMode('barrier');
+        setBarrierHintOperation('add');
+        setBarrierEditMode('brush');
+        setShowBarrier(true);
+        setShowForbiddenUiOverlay(reason === 'selected');
+        setShowSeedStatusOverlay(true);
+        if (reason === 'unmatched') {
+            openUnmatchedSeedRepairPreview(region);
+        } else {
+            setBoundaryRepairPreview(null);
+        }
+        const reasonPrefix = reason === 'unmatched' ? '已聚焦未独立区域' : '已聚焦';
+        setStatusMessage(`${reasonPrefix} ${region.name} seed ${seed.x}, ${seed.y}。当前为边界画笔模式；沿真实地图边界手绘分割线，禁区叠层可按需手动显示。`);
+        if (!viewport) {
+            return;
+        }
+        const targetLeft = (seed.x * nextDisplayScale) - (viewport.clientWidth / 2) + 16;
+        const targetTop = (seed.y * nextDisplayScale) - (viewport.clientHeight / 2) + 16;
+        requestAnimationFrame(() => {
+            viewport.scrollTo({
+                left: clampScroll(targetLeft),
+                top: clampScroll(targetTop),
+                behavior: 'smooth',
+            });
+        });
+    }, [fitZoom, openUnmatchedSeedRepairPreview, zoom]);
+
+    const focusSelectedRegionSeedForTracing = React.useCallback(() => {
+        if (!selectedRegion) {
+            setStatusMessage('当前没有选中区域。');
+            return;
+        }
+        focusRegionSeedForTracing(selectedRegion);
+    }, [focusRegionSeedForTracing, selectedRegion]);
+    const focusNextFormalRegion = React.useCallback(() => {
+        const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+        if (formalRegions.length === 0) {
+            setStatusMessage('当前没有可用的正式区域。');
+            return;
+        }
+        const currentIndex = formalRegions.findIndex((region) => region.id === selectedRegionId);
+        const nextRegion = formalRegions[(currentIndex + 1 + formalRegions.length) % formalRegions.length];
+        if (!nextRegion) {
+            return;
+        }
+        setSelectedRegionId(nextRegion.id);
+        setStatusMessage(`已切到下一个正式区域：${nextRegion.name}。`);
+    }, [regions, selectedRegionId]);
+
+    const focusNextUnmatchedSeedForTracing = React.useCallback(() => {
+        const nextUnmatchedRegion = boundaryClosureDiagnostics.unmatchedRegions
+            .map((unmatchedRegion) => regions.find((region) => region.id === unmatchedRegion.id) ?? null)
+            .find((region): region is PainterRegion => region != null);
+        if (!nextUnmatchedRegion) {
+            setStatusMessage(
+                barrierPixelCount === 0
+                    ? '当前还没有边界图。先导入或手绘边界后，未独立 seed 会在地图上标红。'
+                    : '当前没有未独立 seed。可以保存工作区或按边界分割全图生成区域。',
+            );
+            return;
+        }
+        focusRegionSeedForTracing(nextUnmatchedRegion, 'unmatched');
+    }, [barrierPixelCount, boundaryClosureDiagnostics.unmatchedRegions, focusRegionSeedForTracing, regions]);
+
+    const focusOpenBoundaryHintForTracing = React.useCallback((hint: BoundaryOpenDiagnostics['hints'][number], index: number) => {
+        setMode('barrier');
+        setBarrierEditMode('brush');
+        setBarrierHintOperation('add');
+        setShowBarrier(true);
+        setShowForbiddenUiOverlay(false);
+        setShowSeedStatusOverlay(true);
+        openBoundaryBreakRepairPreview(hint);
+        const regionLabel = hint.nearestRegionName ? `${hint.nearestRegionName} ` : '';
+        setStatusMessage(
+            `已定位未解释开放线段 ${index + 1}：${regionLabel}${hint.endpoints[0].x},${hint.endpoints[0].y} ↔ ${hint.endpoints[1].x},${hint.endpoints[1].y}。工具不会自动直线封口；请沿真实边界补线，不能成线就舍弃。`,
+        );
+        const viewport = viewportRef.current;
+        if (!viewport) {
+            return;
+        }
+        const center = {
+            x: Math.round((hint.endpoints[0].x + hint.endpoints[1].x) / 2),
+            y: Math.round((hint.endpoints[0].y + hint.endpoints[1].y) / 2),
+        };
+        const nextZoom = Math.max(zoom, 1.35);
+        const nextDisplayScale = fitZoom * nextZoom;
+        setZoom(nextZoom);
+        requestAnimationFrame(() => {
+            viewport.scrollTo({
+                left: clampScroll((center.x * nextDisplayScale) - (viewport.clientWidth / 2) + 16),
+                top: clampScroll((center.y * nextDisplayScale) - (viewport.clientHeight / 2) + 16),
+                behavior: 'smooth',
+            });
+        });
+    }, [fitZoom, openBoundaryBreakRepairPreview, zoom]);
 
     React.useEffect(() => {
         const sample = DIAGNOSTIC_SAMPLES.find((item) => item.id === activeDiagnosticSampleId);
@@ -3506,6 +9166,24 @@ const QidahenRegionMaskTool: React.FC = () => {
         return findNearestBarrierPoint(point, barrierMask, 18) ?? point;
     }, []);
 
+    const snapPointToRealMapBoundarySupport = React.useCallback((point: MaskPoint): { point: MaskPoint; snapped: boolean } => {
+        if (!snapBarrierBrushToRealMapSupport) {
+            return { point, snapped: false };
+        }
+        const supportMask = realMapBoundaryCandidateMask;
+        if (!supportMask) {
+            return { point, snapped: false };
+        }
+        const snappedPoint = findNearestBarrierPoint(point, supportMask, REAL_MAP_BOUNDARY_SUPPORT_SNAP_RADIUS);
+        if (!snappedPoint) {
+            return { point, snapped: false };
+        }
+        if (AUTO_MAP_PRINTED_UI_EXCLUSION_MASK[(snappedPoint.y * MASK_WIDTH) + snappedPoint.x] !== 0) {
+            return { point, snapped: false };
+        }
+        return { point: snappedPoint, snapped: snappedPoint.x !== point.x || snappedPoint.y !== point.y };
+    }, [realMapBoundaryCandidateMask, snapBarrierBrushToRealMapSupport]);
+
     const applyBrushAtPointer = React.useCallback((clientX: number, clientY: number) => {
         const canvas = maskCanvasRef.current;
         if (!canvas) {
@@ -3541,12 +9219,20 @@ const QidahenRegionMaskTool: React.FC = () => {
         );
     }, [brushSize, markAssignmentsChanged, mode, renderAssignments, selectedRegion?.name, selectedRegionIndex]);
 
-    const applyBarrierHintAtPointer = React.useCallback((clientX: number, clientY: number) => {
+    const applyBarrierHintAtPointer = React.useCallback((clientX: number, clientY: number, options: { deferRebuild?: boolean } = {}) => {
         const canvas = maskCanvasRef.current;
         if (!canvas) {
             return;
         }
-        const point = mapClientPointToCanvas(canvas, clientX, clientY);
+        const rawPoint = mapClientPointToCanvas(canvas, clientX, clientY);
+        const snapped = barrierHintOperation === 'add'
+            ? snapPointToRealMapBoundarySupport(rawPoint)
+            : { point: rawPoint, snapped: false };
+        const point = snapped.point;
+        const previousPoint = lastBarrierBrushPointRef.current;
+        const strokeDistance = previousPoint ? Math.hypot(point.x - previousPoint.x, point.y - previousPoint.y) : 0;
+        const strokeStep = Math.max(1, brushSize * 0.75);
+        const strokeSteps = previousPoint ? Math.max(1, Math.ceil(strokeDistance / strokeStep)) : 1;
         const targetMask = barrierHintOperation === 'add'
             ? manualBarrierAddRef.current
             : manualBarrierRemoveRef.current;
@@ -3554,50 +9240,88 @@ const QidahenRegionMaskTool: React.FC = () => {
             ? manualBarrierRemoveRef.current
             : manualBarrierAddRef.current;
 
-        const primaryBounds = applyBrushToBinaryMask({
-            mask: targetMask,
-            width: MASK_WIDTH,
-            height: MASK_HEIGHT,
-            centerX: point.x,
-            centerY: point.y,
-            radius: brushSize,
-            value: 1,
-        });
-        applyBrushToBinaryMask({
-            mask: oppositeMask,
-            width: MASK_WIDTH,
-            height: MASK_HEIGHT,
-            centerX: point.x,
-            centerY: point.y,
-            radius: brushSize,
-            value: 0,
-        });
+        let primaryBounds: PixelBounds | null = null;
+        for (let step = 1; step <= strokeSteps; step += 1) {
+            const t = step / strokeSteps;
+            const samplePoint = previousPoint
+                ? {
+                    x: Math.round(previousPoint.x + ((point.x - previousPoint.x) * t)),
+                    y: Math.round(previousPoint.y + ((point.y - previousPoint.y) * t)),
+                }
+                : point;
+            const sampleBounds = applyBrushToBinaryMask({
+                mask: targetMask,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                centerX: samplePoint.x,
+                centerY: samplePoint.y,
+                radius: brushSize,
+                value: 1,
+            });
+            applyBrushToBinaryMask({
+                mask: oppositeMask,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                centerX: samplePoint.x,
+                centerY: samplePoint.y,
+                radius: brushSize,
+                value: 0,
+            });
+            if (sampleBounds) {
+                primaryBounds = primaryBounds
+                    ? {
+                        left: Math.min(primaryBounds.left, sampleBounds.left),
+                        top: Math.min(primaryBounds.top, sampleBounds.top),
+                        right: Math.max(primaryBounds.right, sampleBounds.right),
+                        bottom: Math.max(primaryBounds.bottom, sampleBounds.bottom),
+                    }
+                    : sampleBounds;
+            }
+        }
 
         if (!primaryBounds) {
             return;
         }
 
-        rebuildBarrierMask();
-        const operationLabel = barrierHintOperation === 'add' ? '补边' : '去噪';
-        setStatusMessage(
-            `边界修正 ${operationLabel} · ${primaryBounds.right - primaryBounds.left + 1}x${primaryBounds.bottom - primaryBounds.top + 1} · 最终停线已重算`,
-        );
-    }, [barrierHintOperation, brushSize, rebuildBarrierMask]);
+        renderBarrierBrushPreviewStroke(previousPoint ?? point, point, barrierHintOperation);
+        lastBarrierBrushPointRef.current = point;
+
+        if (options.deferRebuild) {
+            barrierBrushPendingRebuildRef.current = true;
+        } else {
+            rebuildBarrierMask();
+        }
+    }, [barrierHintOperation, brushSize, rebuildBarrierMask, renderBarrierBrushPreviewStroke, snapPointToRealMapBoundarySupport]);
 
     const applyBarrierHintStroke = React.useCallback((points: readonly MaskPoint[]) => {
         if (points.length < 2) {
             setStatusMessage('桥接点数不足：至少拖出一条线段后再松开。');
             return;
         }
-
+        const startPoint = points[0];
+        const endPoint = points[points.length - 1];
+        let pathNote = '';
         const snappedPoints = barrierHintOperation === 'add'
-            ? points.map((point, index) => {
-                if (index !== 0 && index !== points.length - 1) {
-                    return point;
+            ? (() => {
+                const boundaryPath = findBoundarySupportPath({
+                    start: startPoint,
+                    end: endPoint,
+                    supportMask: realMapBoundaryCandidateMask,
+                });
+                if (!boundaryPath) {
+                    const bridgeDistance = Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+                    setStatusMessage(
+                        `沿细线候选补边已拒绝：当前 ${Math.round(bridgeDistance)} px 内没有连续真实底图细线候选路径。不会直线封口，请缩短两点距离或切回画笔手绘。`,
+                    );
+                    return null;
                 }
-                return snapChainPointToBarrier(point);
-            })
-            : [...points];
+                pathNote = ` · 沿细线候选 ${boundaryPath.points.length} 点 / ${boundaryPath.usedCandidatePixels} 候选像素`;
+                return boundaryPath.points;
+            })()
+            : points.map((point) => snapChainPointToBarrier(point));
+        if (!snappedPoints) {
+            return;
+        }
         const strokeMask = rasterizeStrokeMask({
             width: MASK_WIDTH,
             height: MASK_HEIGHT,
@@ -3611,6 +9335,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             ? manualBarrierRemoveRef.current
             : manualBarrierAddRef.current;
 
+        const beforeSnapshot = captureBarrierHistorySnapshot();
         let changed = 0;
         for (let index = 0; index < strokeMask.length; index += 1) {
             if (strokeMask[index] === 0) {
@@ -3620,7 +9345,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                 targetMask[index] = 1;
                 changed += 1;
             }
-            oppositeMask[index] = 0;
+            if (oppositeMask[index] !== 0) {
+                oppositeMask[index] = 0;
+                changed += 1;
+            }
         }
 
         if (changed === 0) {
@@ -3628,10 +9356,109 @@ const QidahenRegionMaskTool: React.FC = () => {
             return;
         }
 
+        pushBarrierHistorySnapshot(beforeSnapshot);
         rebuildBarrierMask();
-        const operationLabel = barrierHintOperation === 'add' ? '补边桥接' : '去噪桥接';
-        setStatusMessage(`${operationLabel} · ${changed.toLocaleString()} px · 最终停线已重算`);
-    }, [barrierHintOperation, brushSize, rebuildBarrierMask, snapChainPointToBarrier]);
+        const operationLabel = barrierHintOperation === 'add' ? '沿细线候选补边' : '去噪桥接';
+        setStatusMessage(`${operationLabel} · ${changed.toLocaleString()} px${pathNote} · 最终停线已重算`);
+    }, [barrierHintOperation, brushSize, captureBarrierHistorySnapshot, pushBarrierHistorySnapshot, realMapBoundaryCandidateMask, rebuildBarrierMask, snapChainPointToBarrier]);
+
+    const autoSnapCurrentBoundaryToRealMapSupport = React.useCallback(() => {
+        const sourcePixels = sourcePixelsRef.current;
+        const currentBoundaryMask = barrierMaskRef.current;
+        if (!sourcePixels || !currentBoundaryMask) {
+            setStatusMessage('地图或当前红线还没加载完成，暂时不能自动贴合轮廓。');
+            return;
+        }
+        const currentBoundaryPixelCount = countMaskPixels(currentBoundaryMask);
+        if (currentBoundaryPixelCount === 0) {
+            setStatusMessage('当前没有红线可贴合。先初始化、导入或手绘边界。');
+            return;
+        }
+
+        const supportMask = realMapBoundaryCandidateMask ?? buildRealMapBoundaryLongLineCandidateMaskFromSourcePixels({
+            sourcePixels,
+            boundaryPresets: DEFAULT_BOUNDARY_PRESETS,
+            boundaryTolerance: DEFAULT_BOUNDARY_TOLERANCE,
+        });
+        if (!supportMask || countMaskPixels(supportMask) === 0) {
+            setStatusMessage('真实底图没有生成可用细线候选，不能自动贴合。继续手绘或导入完成边界图。');
+            return;
+        }
+
+        const clipMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+        for (let index = 0; index < clipMask.length; index += 1) {
+            clipMask[index] = currentMapArtifactExclusionMask[index] === 0 ? 1 : 0;
+        }
+        const snapResult = snapBoundaryMaskToSupport({
+            sourceMask: currentBoundaryMask,
+            supportMask,
+            width: MASK_WIDTH,
+            clipMask,
+            maxDistance: REAL_MAP_BOUNDARY_SUPPORT_SNAP_RADIUS,
+            minPixels: 10,
+            minSpan: 10,
+            maxAverageThickness: 4.6,
+            gapClosingIterations: 1,
+            preserveUnmatched: true,
+        });
+        if (snapResult.matchedSupportPixelCount === 0) {
+            setStatusMessage('自动贴合已拒绝：当前红线附近没有连续真实底图细线候选。可以打开细线候选层看位置，或继续手绘。');
+            return;
+        }
+
+        const nextBoundaryMask = snapResult.mask;
+        let changedPixelCount = 0;
+        for (let index = 0; index < nextBoundaryMask.length; index += 1) {
+            if (nextBoundaryMask[index] !== currentBoundaryMask[index]) {
+                changedPixelCount += 1;
+            }
+        }
+        if (changedPixelCount === 0) {
+            setStatusMessage('当前红线已经贴近细线候选，没有产生新的贴合变化。');
+            return;
+        }
+
+        const beforeSnapshot = captureBarrierHistorySnapshot();
+        const baseMask = boundaryDraftMaskRef.current ?? new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+        manualBarrierAddRef.current.fill(0);
+        manualBarrierRemoveRef.current.fill(0);
+        for (let index = 0; index < nextBoundaryMask.length; index += 1) {
+            if (nextBoundaryMask[index] !== 0 && baseMask[index] === 0) {
+                manualBarrierAddRef.current[index] = 1;
+            } else if (nextBoundaryMask[index] === 0 && baseMask[index] !== 0) {
+                manualBarrierRemoveRef.current[index] = 1;
+            }
+        }
+
+        pushBarrierHistorySnapshot(beforeSnapshot);
+        setManualBlankBoundaryBase(boundaryDraftMaskRef.current == null);
+        setPaintedBoundaryOnly(true);
+        setShowBarrier(true);
+        setShowMask(false);
+        setShowRealMapBoundarySupportOverlay(true);
+        setMode('barrier');
+        setBarrierEditMode('brush');
+        setBarrierHintOperation('add');
+        rebuildBarrierMask();
+        setStatusMessage(
+            `已自动贴合当前红线：${snapResult.matchedSourcePixelCount.toLocaleString()}/${snapResult.sourcePixelCount.toLocaleString()} px 找到附近细线，写入 ${snapResult.matchedSupportPixelCount.toLocaleString()} px 候选轮廓，保留无候选支撑手绘 ${snapResult.keptOriginalPixelCount.toLocaleString()} px。满意后再点保存边界。`,
+        );
+    }, [
+        captureBarrierHistorySnapshot,
+        currentMapArtifactExclusionMask,
+        pushBarrierHistorySnapshot,
+        realMapBoundaryCandidateMask,
+        rebuildBarrierMask,
+    ]);
+
+    const focusNearestOpenBoundaryHint = React.useCallback(() => {
+        const hint = unexplainedBoundaryOpenDiagnostics.hints[0];
+        if (!hint) {
+            setStatusMessage('当前没有未解释开放线段提示。');
+            return;
+        }
+        focusOpenBoundaryHintForTracing(hint, 0);
+    }, [focusOpenBoundaryHintForTracing, unexplainedBoundaryOpenDiagnostics.hints]);
 
     const handleMagicFill = React.useCallback((clientX: number, clientY: number) => {
         const canvas = maskCanvasRef.current;
@@ -3646,10 +9473,19 @@ const QidahenRegionMaskTool: React.FC = () => {
         }
 
         const clickedPoint = mapClientPointToCanvas(canvas, clientX, clientY);
+        const explicitBoundaryPixelCount = (boundaryDraftMaskRef.current ? countMaskPixels(boundaryDraftMaskRef.current) : 0)
+            + countMaskPixels(manualBarrierAddRef.current);
+        const hasAuthoritativeTruthForRegion = authoritativeTruthMasks.has(selectedRegion.id);
+        const isDiagnosticRegion = isDiagnosticRegionId(selectedRegion.id);
+        if (!isDiagnosticRegion && !hasAuthoritativeTruthForRegion && explicitBoundaryPixelCount === 0) {
+            setStatusMessage('魔棒已拒绝：当前没有用户导入/手绘的真实边界图，工具不会再用粗 shape 或底图自动候选生成直线假区域。请先导入完成边界图、带底图描线图，或用边界修正画笔闭合区域。');
+            return;
+        }
         const authoritativeBootstrapGuideMaskRaw = authoritativeBootstrapGuideMasks.get(selectedRegion.id) ?? null;
         const authoritativeTruthMaskRaw = authoritativeTruthMasks.get(selectedRegion.id) ?? null;
-        const staticBootstrapGuideMaskRaw = STATIC_BOOTSTRAP_GUIDE_MASKS.get(selectedRegion.id) ?? null;
-        const staticBootstrapShapeMaskRaw = STATIC_BOOTSTRAP_SHAPE_MASKS.get(selectedRegion.id) ?? null;
+        const allowStaticBootstrap = isDiagnosticRegion;
+        const staticBootstrapGuideMaskRaw = allowStaticBootstrap ? (STATIC_BOOTSTRAP_GUIDE_MASKS.get(selectedRegion.id) ?? null) : null;
+        const staticBootstrapShapeMaskRaw = allowStaticBootstrap ? (STATIC_BOOTSTRAP_SHAPE_MASKS.get(selectedRegion.id) ?? null) : null;
         const persistedRegionMaskRaw = buildRegionMaskFromAssignments(assignmentsRef.current, selectedRegionIndex);
         const persistedRegionGuideMaskRaw = persistedRegionMaskRaw
             ? expandBinaryMask({
@@ -3876,7 +9712,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         }> = [];
 
         let bestPoint = point;
-        let selection = buildMagicSelection(point, selectedRegion.id);
+        let selection = buildMagicSelection(point, selectedRegion.id, { allowStaticBootstrap });
         let bestSelectionFitness = describeSelectionFitness(selection);
         let bestDistanceSquaredToClicked = ((bestPoint.x - clickedPoint.x) * (bestPoint.x - clickedPoint.x))
             + ((bestPoint.y - clickedPoint.y) * (bestPoint.y - clickedPoint.y));
@@ -3890,7 +9726,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             if (candidatePoint.x === bestPoint.x && candidatePoint.y === bestPoint.y) {
                 continue;
             }
-            const candidateSelection = buildMagicSelection(candidatePoint, selectedRegion.id);
+            const candidateSelection = buildMagicSelection(candidatePoint, selectedRegion.id, { allowStaticBootstrap });
             const candidateSelectionFitness = describeSelectionFitness(candidateSelection);
             seedEvaluations.push({
                 point: candidatePoint,
@@ -3990,7 +9826,12 @@ const QidahenRegionMaskTool: React.FC = () => {
 
         const point = mapClientPointToCanvas(event.currentTarget, event.clientX, event.clientY);
         drawingRef.current = true;
-        event.currentTarget.setPointerCapture(event.pointerId);
+        try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {
+            // Playwright can dispatch synthetic PointerEvents without registering a native active pointer.
+            // The drawing state is still tracked by this component, so capture failure must not cancel the stroke.
+        }
 
         if (mode === 'chain') {
             const operation = event.shiftKey ? 'subtract' : chainOperation;
@@ -4007,11 +9848,15 @@ const QidahenRegionMaskTool: React.FC = () => {
             if (barrierEditMode === 'bridge') {
                 chainPointsRef.current = [point];
                 setChainPreviewPoints([point]);
-                const operationLabel = barrierHintOperation === 'add' ? '补边桥接' : '去噪桥接';
-                setStatusMessage(`${operationLabel} 开始：拖一笔把窄缝补上，松开后重算最终停线。`);
+                const operationLabel = barrierHintOperation === 'add' ? '沿候选线补边' : '去噪桥接';
+                const addNote = barrierHintOperation === 'add' ? '松手后沿真实底图细线候选寻路；找不到连续线会拒绝，不会直线封口。' : '松手后写入去噪提示层。';
+                setStatusMessage(`${operationLabel} 开始：${addNote}`);
                 return;
             }
-            applyBarrierHintAtPointer(event.clientX, event.clientY);
+            barrierBrushStrokeSnapshotRef.current = captureBarrierHistorySnapshot();
+            barrierBrushPendingRebuildRef.current = false;
+            lastBarrierBrushPointRef.current = null;
+            applyBarrierHintAtPointer(event.clientX, event.clientY, { deferRebuild: true });
             return;
         }
 
@@ -4039,11 +9884,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                 const startPoint = chainPointsRef.current[0] ?? currentPoint;
                 chainPointsRef.current = [startPoint, currentPoint];
                 setChainPreviewPoints([startPoint, currentPoint]);
-                const operationLabel = barrierHintOperation === 'add' ? '补边桥接' : '去噪桥接';
-                setStatusMessage(`${operationLabel} 预览中：松开后把这一段写进边界提示层。`);
+                const operationLabel = barrierHintOperation === 'add' ? '沿候选线补边' : '去噪桥接';
+                const addNote = barrierHintOperation === 'add' ? '松手后按候选细线寻路写入；预览线不是最终写入路径。' : '松手后把这一段写进去噪提示层。';
+                setStatusMessage(`${operationLabel} 预览中：${addNote}`);
                 return;
             }
-            applyBarrierHintAtPointer(event.clientX, event.clientY);
+            applyBarrierHintAtPointer(event.clientX, event.clientY, { deferRebuild: true });
             return;
         }
         applyBrushAtPointer(event.clientX, event.clientY);
@@ -4063,30 +9909,139 @@ const QidahenRegionMaskTool: React.FC = () => {
             chainPointsRef.current = [];
             setChainPreviewPoints([]);
         }
+        if (mode === 'barrier' && barrierEditMode === 'brush') {
+            const beforeSnapshot = barrierBrushStrokeSnapshotRef.current;
+            barrierBrushStrokeSnapshotRef.current = null;
+            lastBarrierBrushPointRef.current = null;
+            if (beforeSnapshot && !barrierHistorySnapshotsEqual(beforeSnapshot, captureBarrierHistorySnapshot())) {
+                pushBarrierHistorySnapshot(beforeSnapshot);
+            }
+            if (barrierBrushPendingRebuildRef.current) {
+                barrierBrushPendingRebuildRef.current = false;
+                rebuildBarrierMask();
+            }
+            setStatusMessage(barrierHintOperation === 'add' ? '已绘制边界线。' : '已擦除边界线。');
+        }
         drawingRef.current = false;
-        renderAssignments();
+        if (mode !== 'barrier') {
+            renderAssignments();
+        }
     };
 
     const clearMask = () => {
         assignmentsRef.current.fill(EMPTY_REGION);
         renderAssignments();
         markAssignmentsChanged();
+        setLastRegionGenerationResults([]);
         setPassages([]);
         setStatusMessage('已清空当前 mask。');
     };
 
     const clearBarrierHints = () => {
+        const beforeSnapshot = captureBarrierHistorySnapshot();
         manualBarrierAddRef.current.fill(0);
         manualBarrierRemoveRef.current.fill(0);
+        if (!barrierHistorySnapshotsEqual(beforeSnapshot, captureBarrierHistorySnapshot())) {
+            pushBarrierHistorySnapshot(beforeSnapshot);
+        }
         rebuildBarrierMask();
         setStatusMessage('已清空手工边界修正；当前停线回到边界图本体。');
     };
 
-    const generateBoundaryDraftFromColors = () => {
-        if (!sourcePixelsRef.current) {
-            setStatusMessage('地图像素还没加载完成，不能生成边界图。');
-            return;
+    const startBlankBoundaryDraft = React.useCallback(() => {
+        boundaryDraftMaskRef.current = null;
+        manualBarrierAddRef.current.fill(0);
+        manualBarrierRemoveRef.current.fill(0);
+        clearBarrierHistory();
+        setShowFormalEmptyToolPanel(true);
+        setManualBlankBoundaryBase(true);
+        setPaintedBoundaryOnly(true);
+        setShowBarrier(true);
+        setMode('barrier');
+        setBarrierHintOperation('add');
+        setBarrierEditMode('brush');
+        setLastBoundaryExtractionStats(null);
+        setLastRegionGenerationResults([]);
+        rebuildBarrierMask();
+        setStatusMessage('已切到空白边界图手绘：当前不会混入底图自动识别。直接沿真实边界补线，保存后会固化成边界图。');
+    }, [clearBarrierHistory, rebuildBarrierMask]);
+
+    const findFirstUnmatchedRegionForBoundaryMask = React.useCallback((barrierMask: Uint8Array, preferredRegionIds?: readonly string[]) => {
+        const diagnostics = buildSeedPartitionDiagnosticsForBoundaryMask(barrierMask);
+        const unmatchedIds = new Set(diagnostics.unmatchedRegions.map((region) => region.id));
+        const preferredIds = preferredRegionIds
+            ? preferredRegionIds.filter((regionId, index, source) => source.indexOf(regionId) === index)
+            : [];
+        const orderedRegions = preferredIds.length > 0
+            ? [
+                ...preferredIds
+                    .map((regionId) => regions.find((region) => region.id === regionId) ?? null)
+                    .filter((region): region is PainterRegion => region != null),
+                ...regions.filter((region) => !preferredIds.includes(region.id)),
+            ]
+            : regions;
+        for (const region of orderedRegions) {
+            if (!region || isDiagnosticRegionId(region.id)) {
+                continue;
+            }
+            if (unmatchedIds.has(region.id)) {
+                const unmatched = diagnostics.unmatchedRegions.find((item) => item.id === region.id);
+                return {
+                    id: region.id,
+                    name: region.name,
+                    seed: unmatched?.seed ?? region.seed ?? null,
+                    closedFaceCount: diagnostics.matchedSeedCount,
+                };
+            }
         }
+        return null;
+    }, [buildSeedPartitionDiagnosticsForBoundaryMask, regions]);
+
+    const focusBoundaryImportProblem = React.useCallback((barrierMask: Uint8Array, preferredRegionIds?: readonly string[]) => {
+        const unmatchedRegion = findFirstUnmatchedRegionForBoundaryMask(barrierMask, preferredRegionIds);
+        setMode('barrier');
+        setBarrierEditMode('brush');
+        setBarrierHintOperation('add');
+        setShowBarrier(true);
+        setShowSeedStatusOverlay(true);
+        setShowForbiddenUiOverlay(false);
+        if (!unmatchedRegion) {
+            setBoundaryRepairPreview(null);
+            return '所有正式 seed 已进入独立分区。下一步可先保存工作区，再按边界图生成初始区域。';
+        }
+        setSelectedRegionId(unmatchedRegion.id);
+        if (!unmatchedRegion.seed) {
+            setBoundaryRepairPreview(null);
+            return `已自动定位第一个缺 seed 区域：${unmatchedRegion.name}；当前独立分区 ${unmatchedRegion.closedFaceCount} 个。请先给这个区域设置内部 seed，工具不会再用旧 shape 中心代替。`;
+        }
+        const fullRegion = regions.find((region) => region.id === unmatchedRegion.id) ?? null;
+        if (fullRegion) {
+            openUnmatchedSeedRepairPreview(fullRegion, barrierMask, unmatchedRegion);
+        }
+        return `已自动定位第一个未独立 seed：${unmatchedRegion.name} (${unmatchedRegion.seed.x}, ${unmatchedRegion.seed.y})，并打开补边裁图；当前独立分区 ${unmatchedRegion.closedFaceCount} 个。请沿真实边界补线，连不上的线会在“只保留有效分区边界”里舍弃。`;
+    }, [findFirstUnmatchedRegionForBoundaryMask, openUnmatchedSeedRepairPreview, regions]);
+
+    const buildBoundaryDraftFromSourcePixels = (
+        sourcePixels: Uint8ClampedArray,
+        options?: {
+            extractionMode?: BoundaryDraftExtractionMode;
+            basePixels?: Uint8ClampedArray | null;
+        },
+    ) => {
+        const extractionMode = options?.extractionMode ?? 'auto-map';
+        const baseDiffMask = extractionMode === 'hand-drawn' && options?.basePixels
+            ? expandBinaryMask({
+                mask: buildPixelsChangedFromBaseMask({
+                    source: sourcePixels,
+                    base: options.basePixels,
+                    threshold: HAND_DRAWN_SOURCE_DIFF_THRESHOLD,
+                }),
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                iterations: HAND_DRAWN_SOURCE_DIFF_EXPANSION,
+            })
+            : null;
+        const drawnChangedPixelCount = baseDiffMask ? countMaskPixels(baseDiffMask) : undefined;
         const activeRules = boundaryPresets
             .filter((preset) => preset.enabled)
             .map((preset) => ({
@@ -4096,26 +10051,1054 @@ const QidahenRegionMaskTool: React.FC = () => {
                 enabled: true,
             }));
         if (activeRules.length === 0) {
-            setStatusMessage('没有启用任何边界颜色，不能生成边界图。');
-            return;
+            return {
+                mask: new Uint8Array(MASK_WIDTH * MASK_HEIGHT),
+                mode: extractionMode,
+                discardedPixelCount: 0,
+                activeRuleCount: 0,
+                matchedPixelCount: 0,
+                drawnChangedPixelCount,
+                boundedPixelCount: 0,
+                sealedPixelCount: 0,
+                keptPixelCount: 0,
+                componentCount: 0,
+                keptComponentCount: 0,
+                usable: extractionMode === 'hand-drawn',
+                usabilityReason: extractionMode === 'hand-drawn' ? null : '没有启用任何边界颜色',
+            };
         }
-        const nextBoundaryMask = buildBarrierMask({
-            source: sourcePixelsRef.current,
+        const extractedBoundaryMask = buildBarrierMask({
+            source: sourcePixels,
             width: MASK_WIDTH,
             height: MASK_HEIGHT,
             rules: activeRules,
-            expansion: boundaryExpansion,
+            expansion: extractionMode === 'hand-drawn' ? 0 : boundaryExpansion,
             minComponentPixels: DEFAULT_BOUNDARY_COMPONENT_MIN_PIXELS,
-            blurRadius: HEURISTIC_BARRIER_BLUR_RADIUS,
-            lineFilter: HEURISTIC_BARRIER_LINE_FILTER,
+            blurRadius: extractionMode === 'hand-drawn' ? 0 : HEURISTIC_BARRIER_BLUR_RADIUS,
+            lineFilter: extractionMode === 'hand-drawn' ? null : HEURISTIC_BARRIER_LINE_FILTER,
         });
+        const changedBoundaryMask = baseDiffMask
+            ? intersectBinaryMasks(extractedBoundaryMask, baseDiffMask)
+            : extractedBoundaryMask;
+        const importExclusionMask = extractionMode === 'hand-drawn'
+            ? AUTO_MAP_PRINTED_UI_EXCLUSION_MASK
+            : currentMapArtifactExclusionMask;
+        const uiExcludedBoundaryMask = removeExcludedPixels(changedBoundaryMask, importExclusionMask);
+        const boundedExtractedBoundaryMask = extractionMode === 'auto-map'
+            ? keepBoundaryDraftComponents({
+                mask: uiExcludedBoundaryMask,
+                width: MASK_WIDTH,
+                minPixels: AUTO_MAP_COMPONENT_FILTER.minPixels,
+                minSpan: AUTO_MAP_COMPONENT_FILTER.minSpan,
+                maxAverageThickness: AUTO_MAP_COMPONENT_FILTER.maxAverageThickness,
+            })
+            : uiExcludedBoundaryMask;
+        const sealedBoundaryMask = boundedExtractedBoundaryMask;
+        const nextBoundaryMask = sealedBoundaryMask;
+        const matchedPixelCount = countMaskPixels(extractedBoundaryMask);
+        const boundedPixelCount = countMaskPixels(boundedExtractedBoundaryMask);
+        const sealedPixelCount = countMaskPixels(sealedBoundaryMask);
+        const keptPixelCount = countMaskPixels(nextBoundaryMask);
+        const componentSummary = summarizeBinaryComponents(nextBoundaryMask, MASK_WIDTH);
+        const componentCount = componentSummary.componentCount;
+        const keptComponentCount = componentSummary.componentCount;
+        const usability = extractionMode === 'hand-drawn'
+            ? { usable: true, reason: null }
+            : evaluateAutoMapBoundaryDraftUsability({
+                keptPixelCount,
+                keptComponentCount,
+                bounds: getBinaryMaskBounds(nextBoundaryMask, MASK_WIDTH),
+            });
+        return {
+            mask: nextBoundaryMask,
+            mode: extractionMode,
+            discardedPixelCount: matchedPixelCount - keptPixelCount,
+            activeRuleCount: activeRules.length,
+            matchedPixelCount,
+            drawnChangedPixelCount,
+            boundedPixelCount,
+            sealedPixelCount,
+            keptPixelCount,
+            componentCount,
+            keptComponentCount,
+            usable: usability.usable,
+            usabilityReason: usability.reason,
+        };
+    };
+
+    const buildRealMapLongLineBoundaryCandidate = (sourcePixels: Uint8ClampedArray) => {
+        const activeRules = boundaryPresets
+            .filter((preset) => preset.enabled)
+            .map((preset) => ({
+                id: preset.id,
+                rgb: preset.rgb,
+                tolerance: boundaryTolerance,
+                enabled: true,
+            }));
+        const rawColorMask = activeRules.length > 0
+            ? buildBarrierMask({
+                source: sourcePixels,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                rules: activeRules,
+                expansion: 0,
+                minComponentPixels: 0,
+                blurRadius: 0,
+                lineFilter: null,
+            })
+            : new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+        const rawGradientMask = buildGradientBarrierMask({
+            source: sourcePixels,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            blurRadius: 0,
+            strongGradientThreshold: REAL_MAP_GRADIENT_CANDIDATE.strongGradientThreshold,
+            moderateGradientThreshold: REAL_MAP_GRADIENT_CANDIDATE.strongGradientThreshold,
+            darkLuminanceThreshold: REAL_MAP_GRADIENT_CANDIDATE.darkLuminanceThreshold,
+            lowChromaThreshold: REAL_MAP_GRADIENT_CANDIDATE.lowChromaThreshold,
+            lineFilter: null,
+        });
+        const decorationExclusionMask = buildCompactPrintedDecorationExclusionMask(sourcePixels);
+        const printableLineSignalMask = removeExcludedPixels(
+            removeExcludedPixels(
+                unionBinaryMasks(rawColorMask, rawGradientMask),
+                AUTO_MAP_PRINTED_UI_EXCLUSION_MASK,
+            ),
+            decorationExclusionMask,
+        );
+        const regionGuidedAnalysis = analyzeMaskBoundaryChainsNearSupport({
+            mask: printableLineSignalMask,
+            width: MASK_WIDTH,
+            clipMask: REAL_MAP_REGION_BOUNDARY_CLIP_MASK,
+            supportMask: REAL_MAP_REGION_BOUNDARY_SUPPORT_MASK,
+            maxDistance: REAL_MAP_REGION_BOUNDARY_MAX_DISTANCE,
+            minPixels: REAL_MAP_REGION_GUIDED_LONG_LINE_FILTER.minPixels,
+            minSpan: REAL_MAP_REGION_GUIDED_LONG_LINE_FILTER.minSpan,
+            maxAverageThickness: REAL_MAP_REGION_GUIDED_LONG_LINE_FILTER.maxAverageThickness,
+            gapClosingIterations: 0,
+        });
+        const candidateMask = keepBoundaryDraftComponents({
+            mask: regionGuidedAnalysis.mask,
+            width: MASK_WIDTH,
+            ...REAL_MAP_REGION_GUIDED_LONG_LINE_FILTER,
+            connectivity: 8,
+        });
+        const matchedPixelCount = countMaskPixels(rawColorMask) + countMaskPixels(rawGradientMask);
+        const boundedPixelCount = regionGuidedAnalysis.boundaryBandPixels;
+        const decorationExcludedPixelCount = countMaskPixels(decorationExclusionMask);
+        const keptPixelCount = countMaskPixels(candidateMask);
+        const componentSummary = summarizeBinaryComponents(candidateMask, MASK_WIDTH);
+        return {
+            mask: candidateMask,
+            mode: 'auto-map' as const,
+            activeRuleCount: activeRules.length,
+            matchedPixelCount,
+            boundedPixelCount,
+            sealedPixelCount: keptPixelCount,
+            keptPixelCount,
+            discardedPixelCount: Math.max(0, matchedPixelCount - keptPixelCount),
+            guidePixelCount: countMaskPixels(REAL_MAP_REGION_BOUNDARY_SUPPORT_MASK),
+            decorationExcludedPixelCount,
+            componentCount: componentSummary.componentCount,
+            keptComponentCount: componentSummary.componentCount,
+            usable: keptPixelCount > 0,
+            usabilityReason: keptPixelCount > 0
+                ? '已生成区域导向长线候选参考层，仍需沿参考手绘成闭合边界'
+                : '没有找到可用的长连续边界线',
+        };
+    };
+
+    const buildRealMapColorLineEditableDraft = (sourcePixels: Uint8ClampedArray) => {
+        void sourcePixels;
+        const activeRules = boundaryPresets
+            .filter((preset) => preset.enabled)
+            .map((preset) => ({
+                id: preset.id,
+                rgb: preset.rgb,
+                tolerance: Math.max(2, Math.min(boundaryTolerance, REAL_MAP_COLOR_LINE_DRAFT_MAX_TOLERANCE)),
+                enabled: true,
+            }));
+        const rawColorMask = activeRules.length > 0
+            ? buildBarrierMask({
+                source: sourcePixels,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                rules: activeRules,
+                expansion: 0,
+                minComponentPixels: 0,
+                blurRadius: 0,
+                lineFilter: null,
+            })
+            : new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+        const printableLineMask = removeExcludedPixels(rawColorMask, currentMapArtifactExclusionMask);
+        const lightlyClosedLineMask = closeBinaryMask({
+            mask: printableLineMask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            iterations: REAL_MAP_FIXED_COLOR_CLOSE_ITERATIONS,
+        });
+        const connectedLineMask = keepBoundaryDraftComponents({
+            mask: lightlyClosedLineMask,
+            width: MASK_WIDTH,
+            ...REAL_MAP_FIXED_COLOR_CONNECTED_FILTER,
+            connectivity: 8,
+        });
+        const straightLinePruned = removeLikelyPrintedStraightLineComponents({
+            mask: connectedLineMask,
+            width: MASK_WIDTH,
+        });
+        const editableDraftMask = removeExcludedPixels(straightLinePruned.mask, currentMapArtifactExclusionMask);
+        const matchedPixelCount = countMaskPixels(rawColorMask);
+        const printablePixelCount = countMaskPixels(printableLineMask);
+        const lightlyClosedPixelCount = countMaskPixels(lightlyClosedLineMask);
+        const keptPixelCount = countMaskPixels(editableDraftMask);
+        const componentSummary = summarizeBinaryComponents(editableDraftMask, MASK_WIDTH);
+        return {
+            mask: editableDraftMask,
+            mode: 'auto-map' as const,
+            activeRuleCount: activeRules.length,
+            matchedPixelCount,
+            boundedPixelCount: printablePixelCount,
+            sealedPixelCount: keptPixelCount,
+            keptPixelCount,
+            discardedPixelCount: Math.max(0, matchedPixelCount - keptPixelCount),
+            guidePixelCount: lightlyClosedPixelCount,
+            decorationExcludedPixelCount: countMaskPixels(currentMapArtifactExclusionMask),
+            componentCount: componentSummary.componentCount,
+            keptComponentCount: componentSummary.componentCount,
+            usedGuidedSupplement: false,
+            guidedSupplementPixelCount: straightLinePruned.removedPixelCount,
+            usable: keptPixelCount > 0,
+            usabilityReason: keptPixelCount > 0
+                ? '已按固定边界色生成连通粗边界稿，碎段已过滤，仍需人工删错线补缺线'
+                : '没有找到可用的真实底图颜色连续线',
+        };
+    };
+
+    const buildHybridRealMapColorLineDraft = (sourcePixels: Uint8ClampedArray) => {
+        const result = buildRealMapColorLineEditableDraft(sourcePixels);
+        const nextBoundaryMask = removeExcludedPixels(result.mask, currentMapArtifactExclusionMask);
+        const keptPixelCount = countMaskPixels(nextBoundaryMask);
+        const keptComponentCount = summarizeBinaryComponents(nextBoundaryMask, MASK_WIDTH).componentCount;
+        return {
+            result,
+            prunedBoundary: {
+                mask: nextBoundaryMask,
+                keptPixelCount,
+                discardedPixelCount: 0,
+                mode: null,
+            },
+            nextBoundaryMask,
+            keptPixelCount,
+            keptComponentCount,
+            supplementNote: '',
+            draftSupplementNote: '',
+        };
+    };
+
+    const generateBoundaryDraftFromColors = () => {
+        if (!sourcePixelsRef.current) {
+            setStatusMessage('地图像素还没加载完成，不能诊断底图颜色。');
+            return;
+        }
+        const result = buildBoundaryDraftFromSourcePixels(sourcePixelsRef.current);
+        if (result.activeRuleCount === 0) {
+            setStatusMessage('没有启用任何边界颜色，不能诊断底图颜色。');
+            return;
+        }
+        setLastBoundaryExtractionStats({
+            mode: result.mode,
+            writeMode: 'read-only',
+            activeRuleCount: result.activeRuleCount,
+            matchedPixelCount: result.matchedPixelCount,
+            boundedPixelCount: result.boundedPixelCount,
+            sealedPixelCount: result.sealedPixelCount,
+            keptPixelCount: result.keptPixelCount,
+            discardedPixelCount: result.discardedPixelCount,
+            componentCount: result.componentCount,
+            keptComponentCount: result.keptComponentCount,
+            usable: result.usable,
+            usabilityReason: result.usabilityReason,
+        });
+        setStatusMessage(
+            `只读诊断完成：当前底图按边界色命中 ${result.matchedPixelCount.toLocaleString()} px，剔除印刷 UI 和厚块噪声后仍剩 ${result.keptPixelCount.toLocaleString()} px / ${result.keptComponentCount ?? 0} 条。真实底图颜色会命中马、海面纹理、文字和河线，本入口不会写入边界图；请导入完成边界图或从空白边界开始手绘。`,
+        );
+    };
+
+    const loadRealMapColorLineDraft = async (): Promise<boolean> => {
+        if (!sourcePixelsRef.current) {
+        setStatusMessage('地图像素还没加载完成，不能载入固定色边界稿。');
+            return false;
+        }
+        setStatusMessage('正在按固定边界色生成可编辑边界稿...');
+        const {
+            result,
+            prunedBoundary,
+            nextBoundaryMask,
+            keptPixelCount,
+            supplementNote,
+            draftSupplementNote,
+        } = buildHybridRealMapColorLineDraft(sourcePixelsRef.current);
+        if (result.activeRuleCount === 0) {
+            setStatusMessage('还没有可用的边界颜色：请先输入你实际画边界使用的 #RRGGBB 或 rgb(r,g,b) 颜色。');
+            return false;
+        }
+        if (keptPixelCount === 0) {
+            setStatusMessage('固定色边界稿为空：命中的边界线在连通过滤后都被舍弃了。请直接手绘，或先走区域粗稿再反推边界。');
+            return false;
+        }
+
         boundaryDraftMaskRef.current = nextBoundaryMask;
         manualBarrierAddRef.current.fill(0);
         manualBarrierRemoveRef.current.fill(0);
+        clearBarrierHistory();
+        setManualBlankBoundaryBase(false);
+        setPaintedBoundaryOnly(true);
+        setShowMask(false);
+        setShowBarrier(true);
+        setShowRealMapBoundarySupportOverlay(false);
+        setMode('barrier');
+        setBarrierHintOperation('add');
+        setBarrierEditMode('brush');
+        setShowSeedStatusOverlay(false);
+        setShowForbiddenUiOverlay(false);
+        setShowPartitionPreviewOverlay(false);
+        setBoundaryRepairPreview(null);
+        setLastRegionGenerationResults([]);
+        setLastRegionGenerationWorkflow(null);
+        await applyBoundarySourceReferenceDataUrl(null);
+        setLastBoundaryExtractionStats({
+            mode: result.mode,
+            writeMode: 'editable-draft',
+            activeRuleCount: result.activeRuleCount,
+            matchedPixelCount: result.matchedPixelCount,
+            boundedPixelCount: result.boundedPixelCount,
+            sealedPixelCount: result.sealedPixelCount,
+            keptPixelCount,
+            discardedPixelCount: result.discardedPixelCount + prunedBoundary.discardedPixelCount,
+            componentCount: result.componentCount,
+            keptComponentCount: summarizeBinaryComponents(nextBoundaryMask, MASK_WIDTH).componentCount,
+            usable: true,
+            usabilityReason: '已按固定边界色和连通碎段过滤生成可编辑红色边界稿，只求大致正确，供手工删错线补缺线。',
+        });
+        rebuildBarrierMask();
+        const prunedNote = prunedBoundary.mode && prunedBoundary.discardedPixelCount > 0
+            ? `；已自动舍弃未参与${prunedBoundary.mode}的碎线 ${prunedBoundary.discardedPixelCount.toLocaleString()} px`
+            : '';
+        setStatusMessage(`已初始化整图红色边界：按 ${result.activeRuleCount} 个固定边界色命中 ${result.matchedPixelCount.toLocaleString()} px，裁掉 UI/装饰并过滤碎段后保留 ${keptPixelCount.toLocaleString()} px${supplementNote}${draftSupplementNote}${prunedNote}。这不是圆圈兜底层；多余线删掉，缺线补上即可。`);
+        return true;
+    };
+
+    const loadRoughShapeOutlineDraft = async () => {
+        const formalRegionSeeds = regions
+            .filter((region) => !isDiagnosticRegionId(region.id))
+            .filter((region): region is PainterRegion & { seed: MaskPoint } => region.seed != null)
+            .map((region) => ({
+                id: region.id,
+                point: region.seed,
+            }));
+        const regionColorDraft = sourcePixelsRef.current
+            ? buildRealMapRegionColorDraft(sourcePixelsRef.current)
+            : null;
+        const generatedRegionIndexes = regionColorDraft
+            ? regionColorDraft.reports
+                .map((report, reportIndex) => report.status === 'generated' ? reportIndex : EMPTY_REGION)
+                .filter((regionIndex) => regionIndex >= 0)
+            : [];
+        const regionColorBoundaryMask = regionColorDraft && generatedRegionIndexes.length >= 4
+            ? buildBoundaryMaskFromRegionAssignments({
+                assignments: regionColorDraft.assignments,
+                regionIndexes: generatedRegionIndexes,
+                exclusionMask: currentMapArtifactExclusionMask,
+                regionSeedByIndex: new Map(regions.map((region, regionIndex) => [regionIndex, region.seed]).filter((entry): entry is [number, MaskPoint] => entry[1] != null)),
+                smoothRegionFillIterations: 3,
+            })
+            : null;
+        const fallbackBoundaryMask = buildSnappedRoughShapeOutlineBoundaryMask({
+            regionSeeds: formalRegionSeeds,
+            supportMask: realMapBoundaryCandidateMask,
+            exclusionMask: currentMapArtifactExclusionMask,
+        });
+        const rawBoundaryMask = regionColorBoundaryMask && countMaskPixels(regionColorBoundaryMask) > 0
+            ? regionColorBoundaryMask
+            : fallbackBoundaryMask;
+        const nextBoundaryMask = removeExcludedPixels(rawBoundaryMask, currentMapArtifactExclusionMask);
+        const keptPixelCount = countMaskPixels(nextBoundaryMask);
+        const discardedPixelCount = Math.max(0, countMaskPixels(rawBoundaryMask) - keptPixelCount);
+        if (keptPixelCount === 0) {
+            setStatusMessage('粗轮廓初稿生成失败：裁掉印刷禁区后没有剩余边界像素。');
+            return;
+        }
+        boundaryDraftMaskRef.current = nextBoundaryMask;
+        manualBarrierAddRef.current.fill(0);
+        manualBarrierRemoveRef.current.fill(0);
+        clearBarrierHistory();
+        setManualBlankBoundaryBase(false);
         setPaintedBoundaryOnly(true);
         setShowBarrier(true);
+        setMode('barrier');
+        setBarrierHintOperation('add');
+        setBarrierEditMode('brush');
+        setShowSeedStatusOverlay(false);
+        setShowForbiddenUiOverlay(false);
+        setShowPartitionPreviewOverlay(false);
+        setBoundaryRepairPreview(null);
+        setLastRegionGenerationResults([]);
+        await applyBoundarySourceReferenceDataUrl(null);
+        setLastBoundaryExtractionStats({
+            mode: 'auto-map',
+            writeMode: 'editable-draft',
+            activeRuleCount: regionColorDraft && generatedRegionIndexes.length >= 4
+                ? generatedRegionIndexes.length
+                : formalRegionSeeds.length,
+            matchedPixelCount: countMaskPixels(rawBoundaryMask),
+            boundedPixelCount: keptPixelCount,
+            sealedPixelCount: keptPixelCount,
+            keptPixelCount,
+            discardedPixelCount,
+            componentCount: summarizeBinaryComponents(rawBoundaryMask, MASK_WIDTH).componentCount,
+            keptComponentCount: summarizeBinaryComponents(nextBoundaryMask, MASK_WIDTH).componentCount,
+            usable: true,
+            usabilityReason: regionColorDraft && generatedRegionIndexes.length >= 4
+                ? '基于真实底图区域底色分区反推的可编辑粗边界，只用于手工修边起稿'
+                : '基于 seed 分区中线与粗形状外包络生成的可编辑粗轮廓，只用于手工修边起稿',
+        });
         rebuildBarrierMask();
-        setStatusMessage(`已从当前边界颜色生成可编辑边界图：${countMaskPixels(nextBoundaryMask).toLocaleString()} px。下一步先微调这张边界图，再按边界图生成区域。`);
+        const sourceNote = regionColorDraft && generatedRegionIndexes.length >= 4
+            ? `当前优先使用真实底图区域底色分区反推边界（${generatedRegionIndexes.length}/${formalRegionSeeds.length} 区），不再直接描那 5 个小圈`
+            : '当前回退到 seed 分区中线 + 粗外包络，因为底色分区不足 4 区';
+        setStatusMessage(`已写入粗轮廓初稿：${keptPixelCount.toLocaleString()} px。${sourceNote}；已裁掉印刷/UI 禁区 ${discardedPixelCount.toLocaleString()} px。为保证画面干净，seed 状态和补边裁图默认先隐藏，需要时再手动打开。`);
+    };
+
+    const enterBoundaryTruthDraftFromCurrentRegions = async () => {
+        const formalRegionIndexes = regions
+            .map((region, regionIndex) => (
+                region && !isDiagnosticRegionId(region.id) && buildRegionMaskFromAssignments(assignmentsRef.current, regionIndex)
+                    ? regionIndex
+                    : EMPTY_REGION
+            ))
+            .filter((regionIndex) => regionIndex >= 0);
+        if (formalRegionIndexes.length === 0) {
+            setStatusMessage('当前还没有可用区域粗稿，不能反推出闭合边界稿。先生成一版粗区域，再切到边界修线。');
+            return;
+        }
+
+        const rawBoundaryMask = buildBoundaryMaskFromRegionAssignments({
+            assignments: assignmentsRef.current,
+            regionIndexes: formalRegionIndexes,
+            exclusionMask: currentMapArtifactExclusionMask,
+            regionSeedByIndex: new Map(regions.map((region, regionIndex) => [regionIndex, region.seed]).filter((entry): entry is [number, MaskPoint] => entry[1] != null)),
+            smoothRegionFillIterations: 3,
+        });
+        const rawPixelCount = countMaskPixels(rawBoundaryMask);
+        if (rawPixelCount === 0) {
+            setStatusMessage('当前区域粗稿反推不出可用边界像素。先调整区域，再重试。');
+            return;
+        }
+
+        const pruned = pruneImportedBoundaryMask(rawBoundaryMask);
+        const nextBoundaryMask = removeExcludedPixels(pruned.mask, currentMapArtifactExclusionMask);
+        const keptPixelCount = countMaskPixels(nextBoundaryMask);
+        if (keptPixelCount === 0) {
+            setStatusMessage('当前区域粗稿反推出的边界在裁掉禁区后为空。先调整区域，再重试。');
+            return;
+        }
+
+        boundaryDraftMaskRef.current = nextBoundaryMask;
+        manualBarrierAddRef.current.fill(0);
+        manualBarrierRemoveRef.current.fill(0);
+        clearBarrierHistory();
+        setManualBlankBoundaryBase(false);
+        setPaintedBoundaryOnly(true);
+        setShowMask(false);
+        setShowBarrier(true);
+        setShowRealMapBoundarySupportOverlay(false);
+        setMode('barrier');
+        setBarrierHintOperation('add');
+        setBarrierEditMode('brush');
+        setShowSeedStatusOverlay(true);
+        setShowForbiddenUiOverlay(false);
+        setBoundaryRepairPreview(null);
+        setLastRegionGenerationResults([]);
+        setLastRegionGenerationWorkflow(null);
+        setLastBoundaryExtractionStats({
+            mode: 'auto-map',
+            writeMode: 'editable-draft',
+            activeRuleCount: formalRegionIndexes.length,
+            matchedPixelCount: rawPixelCount,
+            boundedPixelCount: keptPixelCount,
+            sealedPixelCount: keptPixelCount,
+            keptPixelCount,
+            discardedPixelCount: Math.max(0, rawPixelCount - keptPixelCount),
+            componentCount: summarizeBinaryComponents(rawBoundaryMask, MASK_WIDTH).componentCount,
+            keptComponentCount: summarizeBinaryComponents(nextBoundaryMask, MASK_WIDTH).componentCount,
+            usable: true,
+            usabilityReason: '按当前区域粗稿反推的闭合边界草稿，只要求大致正确；多余连线删掉，缺线直接补上。',
+        });
+        await applyBoundarySourceReferenceDataUrl(null);
+        rebuildBarrierMask();
+        setStatusMessage(`已按当前 ${formalRegionIndexes.length} 区粗稿反推闭合边界稿：${keptPixelCount.toLocaleString()} px。已自动隐藏区域填色与辅助层，方便直接删错线、补缺线；修完后再按边界重新生成区域。`);
+    };
+
+    const loadRealMapBoundaryCandidateReference = async (
+        options?: {
+            opacity?: number;
+            silent?: boolean;
+        },
+    ) => {
+        if (!AUTO_MAP_CANDIDATE_REFERENCE_ENABLED) {
+            if (!options?.silent) {
+                setLastBoundaryExtractionStats(null);
+                setStatusMessage('区域导向候选参考已停用：它会把静态粗轮廓、装饰纹理或直线候选误当边界。当前正常主路是导入/手绘完成边界图，再按边界分割全图生成区域。');
+            }
+            return null;
+        }
+        if (!sourcePixelsRef.current) {
+            if (!options?.silent) {
+                setStatusMessage('地图像素还没加载完成，不能生成候选参考层。');
+            }
+            return null;
+        }
+        const result = buildRealMapLongLineBoundaryCandidate(sourcePixelsRef.current);
+        if (result.keptPixelCount === 0) {
+            if (!options?.silent) {
+                setLastBoundaryExtractionStats({
+                    mode: result.mode,
+                    writeMode: 'candidate-reference',
+                    activeRuleCount: result.activeRuleCount,
+                    matchedPixelCount: result.matchedPixelCount,
+                    boundedPixelCount: result.boundedPixelCount,
+                    sealedPixelCount: result.sealedPixelCount,
+                    keptPixelCount: result.keptPixelCount,
+                    discardedPixelCount: result.discardedPixelCount,
+                    guidePixelCount: result.guidePixelCount,
+                    decorationExcludedPixelCount: result.decorationExcludedPixelCount,
+                    componentCount: result.componentCount,
+                    keptComponentCount: result.keptComponentCount,
+                    usable: false,
+                    usabilityReason: result.usabilityReason,
+                });
+                setStatusMessage('未找到可用的长连续边界线。当前底图撞色太严重，请改用导入完成边界图或空白手绘。');
+            }
+            return null;
+        }
+        const hasEditableBoundaryDraft = Boolean(boundaryDraftMaskRef.current && countMaskPixels(boundaryDraftMaskRef.current) > 0);
+        await applyBoundarySourceReferenceDataUrl(buildMaskDataUrl(result.mask), { visible: true });
+        setBoundarySourceReferenceOpacity(
+            options?.opacity ?? (hasEditableBoundaryDraft ? 0.38 : 0.68),
+        );
+        setManualBlankBoundaryBase(!hasEditableBoundaryDraft);
+        setShowBarrier(hasEditableBoundaryDraft || showBarrier);
+        setMode('barrier');
+        setBarrierHintOperation('add');
+        setBarrierEditMode('brush');
+        setLastRegionGenerationResults([]);
+        setLastBoundaryExtractionStats({
+            mode: result.mode,
+            writeMode: 'candidate-reference',
+            activeRuleCount: result.activeRuleCount,
+            matchedPixelCount: result.matchedPixelCount,
+            boundedPixelCount: result.boundedPixelCount,
+            sealedPixelCount: result.sealedPixelCount,
+            keptPixelCount: result.keptPixelCount,
+            discardedPixelCount: result.discardedPixelCount,
+            guidePixelCount: result.guidePixelCount,
+            decorationExcludedPixelCount: result.decorationExcludedPixelCount,
+            componentCount: result.componentCount,
+            keptComponentCount: result.keptComponentCount,
+            usable: true,
+            usabilityReason: result.usabilityReason,
+        });
+        if (!options?.silent) {
+            setStatusMessage(`已生成区域导向候选参考层：${result.keptPixelCount.toLocaleString()} px / ${result.keptComponentCount ?? 0} 条。候选没有写入边界图本体；${hasEditableBoundaryDraft ? '当前会与固定色边界稿同时显示，方便对着真实地图细线删补。' : '请沿参考层手绘补边，形成闭合边界后再生成区域。'}`);
+        }
+        return result;
+    };
+
+    const buildRealMapRegionColorDraft = (sourcePixels: Uint8ClampedArray) => {
+        const nextAssignments = createRegionAssignments(MASK_WIDTH, MASK_HEIGHT);
+        const reports: RealMapRegionColorDraftReport[] = [];
+        const exclusionMask = currentMapArtifactExclusionMask;
+        const formalRegionSeeds = regions
+            .filter((region) => !isDiagnosticRegionId(region.id))
+            .filter((region): region is PainterRegion & { seed: MaskPoint } => region.seed != null)
+            .map((region) => ({
+                id: region.id,
+                name: region.name,
+                point: region.seed,
+            }));
+        const visibleFallbackMaskByRegionId = new Map<string, Uint8Array>();
+        for (const region of regions) {
+            if (!region || isDiagnosticRegionId(region.id)) {
+                continue;
+            }
+            const visibleFallbackPolygon = REAL_MAP_VISIBLE_REGION_FALLBACK_POLYGONS.get(region.id);
+            const visibleFallbackMask = visibleFallbackPolygon
+                ? removeExcludedPixels(rasterizePolygonMask({
+                    width: MASK_WIDTH,
+                    height: MASK_HEIGHT,
+                    polygon: visibleFallbackPolygon,
+                }), exclusionMask)
+                : null;
+            if (visibleFallbackMask && countMaskPixels(visibleFallbackMask) > 0) {
+                if (region.seed) {
+                    const seedIndex = (region.seed.y * MASK_WIDTH) + region.seed.x;
+                    if (visibleFallbackMask[seedIndex] === 0 && exclusionMask[seedIndex] === 0) {
+                        for (let offsetY = -10; offsetY <= 10; offsetY += 1) {
+                            const y = region.seed.y + offsetY;
+                            if (y < 0 || y >= MASK_HEIGHT) {
+                                continue;
+                            }
+                            for (let offsetX = -10; offsetX <= 10; offsetX += 1) {
+                                const x = region.seed.x + offsetX;
+                                if (x < 0 || x >= MASK_WIDTH || (offsetX * offsetX) + (offsetY * offsetY) > 100) {
+                                    continue;
+                                }
+                                const index = (y * MASK_WIDTH) + x;
+                                if (exclusionMask[index] === 0) {
+                                    visibleFallbackMask[index] = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+                visibleFallbackMaskByRegionId.set(region.id, visibleFallbackMask);
+            }
+        }
+        const geodesicPriorMasksByRegionId = buildGeodesicPriorRegionDraftMasks({
+            sourcePixels,
+            formalRegionSeeds: formalRegionSeeds.map((region) => ({
+                id: region.id,
+                point: region.point,
+            })),
+            priorMaskByRegionId: visibleFallbackMaskByRegionId,
+            exclusionMask,
+            supportMask: realMapBoundaryCandidateMask,
+        });
+        const roughBoundaryMask = buildSnappedRoughShapeOutlineBoundaryMask({
+            regionSeeds: formalRegionSeeds.map((region) => ({
+                id: region.id,
+                point: region.point,
+            })),
+            supportMask: realMapBoundaryCandidateMask,
+            exclusionMask,
+        });
+        const roughPartitions = extractBoundaryPartitionComponents({
+            barrierMask: roughBoundaryMask,
+            width: MASK_WIDTH,
+            fillableMask: AUTO_MAP_REGION_FILLABLE_MASK,
+            seeds: formalRegionSeeds.map((region) => region.point),
+            minPixels: 48,
+        });
+        const roughPartitionByRegionId = new Map<string, {
+            mask: Uint8Array;
+        }>();
+        for (const partition of roughPartitions) {
+            if (partition.seedIndexes.length !== 1) {
+                continue;
+            }
+            const seedRecord = formalRegionSeeds[partition.seedIndexes[0]];
+            if (!seedRecord) {
+                continue;
+            }
+            const shapeMask = STATIC_BOOTSTRAP_SHAPE_MASKS.get(seedRecord.id);
+            const mask = removeExcludedPixels(partition.mask, exclusionMask);
+            const pixelCount = countMaskPixels(mask);
+            if (!shapeMask || pixelCount === 0) {
+                continue;
+            }
+            roughPartitionByRegionId.set(seedRecord.id, { mask });
+        }
+        let generatedRegionCount = 0;
+        let writtenPixelCount = 0;
+        let overlapPixelCount = 0;
+
+        for (let regionIndex = 0; regionIndex < regions.length; regionIndex += 1) {
+            const region = regions[regionIndex];
+            if (!region || isDiagnosticRegionId(region.id)) {
+                continue;
+            }
+            const shape = QIDAHEN_MAP_REGION_SHAPES.find((item) => item.id === region.id);
+            if (!shape || !region.seed) {
+                reports.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'skipped',
+                    pixelCount: 0,
+                    shapeOverlapPixels: 0,
+                    seed: region.seed,
+                    sampledColor: null,
+                    note: !shape ? '缺少真实地图区域轮廓，已跳过。' : '缺少正式 seed，已跳过。',
+                });
+                continue;
+            }
+
+            const shapeMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+            const guideMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+            const polygonXs = shape.polygon.map(([x]) => x);
+            const polygonYs = shape.polygon.map(([, y]) => y);
+            const left = Math.max(0, Math.min(...polygonXs) - REAL_MAP_REGION_COLOR_DRAFT_GUIDE_MARGIN - 16);
+            const right = Math.min(MASK_WIDTH - 1, Math.max(...polygonXs) + REAL_MAP_REGION_COLOR_DRAFT_GUIDE_MARGIN + 16);
+            const top = Math.max(0, Math.min(...polygonYs) - REAL_MAP_REGION_COLOR_DRAFT_GUIDE_MARGIN - 16);
+            const bottom = Math.min(MASK_HEIGHT - 1, Math.max(...polygonYs) + REAL_MAP_REGION_COLOR_DRAFT_GUIDE_MARGIN + 16);
+            let shapePixelCount = 0;
+            const redSamples: number[] = [];
+            const greenSamples: number[] = [];
+            const blueSamples: number[] = [];
+            const pushSample = (color: RgbColor) => {
+                const luminance = rgbLuminance(color);
+                if (luminance < 50 || luminance > 230 || rgbChroma(color) > 150) {
+                    return;
+                }
+                redSamples.push(color[0]);
+                greenSamples.push(color[1]);
+                blueSamples.push(color[2]);
+            };
+
+            for (let y = top; y <= bottom; y += 1) {
+                for (let x = left; x <= right; x += 1) {
+                    const index = (y * MASK_WIDTH) + x;
+                    if (exclusionMask[index] !== 0) {
+                        continue;
+                    }
+                    const insideShape = isPointInsidePolygon(x, y, shape.polygon);
+                    const distanceToBoundary = distanceToPolygonBoundary(x, y, shape.polygon);
+                    if (insideShape) {
+                        shapeMask[index] = 1;
+                        shapePixelCount += 1;
+                        if (distanceToBoundary >= REAL_MAP_REGION_COLOR_DRAFT_SAMPLE_INSET) {
+                            pushSample(sampleSourceRgb(sourcePixels, x, y));
+                        }
+                    }
+                    if (insideShape || distanceToBoundary <= REAL_MAP_REGION_COLOR_DRAFT_GUIDE_MARGIN) {
+                        guideMask[index] = 1;
+                    }
+                }
+            }
+
+            if (redSamples.length < 64) {
+                for (let index = 0; index < shapeMask.length; index += 1) {
+                    if (shapeMask[index] === 0) {
+                        continue;
+                    }
+                    pushSample(sampleSourceRgb(sourcePixels, index % MASK_WIDTH, (index / MASK_WIDTH) | 0));
+                }
+            }
+
+            const sampledColor = (
+                medianNumber(redSamples) != null
+                && medianNumber(greenSamples) != null
+                && medianNumber(blueSamples) != null
+            )
+                ? [
+                    medianNumber(redSamples) ?? 0,
+                    medianNumber(greenSamples) ?? 0,
+                    medianNumber(blueSamples) ?? 0,
+                ] as RgbColor
+                : null;
+            if (!sampledColor || shapePixelCount === 0) {
+                reports.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'skipped',
+                    pixelCount: 0,
+                    shapeOverlapPixels: 0,
+                    seed: region.seed,
+                    sampledColor,
+                    note: '没有采到稳定底图底色，已跳过。',
+                });
+                continue;
+            }
+
+            const candidateMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+            for (let index = 0; index < guideMask.length; index += 1) {
+                if (guideMask[index] === 0 || exclusionMask[index] !== 0) {
+                    continue;
+                }
+                const color = sampleSourceRgb(sourcePixels, index % MASK_WIDTH, (index / MASK_WIDTH) | 0);
+                const luminance = rgbLuminance(color);
+                if (
+                    luminance >= 42
+                    && luminance <= 238
+                    && rgbDistance(color, sampledColor) <= REAL_MAP_REGION_COLOR_DRAFT_TOLERANCE
+                ) {
+                    candidateMask[index] = 1;
+                }
+            }
+
+            const minShapeOverlapPixels = Math.max(
+                300,
+                Math.round(shapePixelCount * REAL_MAP_REGION_COLOR_DRAFT_MIN_SHAPE_OVERLAP_RATIO),
+            );
+            const rawRoughPartition = roughPartitionByRegionId.get(region.id);
+            const component = selectBestRegionColorDraftComponent({
+                candidateMask,
+                shapeMask,
+                seed: region.seed,
+                minShapeOverlapPixels,
+            });
+            if (!component || component.pixelCount < REAL_MAP_REGION_COLOR_DRAFT_MIN_PIXELS) {
+                reports.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'skipped',
+                    pixelCount: 0,
+                    shapeOverlapPixels: component?.shapeOverlapPixels ?? 0,
+                    seed: region.seed,
+                    sampledColor,
+                    note: '没有找到与 seed/真实底色相连的可用区域块，已跳过。',
+                });
+                continue;
+            }
+
+            const colorFilledMask = removeExcludedPixels(
+                intersectBinaryMasks(
+                    fillMaskInternalHoles({
+                        mask: component.mask,
+                        width: MASK_WIDTH,
+                        height: MASK_HEIGHT,
+                    }),
+                    guideMask,
+                ),
+                exclusionMask,
+            );
+            const colorPixelCount = countMaskPixels(colorFilledMask);
+            const roughGuidedMask = rawRoughPartition
+                ? removeExcludedPixels(intersectBinaryMasks(rawRoughPartition.mask, guideMask), exclusionMask)
+                : null;
+            const roughPixelCount = roughGuidedMask ? countMaskPixels(roughGuidedMask) : 0;
+            const roughShapeOverlapPixels = roughGuidedMask ? countMaskOverlapPixels(roughGuidedMask, shapeMask) : 0;
+            const visibleFallbackMask = visibleFallbackMaskByRegionId.get(region.id) ?? null;
+            const rawGeodesicPriorMask = geodesicPriorMasksByRegionId.get(region.id) ?? null;
+            const geodesicClipMask = visibleFallbackMask
+                ? removeExcludedPixels(
+                    expandBinaryMask({
+                        mask: visibleFallbackMask,
+                        width: MASK_WIDTH,
+                        height: MASK_HEIGHT,
+                        iterations: REAL_MAP_GEODESIC_VISIBLE_CLIP_EXPANSION,
+                    }),
+                    exclusionMask,
+                )
+                : guideMask;
+            const geodesicPriorMask = rawGeodesicPriorMask
+                ? removeExcludedPixels(intersectBinaryMasks(rawGeodesicPriorMask, geodesicClipMask), exclusionMask)
+                : null;
+            const bootstrapShapeMask = visibleFallbackMask && countMaskPixels(visibleFallbackMask) > 0
+                ? visibleFallbackMask
+                : removeExcludedPixels(shapeMask, exclusionMask);
+            const expectedPixelCount = Math.max(1, NORMAL_REGION_EXPECTED_PIXEL_COUNT_BY_ID.get(region.id) ?? shapePixelCount);
+            const colorCoverageRatio = colorPixelCount / expectedPixelCount;
+            const roughCoverageRatio = roughPixelCount / expectedPixelCount;
+            const roughShapeOverlapRatio = roughShapeOverlapPixels / Math.max(1, shapePixelCount);
+            const geodesicPixelCount = geodesicPriorMask ? countMaskPixels(geodesicPriorMask) : 0;
+            const geodesicCoverageRatio = geodesicPixelCount / expectedPixelCount;
+            const geodesicMaxCoverageRatio = region.id === 'song-jin' || region.id === 'jinzhou' ? 1.24 : 1.75;
+            const shouldPreferRoughPartition = Boolean(
+                roughGuidedMask
+                && roughPixelCount > 0
+                && roughShapeOverlapRatio >= 0.22
+                && roughCoverageRatio <= 1.24
+                && (
+                    colorPixelCount === 0
+                    || (
+                        colorCoverageRatio < 0.82
+                        && roughCoverageRatio >= 0.40
+                        && roughCoverageRatio > (colorCoverageRatio + 0.12)
+                    )
+                    || (
+                        colorCoverageRatio < 0.30
+                        && roughCoverageRatio >= 0.28
+                        && roughPixelCount > (colorPixelCount * 1.18)
+                    )
+                )
+            );
+            const shouldPreferGeodesicPrior = Boolean(
+                geodesicPriorMask
+                && geodesicPixelCount > 0
+                && geodesicCoverageRatio >= 0.65
+                && geodesicCoverageRatio <= geodesicMaxCoverageRatio
+            );
+            const shouldPreferVisibleFallback = !shouldPreferGeodesicPrior
+                && visibleFallbackMask != null
+                && countMaskPixels(visibleFallbackMask) > 0;
+            const shouldPreferBootstrapShape = !shouldPreferGeodesicPrior
+                && !shouldPreferVisibleFallback
+                && !shouldPreferRoughPartition
+                && colorCoverageRatio < 0.26
+                && countMaskPixels(bootstrapShapeMask) > 0;
+            const selectedMask = shouldPreferGeodesicPrior
+                ? geodesicPriorMask!
+                : shouldPreferRoughPartition
+                ? roughGuidedMask!
+                : shouldPreferVisibleFallback
+                    ? visibleFallbackMask!
+                    : shouldPreferBootstrapShape
+                    ? bootstrapShapeMask
+                    : colorFilledMask;
+            let regionWrittenPixels = 0;
+            for (let index = 0; index < selectedMask.length; index += 1) {
+                if (selectedMask[index] === 0) {
+                    continue;
+                }
+                if (exclusionMask[index] !== 0) {
+                    continue;
+                }
+                if (nextAssignments[index] !== EMPTY_REGION) {
+                    overlapPixelCount += 1;
+                    continue;
+                }
+                nextAssignments[index] = regionIndex;
+                regionWrittenPixels += 1;
+            }
+
+            if (regionWrittenPixels === 0) {
+                reports.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'overlap-only',
+                    pixelCount: 0,
+                    shapeOverlapPixels: shouldPreferGeodesicPrior
+                        ? countMaskOverlapPixels(geodesicPriorMask!, shapeMask)
+                        : shouldPreferRoughPartition
+                        ? roughShapeOverlapPixels
+                        : shouldPreferVisibleFallback
+                            ? countMaskOverlapPixels(visibleFallbackMask!, shapeMask)
+                        : shouldPreferBootstrapShape
+                            ? shapePixelCount
+                        : component.shapeOverlapPixels,
+                    seed: region.seed,
+                    sampledColor,
+                    note: '候选区域被前面区域占用，已跳过。',
+                });
+                continue;
+            }
+
+            generatedRegionCount += 1;
+            writtenPixelCount += regionWrittenPixels;
+            reports.push({
+                regionId: region.id,
+                regionName: region.name,
+                status: 'generated',
+                pixelCount: regionWrittenPixels,
+                shapeOverlapPixels: shouldPreferGeodesicPrior
+                    ? countMaskOverlapPixels(geodesicPriorMask!, shapeMask)
+                    : shouldPreferRoughPartition
+                    ? roughShapeOverlapPixels
+                    : shouldPreferVisibleFallback
+                        ? countMaskOverlapPixels(visibleFallbackMask!, shapeMask)
+                    : shouldPreferBootstrapShape
+                        ? shapePixelCount
+                    : component.shapeOverlapPixels,
+                seed: region.seed,
+                sampledColor,
+                note: shouldPreferGeodesicPrior
+                    ? `已写入 ${regionWrittenPixels.toLocaleString()} px；当前主路改用按底图纹理 + 位置先验整理的粗轮廓真值，先给后续手修一个更像地图地块的大轮廓。`
+                    : shouldPreferRoughPartition
+                    ? `已写入 ${regionWrittenPixels.toLocaleString()} px；优先采用吸附到底图细线候选的粗分区，旧底色块仅覆盖粗范围 ${(colorCoverageRatio * 100).toFixed(1)}%。`
+                    : shouldPreferVisibleFallback
+                        ? `已写入 ${regionWrittenPixels.toLocaleString()} px；当前主路改用按底图人工整理的可见粗轮廓真值，先给后续手修一个正常大轮廓。`
+                    : shouldPreferBootstrapShape
+                        ? `已写入 ${regionWrittenPixels.toLocaleString()} px；底色候选只覆盖粗范围 ${(colorCoverageRatio * 100).toFixed(1)}%，已回退到静态粗轮廓真值，供后续手修。`
+                    : `已写入 ${regionWrittenPixels.toLocaleString()} px；底色 rgb(${sampledColor.join(', ')}), 距 seed 最近 ${Math.round(component.nearestSeedDistance)} px。`,
+            });
+        }
+
+        return {
+            assignments: nextAssignments,
+            reports,
+            generatedRegionCount,
+            writtenPixelCount,
+            overlapPixelCount,
+        };
+    };
+
+    const applyAutoDetectedPassagesForAssignments = React.useCallback((nextAssignments: Int16Array) => {
+        const result = buildAutoPassagesFromAssignments({
+            assignments: nextAssignments,
+            regions,
+            existingPassages: passages,
+        });
+        setPassages(result.passages);
+        return result;
+    }, [passages, regions]);
+    const scrollSidebarToTop = React.useCallback(() => {
+        const container = sidebarScrollRef.current;
+        if (!container) {
+            return;
+        }
+        container.scrollTo({ top: 0, behavior: 'auto' });
+    }, []);
+
+    const promoteRegionDraftResultsToAuthoritativeTruth = React.useCallback((results: RegionGenerationResult[]) => {
+        const generatedRegionIds = results
+            .filter((result) => result.status === 'generated')
+            .map((result) => result.regionId)
+            .filter((regionId) => !isDiagnosticRegionId(regionId));
+        if (generatedRegionIds.length === 0) {
+            return 0;
+        }
+        setAuthoritativeGuideRegionIds((current) => {
+            const next = new Set(current);
+            for (const regionId of generatedRegionIds) {
+                next.add(regionId);
+            }
+            return [...next];
+        });
+        return generatedRegionIds.length;
+    }, []);
+
+    const generateRealMapRegionColorDraft = ({ autoDetectPassages = false }: { autoDetectPassages?: boolean } = {}) => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setStatusMessage('地图像素还没加载完成，不能生成区域底色草稿。');
+            return;
+        }
+        const result = buildRealMapRegionColorDraft(sourcePixels);
+        setLastBoundaryExtractionStats(null);
+        setLastRegionGenerationWorkflow(autoDetectPassages ? 'region-path-quick-start' : 'region-draft');
+        setLastRegionGenerationResults(result.reports.map((report) => ({
+            regionId: report.regionId,
+            regionName: report.regionName,
+            status: report.status,
+            pixelCount: report.pixelCount,
+            seed: report.seed,
+            note: report.note,
+        })));
+        if (result.generatedRegionCount === 0) {
+            setStatusMessage('没有生成任何区域底色草稿：真实底图底色与当前 seed/粗轮廓没有形成可用连通块。');
+            return;
+        }
+        assignmentsRef.current = result.assignments;
+        renderAssignments();
+        markAssignmentsChanged();
+        scrollSidebarToTop();
+        const promotedTruthCount = promoteRegionDraftResultsToAuthoritativeTruth(result.reports.map((report) => ({
+            regionId: report.regionId,
+            regionName: report.regionName,
+            status: report.status,
+            pixelCount: report.pixelCount,
+            seed: report.seed,
+            note: report.note,
+        })));
+        setMode(autoDetectPassages ? 'path' : 'paint');
+        setShowBarrier(true);
+        setShowSeedStatusOverlay(!autoDetectPassages);
+        setShowForbiddenUiOverlay(false);
+        const skippedCount = result.reports.filter((report) => report.status !== 'generated').length;
+        const skippedNote = skippedCount > 0 ? `；${skippedCount} 个区域未生成` : '';
+        const overlapNote = result.overlapPixelCount > 0 ? `；重叠 ${result.overlapPixelCount.toLocaleString()} px 已跳过` : '';
+        const truthNote = promotedTruthCount > 0 ? `；已锁定 ${promotedTruthCount} 区显式 truth` : '';
+        if (autoDetectPassages) {
+            const autoPassageResult = applyAutoDetectedPassagesForAssignments(result.assignments);
+            const preservedCount = autoPassageResult.detectedCount - autoPassageResult.addedCount;
+            const passageNote = autoPassageResult.detectedCount > 0
+                ? `；已补全 ${autoPassageResult.detectedCount} 条邻近通路，新增 ${autoPassageResult.addedCount} 条${preservedCount > 0 ? `，保留既有 ${preservedCount} 条设置` : ''}，现在可以直接改移动代价`
+                : '；暂未识别到相邻通路，可先微调区域后再手动补线';
+            setStatusMessage(`已按真实底图生成区域粗稿并切到路径模式：${result.generatedRegionCount} 个区域，写入 ${result.writtenPixelCount.toLocaleString()} px${skippedNote}${overlapNote}${truthNote}${passageNote}。这条路只求先有大轮廓，不冒充正式边界成果。`);
+            return;
+        }
+        setStatusMessage(`已生成人工整理粗轮廓可编辑初稿：${result.generatedRegionCount} 个区域，写入 ${result.writtenPixelCount.toLocaleString()} px${skippedNote}${overlapNote}${truthNote}。当前主路优先使用看图整理过的可见粗轮廓真值，不再假装是底色自动识别；后续仍需人工微调/验收。`);
     };
 
     const bakeCurrentBoundaryDraft = () => {
@@ -4127,15 +11110,139 @@ const QidahenRegionMaskTool: React.FC = () => {
         boundaryDraftMaskRef.current = currentBoundaryMask.slice();
         manualBarrierAddRef.current.fill(0);
         manualBarrierRemoveRef.current.fill(0);
+        clearBarrierHistory();
+        setManualBlankBoundaryBase(false);
         rebuildBarrierMask();
+        setLastBoundaryExtractionStats(null);
         setStatusMessage(`已把当前最终停线固化为边界图：${countMaskPixels(currentBoundaryMask).toLocaleString()} px，手工补边/去噪层已清空。`);
     };
+
+    const keepClosedBoundaryOnly = React.useCallback(() => {
+        const currentBoundaryMask = barrierMaskRef.current;
+        if (!currentBoundaryMask || countMaskPixels(currentBoundaryMask) === 0) {
+            setStatusMessage('当前没有可清洗的边界图。请先导入或手绘边界。');
+            return;
+        }
+
+        const anchors = regions
+            .filter((region) => !isDiagnosticRegionId(region.id))
+            .flatMap((region) => (region.seed ? [[region.seed.x, region.seed.y] as const] : []));
+        const partitionResult = keepBoundaryPixelsTouchingSeedPartitions({
+            mask: currentBoundaryMask,
+            width: MASK_WIDTH,
+            fillableMask: AUTO_MAP_REGION_FILLABLE_MASK,
+            seeds: anchors.map(([x, y]) => ({ x, y })),
+            minPartitionPixels: 48,
+            keepThicknessIterations: Math.max(1, Math.min(2, boundaryExpansion)),
+        });
+        const result = partitionResult.keptPixelCount > 0
+            ? {
+                mask: partitionResult.mask,
+                keptPixelCount: partitionResult.keptPixelCount,
+                discardedPixelCount: partitionResult.discardedPixelCount,
+                partitionCount: partitionResult.partitionCount,
+                anchoredPartitionCount: partitionResult.anchoredPartitionCount,
+                mode: 'partition' as const,
+            }
+            : (() => {
+                const closedResult = keepBoundaryPixelsTouchingClosedInteriors({
+                    mask: currentBoundaryMask,
+                    width: MASK_WIDTH,
+                    minInteriorPixels: 48,
+                    maxInteriorPixels: MASK_WIDTH * MASK_HEIGHT * MAX_MAGIC_FILL_RATIO,
+                    anchors,
+                    keepThicknessIterations: Math.max(1, Math.min(2, boundaryExpansion)),
+                });
+                return {
+                    mask: closedResult.mask,
+                    keptPixelCount: closedResult.keptPixelCount,
+                    discardedPixelCount: closedResult.discardedPixelCount,
+                    partitionCount: closedResult.closedFaceCount,
+                    anchoredPartitionCount: closedResult.anchoredClosedFaceCount,
+                    mode: 'closed' as const,
+                };
+            })();
+
+        if (result.keptPixelCount === 0) {
+            setStatusMessage(
+                `清洗后没有剩余边界：当前边界没有分割出任何单 seed 区域，也没有命中正式 seed 的有效分区。已保留原边界，先补线/调 seed 再清洗。`,
+            );
+            return;
+        }
+
+        boundaryDraftMaskRef.current = result.mask;
+        manualBarrierAddRef.current.fill(0);
+        manualBarrierRemoveRef.current.fill(0);
+        clearBarrierHistory();
+        setManualBlankBoundaryBase(false);
+        setPaintedBoundaryOnly(true);
+        setShowBarrier(true);
+        setLastBoundaryExtractionStats(null);
+        setLastRegionGenerationResults([]);
+        rebuildBarrierMask();
+        const modeLabel = result.mode === 'partition' ? '有效分区边界' : '闭合边界';
+        setStatusMessage(
+            `已只保留${modeLabel}：保留 ${result.keptPixelCount.toLocaleString()} px，舍弃 ${result.discardedPixelCount.toLocaleString()} px；有效分区 ${result.partitionCount} 个，独立 seed ${result.anchoredPartitionCount} 个。未分割 seed 的开放噪声和无 seed 装饰框已丢弃。`,
+        );
+    }, [boundaryExpansion, clearBarrierHistory, rebuildBarrierMask, regions]);
+
+    const pruneImportedBoundaryMask = React.useCallback((boundaryMask: Uint8Array) => {
+        const anchors = regions
+            .filter((region) => !isDiagnosticRegionId(region.id))
+            .flatMap((region) => (region.seed ? [[region.seed.x, region.seed.y] as const] : []));
+        const keepThicknessIterations = Math.max(1, Math.min(2, boundaryExpansion));
+        const partitionResult = keepBoundaryPixelsTouchingSeedPartitions({
+            mask: boundaryMask,
+            width: MASK_WIDTH,
+            fillableMask: AUTO_MAP_REGION_FILLABLE_MASK,
+            seeds: anchors.map(([x, y]) => ({ x, y })),
+            minPartitionPixels: 48,
+            keepThicknessIterations,
+        });
+
+        if (partitionResult.keptPixelCount > 0) {
+            return {
+                mask: partitionResult.mask,
+                keptPixelCount: partitionResult.keptPixelCount,
+                discardedPixelCount: partitionResult.discardedPixelCount,
+                mode: '有效分区边界',
+            };
+        }
+
+        const closedResult = keepBoundaryPixelsTouchingClosedInteriors({
+            mask: boundaryMask,
+            width: MASK_WIDTH,
+            minInteriorPixels: 48,
+            maxInteriorPixels: MASK_WIDTH * MASK_HEIGHT * MAX_MAGIC_FILL_RATIO,
+            anchors,
+            keepThicknessIterations,
+        });
+        if (closedResult.keptPixelCount > 0) {
+            return {
+                mask: closedResult.mask,
+                keptPixelCount: closedResult.keptPixelCount,
+                discardedPixelCount: closedResult.discardedPixelCount,
+                mode: '闭合边界',
+            };
+        }
+
+        return {
+            mask: boundaryMask,
+            keptPixelCount: countMaskPixels(boundaryMask),
+            discardedPixelCount: 0,
+            mode: null,
+        };
+    }, [boundaryExpansion, regions]);
 
     const clearBoundaryDraft = () => {
         boundaryDraftMaskRef.current = null;
         manualBarrierAddRef.current.fill(0);
         manualBarrierRemoveRef.current.fill(0);
+        clearBarrierHistory();
+        setManualBlankBoundaryBase(false);
         rebuildBarrierMask();
+        setLastBoundaryExtractionStats(null);
+        setLastRegionGenerationResults([]);
         setStatusMessage('已清空边界图和手工修正；可重新从边界颜色生成。');
     };
 
@@ -4152,6 +11259,811 @@ const QidahenRegionMaskTool: React.FC = () => {
         setStatusMessage(`已导出当前最终边界图：${countMaskPixels(currentBoundaryMask).toLocaleString()} px。`);
     };
 
+    const exportBoundaryTemplateMap = () => {
+        const link = document.createElement('a');
+        link.href = DEFAULT_MAP_PATH;
+        link.download = 'qidahen-boundary-template-map.png';
+        link.click();
+        setStatusMessage('已导出七大恨底图模板。推荐流程：外部描边 -> 导入完成边界图或带底图描线图 -> 工具内微调 -> 保存工作区。');
+    };
+
+    const exportBoundaryTraceTemplate = () => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setStatusMessage('地图像素还没加载完成，暂时不能导出描边参考图。');
+            return;
+        }
+        const link = document.createElement('a');
+        link.href = buildBoundaryTraceTemplateDataUrl({ sourcePixels, regions });
+        link.download = 'qidahen-boundary-trace-template.png';
+        link.click();
+        setStatusMessage('已导出描边参考图：底图上包含 seed 点和红色禁区。外部描线时不要沿红色禁区画边界。');
+    };
+
+    const exportBoundaryTraceKitZip = async (): Promise<boolean> => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setStatusMessage('地图像素还没加载完成，暂时不能导出描边包。');
+            return false;
+        }
+        try {
+            const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+            const traceTemplateDataUrl = buildBoundaryTraceTemplateDataUrl({ sourcePixels, regions });
+            const blankBoundaryDataUrl = buildMaskDataUrl(new Uint8Array(MASK_WIDTH * MASK_HEIGHT));
+            const colorLineDraft = buildHybridRealMapColorLineDraft(sourcePixels);
+            const colorLineDraftMask = removeExcludedPixels(colorLineDraft.nextBoundaryMask, AUTO_MAP_PRINTED_UI_EXCLUSION_MASK);
+            const colorLineDraftPixelCount = countMaskPixels(colorLineDraftMask);
+            const colorLineDraftDataUrl = buildMaskDataUrl(colorLineDraftMask);
+            const candidateReference = AUTO_MAP_CANDIDATE_REFERENCE_ENABLED
+                ? buildRealMapLongLineBoundaryCandidate(sourcePixels)
+                : null;
+            const candidateReferencePixelCount = candidateReference?.keptPixelCount ?? 0;
+            const candidateReferenceDataUrl = candidateReference && candidateReference.keptPixelCount > 0
+                ? buildMaskDataUrl(candidateReference.mask)
+                : null;
+            const sourceMapDataUrl = makeSourceCanvas(sourcePixels).toDataURL('image/png');
+            const traceKitReadme = [
+                '七大恨边界描边工作包',
+                '',
+                '用途：这个 ZIP 是外部画笔修边输入包，不是正式区域成果。',
+                '',
+                '自动抽线结论：固定边界色可以生成可手修的连续线起稿；工具会把颜色线裁到五区附近，并额外补一层可见闭合粗轮廓，方便先删错线补缺线，但不能自动生成正常成果，也不能直接当成正式区域成果。',
+                '',
+                '推荐流程：',
+                '1. 打开 qidahen-main-map.png 作为底图。',
+                '2. 叠加 layers/current-boundary-transparent.png 或 qidahen-boundary-color-line-draft-transparent.png；它们是五区附近固定边界色连通线 + 可见闭合粗轮廓的可手修初始层，不要把 current-boundary 直接当成果。',
+                candidateReferenceDataUrl
+                    ? '3. 再叠加 qidahen-boundary-candidate-reference-transparent.png；它只提供更贴真实地图的稀疏候选细线，仍然不是正式边界。'
+                    : '3. 当前没有额外的候选参考细线，可直接按固定色起稿层手修。',
+                '4. 沿真实地图边界补成连续闭合边界；无法连成线、无法封口的碎线直接舍弃。',
+                '5. 不要在 manifest.forbiddenUiRects 覆盖区域画边界。',
+                '6. 修完后新增或覆盖 layers/repaired-boundary-transparent.png，保持 1265x893 透明 PNG。',
+                '7. 同步把 report.json 里的 layers.repairedBoundary 写成 "layers/repaired-boundary-transparent.png"。',
+                '8. 回到工具，使用“导入补边包 ZIP 的全图边界层”导入这个 ZIP。',
+                '',
+                '注意：工具会优先回导 layers/repaired-boundary-transparent.png；如果它不存在，才会回导 layers/current-boundary-transparent.png。',
+            ].join('\n');
+            const manifest = {
+                generatedAt: new Date().toISOString(),
+                mapSize: { width: MASK_WIDTH, height: MASK_HEIGHT },
+                importTargets: {
+                    completedBoundary: 'qidahen-boundary-empty-transparent.png',
+                    tracedOnMap: 'qidahen-boundary-trace-template.png',
+                    colorLineDraft: 'qidahen-boundary-color-line-draft-transparent.png',
+                    candidateReference: candidateReferenceDataUrl ? 'qidahen-boundary-candidate-reference-transparent.png' : null,
+                    repairPackageCurrentBoundary: 'layers/current-boundary-transparent.png',
+                },
+                layers: {
+                    currentBoundary: 'layers/current-boundary-transparent.png',
+                    mainMap: 'qidahen-main-map.png',
+                },
+                colorLineDraft: {
+                    path: 'qidahen-boundary-color-line-draft-transparent.png',
+                    repairPackagePath: 'layers/current-boundary-transparent.png',
+                    pixelCount: colorLineDraftPixelCount,
+                    componentCount: colorLineDraft.keptComponentCount,
+                    note: '按固定边界色、低容差、五区裁剪、轻闭合、连通分量过滤和可见闭合粗轮廓生成的初始层，只能作为外部画笔微调底稿；不能直接当正常成果。',
+                },
+                candidateReference: candidateReferenceDataUrl ? {
+                    path: 'qidahen-boundary-candidate-reference-transparent.png',
+                    pixelCount: candidateReferencePixelCount,
+                    componentCount: candidateReference?.keptComponentCount ?? 0,
+                    note: '按真实底图暗线、颜色线和五区支撑范围提取的稀疏候选细线，只作参考层，不能直接当正式边界。',
+                } : null,
+                autoExtractionVerdict: REAL_MAP_COLOR_AUTO_EXTRACTION_VERDICT,
+                boundaryColors: DEFAULT_BOUNDARY_PRESETS.map((preset) => ({
+                    id: preset.id,
+                    label: preset.label,
+                    rgb: preset.rgb,
+                    css: `rgb(${preset.rgb[0]}, ${preset.rgb[1]}, ${preset.rgb[2]})`,
+                })),
+                forbiddenUiRects: AUTO_MAP_PRINTED_UI_EXCLUSION_RECTS,
+                regions: formalRegions.map((region) => ({
+                    id: region.id,
+                    name: region.name,
+                    seed: region.seed,
+                })),
+                notes: [
+                    '在透明边界层或参考图上只用 manifest.boundaryColors 里的颜色画边界。',
+                    '无法连成线或无法封口的碎线不用补，导入后可用“只保留有效分区边界”直接舍弃。',
+                    '不要沿 forbiddenUiRects 覆盖的轮盘、牌框、底部条或说明框画边界。',
+                    '导回工具时优先用“导入完成边界图”；如果画在带底图参考图上，用“导入带底图描线图”。',
+                    '如果继续使用 ZIP 工作流，修完后把全图透明边界层保存为 layers/repaired-boundary-transparent.png；未修前 layers/current-boundary-transparent.png 只是固定色连通线 + 可见闭合粗轮廓的初始层。',
+                ],
+            };
+            const report = {
+                generatedAt: manifest.generatedAt,
+                mapSize: manifest.mapSize,
+                layers: {
+                    mainMap: 'qidahen-main-map.png',
+                    currentBoundary: 'layers/current-boundary-transparent.png',
+                    repairedBoundary: null,
+                },
+                colorLineDraft: manifest.colorLineDraft,
+                candidateReference: manifest.candidateReference,
+                autoExtractionVerdict: REAL_MAP_COLOR_AUTO_EXTRACTION_VERDICT,
+                note: '这是全图描边工作包，不是已修复补边包。currentBoundary 只是固定色连通线 + 可见闭合粗轮廓的初始层；candidateReference 只提供更像真实地图的稀疏候选线；修完请新增或覆盖 repairedBoundary。',
+            };
+            const entries: Record<string, Uint8Array> = {
+                'qidahen-boundary-trace-template.png': await dataUrlToUint8Array(traceTemplateDataUrl),
+                'qidahen-boundary-empty-transparent.png': await dataUrlToUint8Array(blankBoundaryDataUrl),
+                'qidahen-boundary-color-line-draft-transparent.png': await dataUrlToUint8Array(colorLineDraftDataUrl),
+                'layers/current-boundary-transparent.png': await dataUrlToUint8Array(colorLineDraftDataUrl),
+                'qidahen-main-map.png': await dataUrlToUint8Array(sourceMapDataUrl),
+                'manifest.json': new TextEncoder().encode(JSON.stringify(manifest, null, 2)),
+                'report.json': new TextEncoder().encode(JSON.stringify(report, null, 2)),
+                'README.txt': new TextEncoder().encode(traceKitReadme),
+            };
+            if (candidateReferenceDataUrl) {
+                entries['qidahen-boundary-candidate-reference-transparent.png'] = await dataUrlToUint8Array(candidateReferenceDataUrl);
+            }
+            const zipBytes = zipSync(entries, { level: 9 });
+            const objectUrl = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = 'qidahen-boundary-trace-kit.zip';
+            link.click();
+            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+            setStatusMessage(`已导出全图描边包 ZIP：含真实底图、描边参考图、空白透明边界层、固定色边界初始层 ${colorLineDraftPixelCount.toLocaleString()} px${candidateReferenceDataUrl ? `、候选参考细线 ${candidateReferencePixelCount.toLocaleString()} px` : ''}、边界颜色和禁区 manifest。`);
+            return true;
+        } catch (error) {
+            console.error(error);
+            setStatusMessage(`导出全图描边包失败：${error instanceof Error ? error.message : '未知错误'}`);
+            return false;
+        }
+    };
+
+    const prepareHybridBoundaryTraceKit = async () => {
+        const loaded = await loadRealMapColorLineDraft();
+        if (!loaded) {
+            return;
+        }
+        const candidateReference = await loadRealMapBoundaryCandidateReference({ opacity: 0.58, silent: true });
+        const exported = await exportBoundaryTraceKitZip();
+        if (!exported) {
+            return;
+        }
+        setShowBarrier(true);
+        setMode('barrier');
+        setBarrierHintOperation('add');
+        setBarrierEditMode('brush');
+        setStatusMessage(`已准备固定色连通边界稿并导出全图描边包 ZIP${candidateReference ? '，同时叠加了更贴真实地图的稀疏候选参考层' : ''}：现在直接去外部画笔删错线、补缺线；修完后导入完成边界图或带底图描线图，再按边界生成区域。`);
+    };
+
+    const exportSelectedRegionTraceTemplate = () => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setStatusMessage('地图像素还没加载完成，暂时不能导出当前区域描边底稿。');
+            return;
+        }
+        if (!selectedRegion) {
+            setStatusMessage('当前没有选中区域，不能导出局部描边底稿。');
+            return;
+        }
+        if (!selectedRegion.seed) {
+            setStatusMessage(`${selectedRegion.name} 没有设置 seed，不能导出局部描边底稿。请先在区域内部生成/设置 seed。`);
+            return;
+        }
+        const result = buildRegionTraceTemplateDataUrl({ sourcePixels, region: selectedRegion });
+        const link = document.createElement('a');
+        link.href = result.dataUrl;
+        link.download = `qidahen-region-trace-${sanitizeWorkspaceKey(selectedRegion.id || selectedRegion.name)}.png`;
+        link.click();
+        setStatusMessage(
+            `已导出 ${selectedRegion.name} 局部描边底稿：${result.crop.width}x${result.crop.height}，seed ${result.seed.x}, ${result.seed.y}。先在这张局部图上把该区域封口，再导回完成边界图。`,
+        );
+    };
+
+    const exportAllRegionTraceTemplates = async () => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setStatusMessage('地图像素还没加载完成，暂时不能批量导出局部描边底稿。');
+            return;
+        }
+        const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+        const exportableRegions = formalRegions.filter((region): region is PainterRegion & { seed: MaskPoint } => region.seed != null);
+        const missingSeedRegions = formalRegions.filter((region) => !region.seed);
+        if (exportableRegions.length === 0) {
+            setStatusMessage('没有任何正式区域设置了 seed，不能批量导出局部描边底稿。');
+            return;
+        }
+        try {
+            const imageEntries: Record<string, string> = {};
+            const manifest = exportableRegions.map((region) => {
+                const result = buildRegionTraceTemplateDataUrl({ sourcePixels, region });
+                const fileName = `qidahen-region-trace-${sanitizeWorkspaceKey(region.id || region.name)}.png`;
+                imageEntries[fileName] = result.dataUrl;
+                return {
+                    id: region.id,
+                    name: region.name,
+                    fileName,
+                    seed: result.seed,
+                    crop: result.crop,
+                };
+            });
+            const entries: Record<string, Uint8Array> = {};
+            for (const [fileName, dataUrl] of Object.entries(imageEntries)) {
+                entries[fileName] = await dataUrlToUint8Array(dataUrl);
+            }
+            const enabledBoundaryColors = boundaryPresets
+                .filter((preset) => preset.enabled)
+                .map((preset) => ({
+                    id: preset.id,
+                    label: preset.label,
+                    rgb: preset.rgb,
+                    css: `rgb(${preset.rgb[0]}, ${preset.rgb[1]}, ${preset.rgb[2]})`,
+                    tolerance: boundaryTolerance,
+                }));
+            const readme = [
+                '七大恨局部描边底稿包',
+                '',
+                '用途：在普通画笔软件中逐区补真实闭合边界，再批量导回工具。',
+                '',
+                '作业规则：',
+                '1. 只使用 manifest.boundaryColors 中记录的颜色画边界线。',
+                '2. 沿真实地图边界画；不要用直线硬封口，不要把 UI、文字、数字牌、红箭头、锚点当边界。',
+                '3. 某段无法连成线或无法封口时直接留空/舍弃，回到工具里继续看补边队列。',
+                '4. 保持每张 PNG 尺寸和文件名不变，导回时工具按 manifest.regions[].crop 贴回全图。',
+                '5. 透明 PNG 可直接画不透明边界；带底图 PNG 必须使用 boundaryColors 才会被识别。',
+            ].join('\n');
+            entries['manifest.json'] = new TextEncoder().encode(JSON.stringify({
+                generatedAt: new Date().toISOString(),
+                mapSize: { width: MASK_WIDTH, height: MASK_HEIGHT },
+                templateSize: { width: REGION_TRACE_TEMPLATE_WIDTH, height: REGION_TRACE_TEMPLATE_HEIGHT },
+                boundaryColors: enabledBoundaryColors,
+                rules: [
+                    '只使用 boundaryColors 中的颜色画边界线。',
+                    '沿真实地图边界画，不要直线硬封口。',
+                    '不能连成线或不能封口的线直接舍弃。',
+                    '不要把 UI、文字、数字牌、红箭头、锚点或牌框当边界。',
+                    '保持文件名和尺寸不变，导回时工具按 regions[].crop 贴回全图。',
+                ],
+                importFilePrefixes: ['qidahen-region-trace-', 'qidahen-local-region-boundary-'],
+                exportedCount: exportableRegions.length,
+                skippedMissingSeed: missingSeedRegions.map((region) => ({ id: region.id, name: region.name })),
+                regions: manifest,
+            }, null, 2));
+            entries['README.txt'] = new TextEncoder().encode(readme);
+            const zipBytes = zipSync(entries, { level: 9 });
+            const objectUrl = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = 'qidahen-region-trace-templates.zip';
+            link.click();
+            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+            const skippedNote = missingSeedRegions.length > 0 ? `，跳过缺 seed ${missingSeedRegions.length} 个` : '';
+            setStatusMessage(`已批量导出 ${exportableRegions.length} 个局部描边底稿 ZIP${skippedNote}。文件名带区域 id，导回时会按文件名贴回对应区域。`);
+        } catch (error) {
+            console.error(error);
+            setStatusMessage(`批量导出局部描边底稿失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const exportBlankBoundaryPng = () => {
+        const link = document.createElement('a');
+        link.href = buildMaskDataUrl(new Uint8Array(MASK_WIDTH * MASK_HEIGHT));
+        link.download = 'qidahen-boundary-empty-transparent.png';
+        link.click();
+        setStatusMessage('已导出空白透明边界 PNG。可在外部画线后作为“完成边界图”导回工具；没有封口的线后续会被舍弃。');
+    };
+
+    const exportRealMapBoundaryCandidatePng = () => {
+        if (!realMapBoundaryCandidateMask || realMapBoundaryCandidatePixelCount === 0) {
+            setStatusMessage('底图候选诊断还没有生成出来，等地图加载完成后再导出。');
+            return;
+        }
+        const link = document.createElement('a');
+        link.href = buildMaskDataUrl(realMapBoundaryCandidateMask);
+        link.download = 'qidahen-real-map-boundary-candidate-transparent.png';
+        link.click();
+        setStatusMessage(`已导出底图候选诊断透明 PNG：${realMapBoundaryCandidatePixelCount.toLocaleString()} px。当前只用于检查噪声来源，不会写入正式边界；未通过候选达标前不能载入草稿。`);
+    };
+
+    const buildBoundaryQualityReportPayload = () => ({
+        generatedAt: new Date().toISOString(),
+        mapSize: { width: MASK_WIDTH, height: MASK_HEIGHT },
+        hasBoundaryDraft,
+        currentBoundaryPixels: countMaskPixels(barrierMaskRef.current ?? new Uint8Array(MASK_WIDTH * MASK_HEIGHT)),
+        quality: {
+            state: boundaryQualityReport.state,
+            label: boundaryQualityReport.label,
+            detail: boundaryQualityReport.detail,
+            missingSeedNames: boundaryQualityReport.missingSeedNames,
+            boundaryUiPixels: boundaryQualityReport.boundaryUiPixels,
+            maskUiPixels: boundaryQualityReport.maskUiPixels,
+            unmatchedCount: boundaryQualityReport.unmatchedCount,
+            openComponentCount: boundaryQualityReport.openComponentCount,
+            unexplainedOpenComponentCount: boundaryQualityReport.unexplainedOpenComponentCount,
+            generatedCount: boundaryQualityReport.generatedCount,
+            formalRegionCount: boundaryQualityReport.formalRegionCount,
+            normality: {
+                state: boundaryQualityReport.normality.state,
+                label: boundaryQualityReport.normality.label,
+                detail: boundaryQualityReport.normality.detail,
+                blockers: boundaryQualityReport.normality.blockers,
+                approvedCount: boundaryQualityReport.normality.approvedCount,
+                requiredApprovalCount: boundaryQualityReport.normality.requiredApprovalCount,
+                realMapFit: boundaryQualityReport.normality.realMapFit,
+                shape: boundaryQualityReport.normality.shape,
+                regionCoverages: boundaryQualityReport.normality.regionCoverages.map((coverage) => ({
+                    id: coverage.regionId,
+                    name: coverage.regionName,
+                    pixelCount: coverage.pixelCount,
+                    expectedPixelCount: coverage.expectedPixelCount,
+                    coverageRatio: coverage.coverageRatio,
+                    label: coverage.label,
+                    acceptanceState: coverage.acceptanceState,
+                    acceptanceLabel: coverage.acceptanceLabel,
+                    reviewedAt: coverage.reviewedAt,
+                    currentSignature: coverage.currentSignature,
+                })),
+            },
+            regions: boundaryQualityReport.regionDetails.map((detail) => ({
+                id: detail.regionId,
+                name: detail.regionName,
+                label: detail.label,
+                note: detail.note,
+            })),
+        },
+        closure: {
+            closedFaceCount: boundaryClosureDiagnostics.closedFaceCount,
+            matchedSeedCount: boundaryClosureDiagnostics.matchedSeedCount,
+            largestFacePixelCount: boundaryClosureDiagnostics.largestFacePixelCount,
+            unmatchedRegions: boundaryClosureDiagnostics.unmatchedRegions,
+        },
+        openBoundaries: {
+            openComponentCount: boundaryOpenDiagnostics.openComponentCount,
+            largestOpenPixelCount: boundaryOpenDiagnostics.largestOpenPixelCount,
+            hints: boundaryOpenDiagnostics.hints.slice(0, 12),
+            unexplainedOpenComponentCount: unexplainedBoundaryOpenDiagnostics.openComponentCount,
+            unexplainedLargestOpenPixelCount: unexplainedBoundaryOpenDiagnostics.largestOpenPixelCount,
+            unexplainedHints: unexplainedBoundaryOpenDiagnostics.hints.slice(0, 12),
+        },
+        lastGenerationResults: lastRegionGenerationResults,
+    });
+
+    const exportBoundaryQualityReport = () => {
+        const payload = buildBoundaryQualityReportPayload();
+        const objectUrl = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = 'qidahen-region-boundary-quality-report.json';
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+        setStatusMessage(`已导出质量报告 JSON：${boundaryQualityReport.label}，已生成 ${boundaryQualityReport.generatedCount}/${boundaryQualityReport.formalRegionCount}。`);
+    };
+
+    const exportPartitionPreviewPng = () => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setStatusMessage('地图像素还没加载完成，暂时不能导出分区预览图。');
+            return;
+        }
+        if (!hasBoundaryDraft || boundaryClosureDiagnostics.matchedPartitions.length === 0) {
+            setStatusMessage('当前没有可导出的分区预览。先导入或手绘边界图，让至少一个 seed 进入独立分区。');
+            return;
+        }
+        const link = document.createElement('a');
+        link.href = buildPartitionPreviewDataUrl({
+            sourcePixels,
+            barrierMask: barrierMaskRef.current,
+            regions,
+            matchedPartitions: boundaryClosureDiagnostics.matchedPartitions,
+            openHints: unexplainedBoundaryOpenDiagnostics.hints,
+        });
+        link.download = 'qidahen-region-partition-preview.png';
+        link.click();
+        setStatusMessage(`已导出分区预览 PNG：独立 seed ${boundaryClosureDiagnostics.matchedSeedCount}/${regions.filter((region) => !isDiagnosticRegionId(region.id)).length}，未解释开放线 ${unexplainedBoundaryOpenDiagnostics.openComponentCount} 条。`);
+    };
+
+    const exportBoundaryRepairPackage = async () => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setStatusMessage('地图像素还没加载完成，暂时不能导出补边问题包。');
+            return;
+        }
+        const unmatchedRegions = boundaryClosureDiagnostics.unmatchedRegions.filter((region): region is typeof region & { seed: MaskPoint } => region.seed != null);
+        const openHints = unexplainedBoundaryOpenDiagnostics.hints;
+        const weakSupportReports = weakRealMapFitRegionReports
+            .map((report) => {
+                const region = regions.find((item) => item.id === report.regionId) ?? null;
+                const point = report.weakBoundaryPoint ?? region?.seed ?? null;
+                return point ? { report, region, point } : null;
+            })
+            .filter((item): item is {
+                report: BoundaryRealMapFitRegionReport;
+                region: PainterRegion | null;
+                point: MaskPoint;
+            } => item != null);
+        if (!hasBoundaryDraft || (unmatchedRegions.length === 0 && openHints.length === 0 && weakSupportReports.length === 0)) {
+            setStatusMessage('当前没有可导出的补边问题。边界图还没导入，或当前 seed 已全部独立、没有未解释开放线段，也没有底图弱支撑区域。');
+            return;
+        }
+
+        try {
+            const entries: Record<string, Uint8Array> = {};
+            entries['qidahen-main-map.png'] = await dataUrlToUint8Array(makeSourceCanvas(sourcePixels).toDataURL('image/png'));
+            const currentBoundaryMask = barrierMaskRef.current ?? boundaryDraftMaskRef.current;
+            if (currentBoundaryMask && countMaskPixels(currentBoundaryMask) > 0) {
+                entries['layers/current-boundary-transparent.png'] = await dataUrlToUint8Array(buildMaskDataUrl(currentBoundaryMask));
+            }
+            if (weakSupportReports.length > 0) {
+                entries['layers/weak-support-overlay-transparent.png'] = await dataUrlToUint8Array(
+                    buildWeakSupportOverlayDataUrl(weakSupportReports.map((item) => item.report)),
+                );
+            }
+            entries['overview.png'] = await dataUrlToUint8Array(buildPartitionPreviewDataUrl({
+                sourcePixels,
+                barrierMask: barrierMaskRef.current,
+                regions,
+                matchedPartitions: boundaryClosureDiagnostics.matchedPartitions,
+                openHints,
+            }));
+
+            const problems: Array<{
+                type: 'unmatched-seed' | 'open-boundary' | 'weak-support';
+                id: string;
+                name: string;
+                fileName: string;
+                sourceFileName: string;
+                repairCropTarget: string;
+                crop: { left: number; top: number; width: number; height: number };
+                point?: MaskPoint;
+                endpoints?: readonly [MaskPoint, MaskPoint];
+                supportRatio?: number;
+                supportedBoundaryPixelCount?: number;
+                boundaryPixelCount?: number;
+                unsupportedBoundaryPixelCount?: number;
+                weakBoundaryBounds?: { left: number; top: number; right: number; bottom: number } | null;
+                connectedRegionNames?: string[];
+                leakTargetName?: string | null;
+                leakTargetSeed?: MaskPoint | null;
+                leakPath?: MaskPoint[];
+                leakDistancePixels?: number | null;
+                supportSuggestionFileName?: string | null;
+                supportSuggestionPixelCount?: number | null;
+                supportSuggestionCropPixelCount?: number | null;
+                supportSuggestionComponentCount?: number | null;
+                supportSuggestionLargestComponentPixelCount?: number | null;
+                note: string;
+            }> = [];
+
+            for (const region of unmatchedRegions) {
+                const fileName = `problems/unmatched-${sanitizeWorkspaceKey(region.id)}.png`;
+                const sourceFileName = `problem-sources/unmatched-${sanitizeWorkspaceKey(region.id)}.png`;
+                const repairCropTarget = `repair-crops/unmatched-${sanitizeWorkspaceKey(region.id)}-boundary-transparent.png`;
+                const supportSuggestionFileName = `suggestions/unmatched-${sanitizeWorkspaceKey(region.id)}-real-map-support-transparent.png`;
+                const leakPath = region.leakPath && region.leakPath.length > 1 ? region.leakPath : [];
+                const connectedMarkers: Array<{ point: MaskPoint; label: string; tone: 'connected-seed' }> = region.leakTargetSeed
+                    ? [{
+                        point: region.leakTargetSeed,
+                        label: region.leakTargetName ? `连到 ${region.leakTargetName}` : '连到其它 seed',
+                        tone: 'connected-seed',
+                    }]
+                    : [];
+                const baseArtifact = buildBoundaryRepairCropDataUrl({
+                    sourcePixels,
+                    barrierMask: barrierMaskRef.current,
+                    point: region.seed,
+                    label: `${region.name} 未独立 seed`,
+                    markers: [
+                        { point: region.seed, label: 'seed', tone: 'seed' },
+                        ...connectedMarkers,
+                    ],
+                    paths: leakPath.length > 1
+                        ? [{ points: leakPath, label: '泄漏路径' }]
+                        : [],
+                });
+                const supportSuggestion = buildLeakSupportSuggestion({
+                    candidateMask: realMapBoundaryCandidateMask,
+                    barrierMask: currentBoundaryMask,
+                    leakPath,
+                    crop: baseArtifact.crop,
+                    exclusionMask: currentMapArtifactExclusionMask,
+                });
+                const artifact = supportSuggestion
+                    ? buildBoundaryRepairCropDataUrl({
+                        sourcePixels,
+                        barrierMask: barrierMaskRef.current,
+                        supportSuggestionMask: supportSuggestion.mask,
+                        point: region.seed,
+                        label: `${region.name} 未独立 seed`,
+                        markers: [
+                            { point: region.seed, label: 'seed', tone: 'seed' },
+                            ...connectedMarkers,
+                        ],
+                        paths: leakPath.length > 1
+                            ? [{ points: leakPath, label: '泄漏路径' }]
+                            : [],
+                    })
+                    : baseArtifact;
+                entries[fileName] = await dataUrlToUint8Array(artifact.dataUrl);
+                entries[sourceFileName] = await dataUrlToUint8Array(artifact.dataUrl);
+                entries[repairCropTarget] = await dataUrlToUint8Array(buildMaskCropDataUrl({ mask: currentBoundaryMask ?? null, crop: artifact.crop }));
+                if (supportSuggestion) {
+                    entries[supportSuggestionFileName] = await dataUrlToUint8Array(buildColoredMaskCropDataUrl({
+                        mask: supportSuggestion.mask,
+                        crop: artifact.crop,
+                        color: [34, 197, 94],
+                        alpha: 230,
+                    }));
+                }
+                problems.push({
+                    type: 'unmatched-seed',
+                    id: region.id,
+                    name: region.name,
+                    fileName,
+                    sourceFileName,
+                    repairCropTarget,
+                    crop: artifact.crop,
+                    point: region.seed,
+                    connectedRegionNames: region.connectedRegionNames,
+                    leakTargetName: region.leakTargetName,
+                    leakTargetSeed: region.leakTargetSeed,
+                    leakPath,
+                    leakDistancePixels: region.leakDistancePixels,
+                    supportSuggestionFileName: supportSuggestion ? supportSuggestionFileName : null,
+                    supportSuggestionPixelCount: supportSuggestion?.pixelCount ?? null,
+                    supportSuggestionCropPixelCount: supportSuggestion?.cropPixelCount ?? null,
+                    supportSuggestionComponentCount: supportSuggestion?.componentCount ?? null,
+                    supportSuggestionLargestComponentPixelCount: supportSuggestion?.largestComponentPixelCount ?? null,
+                    note: region.leakTargetName
+                        ? `这个 seed 还没有被边界分割到独立分区，当前仍与 ${region.leakTargetName} 连通。绿色像素只是泄漏路径附近的真实底图支撑线建议，可作为临摹参考；先沿真实地图边界切断橙色泄漏路径，连不上的线不要硬直线封口。`
+                        : '这个 seed 还没有被边界分割到独立分区。绿色像素只是泄漏路径附近的真实底图支撑线建议，可作为临摹参考；沿真实地图边界补线，连不上的线不要硬直线封口。',
+                });
+            }
+
+            for (const [index, hint] of openHints.slice(0, 12).entries()) {
+                const fileName = `problems/open-boundary-${String(index + 1).padStart(2, '0')}.png`;
+                const sourceFileName = `problem-sources/open-boundary-${String(index + 1).padStart(2, '0')}.png`;
+                const repairCropTarget = `repair-crops/open-boundary-${String(index + 1).padStart(2, '0')}-boundary-transparent.png`;
+                const artifact = buildBoundaryRepairCropDataUrl({
+                    sourcePixels,
+                    barrierMask: barrierMaskRef.current,
+                    point: {
+                        x: Math.round((hint.endpoints[0].x + hint.endpoints[1].x) / 2),
+                        y: Math.round((hint.endpoints[0].y + hint.endpoints[1].y) / 2),
+                    },
+                    label: `未解释开放线段 ${index + 1}`,
+                    markers: [
+                        { point: hint.endpoints[0], label: '断点 A', tone: 'open-end' },
+                        { point: hint.endpoints[1], label: '断点 B', tone: 'open-end' },
+                    ],
+                });
+                entries[fileName] = await dataUrlToUint8Array(artifact.dataUrl);
+                entries[sourceFileName] = await dataUrlToUint8Array(artifact.dataUrl);
+                entries[repairCropTarget] = await dataUrlToUint8Array(buildMaskCropDataUrl({ mask: currentBoundaryMask ?? null, crop: artifact.crop }));
+                problems.push({
+                    type: 'open-boundary',
+                    id: `open-boundary-${index + 1}`,
+                    name: hint.nearestRegionName ? `未解释开放线段 · ${hint.nearestRegionName}` : '未解释开放线段',
+                    fileName,
+                    sourceFileName,
+                    repairCropTarget,
+                    crop: artifact.crop,
+                    endpoints: hint.endpoints,
+                    note: '这条线没有形成有效 seed 分区边界。能沿真实地图边界补就补；无法连成线/封口的部分应舍弃。',
+                });
+            }
+
+            for (const { report, region, point } of weakSupportReports) {
+                const fileName = `problems/weak-support-${sanitizeWorkspaceKey(report.regionId)}.png`;
+                const sourceFileName = `problem-sources/weak-support-${sanitizeWorkspaceKey(report.regionId)}.png`;
+                const repairCropTarget = `repair-crops/weak-support-${sanitizeWorkspaceKey(report.regionId)}-boundary-transparent.png`;
+                const markers: Array<{ point: MaskPoint; label: string; tone: 'seed' | 'open-end' | 'weak-boundary' }> = [];
+                if (report.weakBoundaryPoint) {
+                    markers.push({ point: report.weakBoundaryPoint, label: '弱支撑段', tone: 'weak-boundary' });
+                }
+                if (region?.seed) {
+                    const weakPointSeedDistance = report.weakBoundaryPoint
+                        ? Math.hypot(report.weakBoundaryPoint.x - region.seed.x, report.weakBoundaryPoint.y - region.seed.y)
+                        : Number.POSITIVE_INFINITY;
+                    if (!report.weakBoundaryPoint || weakPointSeedDistance >= 24) {
+                        markers.push({ point: region.seed, label: 'seed', tone: 'seed' });
+                    }
+                }
+                const artifact = buildBoundaryRepairCropDataUrl({
+                    sourcePixels,
+                    barrierMask: barrierMaskRef.current,
+                    point,
+                    label: `${report.regionName} 底图弱支撑`,
+                    markers,
+                });
+                entries[fileName] = await dataUrlToUint8Array(artifact.dataUrl);
+                entries[sourceFileName] = await dataUrlToUint8Array(artifact.dataUrl);
+                entries[repairCropTarget] = await dataUrlToUint8Array(buildMaskCropDataUrl({ mask: currentBoundaryMask ?? null, crop: artifact.crop }));
+                problems.push({
+                    type: 'weak-support',
+                    id: report.regionId,
+                    name: `${report.regionName} 底图弱支撑`,
+                    fileName,
+                    sourceFileName,
+                    repairCropTarget,
+                    crop: artifact.crop,
+                    point,
+                    supportRatio: report.supportRatio,
+                    supportedBoundaryPixelCount: report.supportedBoundaryPixelCount,
+                    boundaryPixelCount: report.boundaryPixelCount,
+                    unsupportedBoundaryPixelCount: report.unsupportedBoundaryPixelCount,
+                    weakBoundaryBounds: report.weakBoundaryBounds,
+                    note: '这个区域虽然进入独立分区，但局部边界缺少真实底图线支撑。沿真实地图边界重画弱支撑段；不能靠其它区域的一段候选线通过验收。',
+                });
+            }
+
+            const generatedAt = new Date().toISOString();
+            const repairManifest = {
+                generatedAt,
+                mapSize: { width: MASK_WIDTH, height: MASK_HEIGHT },
+                purpose: 'qidahen-boundary-repair-package',
+                boundaryColors: DEFAULT_BOUNDARY_PRESETS.map((preset) => ({
+                    id: preset.id,
+                    label: preset.label,
+                    rgb: preset.rgb,
+                    css: `rgb(${preset.rgb[0]}, ${preset.rgb[1]}, ${preset.rgb[2]})`,
+                })),
+                forbiddenUiRects: AUTO_MAP_PRINTED_UI_EXCLUSION_RECTS,
+                layers: {
+                    mainMap: 'qidahen-main-map.png',
+                    overview: 'overview.png',
+                    currentBoundary: currentBoundaryMask && countMaskPixels(currentBoundaryMask) > 0
+                        ? 'layers/current-boundary-transparent.png'
+                        : null,
+                    weakSupportOverlay: weakSupportReports.length > 0
+                        ? 'layers/weak-support-overlay-transparent.png'
+                        : null,
+                    repairedBoundaryTarget: 'layers/repaired-boundary-transparent.png',
+                },
+                importTargets: {
+                    preferred: 'layers/repaired-boundary-transparent.png',
+                    fallbackCurrentBoundary: 'layers/current-boundary-transparent.png',
+                },
+                rules: [
+                    '只用 boundaryColors 里的颜色画边界。',
+                    '沿真实地图边界补成连续闭合边界；无法连成线、无法封口的碎线直接舍弃。',
+                    'problems/unmatched-*.png 里的橙色虚线是当前未隔断的泄漏路径，只提示需要切断的位置，不是直线封口建议。',
+                    'suggestions/unmatched-*-real-map-support-transparent.png 是橙色泄漏路径附近的真实底图支撑线建议，只能作为临摹参考，不会自动写入边界成果。',
+                    '不要在 forbiddenUiRects 覆盖的轮盘、牌框、底部条或说明框上画边界。',
+                    '修完后新增或覆盖 layers/repaired-boundary-transparent.png，保持 1265x893 全图透明 PNG。',
+                    '也可以只编辑 repair-crops/*.png；工具会按 manifest.problemFiles[].crop 坐标拼回当前全图边界。',
+                    '回到工具后使用“导入补边包 ZIP 的全图边界层”导入；工具会优先读取 repairedBoundary。',
+                ],
+                problemFiles: problems.map((problem) => ({
+                    type: problem.type,
+                    id: problem.id,
+                    name: problem.name,
+                    fileName: problem.fileName,
+                    sourceFileName: problem.sourceFileName,
+                    repairCropTarget: problem.repairCropTarget,
+                    crop: problem.crop,
+                    connectedRegionNames: problem.connectedRegionNames,
+                    leakTargetName: problem.leakTargetName,
+                    leakTargetSeed: problem.leakTargetSeed,
+                    leakDistancePixels: problem.leakDistancePixels,
+                    leakPath: problem.leakPath,
+                    supportSuggestionFileName: problem.supportSuggestionFileName,
+                    supportSuggestionPixelCount: problem.supportSuggestionPixelCount,
+                    supportSuggestionCropPixelCount: problem.supportSuggestionCropPixelCount,
+                    supportSuggestionComponentCount: problem.supportSuggestionComponentCount,
+                    supportSuggestionLargestComponentPixelCount: problem.supportSuggestionLargestComponentPixelCount,
+                })),
+            };
+            entries['manifest.json'] = new TextEncoder().encode(JSON.stringify(repairManifest, null, 2));
+            entries['README.txt'] = new TextEncoder().encode([
+                '七大恨补边问题包',
+                '',
+                '用途：按 problems/ 裁图逐个修闭合边界。这个包不是正式成果。',
+                '',
+                '操作：',
+                '1. 打开 qidahen-main-map.png 作为底图。',
+                '2. 叠加 layers/current-boundary-transparent.png 和需要的 problems/*.png。',
+                '3. 可直接编辑 manifest.problemFiles[].repairCropTarget 指向的 repair-crops/*.png；这些小图会按 crop 坐标拼回全图。',
+                '4. 也可以直接在 problems/*.png 可见裁图上用 boundaryColors 画线；problem-sources/*.png 是原始基线，导入时工具只回收相对基线新增的边界色像素。',
+                '5. 按 manifest.json 的 boundaryColors 画线；不要画进 forbiddenUiRects。',
+                '6. problems/unmatched-*.png 里的橙色虚线是当前未隔断的泄漏路径，只提示需要切断的位置，不是直线封口建议。',
+                '7. suggestions/unmatched-*-real-map-support-transparent.png 是泄漏路径附近的真实底图支撑线建议；可叠加临摹，但它不是自动补线成果。',
+                '8. 能沿真实边界补闭合就补；无法连成线/封口的碎线直接舍弃。',
+                '9. 若修的是全图，保存到 layers/repaired-boundary-transparent.png；若只修局部，保留 repair-crops/*.png 或修改后的 problems/*.png 即可。',
+                '10. 回到工具，用“导入补边包 ZIP 的全图边界层”导入。',
+            ].join('\n'));
+            entries['report.json'] = new TextEncoder().encode(JSON.stringify({
+                generatedAt,
+                mapSize: { width: MASK_WIDTH, height: MASK_HEIGHT },
+                layers: {
+                    mainMap: 'qidahen-main-map.png',
+                    currentBoundary: currentBoundaryMask && countMaskPixels(currentBoundaryMask) > 0
+                        ? 'layers/current-boundary-transparent.png'
+                        : null,
+                    weakSupportOverlay: weakSupportReports.length > 0
+                        ? 'layers/weak-support-overlay-transparent.png'
+                        : null,
+                },
+                matchedSeedCount: boundaryClosureDiagnostics.matchedSeedCount,
+                requiredSeedCount: regions.filter((region) => !isDiagnosticRegionId(region.id)).length,
+                unmatchedCount: boundaryClosureDiagnostics.unmatchedRegions.length,
+                weakSupportCount: weakSupportReports.length,
+                openComponentCount: boundaryOpenDiagnostics.openComponentCount,
+                unexplainedOpenComponentCount: unexplainedBoundaryOpenDiagnostics.openComponentCount,
+                problems,
+            }, null, 2));
+
+            const zipBytes = zipSync(entries, { level: 9 });
+            const objectUrl = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = 'qidahen-boundary-repair-package.zip';
+            link.click();
+            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+            setStatusMessage(`已导出补边问题包 ZIP：未独立 seed ${unmatchedRegions.length} 个，未解释开放线段 ${openHints.length} 条，底图弱支撑 ${weakSupportReports.length} 个。按 problems/ 裁图逐个补线；无法连成真实边界的线直接舍弃。`);
+        } catch (error) {
+            console.error(error);
+            setStatusMessage(`导出补边问题包失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const exportRegionAcceptancePackage = async () => {
+        const sourcePixels = sourcePixelsRef.current;
+        if (!sourcePixels) {
+            setStatusMessage('地图像素还没加载完成，暂时不能导出区域验收包。');
+            return;
+        }
+        const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+        const assignments = assignmentsRef.current;
+        const boundaryMask = barrierMaskRef.current;
+        const entries: Record<string, Uint8Array> = {};
+        try {
+            const overviewDataUrl = buildAcceptanceOverviewDataUrl({
+                sourcePixels,
+                assignments,
+                barrierMask: boundaryMask,
+                regions,
+            });
+            entries['overview.png'] = await dataUrlToUint8Array(overviewDataUrl);
+            const regionArtifacts = [];
+            for (const region of formalRegions) {
+                const regionIndex = regions.findIndex((item) => item.id === region.id);
+                if (regionIndex < 0) {
+                    continue;
+                }
+                const artifact = buildRegionAcceptanceCrop({
+                    sourcePixels,
+                    assignments,
+                    barrierMask: boundaryMask,
+                    region,
+                    regionIndex,
+                });
+                const fileName = `regions/${sanitizeWorkspaceKey(region.id || region.name)}.png`;
+                entries[fileName] = await dataUrlToUint8Array(artifact.dataUrl);
+                regionArtifacts.push({
+                    id: region.id,
+                    name: region.name,
+                    fileName,
+                    pixelCount: artifact.pixelCount,
+                    crop: artifact.crop,
+                });
+            }
+            entries['report.json'] = new TextEncoder().encode(JSON.stringify({
+                ...buildBoundaryQualityReportPayload(),
+                acceptancePackage: {
+                    reviewSignature: acceptancePackageReviewSignature,
+                    overview: 'overview.png',
+                    regions: regionArtifacts,
+                },
+            }, null, 2));
+            const zipBytes = zipSync(entries, { level: 9 });
+            const objectUrl = URL.createObjectURL(new Blob([zipBytes], { type: 'application/zip' }));
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = 'qidahen-region-acceptance-package.zip';
+            link.click();
+            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+            setLastAcceptancePackageSignature(acceptancePackageReviewSignature);
+            setStatusMessage(`已导出区域验收包 ZIP：总览 1 张，区域裁图 ${regionArtifacts.length} 张；当前状态 ${boundaryQualityReport.label}。`);
+        } catch (error) {
+            console.error(error);
+            setStatusMessage(`导出区域验收包失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
     const importBoundaryDraft = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         event.target.value = '';
@@ -4159,16 +12071,861 @@ const QidahenRegionMaskTool: React.FC = () => {
             return;
         }
         try {
-            const nextBoundaryMask = await readBinaryMaskFromFile(file);
+            const sourcePixels = await readImagePixelsFromFile(file);
+            let opaquePixels = 0;
+            for (let index = 0; index < MASK_WIDTH * MASK_HEIGHT; index += 1) {
+                if (sourcePixels[(index * 4) + 3] >= 16) {
+                    opaquePixels += 1;
+                }
+            }
+            const opaqueRatio = opaquePixels / (MASK_WIDTH * MASK_HEIGHT);
+            const extractionResult = opaqueRatio >= 0.6
+                ? buildBoundaryDraftFromSourcePixels(sourcePixels, {
+                    extractionMode: 'hand-drawn',
+                    basePixels: sourcePixelsRef.current,
+                })
+                : null;
+            const rawBoundaryMask = extractionResult
+                ? extractionResult.mask
+                : await readBinaryMaskFromFile(file);
+            const destructiveImportExclusionMask = currentMapArtifactExclusionMask;
+            const rejectedUiPixelCount = countMaskOverlapPixels(rawBoundaryMask, destructiveImportExclusionMask);
+            const uiCleanedBoundaryMask = rejectedUiPixelCount > 0
+                ? removeExcludedPixels(rawBoundaryMask, destructiveImportExclusionMask)
+                : rawBoundaryMask;
+            const prunedBoundary = pruneImportedBoundaryMask(uiCleanedBoundaryMask);
+            const nextBoundaryMask = prunedBoundary.mask;
+            const nextBoundaryPixelCount = countMaskPixels(nextBoundaryMask);
+            if (nextBoundaryPixelCount === 0) {
+                setStatusMessage(
+                    rejectedUiPixelCount > 0
+                        ? `导入边界图失败：全部 ${rejectedUiPixelCount.toLocaleString()} px 都落在 UI/装饰禁区内，已拒绝。请只导入地图区域边界。`
+                        : '导入边界图失败：没有找到可用边界像素。',
+                );
+                return;
+            }
+            setLastBoundaryExtractionStats(
+                extractionResult
+                    ? {
+                        mode: extractionResult.mode,
+                        writeMode: 'boundary-source',
+                        activeRuleCount: extractionResult.activeRuleCount,
+                        matchedPixelCount: extractionResult.matchedPixelCount,
+                        drawnChangedPixelCount: extractionResult.drawnChangedPixelCount,
+                        boundedPixelCount: extractionResult.boundedPixelCount,
+                        sealedPixelCount: extractionResult.sealedPixelCount,
+                        keptPixelCount: nextBoundaryPixelCount,
+                        discardedPixelCount: extractionResult.discardedPixelCount + rejectedUiPixelCount + prunedBoundary.discardedPixelCount,
+                    }
+                    : null,
+            );
             boundaryDraftMaskRef.current = nextBoundaryMask;
             manualBarrierAddRef.current.fill(0);
             manualBarrierRemoveRef.current.fill(0);
+            clearBarrierHistory();
+            setManualBlankBoundaryBase(false);
             setPaintedBoundaryOnly(true);
             setShowBarrier(true);
+            setShowSeedStatusOverlay(false);
+            if (extractionResult) {
+                await applyBoundarySourceReferenceDataUrl(buildMaskDataUrl(nextBoundaryMask));
+            } else {
+                await applyBoundarySourceReferenceDataUrl(null);
+            }
+            setLastRegionGenerationResults([]);
             rebuildBarrierMask();
-            setStatusMessage(`已导入边界图：${countMaskPixels(nextBoundaryMask).toLocaleString()} px。后续区域生成只按这张边界图停线。`);
+            const focusNote = focusBoundaryImportProblem(nextBoundaryMask);
+            const rejectedNote = rejectedUiPixelCount > 0 ? `；已拒绝 UI/装饰禁区 ${rejectedUiPixelCount.toLocaleString()} px` : '';
+            const prunedNote = prunedBoundary.mode && prunedBoundary.discardedPixelCount > 0
+                ? `；已自动只保留${prunedBoundary.mode}，舍弃未参与分区/封口的线 ${prunedBoundary.discardedPixelCount.toLocaleString()} px`
+                : '';
+            setStatusMessage(
+                opaqueRatio >= 0.6
+                    ? `已从带底图的手绘文件抽取边界图：${nextBoundaryPixelCount.toLocaleString()} px${rejectedNote}${prunedNote}。后续区域生成只按这张边界图停线。${focusNote}`
+                    : `已导入边界图：${nextBoundaryPixelCount.toLocaleString()} px${rejectedNote}${prunedNote}。后续区域生成只按这张边界图停线。${focusNote}`,
+            );
         } catch (error: unknown) {
             setStatusMessage(`导入边界图失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const importBoundarySource = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) {
+            return;
+        }
+        try {
+            const sourcePixels = await readImagePixelsFromFile(file);
+            const result = buildBoundaryDraftFromSourcePixels(sourcePixels, {
+                extractionMode: 'hand-drawn',
+                basePixels: sourcePixelsRef.current,
+            });
+            if (result.activeRuleCount === 0) {
+                setStatusMessage('没有启用任何边界颜色，不能从带底图描线图抽边界。');
+                return;
+            }
+            const prunedBoundary = pruneImportedBoundaryMask(result.mask);
+            const nextBoundaryPixelCount = countMaskPixels(prunedBoundary.mask);
+            if (nextBoundaryPixelCount === 0) {
+                setStatusMessage('导入带底图描线图失败：没有抽出可用边界像素，已保留当前边界图。请确认描线使用已记录边界色，或改用导入完成边界图。');
+                return;
+            }
+            setLastBoundaryExtractionStats({
+                mode: result.mode,
+                writeMode: 'boundary-source',
+                activeRuleCount: result.activeRuleCount,
+                matchedPixelCount: result.matchedPixelCount,
+                drawnChangedPixelCount: result.drawnChangedPixelCount,
+                boundedPixelCount: result.boundedPixelCount,
+                sealedPixelCount: result.sealedPixelCount,
+                keptPixelCount: nextBoundaryPixelCount,
+                discardedPixelCount: result.discardedPixelCount + prunedBoundary.discardedPixelCount,
+            });
+            boundaryDraftMaskRef.current = prunedBoundary.mask;
+            manualBarrierAddRef.current.fill(0);
+            manualBarrierRemoveRef.current.fill(0);
+            clearBarrierHistory();
+            setManualBlankBoundaryBase(false);
+            setPaintedBoundaryOnly(true);
+            setShowBarrier(true);
+            await applyBoundarySourceReferenceDataUrl(buildMaskDataUrl(prunedBoundary.mask));
+            setLastRegionGenerationResults([]);
+            rebuildBarrierMask();
+            const focusNote = focusBoundaryImportProblem(prunedBoundary.mask);
+            const diffNote = result.drawnChangedPixelCount != null
+                ? `，底图差分 ${result.drawnChangedPixelCount.toLocaleString()} px`
+                : '';
+            const prunedNote = prunedBoundary.mode && prunedBoundary.discardedPixelCount > 0
+                ? `；导入后只保留${prunedBoundary.mode}，再舍弃未参与分区/封口的线 ${prunedBoundary.discardedPixelCount.toLocaleString()} px`
+                : '';
+            setStatusMessage(`已从带底图描线图抽取边界图：${nextBoundaryPixelCount.toLocaleString()} px；抽色命中 ${result.matchedPixelCount.toLocaleString()} px${diffNote}，封口后保留 ${result.keptPixelCount.toLocaleString()} px，舍弃 ${result.discardedPixelCount.toLocaleString()} px${prunedNote}。后续区域生成只按这张边界图停线。${focusNote}`);
+        } catch (error: unknown) {
+            setStatusMessage(`导入带底图描线图失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const importBoundaryRepairPackageZip = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) {
+            return;
+        }
+        try {
+            const entries = unzipSync(new Uint8Array(await file.arrayBuffer()));
+            const normalizedEntries = new Map<string, Uint8Array>();
+            const normalizeEntryName = (entryName: string) => entryName.replace(/\\/gu, '/').replace(/^\.\//u, '');
+            for (const [entryName, bytes] of Object.entries(entries)) {
+                normalizedEntries.set(normalizeEntryName(entryName), bytes);
+            }
+
+            const preferredEntryNames: string[] = [];
+            const reportBytes = normalizedEntries.get('report.json');
+            if (reportBytes) {
+                try {
+                    const report = JSON.parse(new TextDecoder().decode(reportBytes)) as {
+                        layers?: {
+                            repairedBoundary?: unknown;
+                            currentBoundary?: unknown;
+                            boundary?: unknown;
+                        };
+                    };
+                    for (const candidate of [
+                        report.layers?.repairedBoundary,
+                        report.layers?.currentBoundary,
+                        report.layers?.boundary,
+                    ]) {
+                        if (typeof candidate === 'string' && candidate.trim()) {
+                            preferredEntryNames.push(normalizeEntryName(candidate));
+                        }
+                    }
+                } catch {
+                    // 旧补边包可能没有可解析 report；下面继续按约定路径兜底。
+                }
+            }
+
+            const repairCropTargets: Array<{
+                id: string | null;
+                type: string | null;
+                name: string | null;
+                entryName: string;
+                problemEntryName: string | null;
+                problemSourceEntryName: string | null;
+                crop: { left: number; top: number; width: number; height: number };
+            }> = [];
+            const manifestBytes = normalizedEntries.get('manifest.json');
+            if (manifestBytes) {
+                try {
+                    const manifest = JSON.parse(new TextDecoder().decode(manifestBytes)) as {
+                        problemFiles?: unknown;
+                    };
+                    if (Array.isArray(manifest.problemFiles)) {
+                        for (const item of manifest.problemFiles) {
+                            if (!item || typeof item !== 'object') {
+                                continue;
+                            }
+                            const record = item as {
+                                id?: unknown;
+                                type?: unknown;
+                                name?: unknown;
+                                fileName?: unknown;
+                                sourceFileName?: unknown;
+                                repairCropTarget?: unknown;
+                                crop?: {
+                                    left?: unknown;
+                                    top?: unknown;
+                                    width?: unknown;
+                                    height?: unknown;
+                                };
+                            };
+                            const entryName = typeof record.repairCropTarget === 'string'
+                                ? normalizeEntryName(record.repairCropTarget)
+                                : null;
+                            const problemEntryName = typeof record.fileName === 'string'
+                                ? normalizeEntryName(record.fileName)
+                                : null;
+                            const problemSourceEntryName = typeof record.sourceFileName === 'string'
+                                ? normalizeEntryName(record.sourceFileName)
+                                : null;
+                            const id = typeof record.id === 'string' && record.id.trim() ? record.id : null;
+                            const type = typeof record.type === 'string' && record.type.trim() ? record.type : null;
+                            const name = typeof record.name === 'string' && record.name.trim() ? record.name : null;
+                            const crop = record.crop;
+                            if (
+                                entryName
+                                && crop
+                                && Number.isInteger(crop.left)
+                                && Number.isInteger(crop.top)
+                                && Number.isInteger(crop.width)
+                                && Number.isInteger(crop.height)
+                                && crop.left >= 0
+                                && crop.top >= 0
+                                && crop.width > 0
+                                && crop.height > 0
+                                && crop.left + crop.width <= MASK_WIDTH
+                                && crop.top + crop.height <= MASK_HEIGHT
+                            ) {
+                                repairCropTargets.push({
+                                    id,
+                                    type,
+                                    name,
+                                    entryName,
+                                    problemEntryName,
+                                    problemSourceEntryName,
+                                    crop: {
+                                        left: crop.left,
+                                        top: crop.top,
+                                        width: crop.width,
+                                        height: crop.height,
+                                    },
+                                });
+                            }
+                        }
+                    }
+                } catch {
+                    // 没有 manifest 或 manifest 不可解析时，继续按旧全图边界层导入。
+                }
+            }
+            preferredEntryNames.push(
+                'layers/repaired-boundary-transparent.png',
+                'layers/current-boundary-transparent.png',
+                'region-boundary-mask.png',
+                'qidahen-boundary-empty-transparent.png',
+            );
+            for (const entryName of normalizedEntries.keys()) {
+                const lowerName = entryName.toLowerCase();
+                if (
+                    lowerName.endsWith('.png')
+                    && lowerName.includes('boundary')
+                    && !lowerName.includes('weak')
+                    && !lowerName.includes('overlay')
+                    && !lowerName.includes('overview')
+                    && !lowerName.startsWith('problems/')
+                    && !lowerName.includes('main-map')
+                    && !lowerName.includes('trace-template')
+                ) {
+                    preferredEntryNames.push(entryName);
+                }
+            }
+
+            const selectedEntryName = preferredEntryNames.find((entryName) => normalizedEntries.has(entryName)) ?? null;
+            const existingLocalRepairTargets = repairCropTargets.filter((target) => normalizedEntries.has(target.entryName));
+            const existingPaintedProblemTargets = repairCropTargets.filter((target) => (
+                target.problemEntryName
+                && target.problemSourceEntryName
+                && normalizedEntries.has(target.problemEntryName)
+                && normalizedEntries.has(target.problemSourceEntryName)
+            ));
+            const hasFullRepairedBoundaryEntry = normalizedEntries.has('layers/repaired-boundary-transparent.png')
+                || preferredEntryNames.some((entryName) => normalizedEntries.has(entryName) && /repaired-boundary/iu.test(entryName));
+            const shouldComposeLocalRepairCrops = !hasFullRepairedBoundaryEntry && (existingLocalRepairTargets.length > 0 || existingPaintedProblemTargets.length > 0);
+            if (!selectedEntryName && !shouldComposeLocalRepairCrops) {
+                setStatusMessage('导入补边包失败：ZIP 内没有找到可回导的透明边界层。请保留或新增 layers/current-boundary-transparent.png。');
+                return;
+            }
+            const fallbackCurrentBoundaryWithoutRepair = !shouldComposeLocalRepairCrops
+                && selectedEntryName === 'layers/current-boundary-transparent.png'
+                && !normalizedEntries.has('layers/repaired-boundary-transparent.png')
+                && (normalizedEntries.has('manifest.json') || normalizedEntries.has('report.json'));
+
+            const readFullBoundaryMaskEntry = async (entryName: string) => {
+                const selectedBytes = normalizedEntries.get(entryName);
+                if (!selectedBytes) {
+                    throw new Error('选中的边界层为空');
+                }
+                const boundaryFile = new File([selectedBytes], entryName.split('/').pop() ?? 'boundary.png', { type: 'image/png' });
+                const { pixels, width, height } = await readNativeImagePixelsFromFile(boundaryFile);
+                if (width !== MASK_WIDTH || height !== MASK_HEIGHT) {
+                    throw new Error(`${entryName} 尺寸是 ${width}x${height}，必须是 ${MASK_WIDTH}x${MASK_HEIGHT} 的全图透明边界层`);
+                }
+                const mask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+                let opaquePixelCount = 0;
+                for (let index = 0; index < mask.length; index += 1) {
+                    if (pixels[(index * 4) + 3] >= 16) {
+                        mask[index] = 1;
+                        opaquePixelCount += 1;
+                    }
+                }
+                return { mask, opaquePixelCount };
+            };
+
+            let rawBoundaryMask: Uint8Array;
+            let opaquePixels = 0;
+            let importedBoundarySourceLabel = selectedEntryName ?? 'repair-crops/*.png';
+            let localRepairCropAppliedCount = 0;
+            let localRepairCropUnchangedCount = 0;
+            let localRepairCropUiPixelCount = 0;
+            let paintedProblemCropAppliedCount = 0;
+            let paintedProblemCropUnchangedCount = 0;
+            let paintedProblemPixelCount = 0;
+            let paintedProblemSupportedPixelCount = 0;
+            let paintedProblemUiPixelCount = 0;
+            const previousBoundaryMask = barrierMaskRef.current ?? boundaryDraftMaskRef.current;
+            const changedRepairRegionIds: string[] = [];
+            const recordChangedRepairRegion = (target: typeof repairCropTargets[number]) => {
+                if (!target.id || changedRepairRegionIds.includes(target.id)) {
+                    return;
+                }
+                if (!regions.some((region) => region.id === target.id && !isDiagnosticRegionId(region.id))) {
+                    return;
+                }
+                changedRepairRegionIds.push(target.id);
+            };
+            if (shouldComposeLocalRepairCrops) {
+                if (selectedEntryName) {
+                    const fullBoundary = await readFullBoundaryMaskEntry(selectedEntryName);
+                    rawBoundaryMask = fullBoundary.mask;
+                } else if (previousBoundaryMask) {
+                    rawBoundaryMask = new Uint8Array(previousBoundaryMask);
+                } else {
+                    setStatusMessage('导入补边包失败：只有局部修复层，但工具内和 ZIP 内都没有可作为底板的全图边界。');
+                    return;
+                }
+                const localRepairBaseMask = new Uint8Array(rawBoundaryMask);
+                for (const target of existingLocalRepairTargets) {
+                    const cropBytes = normalizedEntries.get(target.entryName);
+                    if (!cropBytes) {
+                        continue;
+                    }
+                    const cropFile = new File([cropBytes], target.entryName.split('/').pop() ?? 'repair-crop.png', { type: 'image/png' });
+                    const { pixels: cropPixels, width, height } = await readNativeImagePixelsFromFile(cropFile);
+                    if (width !== target.crop.width || height !== target.crop.height) {
+                        setStatusMessage(`导入补边包失败：${target.entryName} 尺寸是 ${width}x${height}，但 manifest crop 要求 ${target.crop.width}x${target.crop.height}。`);
+                        return;
+                    }
+                    let differsFromBase = false;
+                    for (let localY = 0; localY < target.crop.height && !differsFromBase; localY += 1) {
+                        const y = target.crop.top + localY;
+                        for (let localX = 0; localX < target.crop.width; localX += 1) {
+                            const x = target.crop.left + localX;
+                            const fullIndex = (y * MASK_WIDTH) + x;
+                            const localIndex = ((localY * target.crop.width) + localX) * 4;
+                            const localOpaque = cropPixels[localIndex + 3] >= 16 ? 1 : 0;
+                            if (localOpaque !== localRepairBaseMask[fullIndex]) {
+                                differsFromBase = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!differsFromBase) {
+                        localRepairCropUnchangedCount += 1;
+                        continue;
+                    }
+                    let appliedCropChange = false;
+                    for (let localY = 0; localY < target.crop.height; localY += 1) {
+                        const y = target.crop.top + localY;
+                        for (let localX = 0; localX < target.crop.width; localX += 1) {
+                            const x = target.crop.left + localX;
+                            const fullIndex = (y * MASK_WIDTH) + x;
+                            const localIndex = ((localY * target.crop.width) + localX) * 4;
+                            const localOpaque = cropPixels[localIndex + 3] >= 16 ? 1 : 0;
+                            const baseOpaque = localRepairBaseMask[fullIndex] !== 0 ? 1 : 0;
+                            if (localOpaque !== 0 && baseOpaque === 0 && currentMapArtifactExclusionMask[fullIndex] !== 0) {
+                                localRepairCropUiPixelCount += 1;
+                                continue;
+                            }
+                            if (localOpaque !== baseOpaque) {
+                                appliedCropChange = true;
+                            }
+                            rawBoundaryMask[fullIndex] = localOpaque;
+                        }
+                    }
+                    if (appliedCropChange) {
+                        localRepairCropAppliedCount += 1;
+                        recordChangedRepairRegion(target);
+                    } else {
+                        localRepairCropUnchangedCount += 1;
+                    }
+                }
+                const activeBoundaryColors = boundaryPresets.filter((preset) => preset.enabled).map((preset) => preset.rgb);
+                for (const target of existingPaintedProblemTargets) {
+                    if (!target.problemEntryName || !target.problemSourceEntryName) {
+                        continue;
+                    }
+                    const problemBytes = normalizedEntries.get(target.problemEntryName);
+                    const sourceBytes = normalizedEntries.get(target.problemSourceEntryName);
+                    if (!problemBytes || !sourceBytes) {
+                        continue;
+                    }
+                    const problemFile = new File([problemBytes], target.problemEntryName.split('/').pop() ?? 'problem.png', { type: 'image/png' });
+                    const sourceFile = new File([sourceBytes], target.problemSourceEntryName.split('/').pop() ?? 'problem-source.png', { type: 'image/png' });
+                    const { pixels: problemPixels, width, height } = await readNativeImagePixelsFromFile(problemFile);
+                    const { pixels: sourceProblemPixels, width: sourceWidth, height: sourceHeight } = await readNativeImagePixelsFromFile(sourceFile);
+                    if (width !== target.crop.width || height !== target.crop.height || sourceWidth !== target.crop.width || sourceHeight !== target.crop.height) {
+                        setStatusMessage(`导入补边包失败：${target.problemEntryName} 或 ${target.problemSourceEntryName} 尺寸与 manifest crop 不一致。`);
+                        return;
+                    }
+                    let paintedPixelsInCrop = 0;
+                    for (let localY = 0; localY < target.crop.height; localY += 1) {
+                        const y = target.crop.top + localY;
+                        for (let localX = 0; localX < target.crop.width; localX += 1) {
+                            const x = target.crop.left + localX;
+                            const fullIndex = (y * MASK_WIDTH) + x;
+                            const localOffset = ((localY * target.crop.width) + localX) * 4;
+                            if (problemPixels[localOffset + 3] < 16) {
+                                continue;
+                            }
+                            const changed = Math.abs(problemPixels[localOffset] - sourceProblemPixels[localOffset]) >= 6
+                                || Math.abs(problemPixels[localOffset + 1] - sourceProblemPixels[localOffset + 1]) >= 6
+                                || Math.abs(problemPixels[localOffset + 2] - sourceProblemPixels[localOffset + 2]) >= 6
+                                || Math.abs(problemPixels[localOffset + 3] - sourceProblemPixels[localOffset + 3]) >= 16;
+                            if (!changed) {
+                                continue;
+                            }
+                            const color: RgbColor = [
+                                problemPixels[localOffset],
+                                problemPixels[localOffset + 1],
+                                problemPixels[localOffset + 2],
+                            ];
+                            const matchesBoundaryColor = activeBoundaryColors.some((presetColor) => rgbDistance(color, presetColor) <= Math.max(boundaryTolerance, 18));
+                            if (!matchesBoundaryColor) {
+                                continue;
+                            }
+                            if (currentMapArtifactExclusionMask[fullIndex] !== 0) {
+                                paintedProblemUiPixelCount += 1;
+                                continue;
+                            }
+                            if (realMapBoundarySupportMask?.[fullIndex] !== 0) {
+                                paintedProblemSupportedPixelCount += 1;
+                            }
+                            rawBoundaryMask[fullIndex] = 1;
+                            paintedPixelsInCrop += 1;
+                        }
+                    }
+                    if (paintedPixelsInCrop > 0) {
+                        paintedProblemCropAppliedCount += 1;
+                        paintedProblemPixelCount += paintedPixelsInCrop;
+                        recordChangedRepairRegion(target);
+                    } else {
+                        paintedProblemCropUnchangedCount += 1;
+                    }
+                }
+                opaquePixels = countMaskPixels(rawBoundaryMask);
+                importedBoundarySourceLabel = `${selectedEntryName ?? '当前边界'} + 局部修复层 ${localRepairCropAppliedCount} 个 + 可见裁图画线 ${paintedProblemCropAppliedCount} 个`;
+            } else {
+                if (!selectedEntryName) {
+                    setStatusMessage('导入补边包失败：ZIP 内没有找到可回导的透明边界层。');
+                    return;
+                }
+                try {
+                    const fullBoundary = await readFullBoundaryMaskEntry(selectedEntryName);
+                    rawBoundaryMask = fullBoundary.mask;
+                    opaquePixels = fullBoundary.opaquePixelCount;
+                } catch (error) {
+                    setStatusMessage(`导入补边包失败：${error instanceof Error ? error.message : '选中的边界层不可读'}`);
+                    return;
+                }
+            }
+            const rejectedUiPixelCount = countMaskOverlapPixels(rawBoundaryMask, currentMapArtifactExclusionMask);
+            const uiCleanedBoundaryMask = rejectedUiPixelCount > 0
+                ? removeExcludedPixels(rawBoundaryMask, currentMapArtifactExclusionMask)
+                : rawBoundaryMask;
+            const prunedBoundary = pruneImportedBoundaryMask(uiCleanedBoundaryMask);
+            const nextBoundaryMask = prunedBoundary.mask;
+            const nextBoundaryPixelCount = countMaskPixels(nextBoundaryMask);
+            if (nextBoundaryPixelCount === 0) {
+                setStatusMessage(
+                    rejectedUiPixelCount > 0
+                        ? `导入补边包失败：${selectedEntryName} 的 ${rejectedUiPixelCount.toLocaleString()} px 全部落在 UI/装饰禁区内，已拒绝。`
+                        : `导入补边包失败：${selectedEntryName} 没有可用边界像素。`,
+                );
+                return;
+            }
+
+            let changedPixelCount = 0;
+            if (previousBoundaryMask) {
+                for (let index = 0; index < nextBoundaryMask.length; index += 1) {
+                    if ((previousBoundaryMask[index] !== 0) !== (nextBoundaryMask[index] !== 0)) {
+                        changedPixelCount += 1;
+                    }
+                }
+            } else {
+                changedPixelCount = nextBoundaryPixelCount;
+            }
+
+            setLastBoundaryExtractionStats({
+                mode: 'hand-drawn',
+                writeMode: 'boundary-source',
+                activeRuleCount: 0,
+                matchedPixelCount: opaquePixels,
+                boundedPixelCount: opaquePixels,
+                sealedPixelCount: nextBoundaryPixelCount,
+                keptPixelCount: nextBoundaryPixelCount,
+                discardedPixelCount: rejectedUiPixelCount + prunedBoundary.discardedPixelCount,
+            });
+            boundaryDraftMaskRef.current = nextBoundaryMask;
+            manualBarrierAddRef.current.fill(0);
+            manualBarrierRemoveRef.current.fill(0);
+            clearBarrierHistory();
+            setManualBlankBoundaryBase(false);
+            setPaintedBoundaryOnly(true);
+            setShowBarrier(true);
+            setShowSeedStatusOverlay(true);
+            await applyBoundarySourceReferenceDataUrl(buildMaskDataUrl(nextBoundaryMask));
+            setLastRegionGenerationResults([]);
+            rebuildBarrierMask();
+            const focusNote = focusBoundaryImportProblem(nextBoundaryMask, changedRepairRegionIds);
+            const rejectedNote = rejectedUiPixelCount > 0 ? `；已拒绝 UI/装饰禁区 ${rejectedUiPixelCount.toLocaleString()} px` : '';
+            const prunedNote = prunedBoundary.mode && prunedBoundary.discardedPixelCount > 0
+                ? `；已自动只保留${prunedBoundary.mode}，舍弃未参与分区/封口的线 ${prunedBoundary.discardedPixelCount.toLocaleString()} px`
+                : '';
+            const fallbackWarning = fallbackCurrentBoundaryWithoutRepair
+                ? '；ZIP 未包含 layers/repaired-boundary-transparent.png，本次只是回导 currentBoundary 初始/旧边界层，修完后请新增 repairedBoundary 再导入'
+                : '';
+            const localRepairNote = localRepairCropAppliedCount > 0
+                ? `；已按 manifest crop 拼回局部修复层 ${localRepairCropAppliedCount} 个${localRepairCropUnchangedCount > 0 ? `，跳过未修改局部层 ${localRepairCropUnchangedCount} 个` : ''}${localRepairCropUiPixelCount > 0 ? `，拒绝局部层 UI/装饰新增像素 ${localRepairCropUiPixelCount.toLocaleString()} px` : ''}`
+                : localRepairCropUnchangedCount > 0
+                    ? `；未检测到修改过的 repair-crops，跳过未修改局部层 ${localRepairCropUnchangedCount} 个，本次只是回导底板${localRepairCropUiPixelCount > 0 ? `；拒绝局部层 UI/装饰新增像素 ${localRepairCropUiPixelCount.toLocaleString()} px，未写入边界层` : ''}`
+                : '';
+            const paintedProblemNote = paintedProblemCropAppliedCount > 0
+                ? `；已从 problems 可见裁图回收边界色画线 ${paintedProblemCropAppliedCount} 张 / ${paintedProblemPixelCount.toLocaleString()} px${paintedProblemCropUnchangedCount > 0 ? `，跳过未修改可见裁图 ${paintedProblemCropUnchangedCount} 张` : ''}`
+                : paintedProblemCropUnchangedCount > 0
+                    ? `；未检测到 problems 可见裁图里的新增边界色，跳过 ${paintedProblemCropUnchangedCount} 张`
+                    : '';
+            const paintedProblemSupportRatio = paintedProblemPixelCount > 0
+                ? paintedProblemSupportedPixelCount / paintedProblemPixelCount
+                : 0;
+            const paintedProblemQualityNote = paintedProblemPixelCount > 0
+                ? `；新增可见画线底图支撑 ${paintedProblemSupportedPixelCount.toLocaleString()}/${paintedProblemPixelCount.toLocaleString()} px (${(paintedProblemSupportRatio * 100).toFixed(1)}%)${paintedProblemUiPixelCount > 0 ? `，其中 UI/装饰禁区 ${paintedProblemUiPixelCount.toLocaleString()} px 已拒绝` : ''}${paintedProblemSupportRatio < REAL_MAP_BOUNDARY_FIT_MIN_SUPPORT_RATIO ? '，疑似没有贴真实底图线，不能直接当正常成果' : ''}`
+                : paintedProblemUiPixelCount > 0
+                    ? `；新增可见画线 UI/装饰禁区 ${paintedProblemUiPixelCount.toLocaleString()} px 已拒绝，未写入边界层`
+                    : '';
+            setStatusMessage(`已从补边包回导 ${importedBoundarySourceLabel}：边界 ${nextBoundaryPixelCount.toLocaleString()} px，替换差异 ${changedPixelCount.toLocaleString()} px${rejectedNote}${prunedNote}${localRepairNote}${paintedProblemNote}${paintedProblemQualityNote}${fallbackWarning}。继续生成区域并看弱支撑报告。${focusNote}`);
+        } catch (error: unknown) {
+            setStatusMessage(`导入补边包失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const resolveRegionTraceTargetFromFileName = React.useCallback((fileName: string): PainterRegion | null => {
+        const plainFileName = fileName.split(/[\\/]/u).pop() ?? fileName;
+        const baseName = plainFileName.replace(/\.[^.]+$/u, '');
+        const prefixes = ['qidahen-region-trace-', 'qidahen-local-region-boundary-'];
+        const matchedPrefix = prefixes.find((prefix) => baseName.startsWith(prefix));
+        if (!matchedPrefix) {
+            return null;
+        }
+        const regionKey = baseName.slice(matchedPrefix.length);
+        return regions.find((region) => (
+            !isDiagnosticRegionId(region.id)
+            && (
+                sanitizeWorkspaceKey(region.id) === regionKey
+                || sanitizeWorkspaceKey(region.name) === regionKey
+            )
+        )) ?? null;
+    }, [regions]);
+
+    const buildRegionTraceImportOutcome = React.useCallback(async ({
+        file,
+        targetRegion,
+        baseBoundaryMask,
+    }: {
+        file: File;
+        targetRegion: PainterRegion;
+        baseBoundaryMask: Uint8Array;
+    }): Promise<RegionTraceImportOutcome> => {
+        const { pixels, width, height } = await readNativeImagePixelsFromFile(file);
+        const cropResult = calculateRegionTraceCrop(targetRegion);
+        if (!cropResult) {
+            throw new Error(`${targetRegion.name} 没有设置 seed，不能确定局部图贴回位置。`);
+        }
+        const { crop } = cropResult;
+        if (width !== crop.width || height !== crop.height) {
+            throw new Error(`图片尺寸是 ${width}x${height}，${targetRegion.name} 底稿应为 ${crop.width}x${crop.height}。请使用“导出当前区域局部底稿”得到的尺寸。`);
+        }
+
+        let opaquePixels = 0;
+        for (let index = 0; index < width * height; index += 1) {
+            if (pixels[(index * 4) + 3] >= 16) {
+                opaquePixels += 1;
+            }
+        }
+        const opaqueRatio = opaquePixels / Math.max(1, width * height);
+        let localMask: Uint8Array;
+        let matchedPixelCount = 0;
+        if (opaqueRatio < 0.6) {
+            localMask = new Uint8Array(width * height);
+            for (let index = 0; index < localMask.length; index += 1) {
+                if (pixels[(index * 4) + 3] >= 16) {
+                    localMask[index] = 1;
+                    matchedPixelCount += 1;
+                }
+            }
+        } else {
+            const activeRules = boundaryPresets
+                .filter((preset) => preset.enabled)
+                .map((preset) => ({
+                    id: preset.id,
+                    rgb: preset.rgb,
+                    tolerance: boundaryTolerance,
+                    enabled: true,
+                }));
+            if (activeRules.length === 0) {
+                throw new Error('没有启用任何边界颜色。');
+            }
+            localMask = buildBarrierMask({
+                source: pixels,
+                width,
+                height,
+                rules: activeRules,
+                expansion: Math.max(0, boundaryExpansion),
+                minComponentPixels: DEFAULT_BOUNDARY_COMPONENT_MIN_PIXELS,
+                blurRadius: 0,
+                lineFilter: null,
+            });
+            matchedPixelCount = countMaskPixels(localMask);
+        }
+
+        if (matchedPixelCount === 0) {
+            throw new Error('没有找到可用边界像素。透明图请确认边界线不透明；带底图图请确认使用了已启用边界颜色。');
+        }
+
+        const nextBoundaryMask = baseBoundaryMask.slice();
+        let writtenPixelCount = 0;
+        let rejectedUiPixelCount = 0;
+        for (let localIndex = 0; localIndex < localMask.length; localIndex += 1) {
+            if (localMask[localIndex] === 0) {
+                continue;
+            }
+            const localX = localIndex % width;
+            const localY = (localIndex / width) | 0;
+            const x = crop.left + localX;
+            const y = crop.top + localY;
+            if (x < 0 || x >= MASK_WIDTH || y < 0 || y >= MASK_HEIGHT) {
+                continue;
+            }
+            const globalIndex = (y * MASK_WIDTH) + x;
+            if (currentMapArtifactExclusionMask[globalIndex] !== 0) {
+                rejectedUiPixelCount += 1;
+                continue;
+            }
+            if (nextBoundaryMask[globalIndex] === 0) {
+                writtenPixelCount += 1;
+            }
+            nextBoundaryMask[globalIndex] = 1;
+        }
+
+        return {
+            targetRegion,
+            nextBoundaryMask,
+            writtenPixelCount,
+            rejectedUiPixelCount,
+            matchedPixelCount,
+        };
+    }, [boundaryExpansion, boundaryPresets, boundaryTolerance, currentMapArtifactExclusionMask]);
+
+    const importSelectedRegionTraceTemplate = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) {
+            return;
+        }
+        const targetRegion = resolveRegionTraceTargetFromFileName(file.name) ?? selectedRegion;
+        if (!targetRegion) {
+            setStatusMessage('当前没有选中区域，不能导入局部描边图。');
+            return;
+        }
+        try {
+            const result = await buildRegionTraceImportOutcome({
+                file,
+                targetRegion,
+                baseBoundaryMask: (barrierMaskRef.current ?? boundaryDraftMaskRef.current)?.slice()
+                    ?? new Uint8Array(MASK_WIDTH * MASK_HEIGHT),
+            });
+
+            if (result.writtenPixelCount === 0) {
+                setStatusMessage(
+                    result.rejectedUiPixelCount > 0
+                        ? `导入局部描边图未写入：${result.rejectedUiPixelCount.toLocaleString()} px 落在红色 UI 禁区内，已拒绝。`
+                        : '导入局部描边图未写入：边界像素已经存在，或没有落在当前区域底稿范围内。',
+                );
+                return;
+            }
+
+            boundaryDraftMaskRef.current = result.nextBoundaryMask;
+            manualBarrierAddRef.current.fill(0);
+            manualBarrierRemoveRef.current.fill(0);
+            clearBarrierHistory();
+            setSelectedRegionId(targetRegion.id);
+            setManualBlankBoundaryBase(false);
+            setPaintedBoundaryOnly(true);
+            setShowBarrier(true);
+            setShowSeedStatusOverlay(true);
+            setLastBoundaryExtractionStats(null);
+            setLastRegionGenerationResults([]);
+            rebuildBarrierMask();
+            const focusNote = focusBoundaryImportProblem(result.nextBoundaryMask, [targetRegion.id]);
+            const rejectedNote = result.rejectedUiPixelCount > 0 ? `，拒绝 UI 禁区 ${result.rejectedUiPixelCount.toLocaleString()} px` : '';
+            setStatusMessage(`已导入 ${targetRegion.name} 局部描边图：写入 ${result.writtenPixelCount.toLocaleString()} px${rejectedNote}。${focusNote}`);
+        } catch (error: unknown) {
+            setStatusMessage(`导入局部描边图失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const importRegionTraceZip = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) {
+            return;
+        }
+        try {
+            const entries = unzipSync(new Uint8Array(await file.arrayBuffer()));
+            const normalizeZipEntryName = (entryName: string) => entryName.replace(/\\/gu, '/').replace(/^\.\/+/u, '').toLowerCase();
+            const manifestRegionByEntryName = new Map<string, PainterRegion>();
+            const manifestBytes = entries['manifest.json'];
+            if (manifestBytes) {
+                try {
+                    const manifest = JSON.parse(new TextDecoder().decode(manifestBytes)) as {
+                        regions?: Array<{ id?: unknown; name?: unknown; fileName?: unknown }>;
+                    };
+                    for (const item of manifest.regions ?? []) {
+                        if (typeof item.fileName !== 'string' || item.fileName.length === 0) {
+                            continue;
+                        }
+                        const targetRegion = regions.find((region) => (
+                            !isDiagnosticRegionId(region.id)
+                            && (
+                                (typeof item.id === 'string' && region.id === item.id)
+                                || (typeof item.name === 'string' && region.name === item.name)
+                                || (typeof item.id === 'string' && sanitizeWorkspaceKey(region.id) === sanitizeWorkspaceKey(item.id))
+                                || (typeof item.name === 'string' && sanitizeWorkspaceKey(region.name) === sanitizeWorkspaceKey(item.name))
+                            )
+                        ));
+                        if (!targetRegion) {
+                            continue;
+                        }
+                        const normalizedName = normalizeZipEntryName(item.fileName);
+                        manifestRegionByEntryName.set(normalizedName, targetRegion);
+                        manifestRegionByEntryName.set(normalizedName.split('/').pop() ?? normalizedName, targetRegion);
+                    }
+                } catch (error) {
+                    console.warn('Failed to parse region trace manifest', error);
+                }
+            }
+            const pngEntries = Object.entries(entries)
+                .filter(([entryName]) => /\.png$/iu.test(entryName))
+                .sort(([left], [right]) => left.localeCompare(right));
+            if (pngEntries.length === 0) {
+                setStatusMessage('导入局部描边 ZIP 失败：ZIP 内没有 PNG 文件。');
+                return;
+            }
+
+            let nextBoundaryMask = (barrierMaskRef.current ?? boundaryDraftMaskRef.current)?.slice()
+                ?? new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+            let importedCount = 0;
+            let skippedUnknownCount = 0;
+            let skippedNoWriteCount = 0;
+            let failedCount = 0;
+            let totalWrittenPixelCount = 0;
+            let totalRejectedUiPixelCount = 0;
+            let lastImportedRegionId: string | null = null;
+            const importedRegionIds: string[] = [];
+            const failureNotes: string[] = [];
+
+            for (const [entryName, bytes] of pngEntries) {
+                const normalizedEntryName = normalizeZipEntryName(entryName);
+                const targetRegion = manifestRegionByEntryName.get(normalizedEntryName)
+                    ?? manifestRegionByEntryName.get(normalizedEntryName.split('/').pop() ?? normalizedEntryName)
+                    ?? resolveRegionTraceTargetFromFileName(entryName);
+                if (!targetRegion) {
+                    skippedUnknownCount += 1;
+                    continue;
+                }
+                try {
+                    const entryFile = new File([bytes], entryName.split(/[\\/]/u).pop() ?? entryName, { type: 'image/png' });
+                    const result = await buildRegionTraceImportOutcome({
+                        file: entryFile,
+                        targetRegion,
+                        baseBoundaryMask: nextBoundaryMask,
+                    });
+                    if (result.writtenPixelCount === 0) {
+                        skippedNoWriteCount += 1;
+                        totalRejectedUiPixelCount += result.rejectedUiPixelCount;
+                        continue;
+                    }
+                    nextBoundaryMask = result.nextBoundaryMask;
+                    importedCount += 1;
+                    totalWrittenPixelCount += result.writtenPixelCount;
+                    totalRejectedUiPixelCount += result.rejectedUiPixelCount;
+                    lastImportedRegionId = targetRegion.id;
+                    importedRegionIds.push(targetRegion.id);
+                } catch (error) {
+                    failedCount += 1;
+                    if (failureNotes.length < 3) {
+                        failureNotes.push(`${entryName}: ${error instanceof Error ? error.message : '未知错误'}`);
+                    }
+                }
+            }
+
+            if (importedCount === 0) {
+                const reason = failureNotes.length > 0
+                    ? `；失败示例：${failureNotes.join('；')}`
+                    : '';
+                setStatusMessage(`导入局部描边 ZIP 未写入任何边界：未知文件 ${skippedUnknownCount} 个，重复/无效 ${skippedNoWriteCount} 个，失败 ${failedCount} 个${reason}`);
+                return;
+            }
+
+            boundaryDraftMaskRef.current = nextBoundaryMask;
+            manualBarrierAddRef.current.fill(0);
+            manualBarrierRemoveRef.current.fill(0);
+            clearBarrierHistory();
+            if (lastImportedRegionId) {
+                setSelectedRegionId(lastImportedRegionId);
+            }
+            setManualBlankBoundaryBase(false);
+            setPaintedBoundaryOnly(true);
+            setShowBarrier(true);
+            setShowSeedStatusOverlay(true);
+            setLastBoundaryExtractionStats(null);
+            setLastRegionGenerationResults([]);
+            rebuildBarrierMask();
+            const focusNote = focusBoundaryImportProblem(nextBoundaryMask, importedRegionIds);
+            const rejectedNote = totalRejectedUiPixelCount > 0 ? `，拒绝 UI 禁区 ${totalRejectedUiPixelCount.toLocaleString()} px` : '';
+            const skippedNote = skippedUnknownCount + skippedNoWriteCount + failedCount > 0
+                ? `；跳过未知 ${skippedUnknownCount} 个、重复/无效 ${skippedNoWriteCount} 个、失败 ${failedCount} 个`
+                : '';
+            setStatusMessage(`已导入局部描边 ZIP：${importedCount} 个区域，写入 ${totalWrittenPixelCount.toLocaleString()} px${rejectedNote}${skippedNote}。${focusNote}`);
+        } catch (error: unknown) {
+            setStatusMessage(`导入局部描边 ZIP 失败：${error instanceof Error ? error.message : '未知错误'}`);
         }
     };
 
@@ -4219,91 +12976,388 @@ const QidahenRegionMaskTool: React.FC = () => {
         );
     };
 
-    const addBoundaryColorPreset = () => {
-        let rgb: RgbColor;
-        try {
-            rgb = parseBoundaryColorInput(boundaryColorInput);
-        } catch {
-            setStatusMessage('还没有可用的边界颜色：请先输入你实际画边界使用的 #RRGGBB 或 rgb(r,g,b) 颜色。');
-            return;
-        }
-        const presetId = `manual-color-${rgb.join('-')}`;
-        setBoundaryPresets((current) => {
-            if (current.some((preset) => preset.id === presetId)) {
-                return current.map((preset) => (
-                    preset.id === presetId
-                        ? { ...preset, enabled: true }
-                        : preset.id.startsWith('manual-color-')
-                            ? preset
-                            : { ...preset, enabled: false }
-                ));
-            }
-            return [
-                ...current.map((preset) => (
-                    preset.id.startsWith('manual-color-')
-                        ? preset
-                        : { ...preset, enabled: false }
-                )),
-                {
-                    id: presetId,
-                    label: `指定边界 ${rgb.join(',')}`,
-                    rgb,
-                    enabled: true,
-                },
-            ];
-        });
-        setPaintedBoundaryOnly(true);
-        setShowBarrier(true);
-        setStatusMessage(`已加入指定边界颜色 rgb(${rgb.join(', ')})；当前只用这个颜色和手工补边生成初始区域。`);
-    };
-
-    const generateRegionsFromCurrentBoundary = React.useCallback(() => {
+    const generateRegionsFromCurrentBoundary = React.useCallback((options?: { allowPartial?: boolean }) => {
         const barrierMask = barrierMaskRef.current;
         if (!barrierMask) {
             setStatusMessage('当前还没有可用边界。请先等待地图加载，或添加/绘制边界后再生成。');
             return;
         }
+        const allowPartial = options?.allowPartial === true;
+        const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+        const missingSeedNames = formalRegions
+            .filter((region) => !region.seed)
+            .map((region) => region.name);
+        const generationDiagnostics = allowPartial || !simplifiedBoundaryWorkflow
+            ? boundaryClosureDiagnostics
+            : buildSeedPartitionDiagnosticsForBoundaryMask(barrierMask);
+        const generationOpenDiagnostics = allowPartial || !simplifiedBoundaryWorkflow
+            ? unexplainedBoundaryOpenDiagnostics
+            : analyzeOpenBoundaryComponents({
+                barrierMask,
+                width: MASK_WIDTH,
+                minPixels: 24,
+                maxHints: 0,
+            });
+        if (!allowPartial) {
+            const boundaryUiPixels = countMaskOverlapPixels(barrierMask, currentMapArtifactExclusionMask);
+            const blockers = [
+                boundaryDraftPixelCount === 0 && barrierPixelCount === 0 ? '还没有真实边界图' : null,
+                missingSeedNames.length > 0 ? `缺 seed：${missingSeedNames.join('、')}` : null,
+                generationDiagnostics.matchedSeedCount < formalRegions.length
+                    ? `独立 seed ${generationDiagnostics.matchedSeedCount}/${formalRegions.length}${generationDiagnostics.unmatchedRegionNames.length > 0 ? `，未独立：${generationDiagnostics.unmatchedRegionNames.join('、')}` : ''}`
+                    : null,
+                generationOpenDiagnostics.openComponentCount > 0 ? `未解释开放线段 ${generationOpenDiagnostics.openComponentCount} 条` : null,
+                boundaryUiPixels > 0 ? `边界落入 UI 禁区 ${boundaryUiPixels.toLocaleString()} px` : null,
+            ].filter((item): item is string => Boolean(item));
+            if (blockers.length > 0) {
+                setLastRegionGenerationResults([]);
+                setStatusMessage(`默认生成已拒绝：${blockers.join('；')}。继续补线/清洗到 5/5 全部独立后再生成正常成果；如只想调试当前独立分区，请用“调试生成当前独立分区”。`);
+                return;
+            }
+        }
 
         const nextAssignments = createRegionAssignments(MASK_WIDTH, MASK_HEIGHT);
         const nextSeeds = new Map<string, MaskPoint>();
+        const generationResults: RegionGenerationResult[] = [];
+        const seedRecords: Array<{
+            regionIndex: number;
+            region: PainterRegion;
+            seedPoint: MaskPoint;
+        }> = [];
+        const seedRecordIndexByRegionIndex = new Map<number, number>();
         let generatedRegionCount = 0;
         let skippedRegionCount = 0;
-        let leakedRegionCount = 0;
         let overlapPixelCount = 0;
         let writtenPixelCount = 0;
+        let printedUiRejectedPixelCount = 0;
 
         for (let regionIndex = 0; regionIndex < regions.length; regionIndex += 1) {
             const region = regions[regionIndex];
             if (!region || isDiagnosticRegionId(region.id)) {
                 continue;
             }
-            const fallbackSeed = getRegionShapeCenterPoint(region.name, region.seed ?? { x: Math.floor(MASK_WIDTH / 2), y: Math.floor(MASK_HEIGHT / 2) });
-            const preferredSeed = region.seed ?? fallbackSeed;
+            const preferredSeed = region.seed;
+            if (!preferredSeed) {
+                skippedRegionCount += 1;
+                generationResults.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'skipped',
+                    pixelCount: 0,
+                    seed: null,
+                    note: '没有设置 seed，已跳过。工具不会再用旧 shape 中心生成假区域。',
+                });
+                continue;
+            }
             const seedPoint = findBestInteriorSeedPoint(preferredSeed, barrierMask, 18)
-                ?? findNearestNonBarrierPoint(preferredSeed, barrierMask, 36)
-                ?? findBestInteriorSeedPoint(fallbackSeed, barrierMask, 24)
-                ?? findNearestNonBarrierPoint(fallbackSeed, barrierMask, 42);
+                ?? findNearestNonBarrierPoint(preferredSeed, barrierMask, 36);
             if (!seedPoint) {
                 skippedRegionCount += 1;
+                generationResults.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'skipped',
+                    pixelCount: 0,
+                    seed: null,
+                    note: '没有找到内部种子，通常是边界没封口或种子压在线上。',
+                });
                 continue;
             }
 
-            const selectionMask = floodFillContiguousArea({
-                width: MASK_WIDTH,
-                height: MASK_HEIGHT,
-                startX: seedPoint.x,
-                startY: seedPoint.y,
-                barrierMask,
+            seedRecordIndexByRegionIndex.set(regionIndex, seedRecords.length);
+            seedRecords.push({ regionIndex, region, seedPoint });
+        }
+
+        if (allowPartial) {
+            const fillBarrierMask = buildRegionFillBarrierMask(barrierMask);
+            const usedRegionIds = new Set<string>();
+            const usedRegionColors = new Set<string>();
+            const allocateRegionColor = (preferredColor: string | null | undefined, componentIndex: number) => {
+                if (preferredColor && !usedRegionColors.has(preferredColor.toLowerCase())) {
+                    usedRegionColors.add(preferredColor.toLowerCase());
+                    return preferredColor;
+                }
+                for (let offset = 0; offset < 128; offset += 1) {
+                    const candidateColor = getGeneratedRegionColorCandidate(componentIndex + offset);
+                    const normalizedCandidate = candidateColor.toLowerCase();
+                    if (usedRegionColors.has(normalizedCandidate)) {
+                        continue;
+                    }
+                    usedRegionColors.add(normalizedCandidate);
+                    return candidateColor;
+                }
+                const fallbackColor = hslToHex((componentIndex * 97) % 360, 68, 52);
+                usedRegionColors.add(fallbackColor.toLowerCase());
+                return fallbackColor;
+            };
+            const seedRegionsByPixel = new Map<number, PainterRegion[]>();
+            for (const region of regions) {
+                if (!region.seed || isDiagnosticRegionId(region.id)) {
+                    continue;
+                }
+                const seedIndex = (region.seed.y * MASK_WIDTH) + region.seed.x;
+                const list = seedRegionsByPixel.get(seedIndex);
+                if (list) {
+                    list.push(region);
+                } else {
+                    seedRegionsByPixel.set(seedIndex, [region]);
+                }
+            }
+
+            const nextGeneratedRegions: PainterRegion[] = [];
+            const visited = new Uint8Array(fillBarrierMask.length);
+            const queue = new Uint32Array(fillBarrierMask.length);
+            const enqueueFillPixel = (index: number, currentTail: number) => {
+                if (visited[index] !== 0 || fillBarrierMask[index] !== 0) {
+                    return currentTail;
+                }
+                visited[index] = 1;
+                queue[currentTail] = index;
+                return currentTail + 1;
+            };
+
+            for (let startIndex = 0; startIndex < fillBarrierMask.length; startIndex += 1) {
+                if (fillBarrierMask[startIndex] !== 0 || visited[startIndex] !== 0) {
+                    continue;
+                }
+
+                let head = 0;
+                let tail = 0;
+                let pixelCount = 0;
+                let sumX = 0;
+                let sumY = 0;
+                let left = MASK_WIDTH - 1;
+                let right = 0;
+                let top = MASK_HEIGHT - 1;
+                let bottom = 0;
+                const seedRegionCandidates: PainterRegion[] = [];
+
+                visited[startIndex] = 1;
+                queue[tail] = startIndex;
+                tail += 1;
+
+                while (head < tail) {
+                    const index = queue[head];
+                    head += 1;
+                    const x = index % MASK_WIDTH;
+                    const y = (index / MASK_WIDTH) | 0;
+                    pixelCount += 1;
+                    sumX += x;
+                    sumY += y;
+                    left = Math.min(left, x);
+                    right = Math.max(right, x);
+                    top = Math.min(top, y);
+                    bottom = Math.max(bottom, y);
+
+                    const seedRegions = seedRegionsByPixel.get(index);
+                    if (seedRegions) {
+                        seedRegionCandidates.push(...seedRegions);
+                    }
+
+                    if (x > 0) {
+                        tail = enqueueFillPixel(index - 1, tail);
+                    }
+                    if (x < MASK_WIDTH - 1) {
+                        tail = enqueueFillPixel(index + 1, tail);
+                    }
+                    if (y > 0) {
+                        tail = enqueueFillPixel(index - MASK_WIDTH, tail);
+                    }
+                    if (y < MASK_HEIGHT - 1) {
+                        tail = enqueueFillPixel(index + MASK_WIDTH, tail);
+                    }
+                }
+
+                if (pixelCount < 160 || right - left + 1 < 6 || bottom - top + 1 < 6) {
+                    continue;
+                }
+
+                const componentIndex = nextGeneratedRegions.length;
+                const existingRegion = seedRegionCandidates.find((region) => !usedRegionIds.has(region.id));
+                const fallbackId = `city-region-${componentIndex + 1}`;
+                const id = existingRegion?.id ?? fallbackId;
+                usedRegionIds.add(id);
+                const region: PainterRegion = {
+                    id,
+                    name: existingRegion?.name ?? `区域 ${componentIndex + 1}`,
+                    color: allocateRegionColor(existingRegion?.color, componentIndex),
+                    seed: {
+                        x: Math.round(sumX / pixelCount),
+                        y: Math.round(sumY / pixelCount),
+                    },
+                    links: existingRegion?.links ?? [],
+                    acceptance: existingRegion?.acceptance ?? null,
+                };
+                nextGeneratedRegions.push(region);
+
+                const regionIndex = nextGeneratedRegions.length - 1;
+                for (let index = 0; index < tail; index += 1) {
+                    nextAssignments[queue[index]] = regionIndex;
+                }
+
+                generatedRegionCount += 1;
+                writtenPixelCount += pixelCount;
+                generationResults.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'generated',
+                    pixelCount,
+                    seed: region.seed,
+                    note: `由闭合红线自动填充，中心点 ${region.seed?.x ?? 0},${region.seed?.y ?? 0}。生成时会临时封住约 ${HAND_DRAWN_REGION_FILL_CLOSE_ITERATIONS + HAND_DRAWN_REGION_FILL_SEAL_ITERATIONS}px 的手绘小断口，可在左侧把名称改成城市名。`,
+                });
+            }
+
+            if (generatedRegionCount === 0) {
+                setLastRegionGenerationWorkflow('boundary');
+                setLastRegionGenerationResults(generationResults);
+                setStatusMessage('没有生成任何区域：没有找到可写入的闭合面。');
+                return;
+            }
+
+            assignmentsRef.current = nextAssignments;
+            skipNextAssignmentsRenderEffectRef.current = true;
+            skipNextGraphSyncEffectRef.current = true;
+            const autoPassageResult = buildAutoPassagesFromAssignments({
+                assignments: nextAssignments,
+                regions: nextGeneratedRegions,
+                existingPassages: [],
             });
+            setRegions(nextGeneratedRegions);
+            setSelectedRegionId(nextGeneratedRegions[0]?.id ?? selectedRegionId);
+            setPassages(autoPassageResult.passages);
+            setSelectedPassageId(autoPassageResult.passages[0]?.id ?? null);
+            setLastRegionGenerationWorkflow('boundary');
+            setLastRegionGenerationResults(generationResults);
+            renderAssignments(nextGeneratedRegions);
+            setShowMask(true);
+            setShowBarrier(true);
+            setMaskOpacity(0.58);
+            setShowPartitionPreviewOverlay(false);
+            setShowSeedStatusOverlay(false);
+            setShowSelectedOutline(false);
+            setMode(autoPassageResult.passages.length > 0 ? 'path' : 'paint');
+            markAssignmentsChanged(nextGeneratedRegions, { renderOutline: false });
+            const passageNote = autoPassageResult.detectedCount > 0
+                ? `已自动补全 ${autoPassageResult.detectedCount} 条通路，可直接选中通路设置移动代价。`
+                : '没有识别到相邻通路，可切到通路编辑后手动拖线。';
+            setStatusMessage(`已按红线/画布边缘生成 ${generatedRegionCount} 个区域，填充 ${writtenPixelCount.toLocaleString()} px。已临时封住约 ${HAND_DRAWN_REGION_FILL_CLOSE_ITERATIONS + HAND_DRAWN_REGION_FILL_SEAL_ITERATIONS}px 的手绘小断口，并把 ${HAND_DRAWN_REGION_FILL_EDGE_SEAL_DISTANCE}px 内靠边红线接到画布边界；仍没有接成分割线的碎线不会单独成区。${passageNote}`);
+            window.setTimeout(scrollSidebarToTop, 0);
+            return;
+        }
+
+        const partitionComponents = extractBoundaryPartitionComponents({
+            barrierMask,
+            width: MASK_WIDTH,
+            fillableMask: AUTO_MAP_REGION_FILLABLE_MASK,
+            seeds: seedRecords.map((record) => record.seedPoint),
+            minPixels: 48,
+        });
+        const partitionBySeedRecordIndex = new Map<number, typeof partitionComponents[number]>();
+        const connectedSeedNamesBySeedRecordIndex = new Map<number, string[]>();
+        for (const component of partitionComponents) {
+            if (component.seedIndexes.length === 1) {
+                partitionBySeedRecordIndex.set(component.seedIndexes[0], component);
+                continue;
+            }
+            if (component.seedIndexes.length > 1) {
+                const connectedNames = component.seedIndexes
+                    .map((seedIndex) => seedRecords[seedIndex]?.region.name)
+                    .filter((name): name is string => Boolean(name));
+                for (const seedIndex of component.seedIndexes) {
+                    connectedSeedNamesBySeedRecordIndex.set(seedIndex, connectedNames);
+                }
+            }
+        }
+
+        for (const { regionIndex, region, seedPoint } of seedRecords) {
+            const seedRecordIndex = seedRecordIndexByRegionIndex.get(regionIndex);
+            const partitionComponent = seedRecordIndex == null ? undefined : partitionBySeedRecordIndex.get(seedRecordIndex);
+            if (!partitionComponent) {
+                skippedRegionCount += 1;
+                const connectedSeedNames = seedRecordIndex == null ? null : connectedSeedNamesBySeedRecordIndex.get(seedRecordIndex);
+                const connectedNote = connectedSeedNames && connectedSeedNames.length > 1
+                    ? `当前边界没有把 ${connectedSeedNames.join('、')} 分割开；这条线仍能绕过去连通，已跳过。`
+                    : '没有独立边界分区包含这个 seed，已跳过。优先把边界线接到地图边缘/红色禁区/其它边界，或补成闭合区后重试。';
+                generationResults.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'skipped',
+                    pixelCount: 0,
+                    seed: seedPoint,
+                    note: connectedNote,
+                });
+                continue;
+            }
+
+            const rawSelectionMask = partitionComponent.mask;
+            const roughFallbackMaskBase = STATIC_BOOTSTRAP_SHAPE_MASKS.get(region.id) ?? REAL_MAP_VISIBLE_REGION_FALLBACK_MASKS.get(region.id) ?? null;
+            const roughFallbackMask = roughFallbackMaskBase
+                ? removeExcludedPixels(roughFallbackMaskBase, currentMapArtifactExclusionMask)
+                : null;
+            const regionClipMask = buildBoundaryRegionClipMask({
+                regionId: region.id,
+                seedPoint,
+                exclusionMask: currentMapArtifactExclusionMask,
+            });
+            const clippedSelectionMask = regionClipMask
+                ? removeExcludedPixels(
+                    intersectBinaryMasks(
+                        fillMaskInternalHoles({
+                            mask: rawSelectionMask,
+                            width: MASK_WIDTH,
+                            height: MASK_HEIGHT,
+                        }),
+                        regionClipMask,
+                    ),
+                    currentMapArtifactExclusionMask,
+                )
+                : rawSelectionMask;
+            const expectedPixelCount = Math.max(1, NORMAL_REGION_EXPECTED_PIXEL_COUNT_BY_ID.get(region.id) ?? 0);
+            const clippedPixelCount = countMaskPixels(clippedSelectionMask);
+            const shouldUseRoughFallback = Boolean(
+                roughFallbackMask
+                && countMaskPixels(roughFallbackMask) > 0
+                && (
+                    clippedPixelCount === 0
+                    || (clippedPixelCount / expectedPixelCount) < 0.58
+                )
+            );
+            const selectionMask = shouldUseRoughFallback ? roughFallbackMask! : clippedSelectionMask;
             const pixelCount = countMaskPixels(selectionMask);
-            if (!isMagicSelectionUsable(pixelCount, MASK_WIDTH * MASK_HEIGHT, MAX_MAGIC_FILL_RATIO)) {
-                leakedRegionCount += 1;
+            if (pixelCount === 0) {
+                skippedRegionCount += 1;
+                generationResults.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'skipped',
+                    pixelCount: 0,
+                    seed: seedPoint,
+                    note: '当前边界分区落不到可编辑区域带内，已跳过。请补边或微调 seed 后重试。',
+                });
+                continue;
+            }
+            const printedUiOverlapPixels = countMaskOverlapPixels(selectionMask, AUTO_MAP_PRINTED_UI_EXCLUSION_MASK);
+            if (printedUiOverlapPixels > 0 && (printedUiOverlapPixels >= 64 || (printedUiOverlapPixels / Math.max(1, pixelCount)) > 0.01)) {
+                skippedRegionCount += 1;
+                printedUiRejectedPixelCount += printedUiOverlapPixels;
+                generationResults.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'leaked',
+                    pixelCount,
+                    seed: seedPoint,
+                    note: `候选分区包含印刷 UI 禁区 ${printedUiOverlapPixels.toLocaleString()} px，已拒绝写入。请只围地图区域，不要把轮盘、说明框或牌框圈进去。`,
+                });
                 continue;
             }
 
             let regionWrittenPixels = 0;
             for (let index = 0; index < selectionMask.length; index += 1) {
                 if (selectionMask[index] === 0) {
+                    continue;
+                }
+                if (currentMapArtifactExclusionMask[index] !== 0) {
+                    printedUiRejectedPixelCount += 1;
                     continue;
                 }
                 if (nextAssignments[index] !== EMPTY_REGION) {
@@ -4316,16 +13370,40 @@ const QidahenRegionMaskTool: React.FC = () => {
 
             if (regionWrittenPixels === 0) {
                 skippedRegionCount += 1;
+                generationResults.push({
+                    regionId: region.id,
+                    regionName: region.name,
+                    status: 'overlap-only',
+                    pixelCount,
+                    seed: seedPoint,
+                    note: '候选区域被前面区域全部占用；可调整种子或单独处理这块。',
+                });
                 continue;
             }
 
             generatedRegionCount += 1;
             writtenPixelCount += regionWrittenPixels;
             nextSeeds.set(region.id, seedPoint);
+            generationResults.push({
+                regionId: region.id,
+                regionName: region.name,
+                status: 'generated',
+                pixelCount: regionWrittenPixels,
+                seed: seedPoint,
+                note: shouldUseRoughFallback
+                    ? `已写入 ${regionWrittenPixels.toLocaleString()} px；当前边界分区过小，已回退到可见粗轮廓，先给你一版可继续手修的正常大轮廓。`
+                    : `已写入 ${regionWrittenPixels.toLocaleString()} px。`,
+            });
         }
 
         if (generatedRegionCount === 0) {
-            setStatusMessage('没有生成任何区域：边界可能还没闭合，或当前 seed 都落在边界线上。');
+            setLastRegionGenerationWorkflow('boundary');
+            setLastRegionGenerationResults(generationResults);
+            setStatusMessage(
+                printedUiRejectedPixelCount > 0
+                    ? `没有生成任何区域：候选分区包含印刷 UI 禁区 ${printedUiRejectedPixelCount.toLocaleString()} px，已拒绝写入。`
+                    : '没有生成任何区域：边界线还没有把任何正式 seed 独立分割出来，或当前 seed 都落在边界线上。',
+            );
             return;
         }
 
@@ -4334,24 +13412,90 @@ const QidahenRegionMaskTool: React.FC = () => {
             const nextSeed = nextSeeds.get(region.id);
             return nextSeed ? { ...region, seed: nextSeed } : region;
         }));
+        setLastRegionGenerationWorkflow('boundary');
+        setLastRegionGenerationResults(generationResults);
         renderAssignments();
+        setShowMask(true);
+        setShowBarrier(true);
+        setShowPartitionPreviewOverlay(true);
+        setShowSeedStatusOverlay(true);
+        setShowSelectedOutline(true);
+        setMode('paint');
         markAssignmentsChanged();
-        const leakNote = leakedRegionCount > 0 ? `；${leakedRegionCount} 个区域疑似漏边过大已跳过` : '';
         const skippedNote = skippedRegionCount > 0 ? `；${skippedRegionCount} 个区域未生成` : '';
         const overlapNote = overlapPixelCount > 0 ? `；重叠 ${overlapPixelCount.toLocaleString()} px，优先保留先生成区域` : '';
-        setStatusMessage(`已按当前边界生成初始区域：${generatedRegionCount} 个，写入 ${writtenPixelCount.toLocaleString()} px${leakNote}${skippedNote}${overlapNote}。`);
-    }, [markAssignmentsChanged, regions, renderAssignments]);
+        const printedUiRejectedNote = printedUiRejectedPixelCount > 0 ? `；拒绝 UI 禁区 ${printedUiRejectedPixelCount.toLocaleString()} px` : '';
+        setStatusMessage(`${allowPartial ? '已调试生成当前独立分区' : '已按当前边界生成初始区域（正常模式）'}：${generatedRegionCount} 个，写入 ${writtenPixelCount.toLocaleString()} px${skippedNote}${overlapNote}${printedUiRejectedNote}。本次按边界线分割全图；未被边界真正隔开的 seed 会直接跳过。`);
+    }, [
+        barrierPixelCount,
+        boundaryClosureDiagnostics,
+        boundaryDraftPixelCount,
+        buildSeedPartitionDiagnosticsForBoundaryMask,
+        currentMapArtifactExclusionMask,
+        markAssignmentsChanged,
+        regions,
+        renderAssignments,
+        scrollSidebarToTop,
+        selectedRegionId,
+        simplifiedBoundaryWorkflow,
+        unexplainedBoundaryOpenDiagnostics,
+    ]);
 
     const updatePassageBoundaryType = (edgeId: string, boundaryType: PassageBoundaryType) => {
         setPassages((current) =>
             current.map((passage) => (
-                passage.id === edgeId ? { ...passage, boundaryType } : passage
+                passage.id === edgeId
+                    ? {
+                        ...passage,
+                        boundaryType,
+                        travelCost: passage.travelCost === getBoundaryTypeMeta(passage.boundaryType).travelCost
+                            ? getBoundaryTypeMeta(boundaryType).travelCost
+                            : passage.travelCost,
+                    }
+                    : passage
             )),
         );
+        setSelectedPassageId(edgeId);
+        const meta = getBoundaryTypeMeta(boundaryType);
+        setStatusMessage(`已把当前通路设为 ${meta.label}：移动代价 ${meta.travelCost}，${meta.note}。`);
     };
 
+    const updatePassageTravelCost = (edgeId: string, travelCost: number) => {
+        const nextTravelCost = clampPassageTravelCost(travelCost);
+        setPassages((current) =>
+            current.map((passage) => (
+                passage.id === edgeId ? { ...passage, travelCost: nextTravelCost } : passage
+            )),
+        );
+        setSelectedPassageId(edgeId);
+        setStatusMessage(`已把当前通路移动代价设为 ${nextTravelCost}。`);
+    };
+
+    const selectRegionAtCanvasPoint = React.useCallback((point: MaskPoint) => {
+        const regionIndex = assignmentsRef.current[(point.y * MASK_WIDTH) + point.x];
+        if (regionIndex < 0) {
+            setStatusMessage(`这里还没有区域填色：${point.x}, ${point.y}。请先生成区域，或补边后重新生成。`);
+            return false;
+        }
+        const region = regions[regionIndex];
+        if (!region || isDiagnosticRegionId(region.id)) {
+            setStatusMessage(`这里不是可保存的正式区域：${point.x}, ${point.y}。`);
+            return false;
+        }
+        setSelectedRegionId(region.id);
+        setShowSelectedOutline(true);
+        setStatusMessage(`已选中 ${region.name}，地图上的金色轮廓就是当前可点击区域边界。`);
+        return true;
+    }, [regions]);
+
     const removePassage = (edgeId: string) => {
-        setPassages((current) => current.filter((passage) => passage.id !== edgeId));
+        setPassages((current) => {
+            const next = current.filter((passage) => passage.id !== edgeId);
+            if (selectedPassageId === edgeId) {
+                setSelectedPassageId(next[0]?.id ?? null);
+            }
+            return next;
+        });
     };
 
     const upsertPassage = (from: string, to: string) => {
@@ -4364,10 +13508,29 @@ const QidahenRegionMaskTool: React.FC = () => {
                 ? current
                 : [...current, { id, from, to, boundaryType: 'plain' }]
         ));
+        setSelectedPassageId(id);
         const fromName = regions.find((region) => region.id === from)?.name ?? from;
         const toName = regions.find((region) => region.id === to)?.name ?? to;
-        setStatusMessage(`已连接 ${fromName} ↔ ${toName}，默认边界类型为平原，可在左侧修改。`);
+        setStatusMessage(`已连接 ${fromName} ↔ ${toName}，已选中这条通路，可直接设置移动代价。`);
     };
+
+    const autoDetectPassagesFromRegions = React.useCallback(() => {
+        const result = buildAutoPassagesFromAssignments({
+            assignments: assignmentsRef.current,
+            regions,
+            existingPassages: passages,
+        });
+        if (result.detectedCount === 0) {
+            setStatusMessage('未识别到可补全通路：请先从边界生成至少两个相邻区域，或在路径模式下手动拖线。');
+            return;
+        }
+        setPassages(result.passages);
+        setSelectedPassageId(result.passages[0]?.id ?? null);
+        setMode('path');
+        const keepCount = result.detectedCount - result.addedCount;
+        const keepNote = keepCount > 0 ? `，保留既有 ${keepCount} 条类型设置` : '';
+        setStatusMessage(`已按当前区域 mask 补全邻近通行路径：识别 ${result.detectedCount} 条，新增 ${result.addedCount} 条${keepNote}。请逐条设置平原、山脉、河流、海岸或城/长城边界。`);
+    }, [passages, regions]);
 
     const mapClientPointToSvg = (clientX: number, clientY: number): MaskPoint | null => {
         const svg = graphSvgRef.current;
@@ -4399,75 +13562,286 @@ const QidahenRegionMaskTool: React.FC = () => {
         return nearestDistance <= 34 ? nearest : null;
     };
 
-    const startPathDrag = (nodeId: string) => {
-        const node = graphNodeMap.get(nodeId);
-        if (!node) {
-            return;
-        }
-        setPathDragStartId(nodeId);
-        setPathDraftPoint({ x: node.x, y: node.y });
-        setStatusMessage('从 ' + node.name + ' 拖到另一个区域中心，建立通行路径。');
+    const preparePathDragFromNode = (node: RegionGraphNode, pointerId: number) => {
+        pathDragSessionRef.current = {
+            nodeId: node.id,
+            pointerId,
+            start: { x: node.x, y: node.y },
+            activated: false,
+        };
+        setPathDragStartId(null);
+        setPathDraftPoint(null);
+        setSelectedRegionId(node.id);
+        setShowSelectedOutline(true);
+        setStatusMessage(`已选中 ${node.name}。改名在左侧当前区域；拖动超过 ${PATH_DRAG_ACTIVATION_DISTANCE}px 才会新建通路。`);
     };
 
     const movePathDrag = (event: React.PointerEvent<SVGSVGElement>) => {
-        if (!pathDragStartId) {
+        const dragSession = pathDragSessionRef.current;
+        if (!dragSession && !pathDragStartId) {
             return;
         }
         const point = mapClientPointToSvg(event.clientX, event.clientY);
         if (point) {
+            if (dragSession && !dragSession.activated) {
+                const moved = Math.hypot(point.x - dragSession.start.x, point.y - dragSession.start.y);
+                if (moved < PATH_DRAG_ACTIVATION_DISTANCE) {
+                    return;
+                }
+                dragSession.activated = true;
+                setPathDragStartId(dragSession.nodeId);
+                const node = graphNodeMap.get(dragSession.nodeId);
+                if (node) {
+                    setStatusMessage('从 ' + node.name + ' 拖到另一个区域中心，建立通行路径。');
+                }
+            }
             setPathDraftPoint(point);
         }
     };
 
     const finishPathDrag = (event: React.PointerEvent<SVGSVGElement>) => {
-        if (!pathDragStartId) {
+        const dragSession = pathDragSessionRef.current;
+        const startId = dragSession?.activated ? dragSession.nodeId : pathDragStartId;
+        if (!startId) {
+            pathDragSessionRef.current = null;
             return;
         }
         const point = mapClientPointToSvg(event.clientX, event.clientY);
         if (point) {
-            const target = findNearestGraphNode(point, pathDragStartId);
+            const target = findNearestGraphNode(point, startId);
             if (target) {
-                upsertPassage(pathDragStartId, target.id);
+                upsertPassage(startId, target.id);
             }
         }
+        pathDragSessionRef.current = null;
         setPathDragStartId(null);
         setPathDraftPoint(null);
     };
 
-    const saveRegionData = async () => {
+    const resetCurrentBoundaryWorkspace = async () => {
+        const emptyAssignments = createRegionAssignments(MASK_WIDTH, MASK_HEIGHT);
+        const emptyBoundaryMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+        const nextRegions = createDefaultRegions();
+
+        assignmentsRef.current = emptyAssignments;
+        boundaryDraftMaskRef.current = null;
+        barrierMaskRef.current = null;
+        colorLineBarrierMaskRef.current = null;
+        colorBarrierMaskRef.current = null;
+        rawColorBarrierMaskRef.current = null;
+        rawHeuristicBarrierMaskRef.current = null;
+        rawBarrierMaskRef.current = null;
+        heuristicBarrierMaskRef.current = null;
+        manualBarrierAddRef.current.fill(0);
+        manualBarrierRemoveRef.current.fill(0);
+        clearBarrierHistory();
+        setRegions(nextRegions);
+        setSelectedRegionId(nextRegions[0]?.id ?? 'jinzhou');
+        setGraphNodes([]);
+        setPassages([]);
+        setLastRegionGenerationResults([]);
+        setLastRegionGenerationWorkflow(null);
+        setLastBoundaryExtractionStats(null);
+        setBoundaryRepairPreview(null);
+        setBoundarySourceReferenceDataUrl(null);
+        setBoundarySourceReferenceImage(null);
+        setShowBoundarySourceReference(false);
+        setShowBarrier(false);
+        setShowMask(false);
+        setShowSeedStatusOverlay(false);
+        setShowPartitionPreviewOverlay(false);
+        setShowSelectedOutline(false);
+        setManualBlankBoundaryBase(true);
+        setPaintedBoundaryOnly(true);
+        setMode('barrier');
+        setBarrierEditMode('brush');
+        setBarrierHintOperation('add');
+        setBoundaryDraftPixelCount(0);
+        setBarrierPixelCount(0);
+        setManualBarrierAddCount(0);
+        setManualBarrierRemoveCount(0);
+        setAssignmentsVersion((current) => current + 1);
+        setBarrierMaskVersion((current) => current + 1);
         renderAssignments();
-        const exportableRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
-        if (exportableRegions.length === 0) {
-            setStatusMessage('保存失败：当前没有可导出的正式区域。');
+        renderBarrierOverlay();
+
+        if (!isIsolatedWorkspace) {
+            setPersistedWorkspaceState('empty');
+            setStatusMessage('已重置当前页面。正式数据未落盘清空；要避免回读旧稿，请在临时 workspace 中操作。');
             return;
         }
+
+        const payload = {
+            maskPngDataUrl: buildMaskDataUrlFromAssignments({
+                assignments: emptyAssignments,
+                regions: nextRegions,
+            }),
+            boundaryMaskPngDataUrl: buildMaskDataUrl(emptyBoundaryMask),
+            barrierHints: {
+                addPngDataUrl: buildMaskDataUrl(emptyBoundaryMask),
+                removePngDataUrl: buildMaskDataUrl(emptyBoundaryMask),
+            },
+            authoritativeGuides: {
+                maskPngDataUrl: buildMaskDataUrlFromAssignments({
+                    assignments: emptyAssignments,
+                    regions: nextRegions,
+                }),
+                regionIds: [],
+            },
+            boundarySourceReferencePngDataUrl: null,
+            regions: buildRegionPayload({
+                regions: nextRegions,
+                passages: [],
+                boundaryPresets,
+                boundaryTolerance,
+                boundaryExpansion,
+                regionColorTolerance,
+                paintedBoundaryOnly,
+            }),
+            graph: buildGraphPayload(nextRegions, [], []),
+        };
+        const response = await fetch(SAVE_ENDPOINT + workspaceQuery, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        setPersistedWorkspaceState('empty');
+        setStatusMessage('已重置当前工作区：边界、补边/擦除、区域和路径都已清空，刷新不会再自动回读旧红线。');
+    };
+
+    const postWorkspaceSavePayload = async (payload: Record<string, unknown>) => {
+        const response = await fetch(SAVE_ENDPOINT + workspaceQuery, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+            throw new Error(await response.text() || response.statusText);
+        }
+        if (currentWorkspaceKey) {
+            window.localStorage.setItem(LAST_WORKSPACE_STORAGE_KEY, currentWorkspaceKey);
+        }
+        return response.json() as Promise<{ outputDir?: unknown; files?: string[]; internalFiles?: string[] }>;
+    };
+
+    const getExportableWorkspaceParts = () => {
+        const exportableRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
         const exportableRegionIdSet = new Set(exportableRegions.map((region) => region.id));
         const exportablePassages = passages.filter((passage) => (
             exportableRegionIdSet.has(passage.from) && exportableRegionIdSet.has(passage.to)
         ));
         const exportableGraphNodes = graphNodes.filter((node) => exportableRegionIdSet.has(node.id));
         const exportableAuthoritativeGuideRegionIds = authoritativeGuideRegionIds.filter((regionId) => exportableRegionIdSet.has(regionId));
-        const exportedAssignments = buildExportAssignments({
-            assignments: assignmentsRef.current,
-            regions,
+        return {
             exportableRegions,
-        });
+            exportablePassages,
+            exportableGraphNodes,
+            exportableAuthoritativeGuideRegionIds,
+        };
+    };
+
+    const saveBoundaryOnly = async () => {
+        const currentBoundaryMask = barrierMaskRef.current ?? boundaryDraftMaskRef.current;
+        if (!currentBoundaryMask || countMaskPixels(currentBoundaryMask) === 0) {
+            setStatusMessage('保存边界失败：当前没有最终红线/障碍。请先初始化或手绘边界。');
+            return;
+        }
+        const {
+            exportableRegions,
+            exportablePassages,
+            exportableGraphNodes,
+            exportableAuthoritativeGuideRegionIds,
+        } = getExportableWorkspaceParts();
+        const bakedBoundaryMask = currentBoundaryMask.slice();
+        const emptyBoundaryMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
         const authoritativeAssignments = buildSubsetAssignments({
             assignments: assignmentsRef.current,
             regions,
             includedRegionIds: new Set(exportableAuthoritativeGuideRegionIds),
         });
-        const hiddenDiagnosticRegions = regions.length - exportableRegions.length;
         const payload = {
+            saveScope: 'boundary',
+            maskPngDataUrl: buildMaskDataUrlFromAssignments({
+                assignments: buildExportAssignments({ assignments: assignmentsRef.current, regions, exportableRegions }),
+                regions: exportableRegions,
+            }),
+            boundaryMaskPngDataUrl: buildMaskDataUrl(bakedBoundaryMask),
+            barrierHints: {
+                addPngDataUrl: buildMaskDataUrl(emptyBoundaryMask),
+                removePngDataUrl: buildMaskDataUrl(emptyBoundaryMask),
+            },
+            authoritativeGuides: {
+                maskPngDataUrl: buildMaskDataUrlFromAssignments({
+                    assignments: authoritativeAssignments,
+                    regions,
+                }),
+                regionIds: exportableAuthoritativeGuideRegionIds,
+            },
+            boundarySourceReferencePngDataUrl: boundarySourceReferenceDataUrl,
+            regions: buildRegionPayload({
+                regions: exportableRegions,
+                passages: exportablePassages,
+                boundaryPresets,
+                boundaryTolerance,
+                boundaryExpansion,
+                regionColorTolerance,
+                paintedBoundaryOnly,
+            }),
+            graph: buildGraphPayload(exportableRegions, exportablePassages, exportableGraphNodes),
+        };
+        try {
+            const result = await postWorkspaceSavePayload(payload);
+            boundaryDraftMaskRef.current = bakedBoundaryMask;
+            manualBarrierAddRef.current.fill(0);
+            manualBarrierRemoveRef.current.fill(0);
+            clearBarrierHistory();
+            setManualBlankBoundaryBase(false);
+            setPaintedBoundaryOnly(true);
+            rebuildBarrierMask();
+            const nextOutputDir = typeof result.outputDir === 'string' ? result.outputDir : dataOutputDir;
+            setDataOutputDir(nextOutputDir);
+            setStatusMessage(`已单独保存边界到 ${nextOutputDir}：region-boundary-mask.png；手工补边/擦除已烘焙进同一张最终红线。`);
+        } catch (error: unknown) {
+            setStatusMessage(`保存边界失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const saveRegionsOnly = async () => {
+        renderAssignments();
+        const {
+            exportableRegions,
+            exportablePassages,
+            exportableAuthoritativeGuideRegionIds,
+        } = getExportableWorkspaceParts();
+        const exportedAssignments = buildExportAssignments({
+            assignments: assignmentsRef.current,
+            regions,
+            exportableRegions,
+        });
+        let exportedAssignedPixels = 0;
+        for (const assignment of exportedAssignments) {
+            if (assignment >= 0) {
+                exportedAssignedPixels += 1;
+            }
+        }
+        if (exportedAssignedPixels === 0) {
+            setStatusMessage('保存区域失败：当前还没有彩色区域。请先点“生成区域”。');
+            return;
+        }
+        const authoritativeAssignments = buildSubsetAssignments({
+            assignments: assignmentsRef.current,
+            regions,
+            includedRegionIds: new Set(exportableAuthoritativeGuideRegionIds),
+        });
+        const payload = {
+            saveScope: 'regions',
             maskPngDataUrl: buildMaskDataUrlFromAssignments({
                 assignments: exportedAssignments,
                 regions: exportableRegions,
             }),
-            boundaryMaskPngDataUrl: buildMaskDataUrl(boundaryDraftMaskRef.current ?? new Uint8Array(MASK_WIDTH * MASK_HEIGHT)),
-            barrierHints: {
-                addPngDataUrl: buildMaskDataUrl(manualBarrierAddRef.current),
-                removePngDataUrl: buildMaskDataUrl(manualBarrierRemoveRef.current),
-            },
             authoritativeGuides: {
                 maskPngDataUrl: buildMaskDataUrlFromAssignments({
                     assignments: authoritativeAssignments,
@@ -4484,10 +13858,151 @@ const QidahenRegionMaskTool: React.FC = () => {
                 regionColorTolerance,
                 paintedBoundaryOnly,
             }),
+        };
+        try {
+            const result = await postWorkspaceSavePayload(payload);
+            const nextOutputDir = typeof result.outputDir === 'string' ? result.outputDir : dataOutputDir;
+            setDataOutputDir(nextOutputDir);
+            setStatusMessage(`已单独保存区域到 ${nextOutputDir}：region-mask.png / region-mask-regions.json；边界和连线未改。`);
+        } catch (error: unknown) {
+            setStatusMessage(`保存区域失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const saveGraphOnly = async () => {
+        const {
+            exportableRegions,
+            exportablePassages,
+            exportableGraphNodes,
+        } = getExportableWorkspaceParts();
+        const payload = {
+            saveScope: 'graph',
+            graph: buildGraphPayload(exportableRegions, exportablePassages, exportableGraphNodes),
+        };
+        try {
+            const result = await postWorkspaceSavePayload(payload);
+            const nextOutputDir = typeof result.outputDir === 'string' ? result.outputDir : dataOutputDir;
+            setDataOutputDir(nextOutputDir);
+            setStatusMessage(`已单独保存连线到 ${nextOutputDir}：region-graph.json；边界和区域未改。`);
+        } catch (error: unknown) {
+            setStatusMessage(`保存连线失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const saveRegionData = async () => {
+        renderAssignments();
+        const exportableRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+        if (exportableRegions.length === 0) {
+            setStatusMessage('保存失败：当前没有可导出的正式区域。');
+            return;
+        }
+        const exportableRegionIdSet = new Set(exportableRegions.map((region) => region.id));
+        const exportablePassages = passages.filter((passage) => (
+            exportableRegionIdSet.has(passage.from) && exportableRegionIdSet.has(passage.to)
+        ));
+        const exportableGraphNodes = graphNodes.filter((node) => exportableRegionIdSet.has(node.id));
+        const exportableAuthoritativeGuideRegionIds = authoritativeGuideRegionIds.filter((regionId) => exportableRegionIdSet.has(regionId));
+        const currentBoundaryMask = barrierMaskRef.current;
+        const shouldBakeManualBlankBoundaryOnSave = manualBlankBoundaryBase
+            && !boundaryDraftMaskRef.current
+            && currentBoundaryMask != null
+            && countMaskPixels(currentBoundaryMask) > 0;
+        const persistedBoundaryMask = shouldBakeManualBlankBoundaryOnSave
+            ? currentBoundaryMask
+            : (boundaryDraftMaskRef.current ?? new Uint8Array(MASK_WIDTH * MASK_HEIGHT));
+        const persistedBarrierAddMask = shouldBakeManualBlankBoundaryOnSave
+            ? new Uint8Array(MASK_WIDTH * MASK_HEIGHT)
+            : manualBarrierAddRef.current;
+        const persistedBarrierRemoveMask = shouldBakeManualBlankBoundaryOnSave
+            ? new Uint8Array(MASK_WIDTH * MASK_HEIGHT)
+            : manualBarrierRemoveRef.current;
+        const exportedAssignments = buildExportAssignments({
+            assignments: assignmentsRef.current,
+            regions,
+            exportableRegions,
+        });
+        const exportedRegionPixelCounts = new Array(exportableRegions.length).fill(0) as number[];
+        let exportedAssignedPixels = 0;
+        for (const assignment of exportedAssignments) {
+            if (assignment >= 0 && assignment < exportedRegionPixelCounts.length) {
+                exportedRegionPixelCounts[assignment] += 1;
+                exportedAssignedPixels += 1;
+            }
+        }
+        if (!isIsolatedWorkspace && exportedAssignedPixels > 0 && boundaryQualityReport.normality.state !== 'accepted') {
+            setStatusMessage(`保存失败：正式工作区已有区域像素，但正常成果状态是 ${boundaryQualityReport.normality.state}。先导出验收包逐区看图，并把 5/5 区域验收为正常成果后，才能写入正式七大恨数据。临时工作区仍可保存进度。`);
+            return;
+        }
+        const missingExportedRegionNames = exportableRegions
+            .filter((_, regionIndex) => exportedRegionPixelCounts[regionIndex] === 0)
+            .map((region) => region.name);
+        const autoDerivedBoundaryMask = exportedAssignedPixels > 0
+            && countMaskPixels(persistedBoundaryMask) === 0
+            && countMaskPixels(persistedBarrierAddMask) === 0
+            ? buildBoundaryMaskFromRegionAssignments({
+                assignments: exportedAssignments,
+                regionIndexes: exportableRegions.map((_, regionIndex) => regionIndex),
+                exclusionMask: currentMapArtifactExclusionMask,
+                regionSeedByIndex: new Map(exportableRegions.map((region, regionIndex) => [regionIndex, region.seed]).filter((entry): entry is [number, MaskPoint] => entry[1] != null)),
+                smoothRegionFillIterations: 3,
+            })
+            : null;
+        const finalPersistedBoundaryMask = autoDerivedBoundaryMask && countMaskPixels(autoDerivedBoundaryMask) > 0
+            ? autoDerivedBoundaryMask
+            : persistedBoundaryMask;
+        const autoDerivedBoundaryOnSave = finalPersistedBoundaryMask !== persistedBoundaryMask;
+        const printedUiAssignedPixels = countAssignmentPixelsInMask(exportedAssignments, currentMapArtifactExclusionMask);
+        if (!isIsolatedWorkspace && printedUiAssignedPixels > 0) {
+            setStatusMessage(`保存失败：正式 mask 包含 UI/装饰禁区 ${printedUiAssignedPixels.toLocaleString()} px。请清掉轮盘、说明框、牌框、底部条、红色箭头、数字牌、锚点和其它非地图边界装饰后再保存。`);
+            return;
+        }
+        const printedUiBoundaryPixels = countMaskOverlapPixels(finalPersistedBoundaryMask, currentMapArtifactExclusionMask)
+            + countMaskOverlapPixels(persistedBarrierAddMask, currentMapArtifactExclusionMask);
+        if (!isIsolatedWorkspace && printedUiBoundaryPixels > 0) {
+            setStatusMessage(`保存失败：边界图包含 UI/装饰禁区 ${printedUiBoundaryPixels.toLocaleString()} px。请清掉轮盘、说明框、牌框、底部条、红色箭头、数字牌、锚点和其它非地图边界装饰；这些不是地图区域边界。`);
+            return;
+        }
+        if (exportedAssignedPixels === 0 && countMaskPixels(finalPersistedBoundaryMask) === 0 && countMaskPixels(persistedBarrierAddMask) === 0) {
+            setStatusMessage('保存失败：当前既没有边界图，也没有可导出的正式区域。请先导入/手绘边界图。');
+            return;
+        }
+        const authoritativeAssignments = buildSubsetAssignments({
+            assignments: assignmentsRef.current,
+            regions,
+            includedRegionIds: new Set(exportableAuthoritativeGuideRegionIds),
+        });
+        const hiddenDiagnosticRegions = regions.length - exportableRegions.length;
+        const payload = {
+            maskPngDataUrl: buildMaskDataUrlFromAssignments({
+                assignments: exportedAssignments,
+                regions: exportableRegions,
+            }),
+            boundaryMaskPngDataUrl: buildMaskDataUrl(finalPersistedBoundaryMask),
+            barrierHints: {
+                addPngDataUrl: buildMaskDataUrl(persistedBarrierAddMask),
+                removePngDataUrl: buildMaskDataUrl(persistedBarrierRemoveMask),
+            },
+            authoritativeGuides: {
+                maskPngDataUrl: buildMaskDataUrlFromAssignments({
+                    assignments: authoritativeAssignments,
+                    regions,
+                }),
+                regionIds: exportableAuthoritativeGuideRegionIds,
+            },
+            boundarySourceReferencePngDataUrl: boundarySourceReferenceDataUrl,
+            regions: buildRegionPayload({
+                regions: exportableRegions,
+                passages: exportablePassages,
+                boundaryPresets,
+                boundaryTolerance,
+                boundaryExpansion,
+                regionColorTolerance,
+                paintedBoundaryOnly,
+            }),
             graph: buildGraphPayload(exportableRegions, exportablePassages, exportableGraphNodes),
         };
 
-        const response = await fetch(SAVE_ENDPOINT, {
+        const response = await fetch(SAVE_ENDPOINT + workspaceQuery, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -4498,10 +14013,22 @@ const QidahenRegionMaskTool: React.FC = () => {
             setStatusMessage('保存失败：' + (detail || response.statusText));
             return;
         }
-        const result = await response.json() as { files?: string[]; internalFiles?: string[] };
+        const result = await response.json() as { outputDir?: unknown; files?: string[]; internalFiles?: string[] };
         const hiddenSuffix = (result.internalFiles?.length ?? 0) > 0 ? '（含边界修正/显式 truth 内部文件）' : '';
         const diagnosticSuffix = hiddenDiagnosticRegions > 0 ? `；已自动忽略 ${hiddenDiagnosticRegions} 个诊断临时区域` : '';
-        setStatusMessage('已保存到 ' + DATA_OUTPUT_DIR + '：' + (result.files?.join(' / ') ?? 'region-mask.png / region-mask-regions.json / region-graph.json') + hiddenSuffix + diagnosticSuffix);
+        const bakedBlankBoundarySuffix = shouldBakeManualBlankBoundaryOnSave ? '；空白手绘边界已直接固化为边界图' : '';
+        const autoDerivedBoundarySuffix = autoDerivedBoundaryOnSave ? '；已按当前区域粗稿自动反推出初始闭合边界图' : '';
+        const isolatedArtifactWarningSuffix = isIsolatedWorkspace && (printedUiAssignedPixels > 0 || printedUiBoundaryPixels > 0)
+            ? `；临时工作区仍保留 UI/装饰禁区：边界 ${printedUiBoundaryPixels.toLocaleString()} px / mask ${printedUiAssignedPixels.toLocaleString()} px，仅用于继续修边，不可当正式成果`
+            : '';
+        const progressSuffix = exportedAssignedPixels === 0
+            ? '；仅保存边界工作区，尚未生成正式区域'
+            : missingExportedRegionNames.length > 0
+                ? `；仍有 ${missingExportedRegionNames.length} 个区域未生成：${missingExportedRegionNames.slice(0, 4).join('、')}${missingExportedRegionNames.length > 4 ? '等' : ''}`
+                : '；正式区域已全部生成';
+        const nextOutputDir = typeof result.outputDir === 'string' ? result.outputDir : dataOutputDir;
+        setDataOutputDir(nextOutputDir);
+        setStatusMessage('已保存工作区到 ' + nextOutputDir + '：' + (result.files?.join(' / ') ?? 'region-mask.png / region-mask-regions.json / region-graph.json') + hiddenSuffix + diagnosticSuffix + bakedBlankBoundarySuffix + autoDerivedBoundarySuffix + isolatedArtifactWarningSuffix + progressSuffix);
     };
 
     const importMask = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -4516,7 +14043,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = MASK_WIDTH;
             tempCanvas.height = MASK_HEIGHT;
-            const tempContext = tempCanvas.getContext('2d');
+            const tempContext = tempCanvas.getContext('2d', { willReadFrequently: true });
             if (!tempContext) {
                 URL.revokeObjectURL(objectUrl);
                 return;
@@ -4555,6 +14082,573 @@ const QidahenRegionMaskTool: React.FC = () => {
     };
     const draggingNode = pathDragStartId ? graphNodeMap.get(pathDragStartId) : null;
 
+    if (usePrimaryMapEditor) {
+        return (
+            <div className="h-screen overflow-hidden bg-stone-950 text-stone-100">
+                <div className="mx-auto flex h-screen max-w-[1880px]">
+                    <aside className="flex h-screen w-[392px] shrink-0 flex-col border-r border-stone-800 bg-stone-900/92">
+                        <div className="shrink-0 border-b border-stone-800 px-5 py-4">
+                            <Link to="/" className="text-xs font-bold uppercase tracking-[0.2em] text-stone-400 transition hover:text-amber-200">
+                                返回首页
+                            </Link>
+                            <h1 className="mt-3 text-2xl font-black text-amber-100">七大恨地图编辑器</h1>
+                            <p className="mt-2 text-sm leading-6 text-stone-400">
+                                自动读取上次工作区。直接在地图上画边界、生成区域、点通路改移动代价。
+                            </p>
+                            <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="font-black uppercase tracking-[0.16em] text-stone-500">当前工作区</span>
+                                    <span className={isIsolatedWorkspace ? 'rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-black text-cyan-100' : 'rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-black text-amber-100'}>
+                                        {isIsolatedWorkspace ? '临时隔离工作区' : '正式工作区'}
+                                    </span>
+                                </div>
+                                <div className="mt-2 break-all font-mono text-[11px] text-stone-300">{dataOutputDir}</div>
+                            </div>
+                        </div>
+
+                        <div ref={sidebarScrollRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
+                            <section data-testid="qidahen-boundary-workflow-panel" className="space-y-3 rounded-xl border border-cyan-900/60 bg-cyan-950/20 p-3">
+                                <div className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">边界</div>
+                                <button
+                                    type="button"
+                                    onClick={() => void loadRealMapColorLineDraft()}
+                                    data-testid="qidahen-initialize-red-boundary-lines"
+                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-rose-300 bg-rose-500/18 px-3 text-sm font-black text-rose-50 transition hover:bg-rose-500/25"
+                                >
+                                    <WandSparkles size={16} />
+                                    初始化红线
+                                </button>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMode('barrier');
+                                            setBarrierEditMode('brush');
+                                            setBarrierHintOperation('add');
+                                            setShowBarrier(true);
+                                            if (!boundaryDraftMaskRef.current) {
+                                                setManualBlankBoundaryBase(true);
+                                                setPaintedBoundaryOnly(true);
+                                            }
+                                        }}
+                                        data-testid="qidahen-enter-boundary-brush"
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'add' ? 'border-rose-300 bg-rose-500/15 text-rose-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
+                                    >
+                                        <Pencil size={14} />
+                                        画边界
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMode('barrier');
+                                            setBarrierEditMode('brush');
+                                            setBarrierHintOperation('subtract');
+                                            setShowBarrier(true);
+                                            if (!boundaryDraftMaskRef.current) {
+                                                setManualBlankBoundaryBase(true);
+                                                setPaintedBoundaryOnly(true);
+                                            }
+                                        }}
+                                        data-testid="qidahen-enter-boundary-eraser"
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'subtract' ? 'border-fuchsia-300 bg-fuchsia-500/15 text-fuchsia-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
+                                    >
+                                        <Eraser size={14} />
+                                        擦边界
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={undoBarrierHints}
+                                        disabled={!barrierHistoryState.canUndo}
+                                        data-testid="qidahen-primary-undo-boundary"
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canUndo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
+                                    >
+                                        <RotateCcw size={14} />
+                                        撤回
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={redoBarrierHints}
+                                        disabled={!barrierHistoryState.canRedo}
+                                        data-testid="qidahen-primary-redo-boundary"
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canRedo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
+                                    >
+                                        <RotateCcw size={14} className="-scale-x-100" />
+                                        重做
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => boundaryMaskInputRef.current?.click()}
+                                        data-testid="qidahen-import-boundary-draft"
+                                        className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
+                                    >
+                                        <Upload size={14} />
+                                        导入边界图
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={autoSnapCurrentBoundaryToRealMapSupport}
+                                        data-testid="qidahen-auto-snap-boundary-to-contour"
+                                        className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-400/70 bg-amber-500/12 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-200 hover:bg-amber-500/18"
+                                    >
+                                        <ScanSearch size={14} />
+                                        自动贴合轮廓
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowBarrier((current) => !current)}
+                                        data-testid="qidahen-toggle-boundary-overlay"
+                                        className={'col-span-2 inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (showBarrier ? 'border-stone-500/70 bg-stone-950/60 text-stone-100 hover:border-stone-300' : 'border-rose-400/60 bg-rose-500/10 text-rose-100 hover:border-rose-300')}
+                                    >
+                                        {showBarrier ? <EyeOff size={14} /> : <Eye size={14} />}
+                                        {showBarrier ? '隐藏红线' : '显示红线'}
+                                    </button>
+                                </div>
+                                <input ref={boundaryMaskInputRef} data-testid="qidahen-boundary-draft-input" type="file" accept="image/png" className="hidden" onChange={importBoundaryDraft} />
+                                <input ref={boundarySourceInputRef} data-testid="qidahen-boundary-source-input" type="file" accept="image/png" className="hidden" onChange={importBoundarySource} />
+                                <div data-testid="qidahen-compact-status-message" className="rounded-md border border-stone-800 bg-stone-950/60 px-3 py-2 text-xs leading-5 text-stone-300">
+                                    {statusMessage}
+                                </div>
+                                <div data-testid="qidahen-compact-region-editor" className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div>
+                                            <div className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">当前区域/点</div>
+                                            <div className="mt-1 font-mono text-[11px] text-stone-400">{selectedRegion?.id ?? '未选择'}</div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowMask((current) => !current)}
+                                            data-testid="qidahen-compact-toggle-region-fill"
+                                            className="inline-flex shrink-0 items-center justify-center gap-1 rounded-md border border-stone-600 bg-stone-950/60 px-2.5 py-1.5 text-xs font-black text-stone-100 transition hover:border-amber-300"
+                                        >
+                                            {showMask ? <EyeOff size={14} /> : <Eye size={14} />}
+                                            {showMask ? '隐藏涂色' : '显示涂色'}
+                                        </button>
+                                    </div>
+                                    {selectedRegion ? (
+                                        <>
+                                            <input
+                                                value={selectedRegion.name}
+                                                onChange={(event) => updateRegion(selectedRegion.id, 'name', event.target.value)}
+                                                data-testid={`qidahen-compact-region-name-${selectedRegion.id}`}
+                                                className="mt-3 w-full rounded-md border border-stone-700 bg-stone-900 px-2 py-2 text-sm font-black text-stone-100 outline-none focus:border-amber-400"
+                                            />
+                                            <div className="mt-2 text-xs leading-5 text-stone-400">
+                                                点地图区域或中心点选中；这里改名后，地图点标签和保存的区域/连线节点会同步使用这个名字。
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="mt-3 rounded-md border border-dashed border-stone-700 px-2 py-2 text-xs leading-5 text-stone-400">
+                                            生成区域后，点地图上的填色区域或中心点，再在这里重命名。
+                                        </div>
+                                    )}
+                                </div>
+                                <div data-testid="qidahen-compact-passage-editor" className="rounded-xl border border-sky-500/35 bg-sky-500/10 px-3 py-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div>
+                                            <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">通路与移动代价</div>
+                                            <div className="mt-1 text-xs text-stone-400">中心 {graphNodes.length} / 自动连线 {passages.length}</div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={autoDetectPassagesFromRegions}
+                                            data-testid="qidahen-compact-auto-detect-passages"
+                                            className="inline-flex shrink-0 items-center justify-center gap-1 rounded-md border border-emerald-500/45 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                        >
+                                            <Link2 size={14} />
+                                            自动连线
+                                        </button>
+                                    </div>
+                                    {passages.length > 0 ? (
+                                        <div className="mt-3 max-h-80 space-y-1.5 overflow-y-auto pr-1" data-testid="qidahen-compact-passage-list">
+                                            {passages.map((passage, index) => {
+                                                const fromRegion = regions.find((region) => region.id === passage.from);
+                                                const toRegion = regions.find((region) => region.id === passage.to);
+                                                const boundaryMeta = getBoundaryTypeMeta(passage.boundaryType);
+                                                const selected = selectedPassage?.id === passage.id;
+                                                return (
+                                                    <div
+                                                        key={passage.id}
+                                                        data-testid={`qidahen-compact-passage-row-${passage.id}`}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => {
+                                                            setSelectedPassageId(passage.id);
+                                                            setMode('path');
+                                                        }}
+                                                        onKeyDown={(event) => {
+                                                            if (event.key === 'Enter' || event.key === ' ') {
+                                                                event.preventDefault();
+                                                                setSelectedPassageId(passage.id);
+                                                                setMode('path');
+                                                            }
+                                                        }}
+                                                        className={'rounded-lg border px-2 py-1.5 transition ' + (selected ? 'border-amber-400 bg-amber-500/10' : 'border-sky-500/25 bg-stone-950/50 hover:border-sky-300/70')}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-sky-400/35 bg-sky-500/10 font-mono text-[10px] font-black text-sky-100">
+                                                                {index + 1}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="truncate text-xs font-black text-stone-100">
+                                                                    {fromRegion?.name ?? passage.from} ↔ {toRegion?.name ?? passage.to}
+                                                                </div>
+                                                                <div className="text-[11px] text-stone-500">
+                                                                    移 {passage.travelCost} / 宽 {boundaryMeta.width}
+                                                                </div>
+                                                            </div>
+                                                            <select
+                                                                value={passage.boundaryType}
+                                                                onClick={(event) => event.stopPropagation()}
+                                                                onChange={(event) => updatePassageBoundaryType(passage.id, event.target.value as PassageBoundaryType)}
+                                                                data-testid={`qidahen-passage-boundary-${passage.id}`}
+                                                                className="w-32 shrink-0 rounded-md border border-stone-700 bg-stone-900 px-2 py-1 text-xs text-stone-100 outline-none focus:border-sky-400"
+                                                            >
+                                                                {PASSAGE_BOUNDARY_TYPES.map((boundaryType) => (
+                                                                    <option key={boundaryType.id} value={boundaryType.id}>
+                                                                        {boundaryType.label} 路 {boundaryType.note}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                        <div className="mt-1 flex items-center gap-2">
+                                                            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-stone-500">移动代价</span>
+                                                            <input
+                                                                type="number"
+                                                                min={1}
+                                                                step={1}
+                                                                value={passage.travelCost}
+                                                                onClick={(event) => event.stopPropagation()}
+                                                                onChange={(event) => updatePassageTravelCost(passage.id, Number(event.target.value))}
+                                                                data-testid={`qidahen-compact-passage-travel-cost-${passage.id}`}
+                                                                className="h-7 w-20 rounded-md border border-stone-700 bg-stone-900 px-2 text-xs font-black text-stone-100 outline-none focus:border-sky-400"
+                                                            />
+                                                        </div>
+                                                        <div data-testid={`qidahen-passage-note-${passage.id}`} className="mt-1 truncate text-[11px] leading-4 text-stone-400">
+                                                            边界规则：<span className="font-black text-stone-200">{boundaryMeta.label} · {boundaryMeta.note}</span>
+                                                            <span className="ml-2">移动代价 {passage.travelCost} / 战场宽度 {boundaryMeta.width}</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="mt-3 rounded-md border border-dashed border-stone-700 px-2 py-2 text-xs leading-5 text-stone-400">
+                                            生成区域后会按相邻区域自动连线；也可以点“自动连线”补全，再逐条设置边界类型。
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
+                                    <div>
+                                        初始红线像素：<span className="font-mono text-rose-200">{boundaryDraftPixelCount.toLocaleString()}</span>
+                                        <span className="mx-2 text-stone-600">/</span>
+                                        最终红线/障碍：<span className="font-mono text-rose-200">{barrierPixelCount.toLocaleString()}</span>
+                                    </div>
+                                    <div>
+                                        手工补边：<span data-testid="qidahen-manual-barrier-add-count" className="font-mono text-rose-200">{manualBarrierAddCount.toLocaleString()}</span>
+                                        <span className="mx-2 text-stone-600">/</span>
+                                        去噪：<span data-testid="qidahen-manual-barrier-remove-count" className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
+                                    </div>
+                                    <label className="mt-3 block text-stone-300">
+                                        画笔宽度约 {brushSize * 2}px
+                                        <input
+                                            data-testid="qidahen-compact-brush-size-input"
+                                            type="range"
+                                            min="1"
+                                            max="12"
+                                            value={brushSize}
+                                            onChange={(event) => setBrushSize(Number(event.target.value))}
+                                            className="mt-2 w-full"
+                                        />
+                                    </label>
+                                    <label className="mt-3 block text-stone-300">
+                                        缩放 {(displayScale).toFixed(2)}x
+                                        <input
+                                            data-testid="qidahen-compact-zoom-input"
+                                            type="range"
+                                            min="0.75"
+                                            max="3"
+                                            step="0.05"
+                                            value={zoom}
+                                            onChange={(event) => setZoom(Number(event.target.value))}
+                                            className="mt-2 w-full"
+                                        />
+                                    </label>
+                                </div>
+                            </section>
+
+                            <section className="space-y-3">
+                                <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">区域与保存</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => generateRegionsFromCurrentBoundary({ allowPartial: true })}
+                                        data-testid="qidahen-primary-generate-regions-from-boundary"
+                                        className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/70 bg-emerald-500/10 px-3 py-2 text-sm font-black text-emerald-100 transition hover:border-emerald-300"
+                                    >
+                                        <WandSparkles size={15} />
+                                        生成区域
+                                    </button>
+                                    <button type="button" onClick={() => void saveBoundaryOnly()} data-testid="qidahen-primary-save-boundary-only" className="inline-flex items-center justify-center gap-2 rounded-md border border-rose-400/50 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-100 transition hover:border-rose-300">
+                                        <Save size={14} />
+                                        保存边界
+                                    </button>
+                                    <button type="button" onClick={() => void saveRegionsOnly()} data-testid="qidahen-primary-save-regions-only" className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-400/50 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300">
+                                        <Save size={14} />
+                                        保存区域
+                                    </button>
+                                    <button type="button" onClick={() => void saveGraphOnly()} data-testid="qidahen-primary-save-graph-only" className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-sky-400/50 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300">
+                                        <Link2 size={14} />
+                                        保存连线
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    {graphNodes.length === 0 ? (
+                                        <div className="rounded-xl border border-dashed border-stone-800 px-3 py-3 text-sm text-stone-500">
+                                            生成区域后，这里会列出每个中心点。把名称改成城市名后再保存区域。
+                                        </div>
+                                    ) : graphNodes.map((node) => {
+                                        const region = regions.find((item) => item.id === node.id);
+                                        if (!region) {
+                                            return null;
+                                        }
+                                        return (
+                                            <div
+                                                key={node.id}
+                                                data-testid={`qidahen-generated-region-row-${node.id}`}
+                                                className={'rounded-lg border px-3 py-2 ' + (node.id === selectedRegionId ? 'border-amber-400 bg-amber-500/10' : 'border-stone-800 bg-stone-950/45')}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedRegionId(node.id);
+                                                            setMode('paint');
+                                                            setShowSelectedOutline(true);
+                                                        }}
+                                                        className="h-5 w-5 shrink-0 rounded-full border border-white/25"
+                                                        style={{ backgroundColor: region.color }}
+                                                        aria-label={`选中 ${region.name}`}
+                                                    />
+                                                    <input
+                                                        value={region.name}
+                                                        onChange={(event) => updateRegion(region.id, 'name', event.target.value)}
+                                                        data-testid={`qidahen-generated-region-name-${region.id}`}
+                                                        className="min-w-0 flex-1 rounded border border-stone-700 bg-stone-900 px-2 py-1 text-sm font-bold text-stone-100 outline-none focus:border-amber-400"
+                                                    />
+                                                </div>
+                                                <div className="mt-1 font-mono text-[11px] text-stone-500">
+                                                    点 {node.x},{node.y} · {node.pixelCount.toLocaleString()} px · {node.id}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-stone-500">
+                                    <Link2 size={13} />
+                                    通路
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button type="button" onClick={autoDetectPassagesFromRegions} data-testid="qidahen-auto-detect-passages" className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-bold text-emerald-100 transition hover:border-emerald-300">
+                                        <Link2 size={15} />
+                                        按邻近补全
+                                    </button>
+                                    <div data-testid="qidahen-passage-summary" className="rounded-md border border-stone-800 bg-stone-900/70 px-3 py-2 text-xs leading-5 text-stone-300">
+                                        中心 {graphNodes.length} / 通路 {passages.length}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    {passages.length === 0 ? (
+                                        <div className="rounded-xl border border-dashed border-stone-800 px-3 py-4 text-sm text-stone-500">
+                                            暂无通路。先生成区域，再用“按邻近补全”；特殊通路可直接在地图上拖线补。
+                                        </div>
+                                    ) : passages.map((passage) => {
+                                        const fromRegion = regions.find((region) => region.id === passage.from);
+                                        const toRegion = regions.find((region) => region.id === passage.to);
+                                        const boundaryMeta = getBoundaryTypeMeta(passage.boundaryType);
+                                        const selected = selectedPassage?.id === passage.id;
+                                        return (
+                                            <div
+                                                key={passage.id}
+                                                data-testid={`qidahen-passage-row-${passage.id}`}
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => {
+                                                    setSelectedPassageId(passage.id);
+                                                    setMode('path');
+                                                }}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter' || event.key === ' ') {
+                                                        event.preventDefault();
+                                                        setSelectedPassageId(passage.id);
+                                                        setMode('path');
+                                                    }
+                                                }}
+                                                className={'rounded-lg border px-2.5 py-2 transition ' + (selected ? 'border-amber-400 bg-amber-500/10' : 'border-stone-800 bg-stone-950/45 hover:border-stone-600')}
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="min-w-0 text-sm font-bold text-stone-100">
+                                                        {fromRegion?.name ?? passage.from} ↔ {toRegion?.name ?? passage.to}
+                                                    </div>
+                                                    <span className="shrink-0 rounded border px-2 py-0.5 text-[11px] font-black" style={{ borderColor: boundaryMeta.color, color: boundaryMeta.color }}>
+                                                        {boundaryMeta.label}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            removePassage(passage.id);
+                                                        }}
+                                                        data-testid={`qidahen-passage-delete-${passage.id}`}
+                                                        className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-stone-700 text-stone-400 transition hover:border-rose-400 hover:text-rose-200"
+                                                        aria-label="删除路径"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        </div>
+                        <div className="shrink-0 border-t border-stone-800 bg-stone-950/95 px-5 py-4 text-xs leading-5 text-stone-500">
+                            当前工作区：{dataOutputDir}
+                        </div>
+                    </aside>
+
+                    <main className="flex h-screen min-w-0 flex-1 flex-col bg-stone-950">
+                        <div className="shrink-0 border-b border-stone-800 px-6 py-4 text-sm text-stone-400">
+                            当前区域：<span className="font-bold text-stone-100">{selectedRegion?.name ?? '未选择'}</span>
+                            <span className="ml-3 font-mono text-xs text-stone-500">{selectedRegion?.id}</span>
+                            <span className="ml-4 text-xs text-stone-500">
+                                模式：{mode === 'wand' ? '魔棒' : mode === 'chain' ? '锁链' : mode === 'paint' ? '区域修正' : mode === 'erase' ? '区域擦除' : mode === 'barrier' ? '边界修正' : '通路编辑'}
+                            </span>
+                            <span className="ml-4 text-xs text-stone-500">路径：{passages.length}</span>
+                        </div>
+                        <div ref={viewportRef} className="grid min-h-0 flex-1 place-items-center overflow-auto px-4 py-4">
+                            <div className="relative" style={{ width: Math.round(MASK_WIDTH * displayScale), aspectRatio: `${MASK_WIDTH} / ${MASK_HEIGHT}` }}>
+                                <canvas ref={bgCanvasRef} width={MASK_WIDTH} height={MASK_HEIGHT} data-testid="qidahen-bg-canvas" className="absolute inset-0 block h-full w-full rounded-md border border-stone-800" />
+                                <canvas ref={boundarySourceReferenceCanvasRef} width={MASK_WIDTH} height={MASK_HEIGHT} data-testid="qidahen-boundary-source-reference-canvas" className="pointer-events-none absolute inset-0 block h-full w-full rounded-md" aria-hidden="true" />
+                                <canvas ref={maskCanvasRef} width={MASK_WIDTH} height={MASK_HEIGHT} data-testid="qidahen-mask-canvas" className="absolute inset-0 block h-full w-full rounded-md" aria-hidden="true" />
+                                <canvas ref={partitionPreviewCanvasRef} width={MASK_WIDTH} height={MASK_HEIGHT} data-testid="qidahen-partition-preview-canvas" className="pointer-events-none absolute inset-0 block h-full w-full rounded-md" aria-hidden="true" />
+                                <canvas ref={outlineCanvasRef} width={MASK_WIDTH} height={MASK_HEIGHT} data-testid="qidahen-outline-canvas" className="pointer-events-none absolute inset-0 block h-full w-full rounded-md" aria-hidden="true" />
+                                <canvas ref={barrierCanvasRef} width={MASK_WIDTH} height={MASK_HEIGHT} data-testid="qidahen-barrier-canvas" className="pointer-events-none absolute inset-0 block h-full w-full rounded-md" aria-hidden="true" />
+                                <canvas
+                                    width={MASK_WIDTH}
+                                    height={MASK_HEIGHT}
+                                    data-testid="qidahen-region-canvas"
+                                    className={`absolute inset-0 block h-full w-full touch-none rounded-md ${mode === 'path' ? 'pointer-events-none' : ''}`}
+                                    onPointerDown={handlePointerDown}
+                                    onPointerMove={handlePointerMove}
+                                    onPointerUp={stopDrawing}
+                                    onPointerLeave={stopDrawing}
+                                    onPointerCancel={stopDrawing}
+                                />
+                                <svg
+                                    ref={graphSvgRef}
+                                    viewBox={`0 0 ${MASK_WIDTH} ${MASK_HEIGHT}`}
+                                    data-testid="qidahen-region-graph"
+                                    className={`absolute inset-0 block h-full w-full rounded-md ${mode === 'path' ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}
+                                    onPointerDown={(event) => {
+                                        if (mode !== 'path') {
+                                            return;
+                                        }
+                                        const point = mapClientPointToCanvas(event.currentTarget, event.clientX, event.clientY);
+                                        selectRegionAtCanvasPoint(point);
+                                    }}
+                                    onPointerMove={movePathDrag}
+                                    onPointerUp={finishPathDrag}
+                                    onPointerCancel={() => {
+                                        pathDragSessionRef.current = null;
+                                        setPathDragStartId(null);
+                                        setPathDraftPoint(null);
+                                    }}
+                                    aria-label="通行路径图"
+                                >
+                                    <rect
+                                        x="0"
+                                        y="0"
+                                        width={MASK_WIDTH}
+                                        height={MASK_HEIGHT}
+                                        fill="transparent"
+                                        pointerEvents="all"
+                                        data-testid="qidahen-region-area-hit-target"
+                                    />
+                                    {graphNodes.length > 0 && passages.length > 0 ? passages.map((passage) => {
+                                        const from = graphNodeMap.get(passage.from);
+                                        const to = graphNodeMap.get(passage.to);
+                                        if (!from || !to) {
+                                            return null;
+                                        }
+                                        const boundaryType = getBoundaryTypeMeta(passage.boundaryType);
+                                        const selected = selectedPassage?.id === passage.id;
+                                        const midX = (from.x + to.x) / 2;
+                                        const midY = (from.y + to.y) / 2;
+                                        return (
+                                            <g
+                                                key={passage.id}
+                                                data-testid={`qidahen-passage-edge-${passage.id}`}
+                                                className="pointer-events-auto cursor-pointer"
+                                                onPointerDown={(event) => {
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+                                                    setSelectedPassageId(passage.id);
+                                                    setMode('path');
+                                                    setStatusMessage(`已选中 ${from.name} ↔ ${to.name}，在左侧设置移动代价。`);
+                                                }}
+                                            >
+                                                <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="transparent" strokeWidth={24} strokeLinecap="round" />
+                                                <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={boundaryType.color} strokeWidth={selected ? 9 : 6} strokeLinecap="round" opacity={selected ? 1 : 0.88} />
+                                                <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="#1b130d" strokeWidth={2} strokeDasharray={passage.boundaryType === 'coast' ? '8 8' : undefined} strokeLinecap="round" opacity={selected ? 0.9 : 0.75} />
+                                                <g transform={`translate(${midX} ${midY})`}>
+                                                    <rect x="-34" y="-12" width="68" height="24" rx="4" fill={selected ? 'rgba(120, 53, 15, 0.92)' : 'rgba(20,14,10,0.82)'} stroke={boundaryType.color} strokeWidth={selected ? '2.5' : '1.5'} />
+                                                    <text textAnchor="middle" dominantBaseline="middle" fill="#fff4d6" fontSize="12" fontWeight="800">{boundaryType.label}</text>
+                                                </g>
+                                            </g>
+                                        );
+                                    }) : null}
+                                    {mode === 'path' && draggingNode && pathDraftPoint ? (
+                                        <line x1={draggingNode.x} y1={draggingNode.y} x2={pathDraftPoint.x} y2={pathDraftPoint.y} stroke="#f8d27a" strokeWidth={4} strokeDasharray="10 7" strokeLinecap="round" opacity="0.9" />
+                                    ) : null}
+                                    {graphNodes.length > 0 ? graphNodes.map((node) => (
+                                        <g
+                                            key={node.id}
+                                            data-testid={`qidahen-region-graph-node-${node.id}`}
+                                            className="pointer-events-auto cursor-pointer"
+                                            transform={`translate(${node.x} ${node.y})`}
+                                            onPointerDown={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                setSelectedRegionId(node.id);
+                                                setShowSelectedOutline(true);
+                                                if (mode !== 'path') {
+                                                    if (mode !== 'barrier') {
+                                                        setMode('paint');
+                                                    }
+                                                    setStatusMessage(`已选中 ${node.name}。区域可直接在地图上修，通路可点边或拖中心建立。`);
+                                                    return;
+                                                }
+                                                event.currentTarget.setPointerCapture(event.pointerId);
+                                                preparePathDragFromNode(node, event.pointerId);
+                                            }}
+                                        >
+                                            <circle r={node.id === selectedRegionId ? 16 : 13} fill="rgba(20,14,10,0.86)" stroke={node.color} strokeWidth={node.id === selectedRegionId ? 5 : 4} />
+                                            <circle r="5" fill={node.color} stroke="#fff4d6" strokeWidth="1.5" />
+                                            <text y="-18" textAnchor="middle" fill="#fff4d6" fontSize="12" fontWeight="900" paintOrder="stroke" stroke="#1b130d" strokeWidth="4">{node.name}</text>
+                                        </g>
+                                    )) : null}
+                                </svg>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="h-screen overflow-hidden bg-stone-950 text-stone-100">
             <div className="mx-auto flex h-screen max-w-[1880px]">
@@ -4564,25 +14658,415 @@ const QidahenRegionMaskTool: React.FC = () => {
                             <Link to="/" className="text-xs font-bold uppercase tracking-[0.2em] text-stone-400 transition hover:text-amber-200">
                                 返回首页
                             </Link>
-                            <button
-                                type="button"
-                                onClick={() => importInputRef.current?.click()}
-                                className="inline-flex items-center gap-2 rounded-md border border-stone-700 px-3 py-1.5 text-xs font-bold text-stone-200 transition hover:border-amber-400 hover:text-amber-200"
-                            >
-                                <Upload size={14} />
-                                导入 Mask
-                            </button>
-                            <input ref={importInputRef} type="file" accept="image/png" className="hidden" onChange={importMask} />
+                            {showAdvancedWorkbench ? (
+                                <button
+                                    type="button"
+                                    onClick={() => importInputRef.current?.click()}
+                                    data-testid="qidahen-import-mask"
+                                    className="inline-flex items-center gap-2 rounded-md border border-stone-700 px-3 py-1.5 text-xs font-bold text-stone-200 transition hover:border-amber-400 hover:text-amber-200"
+                                >
+                                    <Upload size={14} />
+                                    导入 Mask
+                                </button>
+                            ) : null}
+                            <input ref={importInputRef} data-testid="qidahen-import-mask-input" type="file" accept="image/png" className="hidden" onChange={importMask} />
                         </div>
-                        <h1 className="mt-3 text-2xl font-black text-amber-100">七大恨区域制图工具</h1>
+                        <h1 className="mt-3 text-2xl font-black text-amber-100">七大恨地图编辑器</h1>
                         <p className="mt-2 text-sm leading-6 text-stone-400">
-                            魔棒只负责初选；最终停线来自启发式边界 + 手工边界修正；锁链沿已选区域边界做局部加减，区域必须保持一个连续整体。
+                            默认自动读取上次工作区。直接在地图上画/擦红色边界，生成区域后补通路，再分别保存边界、区域和连线。
                         </p>
+                        <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6">
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="font-black uppercase tracking-[0.16em] text-stone-500">当前工作区</span>
+                                <span className={isIsolatedWorkspace ? 'rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-black text-cyan-100' : 'rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-black text-amber-100'}>
+                                    {isIsolatedWorkspace ? '临时隔离工作区' : '正式工作区'}
+                                </span>
+                            </div>
+                            <div className="mt-2 break-all font-mono text-[11px] text-stone-300">{dataOutputDir}</div>
+                            <div className="mt-1 text-[11px] text-stone-500">
+                                {isIsolatedWorkspace
+                                    ? '当前页面只会读写这份临时工作区，不会污染正式七大恨数据。'
+                                    : '当前页面直接读写正式七大恨数据。确认是真实边界成果后再保存。'}
+                            </div>
+                        </div>
+                        {shouldShowBestAvailableWorkspaceSwitcher ? (
+                            <div className="mt-3 rounded-xl border border-cyan-500/20 bg-cyan-500/8 px-3 py-3 text-xs leading-5">
+                                <div className="font-black uppercase tracking-[0.16em] text-cyan-200">推荐工作区</div>
+                                <div className="mt-2 grid gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => openWorkspaceRoute(BEST_AVAILABLE_BOUNDARY_WORKSPACE)}
+                                        data-testid="qidahen-open-best-available-boundary-workspace"
+                                        disabled={currentWorkspaceKey === BEST_AVAILABLE_BOUNDARY_WORKSPACE}
+                                        className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (
+                                            currentWorkspaceKey === BEST_AVAILABLE_BOUNDARY_WORKSPACE
+                                                ? 'cursor-not-allowed border-stone-700 bg-stone-950/40 text-stone-500'
+                                                : 'border-amber-400/45 bg-amber-500/10 text-amber-100 hover:border-amber-200'
+                                        )}
+                                    >
+                                        <Pencil size={14} />
+                                        边界手修起稿
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => openWorkspaceRoute(BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE)}
+                                        data-testid="qidahen-open-best-available-move-cost-ready-workspace"
+                                        disabled={currentWorkspaceKey === BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE}
+                                        className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (
+                                            currentWorkspaceKey === BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE
+                                                ? 'cursor-not-allowed border-stone-700 bg-stone-950/40 text-stone-500'
+                                                : 'border-sky-400/45 bg-sky-500/10 text-sky-100 hover:border-sky-200'
+                                        )}
+                                    >
+                                        <Route size={14} />
+                                        移动代价可用成果
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => openRuntimePreviewRoute(BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE)}
+                                        data-testid="qidahen-open-best-available-runtime-preview"
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/45 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-200"
+                                    >
+                                        <Eye size={14} />
+                                        运行时预览
+                                    </button>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
 
-                    <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5">
+                    <div ref={sidebarScrollRef} className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5">
+                        {showAdvancedWorkbench && regionTruthWorkflowActive ? (
+                            <section
+                                data-testid="qidahen-region-truth-workflow-banner"
+                                className="space-y-2 rounded-2xl border border-emerald-500/35 bg-gradient-to-br from-emerald-500/12 via-stone-950 to-cyan-950/25 p-4"
+                            >
+                                <div className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200">当前区域路线</div>
+                                <div className="text-lg font-black text-emerald-50">
+                                    {lastRegionGenerationWorkflow === 'region-path-quick-start'
+                                        ? '区域粗稿 + 通路编辑（次路线）'
+                                        : '区域粗稿编辑（次路线）'}
+                                </div>
+                                <div className="text-sm leading-6 text-stone-200">
+                                    你现在看到的是区域 truth 的可编辑初稿，不是正式边界主路。
+                                    {lastRegionGenerationWorkflow === 'region-path-quick-start'
+                                        ? ' 当前可以直接改区域、改通路类型，再继续调移动代价。'
+                                        : ' 当前可以先用画笔微调区域，之后再切到路径模式补通路和移动代价。'}
+                                </div>
+                                <div className="text-xs font-mono text-emerald-100/85">
+                                    当前已锁显式 truth：{authoritativeGuideRegionIdSet.size} 区
+                                </div>
+                                <div className="rounded-xl border border-stone-800 bg-stone-950/70 px-3 py-3 text-xs leading-6 text-stone-300">
+                                    <div><span className="font-black text-emerald-100">现在该看：</span> 区块轮廓大致对不对、中心点位置对不对、相邻通路需不需要补或改类型。</div>
+                                    <div><span className="font-black text-emerald-100">现在不用纠结：</span> 边界候选 seed 0/5、自动抽线红字、accepted 门禁；那是边界手修主路的诊断，不影响这条区域次路线继续用。</div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => void enterBoundaryTruthDraftFromCurrentRegions()}
+                                    data-testid="qidahen-region-truth-boundary-draft-shortcut"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-cyan-500/10 px-3 py-2 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
+                                >
+                                    <Pencil size={15} />
+                                    改方向：反推闭合边界稿
+                                </button>
+                                <div className="text-[11px] leading-5 text-stone-400">
+                                    不要求一次全对。先给一版大致正确的闭合边界，错线删掉，缺线补上，再按边界重生区域。
+                                </div>
+                                {isIsolatedWorkspace ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => openRuntimePreviewRoute(currentWorkspaceKey)}
+                                        data-testid="qidahen-open-current-runtime-preview"
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-300/55 bg-sky-500/10 px-3 py-2 text-sm font-black text-sky-100 transition hover:border-sky-100"
+                                    >
+                                        <Eye size={15} />
+                                        打开当前工作区运行时预览
+                                    </button>
+                                ) : null}
+                            </section>
+                        ) : null}
+
+                        {showAdvancedWorkbench && showFormalEmptyWorkspaceGuide ? (
+                            <section className="space-y-3" data-testid="qidahen-empty-workspace-guide">
+                                <div className="rounded-2xl border border-amber-500/35 bg-gradient-to-br from-amber-500/12 via-stone-950 to-cyan-950/30 p-4">
+                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-amber-200">开始工作区</div>
+                                    <div className="mt-2 text-xl font-black text-amber-50">先准备手修边界稿</div>
+                                    <div className="mt-2 text-sm leading-6 text-stone-300">
+                                        现在这份正式工作区是空白起点。先得到一张可微调的边界图，再保存工作区，最后才按边界图生成区域。
+                                    </div>
+                                    <div className="mt-4 rounded-xl border border-emerald-400/35 bg-emerald-500/10 px-3 py-3 text-xs leading-6 text-emerald-50" data-testid="qidahen-empty-guide-normal-route">
+                                        <div className="font-black uppercase tracking-[0.16em] text-emerald-200">正常成果路线</div>
+                                        <div className="mt-2 text-sm font-black text-emerald-50">要正式边界成果，先手修边界，再生区域；不要继续卡在自动抽线。</div>
+                                        <div className="mt-3 grid gap-2">
+                                            <div className="rounded-lg border border-emerald-500/20 bg-stone-950/45 px-3 py-2">
+                                                <span className="font-black text-emerald-100">1.</span> 先导入你已经画好的完成边界图；如果还没画，就直接在图上补边或导出描边包去外部画笔修。
+                                            </div>
+                                            <div className="rounded-lg border border-emerald-500/20 bg-stone-950/45 px-3 py-2">
+                                                <span className="font-black text-emerald-100">2.</span> 修边时只关心闭合轮廓，连不上的碎线直接舍弃，不要再追自动边界“全自动正确”。
+                                            </div>
+                                            <div className="rounded-lg border border-emerald-500/20 bg-stone-950/45 px-3 py-2">
+                                                <span className="font-black text-emerald-100">3.</span> 修完后保存工作区，再按完成边界图生成区域；如果只是测通路和移动代价，直接走下面的现成可用成果。
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => boundaryMaskInputRef.current?.click()}
+                                                data-testid="qidahen-empty-guide-normal-import-boundary"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/60 bg-emerald-500/12 px-3 py-2.5 text-sm font-black text-emerald-50 transition hover:border-emerald-200"
+                                            >
+                                                <Upload size={15} />
+                                                正常成果：导入完成边界图
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={startBlankBoundaryDraft}
+                                                data-testid="qidahen-empty-guide-normal-direct-draw"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2.5 text-sm font-black text-stone-100 transition hover:border-stone-500"
+                                            >
+                                                <Pencil size={15} />
+                                                正常成果：直接在图上补边
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 rounded-xl border border-sky-400/35 bg-sky-500/10 px-3 py-3 text-xs leading-6 text-sky-50">
+                                        <div className="font-black uppercase tracking-[0.16em] text-sky-200">现成可用成果</div>
+                                        <div className="mt-2 text-sm font-black text-sky-50">如果你现在就是要改区域、通路和移动代价，不用先卡在自动边界主路。</div>
+                                        <div className="mt-2 text-[11px] leading-5 text-sky-100/85">
+                                            下面两个入口都只会打开临时隔离工作区，不会写正式七大恨数据。一个用于继续手修边界，一个直接进入当前可用的区域/通路编辑成果。
+                                        </div>
+                                        <div className="mt-3 grid gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => openWorkspaceRoute(BEST_AVAILABLE_BOUNDARY_WORKSPACE)}
+                                                data-testid="qidahen-empty-guide-open-best-available-boundary-workspace"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-400/45 bg-amber-500/10 px-3 py-2.5 text-sm font-black text-amber-100 transition hover:border-amber-200"
+                                            >
+                                                <Pencil size={15} />
+                                                现成入口：边界手修起稿
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => openWorkspaceRoute(BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE)}
+                                                data-testid="qidahen-empty-guide-open-best-available-move-cost-ready-workspace"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-300/55 bg-sky-500/15 px-3 py-2.5 text-sm font-black text-sky-50 transition hover:border-sky-100"
+                                            >
+                                                <Route size={15} />
+                                                现成入口：移动代价可用成果
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => openRuntimePreviewRoute(BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE)}
+                                                data-testid="qidahen-empty-guide-open-best-available-runtime-preview"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/45 bg-cyan-500/10 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-200"
+                                            >
+                                                <Eye size={15} />
+                                                现成入口：运行时预览
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <details data-testid="qidahen-empty-guide-hand-edit-toolbox" className="mt-4 rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
+                                        <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.16em] text-stone-300">
+                                            边界手修工具与描边包（按需展开）
+                                        </summary>
+                                        <div className="mt-3 grid gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => void prepareHybridBoundaryTraceKit()}
+                                                data-testid="qidahen-empty-guide-prepare-hybrid-trace-kit"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/70 bg-emerald-500/12 px-3 py-2.5 text-sm font-black text-emerald-100 transition hover:border-emerald-300"
+                                            >
+                                                <Download size={15} />
+                                                一键准备固定色边界稿 + 描边包
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void loadRealMapColorLineDraft()}
+                                                data-testid="qidahen-empty-guide-load-hybrid-boundary-draft"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-cyan-500/10 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
+                                            >
+                                                <WandSparkles size={15} />
+                                                载入固定色边界稿
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void exportBoundaryTraceKitZip()}
+                                                data-testid="qidahen-empty-guide-export-boundary-trace-kit"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-stone-950/70 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
+                                            >
+                                                <Download size={15} />
+                                                导出全图描边包 ZIP
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => boundaryMaskInputRef.current?.click()}
+                                                data-testid="qidahen-empty-guide-import-boundary"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/60 bg-emerald-500/8 px-3 py-2.5 text-sm font-black text-emerald-100 transition hover:border-emerald-300"
+                                            >
+                                                <Upload size={15} />
+                                                导入完成边界图
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => boundarySourceInputRef.current?.click()}
+                                                data-testid="qidahen-empty-guide-import-source"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-cyan-500/10 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
+                                            >
+                                                <Upload size={15} />
+                                                导入带底图描线图
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={startBlankBoundaryDraft}
+                                                data-testid="qidahen-empty-guide-direct-draw"
+                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2.5 text-sm font-black text-stone-100 transition hover:border-stone-500"
+                                            >
+                                                <Pencil size={15} />
+                                                直接在图上补边
+                                            </button>
+                                        </div>
+                                        <div className="mt-4 rounded-xl border border-stone-800 bg-stone-950/70 px-3 py-3 text-xs leading-6 text-stone-300">
+                                            <div><span className="font-black text-amber-100">1.</span> 主路先用“固定色边界稿”起稿，或者直接导出全图描边包去外部画笔手修。</div>
+                                            <div><span className="font-black text-amber-100">2.</span> 连不上的边界先不用强凑，不能封口的碎线直接舍弃。</div>
+                                            <div><span className="font-black text-amber-100">3.</span> 修完后优先导入透明/纯边界 PNG；如果你画在底图上，就导入带底图描线图。</div>
+                                            <div><span className="font-black text-amber-100">4.</span> 真要落正式成果时，仍然是保存工作区后，再按完成边界图生成区域。</div>
+                                        </div>
+                                        <details className="mt-4 rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
+                                            <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.16em] text-stone-400">
+                                                次路线：区域粗稿与移动代价
+                                            </summary>
+                                            <div className="mt-3 grid gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void loadRoughShapeOutlineDraft()}
+                                                    data-testid="qidahen-empty-guide-load-rough-shape-outline-draft"
+                                                    className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-500/55 bg-amber-500/10 px-3 py-2.5 text-sm font-black text-amber-100 transition hover:border-amber-300"
+                                                >
+                                                    <WandSparkles size={15} />
+                                                    载入粗轮廓初稿
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => generateRealMapRegionColorDraft({ autoDetectPassages: true })}
+                                                    data-testid="qidahen-empty-guide-quick-start-region-path"
+                                                    className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-2.5 text-sm font-black text-sky-100 transition hover:border-sky-300"
+                                                >
+                                                    <Route size={15} />
+                                                    次路线：区域粗稿 + 通路
+                                                </button>
+                                            </div>
+                                            <div className="mt-3 text-xs leading-6 text-stone-400">
+                                                这条路只在你现在就是要改区域中心点、通路类型、移动代价时使用。它不是边界主路。
+                                            </div>
+                                        </details>
+                                        <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3 text-xs leading-6 text-stone-400">
+                                            已记录边界色：
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                {boundaryPresets.map((preset) => (
+                                                    <span
+                                                        key={`guide-${preset.id}`}
+                                                        className="inline-flex items-center gap-2 rounded-full border border-stone-700 bg-stone-900/90 px-2.5 py-1 text-[11px] text-stone-200"
+                                                    >
+                                                        <span
+                                                            className="h-3 w-3 rounded-full border border-white/10"
+                                                            style={{ backgroundColor: 'rgb(' + preset.rgb[0] + ', ' + preset.rgb[1] + ', ' + preset.rgb[2] + ')' }}
+                                                        />
+                                                        rgb({preset.rgb.join(', ')})
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </details>
+                                </div>
+                            </section>
+                        ) : null}
+
+                        {shouldShowMoveCostDetourCard ? (
+                            <section data-testid="qidahen-boundary-move-cost-detour" className="space-y-3">
+                                <div className="rounded-2xl border border-sky-400/35 bg-sky-400/10 px-4 py-4 text-[11px] leading-5 text-sky-50">
+                                    <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">改方向入口</div>
+                                    <div className="mt-2 text-lg font-black text-sky-50">如果你现在是测试通路和移动代价，直接改方向</div>
+                                    <div className="mt-2">
+                                        当前这版边界稿还不能直接按边界生区域：
+                                        独立 seed {boundaryClosureDiagnostics.matchedSeedCount}/{boundaryQualityReport.formalRegionCount}
+                                        ，未解释开放线 {unexplainedBoundaryOpenDiagnostics.openComponentCount} 条。
+                                    </div>
+                                <button
+                                    type="button"
+                                    onClick={() => generateRealMapRegionColorDraft({ autoDetectPassages: true })}
+                                    data-testid="qidahen-boundary-detour-region-path-draft"
+                                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-300/55 bg-sky-500/15 px-3 py-2.5 text-sm font-black text-sky-50 transition hover:border-sky-100"
+                                >
+                                    <Route size={15} />
+                                    改方向：直接进入区域 + 通路 + 移动代价
+                                </button>
+                                {isIsolatedWorkspace && currentWorkspaceKey !== BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE ? (
+                                    <div className="mt-2 grid gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => openWorkspaceRoute(BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE)}
+                                            data-testid="qidahen-open-move-cost-ready-workspace"
+                                            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-300/45 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-50 transition hover:border-cyan-100"
+                                        >
+                                            <Route size={14} />
+                                            直接打开现成可用工作区
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => openRuntimePreviewRoute(BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE)}
+                                            data-testid="qidahen-open-move-cost-runtime-preview"
+                                            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-300/45 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-50 transition hover:border-sky-100"
+                                        >
+                                            <Eye size={14} />
+                                            直接看运行时预览
+                                        </button>
+                                    </div>
+                                ) : null}
+                                <div className="mt-2 text-[10px] leading-4 text-sky-100/85">
+                                    这不会把当前粗边界稿当正式成果；只是先给你一个可编辑的区域/通路起点。
+                                </div>
+                            </div>
+                        </section>
+                        ) : null}
+
+                        {showAdvancedWorkbench && showFormalEmptyWorkspaceGuide && !showFormalEmptyToolPanel ? (
+                            <section data-testid="qidahen-formal-empty-tool-panel-collapsed" className="space-y-3">
+                                <div className="rounded-2xl border border-stone-800 bg-stone-950/55 p-4">
+                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-400">工具面板</div>
+                                    <div className="mt-2 text-lg font-black text-stone-100">默认先收起，避免首屏又像旧工具台</div>
+                                    <div className="mt-2 text-sm leading-6 text-stone-400">
+                                        真正开始补边时，再展开模式按钮、进度和调试区。空白起点先看上面的正常成果路线和现成成果入口就够了。
+                                    </div>
+                                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                        <button
+                                            type="button"
+                                            onClick={startBlankBoundaryDraft}
+                                            data-testid="qidahen-formal-empty-open-barrier-workflow"
+                                            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-cyan-500/10 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
+                                        >
+                                            <Pencil size={15} />
+                                            开始补边：进入边界修正
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowFormalEmptyToolPanel(true)}
+                                            data-testid="qidahen-formal-empty-expand-tool-panel"
+                                            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2.5 text-sm font-black text-stone-100 transition hover:border-stone-500"
+                                        >
+                                            <Eye size={15} />
+                                            展开工具面板
+                                        </button>
+                                    </div>
+                                </div>
+                            </section>
+                        ) : null}
+
+                        {!simplifiedBoundaryWorkflow ? (
+                        <>
                         <section className="space-y-3">
-                            <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">模式</div>
+                            <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">
+                                {showFormalEmptyWorkspaceGuide ? '已展开工具面板' : '模式'}
+                            </div>
                             <div className="grid grid-cols-3 gap-2">
                                 <button
                                     type="button"
@@ -4668,187 +15152,789 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             {label}
                                         </button>
                                     ))}
-                                    {([
-                                        ['brush', '画笔'],
-                                        ['bridge', '桥接'],
-                                    ] as const).map(([editMode, label]) => (
-                                        <button
-                                            key={editMode}
-                                            type="button"
-                                            onClick={() => setBarrierEditMode(editMode)}
-                                            className={'rounded-md border px-2 py-1.5 text-xs font-black transition ' + (barrierEditMode === editMode ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
-                                        >
-                                            {label}
-                                        </button>
-                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => setBarrierEditMode('brush')}
+                                        data-testid="qidahen-barrier-edit-mode-brush"
+                                        className={'rounded-md border px-2 py-1.5 text-xs font-black transition ' + (barrierEditMode === 'brush' ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
+                                    >
+                                        画笔
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBarrierEditMode('bridge')}
+                                        data-testid="qidahen-barrier-edit-mode-bridge"
+                                        className={'rounded-md border px-2 py-1.5 text-xs font-black transition ' + (barrierEditMode === 'bridge' ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
+                                    >
+                                        沿候选线补边
+                                    </button>
                                     <div className="col-span-2 text-[11px] leading-5 text-stone-400">
-                                        当前问题不是区域颜色，而是边界识别会把马纹、山纹、字块一起膨胀成噪声。画笔适合局部涂抹；桥接适合补一条漏掉的窄缝，让魔棒像地图工具那样真正被边界拦住。
+                                        当前问题不是区域颜色，而是边界识别会把马纹、山纹、字块一起膨胀成噪声。正常修边优先用画笔沿真实边界手绘；“沿候选线补边”只沿连续细线候选寻路，找不到连续线会拒绝，不会直线封口。
                                     </div>
                                 </div>
                             ) : null}
                             <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
                                 {statusMessage}
                             </div>
-                        </section>
-
-                        <section className="space-y-3">
-                            <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">诊断样本</div>
-                            <div className="space-y-2">
-                                {DIAGNOSTIC_SAMPLES.map((sample) => (
-                                    <button
-                                        key={sample.id}
-                                        type="button"
-                                        onClick={() => focusDiagnosticSample(sample)}
-                                        className="w-full rounded-xl border border-stone-800 bg-stone-950/45 px-3 py-3 text-left transition hover:border-cyan-400/60 hover:bg-stone-950/70"
-                                    >
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="text-sm font-bold text-stone-100">{sample.label}</div>
-                                            <div className="font-mono text-[11px] text-stone-500">
-                                                {sample.point.x}, {sample.point.y}
-                                            </div>
-                                        </div>
-                                        <div className="mt-1 text-xs leading-5 text-stone-400">{sample.note}</div>
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
-                                北京不是当前正式区域列表的一部分，但它适合先验证“边界有没有停住”。这一步做不对，后面的大区域也不会对。
-                            </div>
-                            {diagnosticPreview ? (
-                                <div className="space-y-3 rounded-xl border border-stone-800 bg-stone-950/45 p-3">
-                                    <div className="text-xs font-black uppercase tracking-[0.16em] text-stone-500">局部预览</div>
-                                    <div className={`grid gap-2 ${diagnosticPreview.comparisonDataUrl ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                                        <div>
-                                            <div className="mb-1 text-[11px] font-bold text-stone-400">原图</div>
-                                            <img
-                                                src={diagnosticPreview.originalDataUrl}
-                                                alt="诊断原图"
-                                                className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-stone-950 object-cover"
-                                            />
-                                        </div>
-                                        <div>
-                                            <div className="mb-1 text-[11px] font-bold text-stone-400">启发式边界</div>
-                                            <img
-                                                src={diagnosticPreview.heuristicBarrierDataUrl}
-                                                alt="启发式边界"
-                                                className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-black object-cover"
-                                            />
-                                        </div>
-                                        <div>
-                                            <div className="mb-1 text-[11px] font-bold text-stone-400">
-                                                {diagnosticPreview.comparisonDataUrl ? '禁用 truth 后的启发式初选' : '当前魔棒填充'}
-                                            </div>
-                                            <img
-                                                src={diagnosticPreview.fillDataUrl}
-                                                alt="当前魔棒填充"
-                                                className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-black object-cover"
-                                            />
-                                            <div className={`mt-1 text-[11px] font-bold ${diagnosticPreview.usable ? 'text-emerald-300' : 'text-rose-300'}`}>
-                                                {diagnosticPreview.fillPixelCount.toLocaleString()} px · {diagnosticPreview.methodLabel}
-                                            </div>
-                                            {diagnosticPreview.guideRejected ? (
-                                                <div className="mt-1 text-[10px] font-bold text-amber-300">
-                                                    粗轮廓不包含当前 seed，已自动禁用
-                                                </div>
-                                            ) : null}
-                                        </div>
-                                        {diagnosticPreview.comparisonDataUrl ? (
-                                            <div>
-                                                <div className="mb-1 text-[11px] font-bold text-stone-400">与显式 truth 的差异</div>
-                                                <img
-                                                    src={diagnosticPreview.comparisonDataUrl}
-                                                    alt="启发式与显式 truth 差异"
-                                                    className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-black object-cover"
-                                                />
-                                                <div className="mt-1 text-[11px] font-bold text-amber-200">
-                                                    {diagnosticPreview.comparisonLabel}
-                                                </div>
-                                                <div className="mt-1 text-[10px] leading-4 text-stone-500">
-                                                    黄=重合，粉=truth 里有但启发式没到边，蓝=启发式越界。
-                                                </div>
-                                            </div>
-                                        ) : null}
-                                    </div>
-                                    <div className="text-xs leading-5 text-stone-500">
-                                        先看“启发式边界”是不是仍被纹理糊成大块；如果这里都不闭合，继续调魔棒容差没有意义。
-                                    </div>
-                                    {diagnosticPreview.comparisonDataUrl ? (
-                                        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs leading-5 text-amber-100">
-                                            北京这块当前主链可以直用显式 truth；上面的启发式初选和差异图才是用来判断“算法有没有到边界停止”的证据。
-                                        </div>
-                                    ) : (
-                                        <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-5 text-stone-400">
-                                            当前这张局部图仍是启发式 bootstrap。它只能证明初选方向，不能直接当最终区域真相。
-                                        </div>
-                                    )}
+                            {showFormalEmptyWorkspaceGuide ? (
+                                <div className="rounded-xl border border-stone-800 bg-stone-950/45 px-3 py-3 text-xs leading-6 text-stone-500">
+                                    这组工具先不用急着调。正式空白工作区第一步只需要导入完成边界图，或切到“边界修正”继续补线。
                                 </div>
                             ) : null}
+                            <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/20 p-3">
+                                <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">主路进度</div>
+                                <div className="mt-3 grid gap-2">
+                                    {([
+                                        {
+                                            label: '1. 边界图',
+                                            done: hasBoundaryDraft,
+                                            note: hasBoundaryDraft ? `${boundaryDraftPixelCount.toLocaleString()} px` : '还没开始',
+                                        },
+                                        {
+                                            label: '2. 保存工作区',
+                                            done: persistedWorkspaceState === 'populated',
+                                            note: persistedWorkspaceState === 'populated' ? '已可刷新回读' : '还没固化',
+                                        },
+                                        {
+                                            label: '3. 生成区域',
+                                            done: hasGeneratedRegions,
+                                            note: hasGeneratedRegions
+                                                ? hasLeakedRegions
+                                                    ? `已生成 ${lastRegionGenerationSummary.generated}，漏边 ${lastRegionGenerationSummary.leaked}`
+                                                    : `已生成 ${lastRegionGenerationSummary.generated}`
+                                                : '还没生成',
+                                        },
+                                    ] as const).map((step) => (
+                                        <div key={step.label} className="flex items-center justify-between gap-3 rounded-lg border border-stone-800 bg-stone-950/50 px-3 py-2 text-xs">
+                                            <div className={step.done ? 'font-bold text-emerald-100' : 'font-bold text-stone-300'}>{step.label}</div>
+                                            <div className={step.done ? 'font-mono text-emerald-200' : 'font-mono text-stone-500'}>{step.note}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs leading-5 text-emerald-100">
+                                    下一步：{nextActionHint}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowAdvancedWorkbench((current) => !current)}
+                                data-testid="qidahen-toggle-advanced-workbench"
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-sm font-bold text-stone-200 transition hover:border-stone-500"
+                            >
+                                {showAdvancedWorkbench ? '收起高级调试与参数' : '展开高级调试与参数'}
+                            </button>
                         </section>
+                        </>
+                        ) : null}
+
+                        {showAdvancedWorkbench ? (
+                            <>
+                                <section className="space-y-3">
+                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">
+                                        {showFormalEmptyWorkspaceGuide ? '高级诊断' : '诊断样本'}
+                                    </div>
+                                    <div className="space-y-2">
+                                        {DIAGNOSTIC_SAMPLES.map((sample) => (
+                                            <button
+                                                key={sample.id}
+                                                type="button"
+                                                onClick={() => focusDiagnosticSample(sample)}
+                                                className="w-full rounded-xl border border-stone-800 bg-stone-950/45 px-3 py-3 text-left transition hover:border-cyan-400/60 hover:bg-stone-950/70"
+                                            >
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="text-sm font-bold text-stone-100">{sample.label}</div>
+                                                    <div className="font-mono text-[11px] text-stone-500">
+                                                        {sample.point.x}, {sample.point.y}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-1 text-xs leading-5 text-stone-400">{sample.note}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
+                                        北京不是当前正式区域列表的一部分，但它适合先验证“边界有没有停住”。这一步做不对，后面的大区域也不会对。
+                                    </div>
+                                    {diagnosticPreview ? (
+                                        <div className="space-y-3 rounded-xl border border-stone-800 bg-stone-950/45 p-3">
+                                            <div className="text-xs font-black uppercase tracking-[0.16em] text-stone-500">局部预览</div>
+                                            <div className={`grid gap-2 ${diagnosticPreview.comparisonDataUrl ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                                                <div>
+                                                    <div className="mb-1 text-[11px] font-bold text-stone-400">原图</div>
+                                                    <img
+                                                        src={diagnosticPreview.originalDataUrl}
+                                                        alt="诊断原图"
+                                                        className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-stone-950 object-cover"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <div className="mb-1 text-[11px] font-bold text-stone-400">启发式边界</div>
+                                                    <img
+                                                        src={diagnosticPreview.heuristicBarrierDataUrl}
+                                                        alt="启发式边界"
+                                                        className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-black object-cover"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <div className="mb-1 text-[11px] font-bold text-stone-400">
+                                                        {diagnosticPreview.comparisonDataUrl ? '禁用 truth 后的启发式初选' : '当前魔棒填充'}
+                                                    </div>
+                                                    <img
+                                                        src={diagnosticPreview.fillDataUrl}
+                                                        alt="当前魔棒填充"
+                                                        className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-black object-cover"
+                                                    />
+                                                    <div className={`mt-1 text-[11px] font-bold ${diagnosticPreview.usable ? 'text-emerald-300' : 'text-rose-300'}`}>
+                                                        {diagnosticPreview.fillPixelCount.toLocaleString()} px · {diagnosticPreview.methodLabel}
+                                                    </div>
+                                                    {diagnosticPreview.guideRejected ? (
+                                                        <div className="mt-1 text-[10px] font-bold text-amber-300">
+                                                            粗轮廓不包含当前 seed，已自动禁用
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                                {diagnosticPreview.comparisonDataUrl ? (
+                                                    <div>
+                                                        <div className="mb-1 text-[11px] font-bold text-stone-400">与显式 truth 的差异</div>
+                                                        <img
+                                                            src={diagnosticPreview.comparisonDataUrl}
+                                                            alt="启发式与显式 truth 差异"
+                                                            className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-black object-cover"
+                                                        />
+                                                        <div className="mt-1 text-[11px] font-bold text-amber-200">
+                                                            {diagnosticPreview.comparisonLabel}
+                                                        </div>
+                                                        <div className="mt-1 text-[10px] leading-4 text-stone-500">
+                                                            黄=重合，粉=truth 里有但启发式没到边，蓝=启发式越界。
+                                                        </div>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                            <div className="text-xs leading-5 text-stone-500">
+                                                先看“启发式边界”是不是仍被纹理糊成大块；如果这里都不闭合，继续调魔棒容差没有意义。
+                                            </div>
+                                            {diagnosticPreview.comparisonDataUrl ? (
+                                                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs leading-5 text-amber-100">
+                                                    北京这块当前主链可以直用显式 truth；上面的启发式初选和差异图才是用来判断“算法有没有到边界停止”的证据。
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-5 text-stone-400">
+                                                    当前这张局部图仍是启发式 bootstrap。它只能证明初选方向，不能直接当最终区域真相。
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : null}
+                                </section>
+
+                                <section className="space-y-3">
+                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">边界停线</div>
+                                    <label className="block text-sm text-stone-300">
+                                        颜色容差 {boundaryTolerance}
+                                        <input
+                                            type="range"
+                                            min="2"
+                                            max="28"
+                                            value={boundaryTolerance}
+                                            onChange={(event) => setBoundaryTolerance(Number(event.target.value))}
+                                            className="mt-2 w-full"
+                                        />
+                                    </label>
+                                    <label className="block text-sm text-stone-300">
+                                        边界加粗 {boundaryExpansion}px
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="8"
+                                            value={boundaryExpansion}
+                                            onChange={(event) => setBoundaryExpansion(Number(event.target.value))}
+                                            className="mt-2 w-full"
+                                        />
+                                    </label>
+                                    <label className="block text-sm text-stone-300">
+                                        区域底色容差 {regionColorTolerance}（魔棒使用种子色相近区域 + 边界停线；必要时再用锁链修边）
+                                        <input
+                                            type="range"
+                                            min="8"
+                                            max="64"
+                                            value={regionColorTolerance}
+                                            onChange={(event) => setRegionColorTolerance(Number(event.target.value))}
+                                            className="mt-2 w-full"
+                                        />
+                                    </label>
+                                </section>
+                            </>
+                        ) : null}
 
                         <section className="space-y-3">
-                            <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">边界停线</div>
-                            <label className="block text-sm text-stone-300">
-                                颜色容差 {boundaryTolerance}
-                                <input
-                                    type="range"
-                                    min="2"
-                                    max="28"
-                                    value={boundaryTolerance}
-                                    onChange={(event) => setBoundaryTolerance(Number(event.target.value))}
-                                    className="mt-2 w-full"
-                                />
-                            </label>
-                            <label className="block text-sm text-stone-300">
-                                边界加粗 {boundaryExpansion}px
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="8"
-                                    value={boundaryExpansion}
-                                    onChange={(event) => setBoundaryExpansion(Number(event.target.value))}
-                                    className="mt-2 w-full"
-                                />
-                            </label>
-                            <label className="block text-sm text-stone-300">
-                                区域底色容差 {regionColorTolerance}（魔棒使用种子色相近区域 + 边界停线；必要时再用锁链修边）
-                                <input
-                                    type="range"
-                                    min="8"
-                                    max="64"
-                                    value={regionColorTolerance}
-                                    onChange={(event) => setRegionColorTolerance(Number(event.target.value))}
-                                    className="mt-2 w-full"
-                                />
-                            </label>
-                            <div className="rounded-xl border border-cyan-900/60 bg-cyan-950/20 p-3">
-                                <div className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">边界图工作流</div>
-                                <div className="mt-3 flex items-center gap-2">
-                                    <input
-                                        value={boundaryColorInput}
-                                        onChange={(event) => setBoundaryColorInput(event.target.value)}
-                                        className="min-w-0 flex-1 rounded-md border border-stone-700 bg-stone-950 px-2 py-2 font-mono text-xs text-stone-100 outline-none transition focus:border-cyan-300"
-                                        placeholder="输入你画边界用的颜色，例如 rgb(61,69,66)"
-                                        aria-label="指定边界颜色"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={addBoundaryColorPreset}
-                                        data-testid="qidahen-add-boundary-color"
-                                        className="shrink-0 rounded-md border border-cyan-600 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
-                                    >
-                                        加入
-                                    </button>
+                            <div data-testid="qidahen-boundary-workflow-panel" className="rounded-xl border border-cyan-900/60 bg-cyan-950/20 p-3">
+                                <div className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">
+                                    {showAdvancedWorkbench && regionTruthWorkflowActive ? '区域/路径工作流' : '边界图工作流'}
                                 </div>
+                                {!showAdvancedWorkbench ? (
+                                    <div className="mt-3 grid gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => void loadRealMapColorLineDraft()}
+                                            data-testid="qidahen-initialize-red-boundary-lines"
+                                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-rose-300 bg-rose-500/18 px-3 text-sm font-black text-rose-50 transition hover:bg-rose-500/25"
+                                        >
+                                            <WandSparkles size={16} />
+                                            初始化红线
+                                        </button>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setMode('barrier');
+                                                    setBarrierEditMode('brush');
+                                                    setBarrierHintOperation('add');
+                                                    setShowBarrier(true);
+                                                    setShowMask(false);
+                                                    setShowSeedStatusOverlay(false);
+                                                    setShowSelectedOutline(false);
+                                                    if (!boundaryDraftMaskRef.current) {
+                                                        setManualBlankBoundaryBase(true);
+                                                        setPaintedBoundaryOnly(true);
+                                                    }
+                                                }}
+                                                data-testid="qidahen-enter-boundary-brush"
+                                                className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'add' ? 'border-rose-300 bg-rose-500/15 text-rose-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
+                                            >
+                                                <Pencil size={14} />
+                                                画边界
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setMode('barrier');
+                                                    setBarrierEditMode('brush');
+                                                    setBarrierHintOperation('subtract');
+                                                    setShowBarrier(true);
+                                                    setShowMask(false);
+                                                    setShowSeedStatusOverlay(false);
+                                                    setShowSelectedOutline(false);
+                                                    if (!boundaryDraftMaskRef.current) {
+                                                        setManualBlankBoundaryBase(true);
+                                                        setPaintedBoundaryOnly(true);
+                                                    }
+                                                }}
+                                                data-testid="qidahen-enter-boundary-eraser"
+                                                className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'subtract' ? 'border-fuchsia-300 bg-fuchsia-500/15 text-fuchsia-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
+                                            >
+                                                <Eraser size={14} />
+                                                擦边界
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={undoBarrierHints}
+                                                disabled={!barrierHistoryState.canUndo}
+                                                data-testid="qidahen-primary-undo-boundary"
+                                                className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canUndo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
+                                            >
+                                                <RotateCcw size={14} />
+                                                撤回
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={redoBarrierHints}
+                                                disabled={!barrierHistoryState.canRedo}
+                                                data-testid="qidahen-primary-redo-boundary"
+                                                className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canRedo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
+                                            >
+                                                <RotateCcw size={14} className="-scale-x-100" />
+                                                重做
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => boundaryMaskInputRef.current?.click()}
+                                                data-testid="qidahen-import-boundary-draft"
+                                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
+                                            >
+                                                <Upload size={14} />
+                                                导入边界图
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={autoSnapCurrentBoundaryToRealMapSupport}
+                                                data-testid="qidahen-auto-snap-boundary-to-contour"
+                                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-400/70 bg-amber-500/12 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-200 hover:bg-amber-500/18"
+                                            >
+                                                <ScanSearch size={14} />
+                                                自动贴合轮廓
+                                            </button>
+                                        </div>
+                                        <div data-testid="qidahen-compact-status-message" className="rounded-md border border-stone-800 bg-stone-950/60 px-3 py-2 text-xs leading-5 text-stone-300">
+                                            {statusMessage}
+                                        </div>
+                                    </div>
+                                ) : null}
+                                {showAdvancedWorkbench && regionTruthWorkflowActive ? (
+                                    <>
+                                        <div className="mt-2 text-[11px] leading-5 text-cyan-100/85">
+                                            你已经在区域 truth 主路里。这里优先给当前可直接推进成果的动作；边界失败诊断先降级，不挡路。
+                                        </div>
+                                        <div className="mt-3 grid grid-cols-3 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setMode('paint')}
+                                                data-testid="qidahen-region-truth-paint-shortcut"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                            >
+                                                <Pencil size={14} />
+                                                改区域
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setMode('path')}
+                                                data-testid="qidahen-region-truth-path-shortcut"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300"
+                                            >
+                                                <Route size={14} />
+                                                改通路
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void saveRegionData()}
+                                                data-testid="qidahen-region-truth-save-shortcut"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                            >
+                                                <Save size={14} />
+                                                存进度
+                                            </button>
+                                        </div>
+                                        <div className="mt-2 grid grid-cols-3 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={focusSelectedRegionSeedForTracing}
+                                                data-testid="qidahen-region-truth-focus-selected"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
+                                            >
+                                                <Eye size={14} />
+                                                聚焦当前区
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={focusNextFormalRegion}
+                                                data-testid="qidahen-region-truth-next-region"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
+                                            >
+                                                <Plus size={14} />
+                                                下一区
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={exportSelectedRegionTraceTemplate}
+                                                data-testid="qidahen-region-truth-export-selected-template"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
+                                            >
+                                                <Download size={14} />
+                                                导出局部稿
+                                            </button>
+                                        </div>
+                                        <details data-testid="qidahen-region-truth-boundary-tools" className="mt-3 rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
+                                            <summary className="cursor-pointer list-none text-xs font-black uppercase tracking-[0.16em] text-stone-300">
+                                                继续修边 / 切回边界工具
+                                            </summary>
+                                            <div className="mt-3 space-y-2">
+                                                <div className="text-[11px] leading-5 text-stone-400">
+                                                    只有当这版区域粗稿还不够用时，再回到边界图路线。下面保留最少必需入口，不再默认把整套边界失败诊断铺满。
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => boundaryMaskInputRef.current?.click()}
+                                                        data-testid="qidahen-region-truth-import-boundary"
+                                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                                    >
+                                                        <Upload size={14} />
+                                                        导入边界图
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => boundarySourceInputRef.current?.click()}
+                                                        data-testid="qidahen-region-truth-import-boundary-source"
+                                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
+                                                    >
+                                                        <Upload size={14} />
+                                                        导入描线图
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={startBlankBoundaryDraft}
+                                                        data-testid="qidahen-region-truth-start-blank-boundary"
+                                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/75 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
+                                                    >
+                                                        <Pencil size={14} />
+                                                        空白补边
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={exportBoundaryTraceTemplate}
+                                                        data-testid="qidahen-region-truth-export-boundary-template"
+                                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                                    >
+                                                        <Download size={14} />
+                                                        导出描边参考
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </>
+                                ) : null}
+                                <input ref={boundarySourceInputRef} data-testid="qidahen-boundary-source-input" type="file" accept="image/png" className="hidden" onChange={importBoundarySource} />
+                                {showAdvancedWorkbench && !regionTruthWorkflowActive ? (
+                                <div className="mt-3 space-y-3">
+                                    <div className="rounded-xl border border-rose-500/25 bg-rose-500/8 px-3 py-3">
+                                        <div className="text-xs font-black uppercase tracking-[0.14em] text-rose-100">主流程</div>
+                                        <div className="mt-3 grid gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => void loadRealMapColorLineDraft()}
+                                                data-testid="qidahen-initialize-red-boundary-lines"
+                                                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-rose-300 bg-rose-500/18 px-3 text-sm font-black text-rose-50 transition hover:bg-rose-500/25"
+                                            >
+                                                <WandSparkles size={16} />
+                                                初始化整图红色边界
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void resetCurrentBoundaryWorkspace().catch((error: unknown) => {
+                                                    setStatusMessage(`重置失败：${error instanceof Error ? error.message : String(error)}`);
+                                                })}
+                                                data-testid="qidahen-reset-boundary-workspace"
+                                                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-stone-600 bg-stone-950/70 px-3 text-xs font-black text-stone-100 transition hover:border-rose-300 hover:text-rose-50"
+                                            >
+                                                <RotateCcw size={14} />
+                                                重置当前工作区
+                                            </button>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setMode('barrier');
+                                                        setBarrierEditMode('brush');
+                                                        setBarrierHintOperation('add');
+                                                        setShowBarrier(true);
+                                                        setShowMask(false);
+                                                        setShowSeedStatusOverlay(false);
+                                                        setShowSelectedOutline(false);
+                                                        if (!boundaryDraftMaskRef.current) {
+                                                            setManualBlankBoundaryBase(true);
+                                                            setPaintedBoundaryOnly(true);
+                                                        }
+                                                    }}
+                                                    data-testid="qidahen-enter-boundary-brush"
+                                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'add' ? 'border-rose-300 bg-rose-500/15 text-rose-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
+                                                >
+                                                    <Pencil size={14} />
+                                                    绘制边界
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setMode('barrier');
+                                                        setBarrierEditMode('brush');
+                                                        setBarrierHintOperation('subtract');
+                                                        setShowBarrier(true);
+                                                        setShowMask(false);
+                                                        setShowSeedStatusOverlay(false);
+                                                        setShowSelectedOutline(false);
+                                                        if (!boundaryDraftMaskRef.current) {
+                                                            setManualBlankBoundaryBase(true);
+                                                            setPaintedBoundaryOnly(true);
+                                                        }
+                                                    }}
+                                                    data-testid="qidahen-enter-boundary-eraser"
+                                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'subtract' ? 'border-fuchsia-300 bg-fuchsia-500/15 text-fuchsia-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
+                                                >
+                                                    <Eraser size={14} />
+                                                    擦除边界
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={undoBarrierHints}
+                                                    disabled={!barrierHistoryState.canUndo}
+                                                    data-testid="qidahen-primary-undo-boundary"
+                                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canUndo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
+                                                >
+                                                    <RotateCcw size={14} />
+                                                    撤回
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={redoBarrierHints}
+                                                    disabled={!barrierHistoryState.canRedo}
+                                                    data-testid="qidahen-primary-redo-boundary"
+                                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canRedo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
+                                                >
+                                                    <RotateCcw size={14} className="-scale-x-100" />
+                                                    重做
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => boundaryMaskInputRef.current?.click()}
+                                                    data-testid="qidahen-import-boundary-draft"
+                                                    className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
+                                                >
+                                                    <Upload size={14} />
+                                                    导入边界图
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAdvancedWorkbench((current) => !current)}
+                                            data-testid="qidahen-toggle-advanced-workbench-compact"
+                                            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-xs font-black text-stone-300 transition hover:border-stone-500"
+                                        >
+                                            {showAdvancedWorkbench ? '收起高级面板' : '显示高级面板'}
+                                        </button>
+                                        <div data-testid="qidahen-compact-status-message" className="mt-3 rounded-md border border-stone-800 bg-stone-950/60 px-3 py-2 text-xs leading-5 text-stone-300">
+                                            {statusMessage}
+                                        </div>
+                                    </div>
+
+                                    {showAdvancedWorkbench ? (
+                                    <>
+                                    <details data-testid="qidahen-boundary-trace-assets-details" className="rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
+                                        <summary className="cursor-pointer list-none text-xs font-black uppercase tracking-[0.16em] text-stone-300">
+                                            其它工具
+                                        </summary>
+                                        <div className="mt-3 grid grid-cols-2 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => void prepareHybridBoundaryTraceKit()}
+                                                data-testid="qidahen-prepare-hybrid-boundary-trace-kit"
+                                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                            >
+                                                <Download size={14} />
+                                                固定色边界稿 + 描边包
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void loadRealMapBoundaryCandidateReference()}
+                                                data-testid="qidahen-load-real-map-boundary-candidate-reference"
+                                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                            >
+                                                <ScanSearch size={14} />
+                                                叠加自然候选参考层
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => boundarySourceInputRef.current?.click()}
+                                                data-testid="qidahen-import-boundary-source"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
+                                            >
+                                                <Upload size={14} />
+                                                导入描线图
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => boundaryRepairZipInputRef.current?.click()}
+                                                data-testid="qidahen-import-boundary-repair-package"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-rose-400/50 bg-rose-950/20 px-3 py-2 text-xs font-black text-rose-100 transition hover:border-rose-200"
+                                            >
+                                                <Upload size={14} />
+                                                导入补边包
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={exportBoundaryTraceTemplate}
+                                                data-testid="qidahen-export-boundary-trace-template"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                            >
+                                                <Download size={14} />
+                                                导出描边参考图
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={exportBlankBoundaryPng}
+                                                data-testid="qidahen-export-blank-boundary-png"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/50 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
+                                            >
+                                                <Download size={14} />
+                                                导出空白边界 PNG
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={exportSelectedRegionTraceTemplate}
+                                                data-testid="qidahen-export-selected-region-trace-template"
+                                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                            >
+                                                <Download size={14} />
+                                                导出当前区域局部底稿
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={exportAllRegionTraceTemplates}
+                                                data-testid="qidahen-export-all-region-trace-templates"
+                                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 bg-stone-950/70 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                            >
+                                                <Download size={14} />
+                                                批量导出所有局部底稿 ZIP
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => regionTraceInputRef.current?.click()}
+                                                data-testid="qidahen-import-selected-region-trace-template"
+                                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                            >
+                                                <Upload size={14} />
+                                                导入当前区域局部描边图
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => regionTraceZipInputRef.current?.click()}
+                                                data-testid="qidahen-import-region-trace-zip"
+                                                className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                            >
+                                                <Upload size={14} />
+                                                批量导入局部描边 ZIP
+                                            </button>
+                                        </div>
+                                    </details>
+
+                                    <details data-testid="qidahen-boundary-secondary-region-workflow" className="rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
+                                        <summary className="cursor-pointer list-none text-xs font-black uppercase tracking-[0.16em] text-stone-300">
+                                            次路线：区域粗稿与移动代价
+                                        </summary>
+                                        <div className="mt-3 text-[11px] leading-5 text-stone-400">
+                                            这条路只在你现在就是要改区域中心点、通路类型、移动代价时使用。它不是边界主路，也不能替代完成边界图。
+                                        </div>
+                                        <div className="mt-3 grid gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={generateRealMapRegionColorDraft}
+                                                data-testid="qidahen-generate-real-map-region-color-draft"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300"
+                                                title="改方向入口：先按真实底图底色生成可编辑区域草稿，再微调区域，不把它当成正式边界成果。"
+                                            >
+                                                <WandSparkles size={14} />
+                                                次路线：载入人工整理粗轮廓初稿
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => generateRealMapRegionColorDraft({ autoDetectPassages: true })}
+                                                data-testid="qidahen-quick-start-region-path-draft"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                                title="一键生成区域粗稿并补全相邻通路，直接进入路径模式改边界类型和移动代价。"
+                                            >
+                                                <Route size={14} />
+                                                次路线：区域粗稿 + 通路 + 移动代价
+                                            </button>
+                                            <div
+                                                data-testid="qidahen-region-color-draft-disabled-note"
+                                                className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] font-bold leading-5 text-rose-100"
+                                            >
+                                                自动边界主路仍不够格时，这是一条改方向入口：它直接生成可编辑区域草稿，用来先得到区域 truth 的大轮廓；它不是正式边界成果，也不会绕过 accepted 门禁。
+                                            </div>
+                                        </div>
+                                    </details>
+
+                                    <details data-testid="qidahen-boundary-diagnostics-details" className="rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
+                                        <summary className="cursor-pointer list-none text-xs font-black uppercase tracking-[0.16em] text-stone-300">
+                                            候选诊断与自动结果说明
+                                        </summary>
+                                        <div className="mt-3 grid gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={exportRealMapBoundaryCandidatePng}
+                                                data-testid="qidahen-export-real-map-boundary-candidate"
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                            >
+                                                <Download size={14} />
+                                                导出候选诊断 PNG
+                                            </button>
+                                            <div
+                                                data-testid="qidahen-auto-extraction-verdict"
+                                                className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] font-bold leading-5 text-amber-100"
+                                            >
+                                                自动抽线不能自动生成正常成果：真实图像参数扫描最多 {REAL_MAP_COLOR_AUTO_EXTRACTION_VERDICT.bestObservedMatchedSeedCount}/{REAL_MAP_COLOR_AUTO_EXTRACTION_VERDICT.requiredSeedCount} 个独立 seed；高容差会命中 UI/文字/装饰。固定色边界稿只作为手修起稿层，不能直接保存为成果。
+                                            </div>
+                                            <div
+                                                data-testid="qidahen-real-map-boundary-candidate-readiness"
+                                                className={'rounded-md border px-3 py-2 text-[11px] font-bold leading-5 ' + (realMapBoundaryCandidateReadiness.canLoadAsDraft ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100' : 'border-rose-900/60 bg-rose-950/20 text-rose-100')}
+                                            >
+                                                {realMapBoundaryCandidateReadiness.label}：
+                                                seed {realMapBoundaryCandidateReadiness.matchedSeedCount}/{realMapBoundaryCandidateReadiness.requiredSeedCount}
+                                                <span className="mx-2 text-stone-600">/</span>
+                                                可填分区 {realMapBoundaryCandidateReadiness.closedFaceCount}
+                                                <span className="mx-2 text-stone-600">/</span>
+                                                UI {realMapBoundaryCandidateReadiness.uiPixelCount.toLocaleString()} px
+                                                {realMapBoundaryCandidatePixelCount > 0 ? (
+                                                    <div className="mt-1 text-amber-100">
+                                                        候选诊断 PNG 只用于看噪声和吸附参考；需要起稿请用“载入固定色边界稿”，写入后仍必须手工补成真实闭合边界。
+                                                    </div>
+                                                ) : null}
+                                                {realMapBoundaryCandidateReadiness.blockers.length > 0 ? (
+                                                    <div data-testid="qidahen-real-map-boundary-candidate-blockers" className="mt-1 space-y-0.5 text-rose-100">
+                                                        {realMapBoundaryCandidateReadiness.blockers.slice(0, 3).map((blocker) => (
+                                                            <div key={blocker}>- {blocker}</div>
+                                                        ))}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    </details>
+                                    </>
+                                    ) : null}
+                                </div>
+                                ) : null}
+                                <input ref={regionTraceInputRef} data-testid="qidahen-region-trace-input" type="file" accept="image/png" className="hidden" onChange={importSelectedRegionTraceTemplate} />
+                                <input ref={regionTraceZipInputRef} data-testid="qidahen-region-trace-zip-input" type="file" accept=".zip,application/zip" className="hidden" onChange={importRegionTraceZip} />
+                                <input ref={boundaryRepairZipInputRef} data-testid="qidahen-boundary-repair-package-input" type="file" accept=".zip,application/zip" className="hidden" onChange={importBoundaryRepairPackageZip} />
+                                <input ref={boundaryMaskInputRef} data-testid="qidahen-boundary-draft-input" type="file" accept="image/png" className="hidden" onChange={importBoundaryDraft} />
                                 <div className="mt-3 grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
-                                        onClick={generateBoundaryDraftFromColors}
-                                        data-testid="qidahen-generate-boundary-draft"
-                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/70 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
+                                        onClick={() => generateRegionsFromCurrentBoundary({ allowPartial: true })}
+                                        data-testid="qidahen-primary-generate-regions-from-boundary"
+                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/70 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                     >
                                         <WandSparkles size={14} />
-                                        生成边界图
+                                        生成区域
                                     </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void saveBoundaryOnly()}
+                                        data-testid="qidahen-primary-save-boundary-only"
+                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-rose-500/70 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-100 transition hover:border-rose-300"
+                                    >
+                                        <Save size={14} />
+                                        保存边界
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void saveRegionsOnly()}
+                                        data-testid="qidahen-primary-save-regions-only"
+                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/70 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                    >
+                                        <Save size={14} />
+                                        保存区域
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void saveGraphOnly()}
+                                        data-testid="qidahen-primary-save-graph-only"
+                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-violet-500/70 bg-violet-500/10 px-3 py-2 text-xs font-black text-violet-100 transition hover:border-violet-300"
+                                    >
+                                        <Route size={14} />
+                                        保存连线
+                                    </button>
+                                    {showAdvancedWorkbench ? (
+                                        <button
+                                            type="button"
+                                            onClick={saveRegionData}
+                                            data-testid="qidahen-primary-save-workspace"
+                                            className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-sky-500/70 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300"
+                                        >
+                                            <Save size={14} />
+                                            保存工作区（全部）
+                                        </button>
+                                    ) : null}
+                                </div>
+                                {showAdvancedWorkbench ? (
+                                <>
+                                <div className="mt-3 grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
                                         onClick={bakeCurrentBoundaryDraft}
@@ -4857,6 +15943,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     >
                                         <Save size={14} />
                                         固化微调
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={keepClosedBoundaryOnly}
+                                        data-testid="qidahen-keep-closed-boundary-only"
+                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                    >
+                                        <Eraser size={14} />
+                                        只保留有效分区边界
                                     </button>
                                     <button
                                         type="button"
@@ -4869,23 +15964,77 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => boundaryMaskInputRef.current?.click()}
-                                        data-testid="qidahen-import-boundary-draft"
+                                        onClick={() => boundarySourceInputRef.current?.click()}
+                                        data-testid="qidahen-import-boundary-source-secondary"
                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-xs font-black text-stone-200 transition hover:border-stone-500"
                                     >
                                         <Upload size={14} />
-                                        导入边界图
+                                        导入带底图描线图
                                     </button>
                                 </div>
-                                <input ref={boundaryMaskInputRef} type="file" accept="image/png" className="hidden" onChange={importBoundaryDraft} />
+                                <details className="mt-3 rounded-md border border-stone-800 bg-stone-950/45 px-3 py-2">
+                                    <summary
+                                        data-testid="qidahen-readonly-boundary-diagnostics-summary"
+                                        className="cursor-pointer text-xs font-black text-stone-300"
+                                    >
+                                        只读底图诊断
+                                    </summary>
+                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={generateBoundaryDraftFromColors}
+                                            data-testid="qidahen-generate-boundary-draft"
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/70 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
+                                        >
+                                            <WandSparkles size={14} />
+                                            诊断底图颜色
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => void loadRoughShapeOutlineDraft()}
+                                            data-testid="qidahen-load-rough-shape-outline-draft"
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/70 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                        >
+                                            <WandSparkles size={14} />
+                                            生成粗轮廓初稿
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => void loadRealMapColorLineDraft()}
+                                            data-testid="qidahen-load-real-map-color-line-draft"
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/70 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
+                                        >
+                                            <WandSparkles size={14} />
+                                            载入固定色边界稿
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={exportBoundaryTemplateMap}
+                                            data-testid="qidahen-export-boundary-template-map"
+                                            className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/60 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
+                                        >
+                                            <Download size={14} />
+                                            导出原始底图
+                                        </button>
+                                    </div>
+                                </details>
                                 <button
                                     type="button"
-                                    onClick={generateRegionsFromCurrentBoundary}
+                                    onClick={() => generateRegionsFromCurrentBoundary({ allowPartial: true })}
                                     data-testid="qidahen-generate-regions-from-boundary"
                                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-500/70 bg-emerald-500/10 px-3 py-2 text-sm font-black text-emerald-100 transition hover:border-emerald-300"
                                 >
                                     <WandSparkles size={15} />
-                                    按边界图生成初始区域
+                                    生成粗略初始区域
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => generateRegionsFromCurrentBoundary({ allowPartial: true })}
+                                    data-testid="qidahen-debug-generate-regions-from-boundary"
+                                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/65 px-3 py-2 text-xs font-black text-stone-200 transition hover:border-stone-500"
+                                >
+                                    <WandSparkles size={14} />
+                                    调试生成当前独立分区
                                 </button>
                                 <button
                                     type="button"
@@ -4893,24 +16042,567 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     data-testid="qidahen-painted-boundary-only-toggle"
                                     className={'mt-2 inline-flex w-full items-center justify-center rounded-md border px-3 py-2 text-xs font-black transition ' + (paintedBoundaryOnly ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
-                                    {paintedBoundaryOnly ? '当前：只用边界颜色/手工补边' : '当前：原图启发式 + 边界颜色'}
+                                    {paintedBoundaryOnly ? '当前：只用边界颜色/手工补边' : '实验模式：原图启发式 + 边界颜色'}
                                 </button>
                                 <div className="mt-2 text-[11px] leading-5 text-stone-400">
-                                    正确流程：先从实画颜色生成独立边界图，微调/导入/导出这张图，再按边界图生成区域。断开的零散色块不强行补，后续继续手修。
+                                    正式主路：导入完成边界图最稳；如果你是在原地图上描线，就导入带底图描线图。粗轮廓初稿现在只给一版大致分界，颜色候选只做诊断和吸附参考，不再写入编辑层，避免把断线/噪声误当边界。
                                 </div>
-                            </div>
+                                <div className="mt-2 rounded-md border border-amber-500/25 bg-amber-500/8 px-2 py-1.5 text-[11px] leading-5 text-amber-100">
+                                    自动颜色线扫描已被看图和数据否定：它最多只能分出局部 seed，不能直接生成正常成果。继续走手绘/补边包回导，再逐区看图验收。
+                                </div>
+                                <div className="mt-2 rounded-md border border-emerald-500/20 bg-emerald-500/8 px-2 py-1.5 text-[11px] leading-5 text-emerald-100">
+                                    正常成果链：导出底图模板 → 外部描边 → 导入完成边界图或带底图描线图 → 工具内补边/去噪 → 保存工作区 → 按边界分割全图生成区域。
+                                </div>
+                                {boundarySourceReferenceImage ? (
+                                    <div className="mt-2 rounded-md border border-cyan-500/20 bg-cyan-500/8 px-2 py-1.5 text-[11px] leading-5 text-cyan-100">
+                                        已载入参考层。它可能来自你的描线图，也可能来自底图候选；正式边界仍以你手绘/导入的闭合边界图为准。
+                                    </div>
+                                ) : null}
                             <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
                                 <div>
-                                    当前边界图像素：<span className="font-mono text-cyan-200">{boundaryDraftPixelCount.toLocaleString()}</span>
+                                    当前边界图像素：<span className="font-mono text-rose-200">{boundaryDraftPixelCount.toLocaleString()}</span>
                                 </div>
                                 <div>
-                                    当前最终障碍像素：<span className="font-mono text-stone-200">{barrierPixelCount.toLocaleString()}</span>
+                                    当前最终红线/障碍像素：<span className="font-mono text-rose-200">{barrierPixelCount.toLocaleString()}</span>
                                 </div>
                                 <div>
-                                    手工补边：<span className="font-mono text-emerald-200">{manualBarrierAddCount.toLocaleString()}</span>
+                                    手工补边：<span data-testid="qidahen-manual-barrier-add-count" className="font-mono text-rose-200">{manualBarrierAddCount.toLocaleString()}</span>
                                     <span className="mx-2 text-stone-600">/</span>
-                                    去噪：<span className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
+                                    去噪：<span data-testid="qidahen-manual-barrier-remove-count" className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
                                 </div>
+                                <div>
+                                    底图支撑：<span data-testid="qidahen-real-map-boundary-support-count" className="font-mono text-amber-200">{realMapBoundarySupportPixelCount.toLocaleString()}</span>
+                                    <span className="mx-2 text-stone-600">/</span>
+                                    候选诊断：<span data-testid="qidahen-real-map-boundary-candidate-count" className="font-mono text-amber-200">{realMapBoundaryCandidatePixelCount.toLocaleString()}</span>
+                                    <span className="mx-2 text-stone-600">/</span>
+                                    吸附：<span data-testid="qidahen-real-map-boundary-snap-state" className="font-mono text-emerald-200">{snapBarrierBrushToRealMapSupport ? 'on' : 'off'}</span>
+                                </div>
+                                {boundarySourceReferenceImage ? (
+                                    <div>
+                                        参考层：<span className="font-mono text-cyan-200">{showBoundarySourceReference ? `${Math.round(boundarySourceReferenceOpacity * 100)}%` : '隐藏'}</span>
+                                    </div>
+                                ) : null}
+                                {hasBoundaryDraft ? (
+                                    <div
+                                        data-testid="qidahen-boundary-closure-diagnostics"
+                                        className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/8 px-3 py-2 text-[11px] leading-5 text-emerald-100"
+                                    >
+                                        <div className="font-black uppercase tracking-[0.14em] text-emerald-200">分区诊断</div>
+                                        <div>
+                                            可填分区：<span data-testid="qidahen-closed-face-count" className="font-mono text-emerald-100">{boundaryClosureDiagnostics.closedFaceCount}</span>
+                                            <span className="mx-2 text-stone-600">/</span>
+                                            独立 seed：<span data-testid="qidahen-closed-seed-hit-count" className="font-mono text-emerald-100">{boundaryClosureDiagnostics.matchedSeedCount}</span>
+                                        </div>
+                                        <div>
+                                            最大分区：<span className="font-mono text-stone-200">{boundaryClosureDiagnostics.largestFacePixelCount.toLocaleString()}</span> px
+                                        </div>
+                                        <div data-testid="qidahen-open-boundary-summary" className={boundaryOpenDiagnostics.openComponentCount > 0 ? 'text-amber-100' : 'text-emerald-100'}>
+                                            开放线段：<span data-testid="qidahen-open-boundary-count" className="font-mono">{boundaryOpenDiagnostics.openComponentCount}</span>
+                                            {boundaryOpenDiagnostics.openComponentCount > 0 ? `，最大 ${boundaryOpenDiagnostics.largestOpenPixelCount.toLocaleString()} px` : ''}
+                                        </div>
+                                        <div data-testid="qidahen-unexplained-open-boundary-summary" className={unexplainedBoundaryOpenDiagnostics.openComponentCount > 0 ? 'text-amber-100' : 'text-emerald-100'}>
+                                            未解释开放线：<span data-testid="qidahen-unexplained-open-boundary-count" className="font-mono">{unexplainedBoundaryOpenDiagnostics.openComponentCount}</span>
+                                            {unexplainedBoundaryOpenDiagnostics.openComponentCount > 0 ? `，最大 ${unexplainedBoundaryOpenDiagnostics.largestOpenPixelCount.toLocaleString()} px` : ''}
+                                        </div>
+                                        {unexplainedBoundaryOpenDiagnostics.hints.length > 0 ? (
+                                            <div data-testid="qidahen-open-boundary-hints" className="text-amber-100">
+                                                提示点：{unexplainedBoundaryOpenDiagnostics.hints.slice(0, 3).map((hint) => (
+                                                    `${hint.nearestRegionName ? `${hint.nearestRegionName} ` : ''}${hint.endpoints[0].x},${hint.endpoints[0].y} ↔ ${hint.endpoints[1].x},${hint.endpoints[1].y}${hint.distanceToNearestSeed != null ? `，距 seed ${Math.round(hint.distanceToNearestSeed)}px` : ''}`
+                                                )).join('；')}
+                                            </div>
+                                        ) : null}
+                                        {unexplainedBoundaryOpenDiagnostics.hints.length > 0 ? (
+                                            <button
+                                                type="button"
+                                                onClick={focusNearestOpenBoundaryHint}
+                                                data-testid="qidahen-focus-nearest-open-boundary"
+                                                className="mt-2 rounded-md border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-200"
+                                            >
+                                                定位断点并手绘补边
+                                            </button>
+                                        ) : null}
+                                        {boundaryClosureDiagnostics.unmatchedRegionNames.length > 0 ? (
+                                            <div data-testid="qidahen-unmatched-closed-seeds" className="text-amber-100">
+                                                未独立：{boundaryClosureDiagnostics.unmatchedRegionNames.slice(0, 5).join('、')}
+                                                {boundaryClosureDiagnostics.unmatchedRegionNames.length > 5 ? ` 等 ${boundaryClosureDiagnostics.unmatchedRegionNames.length} 个` : ''}
+                                            </div>
+                                        ) : (
+                                            <div className="text-emerald-100">所有正式区域 seed 都已进入独立分区。</div>
+                                        )}
+                                        <div data-testid="qidahen-boundary-repair-action-hint" className="mt-2 rounded border border-amber-400/20 bg-stone-950/45 px-2 py-1.5 text-amber-50">
+                                            下一步：{boundaryRepairActionHint}
+                                        </div>
+                                        <div className="mt-2 grid grid-cols-2 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={focusNextUnmatchedSeedForTracing}
+                                                data-testid="qidahen-diagnostics-focus-next-unmatched-seed"
+                                                disabled={boundaryClosureDiagnostics.unmatchedRegions.length === 0}
+                                                className="inline-flex items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-500/10 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-300 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
+                                            >
+                                                <Pencil size={12} />
+                                                定位未独立 seed
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const firstHint = unexplainedBoundaryOpenDiagnostics.hints[0];
+                                                    if (firstHint) {
+                                                        focusOpenBoundaryHintForTracing(firstHint, 0);
+                                                    } else {
+                                                        setStatusMessage('当前没有未解释开放线段。');
+                                                    }
+                                                }}
+                                                data-testid="qidahen-diagnostics-focus-first-open-boundary"
+                                                disabled={unexplainedBoundaryOpenDiagnostics.hints.length === 0}
+                                                className="inline-flex items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-500/10 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-300 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
+                                            >
+                                                <Pencil size={12} />
+                                                定位开放线段
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={keepClosedBoundaryOnly}
+                                                data-testid="qidahen-diagnostics-keep-valid-partitions"
+                                                disabled={barrierPixelCount === 0}
+                                                className="inline-flex items-center justify-center gap-1 rounded-md border border-cyan-500/45 bg-cyan-500/10 px-2 py-1 text-[11px] font-black text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
+                                            >
+                                                <Eraser size={12} />
+                                                舍弃无效断线
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={exportBoundaryRepairPackage}
+                                                data-testid="qidahen-diagnostics-export-repair-package"
+                                                disabled={boundaryRepairProblemCount === 0}
+                                                className="inline-flex items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-500/10 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-300 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
+                                            >
+                                                <Download size={12} />
+                                                导出问题包
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : null}
+                                {hasBoundaryDraft && (boundaryClosureDiagnostics.unmatchedRegions.length > 0 || unexplainedBoundaryOpenDiagnostics.hints.length > 0 || weakRealMapFitRegionReports.length > 0) ? (
+                                    <div
+                                        data-testid="qidahen-boundary-repair-queue"
+                                        className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/8 px-3 py-2 text-[11px] leading-5 text-amber-50"
+                                    >
+                                        <div className="mb-2 flex items-center justify-between gap-3">
+                                            <div className="font-black uppercase tracking-[0.14em] text-amber-100">补边问题队列</div>
+                                            <div data-testid="qidahen-boundary-repair-queue-count" className="font-mono text-amber-100/75">
+                                                {boundaryClosureDiagnostics.unmatchedRegions.length + unexplainedBoundaryOpenDiagnostics.hints.length + weakRealMapFitRegionReports.length}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {weakRealMapFitRegionReports.map((report) => (
+                                                <button
+                                                    key={`weak-support-${report.regionId}`}
+                                                    type="button"
+                                                    onClick={() => focusWeakSupportRegionForTracing(report)}
+                                                    data-testid={`qidahen-repair-queue-weak-support-${report.regionId}`}
+                                                    className="flex w-full items-center justify-between gap-2 rounded border border-rose-300/30 bg-rose-950/25 px-2 py-1 text-left transition hover:border-rose-100"
+                                                >
+                                                    <span className="min-w-0 truncate font-bold text-rose-100">{report.regionName} 底图弱支撑</span>
+                                                    <span className="shrink-0 font-mono text-rose-100/75">
+                                                        {(report.supportRatio * 100).toFixed(1)}%
+                                                    </span>
+                                                </button>
+                                            ))}
+                                            {boundaryClosureDiagnostics.unmatchedRegions.map((unmatchedRegion) => {
+                                                const region = regions.find((item) => item.id === unmatchedRegion.id) ?? null;
+                                                return (
+                                                    <button
+                                                        key={`unmatched-${unmatchedRegion.id}`}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (region) {
+                                                                focusRegionSeedForTracing(region, 'unmatched');
+                                                            }
+                                                        }}
+                                                        data-testid={`qidahen-repair-queue-unmatched-${unmatchedRegion.id}`}
+                                                        className="flex w-full items-center justify-between gap-2 rounded border border-amber-400/25 bg-stone-950/45 px-2 py-1 text-left transition hover:border-amber-200"
+                                                    >
+                                                        <span className="min-w-0 truncate font-bold text-amber-100">{unmatchedRegion.name} 未独立 seed</span>
+                                                        <span className="shrink-0 font-mono text-amber-100/70">
+                                                            {unmatchedRegion.seed ? `${unmatchedRegion.seed.x},${unmatchedRegion.seed.y}` : '缺 seed'}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                            {unexplainedBoundaryOpenDiagnostics.hints.map((hint, index) => (
+                                                <button
+                                                    key={`open-${index}-${hint.endpoints[0].x}-${hint.endpoints[0].y}`}
+                                                    type="button"
+                                                    onClick={() => focusOpenBoundaryHintForTracing(hint, index)}
+                                                    data-testid={`qidahen-repair-queue-open-${index}`}
+                                                    className="flex w-full items-center justify-between gap-2 rounded border border-amber-400/25 bg-stone-950/45 px-2 py-1 text-left transition hover:border-amber-200"
+                                                >
+                                                    <span className="min-w-0 truncate font-bold text-amber-100">
+                                                        {hint.nearestRegionName ? `${hint.nearestRegionName} ` : ''}开放线段 {index + 1}
+                                                    </span>
+                                                    <span className="shrink-0 font-mono text-amber-100/70">
+                                                        {hint.endpoints[0].x},{hint.endpoints[0].y} ↔ {hint.endpoints[1].x},{hint.endpoints[1].y}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : null}
+                                {boundaryRepairPreview ? (
+                                    <div
+                                        data-testid="qidahen-boundary-repair-preview"
+                                        className="mt-3 rounded-lg border border-amber-400/35 bg-amber-400/10 px-3 py-2 text-[11px] leading-5 text-amber-50"
+                                    >
+                                        <div className="mb-2 flex items-center justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <div data-testid="qidahen-boundary-repair-preview-title" className="truncate font-black text-amber-100">
+                                                    {boundaryRepairPreview.title}
+                                                </div>
+                                                <div data-testid="qidahen-boundary-repair-preview-meta" className="font-mono text-amber-100/75">
+                                                    {boundaryRepairPreview.kind}
+                                                    <span className="mx-1 opacity-45">·</span>
+                                                    crop {boundaryRepairPreview.crop.left},{boundaryRepairPreview.crop.top}
+                                                    +{boundaryRepairPreview.crop.width}x{boundaryRepairPreview.crop.height}
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setBoundaryRepairPreview(null)}
+                                                data-testid="qidahen-close-boundary-repair-preview"
+                                                aria-label="关闭补边问题裁图"
+                                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-amber-300/35 bg-stone-950/50 text-amber-100 transition hover:border-amber-100"
+                                            >
+                                                <X size={13} />
+                                            </button>
+                                        </div>
+                                        <img
+                                            src={boundaryRepairPreview.dataUrl}
+                                            alt={boundaryRepairPreview.title}
+                                            data-testid="qidahen-boundary-repair-preview-image"
+                                            className="max-h-72 w-full rounded border border-white/10 object-contain"
+                                        />
+                                        <div data-testid="qidahen-boundary-repair-preview-detail" className="mt-2 text-amber-100/85">
+                                            {boundaryRepairPreview.detail}
+                                        </div>
+                                    </div>
+                                ) : null}
+                                <div
+                                    data-testid="qidahen-boundary-quality-report"
+                                    className={`mt-3 rounded-lg border px-3 py-2 text-[11px] leading-5 ${boundaryQualityReport.toneClass}`}
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div data-testid="qidahen-boundary-quality-label" className="font-black uppercase tracking-[0.14em]">
+                                            {boundaryQualityReport.label}
+                                        </div>
+                                        <div className="font-mono text-[10px] opacity-80">
+                                            {boundaryQualityReport.generatedCount}/{boundaryQualityReport.formalRegionCount}
+                                        </div>
+                                    </div>
+                                    <div data-testid="qidahen-boundary-quality-detail" className="mt-1">
+                                        {boundaryQualityReport.detail}
+                                    </div>
+                                    <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-stone-300">
+                                        <div>
+                                            缺 seed：<span data-testid="qidahen-quality-missing-seed-count" className="font-mono text-stone-100">{boundaryQualityReport.missingSeedNames.length}</span>
+                                        </div>
+                                        <div>
+                                            UI 边界：<span data-testid="qidahen-quality-boundary-ui-pixels" className="font-mono text-stone-100">{boundaryQualityReport.boundaryUiPixels.toLocaleString()}</span>
+                                        </div>
+                                        <div>
+                                            UI mask：<span data-testid="qidahen-quality-mask-ui-pixels" className="font-mono text-stone-100">{boundaryQualityReport.maskUiPixels.toLocaleString()}</span>
+                                        </div>
+                                        <div>
+                                            未独立：<span data-testid="qidahen-quality-unmatched-count" className="font-mono text-stone-100">{boundaryQualityReport.unmatchedCount}</span>
+                                        </div>
+                                        <div>
+                                            开放线：<span data-testid="qidahen-quality-open-count" className="font-mono text-stone-100">{boundaryQualityReport.openComponentCount}</span>
+                                        </div>
+                                        <div>
+                                            未解释开放线：<span data-testid="qidahen-quality-unexplained-open-count" className="font-mono text-stone-100">{boundaryQualityReport.unexplainedOpenComponentCount}</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        data-testid="qidahen-boundary-normality-report"
+                                        className={`mt-2 rounded-md border px-2 py-1.5 ${boundaryQualityReport.normality.toneClass}`}
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div data-testid="qidahen-boundary-normality-label" className="font-black">
+                                                {boundaryQualityReport.normality.label}
+                                            </div>
+                                            <div data-testid="qidahen-boundary-normality-state" className="font-mono text-[10px] opacity-80">
+                                                {boundaryQualityReport.normality.state}
+                                            </div>
+                                        </div>
+                                        <div data-testid="qidahen-boundary-normality-approval-count" className="mt-0.5 font-mono text-[10px] opacity-80">
+                                            人工验收 {boundaryQualityReport.normality.approvedCount}/{boundaryQualityReport.normality.requiredApprovalCount}
+                                        </div>
+                                        <div data-testid="qidahen-boundary-real-map-fit" className="mt-0.5 font-mono text-[10px] opacity-80">
+                                            底图贴合 {boundaryQualityReport.normality.realMapFit.state}
+                                            <span className="mx-1 opacity-45">·</span>
+                                            {(boundaryQualityReport.normality.realMapFit.supportRatio * 100).toFixed(1)}%
+                                            <span className="mx-1 opacity-45">·</span>
+                                            {boundaryQualityReport.normality.realMapFit.supportedBoundaryPixelCount.toLocaleString()}
+                                            /{boundaryQualityReport.normality.realMapFit.boundaryPixelCount.toLocaleString()} px
+                                            {boundaryQualityReport.normality.realMapFit.weakRegionNames.length > 0 ? (
+                                                <span data-testid="qidahen-boundary-real-map-fit-weak-regions">
+                                                    <span className="mx-1 opacity-45">·</span>
+                                                    弱支撑 {boundaryQualityReport.normality.realMapFit.weakRegionNames.join('、')}
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                        <div data-testid="qidahen-boundary-shape-report" className="mt-0.5 font-mono text-[10px] opacity-80">
+                                            直线形态 {boundaryQualityReport.normality.shape.state}
+                                            <span className="mx-1 opacity-45">·</span>
+                                            {(boundaryQualityReport.normality.shape.straightSupportRatio * 100).toFixed(1)}%
+                                            <span className="mx-1 opacity-45">·</span>
+                                            {boundaryQualityReport.normality.shape.straightSupportedPixelCount.toLocaleString()}
+                                            /{boundaryQualityReport.normality.shape.boundaryPixelCount.toLocaleString()} px
+                                        </div>
+                                        <div data-testid="qidahen-boundary-normality-detail" className="mt-1 text-[10px] opacity-85">
+                                            {boundaryQualityReport.normality.detail}
+                                        </div>
+                                        <div data-testid="qidahen-acceptance-package-signature-state" className="mt-0.5 font-mono text-[10px] opacity-80">
+                                            验收包 {isCurrentAcceptancePackageExported ? 'current' : lastAcceptancePackageSignature ? 'stale' : 'missing'}
+                                        </div>
+                                        {boundaryQualityReport.normality.blockers.length > 0 ? (
+                                            <div data-testid="qidahen-boundary-normality-blockers" className="mt-1 space-y-0.5 text-[10px] text-amber-100">
+                                                {boundaryQualityReport.normality.blockers.slice(0, 5).map((blocker) => (
+                                                    <div key={blocker}>{blocker}</div>
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                        <div className="mt-1 grid grid-cols-1 gap-1">
+                                            {boundaryQualityReport.normality.regionCoverages.map((coverage) => (
+                                                <div
+                                                    key={coverage.regionId}
+                                                    data-testid={`qidahen-normality-region-${coverage.regionId}`}
+                                                    className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded border border-white/10 bg-black/15 px-2 py-0.5 text-[10px]"
+                                                >
+                                                    <span className="min-w-0 truncate">{coverage.regionName}</span>
+                                                    <span className="shrink-0 font-mono">
+                                                        {coverage.coverageRatio == null ? 'n/a' : `${(coverage.coverageRatio * 100).toFixed(1)}%`}
+                                                        <span className="mx-1 opacity-45">·</span>
+                                                        {coverage.label}
+                                                    </span>
+                                                    <span
+                                                        data-testid={`qidahen-normality-acceptance-${coverage.regionId}`}
+                                                        className={`shrink-0 font-black ${
+                                                            coverage.acceptanceState === 'approved'
+                                                                ? 'text-emerald-100'
+                                                                : coverage.acceptanceState === 'stale'
+                                                                    ? 'text-amber-100'
+                                                                    : coverage.acceptanceState === 'blocked'
+                                                                        ? 'text-rose-100'
+                                                                        : 'text-stone-200'
+                                                        }`}
+                                                    >
+                                                        {coverage.acceptanceLabel}
+                                                    </span>
+                                                    <div className="col-span-3 flex flex-wrap items-center justify-end gap-1">
+                                                        <span
+                                                            data-testid={`qidahen-normality-preview-state-${coverage.regionId}`}
+                                                            className={`mr-auto rounded border px-1.5 py-0.5 font-mono ${
+                                                                hasViewedRegionAcceptanceCrop(coverage)
+                                                                    ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-100'
+                                                                    : 'border-stone-600 bg-stone-950/45 text-stone-300'
+                                                            }`}
+                                                        >
+                                                            {hasViewedRegionAcceptanceCrop(coverage) ? '已看图' : '未看图'}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            disabled={coverage.acceptanceState === 'blocked' || coverage.acceptanceState === 'not-generated'}
+                                                            onClick={() => openRegionAcceptancePreview(coverage)}
+                                                            data-testid={`qidahen-view-normality-region-${coverage.regionId}`}
+                                                            className="rounded border border-cyan-400/45 bg-cyan-400/10 px-2 py-0.5 font-black text-cyan-100 transition hover:border-cyan-200 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
+                                                        >
+                                                            查看裁图
+                                                        </button>
+                                                        {coverage.acceptanceState === 'approved' ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => revokeRegionAcceptance(coverage.regionId, coverage.regionName)}
+                                                                data-testid={`qidahen-revoke-normality-acceptance-${coverage.regionId}`}
+                                                                className="rounded border border-stone-500/60 bg-stone-950/60 px-2 py-0.5 font-black text-stone-100 transition hover:border-stone-300"
+                                                            >
+                                                                撤销
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                disabled={!(
+                                                                    boundaryQualityReport.normality.state === 'needs-visual-review'
+                                                                    && isCurrentAcceptancePackageExported
+                                                                    && hasViewedRegionAcceptanceCrop(coverage)
+                                                                    && coverage.acceptanceState !== 'blocked'
+                                                                    && coverage.acceptanceState !== 'not-generated'
+                                                                )}
+                                                                onClick={() => markRegionAcceptanceApproved(coverage)}
+                                                                data-testid={`qidahen-approve-normality-region-${coverage.regionId}`}
+                                                                className="rounded border border-sky-400/45 bg-sky-400/10 px-2 py-0.5 font-black text-sky-100 transition hover:border-sky-200 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
+                                                            >
+                                                                看图通过
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {regionAcceptancePreview ? (
+                                            <div
+                                                data-testid="qidahen-region-acceptance-preview"
+                                                className="mt-2 rounded-md border border-cyan-400/35 bg-cyan-400/10 p-2 text-[10px] text-cyan-50"
+                                            >
+                                                <div className="mb-1 flex items-center justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <div data-testid="qidahen-region-acceptance-preview-title" className="truncate font-black">
+                                                            {regionAcceptancePreview.regionName} 验收裁图
+                                                        </div>
+                                                        <div data-testid="qidahen-region-acceptance-preview-meta" className="font-mono opacity-80">
+                                                            {regionAcceptancePreview.pixelCount.toLocaleString()} px
+                                                            <span className="mx-1 opacity-45">·</span>
+                                                            crop {regionAcceptancePreview.crop.left},{regionAcceptancePreview.crop.top}
+                                                            -{regionAcceptancePreview.crop.right},{regionAcceptancePreview.crop.bottom}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setRegionAcceptancePreview(null)}
+                                                        data-testid="qidahen-close-region-acceptance-preview"
+                                                        aria-label="关闭区域验收裁图"
+                                                        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-cyan-300/35 bg-stone-950/50 text-cyan-100 transition hover:border-cyan-100"
+                                                    >
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                                <img
+                                                    src={regionAcceptancePreview.dataUrl}
+                                                    alt={`${regionAcceptancePreview.regionName} 验收裁图`}
+                                                    data-testid="qidahen-region-acceptance-preview-image"
+                                                    className="max-h-72 w-full rounded border border-white/10 object-contain"
+                                                />
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                    <div className="mt-2 space-y-1" data-testid="qidahen-boundary-quality-region-list">
+                                        {boundaryQualityReport.regionDetails.map((detail) => (
+                                            <div
+                                                key={detail.regionId}
+                                                data-testid={`qidahen-quality-region-${detail.regionId}`}
+                                                className={`rounded-md border px-2 py-1 ${detail.toneClass}`}
+                                                title={detail.note}
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="min-w-0 truncate font-bold">{detail.regionName}</span>
+                                                    <span className="shrink-0 font-black">{detail.label}</span>
+                                                </div>
+                                                <div className="truncate text-[10px] opacity-75">{detail.note}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={exportBoundaryQualityReport}
+                                        data-testid="qidahen-export-boundary-quality-report"
+                                        className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-600 bg-stone-950/70 px-3 py-1.5 text-[11px] font-black text-stone-100 transition hover:border-stone-400"
+                                    >
+                                        <Download size={13} />
+                                        导出质量报告 JSON
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={exportPartitionPreviewPng}
+                                        data-testid="qidahen-export-partition-preview"
+                                        className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-500/45 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-black text-cyan-100 transition hover:border-cyan-300"
+                                    >
+                                        <Download size={13} />
+                                        导出分区预览 PNG
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={exportBoundaryRepairPackage}
+                                        data-testid="qidahen-export-boundary-repair-package"
+                                        className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-500/45 bg-amber-500/10 px-3 py-1.5 text-[11px] font-black text-amber-100 transition hover:border-amber-300"
+                                    >
+                                        <Download size={13} />
+                                        导出补边问题包 ZIP
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={exportRegionAcceptancePackage}
+                                        data-testid="qidahen-export-region-acceptance-package"
+                                        className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-500/45 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-black text-emerald-100 transition hover:border-emerald-300"
+                                    >
+                                        <Download size={13} />
+                                        导出区域验收包 ZIP
+                                    </button>
+                                </div>
+                                {lastBoundaryExtractionStats ? (
+                                    <div className="mt-3 rounded-lg border border-stone-800 bg-stone-950/70 px-3 py-2 text-[11px] leading-5 text-stone-400">
+                                        <div className="font-black uppercase tracking-[0.14em] text-stone-500">
+                                            最近抽线读数 · {
+                                                lastBoundaryExtractionStats.writeMode === 'candidate-reference'
+                                                    ? '当前底图区域导向候选参考'
+                                                    : lastBoundaryExtractionStats.writeMode === 'editable-draft'
+                                                        ? '真实底图颜色线编辑草稿'
+                                                        : (lastBoundaryExtractionStats.mode === 'hand-drawn' ? '带底图描线图' : '当前底图实验')
+                                            }
+                                        </div>
+                                        <div>
+                                            抽色命中：<span className="font-mono text-cyan-200">{lastBoundaryExtractionStats.matchedPixelCount.toLocaleString()}</span>
+                                        </div>
+                                        {lastBoundaryExtractionStats.drawnChangedPixelCount != null ? (
+                                            <div>
+                                                底图差分：<span className="font-mono text-cyan-200">{lastBoundaryExtractionStats.drawnChangedPixelCount.toLocaleString()}</span>
+                                            </div>
+                                        ) : null}
+                                        <div>
+                                            贴支撑带：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.boundedPixelCount.toLocaleString()}</span>
+                                        </div>
+                                        {lastBoundaryExtractionStats.guidePixelCount != null ? (
+                                            <div>
+                                                区域导向带：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.guidePixelCount.toLocaleString()}</span>
+                                            </div>
+                                        ) : null}
+                                        {lastBoundaryExtractionStats.decorationExcludedPixelCount != null ? (
+                                            <div>
+                                                装饰/标记排除：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.decorationExcludedPixelCount.toLocaleString()}</span>
+                                            </div>
+                                        ) : null}
+                                        <div>
+                                            {lastBoundaryExtractionStats.mode === 'hand-drawn' ? '抽线后' : '剔除后'}：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.sealedPixelCount.toLocaleString()}</span>
+                                        </div>
+                                        <div>
+                                            最终保留：<span className="font-mono text-emerald-200">{lastBoundaryExtractionStats.keptPixelCount.toLocaleString()}</span>
+                                        </div>
+                                        <div>
+                                            舍弃：<span className="font-mono text-fuchsia-200">{lastBoundaryExtractionStats.discardedPixelCount.toLocaleString()}</span>
+                                        </div>
+                                        {lastBoundaryExtractionStats.mode === 'auto-map' && lastBoundaryExtractionStats.componentCount != null ? (
+                                            <div>
+                                                边界链：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.keptComponentCount ?? 0}</span>
+                                                <span className="mx-1 text-stone-600">/</span>
+                                                <span className="font-mono text-stone-500">{lastBoundaryExtractionStats.componentCount}</span>
+                                            </div>
+                                        ) : null}
+                                        {lastBoundaryExtractionStats.mode === 'auto-map' && lastBoundaryExtractionStats.writeMode === 'candidate-reference' ? (
+                                            <div className="text-amber-200">
+                                                候选判定：只写入参考层，不写入边界图本体；需要沿参考手绘成闭合边界后再生成区域。
+                                            </div>
+                                        ) : null}
+                                        {lastBoundaryExtractionStats.mode === 'auto-map' && lastBoundaryExtractionStats.writeMode === 'editable-draft' ? (
+                                            <div className="text-amber-200">
+                                                草稿判定：已写入边界编辑层，但仍是未闭合初始线稿；断线可舍弃，正式成果必须逐区验收。
+                                            </div>
+                                        ) : null}
+                                        {lastBoundaryExtractionStats.mode === 'auto-map' && lastBoundaryExtractionStats.writeMode === 'read-only' ? (
+                                            <div className="text-amber-200">
+                                                诊断判定：真实底图颜色撞色严重，只读显示，不写入边界图。
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                ) : null}
                             </div>
                             <div className="space-y-2">
                                 {boundaryPresets.map((preset) => (
@@ -4932,16 +16624,121 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     </button>
                                 ))}
                             </div>
+                                </>
+                                ) : (
+                                    <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
+                                        <div>
+                                            初始红线像素：<span className="font-mono text-rose-200">{boundaryDraftPixelCount.toLocaleString()}</span>
+                                            <span className="mx-2 text-stone-600">/</span>
+                                            最终红线/障碍：<span className="font-mono text-rose-200">{barrierPixelCount.toLocaleString()}</span>
+                                        </div>
+                                        <div>
+                                            手工补边：<span data-testid="qidahen-manual-barrier-add-count" className="font-mono text-rose-200">{manualBarrierAddCount.toLocaleString()}</span>
+                                            <span className="mx-2 text-stone-600">/</span>
+                                            去噪：<span data-testid="qidahen-manual-barrier-remove-count" className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
+                                        </div>
+                                        <label className="mt-3 block text-stone-300">
+                                            画笔宽度约 {brushSize * 2}px
+                                            <input
+                                                data-testid="qidahen-compact-brush-size-input"
+                                                type="range"
+                                                min="1"
+                                                max="12"
+                                                value={brushSize}
+                                                onChange={(event) => setBrushSize(Number(event.target.value))}
+                                                className="mt-2 w-full"
+                                            />
+                                        </label>
+                                        <label className="mt-3 block text-stone-300">
+                                            缩放 {(displayScale).toFixed(2)}x
+                                            <input
+                                                data-testid="qidahen-compact-zoom-input"
+                                                type="range"
+                                                min="0.75"
+                                                max="3"
+                                                step="0.05"
+                                                value={zoom}
+                                                onChange={(event) => setZoom(Number(event.target.value))}
+                                                className="mt-2 w-full"
+                                            />
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+
+                        {!simplifiedBoundaryWorkflow ? (
+                        <>
+                        <section className="space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">最近批量生成结果</div>
+                                {lastRegionGenerationResults.length > 0 ? (
+                                    <div className="flex flex-wrap justify-end gap-2 text-[11px] leading-5 text-stone-400">
+                                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-emerald-100">
+                                            已生成 {lastRegionGenerationSummary.generated}
+                                        </span>
+                                        <span className="rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-rose-100">
+                                            漏边 {lastRegionGenerationSummary.leaked}
+                                        </span>
+                                        <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-amber-100">
+                                            未生成 {lastRegionGenerationSummary.skipped}
+                                        </span>
+                                        <span className="rounded-full border border-stone-700 bg-stone-900/70 px-2 py-0.5 text-stone-200">
+                                            被占用 {lastRegionGenerationSummary.overlapOnly}
+                                        </span>
+                                    </div>
+                                ) : null}
+                            </div>
+                            {lastRegionGenerationResults.length > 0 ? (
+                                <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                                    {lastRegionGenerationResults.map((result) => {
+                                        const toneClass = result.status === 'generated'
+                                            ? 'border-emerald-500/40 bg-emerald-500/10'
+                                            : result.status === 'leaked'
+                                                ? 'border-rose-500/40 bg-rose-500/10'
+                                                : 'border-amber-500/40 bg-amber-500/10';
+                                        const label = result.status === 'generated'
+                                            ? '已生成'
+                                            : result.status === 'leaked'
+                                                ? '漏边跳过'
+                                                : result.status === 'overlap-only'
+                                                    ? '被占用'
+                                                    : '未生成';
+                                        return (
+                                            <div
+                                                key={result.regionId}
+                                                data-testid={`qidahen-region-generation-result-${result.regionId}`}
+                                                className={`rounded-xl border px-3 py-3 text-xs leading-6 ${toneClass}`}
+                                            >
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="font-bold text-stone-100">{result.regionName}</div>
+                                                    <div className="text-[11px] font-black tracking-[0.14em] text-stone-300">{label}</div>
+                                                </div>
+                                                <div className="text-stone-300">
+                                                    {result.pixelCount > 0 ? `${result.pixelCount.toLocaleString()} px` : '0 px'}
+                                                    {result.seed ? ` · seed ${result.seed.x}, ${result.seed.y}` : ''}
+                                                </div>
+                                                <div className="text-stone-400">{result.note}</div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border border-dashed border-stone-700 px-4 py-4 text-sm text-stone-500">
+                                    批量生成一次后，这里会告诉你每个区域现在是“已生成”“漏边跳过”还是“未生成”。边界主路看这里补哪块边；区域粗稿主路看这里哪些区还要手修。
+                                </div>
+                            )}
                         </section>
 
                         <section className="space-y-3">
                             <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">手修与视图</div>
                             <label className="block text-sm text-stone-300">
-                                修边半径 {brushSize}px
+                                修边宽度约 {brushSize * 2}px
                                 <input
+                                    data-testid="qidahen-brush-size-input"
                                     type="range"
-                                    min="2"
-                                    max="48"
+                                    min="1"
+                                    max="12"
                                     value={brushSize}
                                     onChange={(event) => setBrushSize(Number(event.target.value))}
                                     className="mt-2 w-full"
@@ -4952,7 +16749,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 <input
                                     type="range"
                                     min="0.75"
-                                    max="1.8"
+                                    max="3"
                                     step="0.05"
                                     value={zoom}
                                     onChange={(event) => setZoom(Number(event.target.value))}
@@ -4989,8 +16786,174 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     {showBarrier ? '隐藏边界' : '边界调试'}
                                 </button>
                             </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowSelectedOutline((current) => !current)}
+                                data-testid="qidahen-toggle-selected-outline"
+                                className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (showSelectedOutline ? 'border-amber-300 bg-amber-400/15 text-amber-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
+                            >
+                                {showSelectedOutline ? <Eye size={15} /> : <EyeOff size={15} />}
+                                {showSelectedOutline ? '隐藏选区描边' : '显示选区描边'}
+                            </button>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowForbiddenUiOverlay((current) => !current)}
+                                    data-testid="qidahen-toggle-forbidden-ui-overlay"
+                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (showForbiddenUiOverlay ? 'border-rose-300 bg-rose-400/15 text-rose-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
+                                >
+                                    {showForbiddenUiOverlay ? <Eye size={15} /> : <EyeOff size={15} />}
+                                    {showForbiddenUiOverlay ? '隐藏禁区' : '显示禁区'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setAllowSeedStatusOverlayInFormalEmpty(true);
+                                        focusSelectedRegionSeedForTracing();
+                                    }}
+                                    data-testid="qidahen-focus-selected-seed-for-tracing"
+                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/40 px-3 py-2 text-sm font-bold text-cyan-100 transition hover:border-cyan-300"
+                                >
+                                    <Pencil size={15} />
+                                    聚焦 seed 描边
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (showFormalEmptyWorkspaceGuide) {
+                                            if (seedStatusOverlayVisible) {
+                                                setShowSeedStatusOverlay(false);
+                                                setAllowSeedStatusOverlayInFormalEmpty(false);
+                                                return;
+                                            }
+                                            setAllowSeedStatusOverlayInFormalEmpty(true);
+                                            setShowSeedStatusOverlay(true);
+                                            return;
+                                        }
+                                        setShowSeedStatusOverlay((current) => !current);
+                                    }}
+                                    data-testid="qidahen-toggle-seed-status-overlay"
+                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (seedStatusOverlayVisible ? 'border-emerald-300 bg-emerald-400/15 text-emerald-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
+                                >
+                                    {seedStatusOverlayVisible ? <Eye size={15} /> : <EyeOff size={15} />}
+                                    {seedStatusOverlayVisible ? '隐藏 seed 状态' : '显示 seed 状态'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setAllowSeedStatusOverlayInFormalEmpty(true);
+                                        focusNextUnmatchedSeedForTracing();
+                                    }}
+                                    data-testid="qidahen-focus-next-unmatched-seed"
+                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/45 px-3 py-2 text-sm font-bold text-amber-100 transition hover:border-amber-300"
+                                >
+                                    <Pencil size={15} />
+                                    聚焦未独立 seed
+                                </button>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowPartitionPreviewOverlay((current) => !current)}
+                                data-testid="qidahen-toggle-partition-preview-overlay"
+                                className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (showPartitionPreviewOverlay ? 'border-violet-300 bg-violet-400/15 text-violet-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
+                            >
+                                {showPartitionPreviewOverlay ? <Eye size={15} /> : <EyeOff size={15} />}
+                                {showPartitionPreviewOverlay ? '隐藏分区铺色' : '显示分区铺色'}
+                            </button>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowRealMapBoundarySupportOverlay((current) => !current)}
+                                    data-testid="qidahen-toggle-real-map-boundary-support"
+                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (showRealMapBoundarySupportOverlay ? 'border-amber-300 bg-amber-400/15 text-amber-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
+                                >
+                                    {showRealMapBoundarySupportOverlay ? <Eye size={15} /> : <EyeOff size={15} />}
+                                    {showRealMapBoundarySupportOverlay ? '隐藏细线候选' : '显示细线候选'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSnapBarrierBrushToRealMapSupport((current) => !current)}
+                                    data-testid="qidahen-toggle-real-map-boundary-snap"
+                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (snapBarrierBrushToRealMapSupport ? 'border-emerald-300 bg-emerald-400/15 text-emerald-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
+                                >
+                                    <Pencil size={15} />
+                                    {snapBarrierBrushToRealMapSupport ? '吸附细线候选' : '吸附关闭'}
+                                </button>
+                            </div>
+                            <div className="rounded-md border border-amber-500/20 bg-amber-500/8 px-2 py-1.5 text-[11px] leading-5 text-amber-100">
+                                细线候选只辅助沿底图长线描边；它不会自动写入边界图，也不能替代手绘闭合边界。
+                            </div>
+                            <button
+                                type="button"
+                                onClick={autoSnapCurrentBoundaryToRealMapSupport}
+                                data-testid="qidahen-auto-snap-boundary-to-contour-advanced"
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-400/70 bg-amber-500/12 px-3 py-2 text-sm font-black text-amber-100 transition hover:border-amber-200 hover:bg-amber-500/18"
+                            >
+                                <ScanSearch size={15} />
+                                自动贴合当前红线到细线轮廓
+                            </button>
+                            {boundarySourceReferenceImage ? (
+                                <div className="space-y-2 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3">
+                                    <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.16em] text-stone-500">
+                                        <span>参考层</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowBoundarySourceReference((current) => !current)}
+                                            className={'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-black transition ' + (showBoundarySourceReference ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
+                                        >
+                                            {showBoundarySourceReference ? <Eye size={13} /> : <EyeOff size={13} />}
+                                            {showBoundarySourceReference ? '显示中' : '已隐藏'}
+                                        </button>
+                                    </div>
+                                    <label className="block text-sm text-stone-300">
+                                        参考透明度 {boundarySourceReferenceOpacity.toFixed(2)}
+                                        <input
+                                            type="range"
+                                            min="0.1"
+                                            max="0.9"
+                                            step="0.02"
+                                            value={boundarySourceReferenceOpacity}
+                                            onChange={(event) => setBoundarySourceReferenceOpacity(Number(event.target.value))}
+                                            className="mt-2 w-full"
+                                        />
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={clearBoundarySourceReference}
+                                        data-testid="qidahen-clear-boundary-source-reference"
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-100 transition hover:border-rose-300"
+                                    >
+                                        <X size={14} />
+                                        清除参考图
+                                    </button>
+                                </div>
+                            ) : null}
                             <div className="text-xs leading-5 text-stone-500">
-                                青色是边界图本体，绿色是手工补边，洋红是手工去噪；最终保存会把边界图和微调层一并落到数据目录。
+                                红线就是最终参与区域分割的边界：边界图本体与手工补边会合成同一份障碍数据；擦除只从最终红线里扣掉。
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={undoBarrierHints}
+                                    disabled={!barrierHistoryState.canUndo}
+                                    data-testid="qidahen-undo-barrier-hints"
+                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (barrierHistoryState.canUndo ? 'border-emerald-500/40 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 text-stone-600')}
+                                >
+                                    <RotateCcw size={15} />
+                                    撤销微调
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={redoBarrierHints}
+                                    disabled={!barrierHistoryState.canRedo}
+                                    data-testid="qidahen-redo-barrier-hints"
+                                    className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (barrierHistoryState.canRedo ? 'border-emerald-500/40 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 text-stone-600')}
+                                >
+                                    <RotateCcw size={15} className="-scale-x-100" />
+                                    重做微调
+                                </button>
                             </div>
                             <div className="flex gap-2">
                                 <button
@@ -5038,6 +17001,19 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     const duplicated = duplicateColorSet.has(region.color.toLowerCase());
                                     const passageCount = passages.filter((passage) => passage.from === region.id || passage.to === region.id).length;
                                     const diagnostic = isDiagnosticRegionId(region.id);
+                                    const seedStatus = seedStatusByRegionId.get(region.id);
+                                    const seedStatusLabel = seedStatus?.status === 'matched'
+                                        ? '独立'
+                                        : seedStatus?.status === 'unmatched'
+                                            ? '未独立'
+                                            : seedStatus?.status === 'empty'
+                                                ? '待描'
+                                                : null;
+                                    const seedStatusClass = seedStatus?.status === 'matched'
+                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100'
+                                        : seedStatus?.status === 'unmatched'
+                                            ? 'border-rose-500/35 bg-rose-500/10 text-rose-100'
+                                            : 'border-stone-700 bg-stone-900/70 text-stone-300';
                                     return (
                                         <button
                                             key={region.id}
@@ -5065,6 +17041,14 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                         <span className="font-mono">{region.id}</span>
                                                         <span>seed {formatSeed(region.seed)}</span>
                                                         <span>路径 {passageCount}</span>
+                                                        {seedStatusLabel ? (
+                                                            <span
+                                                                data-testid={`qidahen-region-card-seed-status-${region.id}`}
+                                                                className={`rounded-full border px-2 py-0.5 text-[11px] font-black ${seedStatusClass}`}
+                                                            >
+                                                                {seedStatusLabel}
+                                                            </span>
+                                                        ) : null}
                                                         {diagnostic ? <span className="text-cyan-300">诊断区，不导出</span> : null}
                                                         {duplicated ? <span className="text-rose-300">颜色重复</span> : null}
                                                     </div>
@@ -5123,7 +17107,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 {authoritativeGuideRegionIdSet.has(selectedRegion.id) ? '取消显式 truth' : '设为显式 truth'}
                                             </button>
                                             <div className="mt-1 text-[11px] leading-5 text-stone-500">
-                                                显式 truth 会被主链直接消费，并随保存自动落到数据目录。
+                                                显式 truth 会被主链直接消费，并随保存自动落到当前工作区。
                                             </div>
                                         </div>
                                     ) : (
@@ -5134,36 +17118,84 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 </div>
                             </section>
                         ) : null}
+                        </>
+                        ) : null}
 
                         <section className="space-y-3">
                             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-stone-500">
                                 <Link2 size={13} />
-                                通行路径图
+                                通路
                             </div>
                             <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
-                                路径模式下，从已分区区域中心拖到另一个中心建立边。边界类型按规则保存：平原 3，山脉/河流/海岸 2，攻城/攻入长城 1。
+                                在地图上点通路边，或从一个区域中心拖到另一个中心建边。左侧只编辑当前选中的通路。
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={autoDetectPassagesFromRegions}
+                                    data-testid="qidahen-auto-detect-passages"
+                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-bold text-emerald-100 transition hover:border-emerald-300"
+                                >
+                                    <Link2 size={15} />
+                                    按邻近补全
+                                </button>
+                                <div
+                                    data-testid="qidahen-passage-summary"
+                                    className="rounded-md border border-stone-800 bg-stone-900/70 px-3 py-2 text-xs leading-5 text-stone-300"
+                                >
+                                    中心 {graphNodes.length} / 通路 {passages.length}
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 {passages.length === 0 ? (
                                     <div className="rounded-xl border border-dashed border-stone-800 px-3 py-4 text-sm text-stone-500">
-                                        暂无路径。先用魔棒得到至少两个区域，再切到路径模式拖拽连线。
+                                        暂无通路。先生成区域，再用“按邻近补全”；特殊通路可直接在地图上拖线补。
                                     </div>
                                 ) : passages.map((passage) => {
                                     const fromRegion = regions.find((region) => region.id === passage.from);
                                     const toRegion = regions.find((region) => region.id === passage.to);
+                                    const boundaryMeta = getBoundaryTypeMeta(passage.boundaryType);
+                                    const selected = selectedPassage?.id === passage.id;
                                     return (
                                         <div
                                             key={passage.id}
                                             data-testid={`qidahen-passage-row-${passage.id}`}
-                                            className="rounded-xl border border-stone-800 bg-stone-950/50 p-3"
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => {
+                                                setSelectedPassageId(passage.id);
+                                                setMode('path');
+                                            }}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter' || event.key === ' ') {
+                                                    event.preventDefault();
+                                                    setSelectedPassageId(passage.id);
+                                                    setMode('path');
+                                                }
+                                            }}
+                                            className={'rounded-lg border px-2.5 py-2 transition ' + (selected ? 'border-amber-400 bg-amber-500/10' : 'border-stone-800 bg-stone-950/45 hover:border-stone-600')}
                                         >
                                             <div className="flex items-center justify-between gap-2">
-                                                <div className="min-w-0 text-sm font-bold text-stone-100">
-                                                    {fromRegion?.name ?? passage.from} ↔ {toRegion?.name ?? passage.to}
+                                                <div className="min-w-0">
+                                                    <div className="text-sm font-bold text-stone-100">
+                                                        {fromRegion?.name ?? passage.from} ↔ {toRegion?.name ?? passage.to}
+                                                    </div>
+                                                    <div className="text-[11px] text-stone-400">
+                                                        移 {passage.travelCost} / 宽 {boundaryMeta.width}
+                                                    </div>
                                                 </div>
+                                                <span
+                                                    className="shrink-0 rounded border px-2 py-0.5 text-[11px] font-black"
+                                                    style={{ borderColor: boundaryMeta.color, color: boundaryMeta.color }}
+                                                >
+                                                    {boundaryMeta.label}
+                                                </span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => removePassage(passage.id)}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        removePassage(passage.id);
+                                                    }}
                                                     data-testid={`qidahen-passage-delete-${passage.id}`}
                                                     className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-stone-700 text-stone-400 transition hover:border-rose-400 hover:text-rose-200"
                                                     aria-label="删除路径"
@@ -5171,37 +17203,87 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     <X size={14} />
                                                 </button>
                                             </div>
-                                            <select
-                                                value={passage.boundaryType}
-                                                onChange={(event) => updatePassageBoundaryType(passage.id, event.target.value as PassageBoundaryType)}
-                                                data-testid={`qidahen-passage-boundary-${passage.id}`}
-                                                className="mt-2 w-full rounded-md border border-stone-700 bg-stone-900 px-2 py-2 text-sm text-stone-100 outline-none focus:border-amber-400"
-                                            >
-                                                {PASSAGE_BOUNDARY_TYPES.map((boundaryType) => (
-                                                    <option key={boundaryType.id} value={boundaryType.id}>
-                                                        {boundaryType.label} 路 {boundaryType.note}
-                                                    </option>
-                                                ))}
-                                            </select>
                                         </div>
                                     );
                                 })}
                             </div>
+                            {selectedPassage && selectedPassageBoundaryMeta ? (() => {
+                                const fromRegion = regions.find((region) => region.id === selectedPassage.from);
+                                const toRegion = regions.find((region) => region.id === selectedPassage.to);
+                                return (
+                                    <div className="rounded-xl border border-amber-500/35 bg-amber-500/8 px-3 py-3">
+                                        <div className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">当前通路</div>
+                                        <div className="mt-1 text-sm font-black text-stone-100">
+                                            {fromRegion?.name ?? selectedPassage.from} ↔ {toRegion?.name ?? selectedPassage.to}
+                                        </div>
+                                        <select
+                                            value={selectedPassage.boundaryType}
+                                            onChange={(event) => updatePassageBoundaryType(selectedPassage.id, event.target.value as PassageBoundaryType)}
+                                            data-testid={`qidahen-passage-boundary-${selectedPassage.id}`}
+                                            className="mt-3 w-full rounded-md border border-stone-700 bg-stone-900 px-2 py-2 text-sm text-stone-100 outline-none focus:border-amber-400"
+                                        >
+                                            {PASSAGE_BOUNDARY_TYPES.map((boundaryType) => (
+                                                <option key={boundaryType.id} value={boundaryType.id}>
+                                                    {boundaryType.label} 路 {boundaryType.note}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <label className="mt-2 block text-xs font-black uppercase tracking-[0.12em] text-stone-300">
+                                            移动代价
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                step={1}
+                                                value={selectedPassage.travelCost}
+                                                onChange={(event) => updatePassageTravelCost(selectedPassage.id, Number(event.target.value))}
+                                                data-testid={`qidahen-passage-travel-cost-${selectedPassage.id}`}
+                                                className="mt-1 w-full rounded-md border border-stone-700 bg-stone-900 px-2 py-2 text-sm font-bold text-stone-100 outline-none focus:border-amber-400"
+                                            />
+                                        </label>
+                                        <div
+                                            data-testid={`qidahen-passage-note-${selectedPassage.id}`}
+                                            className="mt-2 rounded-md border border-stone-800 bg-stone-900/75 px-2 py-2 text-xs leading-5 text-stone-300"
+                                        >
+                                            <span className="font-black text-stone-100">当前边界/移动规则：</span>
+                                            {selectedPassageBoundaryMeta.label} · {selectedPassageBoundaryMeta.note}
+                                            <div className="mt-1 text-stone-400">移动代价 {selectedPassage.travelCost} / 战场宽度 {selectedPassageBoundaryMeta.width}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })() : null}
                         </section>
 
                     </div>
 
                     <div className="shrink-0 border-t border-stone-800 bg-stone-950/95 px-5 py-4">
-                        <button
-                            type="button"
-                            onClick={saveRegionData}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-amber-400 bg-amber-500/15 px-3 text-sm font-black text-amber-100 transition hover:bg-amber-500/25 active:translate-y-px"
-                        >
-                            <Save size={16} />
-                            保存区域数据
-                        </button>
+                        {showAdvancedWorkbench ? (
+                            <button
+                                type="button"
+                                onClick={saveRegionData}
+                                data-testid="qidahen-save-workspace"
+                                disabled={formalRegionSaveBlocked}
+                                className={'inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border px-3 text-sm font-black transition active:translate-y-px ' + (formalRegionSaveBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-amber-400 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25')}
+                            >
+                                <Save size={16} />
+                                {formalRegionSaveBlocked ? '正式成果待验收' : '保存工作区'}
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setShowAdvancedWorkbench(true)}
+                                data-testid="qidahen-show-advanced-from-footer"
+                                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-stone-700 px-3 text-xs font-black text-stone-300 transition hover:border-stone-500"
+                            >
+                                显示高级调试
+                            </button>
+                        )}
+                        {showAdvancedWorkbench && formalRegionSaveBlocked ? (
+                            <div data-testid="qidahen-formal-save-guard" className="mt-2 rounded-md border border-rose-500/35 bg-rose-500/10 px-2 py-1.5 text-xs leading-5 text-rose-100">
+                                正式工作区不能保存 {boundaryQualityReport.normality.state} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。
+                            </div>
+                        ) : null}
                         <div className="mt-2 text-xs leading-5 text-stone-500">
-                            自动写入 {DATA_OUTPUT_DIR}，包含 mask、区域定义和链接图。
+                            当前工作区：{dataOutputDir}
                         </div>
                     </div>
                 </aside>
@@ -5211,7 +17293,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                         当前区域：<span className="font-bold text-stone-100">{selectedRegion?.name ?? '未选择'}</span>
                         <span className="ml-3 font-mono text-xs text-stone-500">{selectedRegion?.id}</span>
                         <span className="ml-4 text-xs text-stone-500">
-                            模式：{mode === 'wand' ? '魔棒' : mode === 'chain' ? '锁链' : mode === 'paint' ? '画笔' : mode === 'erase' ? '擦除' : mode === 'barrier' ? '边界修正' : '路径'}
+                            模式：{mode === 'wand' ? '魔棒' : mode === 'chain' ? '锁链' : mode === 'paint' ? '区域修正' : mode === 'erase' ? '区域擦除' : mode === 'barrier' ? '边界修正' : '通路编辑'}
                         </span>
                         <span className="ml-4 text-xs text-stone-500">
                             路径：{passages.length}
@@ -5222,26 +17304,45 @@ const QidahenRegionMaskTool: React.FC = () => {
                             className="relative"
                             style={{
                                 width: Math.round(MASK_WIDTH * displayScale),
-                                height: Math.round(MASK_HEIGHT * displayScale),
+                                aspectRatio: `${MASK_WIDTH} / ${MASK_HEIGHT}`,
                             }}
                         >
                             <canvas
                                 ref={bgCanvasRef}
                                 width={MASK_WIDTH}
                                 height={MASK_HEIGHT}
+                                data-testid="qidahen-bg-canvas"
                                 className="absolute inset-0 block h-full w-full rounded-md border border-stone-800"
+                            />
+                            <canvas
+                                ref={boundarySourceReferenceCanvasRef}
+                                width={MASK_WIDTH}
+                                height={MASK_HEIGHT}
+                                data-testid="qidahen-boundary-source-reference-canvas"
+                                className="pointer-events-none absolute inset-0 block h-full w-full rounded-md"
+                                aria-hidden="true"
                             />
                             <canvas
                                 ref={maskCanvasRef}
                                 width={MASK_WIDTH}
                                 height={MASK_HEIGHT}
+                                data-testid="qidahen-mask-canvas"
                                 className="absolute inset-0 block h-full w-full rounded-md"
+                                aria-hidden="true"
+                            />
+                            <canvas
+                                ref={partitionPreviewCanvasRef}
+                                width={MASK_WIDTH}
+                                height={MASK_HEIGHT}
+                                data-testid="qidahen-partition-preview-canvas"
+                                className="pointer-events-none absolute inset-0 block h-full w-full rounded-md"
                                 aria-hidden="true"
                             />
                             <canvas
                                 ref={outlineCanvasRef}
                                 width={MASK_WIDTH}
                                 height={MASK_HEIGHT}
+                                data-testid="qidahen-outline-canvas"
                                 className="pointer-events-none absolute inset-0 block h-full w-full rounded-md"
                                 aria-hidden="true"
                             />
@@ -5249,7 +17350,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 ref={barrierCanvasRef}
                                 width={MASK_WIDTH}
                                 height={MASK_HEIGHT}
-                                className="pointer-events-none absolute inset-0 block h-full w-full rounded-md mix-blend-screen"
+                                data-testid="qidahen-barrier-canvas"
+                                className="pointer-events-none absolute inset-0 block h-full w-full rounded-md"
                                 aria-hidden="true"
                             />
                             <canvas
@@ -5268,14 +17370,192 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 viewBox={`0 0 ${MASK_WIDTH} ${MASK_HEIGHT}`}
                                 data-testid="qidahen-region-graph"
                                 className={`absolute inset-0 block h-full w-full rounded-md ${mode === 'path' ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}
+                                onPointerDown={(event) => {
+                                    if (mode !== 'path') {
+                                        return;
+                                    }
+                                    const point = mapClientPointToCanvas(event.currentTarget, event.clientX, event.clientY);
+                                    selectRegionAtCanvasPoint(point);
+                                }}
                                 onPointerMove={movePathDrag}
                                 onPointerUp={finishPathDrag}
                                 onPointerCancel={() => {
+                                    pathDragSessionRef.current = null;
                                     setPathDragStartId(null);
                                     setPathDraftPoint(null);
                                 }}
                                 aria-label="通行路径图"
                             >
+                                <rect
+                                    x="0"
+                                    y="0"
+                                    width={MASK_WIDTH}
+                                    height={MASK_HEIGHT}
+                                    fill="transparent"
+                                    pointerEvents="all"
+                                    data-testid="qidahen-region-area-hit-target"
+                                />
+                                {showForbiddenUiOverlay ? (
+                                    <g className="pointer-events-none" data-testid="qidahen-forbidden-ui-overlay">
+                                        {AUTO_MAP_PRINTED_UI_EXCLUSION_RECTS.map((rect) => (
+                                            <g key={rect.label}>
+                                                <rect
+                                                    x={rect.left}
+                                                    y={rect.top}
+                                                    width={(rect.right - rect.left) + 1}
+                                                    height={(rect.bottom - rect.top) + 1}
+                                                    fill="rgba(239, 68, 68, 0.14)"
+                                                    stroke="#fb7185"
+                                                    strokeWidth="3"
+                                                    strokeDasharray="10 8"
+                                                />
+                                                <text
+                                                    x={rect.left + 10}
+                                                    y={rect.top + 22}
+                                                    fill="#ffe4e6"
+                                                    fontSize="13"
+                                                    fontWeight="900"
+                                                    paintOrder="stroke"
+                                                    stroke="#241012"
+                                                    strokeWidth="4"
+                                                >
+                                                    禁止描边：{rect.label}
+                                                </text>
+                                            </g>
+                                        ))}
+                                    </g>
+                                ) : null}
+                                {seedStatusOverlayVisible && seedStatusRegions.length > 0 ? (
+                                    <g className="pointer-events-none" data-testid="qidahen-seed-status-overlay">
+                                        {seedStatusRegions.map((region) => {
+                                            const selected = region.id === selectedRegionId;
+                                            const tone = region.status === 'matched'
+                                                ? {
+                                                    fill: 'rgba(16, 185, 129, 0.28)',
+                                                    stroke: '#34d399',
+                                                    text: '#d1fae5',
+                                                    dot: '#6ee7b7',
+                                                    label: '独立',
+                                                }
+                                                : region.status === 'unmatched'
+                                                    ? {
+                                                        fill: 'rgba(244, 63, 94, 0.26)',
+                                                        stroke: '#fb7185',
+                                                        text: '#ffe4e6',
+                                                        dot: '#fb7185',
+                                                        label: '未独立',
+                                                    }
+                                                    : {
+                                                        fill: 'rgba(148, 163, 184, 0.18)',
+                                                        stroke: '#cbd5e1',
+                                                        text: '#e2e8f0',
+                                                        dot: '#cbd5e1',
+                                                        label: '待描',
+                                                    };
+                                            return (
+                                                <g key={region.id} data-testid={`qidahen-seed-status-${region.id}`}>
+                                                    <circle
+                                                        cx={region.seed.x}
+                                                        cy={region.seed.y}
+                                                        r={selected ? 18 : 14}
+                                                        fill={tone.fill}
+                                                        stroke={tone.stroke}
+                                                        strokeWidth={selected ? 4 : 3}
+                                                        strokeDasharray={region.status === 'matched' ? undefined : '5 5'}
+                                                    />
+                                                    <circle
+                                                        cx={region.seed.x}
+                                                        cy={region.seed.y}
+                                                        r="4"
+                                                        fill={tone.dot}
+                                                        stroke="#16100b"
+                                                        strokeWidth="2"
+                                                    />
+                                                    <text
+                                                        x={region.seed.x}
+                                                        y={region.seed.y - (selected ? 24 : 20)}
+                                                        textAnchor="middle"
+                                                        fill={tone.text}
+                                                        fontSize="12"
+                                                        fontWeight="900"
+                                                        paintOrder="stroke"
+                                                        stroke="#16100b"
+                                                        strokeWidth="4"
+                                                    >
+                                                        {region.name} · {tone.label}
+                                                    </text>
+                                                </g>
+                                            );
+                                        })}
+                                    </g>
+                                ) : null}
+                                {seedStatusOverlayVisible && hasBoundaryDraft && unexplainedBoundaryOpenDiagnostics.hints.length > 0 ? (
+                                    <g className="pointer-events-none" data-testid="qidahen-open-boundary-markers">
+                                        {unexplainedBoundaryOpenDiagnostics.hints.flatMap((hint, hintIndex) => (
+                                            hint.endpoints.map((point, endpointIndex) => (
+                                                <g key={`${hintIndex}-${endpointIndex}-${point.x}-${point.y}`} data-testid={`qidahen-open-boundary-marker-${hintIndex}-${endpointIndex}`}>
+                                                    <circle
+                                                        cx={point.x}
+                                                        cy={point.y}
+                                                        r="10"
+                                                        fill="none"
+                                                        stroke="#f59e0b"
+                                                        strokeWidth="4"
+                                                        opacity="0.92"
+                                                    />
+                                                    <circle
+                                                        cx={point.x}
+                                                        cy={point.y}
+                                                        r="3"
+                                                        fill="#fff7ed"
+                                                        stroke="#7c2d12"
+                                                        strokeWidth="1.5"
+                                                    />
+                                                </g>
+                                            ))
+                                        ))}
+                                    </g>
+                                ) : null}
+                                {seedStatusOverlayVisible && hasBoundaryDraft && boundaryClosureDiagnostics.unmatchedRegions.some((region) => region.seed != null) ? (
+                                    <g className="pointer-events-none" data-testid="qidahen-unmatched-seed-markers">
+                                        {boundaryClosureDiagnostics.unmatchedRegions.map((region) => (
+                                            region.seed ? (
+                                                <g key={region.id} data-testid={`qidahen-unmatched-seed-marker-${region.id}`}>
+                                                    <circle
+                                                        cx={region.seed.x}
+                                                        cy={region.seed.y}
+                                                        r="13"
+                                                        fill="rgba(244, 63, 94, 0.18)"
+                                                        stroke="#fb7185"
+                                                        strokeWidth="3"
+                                                        strokeDasharray="4 4"
+                                                    />
+                                                    <circle
+                                                        cx={region.seed.x}
+                                                        cy={region.seed.y}
+                                                        r="3"
+                                                        fill="#fb7185"
+                                                        stroke="#1b0f12"
+                                                        strokeWidth="2"
+                                                    />
+                                                    <text
+                                                        x={region.seed.x}
+                                                        y={region.seed.y - 18}
+                                                        textAnchor="middle"
+                                                        fill="#ffe4e6"
+                                                        fontSize="12"
+                                                        fontWeight="900"
+                                                        paintOrder="stroke"
+                                                        stroke="#1b0f12"
+                                                        strokeWidth="4"
+                                                    >
+                                                        {region.name}
+                                                    </text>
+                                                </g>
+                                            ) : null
+                                        ))}
+                                    </g>
+                                ) : null}
                                 {mode === 'chain' && boundaryControlPoints.length > 0 ? (
                                     <g className="pointer-events-none" data-testid="qidahen-region-chain-boundary">
                                         {boundaryControlPoints.map((point, index) => (
@@ -5316,26 +17596,47 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         />
                                     </g>
                                 ) : null}
-                                {mode === 'path' ? passages.map((passage) => {
+                                {graphNodes.length > 0 && passages.length > 0 ? passages.map((passage) => {
                                     const from = graphNodeMap.get(passage.from);
                                     const to = graphNodeMap.get(passage.to);
                                     if (!from || !to) {
                                         return null;
                                     }
                                     const boundaryType = getBoundaryTypeMeta(passage.boundaryType);
+                                    const selected = selectedPassage?.id === passage.id;
                                     const midX = (from.x + to.x) / 2;
                                     const midY = (from.y + to.y) / 2;
                                     return (
-                                        <g key={passage.id} data-testid={`qidahen-passage-edge-${passage.id}`}>
+                                        <g
+                                            key={passage.id}
+                                            data-testid={`qidahen-passage-edge-${passage.id}`}
+                                            className="pointer-events-auto cursor-pointer"
+                                            onPointerDown={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                setSelectedPassageId(passage.id);
+                                                setMode('path');
+                                                setStatusMessage(`已选中 ${from.name} ↔ ${to.name}，在左侧设置移动代价。`);
+                                            }}
+                                        >
+                                            <line
+                                                x1={from.x}
+                                                y1={from.y}
+                                                x2={to.x}
+                                                y2={to.y}
+                                                stroke="transparent"
+                                                strokeWidth={24}
+                                                strokeLinecap="round"
+                                            />
                                             <line
                                                 x1={from.x}
                                                 y1={from.y}
                                                 x2={to.x}
                                                 y2={to.y}
                                                 stroke={boundaryType.color}
-                                                strokeWidth={6}
+                                                strokeWidth={selected ? 9 : 6}
                                                 strokeLinecap="round"
-                                                opacity="0.9"
+                                                opacity={selected ? 1 : 0.88}
                                             />
                                             <line
                                                 x1={from.x}
@@ -5346,10 +17647,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 strokeWidth={2}
                                                 strokeDasharray={passage.boundaryType === 'coast' ? '8 8' : undefined}
                                                 strokeLinecap="round"
-                                                opacity="0.75"
+                                                opacity={selected ? 0.9 : 0.75}
                                             />
                                             <g transform={`translate(${midX} ${midY})`}>
-                                                <rect x="-34" y="-12" width="68" height="24" rx="4" fill="rgba(20,14,10,0.82)" stroke={boundaryType.color} strokeWidth="1.5" />
+                                                <rect x="-34" y="-12" width="68" height="24" rx="4" fill={selected ? 'rgba(120, 53, 15, 0.92)' : 'rgba(20,14,10,0.82)'} stroke={boundaryType.color} strokeWidth={selected ? '2.5' : '1.5'} />
                                                 <text textAnchor="middle" dominantBaseline="middle" fill="#fff4d6" fontSize="12" fontWeight="800">
                                                     {boundaryType.label}
                                                 </text>
@@ -5370,27 +17671,33 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         opacity="0.9"
                                     />
                                 ) : null}
-                                {mode === 'path' ? graphNodes.map((node) => (
+                                {graphNodes.length > 0 ? graphNodes.map((node) => (
                                     <g
                                         key={node.id}
                                         data-testid={`qidahen-region-graph-node-${node.id}`}
-                                        className={mode === 'path' ? 'pointer-events-auto' : 'pointer-events-none'}
+                                        className="pointer-events-auto cursor-pointer"
                                         transform={`translate(${node.x} ${node.y})`}
                                         onPointerDown={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            setSelectedRegionId(node.id);
+                                            setShowSelectedOutline(true);
                                             if (mode !== 'path') {
+                                                if (mode !== 'barrier') {
+                                                    setMode('paint');
+                                                }
+                                                setStatusMessage(`已选中 ${node.name}。区域可直接在地图上修，通路可点边或拖中心建立。`);
                                                 return;
                                             }
-                                            event.preventDefault();
-                                            startPathDrag(node.id);
+                                            event.currentTarget.setPointerCapture(event.pointerId);
+                                            preparePathDragFromNode(node, event.pointerId);
                                         }}
                                     >
-                                        <circle r="13" fill="rgba(20,14,10,0.86)" stroke={node.color} strokeWidth="4" />
+                                        <circle r={node.id === selectedRegionId ? 16 : 13} fill="rgba(20,14,10,0.86)" stroke={node.color} strokeWidth={node.id === selectedRegionId ? 5 : 4} />
                                         <circle r="5" fill={node.color} stroke="#fff4d6" strokeWidth="1.5" />
-                                        {mode === 'path' ? (
-                                            <text y="-18" textAnchor="middle" fill="#fff4d6" fontSize="12" fontWeight="900" paintOrder="stroke" stroke="#1b130d" strokeWidth="4">
-                                                {node.name}
-                                            </text>
-                                        ) : null}
+                                        <text y="-18" textAnchor="middle" fill="#fff4d6" fontSize="12" fontWeight="900" paintOrder="stroke" stroke="#1b130d" strokeWidth="4">
+                                            {node.name}
+                                        </text>
                                     </g>
                                 )) : null}
                             </svg>

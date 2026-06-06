@@ -126,7 +126,7 @@ Board.tsx 中的交互渲染逻辑基于以下假设：
 
 ## 相关 Bug
 
-- `docs/bugs/smashup-ninja-hidden-ninja-interaction-not-visible.md` - 之前的便衣忍者 UI bug（2026/2/27 修复）
+- `docs/bugs/smashup/smashup-ninja-hidden-ninja-interaction-not-visible.md` - 之前的便衣忍者 UI bug（2026/2/27 修复）
 - `docs/bugs/smashup-tortuga-无法结束回合-analysis.md` - 当前 bug 的详细分析
 
 ## 教训

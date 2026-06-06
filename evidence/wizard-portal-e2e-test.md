@@ -25,7 +25,7 @@
 
 ### 1. 单选阶段
 
-![单选阶段](assets/wizard-portal-e2e/01-portal-pick-single.png)
+![单选阶段](smashup/assets/wizard-portal-e2e/01-portal-pick-single.png)
 
 审查结论：
 
@@ -35,7 +35,7 @@
 
 ### 2. 单选后结果
 
-![单选后结果](assets/wizard-portal-e2e/02-portal-after-single-pick.png)
+![单选后结果](smashup/assets/wizard-portal-e2e/02-portal-after-single-pick.png)
 
 审查结论：
 
@@ -45,7 +45,7 @@
 
 ### 3. 0 选阶段
 
-![0选阶段](assets/wizard-portal-e2e/03-portal-pick-skip.png)
+![0选阶段](smashup/assets/wizard-portal-e2e/03-portal-pick-skip.png)
 
 审查结论：
 
@@ -55,7 +55,7 @@
 
 ### 4. 0 选后结果
 
-![0选后结果](assets/wizard-portal-e2e/04-portal-after-skip.png)
+![0选后结果](smashup/assets/wizard-portal-e2e/04-portal-after-skip.png)
 
 审查结论：
 
@@ -65,7 +65,7 @@
 
 ### 5. 多选阶段
 
-![多选阶段](assets/wizard-portal-e2e/05-portal-pick-multi.png)
+![多选阶段](smashup/assets/wizard-portal-e2e/05-portal-pick-multi.png)
 
 审查结论：
 
@@ -75,7 +75,7 @@
 
 ### 6. 多选后结果
 
-![多选后结果](assets/wizard-portal-e2e/06-portal-after-multi-pick.png)
+![多选后结果](smashup/assets/wizard-portal-e2e/06-portal-after-multi-pick.png)
 
 审查结论：
 
@@ -105,4 +105,4 @@
 
 - `e2e/framework-pilot-wizard-portal.e2e.ts`：3/3 通过
 - `wizard_portal` 单选 / 空选 / 多选链路：浏览器实跑通过
-- 6 张截图已人工审查并备份到 `evidence/assets/wizard-portal-e2e/`
+- 6 张截图已人工审查并备份到 `evidence/smashup/assets/wizard-portal-e2e/`

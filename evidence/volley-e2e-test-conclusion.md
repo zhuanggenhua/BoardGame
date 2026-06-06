@@ -74,7 +74,7 @@
 4. **推荐手动验证**：在开发环境中手动测试功能
 
 ## 相关文档
-- 代码修复详情：`evidence/volley-fix-final.md`
+- 代码修复详情：`evidence/dicethrone/volley-fix-final.md`
 - 审计缺口分析：`evidence/bonus-die-display-audit-gap-analysis.md`
 - 多骰显示模式总结：`evidence/multi-dice-display-pattern-summary.md`
 - 单元测试：`src/games/dicethrone/__tests__/volley-5-dice-display.test.ts`

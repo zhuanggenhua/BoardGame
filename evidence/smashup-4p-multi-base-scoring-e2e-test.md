@@ -25,7 +25,7 @@
 
 ### 1. 三基地同时达标，弹出多基地选择交互
 
-![三基地同时达标，弹出多基地选择交互](assets/4p-multi-base-scoring-e2e/01-multi-base-prompt.png)
+![三基地同时达标，弹出多基地选择交互](smashup/assets/4p-multi-base-scoring-e2e/01-multi-base-prompt.png)
 
 审查结论：
 
@@ -35,7 +35,7 @@
 
 ### 2. 先选沙皇宫殿后，仍保留两基地顺序选择
 
-![先选沙皇宫殿后，仍保留两基地顺序选择](assets/4p-multi-base-scoring-e2e/02-after-first-choice.png)
+![先选沙皇宫殿后，仍保留两基地顺序选择](smashup/assets/4p-multi-base-scoring-e2e/02-after-first-choice.png)
 
 审查结论：
 
@@ -45,7 +45,7 @@
 
 ### 3. 第二次选择后，最后一个基地自动收尾且只结算一次
 
-![第二次选择后，最后一个基地自动收尾且只结算一次](assets/4p-multi-base-scoring-e2e/03-final-state.png)
+![第二次选择后，最后一个基地自动收尾且只结算一次](smashup/assets/4p-multi-base-scoring-e2e/03-final-state.png)
 
 审查结论：
 

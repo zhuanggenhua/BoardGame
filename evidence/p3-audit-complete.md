@@ -208,18 +208,18 @@
 ## 📚 相关文档
 
 ### 审计批次报告
-- `evidence/p3-audit-batch1-pages-components.md` - Batch 1 详细报告
-- `evidence/p3-audit-batch2-services.md` - Batch 2 详细报告
-- `evidence/p3-audit-batch3-others.md` - Batch 3 详细报告
+- `evidence/_shared/p3-audit-batch1-pages-components.md` - Batch 1 详细报告
+- `evidence/_shared/p3-audit-batch2-services.md` - Batch 2 详细报告
+- `evidence/_shared/p3-audit-batch3-others.md` - Batch 3 详细报告
 
 ### 其他审计报告
 - `evidence/p0-audit-final-complete.md` - P0 审计最终报告
 - `evidence/p1-audit-complete.md` - P1 审计完成报告
-- `evidence/p2-verification-complete.md` - P2 验证完成报告
+- `evidence/smashup/p2-verification-complete.md` - P2 验证完成报告
 
 ### 审计体系文档
 - `evidence/audit-priority-definition.md` - 优先级定义
-- `evidence/audit-scope-complete.md` - 完整审计范围
+- `evidence/_shared/audit-scope-complete.md` - 完整审计范围
 - `evidence/audit-tracking-overview.md` - 审计跟踪总览
 
 ---

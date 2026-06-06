@@ -69,15 +69,15 @@ POD 提交审计体系
 
 ### 核心文档
 - ✅ `evidence/audit-priority-definition.md` - 优先级定义和审计标准
-- ✅ `evidence/audit-scope-complete.md` - 完整审计范围（336 个文件）
+- ✅ `evidence/_shared/audit-scope-complete.md` - 完整审计范围（336 个文件）
 - ✅ `evidence/deletions-complete-report.md` - 删除内容完整报告
 - ✅ `evidence/audit-tracking-overview.md` - 本文档（总览）
 
 ### P0 审计文档（100% 完成）
-- ✅ `evidence/p0-audit-progress.md` - P0 审计进度跟踪
+- ✅ `evidence/_shared/p0-audit-progress.md` - P0 审计进度跟踪
 - ✅ `evidence/p0-audit-summary.md` - P0 审计总结
-- ✅ `evidence/p0-audit-complete.md` - P0 审计完成报告
-- ✅ `evidence/p0-audit-final.md` - P0 最终报告
+- ✅ `evidence/_shared/p0-audit-complete.md` - P0 审计完成报告
+- ✅ `evidence/_shared/p0-audit-final.md` - P0 最终报告
 - ✅ `evidence/p0-audit-final-complete.md` - P0 审计最终完成报告
 
 ### P1 审计文档（100% 完成）
@@ -341,19 +341,19 @@ POD 提交审计体系
 
 ### 核心文档
 - `evidence/audit-priority-definition.md` - 优先级定义
-- `evidence/audit-scope-complete.md` - 完整审计范围
+- `evidence/_shared/audit-scope-complete.md` - 完整审计范围
 - `evidence/deletions-complete-report.md` - 删除内容报告
 
 ### 审计进度文档
-- `evidence/p0-audit-progress.md` - P0 审计进度
+- `evidence/_shared/p0-audit-progress.md` - P0 审计进度
 - `evidence/p1-audit-progress.md` - P1 审计进度
 - `evidence/p2-audit-progress.md` - P2 审计进度
 - `evidence/p3-audit-progress.md` - P3 审计进度
 
 ### 历史文档
 - `evidence/session-5-smashup-audit-summary.md` - Session 5 总结
-- `evidence/session-6-phase-d-complete.md` - Session 6 总结
-- `evidence/pod-commit-recovery-master-plan.md` - 恢复计划
+- `evidence/_shared/session-6-phase-d-complete.md` - Session 6 总结
+- `evidence/_shared/pod-commit-recovery-master-plan.md` - 恢复计划
 
 ---
 
@@ -502,7 +502,7 @@ POD 提交审计体系
 ### 验证工具
 
 - ✅ `scripts/verify-p0-restoration.mjs` - 自动化验证脚本（已更新支持别名检查）
-- ✅ `evidence/p0-restoration-verification.md` - 详细验证报告
+- ✅ `evidence/_shared/p0-restoration-verification.md` - 详细验证报告
 - ✅ `evidence/p0-restoration-final-status.md` - 最终状态报告
 
 ### 结论

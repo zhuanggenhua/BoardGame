@@ -6,7 +6,7 @@
 
 **说明（2026-03-09 补充）**：
 - 本文档记录的是 **173/317 文件阶段** 的“第一版最终完整报告”；
-- 当时尚未收口的剩余项，后续已在 `evidence/POD-REAUDIT-REMAINING-20-FILES.md` 完成详细审查；
+- 当时尚未收口的剩余项，后续已在 `evidence/tictactoe/POD-REAUDIT-REMAINING-20-FILES.md` 完成详细审查；
 - 当前 POD 历史材料的最终口径以 `evidence/pod-reaudit-conclusion.md` 为准：`316/316`，`100% 审计完成`。
 
 ---
@@ -227,7 +227,7 @@ readFile <file>
 - `evidence/pod-reaudit-conclusion.md` - 最终结论
 - `evidence/pod-reaudit-complete.md` - 完整审计报告
 - `evidence/pod-reaudit-progress.md` - 详细进度跟踪
-- `evidence/pod-reaudit-medium-priority-review.md` - 中优先级文件详细审查
+- `evidence/_shared/pod-reaudit-medium-priority-review.md` - 中优先级文件详细审查
 - `evidence/dicethrone-opponent-view-advance-button-fix.md` - 触发审计的 bug 修复
 
 ---
@@ -243,7 +243,7 @@ readFile <file>
 - ✅ SummonerWars：100% 恢复
 - ✅ 中优先级文件：100% 正确处理
 
-本报告编写时尚未收口的剩余项，后续已在 `evidence/POD-REAUDIT-REMAINING-20-FILES.md` 完成详细审查；当前最终口径不是“仍有待查”，而是“已恢复或合理删除”。
+本报告编写时尚未收口的剩余项，后续已在 `evidence/tictactoe/POD-REAUDIT-REMAINING-20-FILES.md` 完成详细审查；当前最终口径不是“仍有待查”，而是“已恢复或合理删除”。
 
 **建议**：审计可以结束。
 

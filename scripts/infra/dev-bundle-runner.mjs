@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { build as nativeBuild, context as nativeContext } from 'esbuild';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
+import { resolveWorkspaceNodeModuleFile } from './node-module-resolver.mjs';
 import { withWindowsHide } from './windows-hide.js';
 
 await assertChildProcessSupport('bundle-runner / esbuild watch', { probeEsbuild: true });
@@ -95,7 +96,10 @@ async function loadWasmEsbuild() {
     if (!wasmEsbuildPromise) {
         wasmEsbuildPromise = (async () => {
             const wasm = await import('esbuild-wasm');
-            const wasmPath = path.resolve(repoRoot, 'node_modules', 'esbuild-wasm', 'esbuild.wasm');
+            const wasmPath = resolveWorkspaceNodeModuleFile('esbuild-wasm/esbuild.wasm', {
+                label: 'esbuild-wasm',
+                cwd: repoRoot,
+            }).filePath;
             await wasm.initialize({
                 wasmURL: pathToFileURL(wasmPath).href,
                 worker: false,

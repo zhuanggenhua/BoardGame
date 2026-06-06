@@ -1,9 +1,9 @@
-import type { GameManifestEntry } from '../../games/manifest.types';
+import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import {
     getDefaultSetupSelections,
     normalizeSetupSelections,
     type GameSetupSelections,
-} from '../../games/setupOptions';
+} from '../../shared/gameSetupOptions';
 import {
     getDefaultSeatController,
     normalizeSeatController,

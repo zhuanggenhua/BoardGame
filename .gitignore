@@ -87,6 +87,9 @@ public/assets/**
 !evidence/**/assets/**/*.png
 !evidence/**/screenshots/**/*.png
 !evidence/**/_captured/**/*.png
+!src/games/qidahen/data/region-mask.png
+!src/games/qidahen/data/region-boundary-add.png
+!src/games/qidahen/data/region-boundary-remove.png
 public/**/*.jpg
 public/**/*.jpeg
 public/**/*.gif
@@ -100,6 +103,13 @@ public/**/*.ogg
 public/**/*.mp3
 public/**/*.flac
 public/**/*.m4a
+!public/assets/
+!public/assets/i18n/
+!public/assets/i18n/zh-CN/
+!public/assets/i18n/zh-CN/qidahen/
+!public/assets/i18n/zh-CN/qidahen/thumbnails/
+!public/assets/i18n/zh-CN/qidahen/thumbnails/**/
+!public/assets/i18n/zh-CN/qidahen/thumbnails/**/*.webp
 public/**/*.mp4
 public/**/*.webm
 

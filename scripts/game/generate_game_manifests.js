@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const gamesRoot = path.resolve(__dirname, '../../src/games');
+const toolsRoot = path.resolve(__dirname, '../../src/tools');
 
 const outputFiles = {
     data: path.join(gamesRoot, 'manifest.generated.ts'),
@@ -13,10 +14,12 @@ const outputFiles = {
     androidOrientationMap: path.resolve(__dirname, '../../android/app/src/main/assets/game-orientation-map.json'),
 };
 
+const normalizeLineEndings = (content) => content.replace(/\r\n/g, '\n');
+
 const writeFileIfChanged = async (outputPath, content) => {
     try {
         const existing = await fs.readFile(outputPath, 'utf8');
-        if (existing === content) {
+        if (normalizeLineEndings(existing) === normalizeLineEndings(content)) {
             return false;
         }
     } catch {
@@ -39,7 +42,7 @@ const fileExists = async (filePath) => {
 const toImportPath = (relativePath) => {
     const normalized = relativePath.split(path.sep).join('/');
     const withoutExt = normalized.replace(/\.(ts|tsx)$/, '');
-    return `./${withoutExt}`;
+    return withoutExt.startsWith('.') ? withoutExt : `./${withoutExt}`;
 };
 
 const readManifestMeta = async (manifestPath) => {
@@ -91,8 +94,17 @@ const readManifestMeta = async (manifestPath) => {
     };
 };
 
-const collectGameEntries = async () => {
-    const dirents = await fs.readdir(gamesRoot, { withFileTypes: true });
+const collectManifestEntriesFromRoot = async ({ rootPath, rootLabel }) => {
+    let dirents = [];
+    try {
+        dirents = await fs.readdir(rootPath, { withFileTypes: true });
+    } catch (error) {
+        if (error?.code === 'ENOENT') {
+            return [];
+        }
+        throw error;
+    }
+
     const entries = [];
 
     for (const dirent of dirents) {
@@ -100,7 +112,7 @@ const collectGameEntries = async () => {
         const dirName = dirent.name;
         if (dirName.startsWith('.')) continue;
 
-        const dirPath = path.join(gamesRoot, dirName);
+        const dirPath = path.join(rootPath, dirName);
         const manifestPath = path.join(dirPath, 'manifest.ts');
         if (!(await fileExists(manifestPath))) {
             continue;
@@ -109,6 +121,12 @@ const collectGameEntries = async () => {
         const meta = await readManifestMeta(manifestPath);
         if (meta.id !== dirName) {
             throw new Error(`[Manifest] manifest.id 与目录名不一致: ${dirName} (${meta.id})`);
+        }
+        if (rootLabel === 'games' && meta.type !== 'game') {
+            throw new Error(`[Manifest] 工具 manifest 应放在 src/tools: ${dirName}`);
+        }
+        if (rootLabel === 'tools' && meta.type !== 'tool') {
+            throw new Error(`[Manifest] 游戏 manifest 应放在 src/games: ${dirName}`);
         }
 
         const gamePath = path.join(dirPath, 'game.ts');
@@ -162,7 +180,24 @@ const collectGameEntries = async () => {
         });
     }
 
-    return entries.sort((a, b) => a.id.localeCompare(b.id));
+    return entries;
+};
+
+const collectGameEntries = async () => {
+    const entries = [
+        ...await collectManifestEntriesFromRoot({ rootPath: gamesRoot, rootLabel: 'games' }),
+        ...await collectManifestEntriesFromRoot({ rootPath: toolsRoot, rootLabel: 'tools' }),
+    ].sort((a, b) => a.id.localeCompare(b.id));
+
+    const seenIds = new Set();
+    for (const entry of entries) {
+        if (seenIds.has(entry.id)) {
+            throw new Error(`[Manifest] 重复 manifest.id: ${entry.id}`);
+        }
+        seenIds.add(entry.id);
+    }
+
+    return entries;
 };
 
 const buildDataManifestFile = ({ entries, outputPath }) => {

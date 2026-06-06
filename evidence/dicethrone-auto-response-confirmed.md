@@ -93,4 +93,4 @@ if (autoResponseEnabled || !isResponseWindowOpen || !currentResponderId || curre
 - `src/games/dicethrone/ui/AutoResponseToggle.tsx` - 自动响应开关组件
 - `src/games/dicethrone/ui/LeftSidebar.tsx` - 自动响应开关集成
 - `evidence/POD-RECOVERY-AND-STEALTH-MODE-COMPLETE.md` - POD 恢复 + 隐身模式
-- `evidence/dicethrone-auto-response-text-fix.md` - 自动响应文本修正
+- `evidence/dicethrone/dicethrone-auto-response-text-fix.md` - 自动响应文本修正

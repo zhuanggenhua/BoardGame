@@ -31,7 +31,7 @@
 
 ### 1. 第一段幽灵弃牌提示
 
-![第一段幽灵弃牌提示](assets/ghost-haunted-house-e2e/01-ghost-first-discard-prompt.png)
+![第一段幽灵弃牌提示](smashup/assets/ghost-haunted-house-e2e/01-ghost-first-discard-prompt.png)
 
 审查结论：
 
@@ -41,7 +41,7 @@
 
 ### 2. 第二段只剩 1 张最新手牌
 
-![第二段只剩 1 张最新手牌](assets/ghost-haunted-house-e2e/02-ghost-haunted-single-latest-card.png)
+![第二段只剩 1 张最新手牌](smashup/assets/ghost-haunted-house-e2e/02-ghost-haunted-single-latest-card.png)
 
 审查结论：
 
@@ -51,7 +51,7 @@
 
 ### 3. 第一条链路最终结果
 
-![第一条链路最终结果](assets/ghost-haunted-house-e2e/03-ghost-haunted-final.png)
+![第一条链路最终结果](smashup/assets/ghost-haunted-house-e2e/03-ghost-haunted-final.png)
 
 审查结论：
 
@@ -61,7 +61,7 @@
 
 ### 4. 第二条链路的刷新后第二段提示
 
-![刷新后第二段提示](assets/ghost-haunted-house-e2e/04-haunted-house-refreshed-second-prompt.png)
+![刷新后第二段提示](smashup/assets/ghost-haunted-house-e2e/04-haunted-house-refreshed-second-prompt.png)
 
 审查结论：
 
@@ -71,7 +71,7 @@
 
 ### 5. 第二条链路最终结果
 
-![第二条链路最终结果](assets/ghost-haunted-house-e2e/05-haunted-house-after-second-discard.png)
+![第二条链路最终结果](smashup/assets/ghost-haunted-house-e2e/05-haunted-house-after-second-discard.png)
 
 审查结论：
 
@@ -99,5 +99,5 @@
 ## 最终结果
 
 - `e2e/smashup-ghost-haunted-house-discard.e2e.ts`：2/2 通过
-- 5 张截图已人工审查并备份到 `evidence/assets/ghost-haunted-house-e2e/`
+- 5 张截图已人工审查并备份到 `evidence/smashup/assets/ghost-haunted-house-e2e/`
 - 该文件已恢复到 Playwright 正常 discovery 集合

@@ -1114,7 +1114,7 @@ npx vitest run src/components/lobby/__tests__/GameDetailsModalJoinConfirm.test.t
 
 ### 1. 校验方法
 
-- 直接从 `evidence/pod-commit-complete-checklist.md` 提取全部路径；
+- 直接从 `evidence/_shared/pod-commit-complete-checklist.md` 提取全部路径；
 - 再与以下续查文档做字符串覆盖对账：
   - `evidence/p1-audit-followup-2026-03-10.md`
   - `evidence/p1-audit-followup-2026-03-10-batch2.md`

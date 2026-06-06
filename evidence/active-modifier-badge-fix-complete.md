@@ -147,8 +147,8 @@ useEffect(() => {
 
 ## 相关文档
 
-- `evidence/active-modifier-badge-not-showing-debug.md`：初始调试文档
-- `evidence/active-modifier-badge-eventstream-empty.md`：EventStream 为空的分析
+- `evidence/dicethrone/active-modifier-badge-not-showing-debug.md`：初始调试文档
+- `evidence/dicethrone/active-modifier-badge-eventstream-empty.md`：EventStream 为空的分析
 - `evidence/active-modifier-badge-debug-status.md`：调试状态文档
-- `evidence/active-modifier-badge-cursor-double-advance-fix.md`：游标重复推进问题详细分析
+- `evidence/dicethrone/active-modifier-badge-cursor-double-advance-fix.md`：游标重复推进问题详细分析
 - `evidence/active-modifier-badge-fix-complete.md`：本文档（修复完成总结）

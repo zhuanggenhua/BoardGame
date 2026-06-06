@@ -236,8 +236,6 @@ src/lib/
 
 ```
 src/games/
-├── assetslicer/
-│   └── manifest.ts
 ├── dicethrone/
 │   ├── __tests__/
 │   ├── audio.config.ts
@@ -274,8 +272,6 @@ src/games/
 │   ├── manifest.ts
 │   ├── thumbnail.tsx
 │   └── tutorial.ts
-├── ugcbuilder/
-│   └── manifest.ts
 ├── manifest.ts
 ├── manifest.client.generated.tsx
 ├── manifest.client.tsx
@@ -283,6 +279,30 @@ src/games/
 ├── manifest.server.types.ts
 ├── manifest.types.ts
 └── registry.ts
+```
+
+### src/tools/
+
+```
+src/tools/
+├── airepoworkbench/
+│   ├── manifest.ts
+│   └── thumbnail.tsx
+├── archview/
+│   ├── manifest.ts
+│   └── thumbnail.tsx
+├── assetslicer/
+│   ├── manifest.ts
+│   └── thumbnail.tsx
+├── audiobrowser/
+│   ├── manifest.ts
+│   └── thumbnail.tsx
+├── fxpreview/
+│   ├── manifest.ts
+│   └── thumbnail.tsx
+└── ugcbuilder/
+    ├── manifest.ts
+    └── thumbnail.tsx
 ```
 
 ### src/ugc/

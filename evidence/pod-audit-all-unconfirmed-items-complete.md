@@ -91,7 +91,7 @@ const expectedDamage = getPendingAttackExpectedDamage(coreAfterPreDefense, core.
 ✓ token-response-window.test.ts (8 tests) 7ms
 ```
 
-**证据文档**：`evidence/pod-audit-expectedDamage-must-fix.md`
+**证据文档**：`evidence/dicethrone/pod-audit-expectedDamage-must-fix.md`
 
 **结论**：已完成修复
 
@@ -190,13 +190,13 @@ const expectedDamage = getPendingAttackExpectedDamage(coreAfterPreDefense, core.
 
 ## 相关文档
 
-- `evidence/pod-commit-flowHooks-changes.md` - POD commit 变更分析
-- `evidence/p2-restoration-plan.md` - P2 恢复计划
+- `evidence/dicethrone/pod-commit-flowHooks-changes.md` - POD commit 变更分析
+- `evidence/_shared/p2-restoration-plan.md` - P2 恢复计划
 - `evidence/p2-token-tests-status.md` - Token 测试状态
 - `evidence/dicethrone-burn-token-persistence-fix.md` - 燃烧机制修复
-- `evidence/pod-audit-expectedDamage-must-fix.md` - expectedDamage 修复
+- `evidence/dicethrone/pod-audit-expectedDamage-must-fix.md` - expectedDamage 修复
 - `evidence/pod-audit-unconfirmed-items-review.md` - 未确认项目审查
-- `evidence/pod-audit-final-confirmation-needed.md` - 最终确认清单
+- `evidence/dicethrone/pod-audit-final-confirmation-needed.md` - 最终确认清单
 
 ---
 

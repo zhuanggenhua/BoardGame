@@ -232,7 +232,7 @@ P0 审计使用了相同的错误方法！必须重新验证 P0 的 20 个文件
 
 ### 3. 审计方法论文档化 📝 必须
 
-创建 `evidence/audit-methodology.md`，记录：
+创建 `evidence/dicethrone/audit-methodology.md`，记录：
 - ❌ 错误方法：只看 `git show` diff
 - ✅ 正确方法：读取当前文件验证
 - 检查清单：每个文件必须完成的验证步骤

@@ -23,7 +23,7 @@ import type {
 import type { TrainingDataRecorder, TrainingDecisionSample } from './trainingData';
 import { buildTrainingDecisionSample } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
-import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
+import type { GameManifestAiSupport } from '../../shared/gameManifest.types';
 import * as aiModule from '../ai';
 import {
     applyPlayerViewToState,
@@ -111,8 +111,9 @@ const shouldTrustOnlineAiSeatControllersForWatchdog = (setupData: unknown): bool
 const normalizeOnlineAiWatchdogSeatControllerType = (
     gameId: string,
     controller: { type?: unknown } | undefined,
+    gameManifests: GameManifestRuntimeMetadataById,
 ): 'human' | 'local-ai' | 'remote-ai' => {
-    const manifestAi = GAME_MANIFEST_BY_ID[gameId]?.ai;
+    const manifestAi = gameManifests[gameId]?.ai;
     if (controller?.type === 'local-ai') {
         return manifestAi?.localAi === false ? 'human' : 'local-ai';
     }
@@ -647,6 +648,7 @@ export interface GameTransportServerConfig {
     storage: MatchStorage;
     /** 注册的游戏引擎 */
     games: GameEngineConfig[];
+    gameManifests?: GameManifestRuntimeMetadataById;
     /** 离线裁决宽限期（毫秒），默认 30000 */
     offlineGraceMs?: number;
     /** 认证回调（可选） */
@@ -669,10 +671,17 @@ export interface GameTransportServerConfig {
     onlineAiFeedbackReporter?: (payload: OnlineAiRecoveryFeedbackPayload) => Promise<void>;
 }
 
+type GameManifestRuntimeMetadata = {
+    ai?: GameManifestAiSupport;
+};
+
+export type GameManifestRuntimeMetadataById = Record<string, GameManifestRuntimeMetadata | undefined>;
+
 export class GameTransportServer {
     private readonly io: IOServer;
     private readonly storage: MatchStorage;
     private readonly gameIndex: Map<string, GameEngineConfig>;
+    private readonly gameManifests: GameManifestRuntimeMetadataById;
     private readonly activeMatches: Map<string, ActiveMatch>;
     private readonly socketIndex: Map<string, SocketInfo>;
     private readonly offlineGraceMs: number;
@@ -699,6 +708,7 @@ export class GameTransportServer {
         this.io = config.io;
         this.storage = config.storage;
         this.gameIndex = new Map(config.games.map((g) => [g.gameId, g]));
+        this.gameManifests = config.gameManifests ?? {};
         this.activeMatches = new Map();
         this.socketIndex = new Map();
         this.offlineGraceMs = config.offlineGraceMs ?? 30000;
@@ -1246,7 +1256,7 @@ export class GameTransportServer {
             const seatControllers = Object.fromEntries(
                 Object.keys(match.metadata.players).map((playerId) => {
                     const controller = rawSeatControllers?.[playerId];
-                    const normalizedType = normalizeOnlineAiWatchdogSeatControllerType(match.gameId, controller);
+                    const normalizedType = normalizeOnlineAiWatchdogSeatControllerType(match.gameId, controller, this.gameManifests);
                     return [
                         playerId,
                         normalizedType === 'human'
@@ -3220,7 +3230,7 @@ export class GameTransportServer {
         gameOver?: unknown;
     }): void {
         if (!this.trainingDataRecorder) return;
-        const manifest = GAME_MANIFEST_BY_ID[args.match.engineConfig.gameId];
+        const manifest = this.gameManifests[args.match.engineConfig.gameId];
         if (manifest && manifest.ai.capture === false) return;
         const seatControllers = extractSetupSeatControllers(args.match.metadata.setupData);
         const seatControllerType = resolveSeatControllerTypeForTraining(seatControllers, args.playerID);

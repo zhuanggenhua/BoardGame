@@ -135,4 +135,4 @@ if (face === FACE.BOW) {
 - `public/locales/en/game-dicethrone.json`
 - `scripts/audit-bonus-die-descriptions.mjs`（审计脚本）
 - `evidence/watch-out-display-fix.md`（看箭修复详情）
-- `evidence/exploding-arrow-fix-complete.md`（爆裂箭修复详情）
+- `evidence/dicethrone/exploding-arrow-fix-complete.md`（爆裂箭修复详情）

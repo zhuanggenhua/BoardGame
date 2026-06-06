@@ -79,7 +79,7 @@ const showAdvancePhaseButton = !isSpectator;
 
 ### POD 提交审计历史
 
-根据 `evidence/pod-commit-scope-audit.md` 和 `evidence/POD-RECOVERY-FINAL-STATUS.md`，`6ea1f9f` 提交（feat: add Smash Up POD faction support）包含了大量非 POD 相关的修改：
+根据 `evidence/_shared/pod-commit-scope-audit.md` 和 `evidence/POD-RECOVERY-FINAL-STATUS.md`，`6ea1f9f` 提交（feat: add Smash Up POD faction support）包含了大量非 POD 相关的修改：
 
 **统计**：
 - **总文件数**: 336 个

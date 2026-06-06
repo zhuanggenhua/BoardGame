@@ -25,7 +25,7 @@ export const QIDAHEN_MAP_REGION_SHAPES: readonly QidahenMapRegionShape[] = [
     },
     {
         id: 'song-jin',
-        name: '宋进',
+        name: '皮岛',
         polygon: [
             [681, 509],
             [746, 493],

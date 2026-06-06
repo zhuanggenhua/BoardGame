@@ -7,7 +7,7 @@
   - 狼人附着 ongoing talent：`werewolf_leader_of_the_pack`、`werewolf_moontouched`
   - 共享执行链：`USE_TALENT validate -> execute -> TALENT_USED reduce -> Board/UI 可点击状态`
 - 本文档覆盖的是“巨石阵 + 附着在随从上的 ongoing talent 第二次发动”这一**基地共享缺口**；狼人只是本次用来复现和回归的具体入口，不代表问题只存在于狼人卡定义层。
-- 本文档不替代 `evidence/smashup-four-new-factions-audit-2026-02-22.md` 的其他狼人审计结论。
+- 本文档不替代 `evidence/smashup/smashup-four-new-factions-audit-2026-02-22.md` 的其他狼人审计结论。
 
 ## 权威来源
 - 基地文案：

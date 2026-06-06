@@ -79,6 +79,6 @@
 - ✅ 通过率: 100%
 
 ## 参考文档
-- `evidence/POD-AUDIT-COMPLETE.md` - POD 审计完整报告
-- `evidence/GAME-LOGIC-BUGS-FIXED.md` - 游戏逻辑 bug 修复详情
+- `evidence/_shared/POD-AUDIT-COMPLETE.md` - POD 审计完整报告
+- `evidence/dicethrone/GAME-LOGIC-BUGS-FIXED.md` - 游戏逻辑 bug 修复详情
 - `evidence/ALL-TESTS-PASSED.md` - 最终测试结果

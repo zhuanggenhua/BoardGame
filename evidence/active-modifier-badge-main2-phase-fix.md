@@ -80,7 +80,7 @@ const hasPhaseChangeToMain2 = newEntries.some(e => {
 ## 历史修复
 
 本次修复是攻击修正徽章系列修复的第四次：
-1. **首次挂载扫描修复**（`evidence/active-modifier-badge-first-mount-scan-fix.md`）- 修复首次挂载时不扫描历史事件的问题
+1. **首次挂载扫描修复**（`evidence/dicethrone/active-modifier-badge-first-mount-scan-fix.md`）- 修复首次挂载时不扫描历史事件的问题
 2. **乐观回滚处理修复**（`evidence/active-modifier-badge-fix-complete.md`）- 修复乐观引擎回滚后状态不同步的问题
 3. **ATTACK_RESOLVED 清除修复**（`evidence/active-modifier-badge-fix-complete.md`）- 修复攻击结束时不清除徽章的问题
 4. **main2 阶段清除修复**（本次）- 修复不攻击直接推进阶段时徽章不清除的问题

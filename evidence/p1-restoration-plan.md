@@ -109,7 +109,7 @@ P0 审计使用了相同的错误方法！必须重新验证 P0 的 20 个文件
 
 ### 2. 📝 创建审计方法论文档
 
-创建 `evidence/audit-methodology.md`，记录：
+创建 `evidence/dicethrone/audit-methodology.md`，记录：
 - ❌ 错误方法：只看 `git show` diff
 - ✅ 正确方法：读取当前文件验证
 - 检查清单：每个文件必须完成的验证步骤
@@ -322,7 +322,7 @@ P0 审计使用了相同的错误方法！必须重新验证 P0 的 20 个文件
 - `evidence/p1-audit-complete.md` - P1 审计完成报告
 - `evidence/p1-audit-batch2-smashup-ui.md` - SmashUp UI 详细审计
 - `evidence/p1-audit-batch3-dicethrone-abilities.md` - DiceThrone 能力详细审计
-- `evidence/p0-restoration-complete.md` - P0 恢复完成报告（参考）
+- `evidence/_shared/p0-restoration-complete.md` - P0 恢复完成报告（参考）
 
 ---
 

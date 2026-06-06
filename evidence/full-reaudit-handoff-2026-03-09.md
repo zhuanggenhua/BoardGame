@@ -29,10 +29,10 @@
   - 短哈希：`6ea1f9f`
   - 完整哈希：`6ea1f9f069d2cbec322636f9cc0455bc21437ad8`
 - 该信息可在以下现有文档中找到：
-  - `evidence/summonerwars-files.txt`
-  - `evidence/audit-methodology.md`
+  - `evidence/summonerwars/summonerwars-files.txt`
+  - `evidence/dicethrone/audit-methodology.md`
   - `evidence/audit-tracking-overview.md`
-  - `evidence/VALIDATION-FIX-COMPLETE.md`
+  - `evidence/dicethrone/VALIDATION-FIX-COMPLETE.md`
 - 注意：
   - 当前本地 Git 历史里，`git show 6ea1f9f` / `git show 6ea1f9f069d2cbec322636f9cc0455bc21437ad8` 可能无法直接解析；
   - 但仓库内大量既有审计文档都把它当作原始 POD 提交来引用；
@@ -44,35 +44,35 @@
 
 - 总览 / 方法论
   - `evidence/audit-tracking-overview.md`
-  - `evidence/audit-methodology.md`
+  - `evidence/dicethrone/audit-methodology.md`
   - `evidence/audit-results-complete.md`
   - `evidence/DEEP-REAUDIT-ANALYSIS.md`
-  - `evidence/DEEP-AUDIT-COMPLETE.md`
+  - `evidence/_shared/DEEP-AUDIT-COMPLETE.md`
 - POD / recovery / reaudit 主线
-  - `evidence/POD-AUDIT-COMPLETE.md`
-  - `evidence/POD-AUDIT-MISSING-ITEMS.md`
+  - `evidence/_shared/POD-AUDIT-COMPLETE.md`
+  - `evidence/_shared/POD-AUDIT-MISSING-ITEMS.md`
   - `evidence/POD-AUDIT-USER-CHANGES-CHECK.md`
-  - `evidence/pod-commit-scope-audit.md`
+  - `evidence/_shared/pod-commit-scope-audit.md`
   - `evidence/pod-reaudit-progress.md`
   - `evidence/pod-reaudit-conclusion.md`
   - `evidence/pod-reaudit-complete.md`
   - `evidence/POD-REAUDIT-COMPLETE-FINAL.md`
   - `evidence/POD-REAUDIT-FINAL-COMPLETE.md`
-  - `evidence/REAUDIT-COMPLETE.md`
-  - `evidence/POD-RECOVERY-PLAN.md`
+  - `evidence/_shared/REAUDIT-COMPLETE.md`
+  - `evidence/dicethrone/POD-RECOVERY-PLAN.md`
   - `evidence/POD-RECOVERY-COMPLETE.md`
   - `evidence/POD-RECOVERY-FINAL-SUMMARY.md`
   - `evidence/POD-RECOVERY-VERIFICATION-COMPLETE.md`
 - 关键专项审计 / 反思
-  - `evidence/VALIDATION-FIX-COMPLETE.md`
+  - `evidence/dicethrone/VALIDATION-FIX-COMPLETE.md`
   - `evidence/TEST-FIXES-COMPLETE.md`
-  - `evidence/TEMPLE-FIRSTMATE-TESTS-PASSED.md`
-  - `evidence/ULTIMATE-SHIELD-IMMUNITY-VERIFIED.md`
+  - `evidence/smashup/TEMPLE-FIRSTMATE-TESTS-PASSED.md`
+  - `evidence/dicethrone/ULTIMATE-SHIELD-IMMUNITY-VERIFIED.md`
 
 ### 历史材料口径统一说明
 
 - `evidence/pod-reaudit-progress.md` 是**阶段性进度快照**，其中“需要检查 / 待查”只代表 2026-03-04 当时的中间状态；
-- 该批剩余项后续已由 `evidence/POD-REAUDIT-REMAINING-20-FILES.md` 收口；
+- 该批剩余项后续已由 `evidence/tictactoe/POD-REAUDIT-REMAINING-20-FILES.md` 收口；
 - 当前 POD 历史材料的**最终口径**以 `evidence/pod-reaudit-conclusion.md` 为准：
   - `316/316` 文件
   - `100%` 审计完成

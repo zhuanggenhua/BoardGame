@@ -26,7 +26,7 @@
 
 ### 1. 无目标时的反馈
 
-![无目标时的反馈](assets/crop-circles-e2e/01-no-targets.png)
+![无目标时的反馈](smashup/assets/crop-circles-e2e/01-no-targets.png)
 
 审查结论：
 
@@ -36,7 +36,7 @@
 
 ### 2. 单基地选择提示
 
-![单基地选择提示](assets/crop-circles-e2e/02-single-base-prompt.png)
+![单基地选择提示](smashup/assets/crop-circles-e2e/02-single-base-prompt.png)
 
 审查结论：
 
@@ -46,7 +46,7 @@
 
 ### 3. 单基地结算后的结果
 
-![单基地结算后的结果](assets/crop-circles-e2e/03-single-base-result.png)
+![单基地结算后的结果](smashup/assets/crop-circles-e2e/03-single-base-result.png)
 
 审查结论：
 
@@ -56,7 +56,7 @@
 
 ### 4. 多基地可选时的提示
 
-![多基地可选时的提示](assets/crop-circles-e2e/04-multi-base-prompt.png)
+![多基地可选时的提示](smashup/assets/crop-circles-e2e/04-multi-base-prompt.png)
 
 审查结论：
 
@@ -66,7 +66,7 @@
 
 ### 5. 多基地场景下只影响选中基地
 
-![多基地场景下只影响选中基地](assets/crop-circles-e2e/05-selected-base-only.png)
+![多基地场景下只影响选中基地](smashup/assets/crop-circles-e2e/05-selected-base-only.png)
 
 审查结论：
 
@@ -77,5 +77,5 @@
 ## 最终结果
 
 - `e2e/smashup-crop-circles.e2e.ts`：`3/3` 通过
-- 5 张截图已人工审查，并备份到 `evidence/assets/crop-circles-e2e/`
+- 5 张截图已人工审查，并备份到 `evidence/smashup/assets/crop-circles-e2e/`
 - `alien_crop_circles` 这份老 E2E 已完成重写并具备稳定证据链

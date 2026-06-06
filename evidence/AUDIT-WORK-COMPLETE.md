@@ -171,26 +171,26 @@ describe('终极技能（Ultimate）护盾免疫', () => {
 ### 问题分析
 
 - `evidence/p2-ultimate-shield-immunity-loss.md` - Ultimate 护盾免疫详细分析
-- `evidence/ULTIMATE-SHIELD-IMMUNITY-VERIFIED.md` - Ultimate 护盾免疫验证报告
-- `evidence/HONEST-AUDIT-CONCLUSION.md` - 诚实的审计结论
+- `evidence/dicethrone/ULTIMATE-SHIELD-IMMUNITY-VERIFIED.md` - Ultimate 护盾免疫验证报告
+- `evidence/dicethrone/HONEST-AUDIT-CONCLUSION.md` - 诚实的审计结论
 - `evidence/FINAL-AUDIT-SUMMARY.md` - 最终审计总结
 
 ### 恢复计划
 
-- `evidence/p0-restoration-plan.md` - P0 恢复计划
+- `evidence/_shared/p0-restoration-plan.md` - P0 恢复计划
 - `evidence/p1-restoration-plan.md` - P1 恢复计划
-- `evidence/p2-restoration-plan.md` - P2 恢复计划
+- `evidence/_shared/p2-restoration-plan.md` - P2 恢复计划
 
 ### 测试验证
 
 - `evidence/TEST-VERIFICATION-COMPLETE.md` - 测试验证完成报告
-- `evidence/p0-restoration-verification.md` - P0 恢复验证报告
+- `evidence/_shared/p0-restoration-verification.md` - P0 恢复验证报告
 
 ### 工作总结
 
 - `evidence/MY-WORK-SUMMARY.md` - 我的工作总结
 - `evidence/DEEP-AUDIT-STATUS.md` - 深度审计状态报告
-- `evidence/FINAL-ACTION-PLAN.md` - 最终行动计划
+- `evidence/_shared/FINAL-ACTION-PLAN.md` - 最终行动计划
 
 ---
 

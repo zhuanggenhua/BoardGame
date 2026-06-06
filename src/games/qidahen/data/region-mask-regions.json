@@ -48,63 +48,559 @@
       "tolerance": 14
     }
   ],
-  "boundaryExpansion": 4,
+  "boundaryExpansion": 2,
   "regionColorTolerance": 32,
   "paintedBoundaryOnly": true,
   "regions": [
     {
-      "id": "jinzhou",
-      "name": "锦州",
+      "id": "city-region-1",
+      "name": "大同",
       "color": "#d64c3a",
       "seed": {
-        "x": 772,
-        "y": 420
+        "x": 188,
+        "y": 186
       },
       "links": [
-        "song-jin"
-      ]
+        "city-region-16",
+        "city-region-2",
+        "city-region-20",
+        "city-region-8"
+      ],
+      "acceptance": null
     },
     {
-      "id": "song-jin",
-      "name": "宋进",
+      "id": "city-region-2",
+      "name": "外喀尔喀部",
       "color": "#e4a93a",
       "seed": {
-        "x": 697,
-        "y": 630
+        "x": 499,
+        "y": 63
       },
       "links": [
-        "jinzhou"
-      ]
+        "city-region-1",
+        "city-region-3",
+        "city-region-6",
+        "city-region-8"
+      ],
+      "acceptance": null
     },
     {
-      "id": "shan-hai-guan",
-      "name": "山海关",
+      "id": "city-region-3",
+      "name": "科尔沁部",
       "color": "#4f88d2",
       "seed": {
-        "x": 635,
-        "y": 552
+        "x": 741,
+        "y": 78
       },
-      "links": []
+      "links": [
+        "city-region-10",
+        "city-region-2",
+        "city-region-4",
+        "city-region-6",
+        "city-region-7"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-4",
+      "name": "乌喇部",
+      "color": "#6fbe73",
+      "seed": {
+        "x": 1009,
+        "y": 53
+      },
+      "links": [
+        "city-region-3",
+        "city-region-5",
+        "city-region-7",
+        "city-region-9"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-5",
+      "name": "辉发部",
+      "color": "#8f63d8",
+      "seed": {
+        "x": 1184,
+        "y": 125
+      },
+      "links": [
+        "city-region-11",
+        "city-region-4",
+        "city-region-9",
+        "xian-xing"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-6",
+      "name": "扎鲁特部",
+      "color": "#d062aa",
+      "seed": {
+        "x": 636,
+        "y": 193
+      },
+      "links": [
+        "city-region-10",
+        "city-region-14",
+        "city-region-2",
+        "city-region-3",
+        "city-region-8"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-7",
+      "name": "叶赫部",
+      "color": "#45b6b1",
+      "seed": {
+        "x": 894,
+        "y": 186
+      },
+      "links": [
+        "city-region-10",
+        "city-region-13",
+        "city-region-15",
+        "city-region-3",
+        "city-region-4",
+        "city-region-9"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-8",
+      "name": "巴林部",
+      "color": "#bf7844",
+      "seed": {
+        "x": 478,
+        "y": 201
+      },
+      "links": [
+        "city-region-1",
+        "city-region-14",
+        "city-region-16",
+        "city-region-2",
+        "city-region-6"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-9",
+      "name": "哈达部",
+      "color": "#d57b4d",
+      "seed": {
+        "x": 1012,
+        "y": 181
+      },
+      "links": [
+        "city-region-11",
+        "city-region-13",
+        "city-region-4",
+        "city-region-5",
+        "city-region-7"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-10",
+      "name": "内喀尔喀部",
+      "color": "#2fc68e",
+      "seed": {
+        "x": 764,
+        "y": 253
+      },
+      "links": [
+        "city-region-14",
+        "city-region-15",
+        "city-region-17",
+        "city-region-3",
+        "city-region-6",
+        "city-region-7"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-11",
+      "name": "长白",
+      "color": "#ca4dd5",
+      "seed": {
+        "x": 1128,
+        "y": 249
+      },
+      "links": [
+        "city-region-13",
+        "city-region-5",
+        "city-region-9",
+        "xian-xing"
+      ],
+      "acceptance": null
     },
     {
       "id": "xian-xing",
       "name": "咸兴",
-      "color": "#6fbe73",
+      "color": "#a6c62f",
       "seed": {
-        "x": 1098,
-        "y": 511
+        "x": 1126,
+        "y": 553
       },
-      "links": []
+      "links": [
+        "city-region-11",
+        "city-region-13",
+        "city-region-15",
+        "city-region-18",
+        "city-region-22",
+        "city-region-29",
+        "city-region-5"
+      ],
+      "acceptance": null
     },
     {
-      "id": "shou-cheng",
-      "name": "汉城",
-      "color": "#8f63d8",
+      "id": "city-region-13",
+      "name": "建州",
+      "color": "#4d91d5",
       "seed": {
-        "x": 1118,
-        "y": 629
+        "x": 1009,
+        "y": 296
       },
-      "links": []
+      "links": [
+        "city-region-11",
+        "city-region-15",
+        "city-region-7",
+        "city-region-9",
+        "xian-xing"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-14",
+      "name": "察哈尔部",
+      "color": "#c62f4e",
+      "seed": {
+        "x": 579,
+        "y": 353
+      },
+      "links": [
+        "city-region-10",
+        "city-region-16",
+        "city-region-17",
+        "city-region-19",
+        "city-region-6",
+        "city-region-8",
+        "jinzhou"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-15",
+      "name": "辽北",
+      "color": "#4dd559",
+      "seed": {
+        "x": 892,
+        "y": 382
+      },
+      "links": [
+        "city-region-10",
+        "city-region-13",
+        "city-region-17",
+        "city-region-19",
+        "city-region-22",
+        "city-region-7",
+        "jinzhou",
+        "song-jin",
+        "xian-xing"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-16",
+      "name": "克什克腾部",
+      "color": "#682fc6",
+      "seed": {
+        "x": 409,
+        "y": 356
+      },
+      "links": [
+        "city-region-1",
+        "city-region-14",
+        "city-region-20",
+        "city-region-8",
+        "jinzhou"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-17",
+      "name": "奈曼部",
+      "color": "#d5a84d",
+      "seed": {
+        "x": 760,
+        "y": 339
+      },
+      "links": [
+        "city-region-10",
+        "city-region-14",
+        "city-region-15",
+        "city-region-19"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-18",
+      "name": "平壤",
+      "color": "#2fc6c0",
+      "seed": {
+        "x": 1222,
+        "y": 501
+      },
+      "links": [
+        "city-region-29",
+        "xian-xing"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-19",
+      "name": "敖汉部",
+      "color": "#d54db3",
+      "seed": {
+        "x": 710,
+        "y": 390
+      },
+      "links": [
+        "city-region-14",
+        "city-region-15",
+        "city-region-17",
+        "jinzhou",
+        "song-jin"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-20",
+      "name": "土默特部",
+      "color": "#74c62f",
+      "seed": {
+        "x": 175,
+        "y": 471
+      },
+      "links": [
+        "city-region-1",
+        "city-region-16",
+        "city-region-24",
+        "city-region-26",
+        "city-region-27"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "jinzhou",
+      "name": "锦州",
+      "color": "#4d64d5",
+      "seed": {
+        "x": 627,
+        "y": 477
+      },
+      "links": [
+        "city-region-14",
+        "city-region-15",
+        "city-region-16",
+        "city-region-19",
+        "city-region-22",
+        "city-region-24",
+        "city-region-25"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-22",
+      "name": "东江",
+      "color": "#c6422f",
+      "seed": {
+        "x": 878,
+        "y": 717
+      },
+      "links": [
+        "city-region-15",
+        "city-region-25",
+        "city-region-27",
+        "city-region-28",
+        "city-region-29",
+        "city-region-32",
+        "city-region-33",
+        "jinzhou",
+        "song-jin",
+        "xian-xing"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "song-jin",
+      "name": "皮岛",
+      "color": "#4dd586",
+      "seed": {
+        "x": 825,
+        "y": 528
+      },
+      "links": [
+        "city-region-15",
+        "city-region-19",
+        "city-region-22"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-24",
+      "name": "宣府",
+      "color": "#9a2fc6",
+      "seed": {
+        "x": 395,
+        "y": 548
+      },
+      "links": [
+        "city-region-20",
+        "city-region-25",
+        "city-region-27",
+        "city-region-28",
+        "jinzhou"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-25",
+      "name": "山海关",
+      "color": "#d5d54d",
+      "seed": {
+        "x": 543,
+        "y": 552
+      },
+      "links": [
+        "city-region-22",
+        "city-region-24",
+        "city-region-28",
+        "jinzhou"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-26",
+      "name": "鄂尔多斯部",
+      "color": "#2f9ac6",
+      "seed": {
+        "x": 70,
+        "y": 632
+      },
+      "links": [
+        "city-region-20",
+        "city-region-31"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-27",
+      "name": "保定",
+      "color": "#d54d86",
+      "seed": {
+        "x": 424,
+        "y": 718
+      },
+      "links": [
+        "city-region-20",
+        "city-region-22",
+        "city-region-24",
+        "city-region-28",
+        "city-region-30",
+        "city-region-33"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-28",
+      "name": "顺天",
+      "color": "#41c62f",
+      "seed": {
+        "x": 503,
+        "y": 634
+      },
+      "links": [
+        "city-region-22",
+        "city-region-24",
+        "city-region-25",
+        "city-region-27"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-29",
+      "name": "汉城",
+      "color": "#654dd5",
+      "seed": {
+        "x": 1239,
+        "y": 820
+      },
+      "links": [
+        "city-region-18",
+        "city-region-22",
+        "xian-xing"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-30",
+      "name": "山西",
+      "color": "#c6752f",
+      "seed": {
+        "x": 269,
+        "y": 776
+      },
+      "links": [
+        "city-region-27",
+        "city-region-31"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-31",
+      "name": "延绥",
+      "color": "#4dd5b4",
+      "seed": {
+        "x": 86,
+        "y": 809
+      },
+      "links": [
+        "city-region-26",
+        "city-region-30"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-32",
+      "name": "登莱",
+      "color": "#c62fbf",
+      "seed": {
+        "x": 756,
+        "y": 746
+      },
+      "links": [
+        "city-region-22",
+        "city-region-33"
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "city-region-33",
+      "name": "山东",
+      "color": "#a7d54d",
+      "seed": {
+        "x": 596,
+        "y": 830
+      },
+      "links": [
+        "city-region-22",
+        "city-region-27",
+        "city-region-32"
+      ],
+      "acceptance": null
     }
   ]
 }

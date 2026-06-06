@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { withWindowsHide } from './windows-hide.js';
+import { prependNodePath, resolveWorkspaceNodeModuleFile } from './node-module-resolver.mjs';
 
 function createSpawnOptions(env, overrides = {}) {
   return {
@@ -32,12 +33,16 @@ export function spawnBundleRunner({ label, entry, outfile, tsconfig, env, watch 
 }
 
 export function spawnTsxEntry({ entry, tsconfig, env, spawnOptions = {} }) {
+  const tsxCliInfo = resolveWorkspaceNodeModuleFile('tsx/dist/cli.mjs', {
+    label: 'tsx CLI',
+    cwd: process.cwd(),
+  });
   return spawn(process.execPath, [
-    'node_modules/tsx/dist/cli.mjs',
+    tsxCliInfo.filePath,
     '--tsconfig',
     tsconfig,
     entry,
-  ], createSpawnOptions(env, spawnOptions));
+  ], createSpawnOptions(prependNodePath(env, tsxCliInfo.nodeModulesRoot), spawnOptions));
 }
 
 export function spawnTsLoaderEntry({ entry, env, tsconfig, spawnOptions = {} }) {
@@ -57,7 +62,11 @@ export function spawnTsLoaderEntry({ entry, env, tsconfig, spawnOptions = {} }) 
 }
 
 export function spawnNpxCommand(args, env) {
-  return spawn(process.execPath, ['node_modules/npm/bin/npm-cli.js', 'exec', '--yes', '--', ...args], createSpawnOptions(env));
+  const npmCliInfo = resolveWorkspaceNodeModuleFile('npm/bin/npm-cli.js', {
+    label: 'npm CLI',
+    cwd: process.cwd(),
+  });
+  return spawn(process.execPath, [npmCliInfo.filePath, 'exec', '--yes', '--', ...args], createSpawnOptions(prependNodePath(env, npmCliInfo.nodeModulesRoot)));
 }
 
 export function registerExitGuard(child, label, onFailure, options = {}) {

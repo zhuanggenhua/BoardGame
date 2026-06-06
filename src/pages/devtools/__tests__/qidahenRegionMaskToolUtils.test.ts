@@ -19,6 +19,10 @@ import {
     countMaskPixels,
     createRegionAssignments,
     expandMaskColorBoundedArea,
+    analyzeOpenBoundaryComponents,
+    extractBoundaryPartitionComponents,
+    extractClosedBoundaryInteriorComponents,
+    rankOpenBoundaryHintsForTargets,
     floodFillColorBoundedArea,
     floodFillContiguousArea,
     fillMaskInternalHoles,
@@ -26,6 +30,9 @@ import {
     growMaskTowardBoundary,
     hexToRgb,
     analyzeMaskBoundaryChainsNearSupport,
+    keepBoundaryComponentsSealingInterior,
+    keepBoundaryPixelsTouchingClosedInteriors,
+    keepBoundaryPixelsTouchingSeedPartitions,
     keepMaskBoundaryChainsNearSupport,
     keepMaskComponentsTouchingSupportMask,
     rasterizePolygonMask,
@@ -33,6 +40,7 @@ import {
     replaceRegionWithSelection,
     sampleRegionBoundaryPoints,
     scoreMaskBoundaryAlignment,
+    snapBoundaryMaskToSupport,
     unionBinaryMasks,
 } from '../qidahenRegionMaskToolUtils';
 
@@ -77,6 +85,152 @@ describe('qidahenRegionMaskToolUtils', () => {
         expect(fill[3 * width + 3]).toBe(1);
         expect(fill[0]).toBe(0);
         expect(fill[1 * width + 3]).toBe(0);
+    });
+
+    it('keepBoundaryComponentsSealingInterior 丢弃未封口线段，只保留能围出内部的边界', () => {
+        const width = 12;
+        const height = 10;
+        const mask = new Uint8Array(width * height);
+        const setPixel = (x: number, y: number) => {
+            mask[y * width + x] = 1;
+        };
+
+        for (let x = 2; x <= 6; x += 1) {
+            setPixel(x, 2);
+            setPixel(x, 6);
+        }
+        for (let y = 2; y <= 6; y += 1) {
+            setPixel(2, y);
+            setPixel(6, y);
+        }
+        for (let y = 1; y <= 7; y += 1) {
+            setPixel(9, y);
+        }
+
+        const sealedOnly = keepBoundaryComponentsSealingInterior({
+            mask,
+            width,
+            minInteriorPixels: 4,
+            anchors: [[4, 4]],
+        });
+
+        expect(sealedOnly[2 * width + 2]).toBe(1);
+        expect(sealedOnly[6 * width + 6]).toBe(1);
+        expect(sealedOnly[4 * width + 9]).toBe(0);
+        expect(countMaskPixels(sealedOnly)).toBe(16);
+    });
+
+    it('keepBoundaryComponentsSealingInterior 会丢弃没有正式区域锚点的封闭装饰框', () => {
+        const width = 12;
+        const height = 10;
+        const mask = new Uint8Array(width * height);
+        const setPixel = (x: number, y: number) => {
+            mask[y * width + x] = 1;
+        };
+
+        for (let x = 1; x <= 4; x += 1) {
+            setPixel(x, 1);
+            setPixel(x, 4);
+        }
+        for (let y = 1; y <= 4; y += 1) {
+            setPixel(1, y);
+            setPixel(4, y);
+        }
+        for (let x = 7; x <= 10; x += 1) {
+            setPixel(x, 5);
+            setPixel(x, 8);
+        }
+        for (let y = 5; y <= 8; y += 1) {
+            setPixel(7, y);
+            setPixel(10, y);
+        }
+
+        const sealedOnly = keepBoundaryComponentsSealingInterior({
+            mask,
+            width,
+            minInteriorPixels: 4,
+            anchors: [[8, 6]],
+        });
+
+        expect(sealedOnly[1 * width + 1]).toBe(0);
+        expect(sealedOnly[5 * width + 7]).toBe(1);
+        expect(countMaskPixels(sealedOnly)).toBe(12);
+    });
+
+    it('keepBoundaryPixelsTouchingClosedInteriors 会剪掉连在闭合边界上的开放尾巴', () => {
+        const width = 14;
+        const height = 10;
+        const mask = new Uint8Array(width * height);
+        const setPixel = (x: number, y: number) => {
+            mask[y * width + x] = 1;
+        };
+
+        for (let x = 2; x <= 6; x += 1) {
+            setPixel(x, 2);
+            setPixel(x, 6);
+        }
+        for (let y = 2; y <= 6; y += 1) {
+            setPixel(2, y);
+            setPixel(6, y);
+        }
+        for (let x = 7; x <= 10; x += 1) {
+            setPixel(x, 4);
+        }
+
+        const result = keepBoundaryPixelsTouchingClosedInteriors({
+            mask,
+            width,
+            minInteriorPixels: 4,
+            anchors: [[4, 4]],
+            keepThicknessIterations: 0,
+        });
+
+        expect(result.closedFaceCount).toBe(1);
+        expect(result.anchoredClosedFaceCount).toBe(1);
+        expect(result.mask[4 * width + 6]).toBe(1);
+        expect(result.mask[4 * width + 7]).toBe(0);
+        expect(result.mask[4 * width + 10]).toBe(0);
+        expect(result.discardedPixelCount).toBe(4);
+    });
+
+    it('keepBoundaryPixelsTouchingClosedInteriors 会丢弃未命中正式 seed 的封闭装饰框', () => {
+        const width = 14;
+        const height = 11;
+        const mask = new Uint8Array(width * height);
+        const setPixel = (x: number, y: number) => {
+            mask[y * width + x] = 1;
+        };
+
+        for (let x = 1; x <= 4; x += 1) {
+            setPixel(x, 1);
+            setPixel(x, 4);
+        }
+        for (let y = 1; y <= 4; y += 1) {
+            setPixel(1, y);
+            setPixel(4, y);
+        }
+        for (let x = 8; x <= 11; x += 1) {
+            setPixel(x, 6);
+            setPixel(x, 9);
+        }
+        for (let y = 6; y <= 9; y += 1) {
+            setPixel(8, y);
+            setPixel(11, y);
+        }
+
+        const result = keepBoundaryPixelsTouchingClosedInteriors({
+            mask,
+            width,
+            minInteriorPixels: 4,
+            anchors: [[9, 7]],
+            keepThicknessIterations: 0,
+        });
+
+        expect(result.closedFaceCount).toBe(2);
+        expect(result.anchoredClosedFaceCount).toBe(1);
+        expect(result.mask[1 * width + 1]).toBe(0);
+        expect(result.mask[6 * width + 8]).toBe(1);
+        expect(countMaskPixels(result.mask)).toBe(12);
     });
 
     it('scoreMaskBoundaryAlignment 能区分更贴边界的选区轮廓', () => {
@@ -419,6 +573,67 @@ describe('qidahenRegionMaskToolUtils', () => {
         expect(countMaskPixels(withoutClosing)).toBe(0);
         expect(withClosing[6 * width + 4]).toBe(1);
         expect(withClosing[8 * width + 4]).toBe(1);
+    });
+
+    it('snapBoundaryMaskToSupport 会把手绘线贴到附近候选轮廓', () => {
+        const width = 16;
+        const height = 10;
+        const sourceMask = new Uint8Array(width * height);
+        const supportMask = new Uint8Array(width * height);
+        const clipMask = new Uint8Array(width * height);
+        clipMask.fill(1);
+
+        for (let y = 2; y <= 7; y += 1) {
+            sourceMask[y * width + 4] = 1;
+            supportMask[y * width + 6] = 1;
+        }
+
+        const result = snapBoundaryMaskToSupport({
+            sourceMask,
+            supportMask,
+            width,
+            clipMask,
+            maxDistance: 3,
+            minPixels: 3,
+            minSpan: 3,
+            maxAverageThickness: 2,
+        });
+
+        expect(result.matchedSourcePixelCount).toBe(6);
+        expect(result.matchedSupportPixelCount).toBe(6);
+        expect(result.mask[4 * width + 6]).toBe(1);
+        expect(result.mask[4 * width + 4]).toBe(0);
+    });
+
+    it('snapBoundaryMaskToSupport 默认保留没有候选支撑的手绘段', () => {
+        const width = 16;
+        const height = 10;
+        const sourceMask = new Uint8Array(width * height);
+        const supportMask = new Uint8Array(width * height);
+        const clipMask = new Uint8Array(width * height);
+        clipMask.fill(1);
+
+        for (let y = 2; y <= 7; y += 1) {
+            sourceMask[y * width + 4] = 1;
+        }
+        sourceMask[8 * width + 12] = 1;
+        for (let y = 2; y <= 7; y += 1) {
+            supportMask[y * width + 6] = 1;
+        }
+
+        const result = snapBoundaryMaskToSupport({
+            sourceMask,
+            supportMask,
+            width,
+            clipMask,
+            maxDistance: 3,
+            minPixels: 3,
+            minSpan: 3,
+            maxAverageThickness: 2,
+        });
+
+        expect(result.keptOriginalPixelCount).toBe(1);
+        expect(result.mask[8 * width + 12]).toBe(1);
     });
 
     it('keepMaskBoundaryChainsNearSupport 不会把过长缺口强行桥接成边界', () => {
@@ -926,6 +1141,257 @@ describe('qidahenRegionMaskToolUtils', () => {
         expect(filled[3 * width + 3]).toBe(1);
         expect(filled[0]).toBe(0);
         expect(countMaskPixels(filled)).toBe(25);
+    });
+
+    it('extractClosedBoundaryInteriorComponents 只返回闭合边界围出的面', () => {
+        const width = 10;
+        const height = 8;
+        const closed = new Uint8Array(width * height);
+        for (let x = 2; x <= 6; x += 1) {
+            closed[2 * width + x] = 1;
+            closed[5 * width + x] = 1;
+        }
+        for (let y = 2; y <= 5; y += 1) {
+            closed[y * width + 2] = 1;
+            closed[y * width + 6] = 1;
+        }
+        for (let x = 7; x <= 8; x += 1) {
+            closed[1 * width + x] = 1;
+        }
+
+        const components = extractClosedBoundaryInteriorComponents({
+            barrierMask: closed,
+            width,
+            minPixels: 1,
+        });
+
+        expect(components).toHaveLength(1);
+        expect(components[0].pixelCount).toBe(6);
+        expect(components[0].mask[3 * width + 3]).toBe(1);
+        expect(components[0].mask[1 * width + 7]).toBe(0);
+    });
+
+    it('extractClosedBoundaryInteriorComponents 对断线边界不生成面', () => {
+        const width = 8;
+        const height = 8;
+        const open = new Uint8Array(width * height);
+        for (let x = 2; x <= 5; x += 1) {
+            open[2 * width + x] = 1;
+            open[5 * width + x] = 1;
+        }
+        for (let y = 2; y <= 5; y += 1) {
+            open[y * width + 2] = 1;
+        }
+
+        expect(extractClosedBoundaryInteriorComponents({
+            barrierMask: open,
+            width,
+            minPixels: 1,
+        })).toHaveLength(0);
+    });
+
+    it('extractClosedBoundaryInteriorComponents 不把斜向单线误判成闭合面', () => {
+        const width = 10;
+        const height = 10;
+        const diagonal = new Uint8Array(width * height);
+        for (let offset = 0; offset < 5; offset += 1) {
+            diagonal[(2 + offset) * width + (2 + offset)] = 1;
+        }
+
+        expect(extractClosedBoundaryInteriorComponents({
+            barrierMask: diagonal,
+            width,
+            minPixels: 1,
+        })).toHaveLength(0);
+    });
+
+    it('extractBoundaryPartitionComponents 用连接到边缘的边界线分割整块地图', () => {
+        const width = 12;
+        const height = 6;
+        const barrier = new Uint8Array(width * height);
+        for (let y = 0; y < height; y += 1) {
+            barrier[y * width + 5] = 1;
+        }
+
+        const components = extractBoundaryPartitionComponents({
+            barrierMask: barrier,
+            width,
+            seeds: [
+                { x: 2, y: 2 },
+                { x: 9, y: 2 },
+            ],
+        });
+
+        expect(components).toHaveLength(2);
+        expect(components.map((component) => component.seedIndexes)).toEqual([[1], [0]]);
+        expect(components.find((component) => component.seedIndexes[0] === 0)?.pixelCount).toBe(30);
+        expect(components.find((component) => component.seedIndexes[0] === 1)?.pixelCount).toBe(36);
+    });
+
+    it('extractBoundaryPartitionComponents 不把未接边缘的开放线段当作有效分割', () => {
+        const width = 12;
+        const height = 6;
+        const barrier = new Uint8Array(width * height);
+        for (let y = 1; y <= 4; y += 1) {
+            barrier[y * width + 5] = 1;
+        }
+
+        const components = extractBoundaryPartitionComponents({
+            barrierMask: barrier,
+            width,
+            seeds: [
+                { x: 2, y: 2 },
+                { x: 9, y: 2 },
+            ],
+        });
+
+        expect(components).toHaveLength(1);
+        expect(components[0].seedIndexes).toEqual([0, 1]);
+    });
+
+    it('keepBoundaryPixelsTouchingSeedPartitions 保留能分割 seed 的边界线并丢弃无效开放噪声', () => {
+        const width = 12;
+        const height = 8;
+        const barrier = new Uint8Array(width * height);
+        for (let y = 0; y < height; y += 1) {
+            barrier[y * width + 5] = 1;
+        }
+        for (let x = 8; x <= 10; x += 1) {
+            barrier[6 * width + x] = 1;
+        }
+
+        const result = keepBoundaryPixelsTouchingSeedPartitions({
+            mask: barrier,
+            width,
+            seeds: [
+                { x: 2, y: 3 },
+                { x: 9, y: 3 },
+            ],
+            keepThicknessIterations: 0,
+        });
+
+        expect(result.partitionCount).toBe(2);
+        expect(result.anchoredPartitionCount).toBe(2);
+        expect(result.mask[3 * width + 5]).toBe(1);
+        expect(result.mask[6 * width + 9]).toBe(0);
+        expect(result.discardedPixelCount).toBe(3);
+    });
+
+    it('keepBoundaryPixelsTouchingSeedPartitions 保留接边分区线组件而不是裁成碎片', () => {
+        const width = 20;
+        const height = 12;
+        const barrier = new Uint8Array(width * height);
+        for (let y = 0; y < height; y += 1) {
+            barrier[y * width + 6] = 1;
+        }
+        for (let x = 6; x < width; x += 1) {
+            barrier[3 * width + x] = 1;
+            barrier[7 * width + x] = 1;
+        }
+        for (let x = 10; x <= 12; x += 1) {
+            barrier[5 * width + x] = 1;
+        }
+
+        const result = keepBoundaryPixelsTouchingSeedPartitions({
+            mask: barrier,
+            width,
+            seeds: [
+                { x: 2, y: 5 },
+                { x: 10, y: 1 },
+                { x: 10, y: 4 },
+            ],
+            keepThicknessIterations: 0,
+        });
+
+        expect(result.partitionCount).toBe(4);
+        expect(result.anchoredPartitionCount).toBe(3);
+        expect(result.mask[0 * width + 6]).toBe(1);
+        expect(result.mask[3 * width + 18]).toBe(1);
+        expect(result.mask[7 * width + 18]).toBe(1);
+        expect(result.mask[5 * width + 11]).toBe(0);
+        expect(result.discardedPixelCount).toBe(3);
+    });
+
+    it('analyzeOpenBoundaryComponents 标出没有围出内部的开放线段', () => {
+        const width = 12;
+        const height = 8;
+        const mask = new Uint8Array(width * height);
+        for (let x = 2; x <= 5; x += 1) {
+            mask[2 * width + x] = 1;
+            mask[5 * width + x] = 1;
+        }
+        for (let y = 2; y <= 5; y += 1) {
+            mask[y * width + 2] = 1;
+            mask[y * width + 5] = 1;
+        }
+        for (let x = 8; x <= 10; x += 1) {
+            mask[3 * width + x] = 1;
+        }
+
+        const analysis = analyzeOpenBoundaryComponents({
+            barrierMask: mask,
+            width,
+            minPixels: 2,
+        });
+
+        expect(analysis.openComponentCount).toBe(1);
+        expect(analysis.hints).toHaveLength(1);
+        expect(analysis.hints[0].pixelCount).toBe(3);
+        expect(analysis.hints[0].endpoints).toEqual([
+            { x: 10, y: 3 },
+            { x: 8, y: 3 },
+        ]);
+    });
+
+    it('analyzeOpenBoundaryComponents 把斜向手绘线视为同一条开放线段', () => {
+        const width = 12;
+        const height = 12;
+        const mask = new Uint8Array(width * height);
+        for (let offset = 0; offset < 5; offset += 1) {
+            mask[(2 + offset) * width + (3 + offset)] = 1;
+        }
+
+        const analysis = analyzeOpenBoundaryComponents({
+            barrierMask: mask,
+            width,
+            minPixels: 2,
+        });
+
+        expect(analysis.openComponentCount).toBe(1);
+        expect(analysis.hints).toHaveLength(1);
+        expect(analysis.hints[0].pixelCount).toBe(5);
+        expect(analysis.hints[0].endpoints).toEqual([
+            { x: 7, y: 6 },
+            { x: 3, y: 2 },
+        ]);
+    });
+
+    it('rankOpenBoundaryHintsForTargets 优先提示未命中 seed 附近的开放线段', () => {
+        const hints = [
+            {
+                pixelCount: 80,
+                bounds: { left: 80, top: 80, right: 95, bottom: 82 },
+                center: { x: 88, y: 81 },
+                endpoints: [{ x: 80, y: 80 }, { x: 95, y: 82 }] as const,
+            },
+            {
+                pixelCount: 18,
+                bounds: { left: 12, top: 10, right: 18, bottom: 12 },
+                center: { x: 15, y: 11 },
+                endpoints: [{ x: 12, y: 10 }, { x: 18, y: 12 }] as const,
+            },
+        ];
+
+        const ranked = rankOpenBoundaryHintsForTargets({
+            hints,
+            targets: [
+                { id: 'shan-hai-guan', name: '山海关', seed: { x: 16, y: 14 } },
+            ],
+        });
+
+        expect(ranked[0].nearestTarget?.name).toBe('山海关');
+        expect(ranked[0].pixelCount).toBe(18);
+        expect(ranked[1].pixelCount).toBe(80);
     });
 
     it('applyBrushToAssignments + replaceRegionWithSelection 能更新区域归属', () => {

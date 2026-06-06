@@ -368,6 +368,9 @@ const gameTransport = new GameTransportServer({
     io,
     storage,
     games: SERVER_ENGINES,
+    gameManifests: Object.fromEntries(
+        GAME_SERVER_MANIFEST.map((entry) => [normalizeGameName(entry.manifest.id), entry.manifest]),
+    ),
     trainingDataRecorder,
     trainingDataMinMatchDurationMs: TRAINING_DATA_MIN_MATCH_DURATION_MS,
     rulesVersion: process.env.npm_package_version ?? null,

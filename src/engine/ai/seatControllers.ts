@@ -1,13 +1,13 @@
 import { DEFAULT_LOCAL_AI_DIFFICULTY, normalizeAiDifficultyLevel } from './difficulty';
 import type { AiSeatController, AiSupportProfile } from './types';
-import type { GameManifestEntry } from '../../games/manifest.types';
+import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import {
     getDefaultSetupSelections,
     isMultiSelectField,
     isSelectField,
     normalizeSetupSelections,
     type GameSetupSelections,
-} from '../../games/setupOptions';
+} from '../../shared/gameSetupOptions';
 
 const DEFAULT_REMOTE_PROVIDER_ID = 'astrbot';
 export const DEFAULT_AI_MINIMUM_ACTION_DELAY_MS = 1000;

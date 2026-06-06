@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { build as nativeBuild } from 'esbuild';
+import { resolveWorkspaceNodeModuleFile } from './node-module-resolver.mjs';
 
 const repoRoot = process.cwd();
 const args = parseArgs(process.argv.slice(2));
@@ -65,7 +66,10 @@ async function loadWasmEsbuild() {
     if (!wasmEsbuildPromise) {
         wasmEsbuildPromise = (async () => {
             const wasm = await import('esbuild-wasm');
-            const wasmPath = path.resolve(repoRoot, 'node_modules', 'esbuild-wasm', 'esbuild.wasm');
+            const wasmPath = resolveWorkspaceNodeModuleFile('esbuild-wasm/esbuild.wasm', {
+                label: 'esbuild-wasm',
+                cwd: repoRoot,
+            }).filePath;
             await wasm.initialize({
                 wasmURL: pathToFileURL(wasmPath).href,
                 worker: false,

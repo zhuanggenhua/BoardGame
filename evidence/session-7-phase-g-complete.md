@@ -280,7 +280,7 @@ async cleanupEphemeralMatches(graceMs = DISCONNECT_GRACE_MS): Promise<number> {
 ## 文档更新
 
 ### 创建的文档
-- `evidence/audit-report-server-phase-g.md` - Phase G 详细审计报告
+- `evidence/_shared/audit-report-server-phase-g.md` - Phase G 详细审计报告
 
 ### 更新的文档
 - `evidence/recovery-progress-summary.md` - 总体进度更新

@@ -108,7 +108,7 @@ return { events, matchState: queueInteraction(ctx.matchState, {
 
 - `src/games/smashup/domain/baseAbilities.ts` - 刚柔流寺庙能力定义
 - `docs/bugs/smashup-afterscoring-summary.md` - afterScoring 问题总结
-- `docs/bugs/smashup-mothership-afterscoring.md` - 母舰基地类似问题（已修复）
+- `docs/bugs/smashup/smashup-mothership-afterscoring.md` - 母舰基地类似问题（已修复）
 
 ## 教训
 

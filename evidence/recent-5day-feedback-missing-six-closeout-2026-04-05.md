@@ -56,8 +56,8 @@
     - 用例：`两名玩家都有 afterScoring 卡牌，支持多轮响应`
   - `src/games/smashup/__tests__/baseAbilitiesPrompt.test.ts`
     - 用例：`并列冠军时应为每位冠军各生成一个 Prompt`
-  - `evidence/smashup-we-are-the-champions-timing-fix.md`
-  - `evidence/smashup-response-window-complete.md`
+  - `evidence/smashup/smashup-we-are-the-champions-timing-fix.md`
+  - `evidence/smashup/smashup-response-window-complete.md`
 - 判定：
   - “双方都是冠军却只触发一次”的核心风险点，已被“正确 afterScoring 注册 + 双边多轮响应 + 并列冠军 prompt”三层证据覆盖。
   - 当前更像历史问题已失效，因此维持 `closed`。
@@ -77,7 +77,7 @@
     - 用例：`walks the real RESPOND chain with target-first selection without throwing a command exception`
   - `src/games/smashup/__tests__/newOngoingAbilities.test.ts`
     - 覆盖：有埋葬牌时 `+4`，否则 `+2`
-  - `evidence/smashup-ancient-egyptians-audit-2026-03-29.md`
+  - `evidence/smashup/smashup-ancient-egyptians-audit-2026-03-29.md`
     - 已明确回写旧结论失效，并写明当前正确口径是“先选随从，再按该随从所在基地判定”
 - 判定：
   - 这条反馈对应的旧错误交互顺序已经被修掉，当前实现和审计口径一致。
@@ -112,7 +112,7 @@
   - `actionLog` 明确出现 `战术卡施放：墓穴陷阱`
   - 之后对局继续推进，没有卡住
 - 现有实现 / 测试 / evidence：
-  - `evidence/smashup-ancient-egyptians-audit-2026-03-29.md`
+  - `evidence/smashup/smashup-ancient-egyptians-audit-2026-03-29.md`
     - 已写清古埃及埋葬牌必须落基地、不会“蒸发”
   - `src/games/smashup/__tests__/buryEngine.test.ts`
     - 覆盖古埃及埋牌必须进入目标基地的埋葬区

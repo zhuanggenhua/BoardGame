@@ -3,17 +3,17 @@
 import type { GameClientManifestEntry, GameClientRuntimeModule } from './manifest.client.types';
 import { ManifestGameThumbnail } from '../components/lobby/thumbnails';
 
-import manifest0 from './airepoworkbench/manifest';
-import Thumbnail0 from './airepoworkbench/thumbnail';
+import manifest0 from '../tools/airepoworkbench/manifest';
+import Thumbnail0 from '../tools/airepoworkbench/thumbnail';
 
-import manifest1 from './archview/manifest';
-import Thumbnail1 from './archview/thumbnail';
+import manifest1 from '../tools/archview/manifest';
+import Thumbnail1 from '../tools/archview/thumbnail';
 
-import manifest2 from './assetslicer/manifest';
-import Thumbnail2 from './assetslicer/thumbnail';
+import manifest2 from '../tools/assetslicer/manifest';
+import Thumbnail2 from '../tools/assetslicer/thumbnail';
 
-import manifest3 from './audiobrowser/manifest';
-import Thumbnail3 from './audiobrowser/thumbnail';
+import manifest3 from '../tools/audiobrowser/manifest';
+import Thumbnail3 from '../tools/audiobrowser/thumbnail';
 
 import manifest4 from './cardia/manifest';
 import Thumbnail4 from './cardia/thumbnail';
@@ -21,8 +21,8 @@ import Thumbnail4 from './cardia/thumbnail';
 import manifest5 from './dicethrone/manifest';
 import Thumbnail5 from './dicethrone/thumbnail';
 
-import manifest6 from './fxpreview/manifest';
-import Thumbnail6 from './fxpreview/thumbnail';
+import manifest6 from '../tools/fxpreview/manifest';
+import Thumbnail6 from '../tools/fxpreview/thumbnail';
 
 import manifest7 from './qidahen/manifest';
 import Thumbnail7 from './qidahen/thumbnail';
@@ -39,8 +39,8 @@ import Thumbnail10 from './summonerwars/thumbnail';
 import manifest11 from './tictactoe/manifest';
 import Thumbnail11 from './tictactoe/thumbnail';
 
-import manifest12 from './ugcbuilder/manifest';
-import Thumbnail12 from './ugcbuilder/thumbnail';
+import manifest12 from '../tools/ugcbuilder/manifest';
+import Thumbnail12 from '../tools/ugcbuilder/thumbnail';
 
 const loadRuntime4 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule] = await Promise.all([

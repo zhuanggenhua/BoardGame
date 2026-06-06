@@ -30,7 +30,7 @@
   - `src/games/dicethrone/rule/武士卡牌录入核对.md`
 - 既有审计文档：
   - `evidence/dicethrone-gunslinger-samurai-reaudit-2026-04-05.md`
-  - `evidence/dicethrone-gunslinger-samurai-card-preview-audit-2026-04-04.md`
+  - `evidence/dicethrone/dicethrone-gunslinger-samurai-card-preview-audit-2026-04-04.md`
   - `evidence/dicethrone-full-capability-audit-2026-04-05.md`
   - `evidence/dicethrone-new-passives-e2e-test-2026-04-06.md`
   - `evidence/dicethrone-fan-the-hammer-upgrade-e2e-test-2026-04-06.md`

@@ -129,7 +129,7 @@
 
 ## 相关文档
 
-- `evidence/audit-scope-complete.md` - 完整审计范围
+- `evidence/_shared/audit-scope-complete.md` - 完整审计范围
 - `evidence/p3-audit-progress.md` - P3 审计进度跟踪
 
 ---
