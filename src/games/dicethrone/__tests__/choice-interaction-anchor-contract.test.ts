@@ -204,6 +204,130 @@ describe('DiceThrone choice handler anchor contract', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.LOADED]).toBe(1);
     });
 
+    it('use-crit 应拒绝 source 正确但没有当前 choice 锚点的 CHOICE_RESOLVED', () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.CRIT] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'holy-strike-large',
+            isDefendable: true,
+            damage: 8,
+            bonusDamage: 0,
+        };
+
+        const next = reduce(state.core, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                tokenId: TOKEN_IDS.CRIT,
+                value: 1,
+                customId: 'use-crit',
+                sourceAbilityId: 'holy-strike-large',
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 100,
+        } as DiceThroneEvent);
+
+        expect(next.players['0'].tokens[TOKEN_IDS.CRIT]).toBe(1);
+        expect(next.pendingAttack?.bonusDamage).toBe(0);
+        expect(next.pendingAttack?.offensiveRollEndTokenResolved).not.toBe(true);
+    });
+
+    it('use-crit 在当前 choice 锚点存在时仍应正常生效', () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], createQueuedRandom([1]));
+        setChoiceAnchor(state.core, 'holy-strike-large');
+        state.core.players['0'].tokens[TOKEN_IDS.CRIT] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'holy-strike-large',
+            isDefendable: true,
+            damage: 8,
+            bonusDamage: 0,
+        };
+
+        const next = reduce(state.core, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                tokenId: TOKEN_IDS.CRIT,
+                value: 1,
+                customId: 'use-crit',
+                sourceAbilityId: 'holy-strike-large',
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 101,
+        } as DiceThroneEvent);
+
+        expect(next.players['0'].tokens[TOKEN_IDS.CRIT]).toBe(0);
+        expect(next.pendingAttack?.bonusDamage).toBe(4);
+        expect(next.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
+        expect(next.activatingAbilityId).toBeUndefined();
+    });
+
+    it('use-accuracy 应拒绝 source 正确但没有当前 choice 锚点的 CHOICE_RESOLVED', () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.ACCURACY] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'holy-strike-large',
+            isDefendable: true,
+            damage: 8,
+            bonusDamage: 0,
+        };
+
+        const next = reduce(state.core, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                tokenId: TOKEN_IDS.ACCURACY,
+                value: 1,
+                customId: 'use-accuracy',
+                sourceAbilityId: 'holy-strike-large',
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 102,
+        } as DiceThroneEvent);
+
+        expect(next.players['0'].tokens[TOKEN_IDS.ACCURACY]).toBe(1);
+        expect(next.pendingAttack?.isDefendable).toBe(true);
+        expect(next.pendingAttack?.offensiveRollEndTokenResolved).not.toBe(true);
+    });
+
+    it('use-accuracy 在当前 choice 锚点存在时仍应正常生效', () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], createQueuedRandom([1]));
+        setChoiceAnchor(state.core, 'holy-strike-large');
+        state.core.players['0'].tokens[TOKEN_IDS.ACCURACY] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'holy-strike-large',
+            isDefendable: true,
+            damage: 8,
+            bonusDamage: 0,
+        };
+
+        const next = reduce(state.core, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                tokenId: TOKEN_IDS.ACCURACY,
+                value: 1,
+                customId: 'use-accuracy',
+                sourceAbilityId: 'holy-strike-large',
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 103,
+        } as DiceThroneEvent);
+
+        expect(next.players['0'].tokens[TOKEN_IDS.ACCURACY]).toBe(0);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
+        expect(next.activatingAbilityId).toBeUndefined();
+    });
+
     it('ninja choice followup 应拒绝 source 正确但没有当前 choice 锚点的 SYS_INTERACTION_RESOLVED', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.pendingAttack = {

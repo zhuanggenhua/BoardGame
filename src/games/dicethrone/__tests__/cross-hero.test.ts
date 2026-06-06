@@ -195,6 +195,51 @@ describe('cross hero battles', () => {
             expect(result.finalState.core.pendingAttack?.defenseAbilityId).toBe('holy-defense');
         });
 
+        it('paladin 使用 Accuracy 后应让原本可防御的攻击直接跳过防御窗口', () => {
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random: createQueuedRandom([1, 2, 3, 4, 5]),
+                setup: (playerIds: PlayerId[], r: RandomFn) => {
+                    const state = createInitializedStateWithCharacters(playerIds, r, { '0': 'paladin', '1': 'monk' });
+                    state.core.players['0'].tokens[TOKEN_IDS.ACCURACY] = 1;
+                    state.core.players['0'].tokens[TOKEN_IDS.CRIT] = 0;
+                    return state;
+                },
+                assertFn: assertState,
+                silent: true,
+            });
+
+            const result = runner.run({
+                name: 'paladin accuracy should skip defense on holy-strike-large',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('RESPONSE_PASS', '0'),
+                    cmd('RESPONSE_PASS', '1'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'holy-strike-large' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    players: {
+                        '0': {
+                            hp: 52,
+                            tokens: { [TOKEN_IDS.ACCURACY]: 0 },
+                        },
+                        '1': { hp: 42 },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.pendingAttack).toBeNull();
+            expect(result.finalState.core.pendingDamage).toBeUndefined();
+        });
+
         it('tithes II 在激活包含 pray 面的技能时额外获得 1 CP', () => {
             const random = createQueuedRandom([1, 1, 2, 6, 3]);
             const tithesUpgrade = PALADIN_CARDS.find((card) => card.id === 'card-tithes-2');

@@ -16,6 +16,20 @@ for (let i = 0; i < args.length; i += 1) {
     i += 1;
     continue;
   }
+  if (arg === '--files-from') {
+    const listPath = args[i + 1];
+    if (listPath) {
+      const content = fs.readFileSync(listPath, 'utf8');
+      files.push(
+        ...content
+          .split(/\r?\n/)
+          .map((value) => value.trim())
+          .filter(Boolean),
+      );
+      i += 1;
+    }
+    continue;
+  }
   if (arg === '--all') {
     scanAll = true;
     continue;

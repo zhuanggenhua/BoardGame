@@ -96,6 +96,19 @@ function collectBaseEventCount(events: SmashUpEvent[], type: typeof SU_EVENTS.BA
     return events.filter(event => event.type === type).length;
 }
 
+function advancePostScoringDelay(
+    runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
+    eventLog: SmashUpEvent[],
+    playerId: PlayerId = '0',
+) {
+    const delayUntil = (runner.getState().sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+    expect(typeof delayUntil).toBe('number');
+    const advance = runner.dispatch('ADVANCE_PHASE', { playerId, timestamp: delayUntil as number });
+    expect(advance.success).toBe(true);
+    eventLog.push(...advance.events);
+    return advance;
+}
+
 function advanceToAfterScoring(
     runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
     actingPlayerId: PlayerId = '0',
@@ -684,9 +697,16 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         expect(moveMate.success).toBe(true);
         eventLog.push(...moveMate.events);
 
-        for (let guard = 0; guard < 4; guard += 1) {
-            const pendingChoice = getCurrentChoice(runner.getState());
+        for (let guard = 0; guard < 8; guard += 1) {
+            const state = runner.getState();
+            const pendingChoice = getCurrentChoice(state);
+
             if (!pendingChoice) {
+                const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+                if (state.sys.phase === 'scoreBases' && typeof delayUntil === 'number') {
+                    advancePostScoringDelay(runner, eventLog);
+                    continue;
+                }
                 break;
             }
 

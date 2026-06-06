@@ -190,6 +190,7 @@ const CACHE_DIR = path.join(repoRoot, 'temp', 'quality-gate-cache');
 const PRE_PUSH_CACHE_FILE = path.join(CACHE_DIR, 'pre-push.json');
 const COMMAND_CACHE_FILE = path.join(CACHE_DIR, 'command-results.json');
 const QUALITY_GATE_TYPECHECK_BUILD_INFO = path.join('temp', 'quality-gate-cache', 'typecheck.tsbuildinfo');
+const TEST_STRUCTURE_FILES_LIST = path.join(CACHE_DIR, 'test-structure-files.txt');
 const STABLE_VITEST_NODE_OPTIONS = '--max-old-space-size=8192';
 const STABLE_ESLINT_NODE_OPTIONS = '--max-old-space-size=8192';
 const ESLINT_CHUNK_LIMIT = 2;
@@ -210,6 +211,12 @@ function runGit(args, options = {}) {
   }
 }
 
+function writeListFile(filename, values) {
+  mkdirSync(path.dirname(filename), { recursive: true });
+  writeFileSync(filename, `${values.join('\n')}\n`, 'utf8');
+  return filename;
+}
+
 function readGitFile(ref, file) {
   return runGit(['show', `${ref}:${file}`], { allowFailure: true });
 }
@@ -221,15 +228,17 @@ function getMergeCommitParents(commit) {
   return parents.length === 2 ? parents : null;
 }
 
-function getIntersectingChangedFiles(parentA, parentB, commit) {
+function getIntersectingChangedFiles(parentA, parentB, baseRef = '') {
+  const mergeBase = baseRef || runGit(['merge-base', parentA, parentB], { allowFailure: true });
+  if (!mergeBase) return [];
   const changedA = new Set(
-    runGit(['diff', '--name-only', parentA, commit], { allowFailure: true })
+    runGit(['diff', '--name-only', '--no-renames', mergeBase, parentA], { allowFailure: true })
       .split(/\r?\n/)
       .map((value) => value.trim())
       .filter(Boolean),
   );
   const changedB = new Set(
-    runGit(['diff', '--name-only', parentB, commit], { allowFailure: true })
+    runGit(['diff', '--name-only', '--no-renames', mergeBase, parentB], { allowFailure: true })
       .split(/\r?\n/)
       .map((value) => value.trim())
       .filter(Boolean),
@@ -319,14 +328,21 @@ function runMergeConflictGuards({ baseRef, headRef }) {
   console.log(`[changed-quality-gate] merge commits: ${mergeCommits.length}`);
 
   for (const commit of mergeCommits) {
+    const parents = getMergeCommitParents(commit);
+    const overlapFiles = parents ? getIntersectingChangedFiles(parents[0], parents[1]) : [];
     const conflictFiles = getConflictFilesFromCommitMessage(commit);
-    if (conflictFiles.length === 0) {
-      console.log(`[changed-quality-gate] merge commit ${commit} 未记录真实冲突文件，按 clean merge 跳过冲突留档门禁。`);
+    if (conflictFiles.length === 0 && overlapFiles.length === 0) {
+      console.log(`[changed-quality-gate] merge commit ${commit} 未识别到双侧重叠改动，按 clean merge 跳过冲突留档门禁。`);
       continue;
     }
 
     console.log(`[changed-quality-gate] 审计 merge commit: ${commit}`);
-    console.log(`[changed-quality-gate] 记录的真实冲突文件数: ${conflictFiles.length}`);
+    if (conflictFiles.length > 0) {
+      console.log(`[changed-quality-gate] 记录的真实冲突文件数: ${conflictFiles.length}`);
+    } else {
+      console.log(`[changed-quality-gate] merge commit ${commit} 未记录真实冲突文件，退化为双侧重叠改动审计。`);
+      console.log(`[changed-quality-gate] 双侧重叠改动文件数: ${overlapFiles.length}`);
+    }
     runMergeAuditStrict(commit);
 
     if (!hasMergeConflictEvidence(commit)) {
@@ -917,7 +933,13 @@ function collectCommands(files, baseRef, affectsTypecheck) {
       label: 'Test structure guard',
       reason: '存在游戏测试改动，检查测试文件命名与巨型泛名文件净新增',
       command: process.execPath,
-      args: ['scripts/infra/testing-structure-guard.mjs', '--base', baseRef, ...files],
+      args: [
+        'scripts/infra/testing-structure-guard.mjs',
+        '--base',
+        baseRef,
+        '--files-from',
+        writeListFile(TEST_STRUCTURE_FILES_LIST, files),
+      ],
     });
   }
 

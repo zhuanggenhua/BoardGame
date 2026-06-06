@@ -100,6 +100,7 @@ import {
     createScoringSession,
     getRemainingScoringBaseRefs,
     getScoringSession,
+    isSameScoringBaseRef,
     markScoringBaseCompleted,
     resolveScoringBaseRefSlotIndex,
     serializePostScoringEvents,
@@ -458,7 +459,7 @@ function finalizeCurrentScoringBase(
         ),
     );
 
-    const completedState = updateScoringSession(
+    let completedState = updateScoringSession(
         markScoringBaseCompleted(workingState, currentBaseRef),
         (currentSession) => currentSession
             ? {
@@ -467,6 +468,38 @@ function finalizeCurrentScoringBase(
             }
             : currentSession,
     );
+    const completedSession = getScoringSession(completedState);
+    if (completedSession) {
+        const discoveredEligibleRefs = getScoringEligibleBaseIndices(postDeferredCore)
+            .map((baseIndex) => createScoringBaseRef({ ...postDeferredCore }, baseIndex))
+            .filter((baseRef): baseRef is SmashUpScoringBaseRef => !!baseRef)
+            .filter((baseRef) => !completedSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)))
+            .filter((baseRef) => !completedSession.lockedBaseRefs.some((lockedRef) => isSameScoringBaseRef(lockedRef, baseRef)));
+
+        if (discoveredEligibleRefs.length > 0) {
+            completedState = updateScoringSession(completedState, (currentSession) => currentSession
+                ? {
+                    ...currentSession,
+                    lockedBaseRefs: [...currentSession.lockedBaseRefs, ...discoveredEligibleRefs],
+                }
+                : currentSession);
+
+            const futureState = { ...completedState, core: postDeferredCore };
+            const futureSession = getScoringSession(futureState);
+            const remainingLockedIndices = futureSession
+                ? futureSession.lockedBaseRefs
+                    .filter((baseRef) => !futureSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)))
+                    .map((baseRef) => resolveScoringBaseRefSlotIndex(futureState, baseRef))
+                    .filter((baseIndex): baseIndex is number => baseIndex !== undefined)
+                : [];
+
+            events.push({
+                type: SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
+                payload: { baseIndices: remainingLockedIndices },
+                timestamp: now,
+            } as SmashUpEvent);
+        }
+    }
     const awaitingReduceState = {
         ...completedState,
         sys: {

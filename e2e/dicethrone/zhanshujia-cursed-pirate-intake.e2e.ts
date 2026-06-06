@@ -5583,7 +5583,7 @@ const playPowderKegUpkeepTransfer = async (
         applied: string;
     },
 ) => {
-    await setupPowderKegUpkeepScenario(match, 1, guestPowderKegCount, repeatRandomValue(0.99, 8));
+    await setupPowderKegUpkeepScenario(match, 1, guestPowderKegCount, repeatRandomValue(6, 8));
     await dismissCardSpotlightIfPresent(match.hostPage);
     await dismissCardSpotlightIfPresent(match.guestPage);
 

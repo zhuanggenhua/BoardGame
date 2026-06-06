@@ -336,11 +336,14 @@ export class GameTestRunner<
             systems,
         };
 
+        const explicitTimestamp = typeof payload.timestamp === 'number'
+            ? payload.timestamp
+            : undefined;
         const command = {
             type: commandType,
             playerId: payload.playerId,
             payload,
-            timestamp: Date.now(),
+            timestamp: explicitTimestamp ?? Date.now(),
         } as TCommand;
 
         const result = executePipeline(

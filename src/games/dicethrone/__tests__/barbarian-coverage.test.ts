@@ -20,6 +20,7 @@ import { describe, it, expect } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { DiceThroneDomain } from '../domain';
 import { STATUS_IDS } from '../domain/ids';
+import { SLAP_2 } from '../heroes/barbarian/abilities';
 import {
     testSystems,
     createQueuedRandom,
@@ -140,6 +141,68 @@ describe('狂战士 GTR 技能覆盖', () => {
                     cmd('ADVANCE_PHASE', '1'),
                 ],
                 expect: { turnPhase: 'main2', players: { '1': { hp: 42 } } },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('巴掌 II 在 4 剑且 4 个相同数字时应改成不可防御并直接收口', () => {
+            const random = createQueuedRandom([1, 1, 1, 1, 6]);
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain, systems: testSystems,
+                playerIds: ['0', '1'], random,
+                setup: (playerIds, setupRandom) => {
+                    const state = createBarbarianSetup()(playerIds, setupRandom);
+                    state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
+                        ability.id === 'slap' ? SLAP_2 : ability
+                    ));
+                    state.core.players['0'].abilityLevels.slap = 2;
+                    return state;
+                },
+                assertFn: assertState, silent: true,
+            });
+            const result = runner.run({
+                name: '巴掌 II 4剑4同值=7不可防御伤害',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'slap-2-4' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                ],
+                expect: { turnPhase: 'main2', players: { '1': { hp: 43 } } },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('巴掌 II 只有 4 剑但不是 4 个相同数字时仍应进入防御阶段', () => {
+            const random = createQueuedRandom([1, 1, 2, 3, 6, 6, 6, 6]);
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain, systems: testSystems,
+                playerIds: ['0', '1'], random,
+                setup: (playerIds, setupRandom) => {
+                    const state = createBarbarianSetup()(playerIds, setupRandom);
+                    state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
+                        ability.id === 'slap' ? SLAP_2 : ability
+                    ));
+                    state.core.players['0'].abilityLevels.slap = 2;
+                    return state;
+                },
+                assertFn: assertState, silent: true,
+            });
+            const result = runner.run({
+                name: '巴掌 II 4剑非4同值仍可防御',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'slap-2-4' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'thick-skin' }),
+                    cmd('ADVANCE_PHASE', '1'),
+                ],
+                expect: { turnPhase: 'main2', players: { '1': { hp: 43 } } },
             });
             expect(result.assertionErrors).toEqual([]);
         });

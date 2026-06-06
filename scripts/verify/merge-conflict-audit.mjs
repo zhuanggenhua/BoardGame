@@ -133,15 +133,21 @@ function getChangedFileSet(commit, parentA, parentB) {
     return { changedA, changedB };
 }
 
-function getBlobId(ref, file) {
-    return runGit(['rev-parse', `${ref}:${file}`], { allowFailure: true });
+function getBlobMap(ref, files) {
+    if (files.length === 0) return new Map();
+    const output = runGit(['ls-tree', '-r', '--full-tree', ref, '--', ...files], { allowFailure: true });
+    const result = new Map();
+    if (!output) return result;
+
+    for (const line of output.split(/\r?\n/)) {
+        const match = line.match(/^\d+\s+blob\s+([0-9a-f]{40})\t(.+)$/);
+        if (!match) continue;
+        result.set(match[2], match[1]);
+    }
+    return result;
 }
 
-function classifyFile(commit, parentA, parentB, file) {
-    const resultBlob = getBlobId(commit, file);
-    const parentABlob = getBlobId(parentA, file);
-    const parentBBlob = getBlobId(parentB, file);
-
+function classifyFile(resultBlob, parentABlob, parentBBlob) {
     if (resultBlob === parentABlob && resultBlob === parentBBlob) {
         return 'same-as-both';
     }
@@ -182,9 +188,16 @@ function main() {
     }
 
     const { changedA, changedB } = getChangedFileSet(commit, parent1, parent2);
+    const commitBlobMap = getBlobMap(commit, files);
+    const parent1BlobMap = getBlobMap(parent1, files);
+    const parent2BlobMap = getBlobMap(parent2, files);
     const results = files.map(file => ({
         file,
-        classification: classifyFile(commit, parent1, parent2, file),
+        classification: classifyFile(
+            commitBlobMap.get(file) ?? null,
+            parent1BlobMap.get(file) ?? null,
+            parent2BlobMap.get(file) ?? null,
+        ),
         differsFromParent1: changedA.has(file),
         differsFromParent2: changedB.has(file),
     }));
