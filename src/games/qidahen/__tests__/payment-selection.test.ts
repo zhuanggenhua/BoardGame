@@ -4926,6 +4926,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-20');
         expect(resolved.postBattleSelection).toMatchObject({
             targetRuntimeRegionId: 'city-region-20',
             survivingTroops: 3,
@@ -5065,6 +5066,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.postBattleSelection).toMatchObject({
             targetRuntimeRegionId: 'city-region-14',
             survivingTroops: 2,
@@ -6007,6 +6009,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.postBattleSelection).toMatchObject({
             committedTroops: 2,
             survivingTroops: 2,
@@ -6242,6 +6245,7 @@ describe('七大恨支付手牌选择', () => {
         }, diceSequence(4, 4, 4, 1, 1, 1));
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.postBattleSelection).toMatchObject({
             targetRuntimeRegionId: 'city-region-14',
             survivingTroops: 4,
@@ -6370,6 +6374,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.regions.find((region) => region.id === 'city-region-17')).toMatchObject({
             troops: 0,
             specialTroops: [],
@@ -6621,6 +6626,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.postBattleSelection).toMatchObject({
             targetRuntimeRegionId: 'city-region-14',
             survivingTroops: 3,
@@ -7227,6 +7233,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.regions.find((region) => region.id === 'city-region-14')).toMatchObject({
             controller: 'jin',
             troops: 0,
@@ -7324,6 +7331,7 @@ describe('七大恨支付手牌选择', () => {
         }, diceSequence(2, 2, 2, 1, 1, 1));
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.regions.find((region) => region.id === 'city-region-14')).toMatchObject({
             controller: 'jin',
             troops: 0,
@@ -7528,6 +7536,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.postBattleSelection).toMatchObject({
             targetRuntimeRegionId: 'city-region-14',
             survivingTroops: 4,
@@ -8878,6 +8887,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-25');
         expect(resolved.pendingTargetAction).toBeNull();
         expect(resolved.postBattleSelection?.battleMode).toBe('city');
         expect(resolved.regions.find((region) => region.id === 'city-region-25')).toMatchObject({
