@@ -99,22 +99,44 @@ function collectBaseEventCount(events: SmashUpEvent[], type: typeof SU_EVENTS.BA
 function advancePostScoringDelay(
     runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
     eventLog: SmashUpEvent[],
-    playerId: PlayerId = '0',
 ) {
-    const delayUntil = (runner.getState().sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+    const state = runner.getState();
+    const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
     expect(typeof delayUntil).toBe('number');
+    const playerId = state.core.turnOrder[state.core.currentPlayerIndex]!;
     const advance = runner.dispatch('ADVANCE_PHASE', { playerId, timestamp: delayUntil as number });
     expect(advance.success).toBe(true);
     eventLog.push(...advance.events);
     return advance;
 }
 
+function drainScoreBasesDelayUntilPromptOrIdle(
+    runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
+    eventLog: SmashUpEvent[],
+) {
+    for (let guard = 0; guard < 8; guard += 1) {
+        const state = runner.getState();
+        if (getCurrentChoice(state)) {
+            break;
+        }
+        if (state.sys.phase !== 'scoreBases') {
+            break;
+        }
+        const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+        if (typeof delayUntil !== 'number') {
+            break;
+        }
+        advancePostScoringDelay(runner, eventLog);
+    }
+}
+
 function advanceToAfterScoring(
     runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
     actingPlayerId: PlayerId = '0',
-    options: { allowDirectAfterScoringSourceId?: string } = {},
+    options: { allowDirectAfterScoringSourceIds?: string[] } = {},
 ) {
     const eventLog: SmashUpEvent[] = [];
+    const allowDirectAfterScoringSourceIds = new Set(options.allowDirectAfterScoringSourceIds ?? []);
 
     const advance = runner.dispatch('ADVANCE_PHASE', { playerId: actingPlayerId });
     expect(advance.success).toBe(true);
@@ -125,7 +147,7 @@ function advanceToAfterScoring(
         const session = getReactionSession(state);
         if (session?.responseWindowType === 'afterScoring') {
             const choice = getCurrentChoice(state);
-            if (choice?.sourceId === options.allowDirectAfterScoringSourceId) {
+            if (choice?.sourceId && allowDirectAfterScoringSourceIds.has(choice.sourceId)) {
                 return { advance, eventLog, choice: choice! };
             }
             expect(choice?.sourceId).toBe('smashup_reaction_choose');
@@ -240,6 +262,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             expect(passResult.success).toBe(true);
             eventLog.push(...passResult.events);
         }
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
 
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(1);
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_CLEARED)).toBe(1);
@@ -292,6 +315,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         const passResult = runner.resolveInteraction(choice.playerId, { optionId: 'pass' });
         expect(passResult.success).toBe(true);
         eventLog.push(...passResult.events);
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
 
         const finalState = runner.getState();
         expect(getReactionSession(finalState)).toBeUndefined();
@@ -375,6 +399,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         });
         expect(chooseAmount.success).toBe(true);
         eventLog.push(...chooseAmount.events);
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
 
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(1);
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_CLEARED)).toBe(1);
@@ -501,7 +526,9 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             return { sys, core };
         });
 
-        const { eventLog, choice } = advanceToAfterScoring(runner);
+        const { eventLog, choice } = advanceToAfterScoring(runner, '0', {
+            allowDirectAfterScoringSourceIds: ['base_greenhouse'],
+        });
         const chooseGreenhouse = runner.resolveInteraction('0', {
             optionId: findQueuedTriggerOptionId(
                 runner.getState(),
@@ -524,6 +551,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         });
         expect(chooseDeckMinion.success).toBe(true);
         eventLog.push(...chooseDeckMinion.events);
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
 
         const finalState = runner.getState();
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(1);
@@ -576,7 +604,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         });
 
         const { eventLog, choice } = advanceToAfterScoring(runner, '1', {
-            allowDirectAfterScoringSourceId: 'alien_scout_return',
+            allowDirectAfterScoringSourceIds: ['alien_scout_return'],
         });
         expect(choice.sourceId).toBe('alien_scout_return');
 
