@@ -1,5 +1,7 @@
 # DiceThrone Ninja 主阶段行动卡真实手牌 E2E（2026-05-17）
 
+> 2026-06-05 当前有效口径：本文只保留 Ninja 三张主阶段行动卡的对象级真实手牌 `L3` 证据，不代表 Ninja 整英雄或升级技能家族的当前完成态。当前若要判断 Ninja 升级技能对象级 `L3/L4` 或整英雄残余范围，应以 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md`、`evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md` 与 `src/games/dicethrone/rule/ninja录入核对.md` 的最新矩阵为准。
+
 ## 范围与结论
 
 本证据只覆盖 Ninja 三张主阶段专属行动卡的真实手牌入口：
@@ -92,8 +94,8 @@ npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者训�
 | `ninja-card-poison-dart` | 主阶段真实手牌可拖拽并打出 | 对手 `delayed_poison=2` | CP 3->1，手牌清空 | 通过 |
 | `ninja-card-knife-fan` | 主阶段真实手牌可拖拽并打出 | 对手 HP 30->29 | CP 3->1，手牌清空，`pendingDamage` 未打开 | 通过 |
 
-残余范围：
+历史边界与当前阅读门禁：
 
 - Ninja 升级卡真实手牌 L3 已另见 `evidence/dicethrone/dicethrone-ninja-upgrade-real-hand-e2e-2026-05-17.md`；升级后技能本体所有骰面/分支仍不能由本文件外推。
-- Ninja 多个基础/升级技能本体仍只有静态/代表链证据，不能宣称 Ninja 全量完成。
+- 本文件不能外推 Ninja 技能本体全量收口。2026-06-04/2026-06-05 后，Ninja 升级技能对象级 L3 与关键 L4 已在 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `evidence/dicethrone/dicethrone-ninja-ability-real-entry-e2e-2026-05-17.md` 补齐一大批；当前剩余应按这些主文档中的批次级治理口径理解，而不是继续读成“技能本体仍只有静态/代表链证据”。
 - `smoke_bomb` 失败骰面分支已另见 `evidence/dicethrone/dicethrone-ninja-smoke-bomb-failure-e2e-2026-05-17.md`；该 token 分支证据不改变本文件只覆盖三张主阶段行动卡的范围。

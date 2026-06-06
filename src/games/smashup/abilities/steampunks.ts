@@ -972,7 +972,17 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
             payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'steampunk_change_of_venue' },
             timestamp,
         } as SmashUpEvent;
-        const recoverEvent = recoverCardsFromDiscard(playerId, [selected.cardUid], 'steampunk_change_of_venue', timestamp);
+        const recoverEvent = {
+            type: SU_EVENTS.CARD_TRANSFERRED,
+            payload: {
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                fromPlayerId: selected.ownerId,
+                toPlayerId: playerId,
+                reason: 'steampunk_change_of_venue',
+            },
+            timestamp,
+        } as SmashUpEvent;
         const replayState = withSimulatedMatchState(state, [detachEvent, recoverEvent]);
 
         if (cardDef?.subtype === 'ongoing') {

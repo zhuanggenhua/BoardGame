@@ -1,5 +1,7 @@
 # DiceThrone 火法 Burn 描述一致性审计（2026-05-12）
 
+> 2026-06-06 当前有效口径：本文只覆盖 Pyromancer `Burn` 描述/规则/实现一致性的历史专项审计，不是当前 DiceThrone 所有状态描述、所有火法对象或新英雄补审的完成证明。阅读时只能把它理解成单条状态对象审计记录。
+
 ## 审计范围
 
 - 对象：Pyromancer / Burn（`STATUS_IDS.BURN`）
@@ -76,3 +78,7 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/pyroma
 2. 误把 `passiveTrigger.removable` 当成生命周期语义，而没有先确认它在项目里实际只服务于净化/移除/转移路径。
 3. 旧审计把“没有自动移除”与“不会自然消失”混在一起，没有补跨多个自己 upkeep 的回归。
 4. 证据当时主要依赖描述和旧测试口径，没有用图片里的 “Does not stack” 反向审一遍状态层数是否可能自然掉到 0。
+
+---
+
+**当前阅读说明**：本文只能证明 Pyromancer `Burn` 描述/规则/实现一致性这条专项对象曾被审计并修正，不能外推为当前所有状态描述、所有火法对象或 DiceThrone 当前整体审计都已收口。

@@ -102,6 +102,80 @@ describe('Mega Troopers 代表性玩法行为', () => {
         });
     });
 
+    it('Form Megabot! 在 borrowed setaside Megabot 上仍应按当前控制者把泰坦打到合法基地，并保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('form', 'mega_troopers_form_megabot', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_juice_bar', [
+                makeMinion('red', 'mega_troopers_red_trooper', '0', 5),
+                makeMinion('beta', 'mega_troopers_beta_6', '0', 2),
+            ])],
+            titans: [{
+                ...makeMegabot({ zone: 'setaside' }),
+                uid: 'megabot-borrowed',
+                ownerId: '1',
+                controllerId: '0',
+            }],
+        });
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'form', targetBaseIndex: 0 },
+            timestamp: 11,
+        }, FIXED_RANDOM);
+
+        expect(play.success).toBe(true);
+        expect(play.events.some(event => event.type === SU_EVENTS.TITAN_PLAYED)).toBe(true);
+        expect(play.finalState.core.titans?.find(titan => titan.uid === 'megabot-borrowed')).toMatchObject({
+            ownerId: '1',
+            controllerId: '0',
+            location: {
+                zone: 'base',
+                baseIndex: 0,
+            },
+        });
+    });
+
+    it('Red Trooper 天赋在 borrowed live Megabot 上仍应按当前控制者移动泰坦，而不是被真实 owner 过滤掉', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_moon_dumpster'),
+                makeBase('base_juice_bar', [makeMinion('red', 'mega_troopers_red_trooper', '0', 5)]),
+            ],
+            titans: [{
+                ...makeMegabot({ zone: 'base', baseIndex: 0, enteredAt: 1 }),
+                uid: 'megabot-borrowed-live',
+                ownerId: '1',
+                controllerId: '0',
+            }],
+        });
+
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'red', baseIndex: 1 },
+            timestamp: 21,
+        }, FIXED_RANDOM);
+
+        expect(talent.success).toBe(true);
+        expect(talent.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(true);
+        expect(talent.finalState.core.titans?.find(titan => titan.uid === 'megabot-borrowed-live')).toMatchObject({
+            ownerId: '1',
+            controllerId: '0',
+            location: {
+                zone: 'base',
+                baseIndex: 1,
+            },
+        });
+    });
+
     it('Lightning Crystal 摧毁基地或随从上的行动牌', () => {
         const core = makeState({
             players: {

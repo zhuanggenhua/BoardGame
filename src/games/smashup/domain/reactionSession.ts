@@ -1346,7 +1346,7 @@ export function resolveSmashUpReactionChoice(
         event => typeof event.type === 'string' && !event.type.startsWith('SYS_'),
     );
     const continuationBaseState = originInteractionSourceId === 'smashup_reaction_choose' && producedDomainEvents
-        ? clearSmashUpReactionSession(resolveInteraction(result.state))
+        ? clearSmashUpReactionSession(result.state)
         : result.state;
 
     const currentInteraction = continuationBaseState.sys.interaction?.current;

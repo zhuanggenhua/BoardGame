@@ -4,7 +4,7 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry, isMinionProtected } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, isMinionProtected, isOperationRestricted } from '../../domain/ongoingEffects';
 import { getEffectivePower } from '../../domain/ongoingModifiers';
 import { reduce } from '../../domain/reduce';
 import { resumePendingBranchingChoiceFrames } from '../../domain/branchingChoice';
@@ -412,6 +412,28 @@ describe('Fairies abilities', () => {
         expect(isMinionProtected(core, protectedMinion, 0, '0', 'destroy')).toBe(true);
     });
 
+    it('borrowed fairies_magic_ward 应按控制者而不是真实 owner 限制其他玩家在此基地打行动', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{
+                    uid: 'ward-borrowed',
+                    defId: 'fairies_magic_ward',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            })],
+        });
+
+        expect(isOperationRestricted(core, 0, '1', 'play_action')).toBe(true);
+        expect(isOperationRestricted(core, 0, '0', 'play_action')).toBe(false);
+    });
+
     it('fairies_enchantment 选择 -1 模式后会写入 metadata 并降低基地上随从力量', () => {
         const core = makeState({
             players: {
@@ -584,6 +606,57 @@ describe('Fairies abilities', () => {
         const spirit = summoned.finalState.core.titans?.find(titan => titan.uid === 'spirit-1');
         expect(spirit?.location.zone).toBe('base');
         expect(spirit?.location.baseIndex).toBe(0);
+        expect(summoned.finalState.core.players['0'].actionsPlayed).toBe(1);
+        expect(summoned.finalState.core.players['0'].minionsPlayed).toBe(0);
+    });
+
+    it('fairies_playful_tricks 应允许当前控制者打出 borrowed 丛林之灵并保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('playful-borrowed', 'fairies_playful_tricks', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            titans: [{
+                uid: 'borrowed-spirit',
+                defId: 'fairies_spirit_of_the_forest',
+                faction: 'fairies',
+                ownerId: '1',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            }],
+            bases: [makeBase('base_a')],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'playful-borrowed' } },
+            defaultTestRandom,
+        );
+
+        const modePrompt = getSimpleChoicePrompt(played.finalState, 'fairies_playful_tricks');
+        const playSpiritOption = getPromptOption(modePrompt, entry => entry.value?.branchId === 'play_spirit', 'borrowed play spirit branch');
+
+        const choseSpirit = respondToPrompt(played.finalState, playSpiritOption.id, '0', defaultTestRandom);
+
+        const basePrompt = getSimpleChoicePrompt(choseSpirit.finalState, 'fairies_playful_tricks_spirit_base');
+        const baseOption = getPromptOptions(basePrompt)[0];
+        expect(baseOption).toBeDefined();
+
+        const summoned = respondToPrompt(choseSpirit.finalState, baseOption.id, '0', defaultTestRandom);
+
+        expect(summoned.events.some(event => event.type === SU_EVENTS.TITAN_PLAYED)).toBe(true);
+        expect(summoned.finalState.core.titans?.find(titan => titan.uid === 'borrowed-spirit')).toMatchObject({
+            ownerId: '1',
+            controllerId: '0',
+            location: {
+                zone: 'base',
+                baseIndex: 0,
+            },
+        });
         expect(summoned.finalState.core.players['0'].actionsPlayed).toBe(1);
         expect(summoned.finalState.core.players['0'].minionsPlayed).toBe(0);
     });

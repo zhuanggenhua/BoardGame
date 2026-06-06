@@ -9,6 +9,7 @@ import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../..
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { reduce } from '../../domain/reduce';
 import { validate } from '../../domain/commands';
+import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import {
     makeMinion,
     makeCard,
@@ -346,6 +347,69 @@ describe('Skeletons abilities', () => {
             now: 3900,
         });
         getSimpleChoicePrompt(executed.matchState ?? makeMatchState(core), 'skeletons_burst_forth');
+    });
+
+    it('skeletons_burst_forth 在多基地计分前只能响应当前计分基地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('burst-1', 'skeletons_burst_forth', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [],
+                    buriedCards: [
+                        { uid: 'buried-a', defId: 'robot_microbot_alpha', trueOwnerId: '0', controllerId: '0', buriedFrom: 'discard' },
+                    ],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                    buriedCards: [],
+                },
+            ],
+            scoringEligibleBaseIndices: [0, 1],
+        });
+        const scoringState = makeMatchState(core);
+        const reactionState = startSmashUpReactionSession(
+            { ...scoringState, sys: { ...scoringState.sys, phase: 'scoreBases' } },
+            {
+                frameId: 'score-before:0:skeletons-burst-forth',
+                frameKind: 'score-before',
+                phase: 'optional',
+                activePlayerId: '0',
+                currentPlayerId: '0',
+                consecutivePasses: 0,
+                sourceBaseIndex: 0,
+                responseWindowType: 'meFirst',
+            },
+        );
+
+        const wrongBaseValidation = validate(reactionState, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { handCardUid: 'burst-1', baseIndex: 1 },
+        } as any);
+        expect(wrongBaseValidation.valid).toBe(false);
+
+        const used = runCommand(
+            reactionState,
+            {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { handCardUid: 'burst-1', baseIndex: 0 },
+            } as any,
+            defaultTestRandom,
+        );
+        expect(used.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(used.finalState, 'skeletons_burst_forth');
+        expect(getPromptOptions(prompt).some((entry: any) => entry.value?.cardUid === 'buried-a' && entry.value?.baseIndex === 0)).toBe(true);
+        expect(getPromptOptions(prompt).some((entry: any) => entry.value?.baseIndex === 1)).toBe(false);
     });
 
     it('skeletons_graveyard 天赋挖掘后若是随从会进入可选 +1 指示物交互', () => {

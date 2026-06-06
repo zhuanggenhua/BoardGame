@@ -125,7 +125,7 @@ Games implement domain logic that plugs into this engine. See `src/games/` for e
 
 The project has an AI-assisted workflow for creating new games (6 stages: skeleton → types → domain logic → system assembly → UI → finalization).
 
-Use the `.windsurf/skills/create-new-game` skill in supported AI editors, or refer to existing game implementations in `src/games/` as templates.
+Use the `.codex/skill/create-new-game` skill in supported AI editors, or refer to existing game implementations in `src/games/` as templates.
 
 ## Testing Strategy
 

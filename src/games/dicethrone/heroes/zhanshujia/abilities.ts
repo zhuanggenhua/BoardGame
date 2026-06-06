@@ -220,6 +220,7 @@ export const DRUM_MOVEMENT_2: AbilityDef = {
                 damage(2, '造成 2 点不可防御伤害。', { unblockable: true }),
             ],
             priority: 1,
+            tags: ['unblockable'],
         },
     ],
 };

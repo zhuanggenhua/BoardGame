@@ -27,7 +27,7 @@ const TMP_DIR = path.join(process.cwd(), '.tmp');
 const RUNTIME_READY_TIMEOUT_MS = Number.parseInt(process.env.PW_SERVICE_READY_TIMEOUT_MS || '420000', 10);
 const RUNTIME_STOP_TIMEOUT_MS = Number.parseInt(process.env.PW_PORT_CLEANUP_TIMEOUT_MS || '20000', 10);
 const HEALTH_POLL_INTERVAL_MS = 1000;
-const HEALTH_REQUEST_TIMEOUT_MS = Number.parseInt(process.env.PW_HEALTH_REQUEST_TIMEOUT_MS || '3000', 10);
+const HEALTH_REQUEST_TIMEOUT_MS = Number.parseInt(process.env.PW_HEALTH_REQUEST_TIMEOUT_MS || '8000', 10);
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));

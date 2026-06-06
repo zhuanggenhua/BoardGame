@@ -4,9 +4,10 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
 import { validate } from '../../domain/commands';
 import { execute } from '../../domain/reducer';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import {
     makeMinion,
     makeCard,
@@ -787,6 +788,78 @@ describe('frankenstein_igor 基地结算弃置触发', () => {
         const prompt = getSimpleChoicePrompt(result.matchState!, 'frankenstein_igor');
         expect(getPromptSourceId(prompt)).toBe('frankenstein_igor');
         expect(getPromptOptions(prompt)).toHaveLength(2);
+    });
+
+    it('frankenstein_igor 在宿主进入弃牌堆后仍会通过 queued discard trigger 给控制者创建目标选择交互', () => {
+        const preDiscardCore = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('igor-left', 'frankenstein_igor', '0', 2, { owner: '1', powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('ally-a', 'test_a', '0', 3, { powerModifier: 0 }),
+                        makeMinion('ally-b', 'test_b', '0', 4, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(preDiscardCore, 'onMinionDiscardedFromBase', {
+            state: preDiscardCore,
+            matchState: makeMatchState(preDiscardCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'igor-left',
+            triggerMinionDefId: 'frankenstein_igor',
+            triggerMinion: preDiscardCore.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 101,
+        });
+
+        expect(queued).toBeDefined();
+
+        const postDiscardCore = makeState({
+            players: preDiscardCore.players,
+            turnOrder: preDiscardCore.turnOrder,
+            currentPlayerIndex: preDiscardCore.currentPlayerIndex,
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('ally-a', 'test_a', '0', 3, { powerModifier: 0 }),
+                        makeMinion('ally-b', 'test_b', '0', 4, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        postDiscardCore.triggerQueue = (queued as any).payload.triggers;
+        const resolved = maybeResolveReactionQueue(makeMatchState(postDiscardCore), defaultTestRandom, 101);
+
+        expect(resolved).toBeDefined();
+        expect(resolved!.events).toContainEqual(
+            expect.objectContaining({
+                type: SU_EVENTS.TRIGGER_CONSUMED,
+            }),
+        );
+        expect(resolved!.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(false);
+        const prompt = getSimpleChoicePrompt(resolved!.state, 'frankenstein_igor');
+        expect(prompt.playerId).toBe('0');
+        expect(getPromptSourceId(prompt)).toBe('frankenstein_igor');
+        const optionUids = getPromptOptions(prompt).map(option => option.value?.minionUid);
+        expect(optionUids).toEqual(expect.arrayContaining(['ally-a', 'ally-b']));
+        expect(optionUids).not.toContain('igor-left');
     });
 
     it('borrowed frankenstein_igor 被消灭时，应按当前 controller 而不是真实 owner 给控制者创建 onDestroy 目标选择', () => {

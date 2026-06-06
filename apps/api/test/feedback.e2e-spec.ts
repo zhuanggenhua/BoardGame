@@ -190,6 +190,7 @@ describe('Feedback Module (e2e)', () => {
             })
             .expect(201);
 
+        expect(res.body.reporterType).toBe('system');
         expect(res.body.source).toBe('client-runtime-guard');
         expect(res.body.autoReportKind).toBe('smashup-runtime-state-normalized');
         expect(res.body.clientContext?.matchId).toBe('match-1');
@@ -213,6 +214,7 @@ describe('Feedback Module (e2e)', () => {
             })
             .expect(201);
 
+        expect(res.body.reporterType).toBe('system');
         expect(res.body.source).toBe('client-window-error');
         expect(res.body.autoReportKind).toBe('window-error');
     });
@@ -1791,6 +1793,52 @@ describe('Feedback Module (e2e)', () => {
         const legacyItem = listRes.body.items.find((item: { content: string }) => item.content.includes('legacy'));
         expect(legacyItem?.reporterType).toBe('system');
         expect(legacyItem?.source).toBe('online-ai-watchdog');
+    });
+
+    it('admin 列表筛选 user 时应排除历史错标的公开自动反馈，并可按 system/source 查到', async () => {
+        const { adminToken, userToken } = await seedUsers();
+
+        await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: '正常用户反馈',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+                source: 'feedback-modal',
+            })
+            .expect(201);
+
+        await feedbackModel.collection.insertOne({
+            content: '[auto][window.error] 历史错标样本',
+            type: 'bug',
+            severity: 'high',
+            reporterType: 'user',
+            source: 'client-window-error',
+            autoReportKind: 'window-error',
+            gameName: 'client',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        const userListRes = await request(app.getHttpServer())
+            .get('/admin/feedback?reporterType=user&limit=20')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(userListRes.body.items).toHaveLength(1);
+        expect(userListRes.body.items[0].content).toBe('正常用户反馈');
+
+        const systemListRes = await request(app.getHttpServer())
+            .get('/admin/feedback?reporterType=system&source=client-window-error&limit=20')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(systemListRes.body.items).toHaveLength(1);
+        expect(systemListRes.body.items[0].content).toBe('[auto][window.error] 历史错标样本');
+        expect(systemListRes.body.items[0].reporterType).toBe('system');
+        expect(systemListRes.body.items[0].source).toBe('client-window-error');
     });
 
     it('admin 列表支持按时间正序排序', async () => {

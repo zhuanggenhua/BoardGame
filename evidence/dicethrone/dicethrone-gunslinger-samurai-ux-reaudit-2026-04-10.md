@@ -3,6 +3,8 @@
 > 触发原因：用户明确指出旧审计“不够充分”，并点名 **攻击修正 UI、枪手 Loaded 单骰特写、5 骰结果展示、国际化按钮/文案、武士 Token 图标** 仍有缺口。
 >
 > 本文不是“补一条截图”，而是把这轮 UX 重新审计的 **失效结论、根因、修复、截图观察、验证阻塞与残余风险** 一次性落地。
+>
+> 2026-06-05 当前有效口径：本文只保留枪手 / 武士 UX 维度的专项重审结论，不代表枪手整英雄、武士整英雄或新英雄整批当前完成态。当前若要判断对象级残余、兄弟能力补审范围或整批发布口径，应以 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-samurai-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 与 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
 
 ## 2026-04-11 复核更新（本轮追加）
 

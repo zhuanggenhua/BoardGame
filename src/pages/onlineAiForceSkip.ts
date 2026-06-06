@@ -1,8 +1,12 @@
 import type { GameTransportClient } from '../engine/transport/client';
+import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import type { AiResolution } from '../engine/ai';
 import type { AiSeatController } from '../engine/ai';
-import type { ForceEndTurnStalledAiReason } from '../engine/transport/onlineAiRecovery';
+import type {
+    ForceEndTurnStalledAiReason,
+    ForceEndTurnStalledAiResolution,
+} from '../engine/transport/onlineAiRecovery';
 import { buildAiProgressMarker, resolveCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
 
 export {
@@ -94,6 +98,22 @@ type SubmitOnlineAiResolutionSequenceArgs = {
         confirmedResolution: AiResolution;
         stepIndex: number;
     }) => void;
+    onCompleted?: (authoritativeState: MatchState<unknown> | unknown) => void;
+    onRejected?: (reason: string, context: {
+        failedResolution: AiResolution;
+        stepIndex: number;
+    }) => void;
+};
+
+type SubmitForceEndTurnRecoverySequenceArgs = {
+    client: Pick<GameTransportClient, 'sendBatch' | 'sendCommand' | 'subscribeStateUpdate' | 'latestState' | 'updateLatestState' | 'resync'>;
+    candidate: ForceEndTurnStalledAiResolution;
+    lastAiAttemptKeyRef: { current: string | null };
+    scheduleRetry: () => void;
+    seatControllers: Record<string, AiSeatController>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    gameId?: string | null;
+    followUpSteps?: number;
     onCompleted?: (authoritativeState: MatchState<unknown> | unknown) => void;
     onRejected?: (reason: string, context: {
         failedResolution: AiResolution;
@@ -285,4 +305,44 @@ export function submitOnlineAiResolutionSequence(args: SubmitOnlineAiResolutionS
     };
 
     runStep(initialResolution, 0);
+}
+
+export function submitForceEndTurnRecoverySequence(args: SubmitForceEndTurnRecoverySequenceArgs): void {
+    const {
+        client,
+        candidate,
+        lastAiAttemptKeyRef,
+        scheduleRetry,
+        seatControllers,
+        engineConfig,
+        gameId,
+        followUpSteps = 16,
+        onCompleted,
+        onRejected,
+    } = args;
+
+    submitOnlineAiResolutionSequence({
+        client,
+        initialResolution: candidate.resolution,
+        lastAiAttemptKeyRef,
+        scheduleRetry,
+        maxSteps: followUpSteps + 1,
+        resolveNextResolution: ({ authoritativeState, stepIndex }) => {
+            if (stepIndex >= followUpSteps) {
+                return null;
+            }
+            if (stepIndex > 0) {
+                return null;
+            }
+            return resolveForceEndTurnFollowUpAfterConfirmation({
+                candidate,
+                authoritativeState,
+                seatControllers,
+                engineConfig,
+                gameId,
+            });
+        },
+        onCompleted,
+        onRejected,
+    });
 }

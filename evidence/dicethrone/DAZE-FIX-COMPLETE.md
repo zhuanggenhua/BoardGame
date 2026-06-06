@@ -1,4 +1,6 @@
-# 眩晕（Daze）机制修复 - 完成总结
+# 眩晕（Daze）机制专项修复证据
+
+> 2026-06-06 当前有效口径：本文只保留 Daze 额外攻击方向这一条共享规则链路的专项修复与测试证据，不代表 DiceThrone 整体、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明“Daze 在 `flowHooks.ts` 这条当轮发现的 shared seam 已被修正并补过相关测试”，不能外推成 Treant / Ninja / Gunslinger / Samurai 或其他英雄已全面收口。
 
 ## 修复内容
 
@@ -88,7 +90,7 @@ if (defenderHasDaze) {
 
 ## 总结
 
-✅ **眩晕（Daze）机制修复完成**
+✅ **眩晕（Daze）专项问题当轮已修复**
 
 修复了 `src/games/dicethrone/domain/flowHooks.ts` 中的 Daze 机制逻辑：
 - 检查 Daze 的目标：从攻击方改为防御方
@@ -102,3 +104,8 @@ if (defenderHasDaze) {
 - 防止 `ReferenceError: localStorage is not defined`
 
 所有 Daze 相关测试已更新并通过（44 个测试）。剩余 4 个失败测试与 Daze 无关，是其他系统的已知问题（Pyromancer FM 消耗、Shadow Thief 伤害计算）。
+
+## 当前阅读说明
+
+- 本文是单问题共享机制修复证据，不是 DiceThrone 当前总审计出口。
+- 本文不能替代新英雄默认全面审计留档所需的对象级矩阵、批次级 `L4` 判等和旧文档统一回写。

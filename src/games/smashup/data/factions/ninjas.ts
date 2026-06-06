@@ -75,6 +75,8 @@ export const NINJA_ACTIONS: ActionCardDef[] = [
         faction: 'ninjas',
         abilityTags: ['ongoing'],
         ongoingTarget: 'minion',
+        playConstraint: 'requireOwnMinion',
+        playTargetMinionController: 'self',
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 17 },
     },

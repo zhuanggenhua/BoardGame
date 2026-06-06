@@ -1,5 +1,9 @@
 # DiceThrone Treant / Ninja 抽样深审：Token、手牌技能、基础技能（2026-05-15）
 
+> 2026-06-05 当前有效口径：本文只保留 2026-05-15 这一轮抽样深审的命中历史，不再代表 Treant / Ninja 当前对象级残余分布。像 `rooted-2` 这类升级技能的对象级真实入口 / 收口链，已在后续升级重审中补到对象级 `L3` 与关键 `L4`；因此本文剩余不能再被读成“这批对象本体仍待补”，而应读作抽样范围有限、不能替代批次级 `L4` 判等矩阵与旧文档统一回写。这里的“抽样已完成”只表示这轮抽样命中的 shared seam 与代表对象曾被补过，**不表示 Treant / Ninja 整英雄或四位新英雄整批已经完成**。
+
+> 2026-06-05 失效回写：本文里关于 `rooted-2` “仍缺升级卡真实打出后进入防御的 E2E / 仍缺专属 L3” 的旧口径已经失效。当前 `rooted-2` 的 4 骰合同、真实升级入口和真实防御收口链，均已在 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 的 2026-06-05 补记中回写；本文保留的是 2026-05-15 当轮抽样命中历史。
+
 ## 2026-05-16 失效补记：抽样结论不能外推 Treant 全量
 
 后续直接对照 Treant `提示板.png` / `玩家面板.png` / `abilitycards.png` 发现，本文件虽然抓到了若干真实消费点问题，但它的抽样对象远不足以覆盖 Treant 全量规则语义。
@@ -14,7 +18,7 @@
 
 ## 结论口径
 
-本文件只证明本轮“抽样深审”已完成，不证明 Treant / Ninja 全对象、全分支、全端到端已经无遗漏。抽样覆盖三类对象：
+本文件只证明本轮“抽样深审”已完成，不证明 Treant / Ninja 全对象、全分支、全端到端已经无遗漏，更不能把这里的抽样通过外推成当前整英雄或整批完成态。抽样覆盖三类对象：
 
 - Token / 状态：Ninja `smoke_bomb` 失败分支。
 - 手牌技能 / 专属卡：Ninja `ninja-card-shuriken`、`ninja-card-escape`；Treant `treant-card-trample`、`treant-card-mother-tree`。
@@ -24,7 +28,8 @@
 
 - 本文件只覆盖“功能消费点 / 行为合同 / 部分 UI 链路”的抽样深审，不覆盖 Treant 玩家板图面合同。
 - 后续已确认：Treant 明明有玩家板图，但旧审计没有逐槽核对 `quiet-cultivation` 与 `rooted` 的图面落点，导致被动/防御槽错位漏审。
-- 因此，凡涉及 Treant 玩家板落点、特殊槽、空槽、display-only 区域的判断，必须改看 `evidence/dicethrone/dicethrone-treant-slot-audit-2026-05-16.md`，不能引用本文件替代。
+- 因此，凡涉及 Treant 玩家板落点、特殊槽、空槽、display-only 区域的判断，必须先改看 `evidence/dicethrone/dicethrone-treant-slot-audit-2026-05-16.md` 这一份槽位专项证据，不能引用本文件替代。
+- 但 `slot-audit` 也只负责图面 / 槽位合同，不是 Treant 当前单英雄总出口；若要判断 Treant 当前现行状态，仍必须组合阅读 `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/treant录入核对.md`。
 
 本轮审计方法不是只看静态定义，而是反查真实消费点：
 
@@ -84,6 +89,8 @@
 
 ## 抽样对象矩阵
 
+> 2026-06-05 当前阅读门禁：下表是 2026-05-15 当轮抽样深审时给出的对象级命中记录，不是 2026-06-05 当前 Treant / Ninja 的对象级完成矩阵。这里的 `L2`/`L4` 只表示**当轮抽样层级**；若后续补审已把某对象推进到对象级 `L3` 或关键 `L4`，应以升级重审主文档、单英雄主文档和现行 `rule/` 矩阵为准，不能继续把本表读成“这些对象现在仍停在 L2”。
+
 | 类别 | 对象 | 真相/规则要点 | 真实消费点 | 本轮结论 | 证据层级 |
 |---|---|---|---|---|---|
 | Token | Ninja `smoke_bomb` 失败分支 | 失败时消耗烟雾弹但不免伤 | `USE_TOKEN` / token handler / `pendingDamage` | 已证明失败骰面消耗 token，保留待结算伤害，不提前扣 HP；2026-05-17 补真实 UI/E2E 后证明跳过响应会正常结算伤害 | L4 |
@@ -91,8 +98,8 @@
 | 手牌卡 | Ninja `ninja-card-escape` | 受击响应窗可打，护盾抵伤 | `checkPlayCard` / `PLAY_CARD` / `SKIP_TOKEN_RESPONSE` | 已证明响应窗可打，护盾抵消后续结算伤害 | L2 |
 | 手牌卡 | Treant `treant-card-trample` | 攻击修正投 5 骰，加伤并施加刺藤 | `PLAY_CARD` immediate effect / `BONUS_DAMAGE_ADDED` | 已修复并证明加伤与刺藤同时进入权威状态 | L2 |
 | 手牌卡 | Treant `treant-card-mother-tree` | 掷 1 骰，树灵分支或否则抽牌 | `PLAY_CARD` immediate effect | 已证明树灵分支与默认抽牌分支不同 | L2 |
-| 基础技能 | Treant `quiet-cultivation` | 维持阶段开始获得幼种 | `flowHooks.onPhaseEnter` | 已证明 upkeep 进入时自动加 1，并受上限后的总量约束 | L2 |
-| 升级基础技能 | Treant `rooted-2` | 防御掷 4 骰 | `resolveAttack` / defense effect action | 已发现旧实现仍 3 骰，已修复并证明 4 个奖励骰事件 | L2 |
+| 基础技能 | Treant `quiet-cultivation` | 维持阶段开始获得幼种 | `flowHooks.onPhaseEnter` | 已证明 upkeep 进入时自动加 1，并受上限后的总量约束；该行现在只保留 2026-05-15 抽样命中历史，后续真实 upkeep 对象级 `L3` 已在别处补齐 | 历史 L2 |
+| 升级基础技能 | Treant `rooted-2` | 防御掷 4 骰 | `resolveAttack` / defense effect action | 已发现旧实现仍 3 骰，已修复并证明 4 个奖励骰事件；该行现在只保留 2026-05-15 合同修复历史，后续真实升级入口与真实防御收口链已补到对象级 `L3` / 关键 `L4` | 历史 L2 |
 
 ## 验证
 
@@ -115,8 +122,11 @@ npm run typecheck
 
 - 本轮原始抽样没有新增真实 UI E2E 截图链；因此上述对象在 2026-05-15 当时只能升级到 L2，不能写 L3/L4。
 - `ninja-card-shuriken` 已于 2026-05-17 追加真实手牌 L3；`treant-card-trample`、`treant-card-soulfire` 已于 2026-05-17 追加真实手牌 L3，分别覆盖奖励骰加伤/刺藤与三种骰面分支。
-- `rooted-2` 已证明防御骰数合同修复，但仍缺升级卡真实打出后进入防御的 E2E。
+- `rooted-2` 已证明防御骰数合同修复；本条当时记录的“仍缺升级卡真实打出后进入防御的 E2E”已于 2026-06-05 失效回写，当前真实防御链对象级 L3 已补齐。
+- 对 Treant / Ninja 升级技能而言，2026-06-05 的实时残余也已不再是本文这些抽样对象的对象级 `L3/L4` 缺口，而是批次级 `L4` 判等治理、外围旧文档统一回写与最终口径统一。
 - 本轮只抽查了部分 Token、专属卡和基础技能；Treant / Ninja 仍不能被描述为“全部新机制新交互均已端到端”。
+- 对 Treant 而言，本文尤其不能继续被拿来证明“当前还有基础技能/专属卡停在 L2”。像 `quiet-cultivation`、`treant-card-trample`、`treant-card-mother-tree`、`rooted-2` 等对象，后续都已经在单英雄主文档或升级重审主文档中被继续推进；本文现阶段只能证明它们**曾经**命中过一轮抽样深审与结构修复。
+- 对四位新英雄整批而言，本文也不能被拿来证明“剩余只差少数抽样对象”；当前批次停止条件仍是总矩阵、批次级 `L4` 判等和历史文档统一收口，而不是抽样深审通过。
 
 ## 对旧审计结论的影响
 
@@ -125,7 +135,7 @@ npm run typecheck
 - `rooted-2`：旧“共享 rooted 合同”结论不充分；实际消费点仍按 3 骰，已在本轮修复。
 - `ninja-card-shuriken`、`treant-card-trample`、`treant-card-soulfire`：旧“L1/L2 静态/代表覆盖”不足；实际卡牌打出链路存在 timing 消费错误，已在本轮修复并补 L2。
 - `treant-card-mother-tree`：旧“缺行为测试”已升级为 L2 抽查覆盖；2026-05-17 已补真实手牌 L3，覆盖树灵养成分支与非树灵抽牌分支。
-- `quiet-cultivation`：旧“缺 L2/L3 专项”已升级为 L2 抽查覆盖，但仍缺 L3。
+- `quiet-cultivation`：旧“缺 L2/L3 专项”结论已继续失效；除 L2 抽查覆盖外，2026-06-05 已补真实 upkeep 进入对象级 L3，当前这条应只保留为历史抽样轨迹，不再代表实时残余。
 - `ninja-card-escape`：已于 2026-05-17 追加真实受击响应窗手牌 L3，见 `evidence/dicethrone/dicethrone-ninja-escape-real-hand-e2e-2026-05-17.md`；`smoke_bomb` 失败分支已在下一条补真实 UI/E2E。
 - `smoke_bomb` 失败分支：已于 2026-05-17 追加真实响应窗 E2E，见 `evidence/dicethrone/dicethrone-ninja-smoke-bomb-failure-e2e-2026-05-17.md`；证明失败骰面消耗 token、保留伤害、跳过响应后 HP 30->23。
 - `ninja-card-training` / `ninja-card-poison-dart` / `ninja-card-knife-fan`：已于 2026-05-17 追加真实主阶段手牌 L3，见 `evidence/dicethrone/dicethrone-ninja-main-action-real-hand-e2e-2026-05-17.md`；该补充不改变本文件“抽样不能外推全量”的主结论。

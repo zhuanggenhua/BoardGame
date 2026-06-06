@@ -1221,6 +1221,7 @@ export function getRegisteredOngoingEffectIds(): {
     interceptorIds: Set<string>;
     baseAbilitySuppressionIds: Set<string>;
     baseScoringSuppressionIds: Set<string>;
+    baseVpModifierIds: Set<string>;
     cardAbilitySuppressionIds: Set<string>;
 } {
     const protectionIds = new Set(
@@ -1248,6 +1249,11 @@ export function getRegisteredOngoingEffectIds(): {
             .filter((entry) => !shouldHideGeneratedPodOngoingAlias(baseScoringSuppressionRegistry, entry.sourceDefId))
             .map(e => e.sourceDefId),
     );
+    const baseVpModifierIds = new Set(
+        baseVpModifierRegistry
+            .filter((entry) => !shouldHideGeneratedPodOngoingAlias(baseVpModifierRegistry, entry.sourceDefId))
+            .map(e => e.sourceDefId),
+    );
     const cardAbilitySuppressionIds = new Set(
         cardAbilitySuppressionRegistry
             .filter((entry) => !shouldHideGeneratedPodOngoingAlias(cardAbilitySuppressionRegistry, entry.sourceDefId))
@@ -1270,6 +1276,7 @@ export function getRegisteredOngoingEffectIds(): {
         interceptorIds,
         baseAbilitySuppressionIds,
         baseScoringSuppressionIds,
+        baseVpModifierIds,
         cardAbilitySuppressionIds,
     };
 }

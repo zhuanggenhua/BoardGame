@@ -1624,6 +1624,39 @@ test.describe('DiceThrone hand card preview regression', () => {
     await page.screenshot({ path: join(evidenceDir, 'samurai-main-cards-end-to-end.png'), fullPage: true });
   });
 
+  test('samurai 荣誉与耻辱主阶段手牌在接近上限时应 clamp 到 stackLimit', async ({ page, game }) => {
+    test.setTimeout(240000);
+    const evidenceDir = ensureEvidenceDir();
+
+    await test.step('武士荣耀在已有 1 层荣誉时再授予 2 层，最终应 clamp 到 2', async () => {
+      await setupHeroScene(page, game, 'samurai', ['card-samurai-honor'], {
+        opponentHeroId: 'monk',
+        player0Tokens: { honor: 1 },
+      });
+      await clickHandCard(page, 'card-samurai-honor');
+      const stateAfter = await waitForCardResolved(page, game, 'card-samurai-honor', 9, {
+        expectedHandIdsAfter: [],
+      });
+      expect(stateAfter.core.players['0'].tokens?.honor ?? 0).toBe(2);
+      await waitForHandAnimationSettled(page);
+      await page.screenshot({ path: join(evidenceDir, 'samurai-honor-clamp-after-play.png'), fullPage: true });
+    });
+
+    await test.step('武士耻辱牌在目标已有 1 层耻辱时再施加 2 层，最终应 clamp 到 2', async () => {
+      await setupHeroScene(page, game, 'samurai', ['card-you-should-be-ashamed'], {
+        opponentHeroId: 'monk',
+        player1Tokens: { shame: 1 },
+      });
+      await clickHandCard(page, 'card-you-should-be-ashamed');
+      const stateAfter = await waitForCardResolved(page, game, 'card-you-should-be-ashamed', 9, {
+        expectedHandIdsAfter: [],
+      });
+      expect(stateAfter.core.players['1'].tokens?.shame ?? 0).toBe(2);
+      await waitForHandAnimationSettled(page);
+      await page.screenshot({ path: join(evidenceDir, 'samurai-shame-clamp-after-play.png'), fullPage: true });
+    });
+  });
+
   test('samurai 攻击修正牌应逐张可打出并挂到当前攻击链路', async ({ page, game }) => {
     test.setTimeout(240000);
     const evidenceDir = ensureEvidenceDir();

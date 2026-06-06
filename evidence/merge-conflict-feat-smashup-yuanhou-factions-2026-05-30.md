@@ -82,3 +82,22 @@
 - commit: `358ef5f6506b8c6cb20c097040537806b2bcc9fd`
 - 分支: `main`
 - 提交标题: `合并猿猴四派系并收口 SmashUp 规则与交互回归`
+
+## 8. Addendum（2026-06-06）：赛博守护者回归根因与门禁漏检复盘
+- 用户追问“赛博守护者为什么没有效果”后，已在当前主工作树重新定位并修复：真正丢失的是 `src/games/smashup/Board.tsx` 内承接 `Cyberback` 弃牌持续行动真实入口的 shared UI seam，而不是 `yuanhou.ts` 规则本体缺失。
+- 直接证据：
+  - feature 分支提交 `a391958e` 与 `787ad147` 都修改过 `src/games/smashup/Board.tsx`。
+  - merge commit `358ef5f6` 的结果中，`src/games/smashup/Board.tsx` blob 与父1 `main` 完全相同，与父2 `feat/smashup-yuanhou-factions` 不同。
+  - 因而 `cyberbackDiscardActionOptions`、`play_action_to_cyberback`、`cyberbackDiscardTargetUids` 以及弃牌堆持续行动到宿主随从的真实入口没有被带进主线。
+- 为什么当时没从审计留档里看出来：
+  - 本文第 2 节“高风险文件”列了 `DeckDiscardZone`、`PromptOverlay`、`BaseZone`，但没有列真正的入口汇总层 `src/games/smashup/Board.tsx`。
+  - 第 5 节验证只抽测了 `Secret Agent` 与 `Time Walk` 两条代表 E2E，没有覆盖 `Cyberback` 这条 shared interaction family 的对象级真实入口。
+  - 旧 evidence 当时虽然声称 `Cyberback` 有真实入口，但截图说明仍写成“点击基地后”，而当前真实交互载体其实是“点击被高亮的赛博守护者宿主”；这让旧 E2E 和旧留档一起变成了 stale 证据。
+- 为什么 `pre-push` 也没拦住：
+  - `quality:changed:pre-push` 运行的是 `scripts/infra/run-changed-quality-gate.mjs pre-push`，其日志口径本来就是“pre-push 最新提交范围模式”，对游戏源码改动不再默认回归整游戏全量测试。
+  - 当次 merge 的增量门禁没有自动强制跑 `e2e/smashup-yuanhou-factions.e2e.ts` 里的 `Cyberback` 对象级用例，只抽到了代表性 smoke / 指定用例。
+  - 更关键的是，旧 merge 守卫要求 merge commit message 里显式记录 `Conflicts:`/`# path` 才会进入严格冲突审计；而 `358ef5f6` 的提交信息没有这类文件列表，导致守卫直接跳过。
+  - 旧独立审计脚本的 fallback 还存在算法盲区：它只审计“最终结果相对双亲都发生变化”的文件，像 `Board.tsx` 这种“最终结果完全退回父1”的文件会天然从候选集合里消失。
+- 本轮已补：
+  - 当前主工作树已补回 `Board.tsx` 的 `Cyberback` 真实入口，并通过对象级 E2E 复跑。
+  - merge 审计脚本与 `pre-push` 包装已收紧为“无冲突文件列表时，退化审计 merge-base 到双亲都改过的重叠文件”，用于拦截这类单边吞并式回归。

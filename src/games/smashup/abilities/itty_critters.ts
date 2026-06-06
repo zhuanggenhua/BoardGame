@@ -434,7 +434,7 @@ const evolutionPromptProgram = createPromptProgram<EvolutionContext, SmashUpCore
             const titan = state.core.titans?.find(candidate =>
                 candidate.uid === choice.titanUid
                 && candidate.defId === 'itty_critters_rainboroc'
-                && candidate.ownerId === playerId
+                && candidate.controllerId === playerId
                 && candidate.location.zone === 'setaside',
             );
             if (!titan || !canControllerPlayTitan(state.core, playerId, titan.uid)) return { events: [] };
@@ -759,7 +759,7 @@ function evolution(ctx: AbilityContext): AbilityResult {
     const cards = collectDeckMinions(ctx, sourcePower + 1);
     const rainboroc = ctx.state.titans?.find(candidate =>
         candidate.defId === 'itty_critters_rainboroc'
-        && candidate.ownerId === ctx.playerId
+        && candidate.controllerId === ctx.playerId
         && candidate.location.zone === 'setaside'
         && canControllerPlayTitan(ctx.state, ctx.playerId, candidate.uid),
     );

@@ -222,7 +222,7 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
         random,
     ),
     reduce,
-    playerView: (state, viewingPlayerId) => playerView(normalizeLegacyDiceThroneMatchState(state), viewingPlayerId),
+    playerView: (state, viewingPlayerId) => playerView(normalizeLegacyDiceThroneCoreState(state), viewingPlayerId),
 
     isGameOver: (state: DiceThroneCore): GameOverResult | undefined => {
         // 在 setup 阶段不进行胜负判定，避免血量未初始化导致误判

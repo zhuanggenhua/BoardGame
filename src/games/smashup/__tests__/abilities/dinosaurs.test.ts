@@ -98,6 +98,47 @@ describe('dino_tooth_and_claw 保护', () => {
     });
 });
 
+describe('激光三角龙保护合同', () => {
+    it('激光三角龙不会越过秘密基地去消灭受保护的 2 力量随从', () => {
+        const state = makeMatchState(makeState({
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['superheroes', 'pirates'] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('lt-1', 'dino_laser_triceratops', 'minion', '1')],
+                    factions: ['dinosaurs', 'aliens'] as [string, string],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_nexus',
+                    minions: [
+                        makeMinion('citizen-1', 'superheroes_mild_mannered_citizen', '0', 2),
+                    ],
+                    ongoingActions: [
+                        { uid: 'secret-1', defId: 'superheroes_secret_base', ownerId: '0' },
+                    ],
+                }),
+            ],
+        }));
+
+        const protectedTarget = state.core.bases[0].minions[0]!;
+        expect(isMinionProtected(state.core, protectedTarget, 0, '1', 'destroy')).toBe(true);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'lt-1', baseIndex: 0 },
+        });
+
+        expect(result.success).toBe(true);
+        expectNoPrompt(result.finalState);
+        expect(result.finalState.core.bases[0].minions.map((minion) => minion.uid)).toEqual(['citizen-1', 'lt-1']);
+    });
+});
+
 describe('恐龙派系行动能力', () => {
     it('dino_rampage: 多个基地时先创建基地选择', () => {
         const state = makeState({

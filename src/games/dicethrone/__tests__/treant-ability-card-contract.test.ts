@@ -241,6 +241,11 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
         next = applyEvents(next, attackEvents);
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(48);
+        expect(next.pendingAttack).toBeNull();
+        expect(next.pendingDamage).toBeUndefined();
+        expect(next.pendingBonusDiceSettlement?.displayOnly).toBe(true);
+        expect(next.pendingBonusDiceSettlement?.sourceAbilityId).toBe('rooted');
+        expect(next.lastResolvedAttackDamage).toBe(2);
     });
 
     it('upgrade-rooted-2 打出后应通过真实升级链把防御入口切到 4 骰 rooted', () => {
@@ -983,6 +988,79 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(40);
     });
 
+    it('Wild Growth II 的 displayOnly 奖励骰应在养成选择后通过真实 SKIP 链清空，不把展示态残留为最终权威状态', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        const treant = state.core.players['0'];
+        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'wild-growth');
+        treant.abilities[abilityIndex] = WILD_GROWTH_2;
+        treant.abilityLevels['wild-growth'] = 2;
+        treant.tokens[TOKEN_IDS.TREANT_SEEDLING] = 0;
+        treant.tokens[TOKEN_IDS.TREANT_SAPLING] = 0;
+        treant.tokens[TOKEN_IDS.TREANT_DIVINE] = 0;
+        treant.tokens[TOKEN_IDS.LIFE_SAP] = 0;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'wild-growth-2-main',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const preDefenseEvents = resolveOffensivePreDefenseEffects(state.core, createQueuedRandom([1, 4, 6, 6, 2]), 100);
+        let next = applyEvents(state.core, preDefenseEvents);
+        expect(next.pendingBonusDiceSettlement).toMatchObject({
+            sourceAbilityId: 'wild-growth-2-main',
+            displayOnly: true,
+        });
+        const selectedOption = preDefenseEvents
+            .find(event => event.type === 'CHOICE_REQUESTED');
+        const cultivateTwoSeedlings = (selectedOption as any).payload.options.find((option: { labelKey?: string }) =>
+            option.labelKey === 'choices.treantCultivate.s2_a0_d0'
+        );
+        expect(cultivateTwoSeedlings).toBeDefined();
+
+        next = reduce(next, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'wild-growth-2-main',
+                customId: cultivateTwoSeedlings.customId,
+                value: cultivateTwoSeedlings.value,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 101,
+        } as DiceThroneEvent);
+
+        const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
+        next = applyEvents(next, attackEvents);
+
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(40);
+        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(2);
+        expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
+        expect(next.pendingAttack).toBeNull();
+        expect(next.pendingDamage).toBeUndefined();
+        expect(next.pendingBonusDiceSettlement).toMatchObject({
+            sourceAbilityId: 'wild-growth-2-main',
+            displayOnly: true,
+        });
+
+        const settleEvents = execute(
+            { core: next, sys: { phase: 'offensiveRoll' } },
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            createQueuedRandom([1]),
+        );
+        expect(settleEvents.map(event => event.type)).toContain('BONUS_DICE_SETTLED');
+        next = applyEvents(next, settleEvents);
+
+        expect(next.pendingBonusDiceSettlement).toBeUndefined();
+        expect(next.pendingAttack).toBeNull();
+        expect(next.pendingDamage).toBeUndefined();
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(40);
+        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(2);
+        expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
+    });
+
     it('Wild Growth II 应拒绝伪造的移除 3 树灵选择', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         const treant = state.core.players['0'];
@@ -1287,6 +1365,64 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(43);
     });
 
+    it('Shattering Fist III 的三同点养成判断应只读取攻击快照，而不是当前活跃骰面', () => {
+        const tripletAttackState = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        tripletAttackState.core.players['0'].abilities = tripletAttackState.core.players['0'].abilities.map((ability) => (
+            ability.id === 'shattering-fist' ? SHATTERING_FIST_3 : ability
+        ));
+        tripletAttackState.core.players['0'].abilityLevels['shattering-fist'] = 3;
+        tripletAttackState.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 0;
+        tripletAttackState.core.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING] = 0;
+        tripletAttackState.core.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE] = 0;
+        tripletAttackState.core.rollDiceCount = 5;
+        tripletAttackState.core.dice = tripletAttackState.core.dice.slice(0, 5).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 2, 3, 4, 5][index],
+            symbol: TREANT_DICE_FACE_IDS.BRANCH,
+            ownerId: '0',
+        }));
+        tripletAttackState.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shattering-fist-3-5',
+            isDefendable: true,
+            damage: 0,
+            attackDiceValues: [2, 2, 2, 4, 5],
+        };
+
+        const tripletEvents = resolveOffensivePreDefenseEffects(tripletAttackState.core, createQueuedRandom([1]), 100);
+        expect(tripletEvents.some(event => event.type === 'CHOICE_REQUESTED')).toBe(true);
+
+        const nonTripletAttackState = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        nonTripletAttackState.core.players['0'].abilities = nonTripletAttackState.core.players['0'].abilities.map((ability) => (
+            ability.id === 'shattering-fist' ? SHATTERING_FIST_3 : ability
+        ));
+        nonTripletAttackState.core.players['0'].abilityLevels['shattering-fist'] = 3;
+        nonTripletAttackState.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 0;
+        nonTripletAttackState.core.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING] = 0;
+        nonTripletAttackState.core.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE] = 0;
+        nonTripletAttackState.core.rollDiceCount = 5;
+        nonTripletAttackState.core.dice = nonTripletAttackState.core.dice.slice(0, 5).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [6, 6, 6, 1, 2][index],
+            symbol: TREANT_DICE_FACE_IDS.BRANCH,
+            ownerId: '0',
+        }));
+        nonTripletAttackState.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shattering-fist-3-5',
+            isDefendable: true,
+            damage: 0,
+            attackDiceValues: [1, 2, 3, 4, 5],
+        };
+
+        const nonTripletEvents = resolveOffensivePreDefenseEffects(nonTripletAttackState.core, createQueuedRandom([1]), 101);
+        expect(nonTripletEvents.some(event => event.type === 'CHOICE_REQUESTED')).toBe(false);
+    });
+
     it('Tend & Care 应抽 1，并选择养成 3 树灵、生命源泉目标和刺藤目标', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 1;
@@ -1431,6 +1567,57 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(selectedValue % 10);
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING]).toBe(Math.floor(selectedValue / 10) % 10);
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(Math.floor(selectedValue / 100) % 10);
+    });
+
+    it('Tend & Care II 的培育分支在选择后应按 nonattack closeout 收口，不得再进入防御链', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        const treant = state.core.players['0'];
+        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'tend-care');
+        treant.abilities[abilityIndex] = TEND_CARE_2;
+        treant.abilityLevels['tend-care'] = 2;
+        treant.tokens[TOKEN_IDS.TREANT_SEEDLING] = 0;
+        treant.tokens[TOKEN_IDS.TREANT_SAPLING] = 0;
+        treant.tokens[TOKEN_IDS.TREANT_DIVINE] = 0;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'tend-care-2-cultivate',
+            defenseAbilityId: 'blink',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const preDefenseEvents = resolveOffensivePreDefenseEffects(state.core, createQueuedRandom([1]), 100);
+        const choiceEvent = preDefenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
+        expect(choiceEvent).toBeDefined();
+        const selectedOption = (choiceEvent as any).payload.options[0];
+
+        let next = applyEvents(state.core, preDefenseEvents);
+        next = reduce(next, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'tend-care-2-cultivate',
+                customId: selectedOption.customId,
+                value: selectedOption.value,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 101,
+        } as DiceThroneEvent);
+
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingDamage).toBeUndefined();
+
+        const attackEvents = resolveAttack(next, createQueuedRandom([1, 2, 4]), { includePreDefense: false }, 200);
+        expect(attackEvents.some(event => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(false);
+        expect(attackEvents.some(event => event.type === 'BONUS_DIE_ROLLED')).toBe(false);
+        expect(attackEvents.find(event => event.type === 'ATTACK_RESOLVED')?.payload).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'tend-care-2-cultivate',
+            defenseAbilityId: 'blink',
+            totalDamage: 0,
+        });
     });
 
     it('Tend & Care II 在 4 人模式下生命源泉可给队友，但刺藤只能给对手', () => {
@@ -1782,6 +1969,35 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(47);
     });
 
+    it('Vengeful Vines II 的苦痛根系分支应在直伤后保持 nonattack closeout，不得再触发防御', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        const treant = state.core.players['0'];
+        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'vengeful-vines');
+        treant.abilities[abilityIndex] = VENGEFUL_VINES_2;
+        treant.abilityLevels['vengeful-vines'] = 2;
+        treant.tokens[TOKEN_IDS.TREANT_SEEDLING] = 1;
+        treant.tokens[TOKEN_IDS.TREANT_SAPLING] = 1;
+        treant.tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'vengeful-vines-2-pain',
+            defenseAbilityId: 'blink',
+            isDefendable: false,
+            damage: 0,
+        };
+
+        const events = resolveAttack(state.core, createQueuedRandom([1, 2, 4]), { includePreDefense: true }, 100);
+        const next = applyEvents(state.core, events);
+
+        expect(events.some(event => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(false);
+        expect(events.some(event => event.type === 'TOKEN_RESPONSE_REQUESTED')).toBe(false);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(47);
+        expect(next.pendingAttack).toBeNull();
+        expect(next.pendingDamage).toBeUndefined();
+    });
+
     it('Forest Awakens 应让自己和队友获得生命源泉，养成 5 树灵，施加刺藤后造成 10 伤害', () => {
         const state = createTreantTeamMatchup();
         state.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 0;
@@ -2080,6 +2296,62 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING]).toBe(0);
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(0);
         expect(next.pendingAttack?.isDefendable).toBe(false);
+    });
+
+    it('Nature Touch II 的自然之怜分支在养成后应保持 nonattack closeout，不得再进入防御链', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        const treant = state.core.players['0'];
+        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'nature-touch');
+        treant.abilities[abilityIndex] = NATURE_TOUCH_2;
+        treant.abilityLevels['nature-touch'] = 2;
+        treant.tokens[TOKEN_IDS.TREANT_SEEDLING] = 1;
+        treant.tokens[TOKEN_IDS.TREANT_SAPLING] = 0;
+        treant.tokens[TOKEN_IDS.TREANT_DIVINE] = 0;
+        treant.resources[RESOURCE_IDS.HP] = 40;
+        treant.resources[RESOURCE_IDS.CP] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'nature-touch-2-mercy',
+            defenseAbilityId: 'blink',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const preDefenseEvents = resolveOffensivePreDefenseEffects(state.core, createQueuedRandom([1]), 100);
+        const choiceEvent = preDefenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
+        expect(choiceEvent).toBeDefined();
+        const selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
+            option.labelKey === 'choices.treantCultivate.s2_a0_d0'
+        );
+        expect(selectedOption).toBeDefined();
+
+        let next = applyEvents(state.core, preDefenseEvents);
+        next = reduce(next, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'nature-touch-2-mercy',
+                customId: selectedOption.customId,
+                value: selectedOption.value,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 101,
+        } as DiceThroneEvent);
+
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingDamage).toBeUndefined();
+
+        const attackEvents = resolveAttack(next, createQueuedRandom([1, 2, 4]), { includePreDefense: false }, 200);
+        expect(attackEvents.some(event => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(false);
+        expect(attackEvents.some(event => event.type === 'BONUS_DIE_ROLLED')).toBe(false);
+        expect(attackEvents.find(event => event.type === 'ATTACK_RESOLVED')?.payload).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'nature-touch-2-mercy',
+            defenseAbilityId: 'blink',
+            totalDamage: 0,
+        });
     });
 
     it('Nature Touch 基础版应按养成后的树灵总数增加不可防御伤害', () => {

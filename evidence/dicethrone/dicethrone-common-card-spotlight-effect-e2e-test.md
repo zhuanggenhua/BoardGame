@@ -1,5 +1,7 @@
 # DiceThrone 新角色通用卡图 / 响应链路 E2E 证据
 
+> 2026-06-05 当前有效口径：本文只保留枪手 `下次不算` 与武士 `Boss Generous` 这两条通用卡/响应链的对象级证据，不代表枪手、武士任一整英雄或整批对象当前完成态。当前若要判断枪手/武士对象级残余、兄弟能力补审范围或整英雄口径，应以 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-samurai-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-gunslinger-samurai-vs-legacy-audit-2026-04-06.md` 与对应录入核对文档为准。
+
 ## 范围
 
 - 适用游戏：`dicethrone`

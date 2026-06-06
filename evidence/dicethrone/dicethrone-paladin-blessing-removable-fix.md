@@ -1,4 +1,6 @@
-# DiceThrone 圣骑士神圣祝福 Token 不可移除修复
+# DiceThrone 圣骑士神圣祝福 Token 不可移除历史修复证据
+
+> 2026-06-06 当前有效口径：本文只保留圣骑士 `Blessing of Divinity / 神圣祝福` 不可移除合同这一条历史专项修复证据，不代表 DiceThrone 全体 token/状态链、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时 `REMOVE_STATUS / TRANSFER_STATUS` 对 `removable: false` 的保护链被专项修补并测试过，不能外推成 DiceThrone 当前总体收口。
 
 ## 问题描述
 
@@ -241,3 +243,8 @@ npm test -- paladin-blessing-removable.test.ts
 2. 标记为 `removable: false` 的 token 不能被转移（因为转移本质上是移除+添加）
 
 这确保了圣骑士神圣祝福这类明确 `removable: false` 的 token 不会被玩家主动移除或转移。枪手赏金不再归入本文件的不可移除范围；它不会自动消耗，但可以被移除状态类卡牌或效果移除。
+
+## 当前阅读说明
+
+- 本文只覆盖神圣祝福不可移除这一条 token 合同，不覆盖更广范围 DiceThrone token/状态体系或新英雄整批完成态。
+- 即使本文中的修复、测试与后续失效回写在当轮成立，也不能把它当成当前 DiceThrone 或新英雄整批“全面收口”的证明。

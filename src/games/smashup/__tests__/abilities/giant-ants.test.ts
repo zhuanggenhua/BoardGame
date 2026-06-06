@@ -4,7 +4,7 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers, isMinionProtected } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { reduce } from '../../domain/reduce';
@@ -41,6 +41,53 @@ beforeAll(() => {
 });
 
 describe('巨蚁派系能力', () => {
+    it('borrowed giant_ant_the_show_must_go_on 应按控制者而不是真实 owner 保护控制者有指示物的随从', () => {
+        const protectedMinion = makeMinion('ant-ally', 'giant_ant_worker', '0', 3, {
+            powerCounters: 1,
+            powerModifier: 0,
+        });
+        const core = makeState({
+            bases: [{
+                defId: 'base_a',
+                minions: [protectedMinion],
+                ongoingActions: [{
+                    uid: 'show-borrowed',
+                    defId: 'giant_ant_the_show_must_go_on',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            }],
+        });
+
+        expect(isMinionProtected(core, protectedMinion, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(core, protectedMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(core, protectedMinion, 0, '1', 'affect')).toBe(true);
+        expect(isMinionProtected(core, protectedMinion, 0, '0', 'destroy')).toBe(false);
+    });
+
+    it('borrowed giant_ant_the_show_must_go_on 不应反向保护真实 owner 的有指示物随从', () => {
+        const ownerMinion = makeMinion('ant-owner', 'giant_ant_worker', '1', 3, {
+            powerCounters: 1,
+            powerModifier: 0,
+        });
+        const core = makeState({
+            bases: [{
+                defId: 'base_a',
+                minions: [ownerMinion],
+                ongoingActions: [{
+                    uid: 'show-borrowed',
+                    defId: 'giant_ant_the_show_must_go_on',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            }],
+        });
+
+        expect(isMinionProtected(core, ownerMinion, 0, '0', 'destroy')).toBe(false);
+        expect(isMinionProtected(core, ownerMinion, 0, '0', 'move')).toBe(false);
+        expect(isMinionProtected(core, ownerMinion, 0, '0', 'affect')).toBe(false);
+    });
+
     it('无人想要永生：可逐次移除并在确认后抽牌', () => {
         const core = makeState({
             players: {
@@ -288,10 +335,11 @@ describe('巨蚁派系能力', () => {
         expect((added as any).payload.amount).toBe(3);
         expect((added as any).payload.minionUid).toBe('m2');
 
-        // Me First! 子动作完成后，计分链会继续推进，所以来源随从可能已随计分基地一起离场。
+        // 当前时点仍处于 Me First! 响应链内部；计分基地是否随后清场由后续 pass / auto-continue 收口负责，
+        // 这里先锁定承受压力自己的即时权威状态。
         const m1Final = amountResult.finalState.core.bases[0]?.minions.find(m => m.uid === 'm1');
         const m2Final = amountResult.finalState.core.bases[1]?.minions.find(m => m.uid === 'm2');
-        expect(m1Final).toBeUndefined();
+        expect(m1Final?.powerCounters).toBe(0);
         expect(m2Final?.powerCounters).toBe(3);
     });
 

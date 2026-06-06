@@ -117,6 +117,7 @@ const collectGameEntries = async () => {
         const criticalImageResolverPath = path.join(dirPath, 'criticalImageResolver.ts');
         const thumbnailPath = path.join(dirPath, 'thumbnail.tsx');
         const latencyConfigPath = path.join(dirPath, 'latencyConfig.ts');
+        const runtimeAdapterPath = path.join(dirPath, 'runtimeAdapter.tsx');
 
         const hasGame = await fileExists(gamePath);
         const hasBoard = await fileExists(boardPath);
@@ -124,9 +125,11 @@ const collectGameEntries = async () => {
         const hasCriticalImageResolver = await fileExists(criticalImageResolverPath);
         const hasThumbnail = await fileExists(thumbnailPath);
         const hasLatencyConfig = await fileExists(latencyConfigPath);
+        const hasRuntimeAdapter = await fileExists(runtimeAdapterPath);
 
         let latencyConfigExportName = null;
         let criticalImageResolverExportName = null;
+        let runtimeAdapterExportName = null;
         if (hasLatencyConfig) {
             const content = await fs.readFile(latencyConfigPath, 'utf8');
             const match = content.match(/export\s+const\s+(\w+LatencyConfig)\b/);
@@ -136,6 +139,11 @@ const collectGameEntries = async () => {
             const content = await fs.readFile(criticalImageResolverPath, 'utf8');
             const match = content.match(/export\s+(?:const|function)\s+(\w+CriticalImageResolver)\b/);
             criticalImageResolverExportName = match ? match[1] : null;
+        }
+        if (hasRuntimeAdapter) {
+            const content = await fs.readFile(runtimeAdapterPath, 'utf8');
+            const match = content.match(/export\s+const\s+(\w+GameRuntimeAdapter)\b/);
+            runtimeAdapterExportName = match ? match[1] : null;
         }
 
         if (meta.type === 'game' && (!hasGame || !hasBoard)) {
@@ -159,6 +167,8 @@ const collectGameEntries = async () => {
             thumbnailImport: hasThumbnail ? toImportPath(path.relative(gamesRoot, thumbnailPath)) : null,
             latencyConfigImport: hasLatencyConfig && latencyConfigExportName ? toImportPath(path.relative(gamesRoot, latencyConfigPath)) : null,
             latencyConfigExportName,
+            runtimeAdapterImport: hasRuntimeAdapter && runtimeAdapterExportName ? toImportPath(path.relative(gamesRoot, runtimeAdapterPath)) : null,
+            runtimeAdapterExportName,
         });
     }
 
@@ -208,11 +218,14 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
     entries.forEach((entry, index) => {
         if (entry.gameImport && entry.boardImport) {
             lines.push(`const loadRuntime${index} = async (): Promise<GameClientRuntimeModule> => {`);
-            lines.push(`    const [gameModule, boardModule${entry.latencyConfigImport ? ', latencyModule' : ''}] = await Promise.all([`);
+            lines.push(`    const [gameModule, boardModule${entry.latencyConfigImport ? ', latencyModule' : ''}${entry.runtimeAdapterImport ? ', runtimeAdapterModule' : ''}] = await Promise.all([`);
             lines.push(`        import('${entry.gameImport}'),`);
             lines.push(`        import('${entry.boardImport}'),`);
             if (entry.latencyConfigImport) {
                 lines.push(`        import('${entry.latencyConfigImport}'),`);
+            }
+            if (entry.runtimeAdapterImport) {
+                lines.push(`        import('${entry.runtimeAdapterImport}'),`);
             }
             lines.push(`    ]);`);
             lines.push(`    return {`);
@@ -220,6 +233,9 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
             lines.push(`        board: boardModule.default,`);
             if (entry.latencyConfigImport) {
                 lines.push(`        latencyConfig: latencyModule.${entry.latencyConfigExportName},`);
+            }
+            if (entry.runtimeAdapterImport) {
+                lines.push(`        runtimeAdapter: runtimeAdapterModule.${entry.runtimeAdapterExportName},`);
             }
             lines.push(`    };`);
             lines.push(`};`);

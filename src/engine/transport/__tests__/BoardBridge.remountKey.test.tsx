@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GameEngineConfig } from '../server';
 import type { GameBoardProps } from '../protocol';
 import { BoardBridge, GameClientOverrideProvider, LocalGameProvider, useGameClient } from '../react';
+import { normalizeSmashUpMatchStateForUi } from '../../../games/smashup/ui/normalizeRuntimeState';
 
 const testConfig = {
     gameId: 'board-bridge-test',
@@ -36,6 +37,7 @@ const smashupCompatConfig = {
         validate: () => ({ valid: true }),
         execute: () => [],
         reduce: (core: unknown) => core,
+        normalizeRuntimeState: (state: any) => normalizeSmashUpMatchStateForUi(state),
     },
     systems: [],
 } as unknown as GameEngineConfig;
@@ -116,6 +118,7 @@ const smashupDirtyDispatchConfig = {
                 ],
             };
         },
+        normalizeRuntimeState: (state: any) => normalizeSmashUpMatchStateForUi(state),
     },
     systems: [],
 } as unknown as GameEngineConfig;

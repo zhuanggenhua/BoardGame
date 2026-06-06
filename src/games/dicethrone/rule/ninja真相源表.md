@@ -1,6 +1,8 @@
 # Dice Throne 忍者真相源表
 
 > 本轮主真相源：用户放入的本地中文图片素材。对照源：本轮代码定义、DiceThrone 旧英雄共享合同（尤其 Gunslinger/Samurai 的 v2 面板与复合升级模式）。日期：2026-05-10。工作树：`.worktrees/dicethrone-treant-ninja`。
+>
+> 2026-06-05 当前有效口径：本文只保留忍者素材与图集合同的真相源清单，不代表 Ninja 整英雄、Ninja 升级技能批次或四位新英雄整批当前完成态。当前若要判断 Ninja 对象级残余、升级技能 `L3/L4`、或批次级治理尾项，应以 `src/games/dicethrone/rule/ninja录入核对.md`、`src/games/dicethrone/rule/ninja卡牌录入核对.md`、`evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md` 与 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 为准。
 
 ## 素材与用途
 
@@ -28,3 +30,9 @@
 | 卡图规格 | 5x8 窄图 | 旧公共 atlas 为宽图 | 新增专属 atlas，禁止复用旧公共合同 |
 | 复合升级语义 | 升级卡替换基础技能 | 旧英雄同类升级走 `targetAbilityId` | 复用共享升级合同，不拆成多张手牌 |
 | Token 机制 | 提示板定义慢性中毒/忍术/烟雾弹 | 代码已实现并有 L2 测试 | 继续用 L2/L3 分层记录，不再保留旧债务结论 |
+
+## 当前阅读门禁
+
+- 本文的职责是回答“图片/资源/atlas 合同是什么”，不是回答“Ninja 当前还有哪些对象级缺口”。
+- 即使这里的素材、atlas 与 token 素材都已盘清，也不能单独外推成 Ninja 当前已完成全面审计。
+- 2026-06-05 当前若还要判断 Ninja 是否存在未完成项，只能回到录入核对矩阵、卡牌核对矩阵和主审计 / 升级重审 evidence；不能从本文的 `L0/L1` 素材盘点直接推出“当前已收口”。

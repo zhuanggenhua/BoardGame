@@ -14,6 +14,7 @@ import {
     removePowerCounter,
 } from '../domain/abilityHelpers';
 import { buildBuryCardEvents, uncoverBuriedCard } from '../domain/bury';
+import { reduce } from '../domain/reducer';
 import { SU_EVENTS } from '../domain/types';
 import type { BaseAbilityUsedEvent, SmashUpCore, SmashUpEvent, BuriedCardOnBase } from '../domain/types';
 import { registerTrigger } from '../domain/ongoingEffects';
@@ -61,6 +62,17 @@ function runtimeResultToAbilityResult(
     return {
         events: result.events,
         ...(result.matchState ? { matchState: result.matchState } : {}),
+    };
+}
+
+function applyPreviewEventsToMatchState(
+    matchState: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    if (events.length === 0) return matchState;
+    return {
+        ...matchState,
+        core: events.reduce((core, event) => reduce(core, event), matchState.core),
     };
 }
 
@@ -113,6 +125,7 @@ export function registerAncientEgyptiansAbilities(): void {
     });
     registerTrigger('ancient_egyptians_pharaoh', 'onBuriedCardUncovered', ancientEgyptiansPharaohOnUncover, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('base_star_portal', 'onCardBuried', ancientEgyptiansStarPortalOnBuried, {
         perInstance: true,
@@ -775,7 +788,7 @@ const ancientEgyptiansSealTheTombUncoverPromptProgram = createPromptProgram<
                 now: timestamp,
                 reason: 'ancient_egyptians_seal_the_tomb',
             });
-            currentState = result.state;
+            currentState = applyPreviewEventsToMatchState(result.state, result.events);
             events.push(...result.events);
         }
         return { events, matchState: currentState };

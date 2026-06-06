@@ -69,3 +69,6 @@ git diff --check
 - 本轮没有实现三派系的完整玩法 handler；UI 已标记 `implementationStatus: 'in_progress'`，避免把静态入口误宣称为完整可玩。
 - 本轮没有新增 E2E，因为改动范围是素材、静态注册、i18n 与关键预加载；真实卡牌能力交互需要在后续 implementation 阶段逐卡补 handler、单测/行为测试与必要 E2E。
 - `shayu.png` 与 `shayu.webp` 受 `.gitignore` 命中；提交资产时需要显式 `git add -f public/assets/i18n/zh-CN/smashup/{cards,base}/shayu.png public/assets/i18n/zh-CN/smashup/{cards,base}/compressed/shayu.webp`，否则 `git status` 默认不会显示它们。
+- 这份 2026-05-10 验证记录只证明了 atlas、静态注册、关键预加载、manifest、`i18n:check` 与既有测试通过，**不能证明每张卡/基地的 locale 文本语义正确**。
+- `赫拉的恩惠（mythic_greeks_favor_of_hera）` 在 2026-06-04 被证实存在“把任意仆兵误录成你的仆兵”的 `i18n + 实现` 联动错误，说明当时验证缺少“逐张卡回单卡主裁图核对正文限定词”的门禁。
+- 因此旧结论“i18n 已验证”自 2026-06-04 起必须限缩解释为：`key` 完整、结构接线正确、不会因缺 key 报错；**不得再把它当作文案语义已逐项核对的证明**。

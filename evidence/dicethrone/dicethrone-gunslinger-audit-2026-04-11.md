@@ -2,7 +2,9 @@
 
 > 2026-05-19 范围澄清：本文件只覆盖 `gunslinger` 单英雄补审。当前整批“新英雄补审”总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解；总范围与跨英雄汇总口径请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 和 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
 >
-> 2026-05-19 本轮补审回写：已重新复跑 `Mark the Target` 的真实 UI/E2E，旧文档里“`mark-the-target` 仍缺真实 UI/E2E”这条结论失效；当前枪手残余风险重新收敛到 `Loaded` 基础奖励骰特写缺少单独 evidence 文档，而不是 `mark-the-target` 本体未验。
+> 2026-05-19 本轮补审回写：已重新复跑 `Mark the Target` 的真实 UI/E2E，旧文档里“`mark-the-target` 仍缺真实 UI/E2E”这条结论失效；当时枪手残余风险一度收敛到 `Loaded` 基础奖励骰特写缺少单独 evidence 文档。
+>
+> 2026-06-05 当前有效口径：本文仍是枪手单英雄主审计入口；其中各对象级 E2E/专项文档只能作为子证据，不得反向外推整英雄之外的批次结论。当前若要判断新英雄整批残余与发布口径，应以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md`、`evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 与 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的最新回写为准。基础 `Loaded` 的独立 evidence 已于本轮补入 `evidence/dicethrone/dicethrone-gunslinger-loaded-base-real-choice-e2e-2026-05-17.md`，旧 residual“缺单独文档化”已失效。
 
 ## 审计范围
 - 角色板能力/终极技：左轮、赏金猎人、快枪手、掩护、枪战决斗、死亡之眼、左轮速射、对决、终极技
@@ -133,6 +135,7 @@
 - Wild West E2E：`evidence/dicethrone/dicethrone-wild-west-e2e-test.md`
 - High Noon E2E：`evidence/dicethrone/dicethrone-high-noon-branches-e2e-test.md`
 - The Law 既有多目标证据：`evidence/dicethrone/dicethrone-gunslinger-the-law-multiselect-e2e-test.md`
+- 基础 Loaded 独立证据：`evidence/dicethrone/dicethrone-gunslinger-loaded-base-real-choice-e2e-2026-05-17.md`
 - 枪手 / 武士变体链路既有证据：`evidence/dicethrone/dicethrone-gunslinger-samurai-variant-e2e-test.md`
 - 4 人目标集合（Wanted / High Noon / Pistol Whip）：`evidence/dicethrone/dicethrone-gunslinger-samurai-4p-targeted-cards-e2e-test.md`
 - 已有 Loaded 奖励骰特写 E2E 文件：`e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`（基础 Loaded 已有真实选择到单骰特写覆盖；2026-05-17 新增 `Quick Draw II` 与 `Fill'Em With Lead` 可重掷单骰特写覆盖）
@@ -239,12 +242,12 @@
 - **D12 写入-消耗对称**：✅ 赏金/装填写入与主流程消耗基本对称；`The Law` 交互 resolve 只消费已选目标。
 - **D13 多来源竞争**：⚠️ 装填与其他攻击修正叠加未做组合回归。
 - **D14 回合清理完整**：✅ 攻击修正结算后自动清理。
-- **D15 UI 状态同步**：⚠️ Wild West、High Noon、Eat My Lead 特写链路已覆盖，主骰盘不改动已验证；攻击修正加伤通过统一 attack-modifier 区域可观测；`Quick Draw II` 与 `Fill'Em With Lead` 的 Loaded 可重掷单骰特写均已补真实 UI 证据；Spin the Chamber 与 `mark-the-target` 真实手牌/真实玩家板交互已补 UI 证据。当前 UI 缺口重新收敛到 `Loaded` 基础奖励骰缺少单独 evidence 文档，而不是 `mark-the-target` 未验证。
+- **D15 UI 状态同步**：✅ Wild West、High Noon、Eat My Lead 特写链路已覆盖，主骰盘不改动已验证；攻击修正加伤通过统一 attack-modifier 区域可观测；基础 `Loaded`、`Quick Draw II` 与 `Fill'Em With Lead` 的单骰特写都已有独立证据；Spin the Chamber 与 `mark-the-target` 真实手牌/真实玩家板交互也已补齐。
 - **D16 条件优先级**：✅ Revolver/升级变体判定顺序正确。
 - **D17 隐式依赖**：✅ `Quick Draw II / Fill'Em With Lead` 的装填例外已从 `quickDrawLevel / sourceAbilityId` 硬编码分支收敛到 `tokenBonusDieReroll` 定义层 hook；规则文档 merge conflict 风险已消除。
 - **D18 否定路径**：✅ Wild West 奖励骰重掷后进入“达到重掷上限不可再次重掷”的否定路径，已由 E2E 截图链路覆盖（见 `dicethrone-wild-west-e2e-test.md` 第 2 张截图）。
 - **D19 组合场景**：⚠️ 赏金+装填叠加未做组合回归。
-- **D20 状态可观测性**：⚠️ UI 证据已覆盖 Wild West / High Noon / The Law / Spin the Chamber / Eat My Lead / `mark-the-target` 的关键交互阶段；基础 Loaded、`Quick Draw II` 与 `Fill'Em With Lead` 单骰特写已有 E2E 截图入口。剩余风险集中在 `Loaded` 基础奖励骰缺少独立 evidence 叙述，而不是 `mark-the-target` 本体。
+- **D20 状态可观测性**：✅ UI 证据已覆盖 Wild West / High Noon / The Law / Spin the Chamber / Eat My Lead / `mark-the-target` 的关键交互阶段；基础 `Loaded`、`Quick Draw II` 与 `Fill'Em With Lead` 的单骰特写也已各自具备可复查截图链与状态断言。
 - **D21 触发频率门控**：✅ 装填消耗与奖励骰仅触发一次。
 - **D22 伤害计算管线配置**：✅ `Bounty` 通过 `damageTriggerScope: 'opponentAttackDamage'` 明确限定触发范围；其余主线伤害事件仍由统一管线输出。
 - **D23 架构假设一致性**：✅ 特写与复合升级合同一致；装填例外语义已由能力定义层声明、通用 loaded handler 消费，避免共享假设分叉。
@@ -272,13 +275,13 @@
 - **D44 测试设计反模式检测**：✅ 旧审计漏项已补；本轮新增定义层合同测试，避免只靠行为测试掩盖 hook 漏建。
 - **D45 Pipeline 多阶段调用去重**：N/A。
 - **D46 交互选项 UI 渲染模式声明完整性**：N/A。
-- **D47 E2E 覆盖完整性**：⚠️ Wild West / High Noon / Wanted / Pistol Whip / The Law / Spin the Chamber / Eat My Lead / `mark-the-target` 已有真实 UI 证据；`Quick Draw II` 与 `Fill'Em With Lead` 的 Loaded 可重掷单骰特写已补真实 UI/E2E。当前未补的是 `Loaded` 基础奖励骰的单独 evidence 文档化，而不是 `mark-the-target` 的真实入口。
+- **D47 E2E 覆盖完整性**：✅ Wild West / High Noon / Wanted / Pistol Whip / The Law / Spin the Chamber / Eat My Lead / `mark-the-target` 已有真实 UI 证据；基础 `Loaded`、`Quick Draw II` 与 `Fill'Em With Lead` 的单骰特写也都已补到对象级独立 evidence。
 - **D48 UI 交互渲染模式完整性**：N/A。
 - **D49 abilityTags 与触发机制一致性**：N/A。
 
 ## 未覆盖风险 / 待确认
-1. **`Loaded` 基础奖励骰特写已有 E2E 文件覆盖，但仍缺单独 evidence 文档承载 flow→choice→effect→UI 的完整叙述。** 当前可引用既有 E2E 文件、截图产物与静态实现路径，但不能写成枪手 Loaded 全对象 UI 已完成。
-2. **`Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷结构层与 UI 单骰特写已补。** 当前仍不得把这些证据外推成“基础 Loaded 奖励骰对象自己的独立 evidence 文档也已齐全”。
+1. **枪手单英雄当前不再保留新的对象级 evidence 缺口。** 基础 `Loaded`、`mark-the-target`、`Quick Draw II / Fill'Em With Lead`、`The Law`、`Spin the Chamber`、`Eat My Lead` 均已有对象级 `L2/L3` 证据。
+2. **后续若继续推进，只应按四英雄总补审的批次级口径处理。** 不得再把“基础 `Loaded` 缺单独文档”当成枪手对象级未完成项复用。
 
 ## 修订记录
 - 2026-04-11：补审枪手派系并记录已修复项（Revolver II 四同点、Wanted/The Law 目标范围、High Noon 骰面归属）。
@@ -312,3 +315,8 @@
   - 失效原因：仓库里实际已存在对应真实 E2E 场景，但旧审计没有把 `dicethrone-watch-out-spotlight.e2e.ts` 中的升级变体入口、目标选择和最终态截图链回写到枪手单英雄文档。
   - 新证据路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-open-target-selection-and-apply-bounty-after-selecting-upgraded-take-cover-variant\32-mark-the-target-before-select.png`、`33-mark-the-target-selected-target.png`、`34-mark-the-target-resolved.png`
   - 新结论：`mark-the-target` 的真实玩家板入口、目标选择门禁和只作用于已选目标的收口结果都已补齐；对应 D15/D20/D47 收敛。
+- 2026-06-05（基础 `Loaded` 独立 evidence 回写）：
+  - 旧结论：基础 `Loaded` 奖励骰虽已有测试与截图，但仍缺单独 evidence 文档承载 flow→choice→effect→UI。
+  - 失效原因：仓库中已同时具备 `cross-hero.test.ts` 的 L2 行为断言、`dicethrone-watch-out-spotlight.e2e.ts` 的真实入口断言与 `20/21/22` 三张截图，只是旧主审计未把它们沉淀成对象级独立文档。
+  - 新证据路径：`evidence/dicethrone/dicethrone-gunslinger-loaded-base-real-choice-e2e-2026-05-17.md`
+  - 新结论：基础 `Loaded` 的对象级 `L2/L3` 证据现已独立落档，枪手旧 residual“基础 Loaded 缺单独 evidence 文档化”失效；对应 D15/D20/D47 收敛。

@@ -260,11 +260,13 @@ function killerPlantWeedEaterPod(_ctx: AbilityContext): AbilityResult {
 function killerPlantDeepRootsChecker(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
-    const deepRoots = base.ongoingActions.find(a => a.defId.startsWith('killer_plant_deep_roots'));
-    if (!deepRoots) return false;
-    // 只保护 deep_roots 拥有者的随从，且只拦截对手的效果
-    return deepRoots.ownerId === ctx.targetMinion.controller
-        && ctx.sourcePlayerId !== ctx.targetMinion.controller;
+    return base.ongoingActions.some(action => {
+        if (!action.defId.startsWith('killer_plant_deep_roots')) return false;
+        const controllerId = (action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId;
+        // 只保护 deep_roots 控制者的随从，且只拦截对手的效果
+        return controllerId === ctx.targetMinion.controller
+            && ctx.sourcePlayerId !== ctx.targetMinion.controller;
+    });
 }
 
 /**
@@ -413,6 +415,29 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
  * choking_vines 触发：回合开始时消灭附着了?choking_vines 的随从
  */
 function killerPlantChokingVinesTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.sourceCardUid) {
+        for (let i = 0; i < ctx.state.bases.length; i++) {
+            const base = ctx.state.bases[i];
+            for (const m of base.minions) {
+                const attached = m.attachedActions.find(a =>
+                    a.uid === ctx.sourceCardUid && a.defId.startsWith('killer_plant_choking_vines'));
+                if (!attached) continue;
+                const attachedControllerId = (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
+                if (attachedControllerId !== ctx.playerId) return [];
+                return [destroyMinion(
+                    m.uid,
+                    m.defId,
+                    i,
+                    m.owner,
+                    attachedControllerId,
+                    'killer_plant_choking_vines',
+                    ctx.now,
+                )];
+            }
+        }
+        return [];
+    }
+
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
@@ -776,24 +801,29 @@ export function registerKillerPlantAbilities(): void {
     });
     // choking_vines: 回合开始时消灭此基地上力量最低的随从
     registerTrigger('killer_plant_choking_vines', 'onTurnStart', killerPlantChokingVinesTrigger, {
+        perInstance: true,
         playerContext: 'sourceController',
     });
     // overgrowth: 回合开始时将本基地临界点降低到0（通过 tempBreakpointModifiers，回合结束自动清零）
     registerTrigger('killer_plant_overgrowth', 'onTurnStart', killerPlantOvergrowthTrigger, {
+        perInstance: true,
         playerContext: 'sourceController',
     });
     // entangled: 有己方随从的基地上的随从不收回可被移动?
     registerProtection('killer_plant_entangled', 'move', killerPlantEntangledChecker);
     // entangled: 控制者回合开始时消灭本卡
     registerTrigger('killer_plant_entangled', 'onTurnStart', killerPlantEntangledDestroyTrigger, {
+        perInstance: true,
         playerContext: 'sourceController',
     });
     registerTrigger('killer_plant_entangled_pod', 'onTurnStart', killerPlantEntangledDestroyTrigger, {
+        perInstance: true,
         playerContext: 'sourceController',
     });
 
     // weed_eater_pod: 控制者回合开始后获得 +2 力量（通过 metadata 标记 + PowerModifier）
     registerTrigger('killer_plant_weed_eater_pod', 'onTurnStart', killerPlantWeedEaterPodTrigger, {
+        perInstance: true,
         playerContext: 'sourceController',
     });
 }
@@ -805,10 +835,11 @@ export function registerKillerPlantAbilities(): void {
  */
 function killerPlantWeedEaterPodTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
-    if (ctx.triggerMinionUid) {
+    const triggerUid = ctx.triggerMinionUid ?? ctx.sourceCardUid;
+    if (triggerUid) {
         for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex++) {
             const targetWeedEater = ctx.state.bases[baseIndex].minions.find(minion =>
-                minion.uid === ctx.triggerMinionUid && minion.defId === 'killer_plant_weed_eater_pod',
+                minion.uid === triggerUid && minion.defId === 'killer_plant_weed_eater_pod',
             );
             if (!targetWeedEater) continue;
             if (targetWeedEater.controller !== ctx.playerId) return [];
@@ -886,6 +917,32 @@ function buildDeckReshuffle(
  * 通过 BREAKPOINT_MODIFIED 事件写入 tempBreakpointModifiers（回合结束自动清零）
  */
 export function killerPlantOvergrowthTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.sourceCardUid) {
+        const candidateBases = ctx.sourceBaseIndex !== undefined
+            ? [{ base: ctx.state.bases[ctx.sourceBaseIndex], baseIndex: ctx.sourceBaseIndex }]
+            : ctx.state.bases.map((base, baseIndex) => ({ base, baseIndex }));
+        for (const candidate of candidateBases) {
+            const ongoing = candidate.base?.ongoingActions.find((action) =>
+                action.uid === ctx.sourceCardUid && action.defId.startsWith('killer_plant_overgrowth'));
+            if (!ongoing) continue;
+            const ongoingControllerId = (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
+            if (ongoingControllerId !== ctx.playerId) return [];
+            const baseDef = candidate.base ? getBaseDef(candidate.base.defId) : undefined;
+            if (!baseDef) return [];
+            return [{
+                type: SU_EVENTS.BREAKPOINT_MODIFIED,
+                payload: {
+                    baseIndex: candidate.baseIndex,
+                    baseDefId: candidate.base.defId,
+                    delta: -baseDef.breakpoint,
+                    reason: 'killer_plant_overgrowth',
+                },
+                timestamp: ctx.now,
+            } as BreakpointModifiedEvent];
+        }
+        return [];
+    }
+
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
@@ -910,27 +967,26 @@ export function killerPlantOvergrowthTrigger(ctx: TriggerContext): SmashUpEvent[
 
 /** 藤蔓缠绕保护检查：有己方随从的基地上的所有随从不收回可被移动 */
 function killerPlantEntangledChecker(ctx: ProtectionCheckContext): boolean {
-    for (const base of ctx.state.bases) {
-        const entangled = base.ongoingActions.find(a => a.defId.startsWith('killer_plant_entangled'));
-        if (!entangled) continue;
-        // 检查?entangled 拥有者在目标随从所在基地是否有随从
-        const ownerHasMinion = ctx.state.bases[ctx.targetBaseIndex].minions.some(
-            m => m.controller === entangled.ownerId
-        );
-        if (!ownerHasMinion) continue;
+    const base = ctx.state.bases[ctx.targetBaseIndex];
+    if (!base) return false;
+
+    return base.ongoingActions.some(action => {
+        if (!action.defId.startsWith('killer_plant_entangled')) return false;
+
+        const controllerId = (action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId;
+        const controllerHasMinion = base.minions.some(minion => minion.controller === controllerId);
+        if (!controllerHasMinion) return false;
+
         // 一目了然：力量≤2的己方随从不受其他玩家卡牌影响。
-        // 若藤蔓缠绕来自其他玩家，则该随从不应再被其“不可移动”效果约束。
-        const protectedFromEntangled = isMinionProtectedNonConsumable(
+        // borrowed ongoing 仍应按当前控制者判断“是否来自其他玩家”。
+        return !isMinionProtectedNonConsumable(
             ctx.state,
             ctx.targetMinion,
             ctx.targetBaseIndex,
-            entangled.ownerId,
+            controllerId,
             'affect',
         );
-        if (protectedFromEntangled) continue;
-        return true;
-    }
-    return false;
+    });
 }
 
 /** 藤蔓缠绕触发：控制者回合开始时消灭本卡 */
@@ -938,7 +994,9 @@ function killerPlantEntangledDestroyTrigger(ctx: TriggerContext): SmashUpEvent[]
     const events: SmashUpEvent[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
-        const entangled = base.ongoingActions.find(a => a.defId.startsWith('killer_plant_entangled'));
+        const entangled = ctx.sourceCardUid
+            ? base.ongoingActions.find(a => a.uid === ctx.sourceCardUid && a.defId.startsWith('killer_plant_entangled'))
+            : base.ongoingActions.find(a => a.defId.startsWith('killer_plant_entangled'));
         if (!entangled) continue;
         const controllerId = (entangled.metadata?.sourceControllerId as PlayerId | undefined) ?? entangled.ownerId;
         if (controllerId !== ctx.playerId) continue;

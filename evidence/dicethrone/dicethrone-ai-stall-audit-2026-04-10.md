@@ -1,4 +1,6 @@
-# 王权骰铸 AI 卡死/无解交互审计（2026-04-10）
+# 王权骰铸 AI 卡死/无解交互历史专项审计（2026-04-10）
+
+> 2026-06-06 当前有效口径：本文只记录 2026-04-10 那轮“无解交互/emergency skip/卡死”专项审计与当时修复口径，不是当前 DiceThrone AI 全链路、也不是当前新英雄补审的完成证明。阅读时只能把它当作历史专项审计证据；当前在线 AI 与新英雄的真实状态应以更晚的主审计文档和现行代码/测试为准。
 
 ## 1. 审计范围
 - **模块范围**：交互系统（InteractionSystem + SimpleChoiceSystem）与 DiceThrone 领域事件系统（`src/games/dicethrone/domain/systems.ts`）。
@@ -108,3 +110,7 @@
 - targetingRoll 仍是唯一已知会产出空 options 的入口（已兜底修复）。
 - `triggerChoice` 分支目前缺少空数组门禁，若调用方传空 options 会触发无解交互，需要补门禁或兜底。
 - 后续新增 CHOICE_REQUESTED 必须遵守“非空门控 + skip 或 emergency fallback”。
+
+---
+
+**当前阅读说明**：本文只能证明“无解交互导致卡死”这条历史专项链路曾被审计并补过兜底，不能外推为当前所有 AI 卡死、所有交互类型或 DiceThrone 整体审计都已收口。

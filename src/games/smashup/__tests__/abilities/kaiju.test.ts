@@ -345,6 +345,66 @@ describe('Kaiju 代表性玩法行为', () => {
         });
     });
 
+    it('Oh, No! 与 Tiny Priestesses 在 borrowed Gorgodzolla 上仍应按当前控制者打出或移动泰坦，并保留真实 owner', () => {
+        const setasideCore = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('oh-no', 'kaiju_oh_no', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_tokyo')],
+            titans: [{
+                ...makeGorgodzolla({ zone: 'setaside' }),
+                uid: 'borrowed-gorgodzolla-setaside',
+                ownerId: '1',
+                controllerId: '0',
+            }],
+        });
+        const playFromSetaside = runCommand(makeMatchState(setasideCore), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'oh-no', targetBaseIndex: 0 },
+            timestamp: 41,
+        }, FIXED_RANDOM);
+        expect(playFromSetaside.events.some(event => event.type === SU_EVENTS.TITAN_PLAYED)).toBe(true);
+        expect(playFromSetaside.finalState.core.titans?.find(titan => titan.uid === 'borrowed-gorgodzolla-setaside')).toMatchObject({
+            ownerId: '1',
+            controllerId: '0',
+            location: {
+                zone: 'base',
+                baseIndex: 0,
+            },
+        });
+
+        const liveCore = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('priestesses', 'kaiju_tiny_priestesses', 'minion', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_tokyo'), makeBase('base_itty_city')],
+            titans: [{
+                ...makeGorgodzolla({ zone: 'base', baseIndex: 0, enteredAt: 1 }),
+                uid: 'borrowed-gorgodzolla-live',
+                ownerId: '1',
+                controllerId: '0',
+            }],
+        });
+        const moveLiveTitan = runCommand(makeMatchState(liveCore), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'priestesses', baseIndex: 1 },
+            timestamp: 46,
+        }, FIXED_RANDOM);
+        expect(moveLiveTitan.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(true);
+        expect(moveLiveTitan.finalState.core.titans?.find(titan => titan.uid === 'borrowed-gorgodzolla-live')).toMatchObject({
+            ownerId: '1',
+            controllerId: '0',
+            location: {
+                zone: 'base',
+                baseIndex: 1,
+            },
+        });
+    });
+
     it('Johnny 可选将己方基地行动回手，并立刻只把该行动额外打到 Johnny 所在基地', () => {
         const core = makeState({
             players: {

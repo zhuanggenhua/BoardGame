@@ -1,10 +1,11 @@
 import type { AiSeatController } from '../../../engine/ai';
 import type { MatchState } from '../../../engine/types';
+import { getGameImplementation } from '../../../games/registry';
+import type { GameRuntimeSeatSwapConfig, GameRuntimeSeatSwapMode } from '../../../games/gameRuntimeAdapter';
 import { resolveOrderedPlayerIds } from './playerDisplay';
 
 type CoreRecord = Record<string, unknown>;
-
-export type MatchSeatSwapMode = 'request' | 'instant';
+export type MatchSeatSwapMode = GameRuntimeSeatSwapMode;
 
 export interface PendingSeatSwapRequest {
     requesterId: string;
@@ -32,45 +33,12 @@ function isRecord(value: unknown): value is CoreRecord {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function resolveSeatSwapMode(gameId?: string | null): MatchSeatSwapMode | null {
-    if (gameId === 'dicethrone') {
-        return 'request';
-    }
-    if (gameId === 'smashup' || gameId === 'summonerwars') {
-        return 'instant';
-    }
-    return null;
-}
-
-function resolveSeatSwapCommandTypes(gameId?: string | null): Pick<
-    MatchSeatSwapContext,
-    'requestSeatSwapCommandType' | 'respondSeatSwapCommandType' | 'cancelSeatSwapCommandType'
-> | null {
-    if (gameId === 'dicethrone') {
-        return {
-            requestSeatSwapCommandType: 'REQUEST_SEAT_SWAP',
-            respondSeatSwapCommandType: 'RESPOND_SEAT_SWAP',
-            cancelSeatSwapCommandType: 'CANCEL_SEAT_SWAP',
-        };
+function resolveSeatSwapConfig(gameId?: string | null): GameRuntimeSeatSwapConfig | null {
+    if (!gameId) {
+        return null;
     }
 
-    if (gameId === 'smashup') {
-        return {
-            requestSeatSwapCommandType: 'su:swap_seat',
-            respondSeatSwapCommandType: null,
-            cancelSeatSwapCommandType: null,
-        };
-    }
-
-    if (gameId === 'summonerwars') {
-        return {
-            requestSeatSwapCommandType: 'sw:swap_seat',
-            respondSeatSwapCommandType: null,
-            cancelSeatSwapCommandType: null,
-        };
-    }
-
-    return null;
+    return getGameImplementation(gameId)?.runtimeAdapter?.seatSwap ?? null;
 }
 
 function canUseSeatSwap(seatSwapMode: MatchSeatSwapMode, state: MatchState<unknown>, coreRecord: CoreRecord): boolean {
@@ -180,12 +148,12 @@ export function resolveMatchSeatSwapContext({
     myPlayerId,
     seatControllers = {},
 }: ResolveMatchSeatSwapContextArgs): MatchSeatSwapContext | null {
-    const seatSwapMode = resolveSeatSwapMode(gameId);
-    const commandTypes = resolveSeatSwapCommandTypes(gameId);
-    if (!seatSwapMode || !commandTypes || !state || myPlayerId == null || !isRecord(state.core)) {
+    const seatSwapConfig = resolveSeatSwapConfig(gameId);
+    if (!seatSwapConfig || !state || myPlayerId == null || !isRecord(state.core)) {
         return null;
     }
 
+    const seatSwapMode = seatSwapConfig.mode;
     const normalizedMyPlayerId = String(myPlayerId);
     const coreRecord = state.core as CoreRecord;
     if (!canUseSeatSwap(seatSwapMode, state, coreRecord)) {
@@ -202,6 +170,8 @@ export function resolveMatchSeatSwapContext({
         seatingOrder,
         seatControllerTypeByPlayerId: resolveSeatControllerTypeByPlayerId(seatingOrder, coreRecord, seatControllers),
         pendingSeatSwapRequest: resolvePendingSeatSwapRequest(seatSwapMode, coreRecord),
-        ...commandTypes,
+        requestSeatSwapCommandType: seatSwapConfig.requestCommandType,
+        respondSeatSwapCommandType: seatSwapConfig.respondCommandType ?? null,
+        cancelSeatSwapCommandType: seatSwapConfig.cancelCommandType ?? null,
     };
 }

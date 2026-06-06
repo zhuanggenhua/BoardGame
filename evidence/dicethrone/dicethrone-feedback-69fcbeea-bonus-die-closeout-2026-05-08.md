@@ -1,5 +1,7 @@
 # DiceThrone 69fcbeea 奖励骰特写回归
 
+> 2026-06-06 当前有效口径：本文只对应反馈 `69fcbeea...` 这一条奖励骰特写 closeout 记录，不是当前 DiceThrone 所有 bonus-die 特写、所有 displayOnly 结算链路都已彻底收口的证明，也不是新英雄补审出口。阅读时只能把它理解成单条反馈与共享奖励骰修复簇的专项验收记录。
+
 ## 结论
 
 这条是线上真实反馈，原始问题是 Pyromancer 技能内奖励骰结算后前台看起来卡死。当前已用 Pyromancer `pyro-blast II` 的双奖励骰 displayOnly 链路补齐真实 UI 证据，证明奖励骰特写可见、可关闭，并且关闭后权威 `pendingBonusDiceSettlement` 清空、流程回到可继续推进的主阶段(2)。
@@ -39,3 +41,7 @@
 ## 备注
 
 本轮新增的 Pyromancer E2E 使用真实英雄能力 `PYRO_BLAST_2`、真实 Pyromancer 骰面触发条件和真实 `SKIP_BONUS_DICE_REROLL` 收口，不靠隐藏遮罩或改 z-index 摆拍。
+
+---
+
+**当前阅读说明**：本文只能证明这条 Pyromancer 奖励骰特写反馈曾被专项验收收口，不能外推为当前所有 bonus-die overlay、所有双奖励骰展示或 DiceThrone 当前整体审计都已收口。

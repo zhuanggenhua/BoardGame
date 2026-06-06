@@ -1,8 +1,9 @@
-import type { PlayerId, RandomFn, ResponseWindowType } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn, ResponseWindowType } from '../../../engine/types';
 import type { ActionCardDef, CardInstance, FusionCardDef, PlayerState, SmashUpCore, MinionOnBase, SpecialTiming } from './types';
 import { getBaseDef, getCardDef, getFactionCards, getFusionDef, getMinionDef } from '../data/cards';
 import { getScoringEligibleBaseIndices } from './ongoingModifiers';
 import { getCardDefActivatableAbilities } from './activationMetadata';
+import { getSmashUpReactionWindowContext } from './reactionWindowState';
 
 // ============================================================================
 // 玩家显示名
@@ -244,8 +245,12 @@ export function getResponseWindowPlayableBaseIndicesForCard(
     state: SmashUpCore,
     cardDefId: string,
     windowType: ResponseWindowType,
+    options?: { sourceBaseIndex?: number; baseIndices?: number[] },
 ): number[] {
-    const eligibleBaseIndices = getScoringEligibleBaseIndices(state);
+    const eligibleBaseIndices = options?.baseIndices
+        ?? (typeof options?.sourceBaseIndex === 'number'
+            ? [options.sourceBaseIndex]
+            : getScoringEligibleBaseIndices(state));
     if (eligibleBaseIndices.length === 0) return [];
 
     if (isMinionLikeRespondableInWindow(cardDefId, windowType)) {
@@ -269,6 +274,28 @@ export function getResponseWindowPlayableBaseIndicesForCard(
     return eligibleBaseIndices.filter(baseIndex =>
         !isSpecialLimitBlockedByGroup(state, limitGroup, baseIndex),
     );
+}
+
+export function getResponseWindowBaseIndices(
+    state: MatchState<SmashUpCore>,
+    windowType: ResponseWindowType,
+): number[] {
+    const reactionWindow = getSmashUpReactionWindowContext(state);
+    if (reactionWindow?.windowType === windowType && typeof reactionWindow.sourceBaseIndex === 'number') {
+        const sourceBaseIndex = reactionWindow.sourceBaseIndex;
+        return state.core.bases[sourceBaseIndex] ? [sourceBaseIndex] : [];
+    }
+    return getScoringEligibleBaseIndices(state.core);
+}
+
+export function getResponseWindowPlayableBaseIndicesForMatchState(
+    state: MatchState<SmashUpCore>,
+    cardDefId: string,
+    windowType: ResponseWindowType,
+): number[] {
+    return getResponseWindowPlayableBaseIndicesForCard(state.core, cardDefId, windowType, {
+        baseIndices: getResponseWindowBaseIndices(state, windowType),
+    });
 }
 
 export function canCardBePlayedInResponseWindow(
@@ -295,6 +322,38 @@ export function canCardBePlayedInResponseWindow(
 
     if (normalizePodDefId(card.defId) === 'ninja_hidden_ninja') {
         const player = state.players[card.owner];
+        if (!player?.hand.some(handCard => handCard.uid !== card.uid && isCardMinionLike(handCard))) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+export function canCardBePlayedInResponseWindowForMatchState(
+    state: MatchState<SmashUpCore>,
+    card: CardInstance,
+    windowType: ResponseWindowType,
+): boolean {
+    if (isCardMinionLike(card)) {
+        return getResponseWindowPlayableBaseIndicesForMatchState(state, card.defId, windowType).length > 0;
+    }
+
+    if (!isCardActionLike(card)) return false;
+    const actionDef = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
+    if (!actionDef || !isActionLikeRespondableInWindow(actionDef, windowType)) {
+        return false;
+    }
+
+    if (
+        actionLikeNeedsResponseWindowBase(actionDef)
+        && getResponseWindowPlayableBaseIndicesForMatchState(state, card.defId, windowType).length === 0
+    ) {
+        return false;
+    }
+
+    if (normalizePodDefId(card.defId) === 'ninja_hidden_ninja') {
+        const player = state.core.players[card.owner];
         if (!player?.hand.some(handCard => handCard.uid !== card.uid && isCardMinionLike(handCard))) {
             return false;
         }

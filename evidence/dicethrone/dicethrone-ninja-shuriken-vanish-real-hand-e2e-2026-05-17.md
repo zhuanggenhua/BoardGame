@@ -1,5 +1,7 @@
 # DiceThrone Ninja Shuriken / Vanish 真实手牌 E2E（2026-05-17）
 
+> 2026-06-05 当前有效口径：本文只保留 `ninja-card-shuriken / 手里剑` 与 `ninja-card-vanish / 雾隐` 这两张卡的对象级真实手牌 `L3` 证据，不代表 Ninja 其它专属卡、升级卡或技能本体的当前完成态。当前整英雄与升级技能家族的有效口径，仍以 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/ninja录入核对.md` 为准。
+
 ## 范围
 
 - 对象：`ninja-card-shuriken / 手里剑`、`ninja-card-vanish / 雾隐`

@@ -521,6 +521,24 @@ describe('zombie_overrun: 泛滥横行限制', () => {
         expect(isOperationRestricted(state, 0, '1', 'play_minion', { basePower: 3 })).toBe(true);
         expect(isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 3 })).toBe(false);
     });
+
+    it('同一基地上若同时有两张不同控制者的 zombie_overrun，不应因第一张同名来源而放行对手打随从', () => {
+        const state = makeState({
+            bases: [makeBase('base_portal_room', {
+                ongoingActions: [
+                    { uid: 'overrun-p0', defId: 'zombie_overrun', ownerId: '0' } as any,
+                    { uid: 'overrun-p1', defId: 'zombie_overrun', ownerId: '1' } as any,
+                ],
+            })],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+        });
+
+        expect(isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 3 })).toBe(true);
+        expect(isOperationRestricted(state, 0, '1', 'play_minion', { basePower: 3 })).toBe(true);
+    });
 });
 
 // ============================================================================

@@ -50,7 +50,7 @@ function getBaseLabel(core: SmashUpCore, baseIndex: number): string {
 }
 
 function getGorgodzolla(core: SmashUpCore, playerId: string): TitanState | undefined {
-    return (core.titans ?? []).find(titan => titan.defId === GORGODZOLLA && titan.ownerId === playerId);
+    return (core.titans ?? []).find(titan => titan.defId === GORGODZOLLA && titan.controllerId === playerId);
 }
 
 function buildMoveOrPlayGorgodzollaEvents(

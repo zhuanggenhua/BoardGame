@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchChatMessage } from '../../services/matchSocket';
 import { UI_Z_INDEX } from '../../core';
-import { GAME_HUD_FAB_Z_INDEX, getLatestIncomingMessage, isSelfChatMessage, resolveGameHudPhase, trimChatMessages } from '../game/framework/widgets/GameHUD';
+import type { MatchState } from '../../engine/types';
+import {
+    buildGameHudFeedbackActionLog,
+    buildGameHudFeedbackStateSnapshot,
+    GAME_HUD_FAB_Z_INDEX,
+    getLatestIncomingMessage,
+    isSelfChatMessage,
+    resolveGameHudPhase,
+    trimChatMessages,
+} from '../game/framework/widgets/GameHUD';
 import { MOBILE_FAB_VISIBLE_ITEM_LIMIT, resolveFabLayerZIndex, resolveFabSatellitesToRender, resolveMobileFabOverflowWarning, shouldTrackFabButtonRect } from '../system/FabMenu';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
@@ -15,6 +24,66 @@ const buildMessage = (override: Partial<MatchChatMessage> = {}): MatchChatMessag
     createdAt: '2025-01-01T00:00:00.000Z',
     ...override,
 });
+
+const buildFeedbackState = (): MatchState<unknown> => ({
+    core: {
+        gameId: 'smashup',
+        players: {
+            '0': { id: '0', hand: [], deck: [], discard: [], factions: ['robots'] },
+        },
+    },
+    sys: {
+        phase: 'scoreBases',
+        turnNumber: 7,
+        flow: { phase: 'scoreBases' },
+        actionLog: {
+            maxEntries: 50,
+            entries: [
+                {
+                    text: '基地开始结算',
+                    timestamp: 1700000000000,
+                    event: { type: 'BASE_SCORING_STARTED' },
+                },
+            ],
+        },
+        eventStream: {
+            nextId: 18,
+            entries: [
+                {
+                    id: 17,
+                    type: 'BASE_SCORING_STARTED',
+                    timestamp: 1700000000000,
+                    payload: { baseId: 'base_wyrms_desolation' },
+                },
+            ],
+        },
+        interaction: {
+            current: {
+                id: 'interaction-1',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: { title: '选择要先结算的基地', options: [{ id: 'base-a' }] },
+            },
+            queue: [],
+            isBlocked: false,
+        },
+        responseWindow: {
+            current: {
+                triggerEvent: { type: 'BASE_SCORING_STARTED' },
+                responderQueue: ['0'],
+                currentResponderIndex: 0,
+            },
+        },
+        undo: {
+            snapshots: [
+                {
+                    core: { gameId: 'smashup', bases: ['before-score'] },
+                    sys: { turnNumber: 6, phase: 'playCards' },
+                },
+            ],
+        },
+    },
+} as MatchState<unknown>);
 
 describe('GameHUD chat preview helpers', () => {
     it('isSelfChatMessage 使用 senderId 判断自身消息', () => {
@@ -73,6 +142,41 @@ describe('GameHUD chat preview helpers', () => {
         expect(resolveGameHudPhase({ sys: { phase: 'setup', flow: { phase: 'main1' } } })).toBe('setup');
         expect(resolveGameHudPhase({ sys: { flow: { phase: 'setup' } } })).toBe('setup');
         expect(resolveGameHudPhase({ sys: { phase: 1 } })).toBeNull();
+    });
+
+    it('手工反馈操作日志应带机器可读诊断窗口', () => {
+        const payload = JSON.parse(buildGameHudFeedbackActionLog(buildFeedbackState(), [
+            { timeLabel: '08:00:00', playerLabel: '矞皇', text: '开始回合' },
+        ]));
+
+        expect(payload).toMatchObject({
+            kind: 'user-feedback-diagnostic',
+            phase: 'scoreBases',
+            turnNumber: 7,
+            humanReadableLog: '[08:00:00] 矞皇: 开始回合',
+        });
+        expect(payload.actionLogTail).toEqual([
+            expect.objectContaining({ text: '基地开始结算', type: 'BASE_SCORING_STARTED' }),
+        ]);
+        expect(payload.eventStreamTail).toEqual([
+            expect.objectContaining({ type: 'BASE_SCORING_STARTED' }),
+        ]);
+        expect(payload.interaction).toMatchObject({ id: 'interaction-1', kind: 'simple-choice' });
+        expect(payload.responseWindow).toMatchObject({
+            triggerEvent: { type: 'BASE_SCORING_STARTED' },
+        });
+        expect(payload.undoSnapshots).toEqual([
+            expect.objectContaining({ phase: 'playCards', turnNumber: 6 }),
+        ]);
+        expect(payload.currentStateSummary).toMatchObject({
+            phase: 'scoreBases',
+            turnNumber: 7,
+        });
+    });
+
+    it('手工反馈状态快照应直接保留完整 MatchState', () => {
+        const state = buildFeedbackState();
+        expect(buildGameHudFeedbackStateSnapshot(state)).toBe(JSON.stringify(state, null, 2));
     });
 });
 

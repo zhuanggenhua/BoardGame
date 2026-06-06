@@ -33,6 +33,18 @@ type CapacitorAppPluginModule = {
 
 let capacitorAppPluginLoader: Promise<CapacitorAppPluginModule | null> | null = null;
 
+const getErrorMessage = (error: unknown) => (
+    error instanceof Error ? error.message : String(error)
+);
+
+const isCapacitorAppPluginUnavailableError = (error: unknown) => (
+    /"app" plugin is not implemented on android/i.test(getErrorMessage(error))
+);
+
+const disableCapacitorAppPlugin = () => {
+    capacitorAppPluginLoader = Promise.resolve(null);
+};
+
 const loadCapacitorAppPlugin = async (): Promise<CapacitorAppPluginModule | null> => {
     if (!isNativeAndroidRuntime()) {
         return null;
@@ -45,6 +57,14 @@ const loadCapacitorAppPlugin = async (): Promise<CapacitorAppPluginModule | null
     }
 
     return capacitorAppPluginLoader;
+};
+
+const swallowUnavailableCapacitorAppPluginError = (error: unknown) => {
+    if (!isCapacitorAppPluginUnavailableError(error)) {
+        return false;
+    }
+    disableCapacitorAppPlugin();
+    return true;
 };
 
 export const AndroidBackNavigationBridge = () => {
@@ -116,7 +136,13 @@ export const AndroidBackNavigationBridge = () => {
             return;
         }
 
-        await appPluginModule.App.exitApp();
+        try {
+            await appPluginModule.App.exitApp();
+        } catch (error) {
+            if (!swallowUnavailableCapacitorAppPluginError(error)) {
+                console.warn('[android-back-nav] exitApp failed', error);
+            }
+        }
     });
 
     useEffect(() => {
@@ -129,24 +155,29 @@ export const AndroidBackNavigationBridge = () => {
                 return;
             }
 
-            const appState = await appPluginModule.App.getState().catch(() => null);
-            if (appState) {
+            try {
+                const appState = await appPluginModule.App.getState();
                 dispatchAppVisibilityChange(appState.isActive);
-            }
-            const launchUrl = await appPluginModule.App.getLaunchUrl().catch(() => null);
-            if (launchUrl?.url) {
-                navigateFromAppUrl(launchUrl.url, { replace: true });
-            }
 
-            listenerHandles.push(await appPluginModule.App.addListener('appStateChange', ({ isActive }) => {
-                dispatchAppVisibilityChange(isActive);
-            }));
-            listenerHandles.push(await appPluginModule.App.addListener('appUrlOpen', ({ url }) => {
-                navigateFromAppUrl(url);
-            }));
-            listenerHandles.push(await appPluginModule.App.addListener('backButton', () => {
-                void handleBackNavigation();
-            }));
+                const launchUrl = await appPluginModule.App.getLaunchUrl();
+                if (launchUrl?.url) {
+                    navigateFromAppUrl(launchUrl.url, { replace: true });
+                }
+
+                listenerHandles.push(await appPluginModule.App.addListener('appStateChange', ({ isActive }) => {
+                    dispatchAppVisibilityChange(isActive);
+                }));
+                listenerHandles.push(await appPluginModule.App.addListener('appUrlOpen', ({ url }) => {
+                    navigateFromAppUrl(url);
+                }));
+                listenerHandles.push(await appPluginModule.App.addListener('backButton', () => {
+                    void handleBackNavigation();
+                }));
+            } catch (error) {
+                if (!swallowUnavailableCapacitorAppPluginError(error)) {
+                    console.warn('[android-back-nav] app plugin registration failed', error);
+                }
+            }
         };
 
         void registerBackHandler();

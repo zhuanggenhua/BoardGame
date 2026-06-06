@@ -189,7 +189,56 @@ describe('Vikings abilities', () => {
         const chooseOwnTop = getPromptOption(orderPrompt, option => option.value?.topCardUid === 'own-top', 'own top card option');
         const resolved = respondToPrompt(afterPlayerChoice.finalState, chooseOwnTop.id, '0', defaultTestRandom);
 
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                sourcePlayerId: '1',
+            }),
+        }));
         expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['own-top', 'rest-1']);
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['borrowed-top', 'p0-rest']);
+    });
+
+    it('vikings_huscarl 选择被他人拥有的手牌时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('borrowed-1', 'pirate_first_mate', 'minion', '1')],
+                    deck: [makeCard('p0-deck-1', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-1', 'wizard_archmage', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('huscarl-1', 'vikings_huscarl', '0', 4)],
+                ongoingActions: [],
+            }],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'huscarl-1', baseIndex: 0 } } as any,
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(used.finalState, 'vikings_huscarl');
+        const borrowedOption = getPromptOption(prompt, option => option.value?.cardUid === 'borrowed-1', 'borrowed hand option');
+        const resolved = respondToPrompt(used.finalState, borrowedOption.id, '0', defaultTestRandom);
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_TO_DECK_TOP,
+            payload: expect.objectContaining({
+                cardUid: 'borrowed-1',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                reason: 'vikings_huscarl',
+            }),
+        }));
+        expect(resolved.finalState.core.players['0'].hand.some(card => card.uid === 'borrowed-1')).toBe(false);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-1', 'p1-deck-1']);
     });
 });

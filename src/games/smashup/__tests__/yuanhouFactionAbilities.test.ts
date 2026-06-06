@@ -9082,14 +9082,24 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         });
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.BASE_DECK_REORDERED)).toBe(true);
-        expect(resolved.events.some(event =>
+        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(resolved.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.events.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_faceless_city',
         )).toBe(true);
-        expect(resolved.finalState.core.bases[0].defId).toBe('base_faceless_city');
-        expect(resolved.finalState.core.baseDeck).toEqual(['base_primate_park']);
-        expect(resolved.finalState.core.baseDiscard).toEqual(['base_the_vats', 'base_monkey_lab']);
-        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('time-fleeting-a');
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_faceless_city');
+        expect(finalized.finalState.core.baseDeck).toEqual(['base_primate_park']);
+        expect(finalized.finalState.core.baseDiscard).toEqual(['base_the_vats', 'base_monkey_lab']);
+        expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toContain('time-fleeting-a');
     });
 
     it('时间旅行者：时间流逝真实计分后若只剩一个合法基地弃牌堆候选则应自动替换而不弹第二层 prompt', () => {
@@ -9142,11 +9152,21 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             && (event.payload as { topDefIds?: string[]; reason?: string }).reason === 'time_travelers_time_is_fleeting'
             && JSON.stringify((event.payload as { topDefIds?: string[] }).topDefIds) === JSON.stringify(['base_faceless_city']),
         )).toBe(true);
-        expect(resolved.finalState.sys.interaction.current).toBeUndefined();
-        expect(resolved.finalState.core.bases[0].defId).toBe('base_faceless_city');
-        expect(resolved.finalState.core.baseDeck).toEqual(['base_primate_park']);
-        expect(resolved.finalState.core.baseDiscard).toEqual(['base_monkey_lab']);
-        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('time-fleeting-a');
+        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(resolved.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.finalState.sys.interaction.current).toBeUndefined();
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_faceless_city');
+        expect(finalized.finalState.core.baseDeck).toEqual(['base_primate_park']);
+        expect(finalized.finalState.core.baseDiscard).toEqual(['base_monkey_lab']);
+        expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toContain('time-fleeting-a');
     });
 
     it('时间旅行者：时间流逝真实计分后若基地牌库已空且只剩一个合法基地弃牌堆候选，仍应使用该候选替换而不是退回旧 reshuffle 池', () => {
@@ -9199,14 +9219,24 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             && (event.payload as { topDefIds?: string[]; reason?: string }).reason === 'time_travelers_time_is_fleeting'
             && JSON.stringify((event.payload as { topDefIds?: string[] }).topDefIds) === JSON.stringify(['base_faceless_city']),
         )).toBe(true);
-        expect(resolved.events.some(event =>
+        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(resolved.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.events.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_faceless_city',
         )).toBe(true);
-        expect(resolved.finalState.core.bases[0].defId).toBe('base_faceless_city');
-        expect(resolved.finalState.core.baseDeck).toEqual([]);
-        expect(resolved.finalState.core.baseDiscard).toEqual(['base_monkey_lab']);
-        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('time-fleeting-a');
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_faceless_city');
+        expect(finalized.finalState.core.baseDeck).toEqual([]);
+        expect(finalized.finalState.core.baseDiscard).toEqual(['base_monkey_lab']);
+        expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toContain('time-fleeting-a');
     });
 
     it('时间旅行者：时间流逝在同一计分响应窗先结算后，仍应继续保留虫洞 special 入口', () => {
@@ -9695,15 +9725,25 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         });
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
-        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([
+        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(resolved.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([
             'deck-d',
             'deck-b',
         ]);
-        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([
+        expect(finalized.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([
             'deck-c',
             'deck-a',
         ]);
-        expect(resolved.finalState.core.bases[0].defId).toBe('base_portal_room');
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_portal_room');
     });
 
     it("超级间谍基地：ISI摇摆据点真实计分后可跳过响应并正常继续收口", () => {
@@ -9754,20 +9794,30 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(skipped.success).toBe(true);
         expect(skipped.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(false);
-        expect(skipped.finalState.sys.phase).toBe('playCards');
-        expect(skipped.finalState.core.currentPlayerIndex).toBe(1);
-        expect(skipped.finalState.sys.interaction.current).toBeUndefined();
-        expect(skipped.finalState.sys.responseWindow?.current).toBeUndefined();
-        expect((skipped.finalState.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'base_isis_swingin_pad')).toBe(false);
-        expect(skipped.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([
+        const delayUntil = (skipped.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(skipped.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.finalState.sys.phase).toBe('playCards');
+        expect(finalized.finalState.core.currentPlayerIndex).toBe(1);
+        expect(finalized.finalState.sys.interaction.current).toBeUndefined();
+        expect(finalized.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect((finalized.finalState.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'base_isis_swingin_pad')).toBe(false);
+        expect(finalized.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([
             'deck-c',
             'deck-d',
         ]);
-        expect(skipped.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([
+        expect(finalized.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([
             'deck-a',
             'deck-b',
         ]);
-        expect(skipped.finalState.core.bases[0].defId).toBe('base_portal_room');
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_portal_room');
     });
 
     it("超级间谍基地：ISI摇摆据点在短牌库下仍可按赢家看到的牌重排", () => {
@@ -10219,9 +10269,19 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             }
             throw new Error(`未处理的飞猴真实计分交互：${prompt?.data?.sourceId ?? 'unknown'}`);
         });
+        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(resolved.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
 
-        const sourceBase = resolved.finalState.core.bases[0];
-        const destinationBase = resolved.finalState.core.bases[1];
+        expect(finalized.success).toBe(true);
+
+        const sourceBase = finalized.finalState.core.bases[0];
+        const destinationBase = finalized.finalState.core.bases[1];
         const movedHost = destinationBase.minions.find(minion => minion.uid === 'flying-host');
 
         expect(sourceBase.defId).toBe('base_portal_room');
@@ -10229,8 +10289,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(destinationBase.defId).toBe('base_secret_volcano_headquarters');
         expect(destinationBase.minions.map(minion => minion.uid)).toEqual(['flying-host']);
         expect(movedHost?.attachedActions.map(action => action.uid)).not.toContain('flying-action');
-        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
-        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('flying-action');
+        expect(finalized.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
+        expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toContain('flying-action');
     });
 
     it('电子猿：飞猴真实计分后跳过移动时应按正常计分清场进入弃牌', () => {
@@ -10279,16 +10339,26 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             }
             throw new Error(`未处理的飞猴跳过计分交互：${prompt?.data?.sourceId ?? 'unknown'}`);
         });
+        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(resolved.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
 
-        const sourceBase = resolved.finalState.core.bases[0];
-        const destinationBase = resolved.finalState.core.bases[1];
+        expect(finalized.success).toBe(true);
+
+        const sourceBase = finalized.finalState.core.bases[0];
+        const destinationBase = finalized.finalState.core.bases[1];
 
         expect(sourceBase.defId).toBe('base_portal_room');
         expect(sourceBase.minions.map(minion => minion.uid)).toEqual([]);
         expect(destinationBase.defId).toBe('base_secret_volcano_headquarters');
         expect(destinationBase.minions.map(minion => minion.uid)).toEqual([]);
-        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
-        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(
+        expect(finalized.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
+        expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(
             expect.arrayContaining(['flying-host', 'flying-action']),
         );
     });
@@ -13656,15 +13726,25 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             return { optionId: option.id };
         });
 
-        expect(skipped.finalState.sys.interaction.current).toBeUndefined();
-        expect(skipped.finalState.sys.responseWindow?.current).toBeUndefined();
-        expect(skipped.events.some(event =>
+        const delayUntil = (skipped.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(skipped.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.finalState.sys.interaction.current).toBeUndefined();
+        expect(finalized.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(finalized.events.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_monkey_lab',
         )).toBe(true);
-        expect(skipped.finalState.core.bases[0].defId).toBe('base_monkey_lab');
-        expect(skipped.finalState.core.baseDeck).toEqual([]);
-        expect(skipped.finalState.core.baseDiscard).toEqual([
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_monkey_lab');
+        expect(finalized.finalState.core.baseDeck).toEqual([]);
+        expect(finalized.finalState.core.baseDiscard).toEqual([
             'base_the_vats',
             'base_faceless_city',
             'base_primate_park',
@@ -13713,13 +13793,23 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         });
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.BASE_DECK_REORDERED)).toBe(true);
-        expect(resolved.events.some(event =>
+        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(resolved.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.events.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_faceless_city',
         )).toBe(true);
-        expect(resolved.finalState.core.bases[0].defId).toBe('base_faceless_city');
-        expect(resolved.finalState.core.baseDeck).toEqual(['base_monkey_lab']);
-        expect(resolved.finalState.core.baseDiscard).toEqual(['base_the_vats', 'base_primate_park', 'base_the_nexus']);
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_faceless_city');
+        expect(finalized.finalState.core.baseDeck).toEqual(['base_monkey_lab']);
+        expect(finalized.finalState.core.baseDiscard).toEqual(['base_the_vats', 'base_primate_park', 'base_the_nexus']);
     });
 
     it('时间旅行者基地：枢纽真实计分后若基地牌库已空且选择弃牌堆基地替换，应让所选基地替换并用其余弃牌堆与旧基地重建牌库', () => {
@@ -13766,12 +13856,22 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             event.type === SU_EVENTS.BASE_DECK_REORDERED
             && (event.payload as { reason?: string }).reason === 'base_the_nexus',
         )).toBe(true);
-        expect(resolved.events.some(event =>
+        const delayUntil = (resolved.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const finalized = runCommand(resolved.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.events.some(event =>
             event.type === SU_EVENTS.BASE_REPLACED
             && (event.payload as { newBaseDefId?: string }).newBaseDefId === 'base_faceless_city',
         )).toBe(true);
-        expect(resolved.finalState.core.bases[0].defId).toBe('base_faceless_city');
-        expect(resolved.finalState.core.baseDeck).toEqual(['base_the_vats', 'base_primate_park', 'base_the_nexus']);
-        expect(resolved.finalState.core.baseDiscard).toEqual([]);
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_faceless_city');
+        expect(finalized.finalState.core.baseDeck).toEqual(['base_the_vats', 'base_primate_park', 'base_the_nexus']);
+        expect(finalized.finalState.core.baseDiscard).toEqual([]);
     });
 });

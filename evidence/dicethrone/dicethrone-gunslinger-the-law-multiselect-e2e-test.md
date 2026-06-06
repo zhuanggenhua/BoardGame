@@ -1,5 +1,7 @@
 # Dice Throne 枪手 The Law 多目标交互 E2E 证据
 
+> 2026-06-05 当前有效口径：本文只保留枪手升级变体 `The Law` 多目标交互链的对象级 `L3/L4` 证据，不代表枪手整英雄或枪手/武士整批当前完成态。当前若要判断枪手对象级残余、兄弟能力补审范围或整英雄口径，应以 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-gunslinger-samurai-vs-legacy-audit-2026-04-06.md` 与 `src/games/dicethrone/rule/枪手录入核对.md` 为准。
+
 ## 范围
 
 - 目标：验证 `upgrade-deadeye-2` 的升级变体 **`the-law`** 对应的 `selectPlayer + selectCount = 2` 多目标交互链路，已经从 UI 到领域结算闭环。

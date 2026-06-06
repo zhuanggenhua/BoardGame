@@ -76,6 +76,7 @@ vi.mock('../../engine/transport/react', () => ({
     },
     LocalGameProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
     BoardBridge: () => <div data-testid="board-bridge" />,
+    GameClientOverrideProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
     buildAiProgressMarker: () => 'marker',
     releaseAiAttemptKeyIfMatches: vi.fn(),
     tryReserveAiAttemptKey: vi.fn(() => true),
@@ -165,6 +166,7 @@ vi.mock('../../games/mobileSupport', () => ({
 
 vi.mock('../../components/game/framework/widgets/GameHUD', () => ({
     GameHUD: () => null,
+    resolveGameHudPhase: () => null,
 }));
 
 vi.mock('../../components/common/SEO', () => ({
@@ -257,12 +259,9 @@ vi.mock('../../hooks/useGameImplementationReady', () => ({
     }),
 }));
 
-vi.mock('../../games/smashup/ui/SmashUpOverlayContext', () => ({
-    SmashUpOverlayProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
-}));
-
-vi.mock('../../games/smashup/ui/CardMagnifyOverlay', () => ({
-    SMASHUP_FORCE_DISMISS_EVENT: 'smashup-force-dismiss',
+vi.mock('../../games/pageRuntimeAdapter', () => ({
+    GamePageRuntimeProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+    dismissGamePageTransientUi: vi.fn(() => false),
 }));
 
 vi.mock('../../components/lobby/roomActions', () => ({

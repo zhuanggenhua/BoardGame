@@ -223,6 +223,41 @@ class InMemoryStorage implements MatchStorage {
     }
 }
 
+type TestOnlineAiSeatControllers = Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
+
+const invokeHasOnlineAiRecoveryResolved = async (
+    server: GameTransportServer,
+    match: any,
+    candidate: any,
+    seatControllers: TestOnlineAiSeatControllers,
+): Promise<boolean> => {
+    const serverInternal = server as unknown as {
+        createOnlineAiRecoveryRuntimeBase: (
+            activeMatch: any,
+            activeSeatControllers: TestOnlineAiSeatControllers,
+        ) => {
+            readState: () => MatchState<unknown>;
+            resolveLatestCandidate: () => Promise<any>;
+            resolvePrivateOverlay: (playerId: string) => MatchState<unknown>;
+            seatControllers: TestOnlineAiSeatControllers;
+        };
+        hasOnlineAiRecoveryResolved: (
+            activeCandidate: any,
+            runtime: {
+                readState: () => MatchState<unknown>;
+                resolveLatestCandidate: () => Promise<any>;
+                resolvePrivateOverlay: (playerId: string) => MatchState<unknown>;
+                seatControllers: TestOnlineAiSeatControllers;
+            },
+        ) => Promise<boolean>;
+    };
+
+    return serverInternal.hasOnlineAiRecoveryResolved(
+        candidate,
+        serverInternal.createOnlineAiRecoveryRuntimeBase(match, seatControllers),
+    );
+};
+
 const createEngineConfig = (): GameEngineConfig => ({
     gameId: 'test-game',
     domain: {
@@ -241,6 +276,124 @@ const createEngineConfigWithId = (gameId: string): GameEngineConfig => {
         ...base,
         gameId,
         onlineAiRecovery: {
+            advancePhaseCommandType: gameId === 'summonerwars' ? 'sw:end_phase' : undefined,
+            disableFallbackAdvancePhase: gameId === 'splendor',
+            publicPregameLegalActionPhases: gameId === 'summonerwars'
+                ? ['factionSelect', 'summon']
+                : gameId === 'smashup'
+                    ? ['factionSelect']
+                    : undefined,
+            humanTurnLegalActionProbePhases: gameId === 'dicethrone'
+                ? ['defensiveRoll', 'targetingRoll']
+                : undefined,
+            autoSelectFirstTriggerOnlySimpleChoiceSourceIds: gameId === 'smashup'
+                ? ['smashup_reaction_choose']
+                : undefined,
+            shouldSuppressActiveTurnCandidate: ({ state, phase, currentPlayerId, turnNumber }) => {
+                if (gameId === 'splendor') {
+                    const core = state.core as { hostStarted?: unknown } | undefined;
+                    return core?.hostStarted !== true && (!phase || turnNumber === 0);
+                }
+                if (gameId === 'smashup') {
+                    const delayUntil = (state.sys as Record<string, unknown> | undefined)
+                        ?._smashupPostScoringBaseRevealDelayUntil;
+                    return phase === 'scoreBases'
+                        && typeof delayUntil === 'number'
+                        && delayUntil > Date.now();
+                }
+                if (gameId === 'summonerwars') {
+                    if (phase !== 'summon' && phase !== 'factionSelect') {
+                        return false;
+                    }
+                    const core = state.core as {
+                        hostStarted?: unknown;
+                        hostPlayerId?: unknown;
+                        turnOrder?: unknown;
+                        selectedFactions?: unknown;
+                        readyPlayers?: unknown;
+                    } | undefined;
+                    if (core?.hostStarted !== false) {
+                        return false;
+                    }
+                    const selectedFactions = core?.selectedFactions && typeof core.selectedFactions === 'object'
+                        ? core.selectedFactions as Record<string, unknown>
+                        : {};
+                    const readyPlayers = core?.readyPlayers && typeof core.readyPlayers === 'object'
+                        ? core.readyPlayers as Record<string, unknown>
+                        : {};
+                    const currentFaction = selectedFactions[currentPlayerId];
+                    const hasSelectedFaction = typeof currentFaction === 'string'
+                        && currentFaction.length > 0
+                        && currentFaction !== 'unselected';
+                    if (!hasSelectedFaction) {
+                        return false;
+                    }
+                    const hostPlayerId = typeof core.hostPlayerId === 'string' ? core.hostPlayerId : null;
+                    if (!hostPlayerId) {
+                        return false;
+                    }
+                    if (currentPlayerId !== hostPlayerId) {
+                        return readyPlayers[currentPlayerId] === true;
+                    }
+                    const allPlayerIds = Array.isArray(core.turnOrder)
+                        ? core.turnOrder.filter((playerId): playerId is string => typeof playerId === 'string')
+                        : Object.keys(selectedFactions);
+                    const otherPlayerIds = allPlayerIds.filter((playerId) => playerId !== hostPlayerId);
+                    return otherPlayerIds.length > 0 && !otherPlayerIds.every((playerId) => {
+                        const faction = selectedFactions[playerId];
+                        return typeof faction === 'string'
+                            && faction.length > 0
+                            && faction !== 'unselected'
+                            && readyPlayers[playerId] === true;
+                    });
+                }
+                return false;
+            },
+            shouldSuppressUnsatisfiableInteractionFeedback: gameId === 'dicethrone'
+                ? ({ sharedInteraction, seatInteraction, sharedSelectability, seatSelectability }) => (
+                    sharedInteraction?.kind === 'dt:defender-choice'
+                    && seatInteraction?.kind === 'dt:defender-choice'
+                    && sharedSelectability?.selectionState === 'no-options'
+                    && seatSelectability?.selectionState === 'no-options'
+                )
+                : undefined,
+            resolveSeatLegalOnlyRecovery: gameId === 'dicethrone'
+                ? ({ state, phase }) => {
+                    if (phase === 'offensiveRoll' || phase === 'targetingRoll' || phase === 'defensiveRoll') {
+                        return null;
+                    }
+                    const core = state.core as {
+                        pendingAttack?: unknown;
+                        pendingBonusDiceSettlement?: {
+                            id?: unknown;
+                            attackerId?: unknown;
+                            displayOnly?: unknown;
+                        };
+                    } | undefined;
+                    if (core?.pendingAttack) {
+                        return null;
+                    }
+                    const settlement = core?.pendingBonusDiceSettlement;
+                    if (settlement?.displayOnly !== true || typeof settlement.attackerId !== 'string') {
+                        return null;
+                    }
+                    const settlementId = typeof settlement.id === 'string' && settlement.id.length > 0
+                        ? settlement.id
+                        : 'unknown-display-only-settlement';
+                    return {
+                        playerId: settlement.attackerId,
+                        fingerprintHint: `display-only-bonus:${settlement.attackerId}:${phase || 'unknown-phase'}:${settlementId}`,
+                        attemptSuffix: `display-only-bonus:${settlement.attackerId}:${settlementId}`,
+                        command: { type: 'SKIP_BONUS_DICE_REROLL', payload: {} },
+                    };
+                }
+                : undefined,
+            offlineAdjudicationCommandByInteractionKind: gameId === 'dicethrone'
+                ? {
+                    'dt:token-response': 'SKIP_TOKEN_RESPONSE',
+                    'dt:bonus-dice': 'SKIP_BONUS_DICE_REROLL',
+                }
+                : undefined,
             allowForceCommandAfterLegalActionExhausted: ({ phase, previousCandidate, nextCandidate }) => {
                 if (gameId === 'dicethrone') {
                     return phase === 'defensiveRoll';
@@ -362,6 +515,13 @@ const createOnlineAiRecoveryState = (overrides?: {
                     hand: [],
                     deck: [],
                     discard: [],
+                    discardPile: [],
+                    resources: { hp: 50, cp: 0 },
+                    statusEffects: {},
+                    tokens: {},
+                    abilities: [],
+                    abilityLevels: {},
+                    upgradeCardByAbilityId: {},
                     vp: 0,
                     minionsPlayed: 0,
                     minionLimit: 1,
@@ -374,6 +534,13 @@ const createOnlineAiRecoveryState = (overrides?: {
                     hand: [],
                     deck: [],
                     discard: [],
+                    discardPile: [],
+                    resources: { hp: 50, cp: 0 },
+                    statusEffects: {},
+                    tokens: {},
+                    abilities: [],
+                    abilityLevels: {},
+                    upgradeCardByAbilityId: {},
                     vp: 0,
                     minionsPlayed: 0,
                     minionLimit: 1,
@@ -383,6 +550,11 @@ const createOnlineAiRecoveryState = (overrides?: {
             },
             bases: [],
             baseDeck: [],
+            dice: [],
+            rollDiceCount: 0,
+            rollCount: 0,
+            pendingAttack: null,
+            pendingDamage: null,
         },
         sys: {
             phase: overrides?.phase ?? 'main2',
@@ -968,6 +1140,56 @@ describe('ResponseWindowSystem（重复打开去重）', () => {
             id: 'rw-current',
             currentResponderIndex: 1,
             passedPlayers: ['0'],
+        });
+    });
+
+    it('hasRespondableContent 应收到完整 MatchState 与当前响应窗口上下文', () => {
+        const state = createResponseWindowState();
+        const seenContexts: Array<{
+            core: unknown;
+            playerId: string;
+            windowType: string;
+            sourceId: string | undefined;
+            matchState: unknown;
+            windowId: string | undefined;
+        }> = [];
+        const system = createResponseWindowSystem({
+            hasRespondableContent: (core, playerId, windowType, sourceId, context) => {
+                seenContexts.push({
+                    core,
+                    playerId,
+                    windowType,
+                    sourceId,
+                    matchState: context?.matchState,
+                    windowId: context?.window.id,
+                });
+                return true;
+            },
+        });
+
+        const result = system.afterEvents?.({
+            state: state as any,
+            events: [{
+                type: RESPONSE_WINDOW_EVENTS.OPENED,
+                payload: {
+                    windowId: 'rw-context-contract',
+                    responderQueue: ['0'],
+                    windowType: 'beforeScoring',
+                    sourceId: 'score-before:base-1',
+                },
+                timestamp: 1,
+            }],
+        });
+
+        expect(result).toBeTruthy();
+        expect(seenContexts).toHaveLength(1);
+        expect(seenContexts[0]).toMatchObject({
+            core: state.core,
+            playerId: '0',
+            windowType: 'beforeScoring',
+            sourceId: 'score-before:base-1',
+            matchState: state,
+            windowId: 'rw-context-contract',
         });
     });
 
@@ -1633,10 +1855,86 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
+            engineConfig: createEngineConfigWithId('dicethrone'),
         });
 
         expect(candidate?.reason).toBe('active-turn');
         expect(candidate?.resolution.action.commands[0]?.type).toBe('ADVANCE_PHASE');
+    });
+
+    it('smashup scoreBases 揭示延迟未到时，不应误判为 active-turn 卡死', () => {
+        const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+        try {
+            const sharedState = createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'scoreBases',
+            }).G as any;
+            sharedState.sys._smashupPostScoringBaseRevealDelayUntil = 1_500;
+
+            const candidate = resolveForceEndTurnForStalledAi({
+                sharedState,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai' },
+                },
+                seatStates: {},
+                engineConfig: {
+                    gameId: 'smashup',
+                    onlineAiRecovery: {
+                        shouldSuppressActiveTurnCandidate: ({ state, phase }) => {
+                            if (phase !== 'scoreBases') {
+                                return false;
+                            }
+                            const delayUntil = (state.sys as Record<string, unknown> | undefined)
+                                ?._smashupPostScoringBaseRevealDelayUntil;
+                            return typeof delayUntil === 'number' && delayUntil > Date.now();
+                        },
+                    },
+                },
+            });
+
+            expect(candidate).toBeNull();
+        } finally {
+            nowSpy.mockRestore();
+        }
+    });
+
+    it('smashup scoreBases 揭示延迟到点后，watchdog 应恢复 active-turn 续链', () => {
+        const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_600);
+        try {
+            const sharedState = createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'scoreBases',
+            }).G as any;
+            sharedState.sys._smashupPostScoringBaseRevealDelayUntil = 1_500;
+
+            const candidate = resolveForceEndTurnForStalledAi({
+                sharedState,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai' },
+                },
+                seatStates: {},
+                engineConfig: {
+                    gameId: 'smashup',
+                    onlineAiRecovery: {
+                        shouldSuppressActiveTurnCandidate: ({ state, phase }) => {
+                            if (phase !== 'scoreBases') {
+                                return false;
+                            }
+                            const delayUntil = (state.sys as Record<string, unknown> | undefined)
+                                ?._smashupPostScoringBaseRevealDelayUntil;
+                            return typeof delayUntil === 'number' && delayUntil > Date.now();
+                        },
+                    },
+                },
+            });
+
+            expect(candidate?.reason).toBe('active-turn');
+            expect(candidate?.resolution.action.commands[0]?.type).toBe('ADVANCE_PHASE');
+        } finally {
+            nowSpy.mockRestore();
+        }
     });
 
     it('visible simple-choice 若存在 smashup reaction pass 选项，应优先 force pass 而不是 cancel', () => {
@@ -1677,6 +1975,7 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
+            engineConfig: createEngineConfigWithId('dicethrone'),
         });
 
         expect(candidate?.reason).toBe('visible-interaction');
@@ -1725,6 +2024,7 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
+            engineConfig: createEngineConfigWithId('dicethrone'),
         });
 
         expect(candidate?.reason).toBe('visible-interaction');
@@ -1754,6 +2054,7 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
+            engineConfig: createEngineConfigWithId('dicethrone'),
         });
 
         expect(candidate?.reason).toBe('active-turn-legal-only');
@@ -1897,6 +2198,7 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
+            engineConfig: createEngineConfigWithId('dicethrone'),
         });
 
         expect(candidate?.reason).toBe('seat-legal-only');
@@ -1946,7 +2248,67 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
-            gameId: 'summonerwars',
+            engineConfig: {
+                gameId: 'summonerwars',
+                onlineAiRecovery: {
+                    publicPregameLegalActionPhases: ['factionSelect', 'summon'],
+                    shouldSuppressActiveTurnCandidate: ({ state, phase, currentPlayerId }) => {
+                        if (phase !== 'summon' && phase !== 'factionSelect') {
+                            return false;
+                        }
+
+                        const core = state.core as {
+                            hostStarted?: unknown;
+                            hostPlayerId?: unknown;
+                            turnOrder?: unknown;
+                            selectedFactions?: unknown;
+                            readyPlayers?: unknown;
+                        } | undefined;
+                        if (core?.hostStarted !== false) {
+                            return false;
+                        }
+
+                        const selectedFactions = core?.selectedFactions && typeof core.selectedFactions === 'object'
+                            ? core.selectedFactions as Record<string, unknown>
+                            : {};
+                        const readyPlayers = core?.readyPlayers && typeof core.readyPlayers === 'object'
+                            ? core.readyPlayers as Record<string, unknown>
+                            : {};
+                        const currentFaction = selectedFactions[currentPlayerId];
+                        const hasSelectedFaction = typeof currentFaction === 'string'
+                            && currentFaction.length > 0
+                            && currentFaction !== 'unselected';
+                        if (!hasSelectedFaction) {
+                            return false;
+                        }
+
+                        const hostPlayerId = typeof core.hostPlayerId === 'string' ? core.hostPlayerId : null;
+                        if (!hostPlayerId) {
+                            return false;
+                        }
+
+                        if (currentPlayerId !== hostPlayerId) {
+                            return readyPlayers[currentPlayerId] === true;
+                        }
+
+                        const allPlayerIds = Array.isArray(core.turnOrder)
+                            ? core.turnOrder.filter((playerId): playerId is string => typeof playerId === 'string')
+                            : Object.keys(selectedFactions);
+                        const otherPlayerIds = allPlayerIds.filter((playerId) => playerId !== hostPlayerId);
+                        if (otherPlayerIds.length === 0) {
+                            return false;
+                        }
+
+                        return !otherPlayerIds.every((playerId) => {
+                            const faction = selectedFactions[playerId];
+                            return typeof faction === 'string'
+                                && faction.length > 0
+                                && faction !== 'unselected'
+                                && readyPlayers[playerId] === true;
+                        });
+                    },
+                },
+            },
         });
 
         expect(candidate).toBeNull();
@@ -2186,10 +2548,10 @@ describe('GameTransportServer（离座与重连）', () => {
     });
 
     it.each([
-        ['simple-choice', 'SYS_INTERACTION_CANCEL'],
-        ['dt:token-response', 'SKIP_TOKEN_RESPONSE'],
-        ['dt:bonus-dice', 'SKIP_BONUS_DICE_REROLL'],
-    ])('离线裁决应按 kind=%s 映射命令 %s', async (kind, expectedCommand) => {
+        ['simple-choice', 'SYS_INTERACTION_CANCEL', createEngineConfig()],
+        ['dt:token-response', 'SKIP_TOKEN_RESPONSE', createEngineConfigWithId('dicethrone')],
+        ['dt:bonus-dice', 'SKIP_BONUS_DICE_REROLL', createEngineConfigWithId('dicethrone')],
+    ])('离线裁决应按 kind=%s 映射命令 %s', async (kind, expectedCommand, engineConfig) => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         let lastCommandType: string | undefined;
@@ -2218,13 +2580,16 @@ describe('GameTransportServer（离座与重连）', () => {
 
         await storage.createMatch(`match-offline-${kind}`, {
             initialState,
-            metadata: createMetadata('offline-cred'),
+            metadata: {
+                ...createMetadata('offline-cred'),
+                gameName: engineConfig.gameId,
+            },
         });
 
-        const engineConfig: GameEngineConfig = {
-            ...createEngineConfig(),
+        const runtimeEngineConfig: GameEngineConfig = {
+            ...engineConfig,
             domain: {
-                ...createEngineConfig().domain,
+                ...engineConfig.domain,
                 validate: (_state, command) => {
                     lastCommandType = command.type;
                     return { valid: true };
@@ -2236,7 +2601,7 @@ describe('GameTransportServer（离座与重连）', () => {
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [engineConfig],
+            games: [runtimeEngineConfig],
         });
 
         const serverInternal = server as unknown as {
@@ -2376,6 +2741,132 @@ describe('GameTransportServer（离座与重连）', () => {
         await syncPromise;
     });
 
+    it('dicethrone sync 不应因 playerView 包装错误而在发送 state:sync 前崩溃', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-sync-dicethrone-player-view', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '0',
+                        startingPlayerId: '0',
+                        hostPlayerId: '0',
+                        hostStarted: true,
+                        turnNumber: 1,
+                        selectedCharacters: {
+                            '0': 'cursed_pirate',
+                            '1': 'ninja',
+                        },
+                        readyPlayers: {
+                            '0': true,
+                            '1': true,
+                        },
+                        players: {
+                            '0': {
+                                id: 'player-0',
+                                characterId: 'cursed_pirate',
+                                resources: {},
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                            '1': {
+                                id: 'player-1',
+                                characterId: 'ninja',
+                                resources: {},
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                        },
+                        tokenDefinitions: [],
+                        turnOrder: ['0', '1'],
+                        rollLimit: 3,
+                        rollDiceCount: 5,
+                        rollCount: 0,
+                        rollConfirmed: false,
+                        dice: [],
+                        pendingAttack: null,
+                        lastEffectSourceByPlayerId: {},
+                        attackResolvedSequence: 0,
+                        afterAttackResponseWindowSequence: 0,
+                    },
+                    sys: {
+                        phase: 'main2',
+                        turnNumber: 1,
+                        eventStream: { entries: [], maxEntries: 200, nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: {
+                gameName: 'dicethrone',
+                players: {
+                    '0': {
+                        name: '玩家0',
+                        credentials: 'cred-0',
+                        isConnected: false,
+                    },
+                    '1': {
+                        name: '玩家1',
+                        credentials: 'cred-1',
+                        isConnected: false,
+                    },
+                },
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                setupData: {
+                    seatControllers: {
+                        '0': { type: 'human' },
+                        '1': { type: 'human' },
+                    },
+                },
+            },
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [diceThroneEngineConfig],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-sync-dicethrone-player-view');
+        io.gameNamespace.connectSocket(socket);
+
+        await socket.clientEmit('sync', 'match-sync-dicethrone-player-view', '0', 'cred-0');
+
+        expect(hasEvent(socket, 'state:sync')).toBe(true);
+        expect(hasEvent(socket, 'error')).toBe(false);
+    });
+
     it('dicethrone sync 遇到存储里的 bare core 旧形状时，也应补回 MatchState 包装并发送 state:sync', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -2487,6 +2978,125 @@ describe('GameTransportServer（离座与重连）', () => {
         const syncedState = syncEvent?.args[1] as { core?: unknown; sys?: unknown } | undefined;
         expect(syncedState?.core).toBeTruthy();
         expect(syncedState?.sys).toBeTruthy();
+        expect(hasEvent(socket, 'error')).toBe(false);
+    });
+
+    it('dicethrone sync 遇到缺失 sys wrapper 的旧 MatchState 时，也应补回 fallback sys 并发送 state:sync', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-sync-dicethrone-missing-sys-wrapper', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '0',
+                        startingPlayerId: '0',
+                        hostPlayerId: '0',
+                        hostStarted: true,
+                        turnNumber: 1,
+                        selectedCharacters: {
+                            '0': 'cursed_pirate',
+                            '1': 'ninja',
+                        },
+                        readyPlayers: {
+                            '0': true,
+                            '1': true,
+                        },
+                        players: {
+                            '0': {
+                                id: 'player-0',
+                                characterId: 'cursed_pirate',
+                                resources: {},
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                            '1': {
+                                id: 'player-1',
+                                characterId: 'ninja',
+                                resources: {},
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                        },
+                        tokenDefinitions: [],
+                        turnOrder: ['0', '1'],
+                        rollLimit: 3,
+                        rollDiceCount: 5,
+                        rollCount: 0,
+                        rollConfirmed: false,
+                        dice: [],
+                        pendingAttack: null,
+                        lastEffectSourceByPlayerId: {},
+                        attackResolvedSequence: 0,
+                        afterAttackResponseWindowSequence: 0,
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            } as any,
+            metadata: {
+                gameName: 'dicethrone',
+                players: {
+                    '0': {
+                        name: '玩家0',
+                        credentials: 'cred-0',
+                        isConnected: false,
+                    },
+                    '1': {
+                        name: '玩家1',
+                        credentials: 'cred-1',
+                        isConnected: false,
+                    },
+                },
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                setupData: {
+                    seatControllers: {
+                        '0': { type: 'human' },
+                        '1': { type: 'human' },
+                    },
+                },
+            },
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [diceThroneEngineConfig],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-sync-dicethrone-missing-sys-wrapper');
+        io.gameNamespace.connectSocket(socket);
+
+        await socket.clientEmit('sync', 'match-sync-dicethrone-missing-sys-wrapper', '0', 'cred-0');
+
+        const syncEvent = socket.sent.find((event) => event.event === 'state:sync');
+        expect(syncEvent).toBeTruthy();
+        const syncedState = syncEvent?.args[1] as { core?: unknown; sys?: { phase?: unknown; turnNumber?: unknown } } | undefined;
+        expect(syncedState?.core).toBeTruthy();
+        expect(syncedState?.sys).toBeTruthy();
+        expect(syncedState?.sys?.phase).toBe('setup');
+        expect(typeof syncedState?.sys?.turnNumber).toBe('number');
         expect(hasEvent(socket, 'error')).toBe(false);
     });
 
@@ -12600,6 +13210,162 @@ describe('GameTransportServer（离座与重连）', () => {
         expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-dt-defender-choice-fingerprint-drift')).toBe(false);
     });
 
+    it('online AI watchdog 在自定义 interaction fingerprint seam 漂移到新的 meta.step 时，应丢弃旧 tracker 而不是按旧 incident 继续上报失败', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfig(),
+            onlineAiRecovery: {
+                buildInteractionRecoveryFingerprintHint: ({ fallbackFingerprintHint, interaction }) => {
+                    const meta = interaction.data?.meta as { step?: unknown } | undefined;
+                    const step = typeof meta?.step === 'number' ? meta.step : 'unknown';
+                    return `${fallbackFingerprintHint}:custom-step:${step}`;
+                },
+            },
+        };
+
+        await storage.createMatch('match-watchdog-custom-interaction-fingerprint-drift', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'main2',
+                interaction: {
+                    current: {
+                        id: 'custom-timing-window-1',
+                        playerId: '1',
+                        kind: 'custom:timing-window',
+                        data: {
+                            sourceId: 'custom-window',
+                            meta: { step: 1 },
+                        },
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'test-game' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [engineConfig],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoverySequence: (
+                match: any,
+                tracker: any,
+                candidate: any,
+                progressMarkerBeforeRecovery: string,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+            ) => Promise<void>;
+            tryRecoverOnlineAiWithLegalAction: (
+                match: any,
+                candidate: any,
+                tracker: any,
+                seatControllers: any,
+            ) => Promise<{
+                applied: boolean;
+                blockedReason: 'missing-visible-state' | 'missing-private-overlay' | 'stale-private-overlay' | null;
+                executedCommandTypes: string[];
+                outcome: 'applied' | 'blocked' | 'no-legal-action' | 'legal-action-command-failed';
+            }>;
+            resolveOnlineAiRecoveryCandidate: (
+                match: any,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+            ) => Promise<any>;
+            buildOnlineAiRecoveryFingerprint: (match: any, candidate: any, progressMarker: string) => string;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-custom-interaction-fingerprint-drift');
+        const baseCandidate = resolveForceEndTurnForStalledAi({
+            sharedState: match.state,
+            seatControllers: {
+                '0': { type: 'human' as const },
+                '1': { type: 'local-ai' as const },
+            },
+            seatStates: {},
+            engineConfig,
+        });
+        const baseFingerprint = serverInternal.buildOnlineAiRecoveryFingerprint(
+            match,
+            baseCandidate,
+            buildAiProgressMarker(match.state),
+        );
+        const tracker = {
+            key: `1:visible-interaction:${baseFingerprint}`,
+            firstSeenAt: Date.now(),
+            autoSubmittedAt: Date.now(),
+            lastReportedFailureReason: null,
+            failureCount: 0,
+        };
+        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+
+        const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
+            activeMatch.state = {
+                ...activeMatch.state,
+                sys: {
+                    ...activeMatch.state.sys,
+                    eventStream: {
+                        ...(activeMatch.state.sys?.eventStream ?? {}),
+                        nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
+                    },
+                    interaction: {
+                        ...(activeMatch.state.sys?.interaction ?? {}),
+                        current: {
+                            id: 'custom-timing-window-1',
+                            playerId: '1',
+                            kind: 'custom:timing-window',
+                            data: {
+                                sourceId: 'custom-window',
+                                meta: { step: 2 },
+                            },
+                        },
+                    },
+                },
+            };
+            return {
+                applied: false,
+                blockedReason: null,
+                executedCommandTypes: [],
+                outcome: 'no-legal-action' as const,
+            };
+        });
+
+        const resolveCandidateSpy = vi.spyOn(serverInternal, 'resolveOnlineAiRecoveryCandidate')
+            .mockImplementationOnce(async (activeMatch, seatControllers) => {
+                return resolveForceEndTurnForStalledAi({
+                    sharedState: activeMatch.state,
+                    seatControllers,
+                    seatStates: {},
+                    engineConfig,
+                });
+            });
+
+        await serverInternal.runOnlineAiRecoverySequence(
+            match,
+            tracker,
+            baseCandidate,
+            buildAiProgressMarker(match.state),
+            {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+        );
+
+        expect(tryRecoverSpy).toHaveBeenCalled();
+        expect(resolveCandidateSpy).toHaveBeenCalled();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+        expect(tracker.autoSubmittedAt).toBeNull();
+        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-custom-interaction-fingerprint-drift')).toBe(false);
+    });
+
     it('buildOnlineAiRecoveryFingerprint 在 response-window 的 source/responder 相同但 window id 漂移时，也必须变化', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -13044,23 +13810,15 @@ describe('GameTransportServer（离座与重连）', () => {
             } as MatchState<unknown>;
         });
 
-        const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
-            candidate,
-            {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            },
-        );
+        const unresolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai' },
+        });
         hiddenStillPresent = false;
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
-            candidate,
-            {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            },
-        );
+        const resolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai' },
+        });
 
         expect(unresolved).toBe(false);
         expect(resolved).toBe(true);
@@ -13286,7 +14044,7 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const resolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -13372,7 +14130,7 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const resolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -13434,7 +14192,7 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const resolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -13449,7 +14207,7 @@ describe('GameTransportServer（离座与重连）', () => {
         await storage.createMatch('match-watchdog-active-turn-legal-only-resolve-same-surface', {
             initialState: createOnlineAiRecoveryState({
                 activePlayerId: '1',
-                phase: 'defensiveRoll',
+                phase: 'main2',
                 interaction: {
                     current: undefined,
                     queue: [],
@@ -13465,7 +14223,13 @@ describe('GameTransportServer（离座与重连）', () => {
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithId('dicethrone')],
+            games: [{
+                ...createEngineConfigWithId('dicethrone'),
+                onlineAiRecovery: {
+                    ...createEngineConfigWithId('dicethrone').onlineAiRecovery,
+                    disableFallbackAdvancePhase: true,
+                },
+            }],
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
         });
@@ -13484,13 +14248,13 @@ describe('GameTransportServer（离座与重连）', () => {
             playerId: '1',
             reason: 'active-turn-legal-only',
             legalActionOnly: true,
-            fingerprintHint: 'active-turn-legal-only:1:defensiveRoll',
+            fingerprintHint: 'active-turn-legal-only:1:main2',
             resolution: {
                 playerId: '1',
-                attemptKey: 'force-end-turn:1:active-turn-legal-only:1:defensiveRoll',
+                attemptKey: 'force-end-turn:1:active-turn-legal-only:1:main2',
                 source: 'local-ai',
                 action: {
-                    actionId: 'force-end-turn:active-turn-legal-only:1:defensiveRoll',
+                    actionId: 'force-end-turn:active-turn-legal-only:1:main2',
                     kind: 'force-end-turn',
                     label: '服务端代 AI 执行合法动作',
                     commands: [],
@@ -13498,7 +14262,7 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const resolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -13513,7 +14277,7 @@ describe('GameTransportServer（离座与重连）', () => {
         await storage.createMatch('match-watchdog-active-turn-legal-only-resolve-new-phase', {
             initialState: createOnlineAiRecoveryState({
                 activePlayerId: '1',
-                phase: 'defensiveRoll',
+                phase: 'main2',
                 interaction: {
                     current: undefined,
                     queue: [],
@@ -13529,7 +14293,13 @@ describe('GameTransportServer（离座与重连）', () => {
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithId('dicethrone')],
+            games: [{
+                ...createEngineConfigWithId('dicethrone'),
+                onlineAiRecovery: {
+                    ...createEngineConfigWithId('dicethrone').onlineAiRecovery,
+                    disableFallbackAdvancePhase: true,
+                },
+            }],
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
         });
@@ -13548,13 +14318,13 @@ describe('GameTransportServer（离座与重连）', () => {
             playerId: '1',
             reason: 'active-turn-legal-only',
             legalActionOnly: true,
-            fingerprintHint: 'active-turn-legal-only:1:defensiveRoll',
+            fingerprintHint: 'active-turn-legal-only:1:main2',
             resolution: {
                 playerId: '1',
-                attemptKey: 'force-end-turn:1:active-turn-legal-only:1:defensiveRoll',
+                attemptKey: 'force-end-turn:1:active-turn-legal-only:1:main2',
                 source: 'local-ai',
                 action: {
-                    actionId: 'force-end-turn:active-turn-legal-only:1:defensiveRoll',
+                    actionId: 'force-end-turn:active-turn-legal-only:1:main2',
                     kind: 'force-end-turn',
                     label: '服务端代 AI 执行合法动作',
                     commands: [],
@@ -13566,11 +14336,11 @@ describe('GameTransportServer（离座与重连）', () => {
             ...match.state,
             sys: {
                 ...match.state.sys,
-                phase: 'targetingRoll',
+                phase: 'main1',
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const resolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -13638,7 +14408,7 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const unresolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -13703,7 +14473,7 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const unresolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -13817,7 +14587,7 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const unresolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -13881,7 +14651,7 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const resolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -13945,7 +14715,7 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
+        const resolved = await invokeHasOnlineAiRecoveryResolved(server, match, candidate, {
             '0': { type: 'human' },
             '1': { type: 'local-ai' },
         });
@@ -23839,6 +24609,99 @@ describe('GameTransportServer（离座与重连）', () => {
             '3',
             INTERACTION_COMMANDS.CANCEL,
             { interactionId: 'dt-defender-choice-empty', reason: 'empty-options' },
+        );
+
+        expect(success).toBe(true);
+        expect(match.state.sys.interaction.current).toBeUndefined();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
+    it('自定义游戏可通过 onlineAiRecovery seam 抑制 unsatisfiable interaction feedback', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-custom-unsat-feedback-suppressed', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                        players: {
+                            '0': { hand: [], deck: [], discard: [] },
+                            '1': { hand: [], deck: [], discard: [] },
+                        },
+                    },
+                    sys: {
+                        phase: 'main2',
+                        turnNumber: 0,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: {
+                                id: 'custom-no-targets',
+                                kind: 'custom:no-targets',
+                                playerId: '1',
+                                data: {
+                                    sourceId: 'custom-no-targets',
+                                    options: [],
+                                },
+                            },
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const customEngine: GameEngineConfig = {
+            ...createInteractiveEngineConfig(),
+            onlineAiRecovery: {
+                shouldSuppressUnsatisfiableInteractionFeedback: ({
+                    sharedInteraction,
+                    seatInteraction,
+                    sharedSelectability,
+                    seatSelectability,
+                }) => (
+                    sharedInteraction?.kind === 'custom:no-targets'
+                    && seatInteraction?.kind === 'custom:no-targets'
+                    && sharedSelectability?.selectionState === 'no-options'
+                    && seatSelectability?.selectionState === 'no-options'
+                ),
+            },
+        };
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [customEngine],
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-custom-unsat-feedback-suppressed');
+        const success = await serverInternal.executeCommandInternal(
+            match,
+            '1',
+            INTERACTION_COMMANDS.CANCEL,
+            { interactionId: 'custom-no-targets', reason: 'empty-options' },
         );
 
         expect(success).toBe(true);

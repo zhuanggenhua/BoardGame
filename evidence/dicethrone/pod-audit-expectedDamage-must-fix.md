@@ -1,5 +1,7 @@
 # POD 审计：expectedDamage 计算简化必须修复
 
+> 2026-06-06 当前有效口径：本文只记录 2026-03-09 那轮 POD 审计里对 `expectedDamage` 简化实现的历史判断，不是当前版本仍然必然存在同一缺陷的直接证明，也不是当前 DiceThrone 审计主线或新英雄补审出口。阅读时必须回到现行代码和现行测试重新判断。
+
 ## 发现时间
 2026-03-09
 
@@ -153,4 +155,8 @@ const expectedDamage = getPendingAttackExpectedDamage(coreAfterPreDefense, core.
 **修复时间**：5 分钟
 
 **风险**：低（恢复原始实现，已验证正确）
+
+---
+
+**当前阅读说明**：本文只能证明当时为什么把 `expectedDamage` 简化列为“必须修复”，不能外推为当前仓库仍处于该旧状态，也不能替代当前代码与测试的直接证据。
 

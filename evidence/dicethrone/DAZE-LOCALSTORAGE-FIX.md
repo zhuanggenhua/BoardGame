@@ -1,5 +1,7 @@
 # localStorage 服务端错误修复
 
+> 2026-06-06 当前有效口径：本文只覆盖“服务端执行链误调用 `localStorage` 导致崩溃”这一条历史专项修复，不是当前 DiceThrone 所有服务端安全问题、也不是当前新英雄补审出口。阅读时只能把它当作单条环境兼容性修复记录。
+
 ## 问题描述
 
 在测试 Daze 机制时，服务端执行 `ADVANCE_PHASE` 命令时崩溃：
@@ -84,3 +86,7 @@ export const getAutoResponseEnabled = (): boolean => {
 **领域层（domain/）不应该依赖 UI 层（ui/）**：
 - `flowHooks.ts` 在服务端执行，不应该调用 UI 组件的函数
 - 更好的设计：将 `getAutoResponseEnabled()` 移到 `domain/utils.ts`，或者通过配置注入
+
+---
+
+**当前阅读说明**：本文只能证明 `localStorage` 服务端崩溃这条专项问题曾被修复，不能外推为当前所有 SSR/Node 环境访问、所有 auto-response 依赖或 DiceThrone 当前整体审计都已收口。

@@ -1048,7 +1048,7 @@ function registerNinjaOngoingEffects(): void {
         return ctx.targetMinion.attachedActions.some((bomb) => {
             if (!matchesDefId(bomb.defId, 'ninja_smoke_bomb')) return false;
             const controllerId = (bomb.metadata?.sourceControllerId as PlayerId | undefined) ?? bomb.ownerId;
-            return ctx.sourcePlayerId !== controllerId;
+            return ctx.targetMinion.controller === controllerId && ctx.sourcePlayerId !== controllerId;
         });
     });
 

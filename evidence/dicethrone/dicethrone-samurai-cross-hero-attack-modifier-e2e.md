@@ -1,5 +1,7 @@
 # Dice Throne 武士跨角色攻击修正 E2E 证据
 
+> 2026-06-05 当前有效口径：本文只保留武士 `Righteousness / Zanshin` 两条跨角色攻击修正链与测试基建桥接的对象级证据，不代表武士整英雄当前完成态。当前若要判断武士对象级残余、兄弟能力补审范围或整英雄口径，应以 `evidence/dicethrone/dicethrone-samurai-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-gunslinger-samurai-vs-legacy-audit-2026-04-06.md` 与 `src/games/dicethrone/rule/武士录入核对.md` 为准。
+
 ## 本次目标
 
 验证武士两张攻击修正牌在真实 UI 链路中的跨角色表现与状态落地：

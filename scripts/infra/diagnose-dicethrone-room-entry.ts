@@ -3,6 +3,7 @@ import { chromium } from 'playwright';
 import { ensureSingleWorkerRuntime, stopManagedRuntime } from './e2e-runtime-manager.mjs';
 import {
     createDTRoomViaAPI,
+    claimDTSeatViaAPI,
     joinDTMatchViaAPI,
     seedDTMatchCredentials,
     waitForCharacterSelectionInRoom,
@@ -153,10 +154,13 @@ const main = async () => {
                     throw new Error('createDTRoomViaAPI 返回 null');
                 }
 
-                console.log(`[diag-dt-room-entry] attempt ${attempt}: join host`);
-                const hostCredentials = await joinDTMatchViaAPI(hostPage, matchId, '0', `DiagHost-${Date.now()}`, hostGuestId);
+                console.log(`[diag-dt-room-entry] attempt ${attempt}: claim host seat`);
+                const hostCredentials = await claimDTSeatViaAPI(hostPage, matchId, '0', {
+                    guestId: hostGuestId,
+                    playerName: `DiagHost-${Date.now()}`,
+                });
                 if (!hostCredentials) {
-                    throw new Error('joinDTMatchViaAPI(host) 返回 null');
+                    throw new Error('claimDTSeatViaAPI(host) 返回 null');
                 }
 
                 await seedDTMatchCredentials(hostContext, matchId, '0', hostCredentials);

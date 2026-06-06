@@ -1,5 +1,7 @@
 # DiceThrone 枪手 / 武士四人目标牌 E2E 证据
 
+> 2026-06-05 当前有效口径：本文只保留枪手 `Wanted / Pistol Whip / High Noon` 与武士 `You Should Be Ashamed` 这几条 4 人目标交互链的对象级 `L3/L4` 证据，不代表枪手整英雄、武士整英雄或枪手/武士整批当前完成态。当前若要判断整英雄残余、兄弟能力补审范围或整批口径，应以 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-samurai-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-gunslinger-samurai-vs-legacy-audit-2026-04-06.md` 与对应录入核对文档为准。
+
 ## 范围
 
 - 枪手 `Wanted`

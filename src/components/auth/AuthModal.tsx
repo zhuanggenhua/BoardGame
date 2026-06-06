@@ -156,6 +156,7 @@ export const AuthModal = ({
     const isRightPlacement = placement === 'right';
     const isHomeV2Style = visualStyle === 'home-v2';
     const isCompactHomeV2Layout = !embedded && isHomeV2Style && isCompactLandscape;
+    const isClassicStandalone = !embedded && !isHomeV2Style;
     const shouldAutoFocusInitialField = !isHomeV2Style;
     const homeV2FieldLabelClassName = isCompactHomeV2Layout ? homeV2PaperCompactLabelClassName : homeV2PaperLabelClassName;
     const homeV2FieldHintClassName = isCompactHomeV2Layout ? homeV2PaperCompactHintClassName : homeV2PaperHintClassName;
@@ -169,7 +170,7 @@ export const AuthModal = ({
             ? 'text-[12px] font-semibold tracking-[0.16em] text-[#6b452d]'
             : isHomeV2Style
                 ? homeV2FieldLabelClassName
-                : 'mb-2 text-[12px] font-semibold tracking-[0.12em] text-[#5d3d28]',
+                : 'mb-2 text-xs font-bold uppercase tracking-wider text-[#8c7b64]',
     );
     const textInputClassName = clsx(
         'auth-form-input w-full outline-none transition-colors',
@@ -177,7 +178,7 @@ export const AuthModal = ({
             ? 'rounded-[10px] border-[1.5px] border-[#8e6140] bg-[rgba(252,245,230,0.78)] px-[16px] py-[11px] text-[16px] text-[#4b3020] caret-[#4b3020] placeholder-[#7e5f44] shadow-[0_4px_12px_rgba(91,63,41,0.08)] focus:border-[#6f4b32] focus:bg-[rgba(252,245,230,0.9)]'
             : isHomeV2Style
                 ? homeV2TextInputClassName
-                : 'rounded-[5px] border border-[#7c5530]/70 bg-[rgba(255,247,224,0.34)] px-4 py-3 text-[15px] text-[#332315] caret-[#332315] placeholder-[#8d6b4a]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] focus:border-[#4d351f] focus:bg-[rgba(255,250,236,0.58)]',
+                : 'border-b-2 border-[#e5e0d0] bg-transparent px-0 py-2 text-base text-[#433422] caret-[#433422] placeholder-[#c0a080]/50 focus:border-[#433422] sm:text-lg',
     );
     const codeActionButtonClassName = clsx(
         'cursor-pointer whitespace-nowrap uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50',
@@ -185,7 +186,7 @@ export const AuthModal = ({
             ? 'rounded-[8px] bg-[#7d5738] px-3.5 py-[9px] text-[10px] font-semibold tracking-[0.12em] text-[#f8ead0] hover:bg-[#65432a]'
             : isHomeV2Style
                 ? homeV2CodeButtonClassName
-                : 'rounded-[6px] bg-[#765233] px-3.5 py-2 text-[11px] font-semibold tracking-[0.08em] text-[#f8ead0] shadow-[0_6px_14px_rgba(82,49,27,0.14)] hover:bg-[#5f3f26]',
+                : 'bg-[#8c7b64] px-3 py-1.5 text-xs tracking-wider text-white hover:bg-[#6b5d4a]',
     );
     const secondaryTextButtonClassName = clsx(
         'transition-colors hover:text-[#433422]',
@@ -193,16 +194,16 @@ export const AuthModal = ({
             ? 'text-[11px] text-[#8a674a]'
             : isHomeV2Style
                 ? homeV2SecondaryTextButtonClassName
-                : 'text-[12px] font-semibold text-[#7c5c3d]',
+                : 'text-xs text-[#8c7b64]',
     );
     const passwordToggleButtonClassName = embedded
         ? undefined
         : isHomeV2Style
             ? 'text-[#8b6646] hover:text-[#5a3923]'
-            : undefined;
+            : 'text-[#8c7b64] hover:text-[#433422]';
     const passwordInputClassName = clsx(
         textInputClassName,
-        !embedded && isHomeV2Style ? (isCompactHomeV2Layout ? 'pr-10' : 'pr-11') : undefined,
+        isHomeV2Style && !embedded ? (isCompactHomeV2Layout ? 'pr-10' : 'pr-11') : undefined,
     );
     const persistRememberedField = useCallback((key: keyof AuthRememberedFields, value: string) => {
         rememberedFieldsRef.current = {
@@ -864,18 +865,20 @@ export const AuthModal = ({
                 'pointer-events-auto relative flex flex-col overflow-hidden border',
                 embedded
                     ? 'mx-auto h-full w-full max-h-full max-w-[560px] rounded-none border-transparent bg-transparent shadow-none'
-                    : clsx(
-                        'w-[calc(100vw-2rem)] max-w-[668px] rounded-[5px] border-[#8a5f34] bg-[#f1dfb9]',
-                        'max-h-[var(--runtime-modal-max-height)] shadow-[0_30px_90px_rgba(10,7,5,0.52),0_0_0_2px_rgba(229,184,101,0.26),0_0_0_1px_rgba(255,246,217,0.22)_inset]',
-                    ),
+                    : 'mx-4 w-[calc(100vw-2rem)] max-w-[400px] max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] rounded-sm border-[#e5e0d0] bg-[#fcfbf9] shadow-[0_10px_40px_rgba(67,52,34,0.1)]',
                 !embedded && (isRightPlacement ? 'ml-4 mr-2 md:mr-4' : 'mx-4'),
             )}
-            style={!embedded ? {
-                backgroundImage: 'radial-gradient(circle at 50% 8%, rgba(255,249,222,0.88) 0%, rgba(255,249,222,0.24) 42%, rgba(255,249,222,0) 68%), linear-gradient(180deg, rgba(247,232,196,0.98) 0%, rgba(229,199,149,0.97) 100%)',
-                minHeight: mode === 'login' ? 'min(668px, var(--runtime-modal-max-height))' : 'min(820px, var(--runtime-modal-max-height))',
-            } : undefined}
+            style={undefined}
             data-testid={embedded ? 'auth-embedded-panel' : 'auth-modal'}
         >
+            {isClassicStandalone ? (
+                <>
+                    <div className="absolute left-2 top-2 h-3 w-3 border-l border-t border-[#c0a080]" />
+                    <div className="absolute right-2 top-2 h-3 w-3 border-r border-t border-[#c0a080]" />
+                    <div className="absolute bottom-2 left-2 h-3 w-3 border-b border-l border-[#c0a080]" />
+                    <div className="absolute bottom-2 right-2 h-3 w-3 border-b border-r border-[#c0a080]" />
+                </>
+            ) : null}
             <AnimatePresence>
                 {isLoading && (
                     <motion.div
@@ -903,35 +906,31 @@ export const AuthModal = ({
             </AnimatePresence>
 
             {showTitle ? (
-                <div className={clsx('shrink-0 text-center', embedded ? 'px-0 pb-3 pt-0' : 'px-12 pb-9 pt-12 sm:px-16')}>
-                    <h2 className={clsx('font-serif font-bold tracking-wide text-[#433422]', embedded ? 'mb-0 text-[15px]' : 'mb-4 text-[30px] leading-none')}>
+                <div className={clsx('shrink-0 text-center', embedded ? 'px-0 pb-3 pt-0' : 'px-6 pb-4 pt-6 sm:px-10 sm:pb-6 sm:pt-10')}>
+                    <h2 className={clsx('font-serif font-bold tracking-wide text-[#433422]', embedded ? 'mb-0 text-[15px]' : 'mb-2 text-2xl')}>
                         {modalTitle}
                     </h2>
                     {!embedded ? (
-                        <div className="mx-auto flex w-[68%] items-center justify-center gap-2">
-                            <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(127,91,48,0)_0%,rgba(127,91,48,0.62)_100%)]" />
-                            <span className="h-2 w-2 rotate-45 bg-[#a77c45]" />
-                            <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(127,91,48,0.62)_0%,rgba(127,91,48,0)_100%)]" />
-                        </div>
+                        <div className="mx-auto h-px w-12 bg-[#c0a080] opacity-50" />
                     ) : null}
                 </div>
             ) : null}
 
             <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col font-serif">
-                <div className={clsx('scrollbar-thin scrollbar-thumb-[#b48a63]/45 scrollbar-track-transparent min-h-0', embedded ? 'flex-1 overflow-y-auto px-0 pb-1' : mode === 'login' ? 'max-h-[390px] overflow-y-auto px-12 pb-0 sm:px-16' : 'overflow-visible px-12 pb-0 sm:px-16')}>
+                <div className={clsx('scrollbar-thin scrollbar-thumb-[#b48a63]/45 scrollbar-track-transparent min-h-0', embedded ? 'flex-1 overflow-y-auto px-0 pb-1' : 'flex-1 overflow-y-auto px-6 pb-4 sm:px-10 sm:pb-6')}>
                     {error && (
                         <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={clsx('font-serif text-center', embedded ? 'mb-4 rounded-[10px] border border-[#d4ab90] bg-[rgba(164,78,48,0.08)] px-3 py-2 text-[11px] text-[#8d4f35]' : 'mb-4 rounded-[6px] border border-[#b8785a]/50 bg-[rgba(155,58,35,0.08)] px-4 py-2 text-[13px] text-[#7e3b27]')}
+                            className={clsx('font-serif text-center', embedded ? 'mb-4 rounded-[10px] border border-[#d4ab90] bg-[rgba(164,78,48,0.08)] px-3 py-2 text-[11px] text-[#8d4f35]' : 'mb-6 border border-red-100 bg-red-50 px-4 py-2 text-sm text-red-600')}
                         >
                             {error}
                         </motion.div>
                     )}
 
-                    <div className={embedded ? 'space-y-[18px]' : mode === 'login' ? 'space-y-10' : 'space-y-4'}>
+                    <div className={embedded ? 'space-y-[18px]' : 'space-y-5'}>
                         {mode === 'register' && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className={clsx(embedded ? 'space-y-[14px]' : 'space-y-4')}>
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className={clsx(embedded ? 'space-y-[14px]' : 'space-y-5')}>
                                 <div>
                                     <label className={fieldLabelClassName}>{t('email.label.address')}</label>
                                     <div className="flex flex-wrap items-end gap-2" data-testid="auth-register-email-row">
@@ -984,7 +983,7 @@ export const AuthModal = ({
                         )}
 
                         {mode === 'reset' && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className={clsx(embedded ? 'space-y-[14px]' : 'space-y-4')}>
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className={clsx(embedded ? 'space-y-[14px]' : 'space-y-5')}>
                                 <div>
                                     <label className={fieldLabelClassName}>{t('email.label.address')}</label>
                                     <div className="flex flex-wrap items-end gap-2" data-testid="auth-reset-email-row">
@@ -1172,7 +1171,7 @@ export const AuthModal = ({
                     </div>
                 </div>
 
-                <div className={clsx('shrink-0', embedded ? 'border-t-0 bg-transparent px-0 py-4' : 'bg-transparent px-12 pb-8 pt-8 sm:px-16')}>
+                <div className={clsx('shrink-0', embedded ? 'border-t-0 bg-transparent px-0 py-4' : 'bg-transparent px-6 pb-6 pt-4 sm:px-10 sm:pb-8')}>
                     <button
                         type="submit"
                         disabled={isLoading}
@@ -1180,7 +1179,7 @@ export const AuthModal = ({
                             'cursor-pointer font-bold uppercase tracking-widest text-[#fcfbf9] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70',
                             embedded
                                 ? 'rounded-[10px] bg-[#433422] py-3 text-[12px] shadow-[0_8px_18px_rgba(67,52,34,0.16)] hover:bg-[#2b2114]'
-                                : 'w-full rounded-[5px] border border-[#c8a157]/70 bg-[#17390e] py-3 text-[17px] shadow-[0_12px_24px_rgba(27,43,12,0.25),0_0_0_1px_rgba(28,18,8,0.48)_inset] hover:bg-[#122f0a]',
+                                : 'w-full rounded-[5px] bg-[#433422] py-3 text-[13px] tracking-[0.2em] shadow-[0_8px_20px_rgba(67,52,34,0.18)] hover:bg-[#2b2114]',
                         )}
                         data-testid="auth-submit-button"
                     >
@@ -1192,11 +1191,7 @@ export const AuthModal = ({
                     {showModeSwitchFooter ? (
                         <div className="mt-5 flex flex-col items-center gap-4 text-sm font-serif italic">
                             {!embedded ? (
-                                <div className="flex w-[72%] items-center justify-center gap-2">
-                                    <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(127,91,48,0)_0%,rgba(127,91,48,0.48)_100%)]" />
-                                    <span className="h-2 w-2 rotate-45 bg-[#a77c45]" />
-                                    <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(127,91,48,0.48)_0%,rgba(127,91,48,0)_100%)]" />
-                                </div>
+                                <div className="mx-auto h-px w-12 bg-[#c0a080] opacity-35" />
                             ) : null}
                             <div className="flex items-center justify-center gap-4">
                                 <button

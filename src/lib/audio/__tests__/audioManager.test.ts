@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setAssetsBaseUrl, setCommonAudioAssetBaseOverride } from '../../../core/AssetLoader';
 
 const { howlInstances, readInstalledGamePackageAssetBlobUrl } = vi.hoisted(() => ({
-    howlInstances: [] as Array<{ options: Record<string, any>; play: ReturnType<typeof vi.fn> }>,
+    howlInstances: [] as Array<{
+        options: Record<string, any>;
+        play: ReturnType<typeof vi.fn>;
+        stop: ReturnType<typeof vi.fn>;
+        unload: ReturnType<typeof vi.fn>;
+    }>,
     readInstalledGamePackageAssetBlobUrl: vi.fn(),
 }));
 
@@ -16,14 +21,19 @@ vi.mock('howler', () => {
     class Howl {
         options: Record<string, unknown>;
         play = vi.fn(() => 1);
+        stop = vi.fn();
+        unload = vi.fn();
         constructor(options: Record<string, unknown>) {
             this.options = options;
-            howlInstances.push(this as unknown as { options: Record<string, any>; play: ReturnType<typeof vi.fn> });
+            howlInstances.push(this as unknown as {
+                options: Record<string, any>;
+                play: ReturnType<typeof vi.fn>;
+                stop: ReturnType<typeof vi.fn>;
+                unload: ReturnType<typeof vi.fn>;
+            });
         }
-        stop() {}
         fade() {}
         volume() {}
-        unload() {}
         state() {
             return 'loaded';
         }
@@ -47,6 +57,7 @@ import type { GameAudioConfig } from '../types';
 
 describe('AudioManager', () => {
     beforeEach(() => {
+        vi.useRealTimers();
         AudioManager.unloadAll();
         setAssetsBaseUrl('/assets');
         setCommonAudioAssetBaseOverride(undefined);
@@ -159,5 +170,51 @@ describe('AudioManager', () => {
         expect(howlInstances[1].options.src).toEqual([
             'https://assets.easyboardgame.top/official/common/audio/sfx/ui/compressed/click.ogg',
         ]);
+    });
+
+    it('BGM 使用手动循环而不是 Howler 内建 loop，避免 vendor 递归重播', () => {
+        const config: GameAudioConfig = {
+            bgm: [{ key: 'bgm-loop', name: 'Loop BGM', src: 'bgm-loop.mp3' }],
+        };
+
+        AudioManager.registerAll(config);
+        AudioManager.playBgm('bgm-loop');
+
+        expect(howlInstances).toHaveLength(1);
+        expect(howlInstances[0].options.loop).toBe(false);
+        expect(typeof howlInstances[0].options.onend).toBe('function');
+    });
+
+    it('BGM 异常快速结束时会熔断手动循环，避免无限重播', async () => {
+        vi.useFakeTimers();
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const config: GameAudioConfig = {
+            bgm: [{ key: 'bgm-broken', name: 'Broken BGM', src: 'bgm-broken.mp3' }],
+        };
+
+        AudioManager.registerAll(config);
+        AudioManager.playBgm('bgm-broken');
+
+        expect(howlInstances).toHaveLength(1);
+        const instance = howlInstances[0];
+        const onEnd = instance.options.onend as (() => void);
+
+        onEnd();
+        await vi.runAllTimersAsync();
+        expect(instance.play).toHaveBeenCalledTimes(2);
+        expect(instance.stop).not.toHaveBeenCalled();
+
+        onEnd();
+        await vi.runAllTimersAsync();
+        expect(instance.play).toHaveBeenCalledTimes(3);
+        expect(instance.stop).not.toHaveBeenCalled();
+
+        onEnd();
+        await vi.runAllTimersAsync();
+        expect(instance.stop).toHaveBeenCalledTimes(1);
+        expect(instance.unload).toHaveBeenCalledTimes(1);
+        expect(AudioManager.currentBgm).toBe(null);
+        consoleErrorSpy.mockRestore();
     });
 });

@@ -1,5 +1,7 @@
 # DiceThrone 树精被动动作按钮收敛证据
 
+> 2026-06-05 当前有效口径：本文只保留树精 `幼种树灵 / 木苗树灵 / 生命源泉` 被动动作按钮收敛与真实入口链的对象级/面板级证据，不代表树精整英雄或 Treant/Ninja 整批当前完成态。当前若要判断树精对象级残余、兄弟能力补审范围或整英雄口径，应以 `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/treant录入核对.md` 为准。
+
 ## 范围
 
 - 修复位置：`src/games/dicethrone/ui/PassiveAbilityPanel.tsx`
@@ -41,4 +43,3 @@
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精幼种树灵应通过真实骰子按钮完成重掷\01-seedling-reroll-before-select.png`
   - 掷骰阶段右侧只看到 `重掷` 入口。
   - 木苗与生命源泉主阶段动作没有占位。
-

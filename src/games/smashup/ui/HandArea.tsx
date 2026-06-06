@@ -323,7 +323,6 @@ const HandCard: React.FC<HandCardProps> = ({
                 ${isDiscardSelected ? 'ring-4 ring-green-500 shadow-[0_0_14px_rgba(34,197,94,0.4)]' : ''}
                 ${!isSelected && !isDiscardSelected && !isDisabled && !isOpponentView ? (isDiscardMode ? 'ring-2 ring-green-500/35' : 'hover:ring-2 hover:ring-green-200/85 hover:shadow-xl') : ''}
             `}>
-
                 {/* Detail View Button (Magnifying Glass) - Appears on hover, inside card top-right */}
                 {!isOpponentView && (
                     <button

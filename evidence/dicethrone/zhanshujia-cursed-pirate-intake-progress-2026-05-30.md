@@ -1,5 +1,16 @@
 # DiceThrone 战术家 / 咒缚海盗接入进度证据（2026-05-30）
 
+> 状态提示（2026-06-05）：这是战术家 / 咒缚海盗 intake 的阶段性进度证据，不是“两个英雄已完整完成”的证明，也不是当前对话的默认长期任务入口。若后续继续该专项，应以对象级审计和当轮验证目标重新收口。
+>
+> 2026-06-06 当前有效口径：本文是 2026-05-30 起这轮战术家 / 咒缚海盗 intake 的历史阶段进度证据，不代表当前 DiceThrone 整体、也不代表这两名新英雄已经完成对象级全面审计。它现在只能说明当时已完成哪些 L1/L2、资源链、代表性 E2E 和上传回查；当前若要判断这两名英雄的现行状态，应优先以对象级审计主文档与后续补审回写为准。
+
+## 2026-06-06 失效旧口径
+
+- “整文件最近一次全量回归仍为 4 passed” 已失效。当前权威整跑结果是 `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts -> 60 passed / 0 failed`，旧的 `2/3/4 passed` 只代表当时的阶段快照。
+- “L1/L2 部分接入” 已不适合作为这两名英雄的现状摘要。当前更真实的口径是：L1 已完成，多个面板对象、手牌、状态与防御/奖励骰链已提升到对象级或状态对象级 `L3`，但 `L4` 合法复用登记与最终 completion audit 仍未收口。
+- “normal/human 面未接入” 或 “human 面只录了名称与槽位” 已失效。当前 human 面 `9 / 9` 对象都已有独立 direct E2E 或对象级真实入口证据。
+- 本文后续“未覆盖风险”表里凡写到“真实入口/E2E 仍未覆盖”的条目，若与对象级审计主文档或最新回写冲突，一律以后者为准，不得把本页历史快照当作当前 blocker。
+
 ## 结论
 
 本轮完成两名新英雄的 L1 静态接入、英雄专属手牌 L1 逐卡录入、一批 L2 机制结算、真实入口双玩家 E2E、资源上传和远端 HEAD 回查，不是完整交付。战略防御、送你们去喂鱼、手牌选择、瞭望台弯刀/战利品/骷髅三分支、作战室奖励骰展示、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、战术家反制措施防御阶段入口、你还嫩了点防御阶段入口，以及深海潜行完整真实攻击入口都已补代表性真实入口交互截图链；其余复杂交互仍未逐项 L3/L4，因此不能宣称两个英雄“已完成”。
@@ -8,8 +19,8 @@
 
 | heroId | 数据录入 | 资源链 | 机制实现 | 审计 | E2E | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `zhanshujia` | `in_progress` | `passed` | `in_progress` | `in_progress` | `passed` | L1/L2 部分接入，真实入口与资源链已通过 |
-| `cursed_pirate` | `in_progress` | `passed` | `in_progress` | `in_progress` | `passed` | L1/L2 部分接入，海盗的一生当前素材咒缚面分支已补 |
+| `zhanshujia` | `passed` | `passed` | `partial` | `partial` | `passed` | L1 已完成；多个面板/手牌/防御链已到对象级或 family 级 `L3`，当前剩余是 `L4` 合法复用与 completion audit |
+| `cursed_pirate` | `passed` | `passed` | `partial` | `partial` | `passed` | L1 已完成；双面 `18 / 18` 面板对象已有直证，多个状态/手牌/防御链已到对象级 `L3`，当前剩余是双面总审计、状态家族 `L4` 与 completion audit |
 
 ## 已完成证据
 
@@ -22,7 +33,7 @@
 | 手牌 L1 录入 | `src/games/dicethrone/heroes/zhanshujia/cards.ts` 录入战术家 slot 17-31；`src/games/dicethrone/heroes/cursed_pirate/cards.ts` 录入咒缚海盗 slot 17-32；临时单卡裁图位于 `temp/dicethrone-intake/*/hand-cards/` |
 | 测试 | `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts`，当前 7 tests passed；`src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`，当前 45 tests passed；组合验证 2 files / 52 tests passed |
 | manifest | `node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN --id dicethrone` 已执行；`--validate --root public/assets/i18n/zh-CN --id dicethrone` 通过 |
-| 真实入口 E2E | `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 已覆盖选角、开局玩家板/提示板/HUD、手牌 atlas、战略防御玩家选择、送你们去喂鱼火药桶选择、手牌选择与弃牌落点、瞭望台弯刀查看手牌、战利品目标自选弃牌、骷髅随机弃牌、作战室奖励骰展示与战术优势落点、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、反制措施防御阶段入口、你还嫩了点防御阶段入口、深海潜行真实攻击入口，以及战争贩子 II / 战争贩子 II 勋章专门链 / 抽筋剥皮 / 死亡印记奖励骰代表链；其中特定深海潜行、赎金、啜呼、战争贩子 II、战争贩子 II 勋章专门链、抽筋剥皮与死亡印记单用例均为 1 passed，整文件最近一次全量回归仍为 4 passed |
+| 真实入口 E2E | `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 当前已进一步覆盖选角、开局玩家板/提示板/HUD、手牌 atlas、战术优势双阶段转移、紧缚 phase-exit 清理、战略转移 / 摇鼓运动 / 开拓战场 / 包夹侧翼基础版、军刀突刺 / 军刀突刺 II、地毯式轰炸 II、战略转移 II、摇鼓运动 II、开拓战场 II、两条防御响应链、human 面 `9 / 9`、咒缚面 `灵魂突刺 / 灵魂指令 / 死亡吐息`、多张手牌与多条奖励骰/状态链；最新整文件权威整跑已是 `60 passed / 0 failed`。本页其余较早的 `1 passed / 2 passed / 4 passed` 记录仅保留为阶段流水，不再代表当前总状态 |
 | 远端资源 | `npm run assets:upload` 已上传 24 个本轮 DiceThrone 新资源；战术家与咒缚海盗 10 个代表 URL 及 Common 2 个依赖 URL HEAD 均为 200 |
 
 ## 验证命令
@@ -161,3 +172,8 @@
 | --- | --- | --- | --- | --- |
 | `zhanshujia` | 17-31，共 15 张 | 33-34 | `card-unexpected` = 32 | `src/games/dicethrone/rule/战术家卡牌录入核对.md`、`cards.ts`、intake test |
 | `cursed_pirate` | 17-32，共 16 张 | 34 | `card-unexpected` = 33 | `src/games/dicethrone/rule/咒缚海盗卡牌录入核对.md`、`cards.ts`、intake test |
+
+## 当前阅读说明
+
+- 本文是战术家 / 咒缚海盗 intake 的历史阶段进度证据，不是当前这两名英雄的总审计出口。
+- 文中的 `passed / in_progress / L1/L2 部分接入` 只代表该阶段快照；当前若判断对象级残余或整批 completion audit，应回到对象级审计主文档与后续补审回写。

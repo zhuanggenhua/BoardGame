@@ -2830,6 +2830,115 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         ]);
     });
 
+    it('queued onTurnStart trigger 处理两张 borrowed cthulhu_complete_the_ritual 时，应逐实例入队并各自清场换基地', () => {
+        const baseCore = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_portal_room',
+                    minions: [makeMinion('ritual-host-a', 'sharks_mako', '0', 3)],
+                    ongoingActions: [{ uid: 'ritual-side-a', defId: 'cthulhu_altar', ownerId: '1' }],
+                }),
+                makeBase({
+                    defId: 'base_faceless_city',
+                    minions: [makeMinion('ritual-host-b', 'sharks_megalodon', '1', 5)],
+                    ongoingActions: [{ uid: 'ritual-side-b', defId: 'cthulhu_altar', ownerId: '1' }],
+                }),
+            ],
+            baseDeck: [
+                'base_the_nexus',
+                'base_monkey_lab',
+                'base_the_nexus',
+                'base_monkey_lab',
+                'base_the_nexus',
+                'base_monkey_lab',
+            ],
+            turnNumber: 51,
+        });
+        const withFirst = reduce(baseCore, {
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: {
+                cardUid: 'ritual-a',
+                defId: 'cthulhu_complete_the_ritual',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 0,
+            },
+            timestamp: 50,
+        } as any);
+        const core = reduce(withFirst, {
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: {
+                cardUid: 'ritual-b',
+                defId: 'cthulhu_complete_the_ritual',
+                ownerId: '1',
+                sourcePlayerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 1,
+            },
+            timestamp: 50,
+        } as any);
+
+        const queued = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 51,
+        }) as any;
+
+        expect(queued?.payload?.triggers).toHaveLength(2);
+        expect(queued?.payload?.triggers?.map((trigger: any) => trigger.sourceCardUid)).toEqual([
+            'ritual-a',
+            'ritual-b',
+        ]);
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }),
+            defaultTestRandom,
+            51,
+        );
+        const reactionPrompt = getInteractionsFromMS(prompted?.state ?? makeMatchState(core))[0] as any;
+        expect(reactionPrompt?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(reactionPrompt?.data?.options).toHaveLength(2);
+
+        const firstTriggerOption = reactionPrompt?.data?.options?.find(
+            (entry: any) => entry.value?.triggerId === queued.payload.triggers[0].id,
+        );
+        expect(firstTriggerOption).toBeDefined();
+
+        const firstResolved = runCommand(
+            prompted!.state,
+            {
+                type: 'SYS_INTERACTION_RESPOND' as any,
+                playerId: '0',
+                payload: { optionId: firstTriggerOption.id },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const ritualBottoms = firstResolved.events.filter((event: any) =>
+            event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM
+            && event.payload?.defId === 'cthulhu_complete_the_ritual',
+        );
+        expect(ritualBottoms.map((event: any) => event.payload.cardUid)).toEqual(['ritual-a', 'ritual-b']);
+        const replacedBases = firstResolved.events.filter((event: any) => event.type === SU_EVENTS.BASE_REPLACED);
+        expect(replacedBases.map((event: any) => event.payload.baseIndex)).toEqual([0, 1]);
+        expect(firstResolved.finalState.core.bases[0]?.defId).toBe('base_the_nexus');
+        expect(firstResolved.finalState.core.bases[1]?.defId).toBe('base_monkey_lab');
+        expect(firstResolved.finalState.core.bases[0]?.minions ?? []).toEqual([]);
+        expect(firstResolved.finalState.core.bases[1]?.minions ?? []).toEqual([]);
+    });
+
     it('queued afterScoring trigger 在对手计分时仍应把 mermaids_shipwreck_cove 的选择权交给控制者', () => {
         const core = makeState({
             turnOrder: ['0', '1'],

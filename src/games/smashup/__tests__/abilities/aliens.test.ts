@@ -508,6 +508,58 @@ describe('外星人派系能力', () => {
         getSimpleChoicePrompt(matchState, 'alien_crop_circles');
     });
 
+    it('alien_crop_circles: 返回随从事件应保留行动玩家 sourcePlayerId', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'alien_crop_circles', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'b1',
+                minions: [
+                    makeMinion('m1', 'test', '0', 3),
+                    makeMinion('m2', 'test', '1', 2),
+                ],
+            })],
+        });
+
+        const played = execPlayAction(state, '0', 'a1');
+        const resolved = respondToPrompt(
+            played.matchState,
+            getPromptOption(
+                getSimpleChoicePrompt(played.matchState, 'alien_crop_circles'),
+                option => option.value?.baseIndex === 0,
+                'crop circles target base',
+            ).id,
+            '0',
+            defaultTestRandom,
+        );
+
+        const returnedEvents = resolved.events.filter(event => event.type === SU_EVENTS.MINION_RETURNED) as any[];
+        expect(returnedEvents).toHaveLength(2);
+        expect(returnedEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    minionUid: 'm1',
+                    toPlayerId: '0',
+                    sourcePlayerId: '0',
+                    reason: 'alien_crop_circles',
+                }),
+            }),
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    minionUid: 'm2',
+                    toPlayerId: '1',
+                    sourcePlayerId: '0',
+                    reason: 'alien_crop_circles',
+                }),
+            }),
+        ]));
+        expect(resolved.finalState.core.bases[0].minions).toHaveLength(0);
+    });
+
     it('alien_scout: 打出时无 onPlay 交互（能力为 afterScoring 触发）', () => {
         const state = makeState({
             players: {

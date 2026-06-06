@@ -1,8 +1,10 @@
-# 审计 100% 完成报告
+# 历史审计阶段性完成快照（原“审计 100% 完成报告”）
+
+> 2026-06-06 当前有效口径：本文是 2026-03-04 那一轮“误删/恢复/POD 相关审计”的历史阶段性快照，不是当前 DiceThrone、也不是四位新英雄整批的完成证明。标题保留原语义仅用于追溯历史上下文；现行阅读时必须把它理解成“当时那一批误删恢复任务的阶段性总结”，不能外推为 Treant / Ninja / Gunslinger / Samurai 或 DiceThrone 整体当前 `100% 完成`。若要判断新英雄补审现状，应以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md`、`evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与对应单英雄主审计文档为准。
 
 **完成日期**: 2026-03-04  
-**审计状态**: ✅ 100% 完成  
-**修复状态**: ✅ 100% 完成
+**审计状态**: 历史阶段任务 100% 完成
+**修复状态**: 历史阶段任务 100% 完成
 
 ---
 
@@ -82,7 +84,7 @@
 
 ---
 
-## ✅ 修复完成情况
+## ✅ 当轮修复完成情况
 
 ### 已修复的问题
 
@@ -123,7 +125,7 @@ grep -n "attack_already_initiated" src/games/dicethrone/domain/commandValidation
 
 ### 待完成的工作
 
-#### 必须完成
+#### 当轮后续待办
 
 1. **[ ] 添加测试用例**
    - 文件: `src/games/dicethrone/__tests__/commandValidation.test.ts`
@@ -264,11 +266,11 @@ grep -n "attack_already_initiated" src/games/dicethrone/domain/commandValidation
 
 ---
 
-## 🎯 最终结论
+## 🎯 历史快照结论
 
 ### 审计完成度
 
-✅ **100% 完成**
+✅ **该历史阶段任务 100% 完成**
 
 **审计范围**:
 - P0 文件: 26/26 (100%)
@@ -313,12 +315,12 @@ grep -n "attack_already_initiated" src/games/dicethrone/domain/commandValidation
 
 **审计人员**: AI Assistant  
 **审计日期**: 2026-03-04  
-**审计状态**: ✅ 100% 完成  
-**修复状态**: ✅ 100% 完成
+**审计状态**: 历史阶段任务 100% 完成
+**修复状态**: 历史阶段任务 100% 完成
 
-**下一步**: 添加测试用例并运行测试验证
+**下一步**: 仅代表当时阶段任务的后续动作，不代表当前 DiceThrone 新英雄补审出口
 
 ---
 
-**🎉 审计完成！所有问题已修复！**
+**注意**：本文只能作为 2026-03-04 那轮历史任务的完成快照，不能继续充当当前 DiceThrone 总体或新英雄整批“100% 完成”的证明。
 

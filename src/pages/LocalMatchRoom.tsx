@@ -1,16 +1,16 @@
-import { useMemo, useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useMemo, useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getGameImplementation } from '../games/registry';
 import { GameModeProvider } from '../contexts/GameModeContext';
 import { getGameById } from '../config/games.config';
 import { getGamePageDataAttributes, syncGamePageDocumentAttributes } from '../games/mobileSupport';
-import { GameHUD } from '../components/game/framework/widgets/GameHUD';
+import { CriticalImageGate } from '../components/game/framework/CriticalImageGate';
+import { MobileBoardShell } from '../components/game/framework/MobileBoardShell';
 import { LoadingScreen } from '../components/system/LoadingScreen';
 import { GameNamespaceLoadError } from '../components/system/GameNamespaceLoadError';
 import { usePerformanceMonitor } from '../hooks/ui/usePerformanceMonitor';
-import { CriticalImageGate, MobileBoardShell } from '../components/game/framework';
-import { LocalGameProvider, BoardBridge } from '../engine/transport/react';
+import { LocalGameProvider, BoardBridge } from '../engine/transport/localReact';
 import type { GameBoardProps } from '../engine/transport/protocol';
 import type { ComponentType } from 'react';
 import { useToast } from '../contexts/ToastContext';
@@ -21,15 +21,18 @@ import {
     resolveLocalMatchPlayerCount,
     resolveSetupSelectionsFromSearchParams,
     resolveSeatControllersFromSearchParams,
-} from '../engine/ai';
-import { GameCursorProvider } from '../core/cursor';
+} from '../engine/ai/seatControllers';
+import { GameCursorProvider } from '../core/cursor/GameCursorProvider';
 import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 import { useGameImplementationReady } from '../hooks/useGameImplementationReady';
 import { createLocalMatchSeed, ensureLocalMatchSeedSearchParams } from '../engine/transport/localSession';
-import { SmashUpOverlayProvider } from '../games/smashup/ui/SmashUpOverlayContext';
+import { GamePageRuntimeProvider } from '../games/pageRuntimeAdapter';
 
 // 教程系统正常拦截，不弹 toast
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
+const LocalGameHUD = lazy(() =>
+    import('../components/game/framework/widgets/GameHUD').then((module) => ({ default: module.GameHUD })),
+);
 
 export const LocalMatchRoom = () => {
     usePerformanceMonitor();
@@ -170,13 +173,15 @@ export const LocalMatchRoom = () => {
 
     return (
         <div className="relative w-full game-page-viewport bg-black overflow-hidden font-sans" {...gamePageDataAttributes}>
-            <SmashUpOverlayProvider>
-                <GameHUD
-                    mode="local"
-                    gameId={gameId}
-                    localModeLabel={hasAiSeat ? t('actions.playAi') : t('actions.singleDevice')}
-                    seatControllers={seatControllers}
-                />
+            <GamePageRuntimeProvider gameId={gameId}>
+                <Suspense fallback={null}>
+                    <LocalGameHUD
+                        mode="local"
+                        gameId={gameId}
+                        localModeLabel={hasAiSeat ? t('actions.playAi') : t('actions.singleDevice')}
+                        seatControllers={seatControllers}
+                    />
+                </Suspense>
                 <MobileBoardShell battlefieldZoomMode={gameConfig?.mobileBattlefieldZoom}>
                     <div
                         className="w-full h-full"
@@ -212,7 +217,7 @@ export const LocalMatchRoom = () => {
                         </GameModeProvider>
                     </div>
                 </MobileBoardShell>
-            </SmashUpOverlayProvider>
+            </GamePageRuntimeProvider>
         </div>
     );
 };

@@ -134,22 +134,31 @@ function innsmouthTheDeepOnes(ctx: AbilityContext): AbilityResult {
 /** 新人 onPlay：所有玩家将弃牌堆中的所有随从洗回牌堆 */
 function innsmouthNewAcolytes(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
+    const workingDecks = new Map<PlayerId, typeof ctx.state.players[PlayerId]['deck']>();
     for (const pid of ctx.state.turnOrder) {
         const player = ctx.state.players[pid];
         const minionsInDiscard = player.discard.filter(c => c.type === 'minion');
         if (minionsInDiscard.length === 0) continue;
-        // 合并牌库 + 弃牌堆随从，洗牌
-        const newDeckCards = [...player.deck, ...minionsInDiscard];
-        const shuffled = ctx.random.shuffle([...newDeckCards]);
-        const evt: DeckReorderedEvent = {
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: {
-                playerId: pid,
-                deckUids: shuffled.map(c => c.uid),
-            },
-            timestamp: ctx.now,
-        };
-        events.push(evt);
+        const cardsByOwner = new Map<PlayerId, typeof minionsInDiscard>();
+        for (const card of minionsInDiscard) {
+            const ownerId = ctx.state.players[card.owner] ? card.owner : pid;
+            cardsByOwner.set(ownerId, [...(cardsByOwner.get(ownerId) ?? []), card]);
+        }
+        for (const [ownerId, ownerCards] of cardsByOwner) {
+            const ownerDeck = workingDecks.get(ownerId) ?? ctx.state.players[ownerId]?.deck ?? [];
+            const shuffled = ctx.random.shuffle([...ownerDeck, ...ownerCards]);
+            workingDecks.set(ownerId, shuffled);
+            const evt: DeckReorderedEvent = {
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ownerId,
+                    deckUids: shuffled.map(c => c.uid),
+                    ...(ownerId !== pid ? { sourcePlayerId: pid } : {}),
+                },
+                timestamp: ctx.now,
+            };
+            events.push(evt);
+        }
     }
     return { events };
 }

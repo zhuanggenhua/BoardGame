@@ -6,6 +6,7 @@
 import type { DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
+import { STATUS_IDS } from './ids';
 import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 
@@ -166,11 +167,29 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     state,
     event
 ) => {
-    const { targetId, amount, actualDamage, sourceAbilityId, bypassShields } = event.payload;
+    const { targetId, amount, actualDamage, sourceAbilityId, bypassShields, damageScope } = event.payload;
     const target = state.players[targetId];
 
     if (!target) {
         return state;
+    }
+
+    const currentAttackAttackerId = state.pendingAttack?.attackerId;
+    const sourcePlayerId = event.payload.sourcePlayerId ?? currentAttackAttackerId;
+    const sourcePlayer = sourcePlayerId ? state.players[sourcePlayerId] : undefined;
+    const parleyStacks = sourcePlayer?.statusEffects?.[STATUS_IDS.PARLEY] ?? 0;
+    const isCurrentAttackDamage = damageScope === 'attack'
+        && Boolean(currentAttackAttackerId)
+        && sourcePlayerId === currentAttackAttackerId
+        && targetId === state.pendingAttack?.defenderId;
+
+    if (isCurrentAttackDamage && parleyStacks > 0) {
+        return {
+            ...state,
+            lastEffectSourceByPlayerId: sourceAbilityId
+                ? { ...(state.lastEffectSourceByPlayerId || {}), [targetId]: sourceAbilityId }
+                : state.lastEffectSourceByPlayerId,
+        };
     }
 
     // 使用 amount（原始伤害）而不是 actualDamage 来计算护盾消耗

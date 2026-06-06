@@ -337,6 +337,53 @@ describe('Itty Critters 代表性玩法行为', () => {
         });
     });
 
+    it('Evolution 在 borrowed setaside Rainboroc 上仍应按当前控制者提供泰坦进场选项，并保留真实 owner', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('evo', 'itty_critters_evolution', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_itty_city', [makeMinion('source', 'itty_critters_leafaroo', '0', 2)])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+            titans: [{
+                uid: 'borrowed-rain',
+                defId: 'itty_critters_rainboroc',
+                faction: 'itty_critters',
+                ownerId: '1',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            }],
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'evo', targetBaseIndex: 0, targetMinionUid: 'source' },
+        } as any);
+        expect(play.success).toBe(true);
+
+        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+            const rainboroc = getPromptOption(prompt, option => option.value?.titanUid === 'borrowed-rain', 'Evolution borrowed Rainboroc option');
+            return { optionId: rainboroc.id };
+        });
+
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'source')).toBe(false);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'borrowed-rain')).toMatchObject({
+            ownerId: '1',
+            controllerId: '0',
+            location: {
+                zone: 'base',
+                baseIndex: 0,
+            },
+        });
+    });
+
     it('Critter Cube 将任意玩家拥有的在场力量≤3随从洗入当前玩家牌库', () => {
         const core = {
             players: {

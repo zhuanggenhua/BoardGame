@@ -1,5 +1,7 @@
 # DiceThrone 枪手 / 武士手牌预览图集审计（2026-04-04）
 
+> 2026-06-05 当前有效口径：本文只保留枪手 / 武士手牌预览图集接线的专项审计结论，不代表枪手整英雄、武士整英雄或新英雄整批当前完成态。当前若要判断整英雄残余、兄弟能力补审范围或整批口径，应以 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-samurai-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 与 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
+
 ## 审计范围
 
 - 适用游戏：`dicethrone`

@@ -17,6 +17,7 @@ import type { PlayerId } from '../../../../engine/types';
 import { ModalStackProvider, useModalStack } from '../../../../contexts/ModalStackContext';
 import { ModalStackRoot } from '../../../../components/system/ModalStackRoot';
 import { useSyncedModalStackEntry } from '../../../../hooks/ui/useSyncedModalStackEntry';
+import { ChoiceModal } from '../ChoiceModal';
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
@@ -35,6 +36,10 @@ vi.mock('react-i18next', () => ({
                 'common.enemy': '敌方',
                 'common.cancel': '取消',
                 'common.confirm': '确认',
+                'choices.title': '选择',
+                'choices.cursedCoinGain.title': '是否获得诅咒金币？',
+                'choices.cursedCoinGain.accept': '获得诅咒金币',
+                'choices.cursedCoinGain.decline': '不获得',
             };
             return translations[key] || key;
         },
@@ -1134,5 +1139,65 @@ describe('useSyncedModalStackEntry', () => {
 
         expect(screen.getByTestId('guard-modal-label')).toHaveTextContent('变更内容');
         expect(onStackChange).toHaveBeenCalledTimes(3);
+    });
+
+    it('simple-choice modal 应显示判决指令的标题和两个诅咒金币选项', async () => {
+        const onResolve = vi.fn();
+
+        const ChoiceModalHarness = () => {
+            const entry = React.useMemo(() => ({
+                owner: {
+                    system: 'interaction' as const,
+                    id: 'choice-human-verdict-command',
+                    gameId: 'dicethrone',
+                    namespace: 'dicethrone',
+                    blocksProgress: true,
+                },
+                closeOnBackdrop: false,
+                closeOnEsc: false,
+                onClose: undefined,
+                render: () => (
+                    <ChoiceModal
+                        choice={{
+                            title: 'choices.cursedCoinGain.title',
+                            options: [
+                                { id: 'option-0', label: 'choices.cursedCoinGain.accept', value: 1 },
+                                { id: 'option-1', label: 'choices.cursedCoinGain.decline', value: 0 },
+                            ],
+                        }}
+                        canResolve={true}
+                        onResolve={onResolve}
+                    />
+                ),
+            }), []);
+
+            useSyncedModalStackEntry({
+                enabled: true,
+                entryId: 'dicethrone_choice',
+                entry,
+            });
+
+            return null;
+        };
+
+        render(
+            <MemoryRouter>
+                <ModalStackProvider>
+                    <ChoiceModalHarness />
+                    <ModalStackRoot />
+                </ModalStackProvider>
+            </MemoryRouter>,
+        );
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(screen.getByText('是否获得诅咒金币？')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '获得诅咒金币' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '不获得' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: '获得诅咒金币' }));
+        expect(onResolve).toHaveBeenCalledWith('option-0');
     });
 });

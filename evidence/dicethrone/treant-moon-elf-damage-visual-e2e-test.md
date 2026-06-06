@@ -1,5 +1,7 @@
 # 树精 vs 月精灵伤害动效 E2E 证据
 
+> 2026-06-05 当前有效口径：本文只保留树精 `shattering-fist-5` 对月精灵 `elusive-step` 这条双边伤害动效链的对象级/单链路证据，不代表树精整英雄、月精灵整英雄或伤害表现系统全量当前完成态。当前若要判断树精对象级残余、Treant/Ninja 整批口径或更广视觉链路，应以 `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与对应专项 evidence 为准。
+
 日期：2026-05-17
 
 范围：

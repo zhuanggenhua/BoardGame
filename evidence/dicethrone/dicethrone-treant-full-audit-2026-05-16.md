@@ -1,8 +1,14 @@
 # DiceThrone Treant 全面审计 2026-05-16
 
+> 2026-06-05 当前有效口径：本文仍是 Treant 单英雄主审计入口；其中对象级 E2E/专项文档只能作为子证据，不得反向外推新英雄整批结论。当前若要判断 Treant 对象级残余或新英雄整批发布口径，应以 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md`、`evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 与 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
+>
 > 2026-05-19 范围澄清：本文件只覆盖 `treant` 单英雄补审。当前整批“新英雄补审”总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解；总范围与跨英雄汇总口径请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 和 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
 >
-> 2026-05-19 本轮复核：按“四个新英雄”总范围重新回看后，Treant 这份单英雄文档当前没有新增实现级 finding。现有有效口径仍是“主效果 L2 已收敛、15 张专属卡逐卡真实手牌入口 L3 已补、部分组合分支 L4 已补，但不能外推成全分支 L4 完成”。本轮没有再发现超出本文既有残余范围的新 bug。
+> 2026-05-19 本轮复核：按“四个新英雄”总范围重新回看后，Treant 这份单英雄文档当前没有新增实现级 finding。这里的旧总述若被理解成“对象级仍大量停在 L2/L3、关键基础/升级对象还没补齐”，对 2026-06-05 当前状态已不成立：对象级 L3 已继续补到基础技能、升级技能、关键防御链与被动/upkeep/终极收口；本文当前更适合作为单英雄历史审计轨迹。这里说的对象级前推，只表示对象级主 bug 已明显收敛，**不表示 Treant 整英雄或四英雄整批已经完成**；实时残余应改读为批次级 `L4` 判等矩阵、旧文档统一回写与治理口径统一，而不是对象级主链路仍待补。
+>
+> 2026-06-04 失效回写：本文关于 `tend-care-2 / nature-touch-2 / vengeful-vines-2 / wild-growth-2` 及对应升级卡 `upgrade-tend-care-2 / upgrade-nature-touch-2 / upgrade-vengeful-vines-2 / upgrade-wild-growth-2` 的旧“主效果与描述对齐”口径，已经不再适合作为最新真相源。当前这些升级技能的最新结论，应以 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的 2026-06-04 补记和 `src/games/dicethrone/rule/treant录入核对.md` 最新矩阵为准；本文保留的是单英雄历史审计轨迹。
+>
+> 2026-06-05 失效回写：本文关于 `rooted-2 / shattering-fist-2 / shattering-fist-3` 及对应升级卡 `upgrade-rooted-2 / upgrade-shattering-fist-2 / upgrade-shattering-fist-3` 的旧“已补升级入口 / L2 已测”口径，也不应再被当作当前最新状态。按 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的 2026-06-05 补记，这三项的技能本体对象级 L3 已补齐；但这同样不表示 Treant 单英雄或四英雄整批已经完成，当前残余仍只应收敛为批次 L4 与旧文档统一收口。
 
 ## 范围
 
@@ -31,7 +37,9 @@
 - 旧文档里 `Rooted` 选择值只靠数字形状猜语义的口径也已失效：`requiresCultivate` / `requiresLifeSap` 现在会一起编码进 choice value，handler 还会按当前 `pendingBonusDiceSettlement.dice` 还原真实 `双树叶/双树灵` 需求；伪造 `value=0`、`10000`、`20000`、`10123` 这类“保持当前树灵/跳过生命源泉目标/缺少必需生命源泉标记”的值不能再绕过真实分支。
 - 更准确的当前口径是：**玩法实现与升级卡描述已明显收敛；共享 token 合同、玩家板槽位合同、`rooted` 防御链、Treant 15 张专属卡逐卡真实手牌入口均已补到 L3；本轮继续补了四批领域 L4 分支，并额外补上 `CHOICE_RESOLVED` 通用 token/status 增量的有限整数门禁、Treant 选择处理器 `sourceAbilityId` 归属门禁与玩家归属门禁、共享 `card-cultivate` 入口按来源绑定 `1/2/3/4` 档位路由门禁，以及 DiceThrone 通用 `choice anchor` 门禁，修掉 `Downpour` 部分升级漏洞、神性树灵同回合重复花费漏洞、神性树灵错误玩家/数量/时机可绕过执行层漏洞、错误玩家可代替跳过 token 响应漏洞、幼种重掷非法目标仍扣 token 漏洞、树灵主动动作 `actionIndex` 字符串索引绕过漏洞、字符串/NaN `choice value` 可污染通用 token/status 结算漏洞、Ninja/Gunslinger followup handler 可被无锚点 `SYS_INTERACTION_RESOLVED` 直接喂入的漏洞、Monk `lotus-palm` 可被无锚点 forged `CHOICE_RESOLVED` 白扣太极的漏洞、Monk `meditation-3` 无 `customId` token 选择可被无锚点 forged `CHOICE_RESOLVED` 白送 token 的漏洞、仅有 `activatingAbilityId` 但压根没有真实 `CHOICE_REQUESTED` 时仍可 forged 落地的漏洞、交互取消/超时/强制解锁后旧 choice 锚点残留可被复用的漏洞、同一批事件出现多个阻塞 choice 时锚点漂到队列尾导致“当前交互/当前锚点”脱钩的漏洞、旧 compare-roll 特写的 `SYS_INTERACTION_CONFIRM` 可误确认新的当前 compare-roll 交互的漏洞、旧 simple-choice/compare-roll 特写的 `SYS_INTERACTION_RESPOND` 可误响应新的当前交互的漏洞、Pyromancer `pyro-spend-cp-for-fm` 与 Monk `lotus-palm` 合法选择在有锚点时仍须保持可用，以及 `initHeroState` 直接复用共享 `abilities/passiveAbilities` 定义导致升级态污染后续 HeroState 的别名漏洞；但这仍不等于所有技能/token/卡牌分支都达到全分支 L4。**
 
-## 2026-05-17 当前快照
+## 2026-05-17 历史快照
+
+> 本节只记录 2026-05-17 当轮看到的单英雄静态盘点结果，不代表 2026-06-05 当前最新审计层级。Treant 当前实时口径应以上文失效回写、`src/games/dicethrone/rule/treant录入核对.md` 与 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的批次级 `L4` 判等矩阵为准。
 
 - 本轮按 **8 个基础/被动/终极技能 + 5 个 token/状态 + 15 张专属卡 = 28 个对象** 重排。
 - 当前结果不是“到处都错”，也不是“只剩两个点”。
@@ -68,14 +76,14 @@
 
 | 对象 | 当前判定 | 直接证据 |
 |---|---|---|
-| `shattering-fist` | 主效果对齐 | 图片 `5/6/7 伤害 + 可弃1树灵施加刺藤`；`abilities.ts` 现为 `treant-shattering-fist-choice + damage 5/6/7`；L2 已测。 |
-| `tend-care` | 主效果对齐 | 图片 `抽1 + 养成3 + 生命源泉目标 + 刺藤目标`；`customActions/treant.ts` 已做组合选择；L2 已测。 |
-| `vengeful-vines` | 主效果对齐 | 图片、locale、代码一致为 `小顺子 => 刺藤 + 7伤害`。 |
-| `nature-touch` | 主效果对齐 | 图片 `养成2 + 5不可防御 + 每有1树灵 +1`；当前已按养成后树灵总数加伤；L2 已测。 |
-| `quiet-cultivation` | 主效果对齐 | 图片 `维持阶段养成1树灵`；当前已改成 `treant-quiet-cultivation` 正式养成选择，不再是固定幼种；L2 已测。 |
+| `shattering-fist` | 主效果对齐，基础版对象级 direct L3 已补 | 图片 `5/6/7 伤害 + 可弃1树灵施加刺藤`；`abilities.ts` 现为 `treant-shattering-fist-choice + damage 5/6/7`；L2 已测。L3：`e2e/dicethrone/dicethrone-treant-upgrade-direct-closeout.e2e.ts` 已跑通“破碎之拳基础版应从真实槽位收口到移除 1 幼种树灵、施加 1 刺藤并造成 7 点伤害”，关键截图见 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\破碎之拳基础版应从真实槽位收口到移除-1-幼种树灵、施加-1-刺藤并造成-7-点伤害\treant-shattering-fist-base-before-click.png` / `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\破碎之拳基础版应从真实槽位收口到移除-1-幼种树灵、施加-1-刺藤并造成-7-点伤害\treant-shattering-fist-base-after-closeout.png`。 |
+| `tend-care` | 主效果对齐，基础版对象级 direct L3 已补 | 图片 `抽1 + 养成3 + 生命源泉目标 + 刺藤目标`；`customActions/treant.ts` 已做组合选择；L2 已测。L3：`e2e/dicethrone/dicethrone-treant-upgrade-direct-closeout.e2e.ts` 已跑通“细心呵护基础版应从真实槽位收口到抽 1、养成 3 树灵、自己获得生命源泉并对手获得刺藤”，关键截图见 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\细心呵护基础版应从真实槽位收口到抽-1、养成-3-树灵、自己获得生命源泉并对手获得刺藤\treant-tend-care-base-before-click.png` / `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\细心呵护基础版应从真实槽位收口到抽-1、养成-3-树灵、自己获得生命源泉并对手获得刺藤\treant-tend-care-base-after-closeout.png`。 |
+| `vengeful-vines` | 主效果对齐，基础版对象级 direct L3 已补 | 图片、locale、代码一致为 `小顺子 => 刺藤 + 7伤害`。L3：`e2e/dicethrone/dicethrone-treant-upgrade-direct-closeout.e2e.ts` 已跑通“复仇枝蔓基础版应从真实槽位收口到 7 点伤害加 1 刺藤”，关键截图见 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\复仇枝蔓基础版应从真实槽位收口到-7-点伤害加-1-刺藤\treant-vengeful-vines-base-before-click.png` / `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\复仇枝蔓基础版应从真实槽位收口到-7-点伤害加-1-刺藤\treant-vengeful-vines-base-after-closeout.png`。 |
+| `nature-touch` | 主效果对齐，基础版对象级 direct L3 已补 | 图片 `养成2 + 5不可防御 + 每有1树灵 +1`；当前已按养成后树灵总数加伤；L2 已测。L3：`e2e/dicethrone/dicethrone-treant-upgrade-direct-closeout.e2e.ts` 已跑通“自然之触基础版应从真实槽位收口到养成后追加伤害并直接造成 7 点不可防御伤害”，关键截图见 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\自然之触基础版应从真实槽位收口到养成后追加伤害并直接造成-7-点不可防御伤害\treant-nature-touch-base-before-click.png` / `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\自然之触基础版应从真实槽位收口到养成后追加伤害并直接造成-7-点不可防御伤害\treant-nature-touch-base-after-closeout.png`。 |
+| `quiet-cultivation` | 主效果对齐 | 图片 `维持阶段养成1树灵`；当前已改成 `treant-quiet-cultivation` 正式养成选择，不再是固定幼种；L2 已测。2026-06-05 已补真实 upkeep 进入对象级 L3，`e2e/dicethrone/dicethrone-treant-upgrade-direct-closeout.e2e.ts` 已跑通“静默耕耘应在真实 upkeep 选择养成后收口到木苗 1 并继续推进到收入阶段”。 |
 | `wild-growth` | 主效果对齐 | 图片 `2伤害 + 至多移除2树灵各+4 + 弃生命源泉变不可防御`；当前实现与图片一致；基础版与升级版均已有直接行为测试。 |
 | `rooted` | 主效果对齐 | 图片 `防止 1×树枝 + 1×树灵 伤害；双树叶养成1；双树灵给生命源泉`；当前 3 骰/4 骰、防伤、双树叶、双树灵都已对齐；L2 已测。 |
-| `forest-awakens` | 主效果对齐 | 图片 `自己和1名队友得生命源泉 + 养成5 + 刺藤 + 10伤害`；当前实现对齐；L2 已测。 |
+| `forest-awakens` | 主效果对齐 | 图片 `自己和1名队友得生命源泉 + 养成5 + 刺藤 + 10伤害`；当前实现对齐；L2 已测。2026-06-05 已补对象级 direct closeout L3，`e2e/dicethrone/dicethrone-treant-upgrade-direct-closeout.e2e.ts` 已跑通“森林觉醒应从真实终极槽位收口到自己获得生命源泉、养成 5、施加刺藤并造成 10 点伤害”。 |
 
 ### Token / 状态（5）
 
@@ -92,19 +100,19 @@
 | 对象 | 当前判定 | 直接证据 |
 |---|---|---|
 | `treant-card-trample` | 主效果对齐 | 当前已改成 `5 骰、每个树枝 +1、至少 +3 再给刺藤`；L2 已测。 |
-| `upgrade-tend-care-2` | 主效果与描述对齐 | 目标能力 `TEND_CARE_2` 已对齐；升级卡描述已按卡图展开为 `抽1 + 养成4 + 生命源泉目标 + 刺藤目标`；真实手牌升级 L3 已补。 |
-| `upgrade-rooted-2` | 主效果与描述对齐 | 目标能力 `ROOTED_2` 已对齐；升级卡描述已按卡图展开为 `防御掷4骰 + 防止树枝/树灵伤害 + 双树叶/双树灵分支`；真实手牌升级 L3 已补。 |
+| `upgrade-tend-care-2` | 主效果与描述对齐 | 目标能力 `TEND_CARE_2` 已对齐；升级卡描述已按卡图展开为 `抽1 + 养成4 + 生命源泉目标 + 刺藤目标`。按升级技能重审文档的 2026-06-04/2026-06-05 补记，目标升级技能对象级 L3/L4 已补到当前可用口径；本文这行仅保留升级卡接线与历史单英雄轨迹，当前残余已转为批次级 L4 治理与旧文档统一收口。 |
+| `upgrade-rooted-2` | 主效果与描述对齐 | 目标能力 `ROOTED_2` 已对齐；升级卡描述已按卡图展开为 `防御掷4骰 + 防止树枝/树灵伤害 + 双树叶/双树灵分支`。按升级技能重审文档的 2026-06-05 补记，目标升级技能对象级真实防御 L3 与关键防御收口 L4 已补齐；本文不再把它视为“只到升级入口/L2 已测”的当前状态。 |
 | `treant-card-drink-deep` | 主效果对齐 | 当前已改成 `选择1名玩家获得生命源泉`；L2 已测。 |
-| `upgrade-shattering-fist-3` | 主效果对齐 | 描述已按图片展开，目标能力也已对齐；L2 已测。 |
+| `upgrade-shattering-fist-3` | 主效果对齐 | 描述已按图片展开，目标能力也已对齐。按升级技能重审文档的 2026-06-05 补记，技能本体对象级 direct closeout L3 与关键攻击快照 L4 已补齐；本文这行只保留历史单英雄矩阵，不再代表当前对象级缺口。 |
 | `treant-card-harvest` | 主效果对齐 | 当前已改成 `移除至多3树灵得CP；至少移除2时至多2名玩家得生命源泉`；L2 已测。 |
 | `treant-card-cultivate` | 主效果对齐 | 当前已改成正式 `养成3树灵`，不再固定幼种；L2 已测。 |
 | `treant-card-downpour` | 主效果对齐 | 当前已改成 `养成所有现有树灵各一次（任意顺序）`；本轮修掉“可只升级部分现有树灵”的错误枚举；L2/L4 分支已测。 |
-| `upgrade-nature-touch-2` | 主效果与描述对齐 | 目标能力 `NATURE_TOUCH_2` 已对齐；升级卡描述已按卡图展开为 `养成2 + 6不可防御 + 每树灵+1`；真实手牌升级 L3 已补。 |
+| `upgrade-nature-touch-2` | 主效果与描述对齐 | 目标能力 `NATURE_TOUCH_2` 已对齐；升级卡描述已按卡图展开为 `养成2 + 6不可防御 + 每树灵+1`。按升级技能重审文档的 2026-06-04/2026-06-05 补记，目标升级技能对象级 L3/L4 已补到当前可用口径；当前残余已转为批次级 L4 治理与旧文档统一收口。 |
 | `treant-card-soulfire` | 主效果对齐 | 当前已改成 `每个树枝=对所有对手1附属伤害；每个树叶=获得1生命源泉；每个树灵=养成1树灵`，共享养成入口现按实际树灵骰面数量消费 `1/2/3` 档；L2/L4 已测。 |
 | `treant-card-mother-tree` | 主效果对齐 | 当前已改成 `投1骰；树灵=>养成4；否则抽1`；L2 已测。 |
-| `upgrade-vengeful-vines-2` | 主效果与描述对齐 | 目标能力已对齐；升级卡描述已按卡图展开为 `小顺子 + 刺藤 + 8伤害`；真实手牌升级 L3 已补。 |
-| `upgrade-wild-growth-2` | 主效果与描述对齐 | 目标能力已对齐；升级卡描述已按卡图展开为 `4伤害 + 至多2树灵各+4 + 弃生命源泉不可防御`；真实手牌升级 L3 已补。 |
-| `upgrade-shattering-fist-2` | 主效果对齐 | 描述已按图片展开；`sourceAtlasIndex` 已修到 `30`；L2 已测。 |
+| `upgrade-vengeful-vines-2` | 主效果与描述对齐 | 目标能力已对齐；升级卡描述已按卡图展开为 `小顺子 + 刺藤 + 8伤害`。按升级技能重审文档的 2026-06-04/2026-06-05 补记，目标升级技能对象级 L3/L4 已补到当前可用口径；本文这行不再暗示对象级缺口仍在。 |
+| `upgrade-wild-growth-2` | 主效果与描述对齐 | 目标能力已对齐；当前升级卡/技能口径应读作“主路线：大顺子时造成 `8` 点伤害并投掷 `5` 骰；每个树枝 `+1` 伤害；若投出树叶，获得生命源泉；每个树灵养成 `1` 次树灵。分支：`乱花迷眼`（`2` 树枝 + `2` 树灵）施加刺藤并造成 `4` 点不可防御伤害”。按升级技能重审文档的 2026-06-05 补记，目标升级技能对象级 L3 已补齐，`displayOnly -> 养成选择 -> 攻击收口 -> SKIP settlement 清空` 的关键 L4 也已锁定；当前残余已转为批次治理口径。 |
+| `upgrade-shattering-fist-2` | 主效果对齐 | 描述已按图片展开；`sourceAtlasIndex` 已修到 `30`。按升级技能重审文档的 2026-06-05 补记，技能本体对象级 direct closeout L3 已补齐，当前对象级无新的关键 L4 缺口；本文这行仅保留历史矩阵定位。 |
 | `treant-card-planting` | 主效果对齐 | 当前已改成正式 `养成3树灵`；`sourceAtlasIndex` 已修到 `31`；L2 已测。 |
 
 ## 测试口径
@@ -165,6 +173,10 @@
 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精专属主阶段卡应通过真实手牌完成升级与选择结算代表链\04-drink-deep-choice-modal.png` | 打出 `痛饮！` 后出现“痛饮：选择获得生命源泉的玩家”弹窗，提供 P1/P2 两个目标按钮。 | 达标：证明选择玩家动作卡走真实 UI 选择，不是直接注入目标。 |
 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精专属主阶段卡应通过真实手牌完成升级与选择结算代表链\05-drink-deep-after-resolve.png` | 选择 P1 后弹窗关闭，左侧生命源泉 token 可见，CP 从 `5` 变为 `4`，手牌已消耗。 | 达标：证明 `痛饮！` 真实出牌后把生命源泉落到所选玩家。 |
 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精专属主阶段卡应通过真实手牌完成升级与选择结算代表链\08-cultivate-after-resolve.png` | 打出 `培育！` 并选择“结算后：幼种 3”后，左侧幼种显示 `3/3`，CP 从 `5` 变为 `2`，手牌已消耗。 | 达标：证明养成选择动作卡通过真实手牌入口完成并落到 token。 |
+| `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\破碎之拳基础版应从真实槽位收口到移除-1-幼种树灵、施加-1-刺藤并造成-7-点伤害\treant-shattering-fist-base-after-closeout.png` | 已回到 `主要阶段(2)`，界面内没有遗留攻击特写或选择窗；真实槽位收口后流程可继续推进。 | 达标：结合 E2E 断言，证明 `破碎之拳` 基础版已从真实槽位收口到移除 1 幼种树灵、施加 1 刺藤并造成 7 点伤害。 |
+| `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\细心呵护基础版应从真实槽位收口到抽-1、养成-3-树灵、自己获得生命源泉并对手获得刺藤\treant-tend-care-base-after-closeout.png` | 已回到 `主要阶段(2)`，界面内没有遗留选择窗或奖励骰特写；Treant 左侧 token 区可见生命源泉与养成后的树灵分布。 | 达标：结合 E2E 断言，证明 `细心呵护` 基础版已从真实槽位收口到抽 1、养成 3、自己获得生命源泉、对手获得刺藤。 |
+| `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\复仇枝蔓基础版应从真实槽位收口到-7-点伤害加-1-刺藤\treant-vengeful-vines-base-after-closeout.png` | 已回到 `主要阶段(2)`，界面内没有遗留攻击特写或选择窗；基础技能真实槽位收口后流程可继续推进。 | 达标：结合 E2E 断言，证明 `复仇枝蔓` 基础版已从真实槽位收口到 7 点伤害并施加 1 刺藤。 |
+| `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-upgrade-direct-closeout.e2e\自然之触基础版应从真实槽位收口到养成后追加伤害并直接造成-7-点不可防御伤害\treant-nature-touch-base-after-closeout.png` | 已回到 `主要阶段(2)`，界面内没有遗留选择窗或攻击特写；Treant 左侧 token 区可见养成后的树灵分布。 | 达标：结合 E2E 断言，证明 `自然之触` 基础版已从真实槽位收口到先养成、再追加并结算 7 点不可防御伤害。 |
 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精践踏应通过真实手牌打出并在奖励骰收口后计入攻击修正\02-trample-bonus-dice-overlay-detail.png` | 局部图能直接看到 5 个奖励骰本体，底部文案写明“践踏：3 个树枝，本次攻击 +3 伤害；若至少 +3 则施加刺藤”。 | 达标：证明攻击修正/掷骰卡不是只走状态注入，真实 UI 能显示奖励骰结果与修正提示。 |
 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精践踏应通过真实手牌打出并在奖励骰收口后计入攻击修正\03-trample-after-closeout-bonus-damage-and-thorn.png` | 奖励骰收口后，`践踏！` 仍在打出区，攻击修正徽章保持 `+3`，E2E 同时断言 CP 从 `3` 变为 `2`、手牌清空、防守方刺藤为 `1`。 | 达标：证明 `践踏！` 的 +3 和“至少 +3 时施加刺藤”都落到权威状态。 |
 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精剩余主阶段动作卡应通过真实手牌逐张结算\10-mother-tree-spirit-choice-modal.png` | 打出 `母树！` 且固定树灵面后，画面出现“母树：选择养成后的树灵”选择窗，提供 `幼种2木苗1`、`幼种1神性1`、`木苗2` 三个合法养成结果。 | 达标：证明 `母树！` 树灵分支从真实手牌入口进入真实选择 UI。 |
@@ -174,14 +186,17 @@
 
 ## 结论
 
-- Treant 当前可以写成：**当前已知主效果 L2 已收敛，15 张专属卡逐卡真实手牌入口 L3 已补，用户点名的两个槽位 bug 已有真实 UI 证据证明修好。**
+- Treant 当前可以写成：**当前已知主效果 L2 已收敛，15 张专属卡逐卡真实手牌入口 L3 已补，`shattering-fist / tend-care / vengeful-vines / nature-touch / rooted` 等基础技能对象级真实入口也已补到当前可用口径，用户点名的两个槽位 bug 已有真实 UI 证据证明修好。**
 - Treant 当前仍不能写成：**所有技能/token/卡牌的所有组合分支都达到全分支 L4。**
-- 当前最硬的残余范围还有 1 类：
-  1. 基础技能、token 和部分多组合选择卡已补四批 L4 分支（Quiet Cultivation 养成选择与伪造不可能养成、Wild Growth 可选/否定、Shattering Fist 跳过/伪造移除 2 与 III 否定/伪造不可能养成、Tend & Care II 4 人目标归属/目标满栈/座位表外索引、Forest Awakens 无队友/目标满栈/伪造不可能养成结果、Rooted II 双触发与 4 人目标全集、Nature Touch 基础版/伪造不可能养成、Drink Deep 4 人目标全集与目标满栈、Harvest 4 人边界/移除 3/最多 2 目标/CP 与生命源泉接近上限、Downpour 禁止部分升级/跳过/无可升级、通用养成动作卡伪造不可能养成、Mother Tree 非树灵与树灵满栈、Soulfire 纯树灵/纯三树枝/纯三树叶/生命源泉满栈/树灵满栈/4 人敌我归属、Trample 阈值与刺藤满栈、Life Sap 1/6 与 `MAX_HEALTH` 边界、Divine 同回合限次与错误玩家/数量/时机/代跳拒绝、Seedling 缺失/越界/锁定目标骰拒绝、树灵主动动作非整数 `actionIndex` 拒绝），并补 Rooted/Wild Growth/Harvest/Drink Deep/Tend & Care/Forest Awakens/Shattering Fist/Quiet Cultivation/Nature Touch/通用养成动作卡的伪造选择非法值门禁、Harvest 无树灵空选、Rooted 过量防伤不出负伤害，以及 `CHOICE_RESOLVED` 通用 token/status 数值门禁；但不是所有可能目标、数量、骰面组合、队友/多人分支都逐一做了 L4 级真实入口覆盖。
+- 当前最硬的残余范围已经不再是“还有若干 Treant 对象级主链路没补到”，而是以下 1 类批次/治理级残余：
+  1. 旧“当前对象级 L3 残余已收窄到 `quiet-cultivation`、`forest-awakens`”结论已失效：截至 2026-06-05，基础技能 / 被动 / 终极里的 `shattering-fist`、`tend-care`、`vengeful-vines`、`nature-touch`、`quiet-cultivation`、`forest-awakens` 已补对象级真实槽位 / upkeep / 终极 closeout L3，`rooted` 也已有对象级真实防御链 L3。与此同时，基础技能、token 和部分多组合选择卡已补四批 L4 分支（Quiet Cultivation 养成选择与伪造不可能养成、Wild Growth 可选/否定、Shattering Fist 跳过/伪造移除 2 与 III 否定/伪造不可能养成、Tend & Care II 4 人目标归属/目标满栈/座位表外索引、Forest Awakens 无队友/目标满栈/伪造不可能养成结果、Rooted II 双触发与 4 人目标全集、Nature Touch 基础版/伪造不可能养成、Drink Deep 4 人目标全集与目标满栈、Harvest 4 人边界/移除 3/最多 2 目标/CP 与生命源泉接近上限、Downpour 禁止部分升级/跳过/无可升级、通用养成动作卡伪造不可能养成、Mother Tree 非树灵与树灵满栈、Soulfire 纯树灵/纯三树枝/纯三树叶/生命源泉满栈/树灵满栈/4 人敌我归属、Trample 阈值与刺藤满栈、Life Sap 1/6 与 `MAX_HEALTH` 边界、Divine 同回合限次与错误玩家/数量/时机/代跳拒绝、Seedling 缺失/越界/锁定目标骰拒绝、树灵主动动作非整数 `actionIndex` 拒绝），并补 Rooted/Wild Growth/Harvest/Drink Deep/Tend & Care/Forest Awakens/Shattering Fist/Quiet Cultivation/Nature Touch/通用养成动作卡的伪造选择非法值门禁、Harvest 无树灵空选、Rooted 过量防伤不出负伤害，以及 `CHOICE_RESOLVED` 通用 token/status 数值门禁；当前剩余重点已转到“并非所有可能目标、数量、骰面组合、队友/多人分支都逐一做了 L4 级真实入口覆盖”，以及批次级治理与旧文档统一收口。
   2. 本轮已把 `CHOICE_RESOLVED` 的统一 choice 锚点从 Treant 扩到共享路径：`CHOICE_REQUESTED` 会单独写入 `currentChoiceSourceAbilityId`，`quiet-cultivation`、`treant-card-drink-deep`、`treant-card-harvest`、`treant-card-downpour`、共享 `card-cultivate`、`tend-care`、树精神圣防负面以及攻击链相关 handler 现在都会要求当前真实 choice 锚点匹配；`resolveChoiceEffect`、`reducer.ts` 的 `offensiveRollEndTokenResolved` 收口、`customId + sourceAbilityId` 对应的通用 token/status delta、`INTERACTION_CANCELLED` 以及 `SYS_INTERACTION_EXPIRED / SYS_INTERACTION_FORCE_UNLOCKED` 统一落到的旧锚点清理、`systems.ts` 的 `choiceResolvedEventHandler` followup，以及“当前交互 `sourceId` -> `currentChoiceSourceAbilityId`”同步现在都改成同一门禁，因此 forged `CHOICE_RESOLVED` / `SYS_INTERACTION_RESOLVED` 不能再只靠合法 `sourceAbilityId` 或残留 `activatingAbilityId` 直接落地、白扣资源、复用旧锚点二次落地，或在同批双 choice 时把当前锚点漂到队列尾；此外 simple-choice / compare-roll-choice 的 `SYS_INTERACTION_RESPOND` 与 compare-roll 的 `SYS_INTERACTION_CONFIRM` 现在也会校验 `interactionId`，旧响应/旧确认命令不会再误消费新的当前交互。
 - 这意味着：
   - 玩法实现层已收敛到 Treant 主效果 L2 通过。
   - 用户最早点名的两个槽位 bug，当前已有真实 UI 证据证明**高亮落点修正生效**。
   - 真实入口层已新增树灵主动入口、神性防负面、技能槽位高亮、`rooted` 防御结算、15 张专属卡逐卡真实手牌入口 L3 证据；领域测试层已补四批 L4 分支，但不能外推成所有组合分支 L4。
+  - 截至 2026-06-05，Treant 升级技能对象级 `L3` 与关键 `L4` 已较本节历史快照继续前推；当前真正残余应改读为批次级 `L4` 判等治理、旧文档统一回写与最终发布口径统一。
   - 数据录入层 5 张升级卡描述已补齐。
-- 当前发布口径只能写成：**Treant 已完成当前已知主效果 L2 合同修正，并确认用户点名的被动槽/防御槽高亮错位、`rooted` 防御结算、15 张专属卡逐卡真实手牌入口均已修/已补证；本轮已补四批基础技能/token/多人目标/骰面阈值/选择边界/满栈上限 L4 分支、一批伪造选择非法值门禁，以及 `CHOICE_RESOLVED` 通用 token/status 数值门禁与共享 `choice anchor` 门禁，并修掉 `Downpour` 部分升级漏洞、神性树灵同回合重复花费漏洞、神性树灵错误玩家/数量/时机可绕过执行层、错误玩家可代替跳过 token 响应、幼种重掷非法目标仍扣 token、树灵主动动作 `actionIndex` 字符串索引绕过、Wild Growth II 伪造移除 3 树灵、Rooted II 座位表外生命源泉目标、Harvest 座位表外目标 mask、Drink Deep 负数索引白送生命源泉、Shattering Fist 伪造移除 2、Tend & Care II 座位表外目标索引、Forest Awakens 伪造不可能养成结果、字符串/NaN `choice value` 污染通用 token/status、树精神圣防负面 source 正确但没有当前 choice 锚点仍可 forged 结算、旧 `activatingAbilityId` 锚点可被复用、同一批双 `CHOICE_REQUESTED` 会把当前锚点漂到队列尾、Ninja Ninjutsu / Gunslinger Loaded / Gunslinger Duel followup handler 可被无锚点 `SYS_INTERACTION_RESOLVED` 直接喂入、Monk `lotus-palm` / Pyromancer `pyro-spend-cp-for-fm` 可被无锚点 forged choice 白扣资源，以及共享 `select-target:*` 可被无锚点 forged choice 强行换目标这几类漏洞，但仍不能宣称所有组合分支 L4 全面完成。**
+- 当前发布口径只能写成：**Treant 已完成当前已知主效果 L2 合同修正，并确认用户点名的被动槽/防御槽高亮错位、`rooted` 防御结算、15 张专属卡逐卡真实手牌入口均已修/已补证；本轮已补四批基础技能/token/多人目标/骰面阈值/选择边界/满栈上限 L4 分支、一批伪造选择非法值门禁，以及 `CHOICE_RESOLVED` 通用 token/status 数值门禁与共享 `choice anchor` 门禁，并修掉一批 shared / choice / forged payload 漏洞。**
+
+**但这份单英雄历史文档本身仍不是 Treant 的最终整英雄收口矩阵。** 截至 2026-06-05，Treant 对象级主 bug 与关键 shared 漏口已经明显收敛；当前真正残余应统一改读为**批次级 `L4` 判等治理、旧文档统一回写与最终发布口径统一**，不能外推成 Treant 整英雄或四英雄整批已经全面审计完成。

@@ -832,6 +832,33 @@ describe('elder_thing_dunwich_horror 附着行动', () => {
             }),
         );
     });
+
+    it('同一宿主上第一张 Dunwich Horror 不属于当前回合玩家时，不应吞掉后面另一控制者的真实触发', () => {
+        const minion = helperMakeMinion('m-mixed-1', 'test_minion', '1', 3, {
+            attachedActions: [
+                { uid: 'dh-owner-1', defId: 'elder_thing_dunwich_horror', ownerId: '1' },
+                { uid: 'dh-owner-0', defId: 'elder_thing_dunwich_horror', ownerId: '0' },
+            ],
+        } as any);
+        const state = makeState({ bases: [helperMakeBase({ minions: [minion] })] });
+
+        const { events } = fireTriggers(state, 'onTurnEnd', {
+            state,
+            playerId: '0',
+            random: defaultRandom,
+            now: 1001,
+        });
+
+        expect(events).toHaveLength(1);
+        expect(events[0]).toEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({
+                minionUid: 'm-mixed-1',
+                reason: 'elder_thing_dunwich_horror',
+                destroyerId: '0',
+            }),
+        }));
+    });
 });
 
 describe('elder_thing_the_price_of_power special', () => {

@@ -1,5 +1,7 @@
 # DiceThrone Ninja 烟雾弹失败分支 E2E（2026-05-17）
 
+> 2026-06-05 当前有效口径：本文只保留 Ninja `烟雾弹` 失败骰面分支的对象级真实入口证据，不代表 Ninja 整英雄或 Treant/Ninja 整批当前完成态。当前若要判断 Ninja 对象级残余、兄弟能力补审范围或整批发布口径，应以 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/ninja录入核对.md` 为准。
+
 ## 范围与结论
 
 本证据覆盖 Ninja `smoke_bomb` / 烟雾弹在防御方响应窗中的失败骰面分支。
@@ -62,6 +64,7 @@ npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者烟�
 | 失败后不免伤、不提前扣 HP | `currentDamage=7`、`pendingDamageOpen=true`、`hp=30` 断言 | 通过 |
 | 跳过响应后正常扣伤害 | `hp=23`、`pendingDamageOpen=false` 断言 | 通过 |
 
-残余范围：
+历史边界与当前阅读门禁：
 
-- Ninja 基础/升级技能本体仍未逐技能覆盖所有骰面与分支 L3；本文件只证明烟雾弹 token 失败分支闭环。
+- 本文件只证明烟雾弹 token 失败分支闭环，不能单独外推为 Ninja 整英雄或所有基础/升级技能已全面审计完成。
+- 截至 2026-06-05，Ninja 升级技能对象级 `L3` 与关键 `L4` 已在 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/ninja录入核对.md` 的最新矩阵中大幅补齐；当前残余应读作批次级 `L4` 治理、旧文档统一回写与最终口径统一，而不是继续读成“对象级还没实施完”。

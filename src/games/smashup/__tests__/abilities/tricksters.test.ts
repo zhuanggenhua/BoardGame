@@ -745,6 +745,44 @@ describe('诡术师 ongoing 能力', () => {
 
             expect(events).toHaveLength(0);
         });
+
+        it('同一基地第一张 Flame Trap 属于出牌玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const state = makeState({
+                bases: [makeBase({
+                    ongoingActions: [
+                        { uid: 'ft-self-1', defId: 'trickster_flame_trap', ownerId: '1' },
+                        { uid: 'ft-enemy-1', defId: 'trickster_flame_trap', ownerId: '0' },
+                    ],
+                })],
+            });
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: defaultTestRandom,
+                now: 1001,
+            });
+
+            expect(events).toHaveLength(2);
+            expect(events[0]).toEqual(expect.objectContaining({
+                type: SU_EVENTS.MINION_DESTROYED,
+                payload: expect.objectContaining({
+                    minionUid: 'new-m',
+                    destroyerId: '0',
+                    reason: 'trickster_flame_trap',
+                }),
+            }));
+            expect(events[1]).toEqual(expect.objectContaining({
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: expect.objectContaining({
+                    cardUid: 'ft-enemy-1',
+                    defId: 'trickster_flame_trap',
+                }),
+            }));
+        });
     });
 
     describe('trickster_brownie: 布朗尼', () => {
@@ -816,6 +854,44 @@ describe('诡术师 ongoing 能力', () => {
             expect(events).toHaveLength(2);
             expect(events[1].type).toBe(SU_EVENTS.MINION_DESTROYED);
             expect((events[1] as any).payload.destroyerId).toBe('0');
+        });
+
+        it('同一基地第一张 Flame Trap POD 属于出牌玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const state = makeState({
+                bases: [makeBase({
+                    ongoingActions: [
+                        { uid: 'ft-pod-self-1', defId: 'trickster_flame_trap_pod', ownerId: '1' },
+                        { uid: 'ft-pod-enemy-1', defId: 'trickster_flame_trap_pod', ownerId: '0' },
+                    ],
+                })],
+            });
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: defaultTestRandom,
+                now: 1002,
+            });
+
+            expect(events).toHaveLength(2);
+            expect(events[0]).toEqual(expect.objectContaining({
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: expect.objectContaining({
+                    cardUid: 'ft-pod-enemy-1',
+                    defId: 'trickster_flame_trap_pod',
+                }),
+            }));
+            expect(events[1]).toEqual(expect.objectContaining({
+                type: SU_EVENTS.MINION_DESTROYED,
+                payload: expect.objectContaining({
+                    minionUid: 'new-m',
+                    destroyerId: '0',
+                    reason: 'trickster_flame_trap_pod',
+                }),
+            }));
         });
 
         it('POD 版 onTurnStart 为每个陷阱实例保留独立 runtime prompt 上下文', () => {
@@ -1121,6 +1197,51 @@ describe('诡术师 ongoing 能力', () => {
             expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
         });
 
+        it('同一宿主上若同时有两张不同控制者的 Hideout，不应因第一张同名来源而放行对手行动', () => {
+            const protectedMinion = makeMinion('t-attached', 'trickster_a', '0', 3, {
+                attachedActions: [
+                    { uid: 'ho-attached-owner', defId: 'trickster_hideout', ownerId: '1' } as any,
+                    {
+                        uid: 'ho-attached-borrowed',
+                        defId: 'trickster_hideout',
+                        ownerId: '1',
+                        metadata: { sourcePlayerId: '0', sourceControllerId: '0' },
+                    } as any,
+                ],
+            });
+            const state = makeState({
+                bases: [makeBase({
+                    minions: [protectedMinion],
+                })],
+            });
+
+            expect(isMinionProtected(state, protectedMinion, 0, '1', 'action')).toBe(true);
+            expect(isMinionProtected(state, protectedMinion, 0, '0', 'action')).toBe(false);
+        });
+
+        it('同一基地上若同时有两张不同控制者的 Hideout，不应因第一张同名来源而放行对手行动', () => {
+            const protectedMinion = makeMinion('t-base', 'trickster_a', '0', 3);
+            const ownerMinion = makeMinion('t-owner', 'trickster_b', '1', 3);
+            const state = makeState({
+                bases: [makeBase({
+                    minions: [protectedMinion, ownerMinion],
+                    ongoingActions: [
+                        { uid: 'ho-base-owner', defId: 'trickster_hideout', ownerId: '1' } as any,
+                        {
+                            uid: 'ho-base-borrowed',
+                            defId: 'trickster_hideout',
+                            ownerId: '1',
+                            metadata: { sourcePlayerId: '0', sourceControllerId: '0' },
+                        } as any,
+                    ],
+                })],
+            });
+
+            expect(isMinionProtected(state, protectedMinion, 0, '1', 'action')).toBe(true);
+            expect(isMinionProtected(state, protectedMinion, 0, '0', 'action')).toBe(false);
+            expect(isMinionProtected(state, ownerMinion, 0, '0', 'action')).toBe(true);
+        });
+
         it('不保护敌方随从', () => {
             const enemyMinion = makeMinion('r-1', 'robot_a', '1', 3);
             const state = makeState({
@@ -1221,6 +1342,38 @@ describe('诡术师 ongoing 能力', () => {
 
             expect(blockedForOtherPlayer).toBeNull();
         });
+
+        it('同一基地两张不同控制者的 Hideout POD 并存时，不应因第一张允许移动就漏掉后面另一张真实拦截', () => {
+            const sourceBase = makeBase({
+                minions: [makeMinion('m-move', 'robot_zapbot', '1', 2, { owner: '1' } as any)],
+            });
+            const targetBase = makeBase({
+                ongoingActions: [
+                    { uid: 'ho-pod-owner', defId: 'trickster_hideout_pod', ownerId: '1' } as any,
+                    {
+                        uid: 'ho-pod-borrowed',
+                        defId: 'trickster_hideout_pod',
+                        ownerId: '1',
+                        metadata: { sourcePlayerId: '0', sourceControllerId: '0' },
+                    } as any,
+                ],
+            });
+            const state = makeState({ bases: [sourceBase, targetBase] });
+
+            const result = interceptEvent(state, {
+                type: SU_EVENTS.MINION_MOVED,
+                payload: {
+                    minionUid: 'm-move',
+                    minionDefId: 'robot_zapbot',
+                    fromBaseIndex: 0,
+                    toBaseIndex: 1,
+                    reason: 'test_move',
+                },
+                timestamp: 1002,
+            } as any);
+
+            expect(result).toBeNull();
+        });
     });
 
     describe('trickster_pay_the_piper: 付笛手的钱', () => {
@@ -1250,6 +1403,78 @@ describe('诡术师 ongoing 能力', () => {
             expect(events).toHaveLength(1);
             expect(events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
             expect((events[0] as any).payload.playerId).toBe('1');
+        });
+
+        it('同一基地第一张 Pay the Piper 属于出牌玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const state = makeState({
+                bases: [makeBase({
+                    ongoingActions: [
+                        { uid: 'pp-self-1', defId: 'trickster_pay_the_piper', ownerId: '1' },
+                        { uid: 'pp-enemy-1', defId: 'trickster_pay_the_piper', ownerId: '0' },
+                    ],
+                })],
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1', {
+                        hand: [makeCard('opp-h1', 'test_opponent_card', 'action', '1')],
+                    }),
+                },
+            });
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: defaultTestRandom,
+                now: 1001,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0]).toEqual(expect.objectContaining({
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: expect.objectContaining({
+                    playerId: '1',
+                    cardUids: ['opp-h1'],
+                }),
+            }));
+        });
+
+        it('同一基地第一张 Pay the Piper POD 属于出牌玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const state = makeState({
+                bases: [makeBase({
+                    ongoingActions: [
+                        { uid: 'pp-pod-self-1', defId: 'trickster_pay_the_piper_pod', ownerId: '1' },
+                        { uid: 'pp-pod-enemy-1', defId: 'trickster_pay_the_piper_pod', ownerId: '0' },
+                    ],
+                })],
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1', {
+                        hand: [makeCard('opp-h1', 'test_opponent_card', 'action', '1')],
+                    }),
+                },
+            });
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'new-m',
+                triggerMinionDefId: 'some_minion',
+                random: defaultTestRandom,
+                now: 1002,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0]).toEqual(expect.objectContaining({
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: expect.objectContaining({
+                    playerId: '1',
+                    cardUids: ['opp-h1'],
+                }),
+            }));
         });
     });
 
@@ -1331,6 +1556,30 @@ describe('诡术师 ongoing 能力', () => {
             expect(events).toHaveLength(1);
             expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
             expect((events[0] as any).payload.minionUid).toBe('wm-1');
+        });
+
+        it('同一基地第一张 Leprechaun 属于出牌玩家时，不应吞掉后面敌方 Leprechaun 的真实触发', () => {
+            const friendlyLeprechaun = makeMinion('lp-self', 'trickster_leprechaun', '1', 4, { basePower: 4 } as any);
+            const enemyLeprechaun = makeMinion('lp-enemy', 'trickster_leprechaun', '0', 5, { basePower: 5 } as any);
+            const weakMinion = makeMinion('wm-1', 'weak_minion', '1', 2, { basePower: 2 } as any);
+            const state = makeState({
+                bases: [makeBase({ minions: [friendlyLeprechaun, enemyLeprechaun, weakMinion] })],
+            });
+
+            const { events } = fireTriggers(state, 'onMinionPlayed', {
+                state,
+                playerId: '1',
+                baseIndex: 0,
+                triggerMinionUid: 'wm-1',
+                triggerMinionDefId: 'weak_minion',
+                random: defaultTestRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+            expect((events[0] as any).payload.minionUid).toBe('wm-1');
+            expect((events[0] as any).payload.destroyerId).toBe('0');
         });
 
         it('POD 版应标记消灭者', () => {
@@ -1450,6 +1699,41 @@ describe('诡术师 ongoing 能力', () => {
             const destroyPrompt = getSimpleChoicePrompt(swapped.finalState, 'trickster_hideout_pod_destroy');
             expect(getPromptSourceId(destroyPrompt)).toBe('trickster_hideout_pod_destroy');
             expect(getPromptOptions(destroyPrompt).some((option: any) => option.value?.minionUid === 'm-low')).toBe(true);
+        });
+
+        it('从手牌交换被他人拥有的持续战术时，换进基地的 ongoing 仍应保留真实 ownerId', () => {
+            const core = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('h-borrowed', 'trickster_flame_trap_pod', 'action', '1')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [makeBase({
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [{ uid: 'oa1', defId: 'trickster_hideout_pod', ownerId: '0', talentUsed: false } as any],
+                })],
+            });
+
+            const result = useOngoingTalent(core, '0', 'oa1', 0);
+            expect(result.success, result.error).toBe(true);
+
+            const swapped = respondToPromptOption(
+                result.finalState,
+                option => option.value?.zone === 'hand' && option.value?.cardUid === 'h-borrowed',
+                'hideout swap borrowed hand option',
+                '0',
+                defaultTestRandom,
+            );
+            expect(swapped.success, swapped.error).toBe(true);
+
+            expect(swapped.finalState.core.players['0'].hand).toEqual([
+                expect.objectContaining({ uid: 'oa1', defId: 'trickster_hideout_pod', type: 'action', owner: '0' }),
+            ]);
+            expect(swapped.finalState.core.bases[0].ongoingActions[0]).toEqual(
+                expect.objectContaining({ uid: 'h-borrowed', defId: 'trickster_flame_trap_pod', ownerId: '1' }),
+            );
         });
 
         it('从牌库交换时把藏身处洗回牌库，而不是回手', () => {
@@ -1598,6 +1882,75 @@ describe('诡术师 ongoing 能力', () => {
 
             const counterPrompt = getSimpleChoicePrompt(chained.finalState, 'trickster_pixie_pod_action_counters');
             expect(getPromptSourceId(counterPrompt)).toBe('trickster_pixie_pod_action_counters');
+
+            const counterOptionIds = getPromptOptions(counterPrompt)
+                .filter((option: any) => option.value?.minionUid === 'ally-a')
+                .map((option: any) => option.id);
+            const counterResolved = respondToPromptOptions(chained.finalState, counterOptionIds, '0', defaultTestRandom);
+            expect(counterResolved.success, counterResolved.error).toBe(true);
+
+            expect(counterResolved.events).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.POWER_COUNTER_ADDED,
+                    payload: expect.objectContaining({ minionUid: 'ally-a', baseIndex: 0, amount: 2, reason: 'trickster_pixie_pod_action' }),
+                }),
+            ]));
+        });
+
+        it('作为战术打出时，销毁 borrowed ongoing 后应进入真实 owner 弃牌堆，且后续加指示物选择权仍归行动玩家', () => {
+            const core = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [{ uid: 'pixie-action', defId: 'trickster_pixie_pod', type: 'fusion', owner: '0' } as any],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase({
+                        defId: 'base_a',
+                        minions: [makeMinion('ally-a', 'pirate_saucy_wench', '0', 2)],
+                        ongoingActions: [{
+                            uid: 'borrowed-oa',
+                            defId: 'trickster_flame_trap_pod',
+                            ownerId: '1',
+                            metadata: { sourceControllerId: '0' },
+                        } as any],
+                    }),
+                    makeBase({
+                        defId: 'base_b',
+                        minions: [makeMinion('ally-b', 'wizard_apprentice', '0', 3)],
+                        ongoingActions: [],
+                    }),
+                ],
+            });
+
+            const result = execPlayAction(core, '0', 'pixie-action');
+            expect(result.matchState).toBeDefined();
+
+            const chained = respondToPromptOption(
+                result.matchState,
+                option => option.value?.cardUid === 'borrowed-oa',
+                'pixie action destroy borrowed ongoing option',
+                '0',
+                defaultTestRandom,
+            );
+            expect(chained.success, chained.error).toBe(true);
+            expect(chained.events).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.ONGOING_DETACHED,
+                    payload: expect.objectContaining({
+                        cardUid: 'borrowed-oa',
+                        ownerId: '1',
+                        reason: 'trickster_pixie_pod_action',
+                    }),
+                }),
+            ]));
+            expect(chained.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-oa');
+            expect(chained.finalState.core.players['1'].discard.map(card => card.uid)).toContain('borrowed-oa');
+
+            const counterPrompt = getSimpleChoicePrompt(chained.finalState, 'trickster_pixie_pod_action_counters');
+            expect(getPromptSourceId(counterPrompt)).toBe('trickster_pixie_pod_action_counters');
+            expect(counterPrompt.playerId).toBe('0');
 
             const counterOptionIds = getPromptOptions(counterPrompt)
                 .filter((option: any) => option.value?.minionUid === 'ally-a')

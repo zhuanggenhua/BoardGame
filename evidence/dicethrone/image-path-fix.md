@@ -1,5 +1,7 @@
 # 图片路径修复 - 移除硬编码的 compressed 路径
 
+> 2026-06-06 当前有效口径：本文只覆盖“图片路径出现 `compressed/compressed` 重复”这一条历史资源链修复，不是当前 DiceThrone 所有图片路径、所有资源管线问题都已彻底收口的证明，也不是新英雄补审出口。阅读时只能把它理解成单条资源路径修复记录。
+
 ## 问题描述
 
 所有图片引用都丢失了，浏览器尝试加载 `compressed/compressed/` 的重复路径。
@@ -172,3 +174,7 @@ dice_roll: { src: 'dice/compressed/Dice_Roll_Velvet_001.ogg', ... }
 ## 日期
 
 2026-02-04
+
+---
+
+**当前阅读说明**：本文只能证明“图片路径出现 `compressed/compressed` 重复”这条专项问题曾被修复，不能外推为当前所有图片路径、所有资源管线或 DiceThrone 当前整体审计都已收口。

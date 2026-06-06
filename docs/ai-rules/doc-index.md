@@ -6,12 +6,12 @@
 | :--- | :--- | :--- |
 | **新增/修改 ActionLog 伤害来源标注** (breakdown/来源显示) | `docs/ai-rules/engine-systems.md` § ActionLogSystem 使用规范 → 伤害来源标注 | 实现 `DamageSourceResolver`，调用 `buildDamageBreakdownSegment` 或 `buildDamageSourceAnnotation`，禁止手写 breakdown 构建逻辑 |
 | **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` | 压缩指令、扫描参数、清单校验、图片链路/裁剪规范 |
-| **录入业务数据** (图片/规则书/Wiki/截图 → 名称/描述/数值/类型/索引/文案) | `.windsurf/skills/data-entry-workflow/SKILL.md` + `docs/ai-rules/data-entry.md` | 先通过 skill 进入通用门禁，再按 gameId 路由到专用 workflow；覆盖真相源锁定、核对契约、零猜测 OCR、图片索引录入、先文档后实现 |
+| **录入业务数据** (图片/规则书/Wiki/截图 → 名称/描述/数值/类型/索引/文案) | `.codex/skill/data-entry-workflow/SKILL.md` + `docs/ai-rules/data-entry.md` | 先通过 skill 进入通用门禁，再按 gameId 路由到专用 workflow；覆盖真相源锁定、核对契约、零猜测 OCR、图片索引录入、先文档后实现 |
 | **录入 DiceThrone 角色** (新英雄/单角色图片 intake、裁图、卡牌/Token/骰面录入) | `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` | 角色真相源表、裁图、卡牌合同、manifest、R2/CDN 回查、规则文档与代码同步 |
 | **国际化资源架构** (i18n 路径/符号链接/locale) | `docs/i18n-asset-architecture.md` | 方案 B2 架构、符号链接设置、未来迁移计划 |
 | **修改 DiceThrone** (文案/资源) | `docs/games/dicethrone/dicethrone-i18n.md` | 翻译 Key 结构、Scheme A 取图函数 |
 | **环境配置 / 部署** (端口/同域代理) | `docs/deploy.md` | 端口映射、环境变量、Nginx 参数 |
-| **Android App 打包 / 上传 / 原生更新 / OTA / 网站下载入口** | `.windsurf/skills/android-app-release/SKILL.md` + `docs/mobile-release.md` + `docs/android-app-build.md` | 先分 OTA 还是 native；release 必须正式壳；本地 build 不算完成；发布后必须回查 `latest.json` 并直接下载线上 APK 验 `appId/appName`；不要把“更新下载入口”误升格成“必须部署网站” |
+| **Android App 打包 / 上传 / 原生更新 / OTA / 网站下载入口** | `.codex/skill/android-app-release/SKILL.md` + `docs/mobile-release.md` + `docs/android-app-build.md` | 先分 OTA 还是 native；release 必须正式壳；本地 build 不算完成；发布后必须回查 `latest.json` 并直接下载线上 APK 验 `appId/appName`；不要把“更新下载入口”误升格成“必须部署网站” |
 | **本地联机测试** (单人同步调试) | `docs/test-mode.md` | 测试模式开关及其对视角的影响 |
 | **编写或修复测试** (Vitest/Playwright) | `docs/automated-testing.md` | 测试库配置、错误码命名规范 |
 | **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；E2E 汇报必须附截图路径 |
@@ -33,13 +33,13 @@
 | **游戏结束检测** (gameover/胜负判定) | `docs/ai-rules/engine-systems.md` § 游戏结束检测 | `sys.gameover` 唯一来源，管线自动检测，Board 读 `G.sys.gameover`，禁止读 core/ctx |
 | **传输层/Board Props** (socket/dispatch/Provider) | `docs/ai-rules/engine-systems.md` § 传输层架构 | `GameBoardProps` 契约，无 `ctx` prop，`dispatch` 命令分发，`GameProvider`/`LocalGameProvider` |
 | **乐观更新/延迟优化** (optimistic/latency/预测) | `docs/ai-rules/engine-systems.md` § 乐观更新引擎 | Random Probe 自动检测、AnimationMode、骰子动画最短播放时间（UI 层保护）、EventStream 水位线、pending replay、`latencyConfig.ts` |
-| **挑选/查找音效** (音效定位) | `docs/audio/audio-catalog.md` | 语义目录，按关键词搜索定位 registry key |
-| **从外部导入新音效素材** (新增音频资源) | `docs/audio/add-audio.md` | 素材整理→目录结构→压缩（wav→ogg）→生成 registry→中文友好名→清单→验证→代码接入全链路 |
+| **挑选/查找/对接音效** (查 key、换音效、补预加载、试听收口) | `.codex/skill/audio-integration/SKILL.md` + `docs/audio/audio-usage.md` | 先走项目音频 workflow；skill 负责查找链路、汇报和收口，文档负责架构合同与命令入口 |
+| **从外部导入新音效素材** (新增音频资源) | `.codex/skill/audio-integration/SKILL.md` + `docs/audio/add-audio.md` | skill 负责执行步骤与收口；文档负责目录、命名、产物、压缩、registry、中文友好名和 `/dev/audio` 验收合同 |
 | **音频不播放 / AudioContext** (浏览器兼容) | `docs/ai-rules/golden-rules.md` § AudioContext | `ctx.resume()` 异步竞态、HTML5 Audio vs WebAudio 区别 |
 | **状态同步/存储调优** (16MB 限制) | `docs/mongodb-16mb-fix.md` | 状态裁剪策略、Log 限制、Undo 快照优化 |
 | **复杂任务规划** (多文件/长流程) | `C:\Users\zhuagenbao\.codex\skills\planning-with-files\SKILL.md` | 必须维护 `task_plan.md`，定期转存 `findings.md` |
-| **AI 规范文档整理** (压缩根 AGENTS、拆分大文档、去重但不丢内容) | `docs/ai-rules/document-consolidation.md` + `.windsurf/skills/README.md` | 先建新落点再压缩旧入口；记录来源、目标、语义变化和冲突裁决 |
-| **UI/UX 设计** (配色/组件/动效) | `.windsurf/skills/ui-ux-pro-max/SKILL.md` | 这是 BoardGame 的 UI/UX overlay；先走全局 `ui-ux-pro-max`，再叠加项目设计系统与验收口径 |
+| **AI 规范文档整理** (压缩根 AGENTS、拆分大文档、去重但不丢内容) | `docs/ai-rules/document-consolidation.md` + `.codex/skill/README.md` | 统一到单一入口；记录来源、目标、语义变化和冲突裁决 |
+| **UI/UX 设计** (配色/组件/动效) | `.codex/skill/ui-ux-pro-max/SKILL.md` | 这是 BoardGame 的 UI/UX overlay；先走全局 `ui-ux-pro-max`，再叠加项目设计系统与验收口径 |
 | **生图设计稿 → 实现设计稿** (AI 生成 UI mockup 后按图实现/复刻) | `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-ux.md` | 真实内容盘点、禁止无中生有、目标稿复看、关键几何比例量测、E2E 截图证据 |
 | **Home V2 移动横屏首页/详情/弹窗** (Home V2 书本界面、移动端专用首页、详情页、纸面弹窗) | `docs/ai-rules/home-v2-design.md` + `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-ux.md` | `artifacts/home-v2-design/` 目标稿优先、移动 CSS 视口、书页构图、详情页缩略图/描述/账本密度、纸面弹窗统一 |
 | **大规模 UI 改动** (新页面/重做布局/新游戏UI) | 先 Skill `--design-system`，再 `design-system/` | 见 §UI/UX 规范 → §0. 大规模 UI 改动前置流程 |

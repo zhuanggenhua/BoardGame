@@ -214,6 +214,46 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         expect(screen.queryByTestId('me-first-overlay')).not.toBeInTheDocument();
     });
 
+    it('smashup_reaction_choose 作为计分响应承载时仍应显示中间弹窗', () => {
+        const base = createState();
+        const state = createState({
+            sys: {
+                ...base.sys,
+                interaction: {
+                    current: {
+                        id: 'reaction-choose',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个响应动作',
+                            options: [
+                                { id: 'play', label: '打出卡牌', value: { kind: 'play_action', cardUid: 'card-1' } },
+                                { id: 'pass', label: '让过', value: { kind: 'pass' } },
+                            ],
+                        },
+                    },
+                    queue: [],
+                },
+            },
+        });
+
+        render(
+            <MeFirstOverlay
+                G={state}
+                dispatch={vi.fn()}
+                playerID="0"
+                pendingCard={null}
+                onSelectCard={vi.fn()}
+                playerNames={{ '0': 'Host', '1': 'Guest' }}
+            />,
+        );
+
+        expect(screen.getByTestId('me-first-overlay')).toBeInTheDocument();
+        expect(screen.getByText('计分后响应')).toBeInTheDocument();
+        expect(screen.getByTestId('me-first-pass-button')).toBeInTheDocument();
+    });
+
     it('hides when response window is locked by another hidden interaction', () => {
         const state = createState({
             sys: {

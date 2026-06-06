@@ -43,6 +43,8 @@ const OFFICIAL_REMOTE_ASSETS_BASE_URL = resolveAssetsBaseUrlFromEnv({
 
 const MAX_CONCURRENT_LOADS = 4;
 const INSTALLED_ASSET_PATH_MARKER = '/current/assets/';
+const RAPID_BGM_END_THRESHOLD_MS = 1500;
+const MAX_RAPID_BGM_ENDS = 3;
 
 const splitUrlSuffix = (value: string) => {
     const hashIndex = value.indexOf('#');
@@ -181,6 +183,9 @@ class AudioManagerClass {
     private failedKeys: Set<SoundKey> = new Set();
     private nativeBlobUrlCache: Map<string, string> = new Map();
     private nativeBlobUrlPromises: Map<string, Promise<string | null>> = new Map();
+    private bgmLoopRestartTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+    private bgmRapidEndCounts: Map<string, number> = new Map();
+    private bgmLastPlayStartedAt: Map<string, number> = new Map();
 
     private bgmListeners: Set<(currentBgm: string | null) => void> = new Set();
 
@@ -460,6 +465,71 @@ class AudioManagerClass {
         };
     }
 
+    private clearBgmLoopRestart(key: string): void {
+        const timer = this.bgmLoopRestartTimers.get(key);
+        if (timer !== undefined) {
+            clearTimeout(timer);
+            this.bgmLoopRestartTimers.delete(key);
+        }
+    }
+
+    private clearBgmLoopState(key: string): void {
+        this.clearBgmLoopRestart(key);
+        this.bgmRapidEndCounts.delete(key);
+        this.bgmLastPlayStartedAt.delete(key);
+    }
+
+    private markBgmPlayStarted(key: string): void {
+        this.bgmLastPlayStartedAt.set(key, Date.now());
+    }
+
+    private stopBrokenBgmLoop(key: string, howl: Howl): void {
+        const definition = this.bgmDefinitions.get(key);
+        console.error(`[Audio] bgm_loop_aborted key=${key} reason=rapid_end src=${formatSrcForLog(definition?.src ?? [])}`);
+        this.clearBgmLoopState(key);
+        howl.stop();
+        howl.unload();
+        if (this.bgms.get(key) === howl) {
+            this.bgms.delete(key);
+        }
+        if (this._currentBgm === key) {
+            this._currentBgm = null;
+            this.notifyBgmChange();
+        }
+    }
+
+    private scheduleBgmLoopRestart(key: string, howl: Howl): void {
+        if (this.bgmLoopRestartTimers.has(key)) {
+            return;
+        }
+        const timer = setTimeout(() => {
+            this.bgmLoopRestartTimers.delete(key);
+            if (this._currentBgm !== key) return;
+            if (this.bgms.get(key) !== howl) return;
+            howl.volume(this._bgmVolume);
+            this.markBgmPlayStarted(key);
+            howl.play();
+        }, 0);
+        this.bgmLoopRestartTimers.set(key, timer);
+    }
+
+    private handleBgmEnded(key: string, howl: Howl): void {
+        if (this._currentBgm !== key) return;
+        if (this.bgms.get(key) !== howl) return;
+
+        const lastStartedAt = this.bgmLastPlayStartedAt.get(key) ?? 0;
+        const endedQuickly = lastStartedAt > 0 && (Date.now() - lastStartedAt) <= RAPID_BGM_END_THRESHOLD_MS;
+        const rapidEndCount = endedQuickly ? (this.bgmRapidEndCounts.get(key) ?? 0) + 1 : 1;
+        this.bgmRapidEndCounts.set(key, rapidEndCount);
+
+        if (rapidEndCount >= MAX_RAPID_BGM_ENDS) {
+            this.stopBrokenBgmLoop(key, howl);
+            return;
+        }
+
+        this.scheduleBgmLoopRestart(key, howl);
+    }
+
 
     /**
      * 注册通用 registry 条目（仅缓存索引）
@@ -656,7 +726,9 @@ class AudioManagerClass {
             });
             howl = this.createHowlWithFallback(mergedDef.src, {
                 volume: (mergedDef.volume ?? 1.0) * this._bgmVolume,
-                loop: true,
+                // 对 html5 BGM 关闭 Howler 内建 loop，改为异步手动重播，
+                // 避免异常媒体状态下出现 _ended -> play 的同步递归。
+                loop: false,
                 html5: true,
                 preload: false,
                 onReplace: (nextHowl) => {
@@ -665,6 +737,7 @@ class AudioManagerClass {
                 onFallbackReady: (nextHowl) => {
                     const retryPlay = () => {
                         nextHowl.volume(0);
+                        this.markBgmPlayStarted(key);
                         const nextPlayId = nextHowl.play();
                         nextHowl.fade(0, this._bgmVolume, 1000, nextPlayId);
                     };
@@ -693,6 +766,9 @@ class AudioManagerClass {
                     this._bgmReadyResolve?.();
                     this._bgmReadyResolve = null;
                 },
+                onend: () => {
+                    this.handleBgmEnded(key, howl!);
+                },
             });
             this.bgms.set(key, howl);
         }
@@ -707,6 +783,7 @@ class AudioManagerClass {
 
         // 停止当前 BGM
         if (this._currentBgm && !isSameBgm) {
+            this.clearBgmLoopState(this._currentBgm);
             this.bgms.get(this._currentBgm)?.fade(this._bgmVolume, 0, 1000);
             const prevBgm = this._currentBgm;
             setTimeout(() => {
@@ -717,7 +794,9 @@ class AudioManagerClass {
             }, 1000);
         }
 
+        this.clearBgmLoopRestart(key);
         howl.volume(0);
+        this.markBgmPlayStarted(key);
         const playId = howl.play();
         howl.fade(0, this._bgmVolume, 1000, playId);
         if (!isSameBgm) {
@@ -731,6 +810,7 @@ class AudioManagerClass {
      */
     stopBgm(): void {
         if (this._currentBgm) {
+            this.clearBgmLoopState(this._currentBgm);
             this.bgms.get(this._currentBgm)?.stop();
             this._currentBgm = null;
             this.notifyBgmChange();
@@ -901,6 +981,9 @@ class AudioManagerClass {
 
     stopAll(): void {
         Howler.stop();
+        for (const key of this.bgms.keys()) {
+            this.clearBgmLoopState(key);
+        }
         if (this._currentBgm !== null) {
             this._currentBgm = null;
             this.notifyBgmChange();
@@ -909,6 +992,9 @@ class AudioManagerClass {
 
 
     unloadAll(): void {
+        for (const key of this.bgms.keys()) {
+            this.clearBgmLoopState(key);
+        }
         for (const howl of this.sounds.values()) howl.unload();
         for (const howl of this.bgms.values()) howl.unload();
         this.sounds.clear();

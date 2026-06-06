@@ -4,15 +4,21 @@ import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, collectTriggers } from '../../domain/ongoingEffects';
+import { validate } from '../../domain/commands';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
-import { defaultTestRandom } from '../testRunner';
+import { defaultTestRandom, runCommand } from '../testRunner';
 import {
     getReactionPrompt,
+    getPromptOption,
+    getPromptOptions,
+    getSimpleChoicePrompt,
     makeBase,
     makeMatchState,
     makeMinion,
     makePlayer,
     makeState,
+    respondToPrompt,
 } from '../helpers';
 
 beforeAll(() => {
@@ -25,6 +31,106 @@ beforeAll(() => {
 });
 
 describe('World Champs queued source-controller runtime context', () => {
+    it('borrowed world_champs_high_speed_chase 应按控制者而不是真实 owner 转移行动并移动随从且+3', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('ally-0', 'robot_microbot_alpha', '0', 3),
+                        makeMinion('enemy-1', 'robot_microbot_beta', '1', 2),
+                    ],
+                    ongoingActions: [{
+                        uid: 'chase-borrowed',
+                        defId: 'world_champs_high_speed_chase',
+                        ownerId: '1',
+                        talentUsed: false,
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                }),
+            ],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'chase-borrowed', baseIndex: 0 },
+            } as any,
+            defaultTestRandom,
+        );
+        expect(used.success).toBe(true);
+
+        const chooseMinionPrompt = getSimpleChoicePrompt(used.finalState, 'world_champs_high_speed_chase_minion');
+        const chooseMinion = respondToPrompt(
+            used.finalState,
+            getPromptOption(chooseMinionPrompt, option => option?.value?.minionUid === 'ally-0', 'High Speed Chase minion option').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseMinion.success).toBe(true);
+
+        const chooseBasePrompt = getSimpleChoicePrompt(chooseMinion.finalState, 'world_champs_high_speed_chase_base');
+        const chooseBase = respondToPrompt(
+            chooseMinion.finalState,
+            getPromptOption(chooseBasePrompt, option => option?.value?.baseIndex === 1, 'High Speed Chase target base').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseBase.success).toBe(true);
+
+        expect(chooseBase.events.some(event =>
+            event.type === SU_EVENTS.ONGOING_DETACHED
+            && (event as any).payload?.cardUid === 'chase-borrowed',
+        )).toBe(true);
+        expect(chooseBase.events.some(event =>
+            event.type === SU_EVENTS.ONGOING_ATTACHED
+            && (event as any).payload?.cardUid === 'chase-borrowed'
+            && (event as any).payload?.ownerId === '1'
+            && (event as any).payload?.sourcePlayerId === '0'
+            && (event as any).payload?.targetBaseIndex === 1,
+        )).toBe(true);
+        expect(chooseBase.events.some(event =>
+            event.type === SU_EVENTS.MINION_MOVED
+            && (event as any).payload?.minionUid === 'ally-0'
+            && (event as any).payload?.toBaseIndex === 1,
+        )).toBe(true);
+        expect(chooseBase.events.some(event =>
+            event.type === SU_EVENTS.TEMP_POWER_ADDED
+            && (event as any).payload?.minionUid === 'ally-0'
+            && (event as any).payload?.amount === 3
+            && (event as any).payload?.reason === 'world_champs_high_speed_chase',
+        )).toBe(true);
+
+        const movedOngoing = chooseBase.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'chase-borrowed');
+        expect(movedOngoing).toEqual(expect.objectContaining({
+            uid: 'chase-borrowed',
+            defId: 'world_champs_high_speed_chase',
+            ownerId: '1',
+            talentUsed: true,
+        }));
+        expect((movedOngoing as any)?.metadata?.sourceControllerId).toBe('0');
+        expect(chooseBase.finalState.core.bases[1].minions.some(minion => minion.uid === 'ally-0')).toBe(true);
+
+        const reused = validate(chooseBase.finalState, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'chase-borrowed', baseIndex: 1 },
+        } as any);
+        expect(reused.valid).toBe(false);
+        expect((reused as any).error).toBe('本回合天赋已使用');
+    });
+
     it('world_champs_mummy 在对手计分时仍应把 queued afterScoring 选择权交给随从控制者', () => {
         const core = makeState({
             players: {

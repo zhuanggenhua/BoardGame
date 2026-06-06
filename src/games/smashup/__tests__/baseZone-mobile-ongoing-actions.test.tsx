@@ -306,7 +306,7 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(counter).toHaveTextContent('5');
     });
 
-    it('随从选择模式下不应继续负向堆叠，底部随从仍可单独点击', () => {
+    it('随从选择模式下应改为半展开，底部随从仍可单独点击', () => {
         const onMinionSelect = vi.fn();
         renderBaseZone({
             isMinionSelectMode: true,
@@ -356,8 +356,8 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         const thirdMinion = document.querySelector('[data-minion-uid="m3"]') as HTMLElement | null;
         expect(secondMinion).not.toBeNull();
         expect(thirdMinion).not.toBeNull();
-        expect(secondMinion?.style.marginTop).toBe('0vw');
-        expect(thirdMinion?.style.marginTop).toBe('0vw');
+        expect(secondMinion?.style.marginTop).toBe('-3.8515vw');
+        expect(thirdMinion?.style.marginTop).toBe('-3.8515vw');
 
         fireEvent.click(thirdMinion as Element);
         expect(onMinionSelect).toHaveBeenCalledWith('m3', 0);

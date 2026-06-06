@@ -37,6 +37,45 @@ function runAction(core: SmashUpCore, command: { type: string; playerId: string;
 }
 
 describe('onDestroy 基础设施', () => {
+    it('bear_cavalry_bear_necessities 不应把自己控制但真实 owner 不同的 borrowed ongoing 当成对手行动目标', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('c1', 'bear_cavalry_bear_necessities', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{
+                    uid: 'borrowed-ongoing',
+                    defId: 'trickster_hideout_pod',
+                    ownerId: '1',
+                    metadata: {
+                        sourcePlayerId: '0',
+                        sourceControllerId: '0',
+                    },
+                } as any],
+            }],
+        });
+
+        const events = runAction(core, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'c1' },
+        });
+
+        expect(events.some(event => event.type === SU_EVENTS.ACTION_PLAYED)).toBe(true);
+        expect(events.some(event => event.type === SU_EVENTS.ONGOING_DETACHED)).toBe(false);
+        expect(
+            events.some(
+                event => event.type === SU_EVENTS.ABILITY_FEEDBACK
+                    && (event as any).payload?.messageKey === 'feedback.no_valid_targets',
+            ),
+        ).toBe(true);
+    });
+
     it('消灭无 onDestroy 能力的随从不产生额外事件（单目标自动执行）', () => {
         const core = makeState({
             players: {

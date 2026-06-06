@@ -60,6 +60,37 @@ describe('Princesses abilities', () => {
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('dvd-1');
     });
 
+    it('princesses_direct_to_dvd_sequel 选择被他人拥有的弃牌随从时，仍应洗回其拥有者牌库而不是当前玩家牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('dvd-1', 'princesses_direct_to_dvd_sequel', 'action', '0')],
+                    deck: [makeCard('p0-deck-1', 'robot_microbot_alpha', 'minion', '0')],
+                    discard: [makeCard('borrowed-discard', 'robot_microbot_beta', 'minion', '1')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-1', 'wizard_archmage', 'minion', '1')],
+                }),
+            },
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'dvd-1' } },
+            defaultTestRandom,
+        );
+        expect(played.success).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'princesses_direct_to_dvd_sequel');
+        const option = getPromptOption(prompt, entry => entry.value?.cardUid === 'borrowed-discard', 'borrowed discard minion');
+
+        const resolved = respondToPrompt(played.finalState, option.id, '0', defaultTestRandom);
+
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toContain('borrowed-discard');
+    });
+
     it('princesses_woodland_helpers 会把刚打出的行动放到牌库底', () => {
         const core = makeState({
             players: {
@@ -93,6 +124,46 @@ describe('Princesses abilities', () => {
 
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('spell-1');
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-1', 'spell-1']);
+    });
+
+    it('princesses_woodland_helpers 在你打出被他人拥有的行动后，仍应给你创建回收选择并把该行动放回其拥有者牌库底', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-0', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('deck-1', 'robot_microbot_beta', 'minion', '1')],
+                    discard: [makeCard('borrowed-spell-1', 'wizard_summon', 'action', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [{ uid: 'woodland-1', defId: 'princesses_woodland_helpers', ownerId: '0' }],
+            }],
+        });
+
+        const triggerResult = fireTriggers(core, 'onActionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            sourceControllerId: '0',
+            sourceEventId: 'action-played:borrowed-spell-1:0',
+            random: defaultTestRandom,
+            now: 1001,
+        });
+
+        const prompt = getSimpleChoicePrompt(triggerResult.matchState!, 'princesses_woodland_helpers');
+        expect(prompt.playerId).toBe('0');
+        expect(prompt.displayCard).toEqual({ defId: 'wizard_summon', cardUid: 'borrowed-spell-1' });
+
+        const option = getPromptOption(prompt, entry => entry.value?.choice === 'move_to_bottom', 'move-to-bottom option');
+        const resolved = respondToPrompt(triggerResult.matchState!, option.id, '0', defaultTestRandom);
+
+        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).not.toContain('borrowed-spell-1');
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['deck-1', 'borrowed-spell-1']);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-0']);
     });
 
     it('princesses_fairy_godmother 选择 buff 时会进入第二段目标选择并给目标 +2 力量', () => {

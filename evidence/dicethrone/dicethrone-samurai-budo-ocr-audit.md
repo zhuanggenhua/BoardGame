@@ -1,5 +1,7 @@
 # DiceThrone 武士 `Budo / 武道` 裁图 OCR 复核
 
+> 2026-06-05 当前有效口径：本文只保留武士 `Budo / 武道` 与 `Budo II / 武道 II` 数值 OCR 对账的对象级专项结论，不代表武士整英雄或枪手/武士整批当前完成态。当前若要判断武士对象级残余、兄弟能力补审范围或整批发布口径，应以 `evidence/dicethrone/dicethrone-samurai-audit-2026-04-11.md`、相关对象级 E2E 回写文档与 `src/games/dicethrone/rule/武士录入核对.md` 为准。
+
 ## 目标
 
 复核武士角色板 `slot-05 / 武道` 与升级卡 `slot-23 / 武道 II` 的伤害数字，确认当前代码中的基础 `6 damage`、升级 `8 damage` 是否与本地汉化裁图一致。

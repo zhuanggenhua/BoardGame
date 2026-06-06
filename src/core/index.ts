@@ -53,3 +53,9 @@ export {
     getCriticalImageResolver,
     resolveCriticalImages,
 } from './CriticalImageResolverRegistry';
+export {
+    isDirectSpriteAsset,
+    resolveSpriteAssetUrls,
+    resolveSpriteAssetUrl,
+    buildSpriteBackgroundImage,
+} from './SpriteAssetResolver';

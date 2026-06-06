@@ -310,12 +310,9 @@ async function loadMatchRoomWithOnlineMocks(args?: {
         GameCursorProvider: ({ children }: any) => createElement('div', null, children),
     }));
 
-    vi.doMock('../../games/smashup/ui/SmashUpOverlayContext', () => ({
-        SmashUpOverlayProvider: ({ children }: any) => createElement('div', null, children),
-    }));
-
-    vi.doMock('../../games/smashup/ui/CardMagnifyOverlay', () => ({
-        SMASHUP_FORCE_DISMISS_EVENT: 'smashup-force-dismiss',
+    vi.doMock('../../games/pageRuntimeAdapter', () => ({
+        GamePageRuntimeProvider: ({ children }: any) => createElement('div', null, children),
+        dismissGamePageTransientUi: () => false,
     }));
 
     vi.doMock('../../components/lobby/roomActions', () => ({
@@ -387,7 +384,8 @@ async function loadMatchRoomWithOnlineMocks(args?: {
         RematchProvider: ({ children }: any) => createElement('div', null, children),
     }));
 
-    const { MatchRoom, OnlineManualFactionSelectionBridge } = await import('../MatchRoom');
+    const { MatchRoom } = await import('../MatchRoom');
+    const { OnlineManualFactionSelectionBridge } = await import('../onlineManualFactionSelectionBridge');
     return {
         MatchRoom,
         OnlineManualFactionSelectionBridge,
@@ -432,7 +430,7 @@ describe('MatchRoom route identity integration', () => {
         expect(navigateMock).toHaveBeenCalledWith('/play/smashup/match/match-1?playerID=0', { replace: true });
         expect(gameProviderSpy).toHaveBeenCalled();
         expect(gameModeSpy).toHaveBeenCalled();
-        expect(setPlayerIDMock).not.toHaveBeenCalled();
+        expect(setPlayerIDMock).toHaveBeenCalledWith('0');
     });
 
     it('即使 URL 显式带 spectate=1，只要 localStorage 仍有 stored seat，集成链也不应把 GameProvider 挂成 spectator/null', async () => {

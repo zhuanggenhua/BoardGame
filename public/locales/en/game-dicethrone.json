@@ -346,8 +346,7 @@
     "tactical_advantage": {
       "name": "Tactical Advantage",
       "description": [
-        "Limit 5. Spend 1 to reroll 1 die; spend 3 to draw 1 or inflict Targeted; spend 4 to gain Protect or transfer a status.",
-        "The full multi-option active effect is still in progress."
+        "Limit 5. Spend 1 to gain 1 CP or reroll 1 die; spend 3 to draw 1 or inflict Targeted on 1 opponent; spend 4 to let 1 player gain Protect or transfer 1 status."
       ]
     }
   },
@@ -2623,7 +2622,7 @@
     },
     "war-monger": {
       "name": "War Monger",
-      "description": "1 Sabre + 3 Banners: gain Tactical Advantage and roll 1 die; Sabre deals 5, Banner gains 4 Tactical Advantage, Medal draws 1. The extra Offensive Roll Phase is still in progress."
+      "description": "1 Sabre + 3 Banners: gain 1 Tactical Advantage and roll 1 die; Sabre deals 5 damage, Banner gains 4 Tactical Advantage, Medal draws 1 card; after resolution, immediately enter an extra Offensive Roll Phase."
     },
     "war-monger-2": {
       "name": "War Monger II",
@@ -2663,7 +2662,7 @@
     },
     "countermeasures": {
       "name": "Countermeasures",
-      "description": "Defensive roll 4 dice; Sabres/Banners counterattack, Medals prevent damage and gain Tactical Advantage. Exact defense resolution is still in progress."
+      "description": "Defensive roll 4 dice; each pair of Sabres deals 1 counter damage; each Banner prevents 1 damage; each Medal gains 1 Tactical Advantage."
     },
     "countermeasures-2": {
       "name": "Countermeasures II",
@@ -2675,11 +2674,11 @@
     },
     "high-ground": {
       "name": "High Ground",
-      "description": "Ultimate: inflict Targeted and Bind; increase Tactical Advantage limit by 1, then gain to the limit and deal 12 damage. Limit increase is still in progress."
+      "description": "Ultimate: inflict Targeted and Bind; increase Tactical Advantage limit by 1, then gain to the limit and deal 12 damage."
     },
     "soul-stab": {
       "name": "Soul Stab",
-      "description": "3/4/5 Cutlasses deal 5/7/9 damage; if you rolled three matching numbers, inflict Powder Keg. Matching-number branch is still in progress."
+      "description": "3/4/5 Cutlasses deal 5/7/9 damage; if you rolled three matching numbers, inflict Powder Keg."
     },
     "marked-for-death": {
       "name": "Marked for Death",
@@ -2687,11 +2686,11 @@
     },
     "cursed": {
       "name": "Cursed",
-      "description": "Passive: during Upkeep, take 4 damage that cannot be reduced or prevented; opponents who dealt no attack get Powder Keg. Full passive is still in progress."
+      "description": "Passive: during your Upkeep, take 4 damage that cannot be reduced or prevented; opponents who made no attack during their Offensive Roll Phase are inflicted with Powder Keg."
     },
     "deep-sea-dive": {
       "name": "Deep Sea Dive",
-      "description": "1 Cutlass + 2 Loot + 1 Skull: steal CP, discard, inflict Wither, then deal 8 damage. Steal/discard interaction is still in progress."
+      "description": "1 Cutlass + 2 Loot + 1 Skull: steal 1 CP, force the opponent to discard 1 card, inflict Wither, then deal 8 damage."
     },
     "breath-of-death": {
       "name": "Breath of Death",
@@ -2703,15 +2702,15 @@
     },
     "undead-claw": {
       "name": "Undead Claw",
-      "description": "1 Cutlass + 3 Skulls: deal 8 undefendable damage; all opponents take 1 damage per Cursed Coin they have. Coin damage is still in progress."
+      "description": "1 Cutlass + 3 Skulls: deal 8 undefendable damage; all opponents take 1 damage for each Cursed Coin they have."
     },
     "still-wet-behind-ears": {
       "name": "Still Wet Behind the Ears",
-      "description": "Defensive roll 5 dice; Cutlasses counterattack, Loot gains CP, Skulls prevent damage; Cutlass+Skull inflicts Cursed Coin. Exact defense resolution is still in progress."
+      "description": "Defensive roll 5 dice; each Cutlass deals 1 counter damage, each Loot gains 1 CP, each Skull prevents 2 damage; if you rolled at least 1 Cutlass and 1 Skull, inflict Cursed Coin."
     },
     "merciless-curse": {
       "name": "Merciless Curse",
-      "description": "Ultimate: deal 13, inflict Parley, Cursed Coin, and Wither; inflict Powder Keg on up to two opponents. Extra target handling is still in progress."
+      "description": "Ultimate: deal 13 damage, inflict Parley, Cursed Coin, and Wither; inflict Powder Keg on up to two opponents."
     }
   },
   "cards": {

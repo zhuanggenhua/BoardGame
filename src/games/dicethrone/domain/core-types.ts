@@ -508,7 +508,7 @@ export interface HeroState {
     characterId: CharacterId;
     /**
      * 部分英雄存在双面玩家板。咒缚海盗运行时已接入 normal / cursed 两张底图，
-     * 当前仅部分效果（如“海盗的一生”）按该字段分支，完整双面技能合同仍待收口。
+     * 当前已用于主棋盘选图、攻击特写裁切、能力集切换，以及“海盗的一生”等按面板分支的效果。
      */
     playerBoardFace?: 'normal' | 'cursed';
     /**

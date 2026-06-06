@@ -75,6 +75,53 @@ function buildCompareRollSeatState(): MatchState<unknown> {
     } as MatchState<unknown>;
 }
 
+function buildCompareRollVisibleState(args?: {
+    currentPlayerId?: string;
+    interactionId?: string;
+    interactionPlayerId?: string;
+    contestantPlayerIds?: string[];
+    eventStreamNextId?: number;
+    isBlocked?: boolean;
+}): MatchState<unknown> {
+    const contestantPlayerIds = args?.contestantPlayerIds ?? ['0', '1'];
+    return {
+        core: {
+            currentPlayerId: args?.currentPlayerId ?? '1',
+        },
+        sys: {
+            phase: 'defensiveRoll',
+            turnNumber: 3,
+            eventStream: {
+                nextId: args?.eventStreamNextId ?? 42,
+                entries: [],
+            },
+            interaction: {
+                current: {
+                    id: args?.interactionId ?? 'compare-roll-1',
+                    kind: 'compare-roll-choice',
+                    playerId: args?.interactionPlayerId ?? '0',
+                    data: {
+                        title: 'compareRoll.gunslingerDuel.title',
+                        contestants: contestantPlayerIds.map((playerId, index) => ({
+                            playerId,
+                            roll: 5 - index,
+                            labelKey: index === 0
+                                ? 'compareRoll.gunslingerDuel.attacker'
+                                : 'compareRoll.gunslingerDuel.defender',
+                        })),
+                        options: [
+                            { id: 'accept', label: '确认' },
+                        ],
+                    },
+                },
+                queue: [],
+                isBlocked: args?.isBlocked ?? false,
+            },
+            responseWindow: {},
+        },
+    } as MatchState<unknown>;
+}
+
 describe('resolveOnlineAiDecisionView', () => {
     it('compare-roll 公开可见但仍 blocked 的 contestant，应优先使用新鲜 seat snapshot 作为 visibleState', () => {
         const sharedState = buildCompareRollSharedState();
@@ -174,6 +221,60 @@ describe('resolveOnlineAiDecisionView', () => {
             return;
         }
         expect(dispatch.idleReason).toBe('no-action');
+    });
+
+    it('compare-roll contestants 变化时，离开可见集合的 seat 必须清掉旧 current，新进入者必须拿到新 current', () => {
+        const updatedSharedState = buildCompareRollVisibleState({
+            currentPlayerId: '2',
+            contestantPlayerIds: ['0', '2'],
+        });
+        const staleSeatStateForPlayer1 = buildCompareRollVisibleState({
+            currentPlayerId: '1',
+            contestantPlayerIds: ['0', '1'],
+            isBlocked: true,
+        });
+
+        const formerContestantView = resolveOnlineAiDecisionView({
+            sharedState: updatedSharedState,
+            privateOverlay: staleSeatStateForPlayer1,
+            playerId: '1',
+        });
+
+        expect(formerContestantView.visibility).toBe('shared');
+        expect(formerContestantView.canDecide).toBe(true);
+        expect(formerContestantView.blockedReason).toBeNull();
+        expect(formerContestantView.visibleState).toBe(updatedSharedState);
+        expect(formerContestantView.visibleState.sys?.interaction?.current).toMatchObject({
+            id: 'compare-roll-1',
+            kind: 'compare-roll-choice',
+            playerId: '0',
+        });
+        expect(
+            Array.isArray(formerContestantView.visibleState.sys?.interaction?.current?.data?.contestants)
+                && formerContestantView.visibleState.sys?.interaction?.current?.data?.contestants
+                    .some((contestant: any) => contestant.playerId === '1'),
+        ).toBe(false);
+
+        const newlyVisibleContestantView = resolveOnlineAiDecisionView({
+            sharedState: updatedSharedState,
+            privateOverlay: null,
+            playerId: '2',
+        });
+
+        expect(newlyVisibleContestantView.visibility).toBe('shared');
+        expect(newlyVisibleContestantView.canDecide).toBe(true);
+        expect(newlyVisibleContestantView.blockedReason).toBeNull();
+        expect(newlyVisibleContestantView.visibleState).toBe(updatedSharedState);
+        expect(newlyVisibleContestantView.visibleState.sys?.interaction?.current).toMatchObject({
+            id: 'compare-roll-1',
+            kind: 'compare-roll-choice',
+            playerId: '0',
+        });
+        expect(
+            newlyVisibleContestantView.visibleState.sys?.interaction?.current?.data?.contestants,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({ playerId: '2' }),
+        ]));
     });
 
     it('factionSelect shared state 滞后时，应使用更新的 seat snapshot 避免重复给上一位 AI 派发', async () => {

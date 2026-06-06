@@ -1,4 +1,6 @@
-# P2 Ultimate 护盾免疫功能恢复完成
+# P2 Ultimate 护盾免疫恢复历史完成记录
+
+> 2026-06-06 当前有效口径：本文只记录 2026-03-09 那轮 POD 相关恢复里，“Ultimate 护盾免疫”这一个专项问题的发现、修复与当时验证，不是当前 DiceThrone 整体、也不是新英雄整批补审的完成证明。阅读时只能把它当作历史专项修复证据；当前新英雄与整批补审状态应以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md`、`evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 及对应单英雄主审计文档为准。
 
 ## 执行总结
 
@@ -150,4 +152,8 @@ Test Files  1 passed (1)
 - P2 的手动验证发现了真正的功能丢失
 - 及时修复避免了规则违反和玩家体验问题
 
-**下一步**：继续验证其他 P2 高优先级测试，确保没有其他功能丢失。
+**下一步**：仅代表当时那轮 P2 恢复任务的后续动作，不代表当前 DiceThrone 或新英雄补审出口。
+
+---
+
+**当前阅读说明**：本文只能证明“Ultimate 护盾免疫”这条历史专项问题曾被定位并补过，不能外推为当前 DiceThrone 全面恢复完成，也不能替代新英雄当前对象级/批次级审计结论。

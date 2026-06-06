@@ -190,6 +190,63 @@ describe('忍者派系能力', () => {
         expectNoPrompt(matchState);
         expect(events.filter(e => e.type === SU_EVENTS.MINION_RETURNED)).toHaveLength(0);
     });
+
+    it('ninja_disguise: 打出 borrowed 手牌随从时，返回事件仍应保留行动玩家 sourcePlayerId', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('a1', 'ninja_disguise', 'action', '0'),
+                        makeCard('borrowed-hand-minion', 'ninja_master', 'minion', '1'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'b1', minions: [makeMinion('return-me', 'test', '0', 2)], ongoingActions: [] }),
+            ],
+        });
+
+        const played = execPlayAction(state, '0', 'a1');
+        const chooseReturn = respondToPrompt(
+            played.matchState,
+            getPromptOption(
+                getSimpleChoicePrompt(played.matchState, 'ninja_disguise_choose_minions'),
+                option => option.value?.minionUid === 'return-me',
+                'disguise return target',
+            ).id,
+            '0',
+            defaultTestRandom,
+        );
+        const resolved = respondToPrompt(
+            chooseReturn.finalState,
+            getPromptOption(
+                getSimpleChoicePrompt(chooseReturn.finalState, 'ninja_disguise_choose_play1'),
+                option => option.value?.cardUid === 'borrowed-hand-minion',
+                'disguise borrowed hand minion',
+            ).id,
+            '0',
+            defaultTestRandom,
+        );
+
+        const returnedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_RETURNED) as any;
+        expect(returnedEvent).toBeDefined();
+        expect(returnedEvent.payload).toMatchObject({
+            minionUid: 'return-me',
+            toPlayerId: '0',
+            sourcePlayerId: '0',
+            reason: 'ninja_disguise',
+        });
+
+        const playedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+        expect(playedEvent).toBeDefined();
+        expect(playedEvent.payload).toMatchObject({
+            cardUid: 'borrowed-hand-minion',
+            ownerId: '1',
+            playerId: '0',
+            baseIndex: 0,
+        });
+    });
 });
 
 function makeNinjaOngoingMinion(overrides: Partial<MinionOnBase> = {}): MinionOnBase {
@@ -269,6 +326,28 @@ describe('忍者 ongoing/special 能力', () => {
             expect(isMinionProtected(state, myMinion, 0, '1', 'action')).toBe(true);
         });
 
+        it('同一宿主上若同时有两张不同控制者的 Smoke Bomb，不应因第一张同名来源而放行对手行动', () => {
+            const protectedMinion = makeNinjaOngoingMinion({
+                defId: 'ninja_a',
+                uid: 'n-smoke-host',
+                controller: '0',
+                owner: '0',
+                attachedActions: [
+                    { uid: 'sb-owner', defId: 'ninja_smoke_bomb', ownerId: '1' } as any,
+                    {
+                        uid: 'sb-borrowed',
+                        defId: 'ninja_smoke_bomb',
+                        ownerId: '1',
+                        metadata: { sourcePlayerId: '0', sourceControllerId: '0' },
+                    } as any,
+                ],
+            });
+            const state = makeNinjaOngoingState([makeBase({ minions: [protectedMinion] })]);
+
+            expect(isMinionProtected(state, protectedMinion, 0, '1', 'action')).toBe(true);
+            expect(isMinionProtected(state, protectedMinion, 0, '0', 'action')).toBe(false);
+        });
+
         it('POD 版烟雾弹也会保护被附着的随从', () => {
             const myMinion = makeNinjaOngoingMinion({
                 defId: 'ninja_a', uid: 'n-pod-1', controller: '0',
@@ -345,6 +424,33 @@ describe('忍者 ongoing/special 能力', () => {
             });
 
             expect(events).toHaveLength(0);
+        });
+
+        it('同一宿主上第一张暗杀不属于当前回合玩家时，不应吞掉后面另一控制者的真实触发', () => {
+            const target = makeNinjaOngoingMinion({
+                defId: 'opp_minion',
+                uid: 'om-mixed-1',
+                controller: '1',
+                owner: '1',
+                attachedActions: [
+                    { uid: 'as-owner-1', defId: 'ninja_assassination', ownerId: '1' },
+                    { uid: 'as-owner-0', defId: 'ninja_assassination', ownerId: '0' },
+                ],
+            });
+            const state = makeNinjaOngoingState([makeBase({ minions: [target] })]);
+
+            const { events } = fireTriggers(state, 'onTurnEnd', {
+                state,
+                playerId: '0',
+                random: defaultTestRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+            expect((events[0] as any).payload.minionUid).toBe('om-mixed-1');
+            expect((events[0] as any).payload.reason).toBe('ninja_assassination');
+            expect((events[0] as any).payload.destroyerId).toBe('0');
         });
     });
 
@@ -567,7 +673,38 @@ describe('忍者 ongoing/special 能力', () => {
             expect(acolyteEvents).toHaveLength(2);
             expect(acolyteEvents[0].type).toBe(SU_EVENTS.SPECIAL_LIMIT_USED);
             expect(acolyteEvents[1].type).toBe(SU_EVENTS.MINION_RETURNED);
+            expect((acolyteEvents[1] as any).payload).toMatchObject({
+                minionUid: 'ac-1',
+                toPlayerId: '0',
+                sourcePlayerId: '0',
+                reason: 'ninja_acolyte',
+            });
             expect(getFirstPrompt(result.finalState)).toBeDefined();
+        });
+
+        it('ninja_acolyte_pod talent 返回手牌事件应保留发动玩家 sourcePlayerId', () => {
+            const state = makeNinjaOngoingState([
+                makeBase({ minions: [makeNinjaOngoingMinion({ defId: 'ninja_acolyte_pod', uid: 'ac-pod-1', controller: '0' })] }),
+            ]);
+            state.players['0'].hand = [];
+            state.players['0'].minionsPlayed = 0;
+
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'ac-pod-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+
+            expect(result.success, result.error).toBe(true);
+            const returnedEvent = result.events.find(event => event.type === SU_EVENTS.MINION_RETURNED) as any;
+            expect(returnedEvent).toBeDefined();
+            expect(returnedEvent.payload).toMatchObject({
+                minionUid: 'ac-pod-1',
+                toPlayerId: '0',
+                sourcePlayerId: '0',
+                reason: 'ninja_acolyte_pod',
+            });
+            expect(getPromptSourceId(getFirstPrompt(result.finalState))).toBe('ninja_acolyte_play');
         });
 
         it('把自己收回再额外打出后，应视为本回合已打出过随从，不能再发动其他忍者侍从', () => {

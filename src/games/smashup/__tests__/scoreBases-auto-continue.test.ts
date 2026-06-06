@@ -16,7 +16,7 @@ import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
 import type { MatchState } from '../../../core/types';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase } from '../types';
 import { defaultTestRandom, runCommand } from './testRunner';
-import { SU_COMMANDS } from '../domain/types';
+import { getCurrentPlayerId, SU_COMMANDS } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { initAllAbilities } from '../abilities';
 import { buildMinionTargetOptions, buildPlayerTargetOptions } from '../domain/abilityHelpers';
@@ -634,8 +634,21 @@ describe('scoreBases 阶段自动推进', () => {
 
         expect(advanced.success, advanced.error).toBe(true);
         expect(advanced.events.map(event => event.type)).toContain(SU_EVENT_TYPES.BASE_SCORED);
-        expect(advanced.events.map(event => event.type)).toContain(SU_EVENT_TYPES.BASE_CLEARED);
-        expect(advanced.finalState.core.bases[0]?.defId).toBe('base_haunted_house');
+        expect(advanced.events.map(event => event.type)).not.toContain(SU_EVENT_TYPES.BASE_CLEARED);
+        const delayUntil = (advanced.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        expect(delayUntil).toBeGreaterThan(Date.now());
+        expect(advanced.finalState.core.bases[0]?.defId).toBe('base_the_homeworld');
+
+        const finalized = runCommand(advanced.finalState as any, {
+            type: 'ADVANCE_PHASE',
+            playerId: getCurrentPlayerId(advanced.finalState.core),
+            payload: {},
+            timestamp: delayUntil,
+        } as any);
+        expect(finalized.success, finalized.error).toBe(true);
+        expect(finalized.events.map(event => event.type)).toContain(SU_EVENT_TYPES.BASE_CLEARED);
+        expect(finalized.finalState.core.bases[0]?.defId).toBe('base_haunted_house');
     });
 
     it('达标基地上只有触发式侏儒 POD beforeScoring 时仍应自动推进', () => {

@@ -131,6 +131,74 @@ function isGenericScriptErrorNoise(payload: ClientAutoReportPayload): boolean {
     return /^script error\.?$/.test(normalizedMessage);
 }
 
+function isCapacitorPluginNotImplementedNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    return /^"?(app|capacitorupdater)"? plugin is not implemented on android$/.test(normalizedMessage);
+}
+
+function isAbortErrorNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedName = payload.errorName.trim().toLowerCase();
+    return normalizedName === 'aborterror'
+        && /^the operation was aborted\.?$/.test(normalizedMessage);
+}
+
+function isAnonymousTopLevelDocumentSource(errorSource: string): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    const trimmedSource = errorSource.trim();
+    const match = /^(.*):(\d+):(\d+)$/.exec(trimmedSource);
+    if (!match) {
+        return false;
+    }
+
+    const [, rawUrl, rawLine, rawColumn] = match;
+    const line = Number(rawLine);
+    const column = Number(rawColumn);
+    if (!Number.isFinite(line) || !Number.isFinite(column) || line !== 1 || column > 80) {
+        return false;
+    }
+
+    try {
+        const sourceUrl = new URL(rawUrl, window.location.href);
+        const currentUrl = new URL(window.location.href);
+        return sourceUrl.pathname === currentUrl.pathname
+            && sourceUrl.search === currentUrl.search;
+    } catch {
+        return false;
+    }
+}
+
+function hasAppStackFrame(stack?: string): boolean {
+    if (!stack) {
+        return false;
+    }
+    const normalizedStack = stack.toLowerCase();
+    return normalizedStack.includes('/assets/')
+        || normalizedStack.includes('/src/')
+        || normalizedStack.includes('webpack-internal:')
+        || normalizedStack.includes('vite/dist/');
+}
+
+function isAnonymousInjectedWindowErrorNoise(payload: ClientAutoReportPayload): boolean {
+    if ((payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE) !== 'client-window-error') {
+        return false;
+    }
+    if (!isAnonymousTopLevelDocumentSource(payload.errorSource) || hasAppStackFrame(payload.stack)) {
+        return false;
+    }
+
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedName = payload.errorName.trim().toLowerCase();
+    const isUndefinedGlobal = normalizedName === 'referenceerror'
+        && /^[a-z_$][a-z0-9_$]* is not defined$/i.test(payload.errorMessage.trim());
+    const isAnonymousPropertyRead = normalizedName === 'typeerror'
+        && /^cannot read properties of undefined \(reading ['"][a-z0-9_$-]+['"]\)$/i.test(payload.errorMessage.trim());
+
+    return isUndefinedGlobal || isAnonymousPropertyRead;
+}
+
 function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
     const normalizedMessage = payload.errorMessage.trim();
     const normalizedName = payload.errorName.trim();
@@ -143,7 +211,16 @@ function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
     if (isStaleChunkError(new Error(normalizedMessage || normalizedName))) {
         return true;
     }
+    if (isCapacitorPluginNotImplementedNoise(payload)) {
+        return true;
+    }
     if (isKnownClientAudioDeviceNoise(payload)) {
+        return true;
+    }
+    if (isAbortErrorNoise(payload)) {
+        return true;
+    }
+    if (isAnonymousInjectedWindowErrorNoise(payload)) {
         return true;
     }
     return false;

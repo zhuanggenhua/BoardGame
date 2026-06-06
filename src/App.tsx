@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { DebugProvider } from './contexts/DebugContext';
@@ -34,15 +34,15 @@ import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
 import { HOME_V2_PREVIEW_PATH } from './lib/homeV2Routing';
 import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
 
-import { HomeEntry } from './pages/HomeEntry';
-import { NotFound } from './pages/NotFound';
-import { MaintenancePage } from './pages/Maintenance';
-
 const ENABLE_INTERNAL_DEVTOOLS = import.meta.env.DEV;
 
 // 页面级懒加载：首页是默认入口，保留同步加载避免首屏闪出路由级 loading 文案
 const MatchRoom = React.lazy(() => import('./pages/MatchRoomWithAudio'));
+const LocalMatchRoom = React.lazy(() => import('./pages/LocalMatchRoomWithAudio'));
 const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoomWithAudio'));
+const LazyHomeEntry = React.lazy(() => import('./pages/HomeEntry').then(m => ({ default: m.HomeEntry })));
+const LazyNotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
+const LazyMaintenancePage = React.lazy(() => import('./pages/Maintenance').then(m => ({ default: m.MaintenancePage })));
 // 旧的测试路由已废弃，使用新的 TestHarness 框架
 const LazyGlobalHUD = React.lazy(() => import('./components/system/GlobalHUD').then(m => ({ default: m.GlobalHUD })));
 const LazyModalStackRoot = React.lazy(() => import('./components/system/ModalStackRoot').then(m => ({ default: m.ModalStackRoot })));
@@ -88,6 +88,48 @@ const DevMobileEvidenceCaptureAgent = import.meta.env.DEV
     )
   : null;
 
+const AppRouteChrome = ({
+  isNativeAndroid,
+  isNativeMobile,
+}: {
+  isNativeAndroid: boolean;
+  isNativeMobile: boolean;
+}) => {
+  const location = useLocation();
+  const isPlayRoute = location.pathname.startsWith('/play/');
+
+  return (
+    <>
+      {DevMobileEvidenceCaptureAgent ? (
+        <React.Suspense fallback={null}>
+          <DevMobileEvidenceCaptureAgent />
+        </React.Suspense>
+      ) : null}
+      {isNativeAndroid ? <AndroidBackNavigationBridge /> : null}
+      <TextEntryAutoScrollAgent />
+      <MobileTextEntryProxyLayer />
+      <ViewportDebugProbe />
+      {!isPlayRoute ? (
+        <React.Suspense fallback={null}>
+          <LazyGlobalHUD />
+        </React.Suspense>
+      ) : null}
+      <React.Suspense fallback={null}>
+        <LazyModalStackRoot />
+      </React.Suspense>
+      <React.Suspense fallback={null}>
+        <LazyToastViewport />
+      </React.Suspense>
+      <Toaster />
+      {isNativeAndroid ? <AndroidNativeUpdateManager /> : null}
+      {isNativeMobile ? <MobileLiveUpdateManager /> : null}
+      {!isPlayRoute ? <PcWebMascot /> : null}
+      <EngineNotificationListener />
+      <GamePageRescueGate />
+    </>
+  );
+};
+
 const AppContent = () => {
   const { t } = useTranslation('lobby');
   const isNativeAndroid = isNativeAndroidRuntime();
@@ -132,13 +174,25 @@ const AppContent = () => {
                   <Routes>
                     <Route
                       path="/"
-                      element={<HomeEntry />}
+                      element={(
+                        <React.Suspense fallback={null}>
+                          <LazyHomeEntry />
+                        </React.Suspense>
+                      )}
                     />
                     <Route
                       path="/play/:gameId/match/:matchId"
                       element={(
                         <React.Suspense fallback={playRouteFallback}>
                           <MatchRoom />
+                        </React.Suspense>
+                      )}
+                    />
+                    <Route
+                      path="/play/:gameId/local"
+                      element={(
+                        <React.Suspense fallback={playRouteFallback}>
+                          <LocalMatchRoom />
                         </React.Suspense>
                       )}
                     />
@@ -191,7 +245,14 @@ const AppContent = () => {
                         </React.Suspense>
                       )}
                     />
-                    <Route path="/maintenance" element={<MaintenancePage />} />
+                    <Route
+                      path="/maintenance"
+                      element={(
+                        <React.Suspense fallback={null}>
+                          <LazyMaintenancePage />
+                        </React.Suspense>
+                      )}
+                    />
 
                     {/* Admin Routes */}
                     <Route path="/admin" element={
@@ -237,32 +298,16 @@ const AppContent = () => {
                       <Route path="notifications" element={renderAdminOnly(<NotificationsPage />)} />
                     </Route>
 
-                    <Route path="*" element={<NotFound />} />
+                    <Route
+                      path="*"
+                      element={(
+                        <React.Suspense fallback={null}>
+                          <LazyNotFound />
+                        </React.Suspense>
+                      )}
+                    />
                     </Routes>
-                    {DevMobileEvidenceCaptureAgent ? (
-                      <React.Suspense fallback={null}>
-                        <DevMobileEvidenceCaptureAgent />
-                      </React.Suspense>
-                    ) : null}
-                    {isNativeAndroid ? <AndroidBackNavigationBridge /> : null}
-                    <TextEntryAutoScrollAgent />
-                    <MobileTextEntryProxyLayer />
-                    <ViewportDebugProbe />
-                    <React.Suspense fallback={null}>
-                      <LazyGlobalHUD />
-                    </React.Suspense>
-                    <React.Suspense fallback={null}>
-                      <LazyModalStackRoot />
-                    </React.Suspense>
-                    <React.Suspense fallback={null}>
-                      <LazyToastViewport />
-                    </React.Suspense>
-                    <Toaster />
-                    {isNativeAndroid ? <AndroidNativeUpdateManager /> : null}
-                    {isNativeMobile ? <MobileLiveUpdateManager /> : null}
-                    <PcWebMascot />
-                    <EngineNotificationListener />
-                    <GamePageRescueGate />
+                    <AppRouteChrome isNativeAndroid={isNativeAndroid} isNativeMobile={isNativeMobile} />
                 </MobileOrientationGuard>
                 </BrowserCompatibilityGate>
               </BrowserRouter>

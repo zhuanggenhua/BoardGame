@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, test } from 'vitest';
-import { registerInnsmouthAbilities } from '../../abilities/innsmouth';
+import { beforeAll, describe, expect, test } from 'vitest';
+import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { grantExtraMinion } from '../../domain/abilityHelpers';
 import { clearRegistry } from '../../domain/abilityRegistry';
+import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { validate } from '../../domain/commands';
 import { clearOngoingEffectRegistry, collectTriggers, isMinionProtected } from '../../domain/ongoingEffects';
@@ -207,13 +208,16 @@ function attachAfterScoringWindow(core: SmashUpCore, sourceBaseIndex = 0, active
     } as any;
 }
 
+beforeAll(() => {
+    clearRegistry();
+    clearBaseAbilityRegistry();
+    clearOngoingEffectRegistry();
+    clearInteractionHandlers();
+    resetAbilityInit();
+    initAllAbilities();
+});
+
 describe('印斯茅斯 ongoing 能力', () => {
-    beforeEach(() => {
-        clearOngoingEffectRegistry();
-        clearRegistry();
-        clearInteractionHandlers();
-        registerInnsmouthAbilities();
-    });
 
     describe('innsmouth_in_plain_sight: 众目睽睽', () => {
         test('力量≤2的己方随从不受对手影响', () => {
@@ -278,6 +282,44 @@ describe('印斯茅斯 ongoing 能力', () => {
 
             expect(isMinionProtected(state, weakMinion, 0, '1', 'affect')).toBe(true);
             expect(isMinionProtected(state, weakMinion, 0, '0', 'affect')).toBe(false);
+        });
+
+        test('同一基地上若同时有两张不同控制者的 in_plain_sight，不应因第一张同名来源而放行对手影响', () => {
+            const controllerWeakMinion = makeMinion({
+                defId: 'inn-controller-weak',
+                uid: 'ips-controller-weak',
+                controller: '0',
+                owner: '0',
+                basePower: 2,
+            });
+            const ownerWeakMinion = makeMinion({
+                defId: 'inn-owner-weak',
+                uid: 'ips-owner-weak',
+                controller: '1',
+                owner: '1',
+                basePower: 2,
+            });
+            const base = makeBase({
+                minions: [controllerWeakMinion, ownerWeakMinion],
+                ongoingActions: [
+                    { uid: 'ips-owner', defId: 'innsmouth_in_plain_sight', ownerId: '1' },
+                    {
+                        uid: 'ips-borrowed',
+                        defId: 'innsmouth_in_plain_sight',
+                        ownerId: '1',
+                        metadata: {
+                            sourcePlayerId: '0',
+                            sourceControllerId: '0',
+                        },
+                    },
+                ],
+            });
+            const state = makeState([base]);
+
+            expect(isMinionProtected(state, controllerWeakMinion, 0, '1', 'affect')).toBe(true);
+            expect(isMinionProtected(state, controllerWeakMinion, 0, '0', 'affect')).toBe(false);
+            expect(isMinionProtected(state, ownerWeakMinion, 0, '0', 'affect')).toBe(true);
+            expect(isMinionProtected(state, ownerWeakMinion, 0, '1', 'affect')).toBe(false);
         });
     });
 
@@ -560,12 +602,6 @@ describe('印斯茅斯 ongoing 能力', () => {
 });
 
 describe('印斯茅斯疯狂卡行动', () => {
-    beforeEach(() => {
-        clearOngoingEffectRegistry();
-        clearRegistry();
-        clearInteractionHandlers();
-        registerInnsmouthAbilities();
-    });
 
     describe('innsmouth_recruitment（招募）', () => {
         test('选择抽 3 张疯狂卡时获得 3 个额外随从', () => {
@@ -857,6 +893,38 @@ describe('印斯茅斯普通行为', () => {
             expect(newState.players['1'].discard).toHaveLength(0);
             expect(newState.players['1'].deck).toHaveLength(1);
             expect(newState.players['1'].deck[0].uid).toBe('dis3');
+        });
+
+        test('被他人拥有的弃牌随从仍应洗回其拥有者牌库', () => {
+            const state = makeInnsmouthActionState({
+                players: {
+                    '0': makeInnsmouthActionPlayer('0', {
+                        hand: [makeInnsmouthActionCard('a1', 'innsmouth_new_acolytes', 'action', '0')],
+                        deck: [makeInnsmouthActionCard('p0-deck-a', 'test_m0', 'minion', '0')],
+                        discard: [
+                            makeInnsmouthActionCard('own-minion', 'test_m1', 'minion', '0'),
+                            makeInnsmouthActionCard('borrowed-minion', 'test_m2', 'minion', '1'),
+                        ],
+                    }),
+                    '1': makeInnsmouthActionPlayer('1', {
+                        deck: [makeInnsmouthActionCard('p1-deck-a', 'test_m3', 'minion', '1')],
+                    }),
+                },
+            });
+
+            const { events } = execInnsmouthActionPlay(state, '0', 'a1');
+            expect(events).toContainEqual(expect.objectContaining({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: expect.objectContaining({
+                    playerId: '1',
+                    sourcePlayerId: '0',
+                }),
+            }));
+
+            const newState = applyInnsmouthActionEvents(state, events);
+            expect(newState.players['0'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);
+            expect(newState.players['0'].deck.some(card => card.uid === 'borrowed-minion')).toBe(false);
+            expect(newState.players['1'].deck.some(card => card.uid === 'borrowed-minion')).toBe(true);
         });
     });
 

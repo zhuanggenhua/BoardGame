@@ -7,7 +7,7 @@ import { createFeedbackResolver, collectPreloadKeys } from '../../lib/audio/defi
 import { pickRandomSoundKey } from '../../lib/audio/audioUtils';
 import type { GamePhase, SmashUpCore } from './domain/types';
 import { SU_EVENTS, SU_EVENT_TYPES } from './domain/events';
-import { SMASHUP_FACTION_IDS } from './domain/ids';
+import { normalizeFactionSelectionId, SMASHUP_FACTION_IDS } from './domain/ids';
 import { getCardDef } from './data/cards';
 
 type SmashUpAudioCtx = {
@@ -282,6 +282,196 @@ const GIANT_ANT_ACTION_KEYS = [
     'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_a',
     'cyberpunk.cyberpunk_sound_fx_pack_vol.buzz_and_hum.buzz_and_hum_b',
 ];
+const ANCIENT_EGYPTIAN_MINION_KEYS = [
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_001',
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_002',
+    'dark_fantasy_studio.dimensional_portal.dimensional_portal_1',
+];
+const ANCIENT_EGYPTIAN_ACTION_KEYS = [
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_003',
+    'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_001',
+    'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_002',
+];
+const CYBORG_APE_MINION_KEYS = [
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_a5',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_b3',
+    'combat.general.khron_studio_fight_fury_vol_1_assets.strong_generic_punch.fghtimpt_strong_generic_punch_01',
+];
+const CYBORG_APE_ACTION_KEYS = [
+    'system.computers_machinery_sound_fx_pack_vol.misc.machinery.mech_transform_001',
+    'system.computers_machinery_sound_fx_pack_vol.misc.energy.laser_emitter_001',
+    'combat.general.khron_studio_fight_fury_vol_1_assets.strong_generic_punch.fghtimpt_strong_generic_punch_02',
+];
+const DRAGON_MINION_KEYS = [
+    'monster.general.khron_studio_monster_library_vol_3_assets.dragon.dragon_roar.creadrgn_dragon_roar_01',
+    'monster.general.khron_studio_monster_library_vol_3_assets.dragon.dragon_roar.creadrgn_dragon_roar_02',
+    'monster.general.khron_studio_monster_library_vol_3_assets.dragon.dragon_attack.creadrgn_dragon_attack_01',
+];
+const DRAGON_ACTION_KEYS = [
+    'monster.general.khron_studio_monster_library_vol_3_assets.dragon.dragon_attack.creadrgn_dragon_attack_02',
+    'monster.general.khron_studio_monster_library_vol_3_assets.dragon.dragon_wings.wingcrea_dragon_wings_01',
+    'magic.fire.3.fire_earthquake',
+];
+const FAIRY_MINION_KEYS = [
+    'status.general.player_status_sound_fx_pack.fantasy.fantasy_fairy_dust_001',
+    'status.general.player_status_sound_fx_pack.fantasy.fantasy_fairy_dust_002',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_sparkle_a',
+];
+const FAIRY_ACTION_KEYS = [
+    'magic.general.spells_variations_vol_2.twinkle_tweak.magspel_twinkle_tweak_04_krst_none',
+    'magic.general.spells_variations_vol_2.twinkle_tweak.magspel_twinkle_tweak_05_krst_none',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_b',
+];
+const GEEK_MINION_KEYS = [
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_a',
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_b',
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_c',
+];
+const GEEK_ACTION_KEYS = [
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_d',
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_e',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_c',
+];
+const HULUWAWA_MINION_KEYS = [
+    'magic.water.12.water_spell_01',
+    'status.general.player_status_sound_fx_pack_vol.action_and_interaction.water_ready_a',
+    'magic.general.spells_variations_vol_2.glinting_bubbles.magelem_glinting_bubbles_01_krst_none',
+];
+const HULUWAWA_ACTION_KEYS = [
+    'magic.general.simple_magic_sound_fx_pack_vol.water.aqua_jet_cast_a',
+    'magic.general.simple_magic_sound_fx_pack_vol.water.aqua_jet_impact_a',
+    'ambient.water_sound_fx_pack_vol.designed.water_ball_spell_small',
+];
+const ITTY_CRITTER_MINION_KEYS = [
+    'status.general.player_status_sound_fx_pack.fantasy.fantasy_fairy_dust_003',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_sparkle_c',
+    'magic.general.spells_variations_vol_2.twinkle_tweak.magspel_twinkle_tweak_06_krst_none',
+];
+const ITTY_CRITTER_ACTION_KEYS = [
+    'magic.general.spells_variations_vol_2.twinkle_tweak.magspel_twinkle_tweak_07_krst_none',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a',
+    'status.general.player_status_sound_fx_pack.fantasy.fantasy_fairy_dust_004',
+];
+const KAIJU_MINION_KEYS = [
+    'monster.general.khron_studio_monster_library_vol_3_assets.dragon.dragon_roar.creadrgn_dragon_roar_03',
+    'monster.general.khron_studio_monster_library_vol_3_assets.dragon.dragon_attack.creadrgn_dragon_attack_03',
+    'magic.fire.3.fire_earthquake',
+];
+const KAIJU_ACTION_KEYS = [
+    'system.computers_machinery_sound_fx_pack_vol.misc.energy.laser_emitter_002',
+    'monster.general.khron_studio_monster_library_vol_3_assets.dragon.dragon_attack.creadrgn_dragon_attack_04',
+    'magic.fire.2.fire_earthquake_with_lava',
+];
+const MEGA_TROOPER_MINION_KEYS = [
+    'system.computers_machinery_sound_fx_pack_vol.misc.machinery.mech_transform_002',
+    'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_b4',
+    'system.computers_machinery_sound_fx_pack_vol.misc.energy.laser_emitter_003',
+];
+const MEGA_TROOPER_ACTION_KEYS = [
+    'system.computers_machinery_sound_fx_pack_vol.misc.energy.laser_emitter_004',
+    'system.computers_machinery_sound_fx_pack_vol.misc.machinery.mech_transform_003',
+    'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_004',
+];
+const MYTHIC_GREEK_MINION_KEYS = [
+    'magic.general.spells_variations_vol_2.colossal_shield_scrape.magmisc_colossal_shield_scrape_01_krst_none',
+    'magic.general.spells_variations_vol_2.colossal_shield_scrape.magmisc_colossal_shield_scrape_02_krst_none',
+    'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a',
+];
+const MYTHIC_GREEK_ACTION_KEYS = [
+    'magic.general.spells_variations_vol_2.colossal_shield_scrape.magmisc_colossal_shield_scrape_03_krst_none',
+    'combat.general.khron_studio_fight_fury_vol_1_assets.strong_generic_punch.fghtimpt_strong_generic_punch_04',
+    'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_005',
+];
+const SHAPESHIFTER_MINION_KEYS = [
+    'dark_fantasy_studio.dimensional_portal.dimensional_portal_2',
+    'dark_fantasy_studio.dimensional_portal.dimensional_portal_3',
+    'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_006',
+];
+const SHAPESHIFTER_ACTION_KEYS = [
+    'dark_fantasy_studio.dimensional_portal.dimensional_portal_4',
+    'dark_fantasy_studio.dimensional_portal.dimensional_portal_5',
+    'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_007',
+];
+const SHARK_MINION_KEYS = [
+    'magic.general.spells_variations_vol_2.beastly_chomp.creamnstr_beastly_chomp_01_krst_none',
+    'magic.general.spells_variations_vol_2.beastly_chomp.creamnstr_beastly_chomp_02_krst_none',
+    'magic.general.spells_variations_vol_2.beastly_chomp.creamnstr_beastly_chomp_03_krst_none',
+];
+const SHARK_ACTION_KEYS = [
+    'ambient.water_sound_fx_pack_vol.designed.water_ball_spell_big',
+    'ambient.water_sound_fx_pack_vol.splashes_and_movement.big_splash_a',
+    'magic.general.spells_variations_vol_2.beastly_chomp.creamnstr_beastly_chomp_04_krst_none',
+];
+const SKELETON_MINION_KEYS = [
+    'monster.general.khron_studio_monster_library_vol_4_assets.skeleton.skeleton_attack.creahmn_skeleton_attack_01',
+    'monster.general.khron_studio_monster_library_vol_4_assets.skeleton.skeleton_attack.creahmn_skeleton_attack_02',
+    'monster.general.khron_studio_monster_library_vol_4_assets.skeleton.skeleton_attack.creahmn_skeleton_attack_03',
+];
+const SKELETON_ACTION_KEYS = [
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_004',
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_005',
+    'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_grave_whisper_006',
+];
+const SUPERHERO_MINION_KEYS = [
+    'combat.general.khron_studio_fight_fury_vol_1_assets.strong_generic_punch.fghtimpt_strong_generic_punch_05',
+    'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_a',
+];
+const SUPERHERO_ACTION_KEYS = [
+    'combat.general.khron_studio_fight_fury_vol_1_assets.strong_generic_punch.fghtimpt_strong_generic_punch_06',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_sparkle_a',
+    'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_001',
+];
+const SUPER_SPY_MINION_KEYS = [
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_f',
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_g',
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_h',
+];
+const SUPER_SPY_ACTION_KEYS = [
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_i',
+    'ui.general.ui_menu_sound_fx_pack_vol.misc.interaction.interaction_mechanic_j',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_a',
+];
+const TIME_TRAVELER_MINION_KEYS = [
+    'ambient.khron_studio_sound_of_survival_vol_1_assets.home.metalic_safe.turn_safe_security_system.clocktick_turn_safe_security_system_01_krst',
+    'ambient.khron_studio_sound_of_survival_vol_1_assets.home.metalic_safe.turn_safe_security_system.clocktick_turn_safe_security_system_02_krst',
+    'dark_fantasy_studio.dimensional_portal.dimensional_portal_6',
+];
+const TIME_TRAVELER_ACTION_KEYS = [
+    'dark_fantasy_studio.dimensional_portal.dimensional_portal_7',
+    'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_006',
+    'system.computers_machinery_sound_fx_pack_vol.misc.energy.laser_emitter_001',
+];
+const TORNADO_MINION_KEYS = [
+    'magic.wind.43.wind_spell_03',
+    'magic.wind.41.wind_whoosh_01',
+    'magic.wind.41.wind_whoosh_02',
+];
+const TORNADO_ACTION_KEYS = [
+    'magic.wind.40.wind_hit_01',
+    'magic.wind.40.wind_hit_02',
+    'magic.wind.44.wind_magic_buff_01',
+];
+const VIKING_MINION_KEYS = [
+    'combat.general.forged_in_fury_vol_1.heavy_axe.heavy_axe_hard_whoosh.weapaxe_heavy_axe_hard_whoosh_01_krst',
+    'combat.general.forged_in_fury_vol_1.heavy_axe.heavy_axe_hard_whoosh.weapaxe_heavy_axe_hard_whoosh_02_krst',
+    'combat.general.forged_in_fury_vol_1.heavy_axe.heavy_axe_hard_whoosh.weapaxe_heavy_axe_hard_whoosh_03_krst',
+];
+const VIKING_ACTION_KEYS = [
+    'combat.general.forged_in_fury_vol_1.heavy_axe.heavy_axe_strike.weapaxe_heavy_axe_strike_01_krst',
+    'combat.general.forged_in_fury_vol_1.heavy_axe.heavy_axe_strike.weapaxe_heavy_axe_strike_02_krst',
+    'combat.general.forged_in_fury_vol_1.heavy_axe.heavy_axe_strike.weapaxe_heavy_axe_strike_03_krst',
+];
+const WORLD_CHAMP_MINION_KEYS = [
+    'combat.general.khron_studio_fight_fury_vol_1_assets.strong_generic_punch.fghtimpt_strong_generic_punch_07',
+    'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_01_krst',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_bells_b',
+];
+const WORLD_CHAMP_ACTION_KEYS = [
+    'combat.general.khron_studio_fight_fury_vol_1_assets.strong_generic_punch.fghtimpt_strong_generic_punch_08',
+    'combat.general.fight_fury_vol_2.versatile_punch_hit.fghtimpt_versatile_punch_hit_02_krst',
+    'ui.general.ui_menu_sound_fx_pack_vol.signals.positive.signal_positive_sparkle_b',
+];
 
 const FACTION_SFX_KEYS: Record<string, string[]> = {
     [SMASHUP_FACTION_IDS.ZOMBIES]: [...ZOMBIE_MINION_KEYS, ...ZOMBIE_ACTION_KEYS],
@@ -307,12 +497,35 @@ const FACTION_SFX_KEYS: Record<string, string[]> = {
     [SMASHUP_FACTION_IDS.FRANKENSTEIN]: [...FRANKENSTEIN_MINION_KEYS, ...FRANKENSTEIN_ACTION_KEYS],
     [SMASHUP_FACTION_IDS.VAMPIRES]: [...VAMPIRE_MINION_KEYS, ...VAMPIRE_ACTION_KEYS],
     [SMASHUP_FACTION_IDS.GIANT_ANTS]: [...GIANT_ANT_MINION_KEYS, ...GIANT_ANT_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS]: [...ANCIENT_EGYPTIAN_MINION_KEYS, ...ANCIENT_EGYPTIAN_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.CYBORG_APES]: [...CYBORG_APE_MINION_KEYS, ...CYBORG_APE_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.DRAGONS]: [...DRAGON_MINION_KEYS, ...DRAGON_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.FAIRIES]: [...FAIRY_MINION_KEYS, ...FAIRY_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.GEEKS]: [...GEEK_MINION_KEYS, ...GEEK_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.HULUWAWA]: [...HULUWAWA_MINION_KEYS, ...HULUWAWA_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.ITTY_CRITTERS]: [...ITTY_CRITTER_MINION_KEYS, ...ITTY_CRITTER_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.KAIJU]: [...KAIJU_MINION_KEYS, ...KAIJU_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.MAGICAL_GIRLS]: [...FAIRY_MINION_KEYS, ...FAIRY_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.MEGA_TROOPERS]: [...MEGA_TROOPER_MINION_KEYS, ...MEGA_TROOPER_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.MYTHIC_GREEKS]: [...MYTHIC_GREEK_MINION_KEYS, ...MYTHIC_GREEK_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.PRINCESSES]: [...FAIRY_MINION_KEYS, ...FAIRY_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.SAMURAI]: [...NINJA_MINION_KEYS, ...NINJA_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.SHAPESHIFTERS]: [...SHAPESHIFTER_MINION_KEYS, ...SHAPESHIFTER_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.SHARKS]: [...SHARK_MINION_KEYS, ...SHARK_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.SKELETONS]: [...SKELETON_MINION_KEYS, ...SKELETON_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.SUPERHEROES]: [...SUPERHERO_MINION_KEYS, ...SUPERHERO_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.SUPER_SPIES]: [...SUPER_SPY_MINION_KEYS, ...SUPER_SPY_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.TIME_TRAVELERS]: [...TIME_TRAVELER_MINION_KEYS, ...TIME_TRAVELER_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.TORNADOS]: [...TORNADO_MINION_KEYS, ...TORNADO_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.VIKINGS]: [...VIKING_MINION_KEYS, ...VIKING_ACTION_KEYS],
+    [SMASHUP_FACTION_IDS.WORLD_CHAMPS]: [...WORLD_CHAMP_MINION_KEYS, ...WORLD_CHAMP_ACTION_KEYS],
 };
 
 const collectFactionPreloadKeys = (factionIds: string[]): string[] => {
     const keys = new Set<string>();
     for (const factionId of factionIds) {
-        const list = FACTION_SFX_KEYS[factionId];
+        const normalizedFactionId = normalizeFactionSelectionId(factionId);
+        const list = FACTION_SFX_KEYS[factionId] ?? FACTION_SFX_KEYS[normalizedFactionId];
         if (list) list.forEach(key => keys.add(key));
     }
     return Array.from(keys);
@@ -424,6 +637,94 @@ const resolveFactionSound = (defId: string | undefined, cardType: 'minion' | 'ac
     if (defId.startsWith('giant_ant_')) {
         const keys = cardType === 'action' ? GIANT_ANT_ACTION_KEYS : GIANT_ANT_MINION_KEYS;
         return pickRandomSoundKey(`smashup.giant_ant.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('ancient_egyptians_')) {
+        const keys = cardType === 'action' ? ANCIENT_EGYPTIAN_ACTION_KEYS : ANCIENT_EGYPTIAN_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.ancient_egyptians.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('cyborg_apes_')) {
+        const keys = cardType === 'action' ? CYBORG_APE_ACTION_KEYS : CYBORG_APE_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.cyborg_apes.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('dragons_')) {
+        const keys = cardType === 'action' ? DRAGON_ACTION_KEYS : DRAGON_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.dragons.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('fairies_')) {
+        const keys = cardType === 'action' ? FAIRY_ACTION_KEYS : FAIRY_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.fairies.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('geeks_')) {
+        const keys = cardType === 'action' ? GEEK_ACTION_KEYS : GEEK_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.geeks.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('huluwawa_')) {
+        const keys = cardType === 'action' ? HULUWAWA_ACTION_KEYS : HULUWAWA_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.huluwawa.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('itty_critters_')) {
+        const keys = cardType === 'action' ? ITTY_CRITTER_ACTION_KEYS : ITTY_CRITTER_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.itty_critters.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('kaiju_')) {
+        const keys = cardType === 'action' ? KAIJU_ACTION_KEYS : KAIJU_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.kaiju.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('magical_girls_')) {
+        const keys = cardType === 'action' ? FAIRY_ACTION_KEYS : FAIRY_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.magical_girls.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('mega_troopers_')) {
+        const keys = cardType === 'action' ? MEGA_TROOPER_ACTION_KEYS : MEGA_TROOPER_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.mega_troopers.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('mythic_greeks_')) {
+        const keys = cardType === 'action' ? MYTHIC_GREEK_ACTION_KEYS : MYTHIC_GREEK_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.mythic_greeks.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('princesses_')) {
+        const keys = cardType === 'action' ? FAIRY_ACTION_KEYS : FAIRY_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.princesses.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('samurai_')) {
+        const keys = cardType === 'action' ? NINJA_ACTION_KEYS : NINJA_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.samurai.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('shapeshifters_')) {
+        const keys = cardType === 'action' ? SHAPESHIFTER_ACTION_KEYS : SHAPESHIFTER_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.shapeshifters.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('sharks_')) {
+        const keys = cardType === 'action' ? SHARK_ACTION_KEYS : SHARK_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.sharks.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('skeletons_')) {
+        const keys = cardType === 'action' ? SKELETON_ACTION_KEYS : SKELETON_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.skeletons.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('superheroes_')) {
+        const keys = cardType === 'action' ? SUPERHERO_ACTION_KEYS : SUPERHERO_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.superheroes.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('super_spies_')) {
+        const keys = cardType === 'action' ? SUPER_SPY_ACTION_KEYS : SUPER_SPY_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.super_spies.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('time_travelers_')) {
+        const keys = cardType === 'action' ? TIME_TRAVELER_ACTION_KEYS : TIME_TRAVELER_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.time_travelers.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('tornados_')) {
+        const keys = cardType === 'action' ? TORNADO_ACTION_KEYS : TORNADO_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.tornados.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('vikings_')) {
+        const keys = cardType === 'action' ? VIKING_ACTION_KEYS : VIKING_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.vikings.${cardType}`, keys, { minGap: 1 });
+    }
+    if (defId.startsWith('world_champs_')) {
+        const keys = cardType === 'action' ? WORLD_CHAMP_ACTION_KEYS : WORLD_CHAMP_MINION_KEYS;
+        return pickRandomSoundKey(`smashup.world_champs.${cardType}`, keys, { minGap: 1 });
     }
     
     // 未配置音效池的派系，返回 null（静默）

@@ -158,8 +158,8 @@ export function hasOffensiveTokens(
 export function hasPurifyToken(state: DiceThroneCore, playerId: PlayerId): boolean {
     const player = state.players[playerId];
     if (!player) return false;
-    
-    return (player.tokens[TOKEN_IDS.PURIFY] ?? 0) > 0;
+
+    return ((player.tokens ?? {})[TOKEN_IDS.PURIFY] ?? 0) > 0;
 }
 
 /**
@@ -168,13 +168,15 @@ export function hasPurifyToken(state: DiceThroneCore, playerId: PlayerId): boole
 export function hasDebuffs(state: DiceThroneCore, playerId: PlayerId): boolean {
     const player = state.players[playerId];
     if (!player) return false;
+    const playerStatusEffects = player.statusEffects ?? {};
+    const playerTokens = player.tokens ?? {};
 
     // 可被净化移除的负面状态：由状态定义驱动（支持未来扩展）
     const removableDebuffIds = (state.tokenDefinitions ?? [])
         .filter(def => def.category === 'debuff' && (def.passiveTrigger?.removable ?? true))
         .map(def => def.id);
 
-    return removableDebuffIds.some(id => (player.statusEffects[id] ?? 0) > 0 || (player.tokens[id] ?? 0) > 0);
+    return removableDebuffIds.some(id => (playerStatusEffects[id] ?? 0) > 0 || (playerTokens[id] ?? 0) > 0);
 }
 
 // ============================================================================
@@ -554,6 +556,7 @@ export function finalizeTokenResponse(
                 actualDamage,
                 sourceAbilityId: pendingDamage.sourceAbilityId,
                 sourcePlayerId: pendingDamage.sourcePlayerId,
+                damageScope: pendingDamage.damageScope,
                 modifiers: pendingDamage.modifiers,
             },
             sourceCommandType: 'ABILITY_EFFECT',
@@ -571,6 +574,7 @@ export function finalizeTokenResponse(
                 actualDamage: deferredDamage.actualDamage,
                 sourceAbilityId: deferredDamage.sourceAbilityId,
                 sourcePlayerId: deferredDamage.sourcePlayerId,
+                damageScope: deferredDamage.damageScope,
             },
             sourceCommandType: deferredDamage.sourceCommandType ?? 'ABILITY_EFFECT',
             timestamp,

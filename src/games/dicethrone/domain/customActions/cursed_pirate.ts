@@ -1,4 +1,5 @@
 import type {
+    AttackMadeUndefendableEvent,
     BonusDieInfo,
     BonusDieRolledEvent,
     BonusDamageAddedEvent,
@@ -15,6 +16,7 @@ import type {
     PreventDamageEvent,
     StatusRemovedEvent,
 } from '../types';
+import { registerChoiceEffectHandler } from '../choiceEffects';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS } from '../ids';
@@ -1301,6 +1303,19 @@ export function registerCursedPirateCustomActions(): void {
             timestamp,
         } as StatusRemovedEvent];
     });
+    registerChoiceEffectHandler(HUMAN_REMOVE_CURSED_COINS_CHOICE_ID, ({ state, sourceAbilityId }) => {
+        if (!sourceAbilityId || state.pendingAttack?.sourceAbilityId !== sourceAbilityId) {
+            return undefined;
+        }
+        return {
+            pendingAttack: {
+                ...state.pendingAttack,
+                // 惊魂动魄的 7 点主伤害已在 withDamage 阶段落地；
+                // 选择是否移除诅咒金币后只需要收口 ATTACK_RESOLVED，不应继续挂住攻击链。
+                bonusDiceResolved: true,
+            },
+        };
+    });
     registerChoiceResolvedEventHandler(HUMAN_VERDICT_COMMAND_CHOICE_ID, ({
         state,
         playerId,
@@ -1314,6 +1329,12 @@ export function registerCursedPirateCustomActions(): void {
 
         const hp = target.resources[RESOURCE_IDS.HP] ?? 0;
         return [
+            {
+                type: 'ATTACK_MADE_UNDEFENDABLE',
+                payload: { attackerId: state.pendingAttack?.attackerId ?? playerId },
+                sourceCommandType: 'CHOICE_RESOLVED',
+                timestamp,
+            } as AttackMadeUndefendableEvent,
             ...buildStatusAppliedOrChoiceEvents({
                 state,
                 targetId,
@@ -1321,7 +1342,7 @@ export function registerCursedPirateCustomActions(): void {
                 stacks: 1,
                 sourceAbilityId,
                 sourceCommandType: 'CHOICE_RESOLVED',
-                timestamp,
+                timestamp: timestamp + 1,
             }),
             {
                 type: 'DAMAGE_DEALT',
@@ -1334,7 +1355,7 @@ export function registerCursedPirateCustomActions(): void {
                     unblockable: true,
                 },
                 sourceCommandType: 'CHOICE_RESOLVED',
-                timestamp: timestamp + 1,
+                timestamp: timestamp + 2,
             } as DamageDealtEvent,
         ];
     });
@@ -1349,6 +1370,12 @@ export function registerCursedPirateCustomActions(): void {
         if (!targetId || !state.players[targetId]) return [];
 
         return [
+            {
+                type: 'ATTACK_MADE_UNDEFENDABLE',
+                payload: { attackerId: state.pendingAttack?.attackerId ?? playerId },
+                sourceCommandType: 'CHOICE_RESOLVED',
+                timestamp,
+            } as AttackMadeUndefendableEvent,
             ...buildStatusAppliedOrChoiceEvents({
                 state,
                 targetId,
@@ -1356,7 +1383,7 @@ export function registerCursedPirateCustomActions(): void {
                 stacks: 1,
                 sourceAbilityId,
                 sourceCommandType: 'CHOICE_RESOLVED',
-                timestamp,
+                timestamp: timestamp + 1,
             }),
             ...buildStatusAppliedOrChoiceEvents({
                 state,
@@ -1365,9 +1392,22 @@ export function registerCursedPirateCustomActions(): void {
                 stacks: 1,
                 sourceAbilityId,
                 sourceCommandType: 'CHOICE_RESOLVED',
-                timestamp: timestamp + 1,
+                timestamp: timestamp + 2,
             }),
         ];
+    });
+    registerChoiceEffectHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({ state, sourceAbilityId }) => {
+        if (!sourceAbilityId || state.pendingAttack?.sourceAbilityId !== sourceAbilityId) {
+            return undefined;
+        }
+        return {
+            pendingAttack: {
+                ...state.pendingAttack,
+                // 无情劫掠的 12 点主伤害已在 withDamage 阶段落地；
+                // 选择诅咒金币后只需要收口 ATTACK_RESOLVED，不应再次重放整段攻击链。
+                bonusDiceResolved: true,
+            },
+        };
     });
     registerChoiceResolvedEventHandler(RANSOM_DIE_CHOICE_ID, ({
         state,

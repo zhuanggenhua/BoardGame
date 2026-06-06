@@ -12,6 +12,7 @@ type PromptOptionLike = {
 };
 
 type ButtonOverlayPromptLike = HandPromptLike & {
+    sourceId?: unknown;
     options?: Array<{ displayMode?: unknown; disabled?: unknown; value?: unknown }>;
 };
 

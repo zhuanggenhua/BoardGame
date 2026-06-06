@@ -3,6 +3,7 @@ import { createInteractionSystem, createSimpleChoice } from '../../systems/Inter
 import { applyPlayerViewToState } from '../playerView';
 import type { GameEngineConfig } from '../../transport/server';
 import type { MatchState } from '../../types';
+import { normalizeSmashUpMatchStateForUi } from '../../../games/smashup/ui/normalizeRuntimeState';
 
 const engineConfig: GameEngineConfig = {
     gameId: 'test-player-view',
@@ -21,6 +22,7 @@ const smashUpEngineConfig: GameEngineConfig = {
     domain: {
         gameId: 'smashup',
         setup: () => ({ turnOrder: ['0', '1'] }),
+        normalizeRuntimeState: (state) => normalizeSmashUpMatchStateForUi(state),
         validate: () => ({ valid: true }),
         execute: () => [],
         reduce: (state) => state,

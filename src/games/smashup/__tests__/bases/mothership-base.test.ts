@@ -66,6 +66,7 @@ describe('base_the_mothership 母舰 afterScoring', () => {
         expect(returned).toBeDefined();
         expect(returned!.payload.minionUid).toBe('m1');
         expect(returned!.payload.toPlayerId).toBe('0');
+        expect(returned!.payload.sourcePlayerId).toBe('0');
     });
 
     it('线上反馈 69ff0cd0：母舰检查可收回随从时允许读取回合压制标记', () => {

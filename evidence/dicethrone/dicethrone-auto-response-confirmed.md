@@ -1,4 +1,6 @@
-# 王权骰铸 - 自动响应功能确认
+# 王权骰铸自动响应专项确认证据
+
+> 2026-06-06 当前有效口径：本文只保留“自动跳过就是我不触发响应”这一条自动响应链路的专项确认与实现对照证据，不代表 DiceThrone 全体交互链、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时 `autoResponse` 这一条 shared interaction seam 被确认过，不能外推成 DiceThrone 当前整体收口。
 
 ## 确认时间
 2026-03-04
@@ -80,7 +82,7 @@ if (autoResponseEnabled || !isResponseWindowOpen || !currentResponderId || curre
 
 ## 结论
 
-当前的自动响应功能实现正确，与"以前"的实现逻辑完全相同。
+当前的自动响应功能在本文覆盖范围内实现正确，与"以前"的实现逻辑完全相同。
 
 **自动跳过 = 我不触发响应**：
 - 当我开启自动跳过（灰色按钮）时
@@ -94,3 +96,8 @@ if (autoResponseEnabled || !isResponseWindowOpen || !currentResponderId || curre
 - `src/games/dicethrone/ui/LeftSidebar.tsx` - 自动响应开关集成
 - `evidence/dicethrone/POD-RECOVERY-AND-STEALTH-MODE-COMPLETE.md` - POD 恢复 + 隐身模式
 - `evidence/dicethrone/dicethrone-auto-response-text-fix.md` - 自动响应文本修正
+
+## 当前阅读说明
+
+- 本文只覆盖自动响应这一条共享交互链，不覆盖更广范围响应窗、单英雄对象级 `L3/L4` 或新英雄整批完成态。
+- 即使本文中的确认在当轮成立，也不能把它当成当前 DiceThrone 或新英雄整批“全面收口”的证明。

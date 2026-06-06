@@ -1,5 +1,7 @@
 # Volley 汇总文本显示修复
 
+> 2026-06-06 当前有效口径：本文只覆盖 “Volley 汇总文本显示” 这一条历史专项修复，不是当前 DiceThrone 所有 Volley/多骰 CardSpotlight 展示问题都已彻底收口的证明，也不是新英雄补审出口。阅读时只能把它理解成单条多骰汇总文案修复记录。
+
 ## 问题描述
 
 用户反馈：Volley（万箭齐发）卡牌使用后，右下角的 CardSpotlightOverlay 显示了卡牌和 5 颗骰子，但**没有显示伤害加成文本**（如"2个弓面：伤害+2"）。
@@ -160,3 +162,7 @@ const SummaryText: React.FC<{
 1. CardSpotlightOverlay 显示 5 颗骰子 + 汇总文本
 2. 汇总文本正确显示伤害加成（"2个弓面：伤害+2"）
 3. ActionLog 正确记录伤害加成信息
+
+---
+
+**当前阅读说明**：本文只能证明 `Volley` 汇总文本显示这条专项问题曾被修复，不能外推为当前所有 `Volley` 特写、所有 CardSpotlight 汇总文本或 DiceThrone 当前整体审计都已收口。

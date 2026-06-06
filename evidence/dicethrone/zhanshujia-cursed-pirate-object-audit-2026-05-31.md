@@ -1,21 +1,50 @@
-# DiceThrone 战术家 / 咒缚海盗对象级审计（2026-05-31）
+# DiceThrone 战术家 / 咒缚海盗对象级审计主文档（2026-05-31）
+
+> 2026-06-06 当前有效口径：本文是战术家 / 咒缚海盗这两名新英雄的现行对象级审计主文档之一，但它本身仍不是“整英雄或整批已经完成”的证明。当前阅读必须以本文件里的修订记录、L4 共享链判等矩阵、未完成门禁和最新对象级结论为准，不再把中前段历史快照或旧 blocker 直接当成当前状态。
+
+## 2026-06-06 当前真实未收口矩阵
+
+> 本节直接回答这两名新英雄当前还剩什么，不再让“normal 面未接入”“整跑仍红”“只是 representative L3”之类历史 blocker 继续冒充现状。
+
+| 范围 | 当前已收敛到的层级 | 当前真实未收口项 | 不得再外推的旧口径 |
+| --- | --- | --- | --- |
+| `zhanshujia` / 战术家 | 选角、开局、玩家板、提示板、手牌 atlas、基础与升级进攻链、防御/响应链、多个奖励骰/随机链都已有对象级或 representative `L2/L3`，且整份 intake 最新权威整跑为 `71 passed / 0 failed` | 当前已不再有 remaining representative 对象级 residual；`包夹侧翼 II / 反制措施 II-III / 埋伏 / 9 张升级牌` 都已补回对象级直证，剩余主要回到升级/防御/即时手牌/奖励骰等 family 的 `L4` 合法复用登记与最终 completion audit | 不得再写成“当前 intake 整跑仍红”或“战术家大面积仍未进入真实入口” |
+| `cursed_pirate` / 咒缚海盗 `human` 面 | `human` 面 9 个对象已全部进入运行时，且 `9 / 9` 都已有独立 direct E2E 或对象级真实入口证据；开局也已纠偏为 human 面 + 3 个诅咒金币 | 仍需做 face-by-face completion audit，把对象级 L3/L4、手牌家族与合法复用登记统一收口 | 不得再写成“normal/human 面仍未接入”或“9 个对象只是名称/槽位占位” |
+| `cursed_pirate` / 咒缚海盗 `cursed` 面 | 咒缚面 9 个对象、诅咒金币/火药桶/凋零/休战等关键状态链已有对象级或 representative `L2/L3/L4`，`灵魂突刺 / 灵魂指令 / 死亡吐息` 等也已有独立真实入口链 | 仍需把状态家族生命周期、remaining representative 条目、双面合法复用登记与最终 completion audit 统一收口 | 不得再写成“咒缚面多处仍在 implementation_in_progress”或“关键面板对象仍缺首条 direct E2E” |
+
+当前真正未收口的不是“是否已接线”或“是否还存在整跑红灯”，而是更高层级的对象矩阵、家族级合法复用边界与最终 completion audit。
 
 ## 结论
 
-本文件是对象级审计进度证据，不是完整交付证明。两名新英雄已经达到 L1 静态接入，多个机制达到 L2 行为证据；真实入口双玩家 E2E、资源上传与远端 HEAD 回查已完成。咒缚海盗当前真实合同已纠偏为：开局 `human` 面朝上并自带 3 个诅咒金币；`HeroState.playerBoardFace` 已参与主棋盘、攻击特写、能力集切换与 `海盗的一生` 分支；诅咒金币维持阶段掉血只作用于非海盗持有者。normal/human 面也不再是“完全未接入”：runtime 已接入 `弯刀突刺 / 做好标记 / 咒缚 / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` 9 个对象，且 9 个对象现均已有 L2 机制测试。当前真正未收口的是：human 面逐对象更高层级 L3/L4 与合法复用登记、双面对象级重审计、representative L3 到逐对象 L3/L4 的边界，以及更长链路的 soak 稳定性；批次仍不得移除 `implementation_in_progress`。
+本文件是对象级审计进度证据，不是完整交付证明。两名新英雄已经达到 L1 静态接入，多个机制达到 L2 行为证据；真实入口双玩家 E2E、资源上传与远端 HEAD 回查已完成。最新整份 intake 权威整跑已更新为 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` -> `71 passed / 0 failed`，说明当前 intake 并不存在“必现整跑红灯”。本轮还补上了 `休战` 的真实运行时修复：它现在不仅有写入证据，也能在真实攻击链中阻断攻击伤害，并在阶段结束后正确清理状态。咒缚海盗当前真实合同已纠偏为：开局 `human` 面朝上并自带 3 个诅咒金币；`HeroState.playerBoardFace` 已参与主棋盘、攻击特写、能力集切换与 `海盗的一生` 分支；诅咒金币维持阶段掉血只作用于非海盗持有者。normal/human 面也不再是“完全未接入”：runtime 已接入 `弯刀突刺 / 做好标记 / 咒缚 / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` 9 个对象，且运行时底图链已指向你新增的人类面板资源。当前真正未收口的是：human 面逐对象更高层级 L3/L4 与合法复用登记、双面对象级重审计、representative L3 到逐对象 L3/L4 的边界，以及是否允许移除 `implementation_in_progress` 的最终 completion audit。
 
 ## 修订记录
 
+- 旧结论失效：整份 intake 仍缺稳定整跑证据，或仍应把最新状态写成 `39 passed` / `57/3` / `59/1` / `60 passed / 0 failed` 一类历史结果。失效原因：最新权威整跑 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 已为 `71 passed / 0 failed`；本轮收掉的既有测试侧残余漂移，也有 `休战` 的真实运行时机制 bug。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts` 当前 helper/断言写法、`src/games/dicethrone/domain/flowHooks.ts`、`src/games/dicethrone/domain/tokenResponse.ts`、`src/games/dicethrone/domain/reduceCombat.ts`，以及同命令的最新整跑结果。新结论：当前 intake soak/整跑红灯已不再是事实；剩余项回到双面对象级 completion audit、family 级 L4 合法复用登记、逐对象更高层级 L3/L4 与最终收口审计，不能再把“整跑仍红”作为主 blocker。
+- 旧结论失效：`休战` 只是在 L2 机制层被证明“理论上阻止攻击伤害”，真实运行时消费链仍待确认。失效原因：此前 `flowHooks.ts` 会在 `offensiveRoll -> defensiveRoll` 过早移除 `PARLEY`，`tokenResponse.ts` 的 `finalizeTokenResponse(...)` 又没有把 `damageScope` 继续传下去，导致某些真实攻击伤害不会被 `休战` 正确拦住；现已修正并补上真实攻击链 E2E。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\flowHooks.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\tokenResponse.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\reduceCombat.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`、截图 `174-176`。新结论：`休战` 现在不仅能被真实写入，还已证明会在真实攻击链里阻断攻击伤害，并在阶段结束后正确清理状态。
+- 旧结论失效：人类面板只是底图接入，是否进入运行时仍待确认。失效原因：当前仓库同时存在 `human-player-board.png` 与 `compressed/human-player-board.webp`，`ASSETS.PLAYER_BOARD('cursed_pirate', 'normal')` 和 `criticalImageResolver` 都已把 normal/human 面指向 `dicethrone/images/cursed/human-player-board`。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\ui\assets.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\criticalImageResolver.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-intake.test.ts`。新结论：人类面底图已进入正式运行时消费链；真正还没收口的是基于该图面的 9 个对象逐槽 completion audit，而不是底图接线本身。
+- 旧口径失效：咒缚面多处前台/源码描述仍把已实现对象写成“仍在实施中”或“待收口”。失效原因：`灵魂突刺` 的三同值火药桶、`咒缚` 的未发起攻击施桶、`深海潜行` 的偷 CP + 对手弃牌、`亡灵之爪` 的诅咒金币追加直伤、`你还嫩了点` 的完整防御结算、`无情诅咒` 的至多两名对手火药桶选择，以及 `海盗的一生` 的双面分支，都已有机制测试与/或真实入口证据；继续保留“仍在实施中”会把已实现对象误报成未完成。新证据：`D:\gongzuo\webgame\BoardGame\public\locales\zh-CN\game-dicethrone.json`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\cursed_pirate\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\cursed_pirate\cards.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`。新结论：这批对象当前剩余的是真实 completion audit 与更高层级补证，而不是前台/源码文案仍应提示“未实现”。
+- 旧口径失效：`public/locales/zh-CN/game-dicethrone.json` 中 human 面 9 个对象仍保留“待正式录入：当前仅接入名称与槽位映射”的中文占位描述。失效原因：当前运行时、真相源表与录入核对文档都已经明确这 9 个对象的正式语义，继续保留占位会让前台展示层落后于已接入的业务合同。新证据：`D:\gongzuo\webgame\BoardGame\public\locales\zh-CN\game-dicethrone.json`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\cursed_pirate\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\rule\咒缚海盗真相源表.md`。新结论：human 面 `弯刀突刺 / 做好标记 / 咒缚 / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 你还嫩了点 / 无情劫掠！` 的中文描述已按当前正式合同补齐，不再属于“前台文案未录入”状态。
 - 旧结论失效：`cursed_pirate` 初始化为 `cursed`。失效原因：`src/games/dicethrone/domain/characters.ts` 已改为 `initialPlayerBoardFace='normal'`，并通过 `initialStatusEffects` 写入 3 个诅咒金币。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-intake.test.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`。新结论：真实开局为 human 面并自带 3 个诅咒金币。
 - 旧结论失效：诅咒金币维持阶段会让所有持有者按层掉血。失效原因：`src/games/dicethrone/domain/flowHooks.ts` 已按权威合同改成只伤非海盗持有者。新证据：同上机制测试文件与 `src/games/dicethrone/rule/咒缚海盗录入核对.md`。新结论：海盗本人持有诅咒金币不会因 upkeep 自伤。
 - 旧结论失效：normal 面 9 个对象仍未逐槽录入/实现。失效原因：`src/games/dicethrone/heroes/cursed_pirate/abilities.ts` 已存在 9 个 human 对象，且首批对象已有 L2 测试。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\cursed_pirate\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`。新结论：当前问题已从“整套未实现”收窄为“对象级审计和剩余补证未完成”。
+- 旧结论失效：`灵魂突刺` 仍只到 `representative L3`。失效原因：`e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 已新增咒缚面 `fist` 槽位的独立 direct E2E，并在真实防御链后收口到 `Host HP 50 -> 45 / Host powderKeg 1`。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`，截图 `135-137`。新结论：`灵魂突刺` 已具备对象级独立真实入口链。
+- 旧结论失效：对象审计表里的 `灵魂指挥` 命名与当前真相源不一致，且仍只写成共享 `representative`。失效原因：`public/locales/zh-CN/game-dicethrone.json` 与 `src/games/dicethrone/rule/咒缚海盗录入核对.md` 当前中文名均为 `灵魂指令`，且 `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 已补咒缚面 `lightning` 槽位的独立 direct E2E。新证据：`D:\gongzuo\webgame\BoardGame\public\locales\zh-CN\game-dicethrone.json`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\rule\咒缚海盗录入核对.md`、截图 `138-139`。新结论：对象名统一为 `灵魂指令`，且该对象已具备对象级独立真实入口链。
+- 旧结论失效：`死亡吐息` 仍因 `CPU 100%` 守卫阻塞而只到 `representative L3`。失效原因：`setupBreathOfDeathScenario(...)` 先前把“小顺子”误写成 `[1,2,3,5,6]` 非顺子盘面，修正为 `[1,2,3,4,6]` 后，定点 E2E 已通过咒缚面 `combo` 槽位真实解析出 `breath-of-death-small` 并自然收口。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`，截图 `140-142`。新结论：`死亡吐息` 已具备对象级独立真实入口链，旧 blocker 失效。
+- 旧结论失效：整份 intake 最近一次 soak 的主 blocker 仍是 `MatchRoom` 在线页白屏，或当前整跑仍会卡在 `深海潜行 / 紧缚 / 起锚 / 占得上风 / 虚张声势 / 休战` 这批位点。失效原因：2026-06-05 起先把 `深海潜行` 的双面场景口径修正到咒缚面；随后又把 `紧缚 / 起锚 / 占得上风` 的残余红灯收敛为测试控制漂移，把 `虚张声势` 的随机控制收紧到 `sys.tutorial.randomPolicy` 的状态级 deterministic 路线，并修掉 `休战` 的真实运行时消费 bug，最终完成整份 intake `71 passed / 0 failed` 整跑。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\flowHooks.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\tokenResponse.ts`、`npx tsx scripts/infra/diagnose-dicethrone-room-entry.ts --attempts 1 --character-selection-timeout 60000 --scope diag-cursed-room-entry`、以及最新整跑结果。新结论：当前明确业务红灯已收敛为“旧 E2E 场景、旧随机控制口径或旧运行时机制 bug 已修正”；整份 intake 不再存在当前必现整跑红灯。
+- 旧结论失效：`军刀突刺 / 摇鼓运动 II / 开拓战场 II / 战略转移 II` 仍应停留在 `representative L3`。失效原因：这四个对象现在都已有各自玩家板槽位的真实入口、Host/Guest 自然推进到防御窗口或变体选择 modal 的中间证据，以及最终 `HP / bind / 战术优势` 收口断言；其中 `摇鼓运动 II / 开拓战场 II / 战略转移 II` 的次级分支也已补到独立真实入口。剩余项已收敛为同对象内部参数链、变体分支或升级家族 `L4` 判等，而不是对象本体缺首条直证。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`，截图 `82-84`、`88-90`、`91-94`、`85-87`、`163-173`、`207-215`。新结论：这些对象当前都应按对象级 `L3` 记录，remaining residual 回到 `L4` completion audit。
+- 旧结论失效：`包夹侧翼 II / 反制措施 II-III / 埋伏` 仍应停留在 `representative L3`。失效原因：本轮已补三条新的真实 E2E，分别锁定升级防御链、升级小顺主链与即时手牌主链：`反制措施 II / III` 现在都能在升级场景下真实进入 `defensiveRoll` 并按 `2 军刀 + 1 旗帜 + 1 勋章` 收口到 `攻击者 HP 49/48`、`战术优势 2`；`包夹侧翼 II` 现在已证明升级场景下 `combo` 槽位可真实打开攻击链、Guest 自然进入 `human-still-wet-behind-ears` 防御阶段，并收口到 `Host 战术优势 2 / Guest HP 44`；`埋伏` 现在也已证明可从真实手牌区打出并把 `战术优势` 直接写到 `2`，且源卡进入弃牌堆。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`，截图 `177-185`。新结论：这 3 项已不再属于 remaining representative residual；战术家当前 representative 主 residual 只剩 `9 张升级牌`。
+- 旧结论失效：`9 张升级牌` 仍应保留为战术家的 remaining representative residual。失效原因：本轮新增一条逐张升级牌真实打出定向 E2E，把 `反制措施 III / 反制措施 II / 战略转移 II / 开拓战场 II / 包夹侧翼 II / 摇鼓运动 II / 地毯式轰炸 II / 军刀突刺 II` 8 张升级牌全部补到“真实手牌打出 -> 对应升级槽位写入”的对象级直证；再加上之前已有的 `战争贩子 II` 真实升级链，战术家 9 张升级牌现在都已有对象级真实打牌链。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`，截图 `76-77`、`186-201`，以及定向命令 `真实入口应逐张把其余战术家升级牌写入对应升级槽位`。新结论：`9 张升级牌` 已不再属于 remaining representative residual；当前剩余只回到升级牌 family 的 `L4` 合法复用登记与最终 completion audit。
+- 旧结论失效：`锁定` 仍只能按 representative `L3` 记录。失效原因：`战术优势` 的 3 个 token 锁定被动此前只被 2 人局默认对手链路覆盖，4 人局缺少“选择 1 名对手”的真实合同；本轮已先用机制测试复现该缺口，再把 `zhanshujia-tactical-advantage-apply-targeted` 修成“2 人局直接落点、多人局创建 `selectPlayer` 交互仅列敌方目标”，并补上 2 人真实被动按钮入口到对手状态区的 E2E。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\customActions\zhanshujia.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`、`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`，截图 `202-203`。新结论：`锁定` 现在已具备对象级真实写入证据与多人局目标选择合同，剩余只回到 `紧缚 / 锁定` 状态 family 的 `L4` completion audit。
+- 旧结论失效：`凋零` 仍只有“真实写入”直证，来源侧攻击伤害消费完全停留在 L2 合同。失效原因：本轮新增一条定向 E2E，把咒缚海盗在持有 `凋零 1` 时通过咒缚面 `fist` 槽位发动 `灵魂突刺` 的真实攻击链补齐，证明同一条 `soul-stab-3` 盘面在无减伤防御骰下会从 `5` 点攻击伤害收口到 `4` 点，且 `火药桶` 三同值副作用仍保留。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`，截图 `204-206`。新结论：`凋零` 现在已不只是“状态对象被写入”，还具备至少 1 条真实来源侧攻击伤害消费链；剩余只回到跨入口/跨消费者的 family 级 `L4` 合法复用登记。
+- 旧结论失效：`战略转移 II / 摇鼓运动 II / 开拓战场 II` 的次级分支仍只到独立 `L2`，或仍待确认是否需要独立 `L3`。失效原因：先前把 `SELECT_ABILITY` / 变体 modal 点击误当成“已结算”，漏掉了 `offensiveRoll` 真合同里“先建立 `pendingAttack`，再由 `ADVANCE_PHASE` 收口”的阶段推进证据；本轮已分别补上 `recon / indirect / lockdown` 三条从真实玩家板槽位进入、等待 `pendingAttack` 建立、推进阶段后再收口的 direct E2E。同时还顺手抓到一个真实实现 bug：`摇鼓运动 II -> 间接接敌` 虽然 effect payload 写了 `unblockable: true`，但 variant 缺 `tags: ['unblockable']`，导致共享 `isDefendableAttack(...)` 仍把它判成可防御；现已补齐 tag 与机制回归。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\zhanshujia\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`，截图 `207-215`。新结论：这三条次级分支现在都已具备对象级独立 `L3`；当前剩余已从“对象分支是否真走通”收敛为变体 family 的 `L4` 判等与 completion audit。
 
 ## 审计范围
 
 | heroId | 中文名 | 本文覆盖 | 当前结论 |
 | --- | --- | --- | --- |
-| `zhanshujia` | 战术家 | 英雄注册、资源链、状态/Token、9 个玩家板能力、15 张专属手牌、通用牌索引 | L1/L2 部分通过；真实入口选角/开局/手牌 atlas 已有 L3 截图 |
-| `cursed_pirate` | 咒缚海盗 | 英雄注册、资源链、4 个状态、双面 18 个玩家板对象、16 张专属手牌、通用牌索引 | L1/L2 部分通过；真实入口选角/开局/手牌 atlas 已有 L3 截图；真实开局已纠偏为 human 面 + 3 个诅咒金币，human 面 9 个对象已接入运行时并补首批 L2，但对象级审计未收口 |
+| `zhanshujia` | 战术家 | 英雄注册、资源链、状态/Token、9 个玩家板能力、15 张专属手牌、通用牌索引 | L1 已完成；多数面板对象、状态/响应链与一批手牌已到对象级或 family 级 `L3`，但合法复用登记与最终 completion audit 未收口 |
+| `cursed_pirate` | 咒缚海盗 | 英雄注册、资源链、4 个状态、双面 18 个玩家板对象、16 张专属手牌、通用牌索引 | L1 已完成；双面 `18 / 18` 面板对象已具备对象级直证，多个状态/手牌/奖励骰链已到对象级或状态对象级 `L3`，但双面总审计、状态家族 `L4` 与最终 completion audit 未收口 |
 
 ## 权威来源
 
@@ -34,12 +63,12 @@
 | D1 语义保真 | 部分通过 | 已按真相源拆卡牌/状态/能力；海盗的一生按 `playerBoardFace` 分支实现咒缚面治疗 3 与普通面金币路径，真实开局已纠偏为 human 面 + 3 个诅咒金币，且人类面 9 个对象已接入运行时；但仍未完成 human 面逐对象 L2-L4 审计 |
 | D2 边界完整 | 部分通过 | 2v2 对手筛选、至多/跳过路径已覆盖；真实入口开局与手牌 atlas 已覆盖，复杂交互 L3 仍未逐项覆盖 |
 | D3 数据流闭环 | 部分通过 | 定义/注册/执行/状态/i18n/测试/E2E/上传链已闭环；复杂交互 UI 未逐项 L3/L4 |
-| D5 交互完整 | 部分通过 | 战略防御、地毯式轰炸、无情诅咒、送你们去喂鱼、赎金、瞭望台、啜呼、深海潜行、干票大的、占得上风、起锚、虚张声势、诱饵、战争贩子 II、开拓战场 II、抽筋剥皮、死亡印记、诅咒卡牌、封舱、分点给我、亡灵之爪、诅咒金币、火药桶均有 L2 交互证据；真实 UI 已覆盖选角、开局、手牌 atlas、战略防御、送你们去喂鱼、手牌选择、瞭望台三分支、作战室奖励骰展示、占得上风勋章分支、起锚骷髅分支、虚张声势弯刀分支、诱饵真实攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、开拓战场 II 大顺主分支变体选择链、4 人地毯式轰炸双敌目标链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、两条防御响应链、深海潜行完整攻击入口、4 人无情诅咒 `targetingRoll / preDefense` 火药桶选择链、诅咒卡牌自伤抽牌分支、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链，以及火药桶维持阶段爆炸链；其余复杂交互仍待逐项 L3 |
-| D8 时序正确 | 部分通过 | 紧缚阶段清理、休战清理、战争贩子额外进攻、战争贩子 II 勋章额外进攻、咒缚未发起攻击追踪有 L2；真实入口已补 `紧缚` 的 `64-66` 额外投掷 `1CP` 门禁与 phase exit 清理链，以及战争贩子 II 奖励骰代表链与勋章专门链，领域层也已补“先触发额外攻击、后于防御阶段收口时切回 offensiveRoll”的最小时序合同 |
-| D11/D12 消耗与写入对称 | 部分通过 | 战术优势消耗、CP 支付/偷取/获得、卡牌扣费后结算已覆盖代表链；战术优势真实入口 `60-63` 已证明 token 消耗与 `bind` 转移写入对称 |
-| D14 清理完整 | 部分通过 | 紧缚、休战等阶段清理已有 L2，且 `紧缚` 已补 `64-66` 真实入口 phase exit 清理链；其它 UI/pending 清理待 E2E |
-| D15 UI 状态同步 | 部分通过 | 已有真实 host/guest 截图证明战术家与咒缚海盗选角、玩家板、提示板、HUD、手牌 atlas 可见；战略防御、送你们去喂鱼、手牌选择、瞭望台三分支、作战室奖励骰、占得上风勋章分支、起锚骷髅分支、虚张声势弯刀分支、诱饵攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、开拓战场 II 变体选择 + 防御链、4 人地毯式轰炸双敌目标链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、两条防御响应链、`伴装撤退 / 脱战` 真实防御响应手牌链、深海潜行完整攻击入口、4 人无情诅咒 `targetingRoll / preDefense` 火药桶选择链、诅咒卡牌选择弹窗、封舱弃手重抽前后手牌状态、分点给我前后火药桶状态、亡灵之爪前后 HP/诅咒金币状态、诅咒金币维持阶段前后 HP/状态保留，以及火药桶维持阶段前后 HP/状态移除已有交互 UI 截图链；其余复杂交互仍待逐项 L3 |
-| D22 伤害计算 | 部分通过 | 不可防御、直接伤害、凋零、护盾/防伤等有 L2 代表链 |
+| D5 交互完整 | 部分通过 | 战略防御、地毯式轰炸、无情诅咒、送你们去喂鱼、赎金、瞭望台、啜呼、深海潜行、干票大的、占得上风、起锚、虚张声势、诱饵、战争贩子 II、开拓战场 II、抽筋剥皮、死亡印记、诅咒卡牌、封舱、分点给我、亡灵之爪、诅咒金币、火药桶均有 L2 交互证据；真实 UI 已覆盖选角、开局、手牌 atlas、战略防御、送你们去喂鱼正向施桶链 + 有合法目标时的 skip 否定链、手牌选择、瞭望台三分支、作战室奖励骰展示、占得上风勋章分支、起锚骷髅分支与默认抽牌分支、虚张声势弯刀 / 战利品抽 2 / 骷髅施加火药桶三分支、诱饵真实攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、开拓战场 II 大顺主分支变体选择链、`战略转移 II` 侦察分支、`摇鼓运动 II` 间接接敌分支、`开拓战场 II` 全面封锁分支、`反制措施 II / III` 升级防御链、`包夹侧翼 II` 升级主链、`埋伏` 即时手牌链、4 人地毯式轰炸双敌目标链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、两条防御响应链、深海潜行完整攻击入口、4 人无情诅咒 `targetingRoll / preDefense` 火药桶正向选择链 + 不施加否定链、诅咒卡牌自伤抽牌分支、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链、火药桶维持阶段爆炸链，以及 `休战` 挂在攻击者身上后仍会真实建立攻击链、打开防御阶段并在收口时把伤害归零的消费链；其余复杂交互仍待逐项 L3 |
+| D8 时序正确 | 部分通过 | 紧缚阶段清理、休战清理、战争贩子额外进攻、战争贩子 II 勋章额外进攻、咒缚未发起攻击追踪有 L2；真实入口已补 `紧缚` 的 `64-66` 额外投掷 `1CP` 门禁与 phase exit 清理链、`休战` 的 `174-176` “攻击链正常建立 -> 防御阶段打开 -> 收口后清理状态”时序链，以及战争贩子 II 奖励骰代表链与勋章专门链，领域层也已补“先触发额外攻击、后于防御阶段收口时切回 offensiveRoll”的最小时序合同 |
+| D11/D12 消耗与写入对称 | 部分通过 | 战术优势消耗、CP 支付/偷取/获得、卡牌扣费后结算已覆盖代表链；战术优势真实入口 `60-63` 已证明 token 消耗与 `bind` 转移写入对称；`184-185` 已补 `埋伏` 的 `支付 1CP -> 战术优势写到 2 -> 源卡进入弃牌堆`，`177-183` 已补 `反制措施 II / III` 与 `包夹侧翼 II` 的升级参数写入对称链 |
+| D14 清理完整 | 部分通过 | 紧缚、休战等阶段清理已有 L2，且 `紧缚` 已补 `64-66` 真实入口 phase exit 清理链，`休战` 已补 `174-176` 真实攻击消费后 `Guest parley 1 -> 0` 的 phase exit 清理链；其它 UI/pending 清理待 E2E |
+| D15 UI 状态同步 | 部分通过 | 已有真实 host/guest 截图证明战术家与咒缚海盗选角、玩家板、提示板、HUD、手牌 atlas 可见；战略防御、送你们去喂鱼正向施桶链与 skip 否定链、手牌选择、瞭望台三分支、作战室奖励骰、占得上风勋章分支、起锚骷髅分支与默认抽牌分支、虚张声势弯刀 / 战利品抽 2 / 骷髅施加火药桶三分支、诱饵攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、开拓战场 II 变体选择 + 防御链、`战略转移 II` 侦察分支变体选择 + 收口、`摇鼓运动 II` 间接接敌分支前后状态、`开拓战场 II` 全面封锁分支前后状态、`反制措施 II / III` 升级防御窗口、`包夹侧翼 II` 升级主链前后状态、`埋伏` 打牌前后手牌/战术优势状态、4 人地毯式轰炸双敌目标链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、两条防御响应链、`伴装撤退 / 脱战` 真实防御响应手牌链、深海潜行完整攻击入口、4 人无情诅咒 `targetingRoll / preDefense` 火药桶正向选择链与不施加否定链、诅咒卡牌选择弹窗、封舱弃手重抽前后手牌状态、分点给我前后火药桶状态、亡灵之爪前后 HP/诅咒金币状态、诅咒金币维持阶段前后 HP/状态保留，以及火药桶维持阶段前后 HP/状态移除已有交互 UI 截图链；其余复杂交互仍待逐项 L3 |
+| D22 伤害计算 | 部分通过 | 不可防御、直接伤害、凋零、护盾/防伤等有 L2 代表链；真实入口已补 `凋零` 的 `204-206` 攻击伤害 `5 -> 4` 消费链，以及 `休战` 的 `174-176` 攻击伤害归零消费链，但更高层伤害家族 `L4` 仍未收口 |
 | D23/D24 共享消费与交互候选 | 部分通过 | `customActionId`、`selectPlayer`、`selectHandCard`、`minSelectCount`、状态施加 helper 已有定向测试 |
 | D52 权威可视合同一致性 | 部分通过 | slot/atlas/frame 已有 intake 测试；真实 UI 截图已覆盖玩家板、提示板、手牌代表卡 |
 
@@ -50,12 +79,12 @@
 | 英雄注册 | 战术家、咒缚海盗 | `CHARACTER_DATA_MAP`、`DICETHRONE_CHARACTER_CATALOG`、`heroes/index.ts` | intake test 6 passed | L1 passed |
 | 卡牌 atlas | 两名英雄专属牌与通用牌 | `DICETHRONE_CARD_ATLAS_IDS`、`previewRef`、`cardAtlas` | slot 17-31/32 与 `card-unexpected` 32/33 测试；开局 E2E 已在同一真实双玩家用例里等待双方 `card-unexpected` 加载完成，并由截图 `05/06` 同时显示战术家“作战室”/咒缚海盗“海盗的一生”与各自 common 卡图 | L1 passed，代表 L3 passed |
 | 状态图集 | 战术优势、紧缚、诅咒金币、火药桶、凋零、休战 | `status-icons-atlas.json`、TokenDef `frameId/atlasId` | intake test 校验 frame 存在；远端 HEAD 均为 200 | L1 passed，remote passed |
-| `grantStatus` 特例 | 诅咒金币、火药桶、凋零、休战、紧缚、锁定 | `buildStatusAppliedOrChoiceEvents`、`effects.ts`、`execute.ts` | `zhanshujia-cursed-pirate-mechanics.test.ts` 已覆盖：诅咒金币拒绝/上限/不可移除不可转移/维持掉血，火药桶重叠爆炸/维持爆炸/保留/转交，凋零只减攻击伤害，休战阻止攻击伤害但不阻止 direct damage 且会在阶段结束清理，紧缚额外投掷 `1CP` 门禁与阶段清理，锁定由战术优势主动动作与制胜高地写入；真实入口截图 42-45、50-59、64-68 已分别覆盖 `休战 / 火药桶 / 诅咒金币 / 锁定 / 紧缚 / 凋零` 的代表性写入与收口链 | L2 passed；诅咒金币/火药桶/凋零/休战/紧缚/锁定 为 representative L3 |
-| 防御 resolver | 反制措施、你还嫩了点 | defense timing `withDamage` | 机制测试覆盖骰面计数、防伤/反击/状态；真实防御阶段入口截图 20-23 与服务器状态断言覆盖两条代表链 | L2/L3 representative |
-| 多目标交互 | 地毯式轰炸、无情诅咒、送你们去喂鱼 | `selectPlayer`/bitmask、`minSelectCount` | 2v2 不列队友、跳过、选满门禁测试；送你们去喂鱼真实入口弹窗截图与火药桶落点断言；无情诅咒 4 人真实入口截图 42-45 覆盖 `targetingRoll` 目标选择归属、`preDefense` 火药桶 modal 与双敌方落桶状态链；地毯式轰炸 4 人真实入口截图 80-81 覆盖 `targetingRoll -> dt:defender-choice -> selectPlayer` 双敌目标链与只命中敌队两名玩家的状态落点 | L2 passed；送你们去喂鱼 / 无情诅咒 / 地毯式轰炸 为 representative L3 |
+| `grantStatus` 特例 | 诅咒金币、火药桶、凋零、休战、紧缚、锁定 | `buildStatusAppliedOrChoiceEvents`、`effects.ts`、`execute.ts` | `zhanshujia-cursed-pirate-mechanics.test.ts` 已覆盖：诅咒金币拒绝/上限/不可移除不可转移/维持掉血，火药桶重叠爆炸/维持爆炸/保留/转交，凋零只减攻击伤害，休战阻止攻击伤害但不阻止 direct damage 且会在阶段结束清理，紧缚额外投掷 `1CP` 门禁与阶段清理，锁定由战术优势主动动作与制胜高地写入，且 4 人局已锁定 `战术优势 -> selectPlayer(敌方)` 目标合同；真实入口截图 24-26、39-45、50-59、64-68、153-158、174-176、202-203 已分别覆盖 `凋零 / 休战 / 火药桶 / 诅咒金币 / 紧缚 / 锁定` 的真实写入、消费与收口链 | L2 passed；`诅咒金币 / 火药桶 / 凋零 / 休战 / 紧缚 / 锁定` 均已到状态对象级 `L3`，其中 `凋零 / 休战` 已各自补到至少 1 条真实消费链，剩余只回到 family 级 `L4` |
+| 防御 resolver | 反制措施家族、你还嫩了点 | defense timing `withDamage` | 机制测试覆盖骰面计数、防伤/反击/状态；真实防御阶段入口截图 `20-23` 与 `177-180` 已分别锁定战术家基础 `反制措施`、`反制措施 II / III` 以及咒缚海盗 `你还嫩了点` 的对象级防御入口与主收口 | L2 passed；三条战术家防御对象与咒缚海盗防御链均已到对象级 L3，剩余为 shared defensive family 的 L4 判等 |
+| 多目标交互 | 地毯式轰炸、无情诅咒、送你们去喂鱼 | `selectPlayer`/bitmask、`minSelectCount` | 2v2 不列队友、跳过、选满门禁测试；送你们去喂鱼真实入口截图 `09-10` 已覆盖正向施桶链，`159-160` 已补“有合法目标时选择不施加火药桶”否定链；无情诅咒 4 人真实入口截图 `42-45` 覆盖 `targetingRoll` 目标选择归属、`preDefense` 火药桶 modal 与双敌方落桶状态链，`161-162` 已补“不施加火药桶”否定链；地毯式轰炸 4 人真实入口截图 80-81 覆盖 `targetingRoll -> dt:defender-choice -> selectPlayer` 双敌目标链与只命中敌队两名玩家的状态落点 | L2 passed；`地毯式轰炸 / 送你们去喂鱼 / 无情诅咒` 都已有对象级多目标真实入口链，剩余是更高层多目标 family 的 L4 复用登记 |
 | 手牌选择/手牌查看交互 | 深海潜行、瞭望台 | `selectHandCard`、simple-choice、Board owner gate、InteractionOverlay/ChoiceModal i18n 渲染 | 目标自选弃牌测试；深海潜行真实攻击入口截图 24-26 证明偷 CP、施加凋零后仍保留弃牌弹窗并正确落弃牌堆；瞭望台弯刀查看手牌截图显示中文卡名且确认后手牌不变；瞭望台战利品目标自选弃牌与骷髅随机弃牌截图已补 | L2 passed，代表 L3 passed |
-| 奖励骰/随机 | 作战室、占得上风、起锚、战争贩子、战争贩子 II、死亡印记、干票大的、抽筋剥皮、啜呼、瞭望台、虚张声势等 | `rollDie`、custom random | `zhanshujia-cursed-pirate-mechanics.test.ts` 已覆盖：作战室、死亡印记、战争贩子、战争贩子 II 勋章分支、干票大的、抽筋剥皮、啜呼、瞭望台三分支；真实入口截图已覆盖：作战室奖励骰特写与战术优势落点、占得上风勋章分支、起锚骷髅分支、干票大的双骰覆盖层与抽牌/CP/弃牌落点、战争贩子基础奖励骰链、战争贩子 II 分支无关代表链与勋章专门链、抽筋剥皮 5 骰覆盖层与按弯刀数收口、死亡印记 4 骰覆盖层与按实际弯刀/战利品/骷髅收口、啜呼目标选择后的奖励骰链、瞭望台弯刀/战利品/骷髅三分支，以及虚张声势弯刀分支 | L2 passed；作战室/占得上风/起锚/战争贩子/战争贩子 II/干票大的/抽筋剥皮/死亡印记/啜呼/瞭望台/虚张声势 为 representative L3 |
-| 玩家板面 | 海盗的一生 C2 + 双面开局合同 | `HeroState.playerBoardFace`、`initialStatusEffects`、`PLAYER_BOARD_FACE_CHANGED` | 机制测试覆盖咒缚面治疗 3 与普通面金币分支、human 面回合结束移除金币/翻面；intake test 已补 `human-player-board.png/.webp` 存在、`ASSETS.PLAYER_BOARD('cursed_pirate', 'normal')` 选图合同，以及真实开局 `playerBoardFace='normal'` + `CURSED_COIN=3` | L2 passed，资源链 passed |
+| 奖励骰/随机 | 作战室、占得上风、起锚、战争贩子、战争贩子 II、死亡印记、干票大的、抽筋剥皮、啜呼、瞭望台、虚张声势等 | `rollDie`、custom random | `zhanshujia-cursed-pirate-mechanics.test.ts` 已覆盖：作战室、死亡印记、战争贩子、战争贩子 II 勋章分支、干票大的、抽筋剥皮、啜呼、瞭望台三分支；真实入口截图已覆盖：作战室奖励骰特写与战术优势落点、占得上风勋章分支、起锚骷髅分支与默认抽牌分支、干票大的双骰覆盖层与抽牌/CP/弃牌落点、战争贩子基础奖励骰链、战争贩子 II 奖励骰链与勋章专门链、抽筋剥皮 5 骰覆盖层与按弯刀数收口、死亡印记 4 骰覆盖层与按实际弯刀/战利品/骷髅收口、啜呼目标选择后的奖励骰链、瞭望台弯刀/战利品/骷髅三分支，以及虚张声势弯刀 / 战利品抽 2 / 骷髅施加火药桶三分支 | L2 passed；上述对象均已至少拿到对象级 `L3`，当前剩余是 family 级 `L4` 合法复用边界 |
+| 玩家板面 | 海盗的一生 C2 + 双面开局合同 | `HeroState.playerBoardFace`、`initialStatusEffects`、`PLAYER_BOARD_FACE_CHANGED` | 机制测试覆盖咒缚面治疗 3 与普通面金币分支、human 面回合结束移除金币/翻面；intake test 已补 `human-player-board.png/.webp` 存在、`ASSETS.PLAYER_BOARD('cursed_pirate', 'normal')` 选图合同，以及真实开局 `playerBoardFace='normal'` + `CURSED_COIN=3`。`src/games/dicethrone/rule/咒缚海盗真相源表.md` 与 `咒缚海盗录入核对.md` 现已显式记录咒缚面/人类面两套逐槽合同 | L2 passed，资源链 passed |
 
 ## 战术家对象矩阵
 
@@ -63,33 +92,33 @@
 | --- | --- | --- | --- | --- | --- |
 | 英雄注册 | 可被选角入口识别，保留实施中徽标 | `domain/characters.ts`、`heroes/index.ts` | intake test | L1 | passed |
 | 资源链 | 玩家板、提示板、骰子、手牌、状态图集本地存在并入 manifest | `criticalImageResolver.ts`、manifest | intake/resource test；`assets:upload`；远端 HEAD 200；E2E 截图 | L1/L3 | passed |
-| 战术优势 | 6 个主动动作：CP、重掷、抽牌、锁定、守护、转移状态 | `tokens.ts`、`customActions/zhanshujia.ts` | 机制测试；真实入口截图 60-63 证明被动按钮可见、`selectStatus -> selectTargetStatus` 双阶段交互成立，且 4 层战术优势消耗后可把 Host 的 `bind` 转移给 Guest | L2/L3 representative | passed |
-| 紧缚 | 额外进攻投掷前 1CP 门禁，进攻掷骰阶段结束清理 | `flowHooks.ts`/状态消费 | 机制测试；真实入口截图 64-66 证明 Guest 在额外投掷里先支付 `1CP` 再重投，并在离开 `offensiveRoll` 后清掉自己身上的 `bind` | L2/L3 representative | passed |
-| 军刀突刺 | 3/4/5 军刀造成 4/5/6 | `abilities.ts` 共享 diceSet/damage | 真实入口截图 82-84 已证明 `fist` 槽位在 3 军刀盘面下会解析为 `sabre-thrust-3`，点击后需由 Host 继续推进到 Guest `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器断言 `Host HP=50 / Guest HP=46`，说明基础 `3 军刀 -> 4 伤害` 主链已在真实 UI 中闭环；其余 `4/5` 军刀仍仅差同一消费者上的参数值 | L2 / representative L3 | passed |
-| 军刀突刺 II | 伤害提升；三同值施加紧缚 | `SABRE_THRUST_2`、custom action | 真实入口截图 100-102 已证明升级场景下 `fist` 槽位会解析为 `sabre-thrust-2-3`，点击后需由 Host 推进到 Guest `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器断言 `Host HP=50 / Guest HP=45 / Guest bind=1`，说明升级后的 `5` 点伤害与“三同值施加紧缚”已经在真实 UI 中闭环 | L2 / representative L3 | passed |
-| 地毯式轰炸 | 获得战术优势；两名不同对手受附属伤害 | `zhanshujia-carpet-bombing-targets` | 机制测试；真实入口截图 80-81 证明 4 人链会先进入 `targetingRoll`，完成目标骰确认后再进入双敌 `selectPlayer` 覆盖层，且只列敌队 `P1 / P3`、结算后 `player0Hp=46 / player2Hp=46 / player3Hp=50` | L2 / representative L3 | passed |
-| 地毯式轰炸 II | 主分支 + 旗帜 4 分支 | `CARPET_BOMBING_2` | 4 人真实入口截图 80-81 已证明主分支会先经过 `targetingRoll` 与双敌 `selectPlayer` 覆盖层；真实入口截图 103-104 已证明升级场景下 `chi` 槽位会解析为 `carpet-bombing-2-strategy`，点击后不会创建 `pendingAttack`，而是直接完成 `Host 战术优势=3` 与 `抽 2 张牌`，且 `战略防御！ / 占得上风！` 会真实进入手牌区 | L2 / representative L3 | passed |
-| 战争贩子 | 奖励骰分支；攻击收口后额外进攻投掷阶段 | `zhanshujia-war-monger-extra-offensive-roll` | 机制测试；真实入口截图 78-79 已证明 Host 会先进入基础战争贩子的奖励骰覆盖层，并在关闭覆盖层、由 Guest 完成防御收口后真实回到额外进攻 `offensiveRoll`；分支断言同时覆盖：勋章时抽 1 张 `战略防御`，旗帜时战术优势从 `1 -> 5`，其余分支时 Guest HP 从 `50 -> 45` | L2/L3 representative | passed |
-| 战争贩子 II | 勋章抽牌并触发额外进攻投掷阶段 | `zhanshujia-war-monger-2-roll` + `extraAttackInProgress.phaseEntered` | 机制测试；真实入口截图 29-30 证明奖励骰覆盖层可见，截图 35 证明 Guest 防御收口后 Host 真实进入额外进攻 `offensiveRoll` | L2 / representative L3 | passed |
-| 摇鼓运动 | 施加紧缚并造成 7 | `abilities.ts` | 纯共享组合链；`伴装撤退` 截图 67-68 已证明 `grantStatus(BIND)` 在真实防御响应链里的写入/落点，`制胜高地` 截图 58-59 已证明战术家玩家板 offensive slot 的真实入口与攻击收口；本对象无私有 `customAction` / choice，仅复用同一 `CombatAbilityManager -> effects.ts(grantStatus/damage)` 消费链组合 `bind + 7 damage` | L2 / representative L3 | passed |
-| 摇鼓运动 II | 主分支获得战术优势+紧缚+伤害；间接分支战术优势+不可防御伤害 | `DRUM_MOVEMENT_2` | 真实入口截图 88-90 已证明 `lotus` 槽位在 `3 军刀 + 2 勋章` 盘面下会直接解析为 `drum-movement-2-main`，点击后需由 Host 推进到 Guest `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器断言 `Host 战术优势=1 / Guest bind=1 / Guest HP=43`，说明主分支 `grantToken + bind + 7 damage` 已在真实 UI 中闭环；间接分支仍只剩同一技能上的 `grantToken + unblockable damage` 参数差异 | L2 / representative L3 | passed |
-| 包夹侧翼 | 小顺获得战术优势并造成 6 | `FLANKING` | 纯共享组合链；`作战室` 截图 18-19 与 `战术优势` 截图 60-63 已证明 `grantToken(TACTICAL_ADVANTAGE)` 的真实写入/读取链，`制胜高地` 截图 58-59 已证明战术家玩家板 offensive slot 的真实攻击入口与伤害收口；本对象无私有 `customAction` / choice，仅复用同一 `grantToken + damage` 组合 | L2 / representative L3 | passed |
-| 包夹侧翼 II | 战术优势数值提升 | `FLANKING_2` | 升级映射测试已锁定 `replaceAbility('flanking', FLANKING_2, 2)`；与基础 `包夹侧翼` 相比，真实入口、trigger、伤害与消费者完全相同，仅 `grantToken(TACTICAL_ADVANTAGE)` 数值由 `1 -> 2`，可复用基础 `包夹侧翼` 的真实攻击入口与收口链 | L2 / representative L3 | passed |
-| 开拓战场 | 大顺获得战术优势、紧缚、9 伤害 | `EXPAND_BATTLEFIELD` | 纯共享组合链；`作战室` 截图 18-19 与 `战术优势` 截图 60-63 已证明 `grantToken(TACTICAL_ADVANTAGE)`，`伴装撤退` 截图 67-68 已证明 `grantStatus(BIND)`，`制胜高地` 截图 58-59 已证明战术家玩家板 offensive slot 的真实攻击收口；本对象无私有 `customAction` / choice，仅复用 `grantToken + grantStatus + damage` 组合 | L2 / representative L3 | passed |
-| 开拓战场 II | 大顺升级；锁定分支抽牌+紧缚 | `EXPAND_BATTLEFIELD_2` | 真实入口截图 91-94 已证明 `lightning` 槽位在 `[2,3,4,5,6]` 盘面下会先解析为 `expand-battlefield-2-large-straight`，且因同时满足 `largeStraight` 与 `lockdown` 会先弹变体选择 modal；Host 显式选择 `开拓战场 II（大顺子）` 后推进到 Guest `still-wet-behind-ears` 防御阶段，并在全战利品防御骰下收口到 `Host 战术优势=3 / Guest bind=1 / Guest HP=41`；`lockdown` 分支仅剩同一变体选择 UI 下的抽牌参数差异 | L2 / representative L3 | passed |
-| 战略转移 | 勋章 4 获得 5 战术优势并造成不可防御伤害 | `STRATEGIC_SHIFT` | 纯共享组合链；`作战室` 截图 18-19 与 `战术优势` 截图 60-63 已证明战术家通用 `grantToken(TACTICAL_ADVANTAGE)` 写入与 UI 落点，`亡灵之爪` 截图 52-53 已证明同一 `damage(unblockable)` 消费链会在真实攻击入口里按权威状态收口；本对象无私有 `customAction` / choice，仅差 token 数值与伤害参数 | L2 / representative L3 | passed |
-| 战略转移 II | 主分支额外紧缚；勋章 3 侦察分支 | `STRATEGIC_SHIFT_2` | 升级映射测试；真实入口截图 85-87 已证明 `calm` 槽位在 `4 勋章 + 3 勋章` 同时满足时会先弹变体选择 modal，Host 显式选择 `4 个勋章` 主分支后，收口到 `Host 战术优势=5 / Guest bind=1 / Guest HP=45`；`3 勋章` 侦察分支仍只剩同一变体选择 UI 下的 `grantToken` 参数差异 | L2 / representative L3 | passed |
-| 反制措施 | 防御骰 4，军刀/旗帜/勋章分支 | `zhanshujia-countermeasures-defense` | 机制测试；真实防御阶段入口截图与服务器状态断言 | L2/L3 | passed representative |
-| 反制措施 II/III | 防御骰 5；III 军刀组伤害提升 | `COUNTERMEASURES_2/3` | 升级映射 + III 代表分支测试；基础反制措施真实入口截图 20-21 已证明同一 defensive slot 与 `customActionId=zhanshujia-countermeasures-defense` 的 L3 闭环；II 与 III 相比仅差 `sabrePairDamage=1/2` 参数，且都由同一 5 骰 defensive trigger 消费 | L2 / representative L3 | passed |
-| 制胜高地 | 锁定、紧缚、战术优势上限 +1 并补满、12 伤害 | `zhanshujia-high-ground-cap-up-and-fill` | 机制测试；真实入口截图 58-59 证明通过 `ultimate` 槽位触发后，Guest 获得锁定/紧缚，Host 的战术优势上限从 5 升到 6 并补满到 6 | L2/L3 representative | passed |
-| 占得上风 | 投 1 骰：勋章得 4 战术优势，否则抽 1 | `cards.ts` rollDie | 定向 E2E 已命中勋章分支：截图 72-73 证明 Host 从真实手牌打出后进入奖励骰覆盖层，并在关闭覆盖层后把战术优势从 0 写到 4、源卡进入弃牌堆；默认抽 1 分支仅剩共享 drawCard 路径差异，已由 L2 锁定 | L2 / representative L3 | passed |
-| 伏击 | 获得 2 战术优势 | `cards.ts` grantToken | 纯共享手牌 immediate 链；`作战室` 截图 18-19 已证明战术家从真实手牌打出卡牌后可在同一手牌入口回写战术优势与弃牌落点，`战术优势` 截图 60-63 已证明该 token 的真实 UI/消耗读写；本对象无私有 `customAction` / choice，仅差 token 数值 | L2 / representative L3 | passed |
-| 脱战 | 被攻击后投骰三分支 | `card-zhanshujia-disengage` | 机制测试；真实入口截图 69-71 证明 Guest 通过 `soul-stab-3` 真实攻击链打开防御窗口后，Host 能从真实手牌打出 `脱战` 并进入奖励骰覆盖层；本次通过 run 命中军刀分支，收口到 Guest HP `50 -> 48`，且源卡进入弃牌堆 | L2/L3 representative | passed |
-| 伴装撤退 | 攻击者紧缚，自己防止 3 | `card-zhanshujia-tactical-retreat` | 机制测试；真实入口截图 67-68 证明 Guest 通过 `soul-stab-3` 真实攻击链打开防御窗口后，Host 能从真实手牌打出 `伴装撤退`，并收口到 Guest 获得 `bind 1`、Host 获得 `3` 点护盾、源卡进入弃牌堆 | L2/L3 representative | passed |
-| 作战室 | 按骰值一半向上取整获得战术优势 | `zhanshujia-war-room-roll` | 机制测试；真实入口奖励骰特写与战术优势落点截图 | L2/L3 | passed |
+| 战术优势 | 6 个主动动作：CP、重掷、抽牌、锁定、守护、转移状态 | `tokens.ts`、`customActions/zhanshujia.ts` | 机制测试；真实入口截图 60-63 证明被动按钮可见、`selectStatus -> selectTargetStatus` 双阶段交互成立，截图 202-203 进一步证明 `3 个战术优势 -> 锁定` 会从真实被动按钮写到对手状态区；4 人机制测试也已锁定多人局仅列敌方目标的 `selectPlayer` 合同；当前剩余已收敛为 6 条主动动作之间哪些可共享同一消费链的 `L4` 判等，而不是 token 对象缺真实交互 | L2 / 对象级 L3 | passed |
+| 紧缚 | 额外进攻投掷前 1CP 门禁，进攻掷骰阶段结束清理 | `flowHooks.ts`/状态消费 | 机制测试；真实入口截图 64-66 证明 Guest 在额外投掷里先支付 `1CP` 再重投，并在离开 `offensiveRoll` 后清掉自己身上的 `bind`；当前剩余已收敛为与相关攻击/防御共享时序链的更高层 `L4` 判等，而不是状态对象缺首条直证 | L2 / 对象级 L3 | passed |
+| 军刀突刺 | 3/4/5 军刀造成 4/5/6 | `abilities.ts` 共享 diceSet/damage | 真实入口截图 82-84 已证明 `fist` 槽位在 3 军刀盘面下会解析为 `sabre-thrust-3`，点击后需由 Host 继续推进到 Guest `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器断言 `Host HP=50 / Guest HP=46`，说明基础 `3 军刀 -> 4 伤害` 主链已在真实 UI 中闭环；其余 `4/5` 军刀当前只剩同一消费者上的参数值与参数链 `L4` 判等 | L2 / 对象级 L3 | passed |
+| 军刀突刺 II | 伤害提升；三同值施加紧缚 | `SABRE_THRUST_2`、custom action | 真实入口截图 100-102 已证明升级场景下 `fist` 槽位会解析为 `sabre-thrust-2-3`，点击后需由 Host 推进到 Guest `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器断言 `Host HP=50 / Guest HP=45 / Guest bind=1`，说明升级后的 `5` 点伤害与“三同值施加紧缚”已经在真实 UI 中闭环；当前剩余只回到 `4/5` 军刀参数链与升级家族 `L4` 判等 | L2 / 对象级 L3 | passed |
+| 地毯式轰炸 | 获得战术优势；两名不同对手受附属伤害 | `zhanshujia-carpet-bombing-targets` | 机制测试；真实入口截图 80-81 证明 4 人链会先进入 `targetingRoll`，完成目标骰确认后再进入双敌 `selectPlayer` 覆盖层，且只列敌队 `P1 / P3`、结算后 `player0Hp=46 / player2Hp=46 / player3Hp=50`；当前剩余已收敛为与升级版/双敌共享链的 `L4` 判等，而不是基础对象仍缺真实入口 | L2 / 对象级 L3 | passed |
+| 地毯式轰炸 II | 主分支 + 旗帜 4 分支 | `CARPET_BOMBING_2` | 4 人真实入口截图 80-81 已证明主分支会先经过 `targetingRoll` 与双敌 `selectPlayer` 覆盖层；真实入口截图 103-104 已证明升级场景下 `chi` 槽位会解析为 `carpet-bombing-2-strategy`，点击后不会创建 `pendingAttack`，而是直接完成 `Host 战术优势=3` 与 `抽 2 张牌`，且 `战略防御！ / 占得上风！` 会真实进入手牌区；当前剩余已收敛为“其它升级分支能否与基础版/已证分支合法复用”的 `L4` 登记 | L2 / 对象级 L3 | passed |
+| 战争贩子 | 奖励骰分支；攻击收口后额外进攻投掷阶段 | `zhanshujia-war-monger-extra-offensive-roll` | 机制测试；真实入口截图 78-79 已证明 Host 会先进入基础战争贩子的奖励骰覆盖层，并在关闭覆盖层、由 Guest 完成防御收口后真实回到额外进攻 `offensiveRoll`；分支断言同时覆盖：勋章时抽 1 张 `战略防御`，旗帜时战术优势从 `1 -> 5`，其余分支时 Guest HP 从 `50 -> 45`；当前剩余已收敛为额外进攻 family 的更高层 `L4` 复用登记，而不是对象本体缺真实收口 | L2 / 对象级 L3 | passed |
+| 战争贩子 II | 勋章抽牌并触发额外进攻投掷阶段 | `zhanshujia-war-monger-2-roll` + `extraAttackInProgress.phaseEntered` | 机制测试；真实入口截图 29-30 证明奖励骰覆盖层可见，截图 35 证明 Guest 防御收口后 Host 真实进入额外进攻 `offensiveRoll`；当前已至少拿到勋章专门链的对象级直证，剩余收敛为“其它分支是否可与基础版合法复用同一额外进攻 family”的 `L4` 登记 | L2 / 勋章专门链 L3 | passed |
+| 摇鼓运动 | 施加紧缚并造成 7 | `abilities.ts` | 真实入口截图 165-167 已证明 `lotus` 槽位在 `3 军刀 + 2 勋章` 盘面下会解析为 `drum-movement`，点击后自然推进到 Guest `human-still-wet-behind-ears` 防御阶段；在全战利品防御骰下，服务器断言 `Host 战术优势=0 / Guest bind=1 / Guest HP=43`，说明基础版 `bind + 7 damage` 已在真实 UI 中闭环 | L2 / 对象级 L3 | passed |
+| 摇鼓运动 II | 主分支获得战术优势+紧缚+伤害；间接分支战术优势+不可防御伤害 | `DRUM_MOVEMENT_2` | 真实入口截图 88-90 已证明 `lotus` 槽位在 `3 军刀 + 2 勋章` 盘面下会直接解析为 `drum-movement-2-main`，点击后需由 Host 推进到 Guest `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器断言 `Host 战术优势=1 / Guest bind=1 / Guest HP=43`，说明主分支 `grantToken + bind + 7 damage` 已在真实 UI 中闭环。2026-06-06 新增截图 `210-212` 又证明在另一组盘面下，同一 `lotus` 槽位会直接解析为 `drum-movement-2-indirect`，并真实收口到 `Host 战术优势=2 / Guest HP=48 / Guest bind=0`。当前剩余已收敛为与基础版/主分支的变体 family `L4` 判等 | L2 / 对象级 L3 | passed |
+| 包夹侧翼 | 小顺获得战术优势并造成 6 | `FLANKING` | 真实入口截图 171-173 已证明 `combo` 槽位在小顺子盘面下会解析为 `flanking`，点击后自然推进到 Guest `human-still-wet-behind-ears` 防御阶段；在全战利品防御骰下，服务器断言 `Host 战术优势=1 / Guest HP=44`，说明基础版 `grantToken + 6 damage` 已在真实 UI 中闭环 | L2 / 对象级 L3 | passed |
+| 包夹侧翼 II | 战术优势数值提升 | `FLANKING_2` | 升级映射测试已锁定 `replaceAbility('flanking', FLANKING_2, 2)`；真实入口截图 `181-183` 已证明升级场景下 `combo` 槽位可真实点击并建立攻击链、Guest 自然进入 `human-still-wet-behind-ears` 防御阶段，并在全战利品防御骰下收口到 `Host 战术优势 2 / Guest HP 44`；当前剩余只回到与基础 `包夹侧翼` 的参数链 `L4` 判等 | L2 / 对象级 L3 | passed |
+| 开拓战场 | 大顺获得战术优势、紧缚、9 伤害 | `EXPAND_BATTLEFIELD` | 真实入口截图 168-170 已证明 `lightning` 槽位在大顺子盘面下会解析为 `expand-battlefield`，点击后自然推进到 Guest `human-still-wet-behind-ears` 防御阶段；在全战利品防御骰下，服务器断言 `Host 战术优势=2 / Guest bind=1 / Guest HP=41`，说明基础版 `grantToken + grantStatus + 9 damage` 已在真实 UI 中闭环 | L2 / 对象级 L3 | passed |
+| 开拓战场 II | 大顺升级；锁定分支抽牌+紧缚 | `EXPAND_BATTLEFIELD_2` | 真实入口截图 91-94 已证明 `lightning` 槽位在 `[2,3,4,5,6]` 盘面下会先解析为 `expand-battlefield-2-large-straight`，且因同时满足 `largeStraight` 与 `lockdown` 会先弹变体选择 modal；Host 显式选择 `开拓战场 II（大顺子）` 后推进到 Guest `still-wet-behind-ears` 防御阶段，并在全战利品防御骰下收口到 `Host 战术优势=3 / Guest bind=1 / Guest HP=41`。2026-06-06 新增截图 `213-215` 又证明在另一组盘面下，同一 `lightning` 槽位会直接解析为 `expand-battlefield-2-lockdown`，并真实收口到 `Host 手牌=2 / Guest bind=1 / Guest HP=50`。当前剩余已收敛为与大顺主分支的变体 family `L4` 判等 | L2 / 对象级 L3 | passed |
+| 战略转移 | 勋章 4 获得 5 战术优势并造成不可防御伤害 | `STRATEGIC_SHIFT` | 真实入口截图 163-164 已证明 `calm` 槽位在 4 勋章盘面下会解析为 `strategic-shift`，点击后创建真实攻击链并收口到 `Host 战术优势=5 / Guest HP=45 / Guest bind=0`；当前不再只是借 `grantToken(TACTICAL_ADVANTAGE)` 与 `damage(unblockable)` 的跨对象共享链外推 | L2 / 对象级 L3 | passed |
+| 战略转移 II | 主分支额外紧缚；勋章 3 侦察分支 | `STRATEGIC_SHIFT_2` | 升级映射测试；真实入口截图 85-87 已证明 `calm` 槽位在 `4 勋章 + 3 勋章` 同时满足时会先弹变体选择 modal，Host 显式选择 `4 个勋章` 主分支后，收口到 `Host 战术优势=5 / Guest bind=1 / Guest HP=45`。2026-06-06 新增截图 `207-209` 又证明同一 `calm` 槽位命中 `strategic-shift-2-recon` 后，会先进入变体选择，再真实收口到 `Host 战术优势=5 / Guest bind=0 / Guest HP=50`。当前剩余已收敛为与主分支的变体 family `L4` 判等 | L2 / 对象级 L3 | passed |
+| 反制措施 | 防御骰 4，军刀/旗帜/勋章分支 | `zhanshujia-countermeasures-defense` | 机制测试；真实防御阶段入口截图与服务器状态断言已锁定同一 defensive slot 下的对象级防御入口与主收口；当前剩余已收敛为与 II/III 的共享 defensive chain `L4` 判等 | L2 / 对象级 L3 | passed |
+| 反制措施 II/III | 防御骰 5；III 军刀组伤害提升 | `COUNTERMEASURES_2/3` | 升级映射 + 代表分支测试；真实防御阶段入口截图 `177-180` 已证明 II/III 在升级场景下都能通过同一 defensive slot 真实进入 `defensiveRoll`，并分别收口到 `攻击者 HP 49 / 战术优势 2` 与 `攻击者 HP 48 / 战术优势 2`；当前剩余只回到 shared defensive family 的参数链 `L4` 判等 | L2 / 对象级 L3 | passed |
+| 制胜高地 | 锁定、紧缚、战术优势上限 +1 并补满、12 伤害 | `zhanshujia-high-ground-cap-up-and-fill` | 机制测试；真实入口截图 58-59 证明通过 `ultimate` 槽位触发后，Guest 获得锁定/紧缚，Host 的战术优势上限从 5 升到 6 并补满到 6；当前剩余已收敛为战术优势/状态共享参数链的更高层 `L4` 判等，而不是终极对象仍缺真实入口 | L2 / 对象级 L3 | passed |
+| 占得上风 | 投 1 骰：勋章得 4 战术优势，否则抽 1 | `cards.ts` rollDie | 定向 E2E 已命中勋章分支：截图 72-73 证明 Host 从真实手牌打出后进入奖励骰覆盖层，并在关闭覆盖层后把战术优势从 0 写到 4、源卡进入弃牌堆；默认抽 1 分支仅剩共享 `drawCard` 路径差异，已由 L2 锁定，因此当前对象级剩余已提升为奖励骰 family 的 `L4` 合法复用登记，而不是对象本体仍缺真实入口 | L2 / 对象级 L3 | passed |
+| 伏击 | 获得 2 战术优势 | `cards.ts` grantToken | 真实手牌截图 `184-185` 已证明 Host 可在主阶段直接看到并打出 `埋伏`，随后服务器状态真实收口到 `战术优势 2` 且源卡进入弃牌堆；当前剩余只回到与其它即时手牌 / token 写入 family 的 `L4` 复用登记 | L2 / 对象级 L3 | passed |
+| 脱战 | 被攻击后投骰三分支 | `card-zhanshujia-disengage` | 机制测试；真实入口截图 69-71 证明 Guest 通过 `soul-stab-3` 真实攻击链打开防御窗口后，Host 能从真实手牌打出 `脱战` 并进入奖励骰覆盖层；本次通过 run 命中军刀分支，收口到 Guest HP `50 -> 48`，且源卡进入弃牌堆。当前剩余已收敛为其它分支与防御奖励骰 family 的 `L4` 复用登记，而不是对象本体仍停留在 representative | L2 / 对象级 L3 | passed |
+| 伴装撤退 | 攻击者紧缚，自己防止 3 | `card-zhanshujia-tactical-retreat` | 机制测试；真实入口截图 67-68 证明 Guest 通过 `soul-stab-3` 真实攻击链打开防御窗口后，Host 能从真实手牌打出 `伴装撤退`，并收口到 Guest 获得 `bind 1`、Host 获得 `3` 点护盾、源卡进入弃牌堆；当前剩余已收敛为与 `紧缚` 状态/防御响应家族的 `L4` 复用登记，而不是对象本体缺真实防御链 | L2 / 对象级 L3 | passed |
+| 作战室 | 按骰值一半向上取整获得战术优势 | `zhanshujia-war-room-roll` | 机制测试；真实入口截图 18-19 已证明从真实手牌打出后会进入奖励骰特写，并在关闭后把战术优势写回棋盘；当前剩余已收敛为与其它奖励骰对象的更高层 `L4` 合法复用登记 | L2 / 对象级 L3 | passed |
 | 战略防御 | 选择任意玩家获得守护 | `zhanshujia-strategic-defense-select-player` | 机制测试；真实入口玩家选择覆盖层与守护落点截图 | L2/L3 | passed |
-| 9 张升级牌 | 替换基础技能，写入等级与升级卡映射 | `replaceAbility` | `cards.ts` 里 9 张升级牌全部是 `type: 'upgrade'` + `effects: [replaceAbility(...)]`；intake test 已锁 `id/sourceAtlasIndex/previewRef`；mechanics test 已锁 `targetAbilityId/newAbilityLevel/upgradeCardByAbilityId/abilityLevels`；真实入口截图 76-77 已证明 `upgrade-zhanshujia-war-monger-2` 会从真实手牌以 `PLAY_UPGRADE_CARD` 打出，令 `abilityLevels['war-monger']` 从 `1 -> 2`、`upgradeCardByAbilityId['war-monger'].cardId` 写为升级牌 ID、手牌归 0、CP 从 `5 -> 3`，且升级牌不进入弃牌堆而是保留在升级槽位 | L2 / representative L3 | passed |
-| 通用牌索引 | `card-unexpected` 使用 slot 32 | `ZHANSHUJIA_COMMON_ATLAS_INDEX` | intake test；开局真实双玩家 E2E 已显式注入并等待 Host 侧 `card-unexpected` 卡图加载完成，截图 `05-host-zhanshujia-hand-card-atlas` 现在同时覆盖战术家专属牌与 common 卡图运行时落点 | L1 / representative L3 | passed |
+| 9 张升级牌 | 替换基础技能，写入等级与升级卡映射 | `replaceAbility` | `cards.ts` 里 9 张升级牌全部是 `type: 'upgrade'` + `effects: [replaceAbility(...)]`；intake test 已锁 `id/sourceAtlasIndex/previewRef`；mechanics test 已锁 `targetAbilityId/newAbilityLevel/upgradeCardByAbilityId/abilityLevels`；真实入口截图 `76-77`、`186-201` 已证明 9 张升级牌都能从真实手牌以 `PLAY_UPGRADE_CARD` 打出，并把对应 `abilityLevels / upgradeCardByAbilityId / CP / hand` 状态写到升级槽位 | L2 / 对象级 L3 | passed |
+| 通用牌索引 | `card-unexpected` 使用 slot 32 | `ZHANSHUJIA_COMMON_ATLAS_INDEX` | intake test；开局真实双玩家 E2E 已显式注入并等待 Host 侧 `card-unexpected` 卡图加载完成，截图 `05-host-zhanshujia-hand-card-atlas` 现在同时覆盖战术家专属牌与 common 卡图运行时落点 | L1 / atlas runtime L3 | passed |
 
 ## 咒缚海盗对象矩阵
 
@@ -97,38 +126,54 @@
 | --- | --- | --- | --- | --- | --- |
 | 英雄注册 | 可被选角入口识别，保留实施中徽标 | `domain/characters.ts`、`heroes/index.ts` | intake test | L1 | passed |
 | 资源链 | 使用素材目录 `cursed`，本地压缩资源与 manifest 存在 | `criticalImageResolver.ts`、manifest | intake/resource test；`assets:upload`；远端 HEAD 200；E2E 截图 | L1/L3 | passed |
-| human 面能力集（9 个对象） | 开局为 human 面，自带 3 个诅咒金币，并按 `playerBoardFace` 切换到 `弯刀突刺 / 做好标记 / 咒缚 / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` | `getCursedPirateAbilitiesForFace`、`characters.ts`、`reducer.ts`、`customActions/cursed_pirate.ts` | intake test 已锁真实开局 `normal + 3`；mechanics test 已覆盖 9 个对象，其中 `点燃炸药 / 判决指令 / 无情劫掠` 已在 2026-06-04 补齐 timing 与 choice continuation 缺口 | L2 passed / L3-L4 pending | in_progress |
-| 诅咒金币 | 自身上限 5/他人 3；维持伤害；不可移动/移除；海盗可拒绝获得 | `tokens.ts`、`statusEvents.ts` | 机制测试；真实入口截图 54-55 证明从 Guest `discard` 推到 Host `upkeep` 后，Host 在保留 3 层诅咒金币的同时从 50 HP 降到 47 HP | L2/L3 representative | passed |
-| 火药桶 | 维持投骰 1-2 爆炸、3-5 无事、6 转交；重复获得爆炸 | `statusEvents.ts`、choice handler | 机制测试；真实入口截图 56-57 证明从 Guest `discard` 推到 Host `upkeep` 后，Host 从 50 HP 降到 47 HP 且火药桶被移除 | L2/L3 representative | passed |
-| 凋零 | 持有者造成攻击伤害 -1/层 | `tokens.ts`、伤害修正管线 | 机制测试；深海潜行真实入口截图 24-26 已证明前置事件会真实施加凋零且不打断后续弃牌交互，`啜呼` 截图 39-41 也覆盖奖励骰分支命中后施加凋零的共享状态写入链 | L2 / representative L3 | passed |
-| 休战 | 阻止攻击伤害，不阻止直接伤害，阶段结束清理 | `tokens.ts`、伤害/flowHooks | 机制测试已锁定“阻止攻击伤害、不阻止直接伤害、`offensiveRoll -> main2` 清理”；`无情诅咒` 截图 42-45 与手牌 `休战` 行已证明 `grantStatus(PARLEY)` 可在真实入口写入目标，开局截图 04 也已覆盖状态图标展示合同；据此可把 L3 收口限定为“真实状态写入 + UI 合同”，不外推到独立攻击阻断 E2E | L2 / representative L3 | passed |
-| 灵魂突刺 | 3/4/5 弯刀伤害；三同值施加火药桶 | `cursed-pirate-powder-keg-if-three-kind` | 机制测试已锁定 `soul-stab-3` 在三同值时会于 `postDamage` 施加火药桶；真实入口截图 67-71 已证明 Guest 会通过玩家板上真实解析出的 `soul-stab-3` 攻击链自然打开防御窗口，说明基础攻击入口与收口链已走通；本对象剩余差异只在伤害数值与三同值附桶条件，均已被 L2 锁住 | L2 / representative L3 | passed |
-| 死亡印记 | 先得 2CP；奖励骰弯刀/战利品/骷髅分支 | `gain-cp`、rollDie | 机制测试；真实入口截图 33-34 证明奖励骰覆盖层可见，关闭后能按实际弯刀/战利品/骷髅结果收口；并已补 `rollDie` 多骰逐颗累计修复 | L2/L3 representative | passed |
-| 咒缚 | 自己维持自伤 4；对手进攻投掷阶段未发起攻击则火药桶 | `cursed-pirate-cursed-upkeep-self-damage`、`flowHooks.ts` | 机制测试；真实入口截图与定点 E2E 已分别覆盖“战术家 discard -> 咒缚海盗 upkeep 自伤 4”以及“对手在其进攻投掷阶段未发起攻击时施加火药桶”两条对象链 | L2/L3 representative | passed |
-| 深海潜行 | 偷 1CP；对手自选弃 1；凋零；8 伤害 | `cursed-pirate-steal-one-cp`、`selectHandCard` | 机制测试；真实攻击入口截图 24-26 证明通过面板槽位触发后，偷 CP、施加凋零、对手自选弃牌与弃牌落点整链成立 | L2/L3 representative | passed |
-| 死亡吐息 | 小顺/大顺施加凋零、火药桶并伤害 | `BREATH_OF_DEATH` | 纯共享组合链；`深海潜行` 截图 24-26 与 `啜呼` 截图 39-41 已证明 `grantStatus(WITHER)` 的真实写入链，`分点给我` 截图 50-51 与 `无情诅咒` 截图 42-45 已证明 `grantStatus(POWDER_KEG)` 的真实写入链，`深海潜行` / `亡灵之爪` 已证明咒缚海盗玩家板 offensive slot 的真实攻击收口；小顺/大顺仅差 `damage=7/10` 参数，无私有 `customAction` / choice | L2 / representative L3 | passed |
-| 灵魂指挥 | 休战、火药桶、凋零、8 不可防御伤害 | `SOUL_COMMAND` | 纯共享组合链；`无情诅咒` 截图 42-45 已证明同一真实攻击链里 `grantStatus(PARLEY)` 与 `grantStatus(WITHER)` 的写入，`分点给我` 截图 50-51 与 `无情诅咒` 截图 42-45 已证明 `grantStatus(POWDER_KEG)`，`亡灵之爪` 截图 52-53 已证明不可防御伤害收口；本对象无私有 `customAction` / choice，仅复用 `grantStatus + damage(unblockable)` 组合 | L2 / representative L3 | passed |
-| 亡灵之爪 | 8 不可防御；按所有对手诅咒金币层数造成伤害 | `cursed-pirate-damage-by-cursed-coins` | 机制测试；真实入口截图 52-53 证明通过 `calm` 槽位触发后，Host 在保留 3 层诅咒金币的同时从 50 HP 降到 39 HP | L2/L3 representative | passed |
-| 你还嫩了点 | 防御骰弯刀/战利品/骷髅/组合金币 | `cursed-pirate-still-wet-behind-ears-defense` | 机制测试；真实防御阶段入口截图与服务器状态断言 | L2/L3 | passed representative |
-| 无情诅咒 | 13 伤害；休战/诅咒金币/凋零；至多两名对手火药桶 | `cursed-pirate-merciless-curse-powder-keg-targets` | 机制测试；真实入口截图 42-45 证明 4 人 `targetingRoll` 目标选择归属、`preDefense` 火药桶 modal 与 `施加给 P2, P4` 后的双敌方落桶状态链 | L2/L3 representative | passed |
-| 起锚 | 投 1 骰，骷髅休战，否则抽 1 | `cards.ts` rollDie | 定向 E2E 已命中骷髅分支：截图 74-75 证明 Guest 从真实手牌打出后进入奖励骰覆盖层，并在关闭覆盖层后给 Host 真实写入 `休战 1`、源卡进入弃牌堆；默认抽 1 分支仅剩共享 drawCard 路径差异，已由 L2 锁定 | L2 / representative L3 | passed |
-| 诅咒卡牌 | 三选一：抽 1 / 受 2 抽 2 / 受 4 抽 3 | `cursed-pirate-curse-card-choice` | 机制测试；真实入口截图 46-47 证明选择弹窗可见，且“受 4 伤害抽 3”分支能回写 HP、手牌与弃牌落点 | L2/L3 representative | passed |
-| 封舱 | 弃剩余手牌后抽 4 | `cursed-pirate-batten-down` | 机制测试；真实入口截图 48-49 证明打牌前手牌可见，打牌后其余手牌进入弃牌堆并重抽 4 张新手牌 | L2/L3 representative | passed |
-| 诱饵 | 攻击伤害 +2 | `cards.ts` damage | 真实入口截图 97-99 已证明 Guest 会先通过真实 `soul-stab-3` 攻击入口建立攻击链，再从真实手牌打出 `诱饵`；该卡在仍处于 `offensiveRoll` 时直接把 `Host HP 50 -> 48`，并同步完成 `CP 5 -> 4` 与源卡弃牌收口，不走 `pendingAttack.bonusDamage / attackModifierBonusDamage` 写入 | L2 / representative L3 | passed |
-| 抽筋剥皮 | 投 5 骰；每弯刀 +1；至少 +3 施加火药桶 | `cursed-pirate-flay-roll` | 机制测试；真实入口截图 31-32 证明奖励骰覆盖层可见，关闭后能按实际弯刀数收口 bonus damage，并在弯刀数 >= 3 时施加火药桶 | L2/L3 representative | passed |
-| 赎金 | 出牌者选骰；目标支付 2CP 或重掷 | `cursed-pirate-ransom-die-choice`、resolve choice | 机制测试；真实入口截图 36-38 证明 Guest 先选骰、Host 后支付 2CP，且收口到 CP 转移与弃牌落点 | L2/L3 representative | passed |
-| 虚张声势 | 投 1 骰三分支 | `cards.ts` rollDie | 真实入口截图 95-96 已证明 Guest 从真实手牌打出后会进入 `bonus-die-overlay`，命中弯刀面时收口到 `Host HP 50 -> 48` 且源卡进入弃牌堆；战利品抽 2 与骷髅施加火药桶仍仅剩同一 `rollDie` 消费链上的参数差异 | L2 / representative L3 | passed |
-| 坏血病 | 自伤 1；对手凋零 | `cards.ts` damage/grantStatus | 纯共享手牌 immediate 链；`诅咒卡牌` 截图 46-47 已证明咒缚海盗从真实手牌打出卡牌后的自伤/弃牌收口，`深海潜行` 截图 24-26 与 `啜呼` 截图 39-41 已证明 `grantStatus(WITHER)` 写入；本对象无私有 `customAction` / choice，仅复用 `direct self-damage + grantStatus(WITHER)` 组合 | L2 / representative L3 | passed |
-| 劫掠 | 偷 1CP | `cursed-pirate-steal-one-cp` | 深海潜行代表链覆盖同 `customActionId=cursed-pirate-steal-one-cp`；截图 24-26 与对应服务器断言已证明该 custom action 在真实攻击入口中完成 `Guest +1CP / Host -1CP` 的共享闭环 | L2 / representative L3 | passed |
-| 休战 | 对一名对手施加休战 | `cards.ts` grantStatus | 纯共享手牌 immediate 链；`分点给我` 截图 50-51 已证明咒缚海盗从真实手牌打出 main 卡牌后的 immediate 写入与弃牌收口，`无情诅咒` 截图 42-45 已证明 `grantStatus(PARLEY)` 会在真实攻击链里写入目标状态；本对象无私有 `customAction` / choice，仅差状态 ID | L2 / representative L3 | passed |
+| human 面能力集（9 个对象） | 开局为 human 面，自带 3 个诅咒金币，并按 `playerBoardFace` 切换到 `弯刀突刺 / 做好标记 / 咒缚 / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` | `getCursedPirateAbilitiesForFace`、`characters.ts`、`reducer.ts`、`customActions/cursed_pirate.ts` | intake test 已锁真实开局 `normal + 3`；mechanics test 已覆盖 9 个对象，且 9 个对象都已补独立真实入口 direct E2E；当前 human 面不再缺对象级 L3 首条直证，剩余项回到更高层 L4 与双面 completion audit | L2 passed / L3 object-complete / L4 pending | in_progress |
+| 弯刀突刺 | 3/4/5 弯刀造成 5/6/7；4 同值时施加火药桶；human 面 `fist` 槽位入口 | `cutlass-stab`、`cutlass-stab-4` | 机制测试已锁 `cutlass-stab-4` 的 4 同值施加火药桶；真实入口 direct E2E 已证明 Guest 在 human 面 `fist` 槽位触发后会解析到 `cutlass-stab-4`，并在 Host 的真实 `countermeasures` 防御链后收口到 `Host HP 50 -> 48 / Host powderKeg 1`；截图 `124-126` | L2/L3 | passed |
+| 做好标记 | 获得 1CP；3 颗奖励骰按弯刀/战利品/骷髅结算；human 面 `chi` 槽位入口 | `make-your-mark` | 机制测试已锁 `+1CP`、`2 点不可防御伤害 / 抽 1 / 诅咒金币选择`；真实入口 direct E2E 已证明 Guest 在 human 面 `chi` 槽位触发后，会进入奖励骰结算，并按实际弯刀/战利品/骷髅结果收口到 `Guest CP 6 / Guest 手牌数=战利品数 / Guest 诅咒金币=骷髅数 / Host HP=50-2*弯刀数`；截图 `127-130` | L2/L3 | passed |
+| 走跳板 | 二选一：偷取 1CP，或令对手自选弃 1 张牌，然后造成 7 点伤害；human 面 `lotus` 槽位入口 | `walk-the-plank` | 机制测试已锁二选一与弃牌交互；真实入口 direct E2E 已证明 Guest 在 human 面 `lotus` 槽位触发后，会先进入“走跳板：选择结算方式”弹窗，选择弃牌分支后自然打开 Host 手牌选择弹窗并完成弃牌收口；截图 `121-123` | L2/L3 | passed |
+| 点燃炸药 | 小顺/大顺：施加火药桶并造成 7/9；human 面 `combo` 槽位入口 | `light-the-fuse`、`light-the-fuse-small` | 机制测试已锁 `preDefense` 时序；真实入口 direct E2E 已证明 Guest 在 human 面 `combo` 槽位会看到 `data-base-ability-id="light-the-fuse"` 与 `data-resolved-ability-id="light-the-fuse-small"`，点击后自然打开防御链，收口到 Host `HP 50 -> 43` 且获得 `火药桶 1`；截图 `107-109` | L2/L3 | passed |
+| 判决指令 | 获得 1 个诅咒金币，施加休战，造成 7 点不可防御伤害；human 面 `lightning` 槽位入口 | `verdict-command` | 机制测试已锁 choice continuation 与真实时序；真实入口 direct E2E 已证明 Guest 在 human 面 `lightning` 槽位触发后，会进入诅咒金币选择窗，选择后继续收口到 `Guest 诅咒金币 +1 / Host 休战 1 / Host HP 50 -> 43`；截图 `105-106` | L2/L3 | passed |
+| 惊魂动魄 | 7 点不可防御伤害；可移除任意数量诅咒金币；human 面 `calm` 槽位入口 | `astonishing` | 机制测试已锁 choice 后攻击链收口；真实入口 direct E2E 已证明 Guest 在 human 面 `calm` 槽位触发后，会进入移除诅咒金币选择窗，并在选择“移除 2 个诅咒金币”后收口到 `Host HP 50 -> 43 / Guest cursedCoin 3 -> 1`；截图 `113-115` | L2/L3 | passed |
+| human-cursed | 回合结束移除 1 个诅咒金币；若无可移除金币则翻回咒缚面；human 面 `sky` 被动槽位 | `cursed-pirate-human-cursed-end-turn` | 机制测试已锁“有币移 1 层、无币翻面”；真实入口 direct E2E 已分别证明：有 3 个诅咒金币时回合结束后收口到 `Guest cursedCoin 3 -> 2 / 仍为 human 面`，无诅咒金币时回合结束后收口到 `playerBoardFace='cursed' / abilities 切回 soul-stab`；截图 `117-120` | L2/L3 | passed |
+| 嘿，老兄 | 防御掷 4：弯刀反击、战利品得 CP、骷髅防伤；若 2 弯刀 + 1 骷髅则获得 1 个诅咒金币；human 面防御槽位入口 | `human-still-wet-behind-ears` | 机制测试已锁反击、CP、防伤与诅咒金币选择；真实入口 direct E2E 已证明这条防御链会由 Host 的真实 `sabre-thrust-3` 攻击流自然打开，并在防御收口后达到 `Host HP 48 / Guest HP 48 / Guest CP 6 / Guest cursedCoin 1`；截图 `131-134` | L2/L3 | passed |
+| 无情劫掠 | 12 伤害；获得 2 个诅咒金币；施加休战和火药桶；human 面 `ultimate` 槽位入口 | `merciless-plunder` | 机制测试已锁伤害与 continuation 收口；真实入口 direct E2E 已证明 human 面 `ultimate` 槽位点击后会进入诅咒金币选择并在选择后继续收口；截图 `110-112` | L2/L3 | passed |
+| 诅咒金币 | 自身上限 5/他人 3；维持伤害；不可移动/移除；海盗可拒绝获得 | `tokens.ts`、`statusEvents.ts` | 机制测试；真实入口截图 54-55 证明从 Guest `discard` 推到 Host `upkeep` 后，Host 在保留 3 层诅咒金币的同时从 50 HP 降到 47 HP；当前剩余已收敛为“所有写入者是否都可合法复用同一生命周期 family”的 `L4` 登记，而不是状态对象缺直证 | L2 / 状态对象级 L3 | passed |
+| 火药桶 | 维持投骰 1-2 爆炸、3-5 无事、6 转交；重复获得爆炸 | `statusEvents.ts`、choice handler | 机制测试；真实入口截图 56-57 证明从 Guest `discard` 推到 Host `upkeep` 后，Host 从 50 HP 降到 47 HP 且火药桶被移除；当前剩余已收敛为跨入口转交/重复获得/收口时序的 family 级 `L4`，而不是状态对象缺真实生命周期链 | L2 / 状态对象级 L3 | passed |
+| 凋零 | 持有者造成攻击伤害 -1/层 | `tokens.ts`、伤害修正管线 | 机制测试；深海潜行真实入口截图 24-26 已证明前置事件会真实施加凋零且不打断后续弃牌交互，`啜呼` 截图 39-41 覆盖奖励骰分支命中后施加凋零，`坏血病` 截图 153-154 进一步锁定单目标手牌入口的真实写入，截图 `204-206` 进一步证明咒缚海盗持有 `凋零 1` 时，真实 `灵魂突刺` 攻击链会把 `Host HP 50 -> 46` 而不是 `45`；当前剩余已收敛为跨入口/跨消费者的 family 级 `L4` 复用登记，而不再是“来源侧只有静态合同” | L2 / 状态对象级 L3+消费链 | passed |
+| 休战 | 阻止攻击伤害，不阻止直接伤害，阶段结束清理 | `tokens.ts`、伤害/flowHooks | 机制测试已锁定“阻止攻击伤害、不阻止直接伤害、`offensiveRoll -> main2` 清理”；`无情诅咒` 截图 42-45、起锚截图 74-75、手牌 `休战` 截图 157-158 已证明 `grantStatus(PARLEY)` 可在真实入口写入目标，开局截图 04 也已覆盖状态图标展示合同；截图 `174-176` 进一步证明攻击者持有 `休战` 时，真实 `cutlass-stab-4` 攻击链会正常进入防御阶段、最终令双方 HP 保持 `50/50`，并在阶段结束后清除 `休战` | L2 / 状态对象级 L3+消费链 | passed |
+| 灵魂突刺 | 3/4/5 弯刀伤害；三同值施加火药桶 | `cursed-pirate-powder-keg-if-three-kind` | 机制测试已锁定 `soul-stab-3` 在三同值时会于 `postDamage` 施加火药桶；独立真实入口截图 `135-137` 已证明 Guest 会通过咒缚面 `fist` 槽位真实解析出的 `soul-stab-3` 建立攻击链，并在 Host 真实防御链后收口到 `Host HP 50 -> 45 / Host powderKeg 1` | L2/L3 | passed |
+| 死亡印记 | 先得 2CP；奖励骰弯刀/战利品/骷髅分支 | `gain-cp`、rollDie | 机制测试；真实入口截图 33-34 证明奖励骰覆盖层可见，关闭后能按实际弯刀/战利品/骷髅结果收口；并已补 `rollDie` 多骰逐颗累计修复 | L2/L3 | passed |
+| 咒缚 | 自己维持自伤 4；对手进攻投掷阶段未发起攻击则火药桶 | `cursed-pirate-cursed-upkeep-self-damage`、`flowHooks.ts` | 机制测试；真实入口截图与定点 E2E 已分别覆盖“战术家 discard -> 咒缚海盗 upkeep 自伤 4”以及“对手在其进攻投掷阶段未发起攻击时施加火药桶”两条对象链 | L2/L3 | passed |
+| 深海潜行 | 偷 1CP；对手自选弃 1；凋零；8 伤害 | `cursed-pirate-steal-one-cp`、`selectHandCard` | 机制测试；真实攻击入口截图 24-26 证明通过面板槽位触发后，偷 CP、施加凋零、对手自选弃牌与弃牌落点整链成立 | L2/L3 | passed |
+| 死亡吐息 | 小顺/大顺施加凋零、火药桶并伤害 | `BREATH_OF_DEATH` | 机制测试已锁定 `smallStraight / largeStraight` 分支的 `grantStatus(WITHER/POWDER_KEG) + damage(7/10)`；独立真实入口截图 `140-142` 已证明 Guest 会通过咒缚面 `combo` 槽位真实解析出的 `breath-of-death-small` 建立攻击链，并在 Host 真实防御链后收口到 `Host HP 50 -> 43 / Host powderKeg 1 / Host wither 1`。本次旧红根因已锁定为测试夹具把“小顺子”误塞成 `[1,2,3,5,6]` 非顺子盘面，而不是业务链未实现 | L2/L3 | passed |
+| 灵魂指令 | 休战、火药桶、凋零、8 不可防御伤害 | `SOUL_COMMAND` | 机制测试已锁定 `grantStatus(PARLEY/POWDER_KEG/WITHER) + damage(unblockable)` 组合；独立真实入口截图 `138-139` 已证明 Guest 会通过咒缚面 `lightning` 槽位真实触发 `soul-command`，并在收口后令 Host 获得 `休战 1 / 火药桶 1 / 凋零 1`，同时 `Host HP 50 -> 42` | L2/L3 | passed |
+| 亡灵之爪 | 8 不可防御；按所有对手诅咒金币层数造成伤害 | `cursed-pirate-damage-by-cursed-coins` | 机制测试；真实入口截图 52-53 证明通过 `calm` 槽位触发后，Host 在保留 3 层诅咒金币的同时从 50 HP 降到 39 HP | L2/L3 | passed |
+| 你还嫩了点 | 防御骰弯刀/战利品/骷髅/组合金币 | `cursed-pirate-still-wet-behind-ears-defense` | 机制测试已锁反击、CP、防伤与“2 弯刀 + 1 骷髅得 1 个诅咒金币”；真实防御阶段入口截图 `22-23` 已证明这条咒缚面防御链会由 Host 的真实 `sabre-thrust-3` 攻击流自然打开，并在防御收口后达到 `Host HP 49 / Guest HP 50 / Guest CP 6 / Host cursedCoin 1` | L2/L3 | passed |
+| 无情诅咒 | 13 伤害；休战/诅咒金币/凋零；至多两名对手火药桶 | `cursed-pirate-merciless-curse-powder-keg-targets` | 机制测试；真实入口截图 42-45 已证明 4 人 `targetingRoll` 目标选择归属、`preDefense` 火药桶 modal 与 `施加给 P2, P4` 后的双敌方落桶状态链；截图 `161-162` 已进一步证明在同样存在合法敌方目标时选择“不施加火药桶”会直接收口，且 `P2/P4` 都不会新增火药桶 | L2/L3 | passed |
+| 起锚 | 投 1 骰，骷髅休战，否则抽 1 | `cards.ts` rollDie | 定向 E2E 已分别命中骷髅分支与默认抽牌分支：截图 `74-75` 证明 Guest 从真实手牌打出后进入奖励骰覆盖层，并在关闭覆盖层后给 Host 真实写入 `休战 1`；截图 `143-144` 证明非骷髅时 Guest 会从真实牌库抽到 `送你们去喂鱼` 且不写入 `休战`，两条分支都完成源卡弃牌收口 | L2/L3 | passed |
+| 诅咒卡牌 | 三选一：抽 1 / 受 2 抽 2 / 受 4 抽 3 | `cursed-pirate-curse-card-choice` | 机制测试；真实入口截图 `46-47` 已证明“受 4 伤害抽 3”分支，截图 `145-146` 已证明“抽 1 张牌”分支，截图 `147-148` 已证明“受 2 伤害抽 2”分支；三条分支都能从真实手牌入口打开选择窗，并完成 HP / 手牌 / 弃牌落点收口 | L2/L3 | passed |
+| 封舱 | 弃剩余手牌后抽 4 | `cursed-pirate-batten-down` | 机制测试；真实入口截图 48-49 证明打牌前手牌可见，打牌后其余手牌进入弃牌堆并重抽 4 张新手牌；当前剩余已收敛为与其它手牌即时链的合法复用登记，而不是对象本体仍缺真实入口 | L2 / 对象级 L3 | passed |
+| 诱饵 | 攻击伤害 +2 | `cards.ts` damage | 真实入口截图 97-99 已证明 Guest 会先通过真实 `soul-stab-3` 攻击入口建立攻击链，再从真实手牌打出 `诱饵`；该卡在仍处于 `offensiveRoll` 时直接把 `Host HP 50 -> 48`，并同步完成 `CP 5 -> 4` 与源卡弃牌收口，不走 `pendingAttack.bonusDamage / attackModifierBonusDamage` 写入；当前剩余已收敛为与其它攻击修正牌的更高层 seam 判等，而不是对象本体仍缺 L3 | L2 / 对象级 L3 | passed |
+| 抽筋剥皮 | 投 5 骰；每弯刀 +1；至少 +3 施加火药桶 | `cursed-pirate-flay-roll` | 机制测试；真实入口截图 31-32 证明奖励骰覆盖层可见，关闭后能按实际弯刀数收口 bonus damage，并在弯刀数 >= 3 时施加火药桶；当前剩余已收敛为与其它奖励骰/状态写入对象的 `L4` 复用登记，而不是对象本体缺真实奖励骰链 | L2 / 对象级 L3 | passed |
+| 赎金 | 出牌者选骰；目标支付 2CP 或重掷 | `cursed-pirate-ransom-die-choice`、resolve choice | 机制测试；真实入口截图 36-38 证明 Guest 先选骰、Host 后支付 2CP，且收口到 CP 转移与弃牌落点；当前剩余已收敛为与其它跨玩家双步选择链的 `L4` 复用登记，而不是对象本体缺真实交互 | L2 / 对象级 L3 | passed |
+| 虚张声势 | 投 1 骰三分支 | `cards.ts` rollDie | 真实入口截图 95-96 已证明 Guest 从真实手牌打出后会进入 `bonus-die-overlay`，命中弯刀面时收口到 `Host HP 50 -> 48` 且源卡进入弃牌堆；截图 149-150 已证明战利品面会让 Guest 抽到 2 张真实牌库卡且 Host HP 保持 `50`；截图 151-152 已进一步证明骷髅面会对 Host 写入 `火药桶 1` 且不造成额外抽牌/伤害。当前三条分支都已拿到真实入口奖励骰覆盖层与最终收口证据 | L2/L3 | passed |
+| 坏血病 | 自伤 1；对手凋零 | `cards.ts` damage/grantStatus | 真实入口截图 `153-154` 已证明 Guest 从真实手牌打出 `坏血病！` 后，自己 HP `50 -> 49`、Host 获得 `凋零 1`，且源卡进入弃牌堆 | L2/L3 | passed |
+| 劫掠 | 偷 1CP | `cursed-pirate-steal-one-cp` | 真实入口截图 `155-156` 已证明 Guest 从真实手牌打出 `强取豪夺！` 后，完成 `Guest CP 5 -> 6 / Host CP 5 -> 4` 的偷取链，且源卡进入弃牌堆 | L2/L3 | passed |
+| 休战 | 对一名对手施加休战 | `cards.ts` grantStatus | 真实入口截图 `157-158` 已证明 Guest 从真实手牌打出 `停战协议！` 后，Host 获得 `休战 1`，且源卡进入弃牌堆 | L2/L3 | passed |
 | 瞭望台 | 弯刀查看手牌；战利品目标自选弃 1；骷髅随机弃 1 | `cursed-pirate-crows-nest-roll` | 机制测试；真实入口弯刀查看手牌截图与手牌不变断言；战利品目标自选弃牌截图；骷髅随机弃牌截图 | L2/L3 | passed for three branches |
 | 干票大的 | 投 2 骰；有战利品则抽 2 并获得 2CP | `cursed-pirate-hefty-roll` | 机制测试；真实入口截图 27-28 证明双骰覆盖层展示后，关闭覆盖层可正确回写抽 2、回 2CP 与弃牌落点 | L2/L3 | passed |
-| 海盗的一生 | C1 普通面获得 1 诅咒金币 | `cursed-pirate-pirates-life` + `playerBoardFace='normal'` | 机制测试 | L2 | passed |
-| 海盗的一生 | C2 咒缚面改为治疗 3 | `playerBoardFace='cursed'` 分支合同；真实开局已改为 `normal + 3 个诅咒金币` | 机制测试 | L2 | passed |
-| 送你们去喂鱼 | 可跳过的至多三名不同对手火药桶 | `cursed-pirate-go-fish-powder-keg-targets` | 机制测试；真实入口简单选择弹窗与火药桶落点截图 | L2/L3 | passed |
-| 分点给我 | 对一名对手施加火药桶 | `cards.ts` grantStatus | 火药桶共享 helper 覆盖；真实入口截图 50-51 证明打牌前手牌可见，打牌后对手获得 1 层火药桶且源卡进入弃牌堆 | L2/L3 representative | passed |
-| 啜呼 | 目标选择接受火药桶或投骰；3-6 火药桶+凋零 | `cursed-pirate-sip-choice` | 机制测试；真实入口截图 39-41 证明 Host 真实接管目标选择，并在改投骰后进入奖励骰覆盖层，再按实际点数收口到状态结果 | L2/L3 representative | passed |
-| 通用牌索引 | `card-unexpected` 使用 slot 33 | `CURSED_PIRATE_COMMON_ATLAS_INDEX` | intake test；开局真实双玩家 E2E 已显式注入并等待 Guest 侧 `card-unexpected` 卡图加载完成，截图 `06-guest-cursed-pirate-hand-card-atlas` 现在同时覆盖咒缚海盗专属牌与 common 卡图运行时落点 | L1 / representative L3 | passed |
+| 海盗的一生 | C1 普通面获得 1 诅咒金币 | `cursed-pirate-pirates-life` + `playerBoardFace='normal'` | 机制测试已锁普通面获得 1 个诅咒金币；真实入口截图 `212-214` 已证明 Guest 在 `human/normal` 面真实手牌区打出 `海盗的一生！` 后，会先进入“是否获得诅咒金币？”选择窗，再在接受后收口到 `诅咒金币 1 -> 2` 且源卡进入弃牌堆。当前剩余已不再是“普通面只到机制层”，而是双面 hand-card family 的更高层 completion audit | L2/L3 | passed |
+| 海盗的一生 | C2 咒缚面改为治疗 3 | `playerBoardFace='cursed'` 分支合同；真实开局已改为 `normal + 3 个诅咒金币` | 机制测试已锁咒缚面治疗 3；真实入口截图 `210-211` 已证明 Guest 在咒缚面真实手牌区打出 `海盗的一生！` 后不会进入诅咒金币选择窗，而是直接收口到 `HP 45 -> 48`、`诅咒金币保持 1` 且源卡进入弃牌堆。当前剩余已收窄为双面 completion audit，而不是对象本体缺分支实现 | L2/L3 | passed |
+| 送你们去喂鱼 | 可跳过的至多三名不同对手火药桶 | `cursed-pirate-go-fish-powder-keg-targets` | 机制测试；真实入口截图 `09-10` 已证明会弹出“至多三名对手获得火药桶”选择窗并对 `P1` 正向施加火药桶；截图 `159-160` 已进一步证明在同样存在合法目标时选择“不施加火药桶”会直接收口，且 Host / Guest 都不会新增火药桶 | L2/L3 | passed |
+| 分点给我 | 对一名对手施加火药桶 | `cards.ts` grantStatus | 火药桶共享 helper 覆盖；真实入口截图 50-51 证明打牌前手牌可见，打牌后对手获得 1 层火药桶且源卡进入弃牌堆；当前剩余已收敛为火药桶状态家族的更高层 `L4` 复用登记，而不是对象本体缺真实施加链 | L2 / 对象级 L3 | passed |
+| 啜呼 | 目标选择接受火药桶或投骰；3-6 火药桶+凋零 | `cursed-pirate-sip-choice` | 机制测试；真实入口截图 39-41 证明 Host 真实接管目标选择，并在改投骰后进入奖励骰覆盖层，再按实际点数收口到状态结果；当前剩余已收敛为与奖励骰/状态写入双重家族的 `L4` 合法复用登记，而不是对象本体缺真实入口 | L2 / 对象级 L3 | passed |
+| 通用牌索引 | `card-unexpected` 使用 slot 33 | `CURSED_PIRATE_COMMON_ATLAS_INDEX` | intake test；开局真实双玩家 E2E 已显式注入并等待 Guest 侧 `card-unexpected` 卡图加载完成，截图 `06-guest-cursed-pirate-hand-card-atlas` 现在同时覆盖咒缚海盗专属牌与 common 卡图运行时落点 | L1 / atlas runtime L3 | passed |
+
+### 双面面板对象级 completion 表（2026-06-06）
+
+| 面 | 对象级 L3 直证覆盖 | 当前证据 | 当前剩余 |
+| --- | --- | --- | --- |
+| human 面 | `9 / 9` | `弯刀突刺 / 做好标记 / human-cursed / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` 已分别由截图 `105-134` 锁定真实槽位入口、交互链与收口 | 不再缺对象级 L3 首条直证；剩余回到更高层 L4、状态/手牌家族合法复用登记与双面总审计 |
+| 咒缚面 | `9 / 9` | `灵魂突刺 / 死亡印记 / 咒缚 / 深海潜行 / 死亡吐息 / 灵魂指令 / 亡灵之爪 / 你还嫩了点 / 无情诅咒` 已分别由截图 `22-23 / 24-26 / 33-45 / 52-53 / 76-79 / 135-142 / 161-162` 锁定真实槽位入口或真实阶段入口与收口 | 不再缺面板对象级 L3 首条直证；剩余回到状态家族、手牌家族和双面 completion audit 的更高层 L4 收口 |
 
 ## 当前验证记录
 
@@ -145,6 +190,19 @@
 | `npx eslint src/games/dicethrone/domain/customActions/cursed_pirate.ts src/games/dicethrone/heroes/cursed_pirate/cards.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 0 errors |
 | `npx tsc --noEmit --pretty false` | 通过（2026-05-31 14:07） |
 | `npx tsc -p tsconfig.json --noEmit` | 通过（2026-06-04） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过咒缚面 fist 槽位触发并结算灵魂突刺的三同值火药桶链"` | 1 passed（2026-06-04；截图 `135-guest-cursed-soul-stab-entry.png`、`136-host-cursed-soul-stab-defense-entry.png`、`137-host-cursed-soul-stab-applied.png` 覆盖咒缚面 `fist` 槽位入口、真实防御窗口与三同值施加火药桶收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过咒缚面 lightning 槽位触发并结算灵魂指令的多状态不可防御链"` | 1 passed（2026-06-04；截图 `138-guest-soul-command-entry.png`、`139-host-soul-command-applied.png` 覆盖咒缚面 `lightning` 槽位入口，以及休战/火药桶/凋零 + 8 点不可防御伤害的真实收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应在攻击者带有休战时阻断攻击伤害并在阶段结束清理状态"` | 1 passed（2026-06-06；截图 `174-guest-parley-block-before-attack.png`、`175-host-parley-block-defense-entry.png`、`176-host-parley-block-cleared.png` 覆盖攻击者带 `休战` 时的真实攻击入口、防御阶段打开以及伤害归零后状态清理收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过人类面 lightning 槽位触发并结算判决指令的诅咒金币选择链"` | 1 passed（2026-06-04；截图 `105-guest-human-verdict-command-choice.png`、`106-host-human-verdict-command-applied.png` 覆盖 human 面 `lightning` 槽位入口、诅咒金币选择窗与选择后收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过人类面 combo 槽位触发并结算点燃炸药的小顺子链"` | 1 passed（2026-06-04；截图 `107-guest-human-light-the-fuse-entry.png`、`108-host-human-light-the-fuse-defense-entry.png`、`109-host-human-light-the-fuse-applied.png` 覆盖 human 面 `combo` 槽位入口、防御窗口与小顺子收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过人类面 ultimate 槽位触发并结算无情劫掠的诅咒金币续结链"` | 1 passed（2026-06-04；截图 `110-guest-human-merciless-plunder-entry.png`、`111-guest-human-merciless-plunder-choice.png`、`112-host-human-merciless-plunder-applied.png` 覆盖 human 面 `ultimate` 槽位入口、诅咒金币选择窗与选择后攻击链收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过人类面 calm 槽位触发并结算惊魂动魄的移除诅咒金币链"` | 1 passed（2026-06-04；截图 `113-guest-human-astonishing-entry.png`、`114-guest-human-astonishing-choice.png`、`115-guest-human-astonishing-applied.png` 覆盖 human 面 `calm` 槽位入口、移除诅咒金币选择窗与选择后攻击链收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应在 human-cursed 有诅咒金币时于回合结束移除 1 个并保持人类面"` | 1 passed（2026-06-04；截图 `117-guest-human-cursed-before-end-turn.png`、`118-guest-human-cursed-coin-removed.png` 覆盖 human 面回合结束前后状态，证明有币时只移 1 层且仍保留 human 面） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应在 human-cursed 无诅咒金币时于回合结束翻回咒缚面"` | 1 passed（2026-06-04；截图 `119-guest-human-cursed-flip-before-end-turn.png`、`120-guest-human-cursed-flipped.png` 覆盖回合结束前后状态，证明无币时会翻回咒缚面并切换能力集） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过人类面 lotus 槽位触发并结算走跳板的弃牌分支"` | 1 passed（2026-06-04；截图 `121-guest-human-walk-the-plank-entry.png`、`122-guest-human-walk-the-plank-choice.png`、`123-host-human-walk-the-plank-discarded.png` 覆盖 human 面 `lotus` 槽位入口、结算方式选择窗，以及对手手牌选择弃牌收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过人类面 fist 槽位触发并结算弯刀突刺的四同值火药桶链"` | 1 passed（2026-06-04；截图 `124-guest-human-cutlass-stab-entry.png`、`125-host-human-cutlass-stab-defense-entry.png`、`126-host-human-cutlass-stab-applied.png` 覆盖 human 面 `fist` 槽位入口、真实防御窗口与 4 同值施加火药桶收口） |
+| `PW_E2E_STANDARD_ENTRY=true PW_E2E_BOOTSTRAP_MODE=legacy-global-setup PW_ALLOW_LEGACY_GLOBAL_BOOTSTRAP=true PW_SERVER_RUNTIME=prebuilt PW_PREBUILT_BUNDLE_ROOT=temp/dev-bundles/e2e-single PW_SERVER_WATCH=false BG_VITE_FORCE_INLINE=1 PW_ISOLATE_PORTS=true PW_WORKERS=1 PW_HAS_EXPLICIT_TARGET=true PW_TEST_TARGET=e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts PW_E2E_TARGET=e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts node node_modules/playwright/cli.js test e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts --grep "真实入口应通过人类面 chi 槽位触发并结算做好标记的奖励骰与诅咒金币链"` | 1 passed（2026-06-04；截图 `127-guest-human-make-your-mark-entry.png`、`128-guest-human-make-your-mark-bonus-dice.png`、`129-guest-human-make-your-mark-choice.png`、`130-guest-human-make-your-mark-applied.png` 覆盖 human 面 `chi` 槽位入口、奖励骰结算、诅咒金币选择与最终收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实防御阶段入口应通过真实攻击流触发并结算人类面嘿，老兄的防御链"` | 1 passed（2026-06-04；截图 `131-host-human-still-wet-behind-ears-attack-entry.png`、`132-guest-human-still-wet-behind-ears-defense-entry.png`、`133-guest-human-still-wet-behind-ears-choice.png`、`134-guest-human-still-wet-behind-ears-applied.png` 覆盖真实攻击入口、防御窗口、诅咒金币选择与最终收口） |
 | `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 13:38） |
 | `npx eslint src/games/dicethrone/ui/InteractionOverlay.tsx e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-05-31 14:07） |
 | `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-06-01 12:00） |
@@ -172,6 +230,9 @@
 | `npx tsc --noEmit --pretty false` | 通过（2026-06-01 07:57） |
 | `npx eslint src/games/dicethrone/domain/systems.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors / 5 warnings（`systems.ts` 既有 `any`，2026-06-01 07:57） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实进攻阶段入口应通过面板槽位选择并结算深海潜行前置链"` | 1 passed（2026-06-01 07:57，截图 24-26 覆盖深海潜行真实攻击入口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实进攻阶段入口应通过面板槽位选择并结算深海潜行前置链"` | 1 passed（2026-06-05；修正 `setupDeepSeaDiveAttackScenario(...)` 为咒缚面后复核通过，证明当前口径应为“咒缚面 lotus=深海潜行 / human 面 lotus=走跳板”） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过人类面 lotus 槽位触发并结算走跳板的弃牌分支"` | 1 passed（2026-06-05；用于确认修正深海潜行场景后 human 面 `lotus=走跳板` 未被带坏） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应在 human-cursed 无诅咒金币时于回合结束翻回咒缚面"` | 1 passed（2026-06-05；用于确认双面翻面链仍能把 human 面切回咒缚面） |
 | `npx tsc --noEmit --pretty false` | 通过（2026-06-01 08:37） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算干票大的奖励骰分支"` | 1 passed（2026-06-01 08:37，截图 27-28 覆盖干票大的奖励骰代表链） |
 | `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-06-01 09:49） |
@@ -187,16 +248,36 @@
 | `npx tsc --noEmit --pretty false` | 通过（2026-06-01 22:18） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过 ultimate 槽位触发并结算制胜高地的前置链"` | 1 passed（2026-06-01 22:09，截图 58-59 覆盖 `ultimate` 槽位入口与锁定/紧缚/战术优势上限补满前置链） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过战术优势被动按钮完成转移状态双阶段交互"` | 1 passed（2026-06-01 22:22，截图 60-63 覆盖被动按钮、状态来源选择、目标选择与 `bind` 转移落点） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过战术优势被动按钮施加锁定并收口到对手状态区"` | 1 passed（2026-06-06，截图 `202-203` 覆盖被动按钮入口，以及 `战术优势 3 -> 0 / 对手锁定 1` 的真实收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应在持有凋零时通过咒缚面 fist 槽位触发并减少灵魂突刺的攻击伤害"` | 1 passed（2026-06-06，截图 `204-206` 覆盖 `凋零 1` 的真实攻击入口、Host 防御窗口与 `Host HP 50 -> 46` 的减伤收口） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "战术优势可按动作消耗 token 取得 CP、重掷、抽牌、锁定、守护和转移入口"` | 先失败后通过（2026-06-06；先复现“战术优势锁定未创建多人目标选择交互”，修复后通过，锁定 4 人局 `selectPlayer` 仅列敌方目标合同） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 1 file / 61 tests passed（2026-06-06） |
+| `npx eslint src/games/dicethrone/domain/customActions/zhanshujia.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-06-06） |
+| `npx tsc --noEmit --pretty false` | 通过（2026-06-06） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示紧缚在额外投掷中的 CP 门禁与阶段清理"` | 1 passed（2026-06-01，截图 64-66 覆盖额外投掷前状态、支付 `1CP` 后状态，以及离开 `offensiveRoll` 后 `bind` 清理收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实防御阶段入口应通过真实攻击流打出并结算伴装撤退"` | 1 passed（2026-06-02 02:20，截图 67-68 覆盖真实防御窗口、真实手牌打出与 `bind / damageShield` 收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实防御阶段入口应通过真实攻击流打出并结算脱战"` | 1 passed（2026-06-02 03:00，截图 69-71 覆盖真实防御窗口、真实手牌打出、奖励骰覆盖层与军刀分支 `-2 HP` 收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并进入军刀突刺的攻击链"` | 1 passed（2026-06-03，截图 82-84 覆盖 `fist` 槽位解析为 `sabre-thrust-3`、Host 推进到 Guest 防御阶段，以及全战利品防御骰下的 `Guest HP 50 -> 46` 收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算军刀突刺 II 的三同值紧缚链"` | 1 passed（2026-06-03，截图 100-102 覆盖升级后 `fist` 槽位解析为 `sabre-thrust-2-3`、Host 推进到 Guest 防御阶段，以及全战利品防御骰下的 `Guest HP 50 -> 45 / Guest bind 1` 收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算地毯式轰炸 II 的旗帜分支"` | 1 passed（2026-06-03，截图 103-104 覆盖升级后 `chi` 槽位解析为 `carpet-bombing-2-strategy`，以及 `Host tactical advantage 3 / hand 2 / pendingAttack 为空` 的即时收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算战略转移的基础主分支"` | 1 passed（2026-06-06，截图 163-164 覆盖基础版 `calm` 槽位入口，以及 `Host tactical advantage 5 / Guest HP 45 / bind 0` 的真实收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算摇鼓运动的基础主分支"` | 1 passed（2026-06-06，截图 165-167 覆盖基础版 `lotus` 槽位入口、Guest 自然进入防御阶段，以及 `Guest bind 1 / Guest HP 43 / Host tactical advantage 0` 的真实收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算开拓战场的基础主分支"` | 1 passed（2026-06-06，截图 168-170 覆盖基础版 `lightning` 槽位入口、Guest 自然进入防御阶段，以及 `Host tactical advantage 2 / Guest bind 1 / Guest HP 41` 的真实收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算包夹侧翼的基础主分支"` | 1 passed（2026-06-06，截图 171-173 覆盖基础版 `combo` 槽位入口、Guest 自然进入防御阶段，以及 `Host tactical advantage 1 / Guest HP 44` 的真实收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算战略转移 II 的主分支"` | 1 passed（2026-06-03，截图 85-87 覆盖 `calm` 槽位入口、双变体选择 modal 与 `4 个勋章` 主分支 `Guest HP 50 -> 45 / bind 1 / tactical advantage 5` 收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算摇鼓运动 II 的主分支"` | 1 passed（2026-06-03，截图 88-90 覆盖 `lotus` 槽位入口、Guest 自然进入防御阶段，以及 `Host tactical advantage 1 / Guest bind 1 / Guest HP 43` 收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算开拓战场 II 的大顺主分支"` | 1 passed（2026-06-03，截图 91-94 覆盖 `lightning` 槽位入口、变体选择 modal、Guest 自然进入防御阶段，以及 `Host tactical advantage 3 / Guest bind 1 / Guest HP 41` 收口） |
-| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应命中并结算虚张声势的弯刀分支"` | 1 passed（2026-06-03，截图 95-96 覆盖 Guest 真实手牌打出后的奖励骰覆盖层，以及弯刀分支 `Host HP 50 -> 48` 收口） |
+| `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算战略转移 II 的侦察分支"` | 3 passed（2026-06-06；定向 run 同批覆盖 `战略转移 II` 主分支、侦察分支与基础版 `战略转移`，其中侦察分支截图 `207-209` 已证明变体选择后收口到 `Host tactical advantage 5 / Guest HP 50 / Guest bind 0`） |
+| `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算摇鼓运动 II 的间接接敌分支"` | 3 passed（2026-06-06；定向 run 同批覆盖 `摇鼓运动 II` 间接接敌分支、基础版 `摇鼓运动` 与 `摇鼓运动 II` 主分支，其中间接接敌分支截图 `210-212` 已证明槽位可直接解析到次级分支，并收口到 `Host tactical advantage 2 / Guest HP 48 / Guest bind 0`） |
+| `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算开拓战场 II 的全面封锁分支"` | 3 passed（2026-06-06；定向 run 同批覆盖 `开拓战场 II` 全面封锁分支、基础版 `开拓战场` 与 `开拓战场 II` 大顺主分支，其中全面封锁分支截图 `213-215` 已证明槽位可直接解析到次级分支，并收口到 `Host hand 2 / Guest HP 50 / Guest bind 1`） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实防御阶段入口应展示并结算反制措施 II 与 III 的升级参数链"` | 1 passed（2026-06-06，截图 `177-180` 覆盖升级后的真实防御入口，以及 `反制措施 II -> 攻击者 HP 49 / 战术优势 2`、`反制措施 III -> 攻击者 HP 48 / 战术优势 2` 的收口） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "战术家升级后的(战略转移 II 侦察分支只获得 5 战术优势|开拓战场 II lockdown 分支抽 2 并施加紧缚|摇鼓运动 II 间接接敌分支获得 2 战术优势并造成 2 点不可防御伤害)"` | 3 passed（2026-06-06；补齐 `strategic-shift-2-recon / expand-battlefield-2-lockdown / drum-movement-2-indirect` 的独立 L2 分支行为证据，证明这三条次级分支都不再处于“是否实现未知”状态） |
+| `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "(human 面判决指令在真实进攻 pipeline 中会于 ADVANCE_PHASE 后进入诅咒金币 simple-choice|human 面无情劫掠在真实进攻 pipeline 中会于诅咒金币选择后收口攻击链|human 面惊魂动魄在真实进攻 pipeline 中会于移除诅咒金币选择后收口攻击链|战术家升级后的摇鼓运动 II 间接接敌分支在真实选择后应标记为不可防御)"` | 4 passed（2026-06-06；补齐同 seam 回归：`判决指令 / 惊魂动魄 / 无情劫掠` 的“选择后 continuation 继续收口”合同，以及 `摇鼓运动 II -> 间接接敌` 的 `ATTACK_INITIATED.isDefendable=false` 共享消费合同） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过升级后的玩家板槽位触发并结算包夹侧翼 II 的参数链"` | 1 passed（2026-06-06，截图 `181-183` 覆盖升级场景下 `combo` 槽位真实入口、Guest 自然进入防御阶段，以及 `Host tactical advantage 2 / Guest HP 44` 的收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算埋伏的即时战术优势链"` | 1 passed（2026-06-06，截图 `184-185` 覆盖真实手牌入口，以及 `战术优势 2 + 源卡进入弃牌堆` 的即时收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应命中并结算虚张声势的弯刀分支"` | 1 passed（2026-06-05 复跑通过；截图 95-96 覆盖 Guest 真实手牌打出后的奖励骰覆盖层，以及弯刀分支 `Host HP 50 -> 48` 收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应命中并结算虚张声势的战利品抽 2 分支"` | 1 passed（2026-06-05，截图 149-150 覆盖 Guest 真实手牌打出后的奖励骰覆盖层，以及战利品分支抽 2 张牌的收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应命中并结算虚张声势的骷髅施加火药桶分支"` | 1 passed（2026-06-05，截图 151-152 覆盖 Guest 真实手牌打出后的奖励骰覆盖层，以及骷髅分支对 Host 写入 `火药桶 1` 的收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算诱饵的 2 点攻击伤害"` | 1 passed（2026-06-03，截图 97-99 覆盖真实 `soul-stab-3` 攻击入口、Guest 真实手牌打出后的攻击修正徽标，以及仍处于 `offensiveRoll` 时的 `Host HP 50 -> 48` 收口） |
 | `npx tsc --noEmit --pretty false` | 通过（2026-06-01 10:52） |
 | `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` | 2 files / 50 tests passed（2026-06-01 10:56） |
@@ -204,7 +285,8 @@
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算死亡印记的奖励骰分支"` | 1 passed（2026-06-01 10:56，截图 33-34 覆盖死亡印记奖励骰代表链） |
 | `npx eslint e2e/helpers/dicethrone.ts e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 0 errors（2026-06-01 18:42；2026-06-01 18:55） |
 | `npx tsc --noEmit --pretty false` | 通过（2026-06-01 18:42；2026-06-01 18:55） |
-| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "4 人真实入口应先进入 targetingRoll，并按 5/6 把无情诅咒的目标选择权交给正确玩家"` | 1 passed（2026-06-01 18:42，截图 42-45 覆盖 defender captain 选敌、attacker 选敌、火药桶 modal 与双敌方落桶状态链） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "4 人真实入口应先进入 targetingRoll，并按 5/6 把无情诅咒的目标选择权交给正确玩家"` | 1 passed（2026-06-06 复跑；原 2026-06-01 截图 42-45 继续覆盖 defender captain 选敌、attacker 选敌、火药桶 modal 与双敌方落桶状态链；新增截图 `161-162` 已补“有合法目标时选择不施加火药桶”的真实否定路径） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算战略防御与送你们去喂鱼的交互 UI"` | 1 passed（2026-06-06 复跑；原截图 `07-10` 继续覆盖战略防御与送你们去喂鱼正向施桶链；新增截图 `159-160` 已补“有合法目标时选择不施加火药桶”的真实否定路径） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算诅咒卡牌的自伤抽牌分支"` | 1 passed（2026-06-01 18:55，截图 46-47 覆盖 choice modal 与“受 4 伤害抽 3”收口状态） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算封舱的弃手重抽链"` | 1 passed（2026-06-01 19:04，截图 48-49 覆盖打牌前手牌与打牌后弃手重抽状态） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算分点给我的单目标火药桶链"` | 1 passed（2026-06-01 19:12，截图 50-51 覆盖打牌前手牌与打牌后目标火药桶状态） |
@@ -219,6 +301,9 @@
 | `npx tsc --noEmit --pretty false` | 通过（2026-06-02 04:14） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应命中并结算占得上风的勋章分支"` | 1 passed（2026-06-02，截图 72-73 覆盖占得上风勋章分支） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应命中并结算起锚的骷髅分支"` | 1 passed（2026-06-02，截图 74-75 覆盖起锚骷髅分支） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应命中并结算起锚的默认抽牌分支"` | 1 passed（2026-06-05，截图 `143-144` 覆盖起锚非骷髅默认抽牌分支与源卡弃牌收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算诅咒卡牌的抽 1 张牌分支"` | 1 passed（2026-06-05，截图 `145-146` 覆盖诅咒卡牌抽 1 张牌分支的选择窗、抽牌与源卡弃牌收口） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算诅咒卡牌的受 2 伤害抽 2 分支"` | 1 passed（2026-06-05，截图 `147-148` 覆盖诅咒卡牌受 2 伤害抽 2 分支的选择窗、HP 变化、抽牌与源卡弃牌收口） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 24 passed / 2 failed（2026-06-02；新增两条后整份扩到 26 条，当时掉红的是既有 `紧缚` 与 `火药桶` 两条旧链，现已修复） |
 | `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 通过（2026-06-02；`咒缚` 与火药桶 upkeep 新一轮改测后复核） |
 | `npx tsc --noEmit --pretty false` | 通过（2026-06-02；同上轮 `咒缚` / 火药桶 upkeep 改测后复核） |
@@ -227,10 +312,12 @@
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应在对手未发起攻击时由咒缚施加火药桶"` | 1 passed（2026-06-02；证明对手在其进攻投掷阶段未发起攻击时，会沿真实入口给咒缚海盗对手施加火药桶） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算火药桶的维持阶段爆炸链"` | 1 passed（2026-06-02；既有旧红链恢复） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算战术家升级牌的共享替换链"` | 1 passed（2026-06-03；截图 76-77 覆盖升级牌真实打出、升级槽位写入与升级后 UI 状态） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应逐张把其余战术家升级牌写入对应升级槽位"` | 1 passed（2026-06-06；截图 `186-201` 逐张覆盖 `反制措施 III / 反制措施 II / 战略转移 II / 开拓战场 II / 包夹侧翼 II / 摇鼓运动 II / 地毯式轰炸 II / 军刀突刺 II` 的真实手牌打出与升级槽位写入） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示紧缚在额外投掷中的 CP 门禁与阶段清理"` | 1 passed（2026-06-03；本轮复核再次证明 `64-66` 真实入口链可用，旧的环境阻断结论已过时） |
-| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 39 passed（2026-06-03；当前整份 intake E2E 已全绿，剩余风险转为 soak 稳定性而非当前红灯） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 39 passed（2026-06-03；这是当时版本的阶段性整跑结果，后续已被更晚的整跑事实取代） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算战争贩子的奖励骰分支与额外进攻阶段"` | 1 passed（2026-06-03；截图 78-79 覆盖基础战争贩子奖励骰展示与防御收口后的额外进攻阶段） |
-| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 历史上曾 `26 passed`（2026-06-02 20:54），但该结论已被更晚回归取代：最新整跑在最前两条开局/选角用例就被 online room / frontend runtime 不稳定拦住，现象包括 `page.goto ... waitUntil "commit" timeout`、`chrome-error://chromewebdata/`、`localStorage/sessionStorage Access is denied`，随后 26 条全部 `skipped`，并伴随前端服务退出 `code=3221226505`；因此不能再把整份 intake 写成“当前全绿” |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 历史上曾 `26 passed`（2026-06-02 20:54）且也曾因 runtime 波动全量 `skipped`；这些都已不是当前事实。最新权威整跑为 `71 passed / 0 failed`（2026-06-06），因此不能再把旧 runtime 波动记成当前主 blocker |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 71 passed / 0 failed（2026-06-06；当前最新整份 intake 权威整跑，说明 `休战 / 紧缚 / 起锚 / 占得上风 / 虚张声势` 的残余红灯与真实机制 bug 都已收口） |
 | `run-e2e-single.mjs` 并行定点执行 | 不可作为当前默认验证方式：并行会稳定撞 `.tmp/e2e-preflight-cache.json` 的 `EBUSY`，应串行跑相关定点用例 |
 | `npx tsx scripts/infra/diagnose-dicethrone-room-entry.ts --attempts 1 --character-selection-timeout 90000` | 已新增最小进房诊断脚本（2026-06-02），反馈环收窄为 `create -> join -> seed -> goto room -> wait character selection`；当前结论仍是环境 blocker：`bundle` runtime 下 `vite-with-logging` 异常退出且 `bundle-runner e2e-game-single` 启动期 `Fatal JavaScript out of memory`，切到 `tsx` runtime 后 Vite 与游戏服务又分别出现 `Zone Allocation failed - process out of memory`，因此 isolated single-worker 现在会在真正进房前随机撞启动期 OOM |
 | `waitForFrontendAssets(hostPage, 30000)` | 目前只能算 best-effort 诊断：即使 runtime manager 已把 `/__ready`、`/@vite/client`、`/src/main.tsx` 纳入健康检查，Playwright `page.request.get('/@vite/client')` 仍可能单独挂死 30s；可证明环境不稳，但不能单独作为业务结论 |
@@ -267,6 +354,9 @@
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应展示并结算干票大的奖励骰分支`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应命中并结算占得上风的勋章分支`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应命中并结算起锚的骷髅分支`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应命中并结算起锚的默认抽牌分支`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应展示并结算诅咒卡牌的抽 1 张牌分支`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应展示并结算诅咒卡牌的受 2 伤害抽 2 分支`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应命中并结算虚张声势的弯刀分支`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应展示并结算诱饵的-2-点攻击伤害`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应展示并结算战争贩子 II 的奖励骰分支`
@@ -283,6 +373,8 @@
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应展示并结算火药桶的维持阶段爆炸链`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应通过 ultimate 槽位触发并结算制胜高地的前置链`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应通过战术优势被动按钮完成转移状态双阶段交互`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应通过战术优势被动按钮施加锁定并收口到对手状态区`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实入口应在持有凋零时通过咒缚面-fist-槽位触发并减少灵魂突刺的攻击伤害`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实防御阶段入口应通过真实攻击流打出并结算伴装撤退`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\zhanshujia-cursed-pirate-intake.e2e\真实防御阶段入口应通过真实攻击流打出并结算脱战`
 
@@ -298,6 +390,8 @@
 | `08-host-strategic-defense-protect-applied.png` | Host 选择 P2 后，服务器状态断言 P2 获得守护；截图保留结算后棋盘证据 |
 | `09-guest-go-fish-powder-keg-choice.png` | Guest 真实入口可见送你们去喂鱼的“至多三名对手获得火药桶”选择弹窗 |
 | `10-guest-go-fish-powder-keg-applied.png` | Guest 选择施加给 P1 后，服务器状态断言 P1 获得火药桶；截图保留结算后棋盘证据 |
+| `159-guest-go-fish-skip-choice.png` | 在同样存在合法目标 `P1` 的前提下，Guest 真实入口仍可见“至多三名对手获得火药桶”选择窗，且按钮同时包含 `施加给 P1` 与“不施加火药桶” |
+| `160-guest-go-fish-skip-applied.png` | Guest 选择“不施加火药桶”后，服务器状态断言 Host / Guest 都未新增火药桶，modal 关闭并直接收口；截图保留否定路径的真实棋盘证据 |
 | `11-host-select-hand-card-choice.png` | Host 可见 `selectHandCard` 手牌选择弹窗，标题为“选择 1 张手牌弃置”，候选牌名已翻译为“作战室！” |
 | `12-host-select-hand-card-discarded.png` | Host 选择作战室并确认后，服务器状态断言该牌进入 P1 弃牌堆；截图保留弃牌堆数量增加证据 |
 | `13-guest-crows-nest-view-hand.png` | Guest 真实入口打出瞭望台并固定弯刀分支，弹窗显示“瞭望台：查看手牌”，按钮文案为“作战室！、战略防御！”中文卡名，无 raw `card-*` ID |
@@ -327,6 +421,8 @@
 | `43-four-player-merciless-curse-attacker-choice.png` | 4 人 2v2 真实入口中，目标骰为 6 时选择权切到进攻方；截图保留 Host 的敌方目标选择面板且不出现队友 |
 | `44-four-player-merciless-curse-powder-keg-choice.png` | 防守队长选完目标后，Host 真实看到“选择至多两名对手获得火药桶” modal，按钮精确包含 `施加给 P2`、`施加给 P4`、`施加给 P2, P4` 与“不施加火药桶” |
 | `45-four-player-merciless-curse-powder-keg-applied.png` | 选择 `施加给 P2, P4` 后，页内 harness 与服务器状态共同证明 `P2/P4` 均获得 1 层火药桶，交互清空且 modal 隐藏 |
+| `161-four-player-merciless-curse-skip-choice.png` | 同一 4 人真实入口在 attacker 选敌后再次打开火药桶 modal；截图保留“存在合法敌方目标时仍可选择不施加火药桶”的按钮证据 |
+| `162-four-player-merciless-curse-skip-applied.png` | Host 选择“不施加火药桶”后，服务器状态断言 `P2/P4` 都未新增火药桶、交互已清空且攻击链直接收口；截图保留否定路径的真实棋盘证据 |
 | `46-guest-curse-card-choice.png` | Guest 真实打出诅咒卡牌后看到“诅咒卡牌：选择结算效果” modal，三个分支按钮文案与图面语义一致 |
 | `47-guest-curse-card-damage4draw3-applied.png` | Guest 选择“受到 4 点伤害并抽 3 张牌”后，截图保留回到棋盘与手牌区的状态；服务器断言 HP 变为 46、手牌变为送你们去喂鱼/瞭望台/干票大的，且诅咒卡牌进入弃牌堆 |
 | `48-guest-batten-down-before-play.png` | Guest 真实进入主阶段并持有封舱、送你们去喂鱼、瞭望台三张手牌；截图保留打牌前手牌可见状态 |
@@ -345,6 +441,11 @@
 | `61-host-tactical-advantage-select-bind.png` | Host 点击“转移状态”后真实进入 `selectStatus` 覆盖层，可选来源为自己身上的紧缚；截图保留来源状态选择界面 |
 | `62-host-tactical-advantage-select-target.png` | 选中 `bind` 后真实进入 `selectTargetStatus` 阶段，来源卡锁定在 P1，P2 作为接收目标可点；截图保留双阶段交互的目标选择界面 |
 | `63-host-tactical-advantage-transfer-applied.png` | Host 选择 P2 并确认后，服务器断言战术优势从 4 降到 0、P1 的 `bind` 清空、P2 获得 1 层 `bind`；截图保留转移完成后的棋盘与状态区变化 |
+| `202-host-tactical-advantage-targeted-entry.png` | Host 主阶段真实显示战术优势被动按钮中的“锁定”；截图保留按钮入口与当前 3 层战术优势状态 |
+| `203-host-tactical-advantage-targeted-applied.png` | Host 点击“锁定”后，服务器断言战术优势从 3 降到 0，Guest 获得 `锁定 1`；截图保留被动按钮真实结算后的棋盘与对手状态区变化 |
+| `204-guest-cursed-soul-stab-wither-entry.png` | Guest 真实持有 `凋零 1`，且咒缚面 `fist` 槽位仍解析为 `soul-stab-3`；截图保留攻击前的状态区与技能入口 |
+| `205-host-cursed-soul-stab-wither-defense-entry.png` | Guest 推进攻击后，Host 自然进入 `countermeasures` 防御窗口；截图保留“攻击链已建立、但防御骰不提供减伤”的中间态证据 |
+| `206-host-cursed-soul-stab-wither-applied.png` | Host 推进防御收口后，服务器断言 `Host HP 50 -> 46`、Guest 仍保留 `凋零 1`、Host 同时获得 `火药桶 1`；截图保留 `凋零` 真实减少攻击伤害后的棋盘状态 |
 | `64-guest-bind-extra-roll-before-reroll.png` | Guest 真实处于被 `紧缚` 的额外进攻投掷阶段，额外投掷按钮可见；截图保留支付 CP 之前的棋盘与状态区 |
 | `65-guest-bind-extra-roll-cp-spent.png` | Guest 点击额外投掷后，服务器状态断言 CP 从 5 降到 4，且 `bind` 仍保留 1 层；截图保留已支付 `1CP` 后的额外投掷状态 |
 | `66-guest-bind-cleared-after-phase-exit.png` | Guest 确认骰面并完成后续阶段推进后，页内 harness 断言已离开 `offensiveRoll` 且 `bind` 清空；截图保留 `紧缚` phase exit 清理收口后的棋盘状态 |
@@ -369,26 +470,180 @@
 | `102-host-sabre-thrust-2-applied.png` | 把 Guest 防御骰固定成全战利品面并推进后，服务器断言 `Host HP=50 / Guest HP=45 / Guest bind=1`，说明升级后的 `sabre-thrust-2-3` 已在真实入口里完成 `5` 点伤害与紧缚写入收口 |
 | `103-host-carpet-bombing-2-strategy-entry.png` | Host 在升级场景下的 `4 旗帜 + 1 军刀` 盘面里，`chi` 槽位显示 `data-base-ability-id="carpet-bombing"` 与 `data-resolved-ability-id="carpet-bombing-2-strategy"`，且可点击；截图保留地毯式轰炸 II 旗帜分支的真实玩家板入口证据 |
 | `104-host-carpet-bombing-2-strategy-applied.png` | 点击 `chi` 槽位后，服务器断言 `Host 战术优势=3 / Host 手牌含 战略防御！ 与 占得上风！ / pendingAttack 为空`；截图保留旗帜分支 `grantToken + draw 2` 的即时收口状态 |
+| `105-guest-human-verdict-command-choice.png` | Guest 在 human 面真实 `lightning` 槽位触发 `判决指令` 后，界面进入诅咒金币选择窗；截图保留 `data-resolved-ability-id="verdict-command"` 与选择交互可见的对象级证据 |
+| `106-host-human-verdict-command-applied.png` | 选择获得诅咒金币后，服务器断言 `Guest cursedCoin +1 / Host parley 1 / Host HP 50 -> 43`；截图保留 `判决指令` 选择后 continuation 已继续收口的棋盘状态 |
+| `107-guest-human-light-the-fuse-entry.png` | Guest 在 human 面真实 `combo` 槽位看到 `data-base-ability-id="light-the-fuse"` 与 `data-resolved-ability-id="light-the-fuse-small"`，且可点击；截图保留 `点燃炸药` 的对象级真实入口证据 |
+| `108-host-human-light-the-fuse-defense-entry.png` | Guest 点击 `点燃炸药` 后，Host 自然进入防御阶段；截图保留这不是 direct injection，而是由 human 面真实攻击链打开的防御窗口 |
+| `109-host-human-light-the-fuse-applied.png` | 推进防御收口后，服务器断言 `Host HP 50 -> 43` 且 `Host powderKeg 1`；截图保留 `点燃炸药` 小顺子 `preDefense` 施桶加伤害的真实收口状态 |
+| `110-guest-human-merciless-plunder-entry.png` | Guest 在 human 面真实 `ultimate` 槽位触发 `无情劫掠` 后，攻击链进入诅咒金币选择前状态；截图保留 `data-resolved-ability-id="merciless-plunder"` 的对象级入口证据 |
+| `111-guest-human-merciless-plunder-choice.png` | `无情劫掠` 主伤害 12 已落地但状态续结尚未收口时，界面进入诅咒金币选择窗；截图保留 continuation 中间态证据 |
+| `112-host-human-merciless-plunder-applied.png` | 选择获得诅咒金币后，服务器断言 `Guest cursedCoin 2 / Host parley 1 / Host powderKeg 1 / Host HP 50 -> 38`；截图保留 `无情劫掠` continuation 完整收口后的棋盘状态 |
+| `113-guest-human-astonishing-entry.png` | Guest 在 human 面真实 `calm` 槽位看到 `data-resolved-ability-id="astonishing"`，且可点击；截图保留 `惊魂动魄` 的对象级真实入口证据 |
+| `114-guest-human-astonishing-choice.png` | Guest 点击 `惊魂动魄` 并推进后，界面进入“你可以移除任意数量的诅咒金币”选择窗；截图保留 choice 中间态与 `Host HP 50 -> 43` 已落地证据 |
+| `115-guest-human-astonishing-applied.png` | 选择“移除 2 个诅咒金币”后，服务器断言 `Guest cursedCoin 3 -> 1 / Host HP 50 -> 43`；截图保留 `惊魂动魄` choice 收口后的棋盘状态 |
+| `117-guest-human-cursed-before-end-turn.png` | Guest 在 human 面且持有 3 个诅咒金币时停在 `discard` 阶段末；截图保留 `human-cursed` 被动结算前的状态区与面板状态 |
+| `118-guest-human-cursed-coin-removed.png` | 推进回合结束后，服务器断言 `Guest cursedCoin 3 -> 2` 且 `playerBoardFace='normal'`、能力集仍含 `human-cursed`；截图保留有币时仅移 1 层并保持 human 面的真实收口状态 |
+| `119-guest-human-cursed-flip-before-end-turn.png` | Guest 在 human 面且没有诅咒金币时停在 `discard` 阶段末；截图保留翻面前的被动结算位点 |
+| `120-guest-human-cursed-flipped.png` | 推进回合结束后，服务器断言 `playerBoardFace='cursed'`、能力集切回 `soul-stab` 且 `human-cursed` 不再存在；截图保留无币时翻回咒缚面的真实收口状态 |
+| `121-guest-human-walk-the-plank-entry.png` | Guest 在 human 面真实 `lotus` 槽位看到 `data-base-ability-id="walk-the-plank"` 与 `data-resolved-ability-id="walk-the-plank"`，且可点击；截图保留 `走跳板` 的对象级真实入口证据 |
+| `122-guest-human-walk-the-plank-choice.png` | 点击 `走跳板` 并推进后，界面进入“走跳板：选择结算方式”弹窗；截图保留“偷取 1CP / 令对手选择弃掉 1 张牌”两条分支可见的中间态证据 |
+| `123-host-human-walk-the-plank-discarded.png` | Host 在弃牌分支里真实打开手牌选择弹窗并确认 `战略防御` 进入弃牌堆；截图保留对手自选弃牌链的最终收口状态 |
+| `124-guest-human-cutlass-stab-entry.png` | Guest 在 human 面真实 `fist` 槽位看到 `data-base-ability-id="cutlass-stab"` 与 `data-resolved-ability-id="cutlass-stab-4"`，且可点击；截图保留 `弯刀突刺` 的对象级真实入口证据 |
+| `125-host-human-cutlass-stab-defense-entry.png` | Guest 点击 `弯刀突刺` 后，Host 自然进入 `countermeasures` 防御阶段；截图保留这不是 direct injection，而是由 human 面真实攻击链打开的战术家防御窗口 |
+| `126-host-human-cutlass-stab-applied.png` | 推进防御收口后，服务器断言 `Host HP 50 -> 48 / Host powderKeg 1 / Guest HP 50`；截图保留 `cutlass-stab-4` 在 4 同值盘面下完成火药桶写入与伤害收口的真实状态 |
+| `127-guest-human-make-your-mark-entry.png` | Guest 在 human 面真实 `chi` 槽位看到 `data-base-ability-id="make-your-mark"` 与 `data-resolved-ability-id="make-your-mark"`，且可点击；截图保留 `做好标记` 的对象级真实入口证据 |
+| `128-guest-human-make-your-mark-bonus-dice.png` | Guest 点击 `做好标记` 并推进后，权威状态进入 3 颗奖励骰结算；截图保留奖励骰收口前的真实中间态证据 |
+| `129-guest-human-make-your-mark-choice.png` | 当奖励骰命中骷髅时，界面进入“是否获得诅咒金币？”选择窗；截图保留 `做好标记` 的诅咒金币选择中间态证据 |
+| `130-guest-human-make-your-mark-applied.png` | `做好标记` 收口后，服务器断言 `Guest CP 6 / Guest 手牌数=战利品数 / Guest cursedCoin=骷髅数 / Host HP=50-2*弯刀数`；截图保留奖励骰按实际骰面结算后的真实状态 |
+| `131-host-human-still-wet-behind-ears-attack-entry.png` | Host 在真实玩家板 `fist` 槽位触发 `sabre-thrust-3`；截图保留 `嘿，老兄` 不是 direct injection，而是由正式攻击流打开的证据 |
+| `132-guest-human-still-wet-behind-ears-defense-entry.png` | Host 推进攻击后，Guest 自然进入 `human-still-wet-behind-ears` 防御阶段；截图保留人类面防御窗口的真实入口证据 |
+| `133-guest-human-still-wet-behind-ears-choice.png` | Guest 以 `2 弯刀 + 1 骷髅 + 1 战利品` 防御收口后，界面进入“是否获得诅咒金币？”选择窗；截图保留组合分支的中间态证据 |
+| `134-guest-human-still-wet-behind-ears-applied.png` | 推进防御收口后，服务器断言 `Host HP 48 / Guest HP 48 / Guest CP 6 / Guest cursedCoin 1`；截图保留 `嘿，老兄` 在真实防御链中的最终状态 |
+| `135-guest-cursed-soul-stab-entry.png` | Guest 在咒缚面真实 `fist` 槽位看到 `data-base-ability-id="soul-stab"` 与 `data-resolved-ability-id="soul-stab-3"`，且可点击；截图保留 `灵魂突刺` 的对象级真实入口证据 |
+| `136-host-cursed-soul-stab-defense-entry.png` | Guest 推进后，Host 自然进入 `countermeasures` 防御阶段；截图保留这不是 direct injection，而是由咒缚面真实攻击链打开的战术家防御窗口 |
+| `137-host-cursed-soul-stab-applied.png` | 推进防御收口后，服务器断言 `Host HP 50 -> 45 / Host powderKeg 1 / Guest HP 50`；截图保留 `灵魂突刺` 三同值施加火药桶与 5 点伤害的真实收口状态 |
+| `138-guest-soul-command-entry.png` | Guest 在咒缚面真实 `lightning` 槽位看到 `data-base-ability-id="soul-command"` 与 `data-resolved-ability-id="soul-command"`，且可点击；截图保留 `灵魂指令` 的对象级真实入口证据 |
+| `139-host-soul-command-applied.png` | Guest 推进攻击收口后，服务器断言 `Host HP 50 -> 42 / Host parley 1 / Host powderKeg 1 / Host wither 1`；截图保留 `灵魂指令` 多状态写入与 8 点不可防御伤害的真实收口状态 |
 | `85-host-strategic-shift-2-entry.png` | Host 在 `4 勋章 + 3 勋章` 同时满足盘面下，`calm` 槽位可点击，且主解析落点为 `data-resolved-ability-id="strategic-shift-2-main"`；截图保留战略转移 II 的真实玩家板入口证据 |
 | `86-host-strategic-shift-2-variant-choice.png` | 点击 `calm` 槽位后，真实 UI 弹出“选择发动变体” modal，候选同时包含 `战略转移 II（4个勋章）` 与 `战略转移 II（3个勋章）`；截图保留升级变体选择不是静默自动分支的证据 |
+| `207-host-strategic-shift-2-recon-entry.png` | Host 在同一 `4 勋章 + 3 勋章` 盘面下，`calm` 槽位仍可真实点击，且默认解析落点保持为 `data-resolved-ability-id="strategic-shift-2-main"`；截图保留侦察分支并不是单独造出来的新槽位，而是复用真实玩家板入口再经变体选择切分的证据 |
+| `208-host-strategic-shift-2-recon-choice.png` | 点击 `calm` 槽位后，真实 UI 再次弹出“选择发动变体” modal，候选同时包含 `战略转移 II（4个勋章）` 与 `战略转移 II（3个勋章）`；截图保留侦察分支同样经过正式变体选择链的证据 |
+| `209-host-strategic-shift-2-recon-applied.png` | Host 选择 `战略转移 II（3个勋章）` 后，服务器断言 `Host 战术优势=5 / Guest HP=50 / Guest bind=0`；截图保留侦察分支“只获得战术优势、不施加紧缚、不造成伤害”的真实收口状态 |
+| `163-host-strategic-shift-entry.png` | Host 在基础版 4 勋章盘面下，`calm` 槽位可点击，且解析落点为 `data-resolved-ability-id="strategic-shift"`；截图保留基础版战略转移的真实玩家板入口证据 |
+| `164-host-strategic-shift-applied.png` | Host 点击基础版 `战略转移` 并推进后，服务器断言 `Host 战术优势=5 / Guest HP=45 / Guest bind=0`；截图保留基础版主分支不可防御伤害与战术优势写入的真实收口状态 |
+| `165-host-drum-movement-entry.png` | Host 在基础版 `3 军刀 + 2 勋章` 盘面下，`lotus` 槽位可点击，且解析落点为 `data-resolved-ability-id="drum-movement"`；截图保留基础版摇鼓运动的真实玩家板入口证据 |
+| `166-guest-drum-movement-defense-entry.png` | Host 点击基础版 `摇鼓运动` 并推进后，Guest 自然进入 `human-still-wet-behind-ears` 防御阶段；截图保留这不是 direct injection，而是由真实玩家板攻击链打开的防御窗口 |
+| `167-host-drum-movement-applied.png` | 在全战利品防御骰下推进收口后，服务器断言 `Host 战术优势=0 / Guest bind=1 / Guest HP=43`；截图保留基础版摇鼓运动的真实收口状态 |
+| `168-host-expand-battlefield-entry.png` | Host 在基础版大顺子盘面下，`lightning` 槽位可点击，且解析落点为 `data-resolved-ability-id="expand-battlefield"`；截图保留基础版开拓战场的真实玩家板入口证据 |
+| `169-guest-expand-battlefield-defense-entry.png` | Host 点击基础版 `开拓战场` 并推进后，Guest 自然进入 `human-still-wet-behind-ears` 防御阶段；截图保留基础版大顺攻击链打开真实防御窗口的证据 |
+| `170-host-expand-battlefield-applied.png` | 在全战利品防御骰下推进收口后，服务器断言 `Host 战术优势=2 / Guest bind=1 / Guest HP=41`；截图保留基础版开拓战场的真实收口状态 |
+| `171-host-flanking-entry.png` | Host 在基础版小顺子盘面下，`combo` 槽位可点击，且解析落点为 `data-resolved-ability-id="flanking"`；截图保留基础版包夹侧翼的真实玩家板入口证据 |
+| `172-guest-flanking-defense-entry.png` | Host 点击基础版 `包夹侧翼` 并推进后，Guest 自然进入 `human-still-wet-behind-ears` 防御阶段；截图保留基础版小顺攻击链打开真实防御窗口的证据 |
+| `173-host-flanking-applied.png` | 在全战利品防御骰下推进收口后，服务器断言 `Host 战术优势=1 / Guest HP=44`；截图保留基础版包夹侧翼的真实收口状态 |
+| `177-host-countermeasures-2-defense-entry.png` | Host 在升级场景下真实进入 `反制措施 II` 防御阶段，当前 `abilityLevel=2` 且推进按钮可用；截图保留升级后的对象级防御入口证据 |
+| `178-host-countermeasures-2-resolved.png` | 推进 `反制措施 II` 后，服务器断言攻击者 HP `50 -> 49`、Host 战术优势 `0 -> 2`；截图保留升级参数链按 `1 组军刀 + 1 勋章` 收口后的棋盘状态 |
+| `179-host-countermeasures-3-defense-entry.png` | Host 在升级场景下真实进入 `反制措施 III` 防御阶段，当前 `abilityLevel=3` 且推进按钮可用；截图保留升级后的对象级防御入口证据 |
+| `180-host-countermeasures-3-resolved.png` | 推进 `反制措施 III` 后，服务器断言攻击者 HP `50 -> 48`、Host 战术优势 `0 -> 2`；截图保留升级参数链按 `1 组军刀 + 1 勋章` 收口后的棋盘状态 |
+| `181-host-flanking-2-entry.png` | Host 在升级场景下的真实小顺子盘面里，`combo` 槽位仍解析为 `flanking` 且可点击；截图保留 `包夹侧翼 II` 不是 direct injection，而是由升级后玩家板真实触发的入口证据 |
+| `182-guest-flanking-2-defense-entry.png` | Host 点击升级后的 `包夹侧翼` 并推进后，Guest 自然进入 `human-still-wet-behind-ears` 防御阶段；截图保留升级主链打开真实防御窗口的证据 |
+| `183-host-flanking-2-applied.png` | 在全战利品防御骰下推进收口后，服务器断言 `Host 战术优势=2 / Guest HP=44`；截图保留 `包夹侧翼 II` 参数提升后的真实收口状态 |
+| `184-host-ambush-before-play.png` | Host 在真实主阶段手牌区可见 `埋伏！`；截图保留该对象的真实手牌入口证据 |
+| `185-host-ambush-applied.png` | Host 打出 `埋伏！` 后，服务器断言 `战术优势=2` 且源卡进入弃牌堆；截图保留该对象即时写入 token 的真实收口状态 |
+| `186-host-countermeasures-3-upgrade-card-before-play.png` | Host 在真实主阶段手牌区可见 `反制措施 III`，且 `countermeasures` 基础槽位尚未挂载升级牌；截图保留该升级牌的真实手牌入口证据 |
+| `187-host-countermeasures-3-upgrade-card-applied.png` | Host 打出 `反制措施 III` 后，服务器断言 `abilityLevels['countermeasures']=3`、`upgradeCardByAbilityId['countermeasures'].cardId='upgrade-zhanshujia-countermeasures-3'`、CP `5 -> 0`、手牌归 0；截图保留升级槽位写入后的真实状态 |
+| `188-host-countermeasures-2-upgrade-card-before-play.png` | Host 在真实主阶段手牌区可见 `反制措施 II`，且 `countermeasures` 基础槽位尚未挂载升级牌；截图保留该升级牌的真实手牌入口证据 |
+| `189-host-countermeasures-2-upgrade-card-applied.png` | Host 打出 `反制措施 II` 后，服务器断言 `abilityLevels['countermeasures']=2`、`upgradeCardByAbilityId['countermeasures'].cardId='upgrade-zhanshujia-countermeasures-2'`、CP `5 -> 2`、手牌归 0；截图保留升级槽位写入后的真实状态 |
+| `190-host-strategic-shift-2-upgrade-card-before-play.png` | Host 在真实主阶段手牌区可见 `战略转移 II`，且 `strategic-shift` 基础槽位尚未挂载升级牌；截图保留该升级牌的真实手牌入口证据 |
+| `191-host-strategic-shift-2-upgrade-card-applied.png` | Host 打出 `战略转移 II` 后，服务器断言 `abilityLevels['strategic-shift']=2`、`upgradeCardByAbilityId['strategic-shift'].cardId='upgrade-zhanshujia-strategic-shift-2'`、CP `5 -> 3`、手牌归 0；截图保留升级槽位写入后的真实状态 |
+| `192-host-expand-battlefield-2-upgrade-card-before-play.png` | Host 在真实主阶段手牌区可见 `开拓战场 II`，且 `expand-battlefield` 基础槽位尚未挂载升级牌；截图保留该升级牌的真实手牌入口证据 |
+| `193-host-expand-battlefield-2-upgrade-card-applied.png` | Host 打出 `开拓战场 II` 后，服务器断言 `abilityLevels['expand-battlefield']=2`、`upgradeCardByAbilityId['expand-battlefield'].cardId='upgrade-zhanshujia-expand-battlefield-2'`、CP `5 -> 3`、手牌归 0；截图保留升级槽位写入后的真实状态 |
+| `194-host-flanking-2-upgrade-card-before-play.png` | Host 在真实主阶段手牌区可见 `包夹侧翼 II`，且 `flanking` 基础槽位尚未挂载升级牌；截图保留该升级牌的真实手牌入口证据 |
+| `195-host-flanking-2-upgrade-card-applied.png` | Host 打出 `包夹侧翼 II` 后，服务器断言 `abilityLevels['flanking']=2`、`upgradeCardByAbilityId['flanking'].cardId='upgrade-zhanshujia-flanking-2'`、CP `5 -> 3`、手牌归 0；截图保留升级槽位写入后的真实状态 |
+| `196-host-drum-movement-2-upgrade-card-before-play.png` | Host 在真实主阶段手牌区可见 `摇鼓运动 II`，且 `drum-movement` 基础槽位尚未挂载升级牌；截图保留该升级牌的真实手牌入口证据 |
+| `197-host-drum-movement-2-upgrade-card-applied.png` | Host 打出 `摇鼓运动 II` 后，服务器断言 `abilityLevels['drum-movement']=2`、`upgradeCardByAbilityId['drum-movement'].cardId='upgrade-zhanshujia-drum-movement-2'`、CP `5 -> 3`、手牌归 0；截图保留升级槽位写入后的真实状态 |
+| `198-host-carpet-bombing-2-upgrade-card-before-play.png` | Host 在真实主阶段手牌区可见 `地毯式轰炸 II`，且 `carpet-bombing` 基础槽位尚未挂载升级牌；截图保留该升级牌的真实手牌入口证据 |
+| `199-host-carpet-bombing-2-upgrade-card-applied.png` | Host 打出 `地毯式轰炸 II` 后，服务器断言 `abilityLevels['carpet-bombing']=2`、`upgradeCardByAbilityId['carpet-bombing'].cardId='upgrade-zhanshujia-carpet-bombing-2'`、CP `5 -> 3`、手牌归 0；截图保留升级槽位写入后的真实状态 |
+| `200-host-sabre-thrust-2-upgrade-card-before-play.png` | Host 在真实主阶段手牌区可见 `军刀突刺 II`，且 `sabre-thrust` 基础槽位尚未挂载升级牌；截图保留该升级牌的真实手牌入口证据 |
+| `201-host-sabre-thrust-2-upgrade-card-applied.png` | Host 打出 `军刀突刺 II` 后，服务器断言 `abilityLevels['sabre-thrust']=2`、`upgradeCardByAbilityId['sabre-thrust'].cardId='upgrade-zhanshujia-sabre-thrust-2'`、CP `5 -> 4`、手牌归 0；截图保留升级槽位写入后的真实状态 |
 | `87-host-strategic-shift-2-applied.png` | Host 选择 `4 个勋章` 主分支并推进后，服务器断言 `Host 战术优势=5 / Guest bind=1 / Guest HP=45`；截图保留主分支 `grantToken + bind + 5 点不可防御伤害` 的真实收口状态 |
 | `88-host-drum-movement-2-entry.png` | Host 在 `3 军刀 + 2 勋章` 盘面下，`lotus` 槽位可点击，且解析落点为 `data-resolved-ability-id="drum-movement-2-main"`；截图保留摇鼓运动 II 主分支的真实玩家板入口证据 |
 | `89-guest-drum-movement-2-defense-entry.png` | Host 推进后，Guest 自然进入 `still-wet-behind-ears` 防御阶段；截图保留摇鼓运动 II 不是 direct injection，而是由真实玩家板攻击链打开的防御窗口 |
 | `90-host-drum-movement-2-applied.png` | 把 Guest 防御骰固定成全战利品面并推进后，服务器断言 `Host 战术优势=1 / Guest bind=1 / Guest HP=43`；截图保留主分支 `grantToken + bind + 7 damage` 的真实收口状态 |
+| `210-host-drum-movement-2-indirect-entry.png` | Host 在另一组 `3 军刀 + 1 旗帜 + 1 勋章` 盘面下，`lotus` 槽位可点击，且当前解析落点直接为 `data-resolved-ability-id="drum-movement-2-indirect"`；截图保留间接接敌分支的真实玩家板入口证据 |
+| `211-host-drum-movement-2-indirect-choice.png` | Host 点击 `lotus` 槽位后，真实攻击链已创建为 `pendingAttack.sourceAbilityId='drum-movement-2-indirect'`，推进按钮可用；截图保留该次级分支不是机制层伪调用，而是已进入正式攻击结算链的中间状态 |
+| `212-host-drum-movement-2-indirect-applied.png` | Host 选择 `摇鼓运动 II（间接接敌）` 后，服务器断言 `Host 战术优势=2 / Guest HP=48 / Guest bind=0`；截图保留“获得 2 战术优势并造成 2 点不可防御伤害”的真实收口状态 |
+| `213-host-expand-battlefield-2-lockdown-entry.png` | Host 在另一组 `[1,4,4,5,6]` 盘面下，`lightning` 槽位可点击，且当前解析落点直接为 `data-resolved-ability-id="expand-battlefield-2-lockdown"`；截图保留全面封锁分支的真实玩家板入口证据 |
+| `214-host-expand-battlefield-2-lockdown-choice.png` | Host 点击 `lightning` 槽位后，真实攻击链已创建为 `pendingAttack.sourceAbilityId='expand-battlefield-2-lockdown'`，推进按钮可用；截图保留该次级分支不是机制层伪调用，而是已进入正式攻击结算链的中间状态 |
+| `215-host-expand-battlefield-2-lockdown-applied.png` | Host 选择 `开拓战场 II（全面封锁）` 后，服务器断言 `Host hand=2 / Guest HP=50 / Guest bind=1`；截图保留“抽 2 并施加紧缚、不造成伤害”的真实收口状态 |
 | `74-guest-weigh-anchor-bonus-die-skull.png` | Guest 从真实手牌打出起锚后，定向 run 命中骷髅分支并进入奖励骰覆盖层；截图保留该对象真实入口的奖励骰展示证据 |
 | `75-host-weigh-anchor-parley-applied.png` | 关闭覆盖层后，服务器断言 Host 获得 `休战 1`，且 `card-cursed-pirate-weigh-anchor` 已进入 Guest 弃牌堆；截图保留骷髅分支对目标施加休战后的棋盘状态 |
+| `143-guest-weigh-anchor-bonus-die-draw.png` | Guest 从真实手牌打出起锚后，定向 run 命中非骷髅默认分支并进入奖励骰覆盖层；截图保留该对象默认抽牌分支的奖励骰展示证据 |
+| `144-guest-weigh-anchor-draw-applied.png` | 关闭覆盖层后，服务器断言 Guest 手牌变为 `送你们去喂鱼`、`card-cursed-pirate-weigh-anchor` 已进入弃牌堆，且 Host 不获得 `休战`；截图保留默认抽牌分支的真实收口状态 |
+| `145-guest-curse-card-draw1-choice.png` | Guest 从真实手牌打出诅咒卡牌后，界面进入三选一选择窗；截图保留“抽 1 张牌”分支按钮与真实入口证据 |
+| `146-guest-curse-card-draw1-applied.png` | Guest 选择“抽 1 张牌”后，服务器断言 HP 保持 `50`、手牌变为 `送你们去喂鱼`，且 `card-cursed-pirate-curse-card` 已进入弃牌堆；截图保留该分支真实收口状态 |
+| `147-guest-curse-card-damage2draw2-choice.png` | Guest 从真实手牌打出诅咒卡牌后，界面进入三选一选择窗；截图保留“受到 2 点伤害并抽 2 张牌”分支按钮与真实入口证据 |
+| `148-guest-curse-card-damage2draw2-applied.png` | Guest 选择“受到 2 点伤害并抽 2 张牌”后，服务器断言 HP 变为 `48`、手牌变为 `送你们去喂鱼 / 瞭望台`，且 `card-cursed-pirate-curse-card` 已进入弃牌堆；截图保留该分支真实收口状态 |
 | `95-guest-bluster-bonus-die-cutlass.png` | Guest 从真实手牌打出 `虚张声势！` 后，定向 run 命中弯刀分支并进入奖励骰覆盖层；截图保留该对象真实入口的奖励骰展示证据 |
 | `96-host-bluster-cutlass-applied.png` | 关闭覆盖层后，服务器断言 Host HP 从 `50 -> 48`，且 `card-cursed-pirate-bluster` 已进入 Guest 弃牌堆；截图保留弯刀分支 2 点伤害收口后的棋盘状态 |
+| `149-guest-bluster-bonus-die-loot.png` | Guest 从真实手牌打出 `虚张声势！` 后，定向 run 命中战利品分支并进入奖励骰覆盖层；截图保留该对象战利品分支的真实入口证据 |
+| `150-guest-bluster-loot-applied.png` | 关闭覆盖层后，服务器断言 Guest 手牌变为预置的 2 张真实抽牌、Host HP 仍为 `50`，且 `card-cursed-pirate-bluster` 已进入 Guest 弃牌堆；截图保留战利品分支抽 2 的真实收口状态 |
+| `151-guest-bluster-bonus-die-skull.png` | Guest 从真实手牌打出 `虚张声势！` 后，定向 run 命中骷髅分支并进入奖励骰覆盖层；截图保留该对象骷髅分支的真实入口证据 |
+| `152-host-bluster-skull-applied.png` | 关闭覆盖层后，服务器断言 Host 获得 `火药桶 1`、Host HP 仍为 `50`、Guest 手牌清空且源卡进入弃牌堆；截图保留骷髅分支施加火药桶后的真实收口状态 |
+| `153-guest-scurvy-before-play.png` | Guest 在真实主阶段手牌区可见 `坏血病！`；截图保留该对象的真实手牌入口证据 |
+| `154-guest-scurvy-applied.png` | Guest 打出 `坏血病！` 后，服务器断言 `Guest HP 50 -> 49 / Host wither 1`，且源卡进入弃牌堆；截图保留自伤 + 凋零的真实收口状态 |
+| `155-guest-pillage-before-play.png` | Guest 在真实主阶段手牌区可见 `强取豪夺！`；截图保留该对象的真实手牌入口证据 |
+| `156-guest-pillage-applied.png` | Guest 打出 `强取豪夺！` 后，服务器断言 `Guest CP 5 -> 6 / Host CP 5 -> 4`，且源卡进入弃牌堆；截图保留偷取 CP 链的真实收口状态 |
+| `157-guest-parley-before-play.png` | Guest 在真实主阶段手牌区可见 `停战协议！`；截图保留该对象的真实手牌入口证据 |
+| `158-guest-parley-applied.png` | Guest 打出 `停战协议！` 后，服务器断言 Host 获得 `休战 1`，且源卡进入弃牌堆；截图保留单目标施加休战的真实收口状态 |
+| `210-guest-pirates-life-cursed-before-play.png` | Guest 在咒缚面真实主阶段手牌区可见 `海盗的一生！`；截图保留咒缚面治疗分支的真实手牌入口证据 |
+| `211-guest-pirates-life-cursed-applied.png` | Guest 在咒缚面打出 `海盗的一生！` 后，服务器断言 `HP 45 -> 48 / 诅咒金币保持 1`，且没有弹出“获得诅咒金币”选择窗；截图保留治疗 3 分支的真实收口状态 |
+| `212-guest-pirates-life-normal-before-play.png` | Guest 在 `human/normal` 面真实主阶段手牌区可见 `海盗的一生！`；截图保留普通面诅咒金币分支的真实手牌入口证据 |
+| `213-guest-pirates-life-normal-choice.png` | Guest 在 `human/normal` 面打出 `海盗的一生！` 后，界面进入“是否获得诅咒金币？”选择窗；截图保留普通面分支真实选择入口 |
+| `214-guest-pirates-life-normal-applied.png` | Guest 在 `human/normal` 面接受诅咒金币后，服务器断言 `诅咒金币 1 -> 2` 且源卡进入弃牌堆；截图保留普通面分支的真实收口状态 |
+| `174-guest-parley-block-before-attack.png` | Guest 在真实咒缚面 `fist` 槽位可点击 `灵魂突刺`，且自身已带 `休战 1`；截图保留“带状态的真实攻击入口”证据 |
+| `175-host-parley-block-defense-entry.png` | Guest 点击后真实进入 Host 防御阶段；截图保留 `休战` 不会阻断攻击链建立、而只会影响最终伤害收口的中间态证据 |
+| `176-host-parley-block-cleared.png` | 攻击收口后服务器断言 `Host HP 50 / Guest HP 50 / Guest parley 0 / Host powderKeg 1`；截图保留 `休战` 令攻击伤害归零并在阶段结束清理的真实消费链 |
 | `97-guest-shark-bait-attack-entry.png` | Guest 真实在玩家板 `soul-stab-3` 槽位建立攻击链；截图保留 `诱饵` 不是 direct injection，而是接在真实攻击入口后的证据 |
 | `98-guest-shark-bait-modifier-active.png` | Guest 从真实手牌打出 `诱饵` 后，攻击修正徽标真实出现；截图保留该对象真实入口的攻击修正中间态证据 |
 | `99-host-shark-bait-attack-damage-applied.png` | `诱饵` 打出后服务器断言仍处于 `offensiveRoll`，同时 `Host HP 50 -> 48 / Guest CP 5 -> 4 / 源卡进入弃牌堆`；截图保留这条即时 2 点攻击伤害的真实收口状态 |
 
 ## 未完成门禁
 
+## L4 共享链判等矩阵（2026-06-06）
+
+| 对象/家族 | 共享链/代表对象 | 是否满足“仅配置不同” | 当前判等依据 | 仍缺什么 |
+| --- | --- | --- | --- | --- |
+| 战术家基础进攻参数链：`包夹侧翼 / 摇鼓运动 / 开拓战场 / 战略转移` | 代表对象为各自对象自身截图链 | 是 | 截图 163-173 已分别锁定 `calm / lotus / lightning / combo` 四个基础槽位的真实入口、Guest 自然进入防御阶段与最终 `战术优势 / 紧缚 / HP` 收口；这 4 条基础对象已不再依赖 `制胜高地 / 战术优势 / 伴装撤退 / 亡灵之爪` 的跨对象共享链外推 | 已从当前 remaining shared-only blocker 中移出；后续只剩批次级 L4 / 双面总审计 |
+| 战术家升级进攻链：`军刀突刺 II / 摇鼓运动 II / 开拓战场 II / 战略转移 II / 地毯式轰炸 II / 包夹侧翼 II` | 代表对象为各自基础版或同对象主分支截图链 | 部分满足 | `军刀突刺 II / 包夹侧翼 II` 现在可按“同 trigger family + 同攻击收口 + 仅伤害/战术优势参数差异”视为近似同构；`摇鼓运动 II / 战略转移 II / 开拓战场 II` 的次级分支现已补到对象级真实入口，不再是“分支是否实现未知”；但 `地毯式轰炸 II` 旗帜分支本身就是即时抽牌分支，`战略转移 II / 开拓战场 II / 摇鼓运动 II` 也都新增了不能被基础版覆盖的 secondary variant，因此整条升级链仍不能整体外推成“只差配置” | 主分支与三条次级分支都已到对象级 L3；当前剩余已收紧为升级/变体 family 的 `L4` 合法复用登记 |
+| 战术家防御/响应链：`反制措施 II/III / 脱战 / 伴装撤退 / 紧缚` | 代表对象为 `反制措施`、`脱战`、`伴装撤退`、`紧缚` 自身真实入口 | 部分满足 | `反制措施 II/III` 现已具备各自升级后真实防御入口，可按同 defensive slot + 同 `customActionId` + 仅 `sabrePairDamage` 参数差异判定为近似同构；但 `脱战` 奖励骰三分支、`伴装撤退` 直接施加紧缚、`紧缚` 额外投掷时序清理并非同一家族 | `反制措施 II/III` 当前剩余仅回到 shared defensive family 的 `L4` 判等；其余对象应按独立对象保留，不宜再合并成一个“防御家族已收口”口径 |
+| 咒缚海盗状态家族：`诅咒金币 / 火药桶 / 凋零 / 休战` | 代表对象来自 `无情诅咒 / 起锚 / 深海潜行 / 啜呼 / upkeep` 等不同入口 | 否 | 虽然共享 `grantStatus` / `flowHooks` / 伤害修正消费者已被证明可用，但这些状态来自不同入口、不同时机、不同后续清理，不能仅凭“都能写入状态”就互相外推到对象级完成 | 仍需继续把“对象写入状态”和“状态本体完整生命周期”分开审，必要时补更多对象级或时序级证据 |
+| 咒缚海盗双面总审计：`human` 9 个对象 + 咒缚面 9 个对象 | 代表对象为双面 `18 / 18` 面板对象级直证矩阵 | 部分满足 | `human` 与咒缚面两套玩家板对象现在都已有 `9 / 9` 对象级 L3 直证，双面“面板对象仍缺首条 direct E2E”的旧口径已失效；但状态家族、手牌家族、通用牌索引与合法复用登记仍未统一升到最终 completion audit | 仍需 face-by-face completion audit，但当前剩余已从“面板对象是否直证”收窄为“更高层 L4 / 家族级合法复用 / 最终收口” |
+| 奖励骰/随机家族：`作战室 / 占得上风 / 起锚 / 战争贩子 / 战争贩子 II / 死亡印记 / 干票大的 / 抽筋剥皮 / 啜呼 / 瞭望台 / 虚张声势` | 代表对象散落在多张手牌和多个面板技能 | 否 | 虽都经过 `rollDie` 或奖励骰覆盖层，但后续消费者有抽牌、伤害、状态、额外进攻、对手选择等显著差异，不能整体按“同是奖励骰”复用 L4 | 当前只能逐对象说明哪些分支已拿到直证；整家族还不能宣称“只差配置” |
+
+### 2026-06-06 状态家族 completion 边界
+
+| 状态 | 当前已锁定的生命周期证据 | 当前已拿到对象级真实写入证据的入口 | 当前仍未收口的边界 |
+| --- | --- | --- | --- |
+| `诅咒金币` | 上限 `self=5 / others=3`、不可移除/转移、海盗可拒绝获得、非海盗维持掉血，均已有 `L2` + upkeep 真实链 | `做好标记`、`判决指令`、`惊魂动魄`、`无情劫掠`、`死亡印记`、`你还嫩了点`、`亡灵之爪` 已分别证明会在真实入口下写入/消费诅咒金币 | 仍缺的是“所有写入者都可合法复用同一状态生命周期 `L4`”的登记，而不是状态未实现 |
+| `火药桶` | 维持投骰、`1-2` 爆炸、`3-5` 保留、`6` 转交、重复获得时原桶爆炸，已有 `L2` + upkeep 真实链 | `灵魂突刺`、`弯刀突刺`、`点燃炸药`、`灵魂指令`、`无情诅咒`、`送你们去喂鱼`、`分点给我`、`虚张声势(骷髅)`、`抽筋剥皮` 已证明真实写入 | 仍缺跨入口的时序/转交/重复获得 family 级 `L4` 复用登记，不能因为多个入口都写入过就当作整家族收口 |
+| `凋零` | 只减攻击伤害、不减 direct damage，来源侧伤害修正消费者已有 `L2` 合同，且 `灵魂突刺` 已补 1 条真实攻击减伤消费链 | `深海潜行`、`啜呼`、`灵魂指令`、`死亡吐息` 已证明真实写入；`灵魂突刺` 已证明真实消费时会把攻击伤害从 `5` 降到 `4` | 仍缺“所有写入入口 + 更多来源侧攻击消费者”放在同一 family 的 completion audit，当前还不能外推成整家族全绿 |
+| `休战` | 阻止攻击伤害、不阻止 direct damage、`offensiveRoll -> main2` 清理，已有 `L2` 合同，且 `cutlass-stab-4` 已补 1 条真实攻击阻断消费链 | `灵魂指令`、`无情诅咒`、`判决指令`、`无情劫掠`、`起锚(骷髅)`、手牌 `休战` 已证明真实写入；`灵魂突刺 / cutlass-stab-4` 已证明真实消费时会让攻击伤害归零并在阶段结束清理 | 仍缺“所有写入入口 + 更多攻击来源消费者”汇总成统一生命周期 family 的 `L4` 复用登记，当前不能外推成整家族 completion audit |
+| `紧缚` / `锁定` | `紧缚` 的额外投掷 `1CP` 门禁与阶段清理、`锁定` 的状态写入 helper 以及多人局 `selectPlayer(敌方)` 目标合同均已有 `L2` 合同 | `战术优势`、`制胜高地`、`军刀突刺 II`、`摇鼓运动`、`开拓战场`、`伴装撤退` 已证明真实写入或真实消费，其中 `战术优势 -> 锁定` 已补被动按钮真实入口截图 `202-203` | 仍缺战术家共享参数链/防御响应链对 `紧缚 / 锁定` 的更高层 `L4` 判等，不再是状态本体未落地 |
+
+### 2026-06-06 战术家升级链 completion 边界
+
+| 升级对象 | 当前已锁定的分支证据 | 当前可确认的判等边界 | 当前仍未收口的边界 |
+| --- | --- | --- | --- |
+| `军刀突刺 II` | `sabre-thrust-2-3` 已有真实入口截图 `100-102`；L2 已证明 `sabre-thrust-2-3` 的 `bind + 5 damage`，且 `sabre-thrust-2-4 / 2-5` 与之共享同一 `bind-if-three-kind` custom action，仅改伤害值 `6 / 7` | 可按“同 trigger family + 同 custom action + 同攻击 damage consumer，仅参数不同”登记为近似同构 | 当前剩余主要是是否还需要为 `4/5` 军刀各补独立 L3，而不是分支语义未知 |
+| `包夹侧翼 II` | 已有真实入口截图 `181-183`，证明与基础 `包夹侧翼` 共用 `smallStraight -> grantToken + damage` 收口，只把战术优势从 `1` 提到 `2` | 可按“同 trigger + 同收口，仅 token 参数不同”登记为近似同构 | 当前剩余只回到与基础版的 family 级 `L4` 复用登记 |
+| `摇鼓运动 II` | 主分支已有真实入口截图 `88-90`；次级 `drum-movement-2-indirect` 现已新增真实入口截图 `210-212`，证明会在正式变体选择后收口到 `战术优势 2 + 2 点不可防御伤害` | 主分支与次级分支都已具备对象级真实入口，不能再把 `indirect` 写成“只有 L2”或“是否实现未知” | 当前剩余只回到与主分支/基础版的 family 级 `L4` |
+| `战略转移 II` | 主分支已有真实入口截图 `85-87`；次级 `strategic-shift-2-recon` 现已新增真实入口截图 `207-209`，证明会在正式变体选择后收口到 `只获得 5 战术优势` | 变体 modal 与两个分支的真实收口都已证实存在；次级分支不再只是机制层语义 | 当前剩余只回到与主分支的变体 family `L4` |
+| `开拓战场 II` | 主分支已有真实入口截图 `91-94`；次级 `expand-battlefield-2-lockdown` 现已新增真实入口截图 `213-215`，证明会在正式变体选择后收口到 `抽 2 + 紧缚` | 不能再把 `lockdown` 写成“仍待确认是否实现”或“是否需要独立 L3”；它已具备对象级真实入口 | 当前剩余只回到与大顺主分支的变体 family `L4` |
+| `地毯式轰炸 II` | 主分支已有 4 人真实入口截图 `80-81`；旗帜分支已有真实入口截图 `103-104`，证明会即时 `draw 2 + tactical advantage 3` 且不创建 `pendingAttack` | 两个分支都已有对象级直证，但因为一个是双敌攻击链、一个是即时抽牌链，不能当“只差配置” | 当前剩余只回到升级双分支 family 的 `L4` 复用登记 |
+
+### 2026-06-06 奖励骰/随机家族 completion 边界
+
+| 对象/子家族 | 当前直证层级 | 当前可确认的 completion 边界 | 当前仍未收口的边界 |
+| --- | --- | --- | --- |
+| `起锚 / 虚张声势 / 瞭望台` | 多分支对象级 `L3` | 三者都已不是“只看到一条代表链”：`起锚` 已锁定骷髅与默认抽牌两分支，`虚张声势` 已锁定弯刀/战利品/骷髅三分支，`瞭望台` 已锁定弯刀查看手牌、战利品自选弃牌、骷髅随机弃牌三分支 | 仍缺更高层 `L4` 的跨对象合法复用登记，但不再缺对象级分支直证 |
+| `战争贩子 / 战争贩子 II` | 奖励骰对象级或专门链 `L3` | 已证明基础版奖励骰覆盖层、勋章分支、额外进攻阶段回切与 II 的勋章专门链 | 仍缺“哪些分支可由同一额外进攻 family 复用、哪些必须独立保留”的 `L4` 登记 |
+| `作战室 / 占得上风 / 干票大的 / 死亡印记 / 抽筋剥皮 / 啜呼` | 对象级 `L3` | 都已有真实入口奖励骰覆盖层与核心收口态，不再是“奖励骰 UI 没验证”或“对象仍只到 representative L3” | 它们的后续消费者分别落在战术优势、抽牌/CP、伤害、状态、目标选择等不同 seam，当前仍不能整体按“同是奖励骰”复用 `L4` |
+| 奖励骰家族总口径 | family 级未收口 | 可以确认“奖励骰覆盖层能打开/关闭”这件事早已不是 blocker | 真正未收口的是：同为 `rollDie` / bonus overlay 的对象，后续消费 seam 差异过大，仍需逐对象或逐子 family 维护合法复用边界 |
+
+### 2026-06-06 战术家 remaining representative 条目边界
+
+- 当前战术家已无 remaining representative 对象级条目。
+- 当前剩余已整体上升为 family 级 `L4` / completion audit，主要集中在升级牌 family、升级进攻/防御共享参数链、奖励骰家族与双面总审计。
+
 | 门禁 | 状态 | 说明 |
 | --- | --- | --- |
-| 官方 human/normal 面完整实现 | scoped-debt | 当前已确认 normal 面与咒缚面存在独立技能文本与被动语义；仓库只完成了底图接入、选图链与 `海盗的一生` 分支，尚未完成 normal 面自动翻面流程、9 个技能对象的逐槽录入/实现/测试与重审计 |
-| 对象级 L3/L4 | partial | 真实入口选角、开局、玩家板/提示板、手牌 atlas 已覆盖；战略防御、送你们去喂鱼、手牌选择、瞭望台三分支、作战室奖励骰、占得上风勋章分支、起锚骷髅分支、虚张声势弯刀分支、诱饵真实攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰、战争贩子基础奖励骰链、战争贩子 II 奖励骰代表链与勋章专门链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、`咒缚` 自伤/施桶链、`伴装撤退 / 脱战` 真实防御响应手牌链、`反制措施 / 你还嫩了点` 防御阶段入口、深海潜行完整攻击入口、4 人无情诅咒火药桶链、诅咒卡牌自伤抽牌分支、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链与火药桶维持阶段爆炸链都已有对象级或代表性截图链；当前 `partial` 已不再是“缺少单对象首条 direct E2E”或“shared/representative 尚未逐对象登记”的问题，而是仍有一批对象只达到 `representative L3`、尚未逐对象独立补满 `L3/L4`，再加上整份 intake runtime 仍缺少稳定重复通过/soak 证据，不能把定点通过外推成整批对象级全绿 |
-| 4 人 online readiness 通用稳定性 | risk-watch | 当前无情诅咒 4 人真实链已通过，旧防御链也已在绕过路径下恢复；本轮又补了 `Online match: Can start a game successfully` 与 `Online 4-player room: create claim-seat join and start successfully` 两条简单开局基线通过，但这仍不足以外推成整份 intake runtime 已稳定，长跑 soak 仍需补 |
-| isolated single-worker DiceThrone runtime 启动稳定性 | risk-watch | 近期两条简单开局基线已在当前 isolated single-worker runtime 下连续通过，说明最小进房不再是稳定 blocker；剩余风险收窄为更长链路、更多对象与整份 intake 的连续 soak，而不是把 `反制措施 / 你还嫩了点` 业务回归误记成环境必败 |
+| 官方 human/normal 面完整实现 | scoped-debt | 当前已确认 normal 面与咒缚面存在独立技能文本与被动语义；仓库已完成底图接入、选图链、两套逐槽图面合同、9 个 human 面对象的运行时接入、自动翻面 direct E2E 与 9 条独立 direct E2E，但仍未完成双面对象级重审计、remaining representative 条目的逐对象 L3/L4 与最终 completion audit |
+| 对象级 L3/L4 | partial | 真实入口选角、开局、玩家板/提示板、手牌 atlas 已覆盖；战略防御、送你们去喂鱼、手牌选择、瞭望台三分支、作战室奖励骰、占得上风勋章分支、起锚骷髅分支与默认抽牌分支、虚张声势三分支、诱饵真实攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰、战争贩子基础奖励骰链、战争贩子 II 勋章专门链、9 张升级牌真实打出 -> 升级槽位写入链、抽筋剥皮奖励骰链、死亡印记奖励骰链、`咒缚` 自伤/施桶链、`伴装撤退 / 脱战` 真实防御响应手牌链、`反制措施 / 反制措施 II / 反制措施 III / 你还嫩了点` 防御阶段入口、`包夹侧翼 / 包夹侧翼 II` 真实攻击入口、`埋伏` 真实手牌链、深海潜行完整攻击入口、`灵魂突刺` 独立真实入口链、`死亡吐息` 独立真实入口链、`灵魂指令` 独立真实入口链、human 面 9 个对象独立 direct E2E、4 人无情诅咒火药桶链、诅咒卡牌三分支、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链与火药桶维持阶段爆炸链都已有对象级或状态对象级截图链；当前 `partial` 的真实原因已进一步具体化为：战术家已无 remaining representative residual，剩余主要是升级牌 family、状态家族、奖励骰家族与双面总审计的 `L4` 与最终 completion audit，因此还不能把最新整份 intake `71 passed / 0 failed` 直接外推成整批对象级全绿 |
+| 4 人 online readiness 通用稳定性 | watch | 当前无情诅咒 4 人真实链已通过，旧防御链也已在绕过路径下恢复；最新整份 intake 已 `71 passed / 0 failed`，因此这项不再是当前 blocker，但后续若继续补更长链 completion audit，仍需顺手观察是否出现环境回摆 |
+| isolated single-worker DiceThrone runtime 启动稳定性 | watch | 近期简单开局基线与最新整份 intake 都已在当前链路下打绿，说明最小进房与当前 intake 整跑都不再是稳定 blocker；这项只保留观察，不再作为当前“规则未实施”的依据 |
 | `implementation_in_progress` | 保留 | 全流程未完成，不允许移除 |
+
+## 当前阅读说明
+
+- 本文是这两名新英雄的现行对象级主审计入口之一，但不是最终 completion 证明。
+- 当前真正有效的口径是：对象级补证已大幅推进，但双面对象级 completion audit、remaining representative 条目的逐对象 L3/L4、合法复用登记与最终收口仍未完成；因此不能把本文外推成“战术家 / 咒缚海盗已全面审计完成”。

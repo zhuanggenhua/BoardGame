@@ -1,5 +1,7 @@
 # DiceThrone Treant 槽位审计 2026-05-16
 
+> 2026-06-05 当前有效口径：本文只保留 Treant 玩家板槽位/可视合同专项审计结论，不代表 Treant 整英雄或 Treant/Ninja 整批当前完成态。当前若要判断 Treant 对象级残余、兄弟能力补审范围或整批口径，应以 `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/treant录入核对.md` 为准。
+
 ## 范围
 
 - 角色：`treant`
@@ -35,10 +37,10 @@
 
 ## 额外发现
 
-- Treant 的卡图 / 面板录入仍存在更深一层的 intake 缺口：
-  - 面板右下左侧还存在一格当前运行时代码未完整接线的基础技能位；
-  - 现有 `treant` 卡图专属区也存在未完整回写到 `cards.ts` / locale 的对象。
-- 这部分不会再用被动或防御槽去“硬填充”遮盖，但仍需后续按主真相源补齐。
+> 2026-06-05 当前阅读门禁：本节保留的是 2026-05-16 做槽位专项审计时，基于当时代码与录入状态额外看到的**历史疑点**。这些疑点不能自动外推成 2026-06-05 当前仍存在的对象级 residual；若要判断这些点后来是否已被实现层、录入层或总汇总回写吸收，必须回到 `dicethrone-treant-full-audit-2026-05-16.md`、`dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/treant录入核对.md` 的现行矩阵。
+
+- 2026-05-16 当轮曾继续怀疑：Treant 的卡图 / 面板录入可能还存在更深一层的 intake 缺口，包括“面板右下左侧仍有基础技能位未完整接线”“专属卡区仍有对象未完整回写到 `cards.ts` / locale”。
+- 这些表述现在只能保留为**当轮怀疑与后续排查入口**，不能直接当作 2026-06-05 当前实现状态。后续补审已经把 Treant 多个基础对象、升级对象和 15 张专属卡推进到对象级 `L3`，当前若还有未完成项，也应统一落到批次级 `L4` 判等、旧文档统一回写与最终发布口径统一，而不是继续直接引用本节把它们表述成“当前仍未接线”。
 
 ## 验证证据
 

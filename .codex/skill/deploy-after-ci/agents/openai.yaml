@@ -1,0 +1,5 @@
+interface:
+  display_name: "CI后生产部署"
+  short_description: "按是否需要查CI选择直接生产更新或CI成功后部署"
+  default_prompt: "看下 CI 好了就更新部署"
+

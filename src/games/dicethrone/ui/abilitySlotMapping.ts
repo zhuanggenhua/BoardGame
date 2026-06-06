@@ -82,6 +82,13 @@ for (const heroData of Object.values(HEROES_DATA)) {
     for (const ability of heroData.abilities) {
         registerAbility(ability);
     }
+    if (heroData.getAbilitiesForFace) {
+        for (const face of ['normal', 'cursed'] as const) {
+            for (const ability of heroData.getAbilitiesForFace(face)) {
+                registerAbility(ability as AbilityDef);
+            }
+        }
+    }
 
     for (const card of heroData.cards) {
         if (card.type !== 'upgrade' || !card.effects) continue;

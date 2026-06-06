@@ -18,4 +18,14 @@ describe('AuthModal compatibility source guards', () => {
         expect(source).toContain("calc(var(--modal-max-height, var(--runtime-modal-max-height)) - 0.5rem)");
         expect(source).not.toContain("calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 2rem)");
     });
+
+    it('经典首页认证弹层应保持独立卡片壳层，而不是复用 HomeV2 纸面外框', () => {
+        const source = readSource();
+
+        expect(source).toContain("const isClassicStandalone = !embedded && !isHomeV2Style;");
+        expect(source).toContain("max-w-[400px]");
+        expect(source).toContain("bg-[#fcfbf9]");
+        expect(source).toContain("border-[#e5e0d0]");
+        expect(source).toContain("bg-[#433422] py-3 text-[13px]");
+    });
 });

@@ -12,11 +12,13 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
+import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
     clearOngoingEffectRegistry,
     isMinionProtected,
 } from '../domain/ongoingEffects';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { processDestroyTriggers } from '../domain/reducer';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, MinionDestroyedEvent, MinionMovedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
@@ -227,6 +229,23 @@ describe('base_egg_chamber: +1 力量指示物保护', () => {
 
         const state = makeState({ bases: [eggBase] });
         expect(isMinionProtected(state, buffedOnlyMinion, 0, '1', 'destroy')).toBe(false);
+    });
+
+    it('borrowed Infiltrate 由控制者控制时，应让 Egg Chamber 不再保护控制者的有指示物随从', () => {
+        const protectedMinion = makeMinion('egg-minion', '0', 3);
+        protectedMinion.powerCounters = 1;
+        const eggBase = makeBase('base_egg_chamber', {
+            minions: [protectedMinion],
+            ongoingActions: [{
+                uid: 'borrowed-infiltrate',
+                defId: 'ninja_infiltrate',
+                ownerId: '1',
+                metadata: { sourceControllerId: '0' },
+            } as any],
+        });
+
+        const state = makeState({ bases: [eggBase] });
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'destroy')).toBe(false);
     });
 });
 

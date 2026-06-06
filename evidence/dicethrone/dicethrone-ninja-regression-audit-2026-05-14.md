@@ -1,6 +1,8 @@
 # DiceThrone Ninja 四项回归修复审计（2026-05-14）
 
 > 2026-05-18 失效回写：本文件里关于 `blink` “改成 `withDamage` 后即可视为防御语义正确”的结论已失效。后续按 `Ablilitycards.png` 与 `ninja录入核对.md` 复核发现，旧实现虽然能在防御阶段产生最终 HP 变化，但仍把 Blink 误落成共享 `rollDie` / 额外奖励骰语义，没有证明“读取防御投已出骰面”这一真实合同。当前最新口径以 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md` 为准；本文件现在只能继续作为 2026-05-14 四项回归中的其余三项证据，以及 Blink “不可防御时应跳过防御效果”的历史分支证据。
+>
+> 2026-06-05 当前有效口径：本文只保留 Ninja 四项回归中的历史修复与分支证据，不代表 Ninja 整英雄或 Treant/Ninja 整批当前完成态。当前若要判断 Ninja 对象级残余、兄弟能力补审范围或整批发布口径，应以 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/ninja录入核对.md` 为准。
 
 ## 范围
 
@@ -10,7 +12,7 @@
 |---|---|---|---|---|---|
 | `poison-blade` | 小顺子执行时选择贴图错误 | Ninja v2 面板视觉槽位与旧共享槽位语义不一致，UI 仍按共享 `sky/combo` 推断 | `ui/abilitySlotMapping.ts`、`AbilityOverlays.tsx`、`Board.tsx`、`HandArea.tsx`、`useAttackShowcase.ts` | L2 + L3 | 已按角色槽位覆盖为 `combo` |
 | `death-blossom` | 左下角技能执行时选择贴图错误 | 同上，左下角实图槽应选择死亡盛放 | 同上 | L2 + L3 | 已按角色槽位覆盖为 `sky` |
-| `blink` | 防御技能无效果 | 2026-05-14 先定位到 effect timing；2026-05-18 继续发现旧实现仍误把 Blink 做成共享 `rollDie` / 奖励骰语义，未按防御投已出骰面结算 | `heroes/ninja/abilities.ts`、`domain/customActions/ninja.ts` | L2 + 旧 L3（已降级） | 旧“改成 `withDamage` 即收口”结论失效；当前以 2026-05-18 重审文档中的 L2 合同为准，真防御 L3 待补 |
+| `blink` | 防御技能无效果 | 2026-05-14 先定位到 effect timing；2026-05-18 继续发现旧实现仍误把 Blink 做成共享 `rollDie` / 奖励骰语义，未按防御投已出骰面结算 | `heroes/ninja/abilities.ts`、`domain/customActions/ninja.ts` | L2 + 旧 L3（已降级） | 旧“改成 `withDamage` 即收口”与“真防御 L3 待补”都已失效；当前应改读为：这行只保留 2026-05-14/2026-05-18 的历史回归轨迹，Ninja 当前对象级 `L3/L4` 结论以升级重审主文档与 `ninja录入核对.md` 最新矩阵为准 |
 | 不可防御 + 防御 | 结算选择不可防御仍然执行防御效果 | `resolveDefenseEffects` 未检查 `pendingAttack.isDefendable === false` | `domain/attack.ts` | L2 + L3 | 已跳过防御效果 |
 | `ninja-card-knife-fan` | 三刀/刀扇应主要阶段使用 | 误录为投掷阶段攻击修正 | `heroes/ninja/cards.ts`、卡牌核对文档 | L2 | 已改为 `main` 行动牌，非攻击修正 |
 
@@ -143,4 +145,12 @@ Blink 防御后截图：
 - `src/games/dicethrone/rule/ninja卡牌录入核对.md`
 - `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md`
 
-当前结论：这四项回归里，`poison-blade` / `death-blossom` / `knife-fan` 仍可维持原 L2/L3 口径；`blink` 则已被 2026-05-18 新证据部分推翻，当前只能按新重审文档中的 L2 合同口径继续陈述，旧接入审计和本文件旧 Blink 结论都不能继续作为 Ninja 全面审计完成证明。
+当前结论：这四项回归里，`poison-blade` / `death-blossom` / `knife-fan` 仍可维持**本文件当轮** L2/L3 口径；`blink` 则已被 2026-05-18 新证据部分推翻。本文现在只能作为 2026-05-14 这一轮回归修复的历史证据，旧接入审计和本文件旧 Blink 结论都不能继续作为 Ninja 全面审计完成证明。
+
+当前若要判断 Ninja 的现行状态，不应再把本文当作现行阅读入口，而应回到：
+
+- `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md`
+- `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md`
+- `src/games/dicethrone/rule/ninja录入核对.md`
+
+截至 2026-06-05，Ninja 升级技能对象级 `L3` 与关键 `L4` 已在 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/ninja录入核对.md` 的最新矩阵中大幅补齐；因此本文件当前残余应统一读作历史回归轨迹，而不是对象级仍待实施。

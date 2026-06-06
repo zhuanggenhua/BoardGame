@@ -1028,6 +1028,9 @@ function inferInPlayActionSourcePlayerId(core: SmashUpCore, record: AffectRecord
 
 function resolveProtectionSourcePlayerId(core: SmashUpCore, record: AffectRecord): PlayerId | undefined {
     if (record.reason?.startsWith('base_')) return undefined;
+    if (record.affectType === 'attach_action' && record.sourcePlayerId) {
+        return record.sourcePlayerId;
+    }
     return inferInPlayActionSourcePlayerId(core, record) ?? record.sourcePlayerId;
 }
 

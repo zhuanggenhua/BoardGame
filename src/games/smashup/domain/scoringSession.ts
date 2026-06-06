@@ -33,6 +33,7 @@ export type SmashUpScoringStep =
     | 'resolving-base'
     | 'awaiting-interactions'
     | 'awaiting-response-window'
+    | 'awaiting-post-scoring-delay'
     | 'awaiting-post-reduce';
 
 export const SMASHUP_SCORE_BASES_FRAME_ID = 'smashup:score-bases';

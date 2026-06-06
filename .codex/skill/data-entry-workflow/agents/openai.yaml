@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Entry Workflow"
+  short_description: "先执行零猜测录入门禁，再按 gameId 进入 BoardGame 的数据 intake workflow。"
+  default_prompt: "Use $data-entry-workflow to handle BoardGame data intake from images, rules, wiki, or PDFs without guessing."

@@ -1,5 +1,7 @@
 # 爆裂箭特写描述修复方案
 
+> 2026-06-06 当前有效口径：本文是关于 `爆裂箭` 特写描述如何改的历史方案文档，不是当前已经完全实施并收口的证明，也不是当前 DiceThrone 总审计或新英雄补审出口。阅读时必须把它理解成阶段性的方案记录，而不是最终完成态证据。
+
 ## 问题确认
 
 用户反馈："看箭 投掷的额外骰子下面特写的描述"不清楚。
@@ -95,3 +97,7 @@ effectKey: 'bonusDie.effect.explodingArrow3.result',
 2. 修改 `src/games/dicethrone/domain/customActions/moon_elf.ts` 中的 effectKey
 3. 同步修改英文版 `public/locales/en/game-dicethrone.json`
 4. 测试游戏中的显示效果
+
+---
+
+**当前阅读说明**：本文只能作为 `爆裂箭` 特写描述的历史方案记录，不能外推为当前该方案已经完整实施，也不能替代后续真正的修复证据或当前 DiceThrone 审计结论。

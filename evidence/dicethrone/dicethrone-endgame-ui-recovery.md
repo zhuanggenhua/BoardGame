@@ -1,4 +1,6 @@
-# DiceThrone 结算画面 UI 恢复记录
+# DiceThrone 结算画面 UI 历史恢复记录
+
+> 2026-06-06 当前有效口径：本文只记录 2026-03-03 那轮“结算画面 UI 被误删后恢复”的历史恢复过程，不是当前 DiceThrone UI 已全面收口的证明，也不是当前新英雄补审出口。阅读时只能把它当作单问题恢复记录；当前 MatchRoom / endgame / rematch 现状应以现行代码和更晚证据为准。
 
 ## 执行时间
 2026-03-03
@@ -163,4 +165,8 @@ getDiagnostics(["src/games/dicethrone/ui/BoardOverlays.tsx"])
 - 所有 DiceThrone 玩家的游戏体验改善
 - 游戏结束后可以正常看到结算画面
 - 重赛功能正常工作
+
+---
+
+**当前阅读说明**：本文只能证明“结算画面 UI 曾经被恢复”这一历史事实，不能外推为当前所有结算页、重赛链路或 DiceThrone 整体 UI 审计都已完成。
 

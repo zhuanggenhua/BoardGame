@@ -1,5 +1,7 @@
 # DiceThrone Ninja Escape 真实手牌 E2E（2026-05-17）
 
+> 2026-06-05 当前有效口径：本文只保留 `ninja-card-escape / 脱身` 这张响应窗卡的对象级真实手牌 `L3` 证据，不代表 Ninja 其它专属卡、升级技能或整英雄范围已经收口。当前整英雄口径仍应以 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md` 与升级重审主文档为准。
+
 ## 范围
 
 - 对象：`ninja-card-escape / 脱身`

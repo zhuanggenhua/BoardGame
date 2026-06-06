@@ -128,6 +128,51 @@ describe('10th Anniversary bases', () => {
         expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
     });
 
+    it('base_ossuary 埋葬 borrowed 弃牌堆随从时应保留真实 owner', () => {
+        const core = makeState({
+            bases: [makeBase('base_ossuary')],
+            players: {
+                '0': makePlayer('0', {
+                    discard: [{ uid: 'borrowed-ossuary-card', defId: 'skeletons_returned_one', type: 'minion', owner: '1' }],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const result = triggerBaseAbilityWithMS('base_ossuary', 'onTurnStart', makeCtx({
+            state: core,
+            baseDefId: 'base_ossuary',
+            baseIndex: 0,
+        }));
+
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        expect(getPromptSourceId(interactions[0])).toBe('base_ossuary');
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            (option: any) => option.value?.cardUid === 'borrowed-ossuary-card',
+            'Ossuary borrowed bury option',
+            '0',
+            { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
+        );
+        expect(resolved.success).toBe(true);
+
+        const buriedEvent = resolved.events.find(event => event.type === SU_EVENTS.CARD_BURIED) as any;
+        expect(buriedEvent).toBeDefined();
+        expect(buriedEvent.payload).toEqual(expect.objectContaining({
+            cardUid: 'borrowed-ossuary-card',
+            trueOwnerId: '1',
+            playerId: '0',
+            buriedFrom: 'discard',
+        }));
+        expect(resolved.finalState.core.bases[0].buriedCards).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                uid: 'borrowed-ossuary-card',
+                defId: 'skeletons_returned_one',
+                trueOwnerId: '1',
+            }),
+        ]));
+    });
+
     it('base_ossuary 埋葬仆从时不应误触发滑稽巨人的“打出随从后弃牌”效果', () => {
         const core = makeState({
             bases: [makeBase('base_ossuary')],

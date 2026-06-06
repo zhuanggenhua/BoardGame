@@ -1,4 +1,6 @@
-# DiceThrone 反馈修复证据：69b174ba57a311c84a8fdd68（意不意外本地改了四个骰子）
+# DiceThrone 反馈 69b174ba57a311c84a8fdd68 历史修复证据
+
+> 2026-06-06 当前有效口径：本文只保留 `意不意外？！ / card-unexpected(any-2)` 本地多步交互越权改 4 颗骰子这一条历史反馈的专项修复证据，不代表 DiceThrone 全体改骰交互、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时 `selectCount` 下沉链被专项修补并做过回归，不能外推成 DiceThrone 当前总体收口。
 
 - 反馈 ID：`69b174ba57a311c84a8fdd68`
 - 游戏：`dicethrone`
@@ -97,3 +99,8 @@
   - 修复是最小范围，只把 `selectCount` 真正下沉到 reducer / `toCommands` / hydration 边界。
   - 现有回归文件已补测，定向 Vitest 通过。
   - 定向 E2E 已通过，且有实际截图证据证明交互出现与收口。
+
+## 当前阅读说明
+
+- 本文只覆盖 `card-unexpected(any-2)` 这一条改单骰交互链，不覆盖更广范围 DiceThrone 多步交互或新英雄整批完成态。
+- 文中的 `resolved` 只代表当轮反馈链本地收口，不是当前 DiceThrone 总审计出口。

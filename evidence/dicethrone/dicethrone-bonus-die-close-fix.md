@@ -1,5 +1,7 @@
 # DiceThrone 单个骰子特写无法关闭问题修复
 
+> 2026-06-06 当前有效口径：本文只记录“单个骰子特写无法关闭/关闭后又弹回”这一条历史专项修复，不是当前 DiceThrone 所有 bonus-die / spotlight 关闭链路都已收口的证明，也不是新英雄补审出口。阅读时应把它当作单条特写状态管理问题的修复记录。
+
 ## 问题描述
 
 用户反馈：DiceThrone 游戏中，单个骰子特写（如 Watch Out、Get Fired Up 等卡牌触发的单骰事件）显示后，点击任何地方都无法关闭。
@@ -114,3 +116,7 @@ const handleBonusDieClose = useCallback(() => {
 - `src/games/dicethrone/ui/SpotlightContainer.tsx`：通用特写容器
 - `src/games/dicethrone/hooks/useCardSpotlight.ts`：卡牌和骰子特写状态管理
 - `src/games/dicethrone/Board.tsx`：游戏主界面，传递 `onBonusDieClose` 回调
+
+---
+
+**当前阅读说明**：本文只能证明“单骰特写关闭失败/回弹”这条专项问题曾被修复，不能外推为当前所有 bonus-die overlay、所有 spotlight 状态管理或 DiceThrone 当前整体审计都已收口。

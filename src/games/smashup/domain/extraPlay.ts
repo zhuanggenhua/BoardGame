@@ -23,9 +23,8 @@ import {
     type SmashUpEvent,
 } from './types';
 import { isOperationRestricted } from './ongoingEffects';
+import { getActionPlayTargetMode } from './playLegality';
 import {
-    actionLikeNeedsPlayBase,
-    actionLikeNeedsPlayMinion,
     isCardActionLike,
     isCardMinionLike,
     isSameNameDefId,
@@ -233,7 +232,7 @@ function buildImmediateExtraActionCardOptions(
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             if (!def) return [];
 
-            const targetMode = getImmediateActionTargetMode(def);
+            const targetMode = getActionPlayTargetMode(def);
             if (extra.restrictToMinionUid && targetMode !== 'minion') return [];
             const playable = (() => {
                 if (targetMode === 'none') {
@@ -295,23 +294,6 @@ function buildImmediateExtraActionCardOptions(
         });
 
     return [...options, createSkipOption('放弃这次额外战术') as any];
-}
-
-function getImmediateActionTargetMode(def: ActionCardDef | FusionCardDef): 'none' | 'base' | 'minion' {
-    const subtype = (def as any).type === 'fusion'
-        ? (def as FusionCardDef).actionSubtype
-        : (def as ActionCardDef).subtype;
-
-    if (subtype === 'ongoing') {
-        const ongoingTarget = (def as any).type === 'fusion'
-            ? ((def as FusionCardDef).actionOngoingTarget ?? 'base')
-            : ((def as ActionCardDef).ongoingTarget ?? 'base');
-        return ongoingTarget === 'minion' ? 'minion' : 'base';
-    }
-
-    if (actionLikeNeedsPlayMinion(def)) return 'minion';
-    if (actionLikeNeedsPlayBase(def)) return 'base';
-    return 'none';
 }
 
 function buildImmediateExtraActionBaseOptions(
@@ -779,7 +761,7 @@ const immediateExtraActionPromptProgram = createPromptProgram<
             return { state, events: [] };
         }
 
-        const targetMode = getImmediateActionTargetMode(def);
+        const targetMode = getActionPlayTargetMode(def);
         if (targetMode === 'none') {
             return executeImmediateExtraActionPlay(state, context.extra, choice, timestamp, random);
         }

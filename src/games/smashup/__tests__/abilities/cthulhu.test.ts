@@ -1047,13 +1047,10 @@ describe('克苏鲁之仆普通行为', () => {
                 .map((option: any) => option.id);
             const result = respondToPromptOptions(matchState, optionIds, '0', dummyRandom);
             expect(result.success, result.error).toBe(true);
-            const reorderEvents = result.events.filter((event: any) => event.type === SU_EVENTS.DECK_REORDERED);
-            expect(reorderEvents).toHaveLength(1);
-            const deckUids = (reorderEvents[0] as any).payload.deckUids;
-            expect(deckUids).toContain('dis1');
-            expect(deckUids).toContain('dis3');
-            expect(deckUids).toContain('d1');
-            expect(deckUids.indexOf('dis1')).toBeLessThan(deckUids.indexOf('d1'));
+            const topdeckEvents = result.events.filter((event: any) => event.type === SU_EVENTS.CARD_TO_DECK_TOP);
+            expect(topdeckEvents).toHaveLength(2);
+            expect(topdeckEvents.map((event: any) => event.payload.cardUid)).toEqual(['dis3', 'dis1']);
+            expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['dis1', 'dis3', 'd1']);
         });
 
         it('弃牌堆无符合条件随从时不产生事件也不创建交互', () => {
@@ -1136,6 +1133,42 @@ describe('克苏鲁之仆普通行为', () => {
             expect(result.success, result.error).toBe(true);
             expect(result.events.filter((event: any) => event.type === SU_EVENTS.DECK_REORDERED)).toHaveLength(0);
             expect(result.finalState.core.players['0'].discard.some((card: any) => card.uid === 'dis1')).toBe(true);
+        });
+
+        it('选择被他人拥有的弃牌随从时，仍应进入其拥有者牌库顶而不是当前玩家牌库顶', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('a1', 'cthulhu_recruit_by_force', 'action', '0')],
+                        deck: [makeCard('p0-deck-1', 'test_action', 'action', '0')],
+                        discard: [makeCard('borrowed-discard', 'innsmouth_the_locals', 'minion', '1')],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('p1-deck-1', 'wizard_archmage', 'minion', '1')],
+                    }),
+                },
+            });
+
+            const { matchState } = execPlayAction(state, '0', 'a1');
+            const prompt = getFirstPrompt(matchState);
+            const optionIds = getPromptOptions(prompt)
+                .filter((option: any) => option.value?.cardUid === 'borrowed-discard')
+                .map((option: any) => option.id);
+            const result = respondToPromptOptions(matchState, optionIds, '0', dummyRandom);
+            expect(result.success, result.error).toBe(true);
+
+            expect(result.events).toContainEqual(expect.objectContaining({
+                type: SU_EVENTS.CARD_TO_DECK_TOP,
+                payload: expect.objectContaining({
+                    cardUid: 'borrowed-discard',
+                    ownerId: '1',
+                    sourcePlayerId: '0',
+                    reason: 'cthulhu_recruit_by_force',
+                }),
+            }));
+            expect(result.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-discard')).toBe(false);
+            expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
+            expect(result.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-discard', 'p1-deck-1']);
         });
     });
 
@@ -1282,6 +1315,40 @@ describe('克苏鲁之仆普通行为', () => {
 
             expect(optionCardUids).toContain('dis1');
             expect(optionCardUids).not.toContain('a1');
+        });
+
+        it('选择被他人拥有的弃牌行动时，仍应洗回其拥有者牌库而不是当前玩家牌库', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('a1', 'cthulhu_it_begins_again', 'action', '0')],
+                        deck: [makeCard('p0-deck-1', 'test_minion', 'minion', '0')],
+                        discard: [makeCard('borrowed-action', 'wizard_summon', 'action', '1')],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('p1-deck-1', 'wizard_archmage', 'minion', '1')],
+                    }),
+                },
+            });
+
+            const { matchState } = execPlayAction(state, '0', 'a1');
+            const prompt = getFirstPrompt(matchState);
+            const optionIds = getPromptOptions(prompt)
+                .filter((option: any) => option.value?.cardUid === 'borrowed-action')
+                .map((option: any) => option.id);
+            const result = respondToPromptOptions(matchState, optionIds, '0', dummyRandom);
+            expect(result.success, result.error).toBe(true);
+
+            expect(result.events).toContainEqual(expect.objectContaining({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: expect.objectContaining({
+                    playerId: '1',
+                    sourcePlayerId: '0',
+                }),
+            }));
+            expect(result.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-action')).toBe(false);
+            expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
+            expect(result.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-deck-1', 'borrowed-action']);
         });
     });
 

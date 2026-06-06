@@ -1,4 +1,6 @@
-# POD autoResponse 功能恢复 - 完成报告
+# POD autoResponse 功能恢复历史证据
+
+> 2026-06-06 当前有效口径：本文是 2026-03-04 那一轮 `autoResponse` 功能恢复的历史证据，不代表当前 DiceThrone 全体响应窗口、在线 AI、任一单英雄，或四位新英雄整批已经审计完成。它现在只能证明当时 `autoResponse` 这条 shared interaction seam 被恢复并做过静态验证，不能外推成 DiceThrone 当前总体收口。
 
 ## 恢复时间
 2026-03-04
@@ -81,9 +83,14 @@ React.useEffect(() => {
 无差异 - 完全按照 POD 之前的实现恢复
 
 ## 结论
-✅ **autoResponse 功能已完全恢复**，与 POD 之前的实现一致。
+✅ **本文覆盖的 autoResponse 功能在当轮已恢复**，并与 POD 之前的实现保持一致。
 
 ## 相关文件
 - `src/games/dicethrone/Board.tsx` - 主要修改文件
 - `src/games/dicethrone/ui/AutoResponseToggle.tsx` - 依赖组件（已存在）
 - `src/games/dicethrone/ui/LeftSidebar.tsx` - 使用 autoResponse 的组件（已集成）
+
+## 当前阅读说明
+
+- 本文只覆盖 `autoResponse` 这一条共享交互链，不覆盖更广范围 DiceThrone response window / watchdog 或新英雄整批完成态。
+- 文中的“已完全恢复”只代表 2026-03-04 当轮结论，不能把它当成当前 DiceThrone 总审计出口。

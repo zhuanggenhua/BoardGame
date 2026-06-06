@@ -328,6 +328,50 @@ describe('Magical Girls 代表性玩法行为', () => {
         expect(moved.finalState.core.bases[1].minions.some(minion => minion.uid === 'target')).toBe(true);
     });
 
+    it('Coordination 在 borrowed setaside Walking Castle 上仍应给当前控制者提供泰坦进场分支，并保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('coordination', 'magical_girls_coordination', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_akihabara_high', [
+                makeMinion('ally-1', 'magical_girls_power_maid', '0', 3),
+                makeMinion('ally-2', 'magical_girls_white_magicat', '0', 1),
+            ])],
+            titans: [{
+                uid: 'borrowed-castle',
+                defId: 'magical_girls_walking_castle',
+                faction: 'magical_girls',
+                ownerId: '1',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } as any],
+        });
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'coordination' },
+            timestamp: 93,
+        }, FIXED_RANDOM);
+
+        const prompt = getSimpleChoicePrompt(play.finalState, 'magical_girls_coordination');
+        const castleOption = getPromptOption(prompt, option => option.value?.choice === 'walking_castle', 'Coordination Walking Castle option');
+        const resolved = respondToPromptOption(play.finalState, option => option.id === castleOption.id, 'walking castle', '0', FIXED_RANDOM);
+
+        expect(resolved.events.some(event => event.type === SU_EVENTS.TITAN_PLAYED)).toBe(true);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'borrowed-castle')).toMatchObject({
+            ownerId: '1',
+            controllerId: '0',
+            location: {
+                zone: 'base',
+                baseIndex: 0,
+            },
+        });
+    });
+
     it('Q Point 计分前让每位玩家保留一张牌并摧毁其余牌', () => {
         const core = makeState({
             players: {

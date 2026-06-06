@@ -1,19 +1,21 @@
 # DiceThrone 新派系重审与 Wiki 差异记录（2026-05-17）
 
+> 2026-06-05 当前有效口径：本文件记录的是四位新英雄总补审范围下的 Wiki / 对照源差异回写，不是“当前已经审完哪几位”的完成态证明。它的现行用途是给总汇总补充对照源差异、批次快照和未完成范围。Treant / Ninja 当前不能再被读成“主要只有 L2 或代表 L3”；两者升级技能对象级 `L3` 与关键 family `L4` 已大幅补齐，但这只表示对象级主 bug 已明显收敛，**不表示整英雄或整批已经全面审计完成**。当前残余应读作批次级 `L4` 治理、旧文档统一回写与最终发布口径统一。Gunslinger / Samurai 仍在同一总范围内，且未完成项也必须继续保留。
+
 > 2026-05-19 范围更正：本文件记录的是“当前四位新英雄总补审范围”中的一轮 Wiki 对照与差异回写。总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解，不再按“两位新英雄”理解。
 
 ## 范围与口径
 
-- 本轮触发问题：Treant `wild-growth` / `wild-growth-2`（中文 UI 为“野蛮生长 / 野蛮生长 II”，用户口径“野性怒吼2”疑似指同一升级技能）在 2 树枝 + 3 树叶骰面下，升级后不能按图面选择“移除树灵加伤 / 弃生命源泉不可防御”。
+- 本轮触发问题：Treant `wild-growth` / `wild-growth-2`（中文 UI 为“野蛮生长 / 野蛮生长 II”，用户口径“野性怒吼2”疑似指同一升级技能）在 2026-05-17 当时的实现中，`wild-growth` / `wild-growth-2` 仍沿用旧语义，未按当时核对文档支持“移除树灵加伤 / 弃生命源泉不可防御”。该问题现仅保留为历史触发背景，`wild-growth-2` 的当前有效口径已改以 `src/games/dicethrone/rule/treant录入核对.md`、`src/games/dicethrone/rule/treant卡牌录入核对.md` 与 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的 2026-06-04/2026-06-05 补记为准。
 - 主真相源：`src/games/dicethrone/rule/treant录入核对.md` 与 `src/games/dicethrone/rule/treant卡牌录入核对.md` 中记录的玩家板/卡图核对结论；清晰图片优先于 Wiki。
 - Wiki 仅作差异记录：本轮读取 Dice Throne Wiki 的 Treant 页面（https://dice-throne.fandom.com/wiki/Treant），确认 Wiki 提供 Treant 精灵/生命源泉/树灵通则说明，但页面正文没有列出 Wild Growth 的完整玩家板技能文本；因此本轮不使用 Wiki 覆盖图片口径。
-- 新派系全集重审对象暂列为：`gunslinger`、`samurai`、`treant`、`ninja`。当前 Treant 基础技能/被动/终极主效果已修到 L2，15 张专属卡已补逐卡真实手牌 L3，树灵每回合限用与神性树灵防负面可选响应已补代表链；Ninja `Training` / `Poison Dart` / `Knife Fan` / `Dojo` / `Shuriken` / `Vanish` / `Escape`、8 张升级卡，以及一组技能本体真实玩家板入口已补 L3。Treant/Ninja 不得据此宣称所有组合分支 L4 完成。当前总补审范围仍以四位新英雄为准，gunslinger / samurai 也仍在总范围内。
+- 新派系全集重审对象暂列为：`gunslinger`、`samurai`、`treant`、`ninja`。截至 2026-06-05，Treant / Ninja 已不能再被概括成“主要只有 L2 或代表 L3”：两者升级技能对象级 `L3` 已大幅补齐，关键 family `L4` 也已补到批次级判等矩阵；Treant 若干基础对象与 15 张专属卡已有对象级 / 逐卡 `L3`，Ninja 行动卡、升级卡、技能本体与 token 代表链也已形成多份 `L3/L4` evidence。Treant / Ninja 仍不得据此宣称整批全面审计完成，当前残余应读作批次级 `L4` 治理、旧文档统一回写与最终发布口径统一。当前总补审范围仍以四位新英雄为准，gunslinger / samurai 也仍在总范围内。
 
 ## 已确认旧结论失效
 
 - `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 中把 Treant/Ninja 作为“全链路审计完成”的结论已经不足以作为 Treant 收口证据。
 - `src/games/dicethrone/rule/treant录入核对.md` 已明确写出 `wild-growth` 真相源应为：造成 2 伤害；可移除至多 2 树灵，每移除 1 树灵增加 4 伤害；可弃掉生命源泉使此次攻击不可防御。旧代码是 `damage 2 + heal 1`。
-- `src/games/dicethrone/rule/treant卡牌录入核对.md` 已明确写出 `upgrade-wild-growth-2` 真相源应为：造成 4 伤害；同样可移除至多 2 树灵加伤，并可弃生命源泉使攻击不可防御。旧代码是 `damage 4 + heal 1`。
+- `src/games/dicethrone/rule/treant卡牌录入核对.md` 在 2026-05-17 当时曾把 `upgrade-wild-growth-2` 记录为“造成 4 伤害；同样可移除至多 2 树灵加伤，并可弃生命源泉使攻击不可防御”，用于解释那一轮 `damage 4 + heal 1` 的旧代码偏差。该对象的当前有效口径已在后续升级技能重审中改写为“`野蛮生长 II / 乱花迷眼` 双分支 `variants`”，不得继续把本条 2026-05-17 历史结论当作当前真相。
 
 ## Wiki 对照差异
 
@@ -28,18 +30,31 @@
 
 ## 批次对象清单与层级快照
 
+### 2026-06-06 当前真实批次治理 residual matrix
+
+> 本节替代此前的 residual shortlist，直接作为四英雄当前未收口项矩阵。若后文仍出现更早的对象级 blocker 或“还有几张没补”的旧句子，一律按本表理解。
+
+| heroId | 当前已收敛到的层级 | 当前真实未收口项 | 不得再外推的旧口径 |
+| --- | --- | --- | --- |
+| `gunslinger` | 对象级主 bug 已清；基础 `Loaded`、来源技能级 `Loaded` 重投、`The Law` 单选、`Spin the Chamber`、`Eat My Lead` 等均已有对象级 `L2/L3` 证据 | 只剩四英雄总补审层面的批次级 `L4` 治理、旧文档统一回写与最终发布口径统一 | 不得再写成“基础 `Loaded` 缺单独 evidence”或“枪手仍有对象级 residual” |
+| `samurai` | 对象级主 bug 已清；`Honor / Shame` clamp、`Back Strike` attack-only 负路径、攻击修正与 token clamp 均已有对象级 `L3` | 只剩四英雄总补审层面的批次级 `L4` 治理、旧文档统一回写与最终发布口径统一 | 不得再写成“武士仍缺对象级主链实现”或“只靠历史代表链” |
+| `treant` | 升级技能对象级 `L3` 与关键 `L4` 已大幅补齐；若干基础对象、token 与 15 张专属卡已有对象级/逐卡 `L3` | 剩余以批次级 `L4` 判等矩阵、旧文档统一回写与最终发布口径统一为主；整英雄最终矩阵仍未完成 | 不得再写成“树精主残余仍是对象级未实现”或“仍普遍停在 L2/代表 L3” |
+| `ninja` | 升级技能对象级 `L3` 与关键 `L4` 已大幅补齐；技能本体、行动卡、升级卡、token 成功/失败链已有多份 `L3/L4` evidence | 剩余以批次级 `L4` 判等矩阵、旧文档统一回写与最终发布口径统一为主；整英雄最终矩阵仍未完成 | 不得再写成“忍者主残余仍是对象级未实现”或把 `瞬身 II` 继续定性成“技能没实装” |
+
+- 当前停止条件仍不是“对象级 bug 清零”，而是四英雄整批矩阵、批次级 `L4` 治理与历史口径真正收口。
+
 | heroId | 对象范围 | 本轮结论 | 当前最高证据 | 不得外推的缺口 |
 | --- | --- | --- | --- | --- |
-| `treant` | 玩家板技能、树灵/生命源泉/刺藤、15 张专属卡主效果 | 已修复 Wild Growth II 触发与主效果；多条技能/卡牌从旧错误语义修到图片口径；15 张专属卡已补逐卡真实手牌入口 L3 | 主效果 L2；15 张专属卡真实手牌 L3；树灵限用与神性树灵响应有代表性 L3 截图链 | 基础技能/token/多目标多骰面组合仍不能外推为全分支 L4 |
-| `ninja` | 玩家板技能、三种 token、专属卡与升级卡 | 已修 Dojo 漏骰分支；7 张专属行动卡与 8 张升级卡已补真实手牌 L3；技能本体已补 `slash-2`、`going-forward-2`、`shadow-step-2`、`smoke-screen-2`、`shadow-fang-2`、`poison-blade-2`、`death-blossom-2`、终极技真实玩家板代表链；烟雾弹失败分支已补真实 UI/E2E | Token 复杂链路 L4；专属行动卡/升级卡真实手牌 L3；技能本体代表 L3 | 仍不能外推每个基础版/升级版、每种骰面组合和所有防御/响应/减伤分支 L4 |
-| `gunslinger` | 玩家板、Loaded/Bounty、专属卡与复合升级 | 本轮静态重扫发现 `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷仍有结构层残余，已收敛为 `tokenBonusDieReroll` 定义层 hook；并修正文档漂移：`Bounty` 不自动过期但可被移除状态链路移除；`Quick Draw II / Fill'Em With Lead` Loaded 可重掷、`Spin the Chamber`、`Eat My Lead` 与 The Law 单选均已补真实 UI 证据 | 既有 L2/L3 证据复用；`Bye Bye` 移除 Bounty 有真实手牌 E2E 文档；Loaded 重掷本轮有定义层合同测试和行为回归；多条枪手 UI 链路通过 L3 | `mark-the-target` 仍不能写成 UI L3 |
-| `samurai` | 玩家板、Honor/Shame/Back Strike、专属卡与复合升级 | 本轮静态重扫未发现新增运行时代码 bug；本地文档显示 Masamune II、复合升级、行动/攻击修正卡已回到本地合同；`Zanshin` 多骰攻击修正已复跑真实 UI 链路 | 既有 L2 为主；`Zanshin` 攻击修正本轮复跑 L3；Honor/Back Strike 等仍复用历史 E2E | 仍未新增逐对象全集 L3；不能把历史“无角色级 residual”改写成新一轮全面审计完成 |
+| `treant` | 玩家板技能、树灵/生命源泉/刺藤、15 张专属卡主效果 | 升级技能对象级 `L3` 已基本补齐，`扎根 II` / `破碎之拳 III` / `野蛮生长 II` 等关键 family `L4` 已补；`破碎之拳`、`细心呵护`、`复仇枝蔓`、`自然之触`、`静默耕耘`、`森林觉醒` 与 `rooted` 真实链路也已补到对象级 `L3` | 升级技能对象级 `L3` + 批次级 `L4` 判等矩阵；15 张专属卡逐卡真实手牌 `L3`；树灵限用 / 神性树灵 / 刺藤等已有 `L3/L4` 证据 | 当前主残余是批次级 `L4` 判等矩阵、旧文档统一回写与最终发布口径统一；不能外推所有组合分支 `L4` |
+| `ninja` | 玩家板技能、三种 token、专属卡与升级卡 | 升级技能对象级 `L3` 已基本补齐，`斩击 II` / `影牙 II` / `诳惑` / `暗影步 II` / `九字切` / `瞬身 II` 等关键 family `L4` 已补；7 张专属行动卡、8 张升级卡、技能本体真实玩家板入口与烟雾弹成功/失败链都已有独立 evidence | Token 复杂链路 `L4`；专属行动卡 / 升级卡真实手牌 `L3`；升级技能对象级 `L3` + 批次级 `L4` 判等矩阵 | 当前主残余是批次级 `L4` 判等矩阵、旧文档统一回写与最终发布口径统一；不能外推所有骰面/防御/减伤组合 `L4` |
+| `gunslinger` | 玩家板、Loaded/Bounty、专属卡与复合升级 | `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷结构层残余已收敛为定义层 `tokenBonusDieReroll` hook；`Bounty` 生命周期/可移除口径已回写；基础 `Loaded`、`Spin the Chamber`、`Eat My Lead`、`The Law` 单选与 `mark-the-target` 都已有独立对象级证据 | `Bye Bye` 移除 Bounty 有真实手牌 E2E 文档；基础 `Loaded` 有独立 L2/L3 文档；Loaded 重掷有定义层合同测试和行为回归；多条枪手 UI 链路通过 L3 | 当前不再单列枪手对象级 residual；但这不是整批完成态，后续仍只按四英雄总补审做批次级口径统一 |
+| `samurai` | 玩家板、Honor/Shame/Back Strike、专属卡与复合升级 | 本轮静态重扫未发现新增运行时代码 bug；本地文档显示 Masamune II、复合升级、行动/攻击修正卡已回到本地合同；`Honor / Shame` 主阶段真实手牌 `L3 clamp`、`samurai_retribution stackLimit=1` 的对象级 `L3` 与 `Back Strike` 非攻击 `direct damage` 真实在线负路径 `L3` 均已补齐 | `Righteousness / Zanshin` 攻击修正、`Honor / Shame` clamp、`samurai_retribution` clamp、`Back Strike` attack-only 负路径都已有对象级 `L3`；其余对象继续复用既有历史 E2E / 状态级证据 | 当前不再单列武士对象级 residual；但这不是整批完成态，后续仍只按四英雄总补审处理批次级 `L4` 治理、旧文档统一回写与最终发布口径统一 |
 
 ## 本轮修复
 
 - `src/games/dicethrone/heroes/treant/abilities.ts`
   - `wild-growth` 从错误的 `damage 2 + heal 1` 改为：preDefense 组合选择 + withDamage 基础伤害 2。
-  - `WILD_GROWTH_2` 从错误的 `damage 4 + heal 1` 改为：preDefense 组合选择 + withDamage 基础伤害 4。
+  - `WILD_GROWTH_2` 在 2026-05-17 这一轮曾先从错误的 `damage 4 + heal 1` 改回当时核对文档对应的主路线。该中间结论现已失效：按 2026-06-04/2026-06-05 的升级技能重审与当前代码，`WILD_GROWTH_2` 的当前有效实现应为“主路线 + `乱花迷眼` 分支 `variants`”，并以 `displayOnly` 收口链和对象级 L3/L4 证据为准。
   - `nature-touch` / `NATURE_TOUCH_2` 从固定不可防御伤害改为：preDefense 选择养成后的树灵分布，withDamage 造成基础 5/6 点不可防御伤害，并追加养成后树灵总数的伤害。
   - `rooted` / `ROOTED_2` 从错误的“逐骰树枝反击、逐骰树叶发幼种、逐骰树灵发生命源泉”改为：防止 `树枝数 + 树灵数` 伤害；双树叶触发养成 1 树灵选择；双树灵选择 1 名玩家获得生命源泉；Rooted II 共享同一合同但掷 4 骰。
   - `tend-care` / `TEND_CARE_2` 从错误的 `seedling3 + self lifeSap + opponent thorn` / `seedling3 + sapling1 + self lifeSap + opponent thorn` 改为：抽 1 后进入组合选择；基础版养成 3 树灵，升级版养成 4 树灵；同时选择 1 名玩家获得生命源泉、选择 1 名对手获得刺藤。
@@ -121,7 +136,7 @@
     - Tend & Care 基础版抽 1 后可选择养成 3 树灵的最终分布，并可把生命源泉给任一玩家、把刺藤给对手。
     - Tend & Care II 使用升级后的 4 次养成合同，覆盖从 0 树灵养成到 `2 幼种 + 1 木苗` 的路径，不再是固定 `幼种3 + 木苗1`。
     - Forest Awakens 在 2v2 中可选择养成 5 树灵后的最终分布，自己和队友获得生命源泉，防御目标获得刺藤，并最终造成 10 点终极伤害。
-    - Nature Touch II 选择“养成后幼种 3、木苗 1”后，写回树灵 token，`bonusDamage=4`，最终造成 10 点不可防御伤害，且不进入防御结算。
+    - Nature Touch II 在这条固定样例里选择“养成后幼种 3、木苗 1”后，写回树灵 token，`bonusDamage=4`，最终造成 10 点不可防御伤害，且不进入防御结算；这里的 `10` 只是该样例的收口结果，不是技能主语义本身，当前主语义应继续读作“先养成 2 树灵，再按养成后的树灵总数增加不可防御伤害”。
 - `npx vitest run src/games/dicethrone/__tests__/treant-ability-card-contract.test.ts src/games/dicethrone/__tests__/treant-token-mechanics.test.ts --configLoader native --maxWorkers 1`
   - 追加修复前结果：通过，19 tests passed。
   - 追加修复后 `treant-ability-card-contract.test.ts` 已扩展到 19 tests，单文件通过；与 `treant-token-mechanics.test.ts` 合计 27 tests passed。
@@ -280,18 +295,18 @@
 | Ninja Dojo | 已修 | `ninja-ability-card-contract.test.ts` 两分支；`dicethrone-treant-ninja-mechanics.e2e.ts` 真实手牌两分支截图链 | 通过 L3 |
 | Ninja Shuriken / Vanish / Escape | 已补真实入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 真实手牌截图链；`dicethrone-ninja-shuriken-vanish-real-hand-e2e-2026-05-17.md`；`dicethrone-ninja-escape-real-hand-e2e-2026-05-17.md` | 通过 L3 |
 | Ninja Training / Poison Dart / Knife Fan | 已补真实入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 主阶段真实手牌截图链；`dicethrone-ninja-main-action-real-hand-e2e-2026-05-17.md` | 通过 L3 |
-| Ninja 8 张升级卡 | 已补真实入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 主阶段真实手牌截图链；`dicethrone-ninja-upgrade-real-hand-e2e-2026-05-17.md` | 通过升级卡打出 L3；不外推技能本体所有分支 |
-| Ninja 技能本体真实玩家板入口 | 已补代表链 | `dicethrone-ninja-ability-real-entry.e2e.ts`；`dicethrone-ninja-ability-real-entry-e2e-2026-05-17.md` | 通过技能本体代表 L3；`slash-2`/`going-forward-2`/`shadow-fang-2` 只证明入口，不外推所有防御后分支 |
+| Ninja 8 张升级卡 | 已补真实入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 主阶段真实手牌截图链；`dicethrone-ninja-upgrade-real-hand-e2e-2026-05-17.md` | 通过 2026-05-17 当轮“升级卡打出” L3；技能本体后续关键 L4 结论现以 `dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 为准 |
+| Ninja 技能本体真实玩家板入口 | 已补代表链 | `dicethrone-ninja-ability-real-entry.e2e.ts`；`dicethrone-ninja-ability-real-entry-e2e-2026-05-17.md` | 通过 2026-05-17 当轮代表入口 L3；`slash-2` / `going-forward-2` / `shadow-fang-2` 等对象的关键 L4 现已在升级重审文档补齐，本表仅保留当轮 L3 边界 |
 | Ninja Smoke Bomb 失败分支 | 已补真实入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 响应窗截图链；`dicethrone-ninja-smoke-bomb-failure-e2e-2026-05-17.md` | 通过 L4 |
 | Gunslinger Bounty 文档漂移 | 已回写 | `枪手录入核对.md`、`dicethrone-gunslinger-audit-2026-04-11.md`、`dicethrone-paladin-blessing-removable-fix.md` | 文档漂移已处理 |
-| Gunslinger Loaded 重掷结构层与主要 UI | 已收敛一部分 | `tokenBonusDieReroll` 定义层 hook；`gunslinger-loaded-contract.test.ts`；`cross-hero.test.ts` 定向行为回归；`dicethrone-watch-out-spotlight.e2e.ts` 的 Quick Draw II / Fill'Em With Lead 单骰特写、The Law 单选最终态、Spin the Chamber、Eat My Lead 截图链 | Loaded 结构层通过定义层合同 + L2 行为；多条 UI 通过 L3；不外推 `mark-the-target` UI |
-| Samurai 本轮重扫 | 未发现新增代码 bug；补一条真实 UI 复跑 | `武士录入核对.md`、`武士卡牌录入核对.md`、`samurai-attack-modifier-e2e-test.md`、`Zanshin` E2E 复跑 | `Zanshin` 通过 L3；其余对象仍以静态/既有证据复用为主 |
+| Gunslinger Loaded 重掷结构层与主要 UI | 已补齐对象级 evidence | `tokenBonusDieReroll` 定义层 hook；`gunslinger-loaded-contract.test.ts`；`cross-hero.test.ts` 定向行为回归；`dicethrone-gunslinger-loaded-base-real-choice-e2e-2026-05-17.md`；`dicethrone-watch-out-spotlight.e2e.ts` 的 Quick Draw II / Fill'Em With Lead 单骰特写、The Law 单选最终态、Spin the Chamber、Eat My Lead 截图链 | 基础 Loaded、Loaded 重掷结构层与多条枪手 UI 都已有对象级 L2/L3；不再把“基础 Loaded 缺单独 evidence”列为 residual |
+| Samurai 本轮重扫 | 未发现新增代码 bug；对象级 clamp / attack-only 负路径 evidence 已补齐 | `武士录入核对.md`、`武士卡牌录入核对.md`、`samurai-attack-modifier-e2e-test.md`、`dicethrone-samurai-token-clamp-real-hand-e2e-2026-06-05.md`、`dicethrone-samurai-direct-damage-no-back-strike-e2e-2026-06-05.md` | `Righteousness / Zanshin`、`Honor / Shame` clamp、`samurai_retribution` clamp、`Back Strike` attack-only 负路径都已具备对象级 L3；其余对象继续复用既有历史 E2E / 状态级证据 |
 | Wiki 差异记录 | 已补本轮对照 | 本节 Treant/Ninja/Bounty/Samurai Wiki 链接 | Wiki 不覆盖本地图 |
-| 全部新派系全面审计完成 | 未完成 | Treant/Ninja 专属卡入口已补到 L3，Ninja 技能本体已有代表 L3，Gunslinger Loaded 重掷结构层、多条代表 UI 与 The Law 单选最终态已补；但 Treant/Ninja 全组合 L4、Gunslinger `mark-the-target` UI、Samurai 部分 UI/evidence 缺口仍未全量补齐 | 不得宣称完成 |
+| 全部新派系全面审计完成 | 未完成 | Treant / Ninja 升级技能对象级 `L3` 已大幅补齐，关键 family `L4` 已补到批次级判等矩阵；Treant 若干基础对象、15 张专属卡、Ninja 行动卡 / 升级卡 / token 成功失败链也已有多份 `L3/L4` evidence；Gunslinger / Samurai 的对象级 residual 已清，但这仍只说明对象级主 bug 已明显收敛，不代表整英雄或整批完成。Treant / Ninja 整英雄最终矩阵、批次级 `L4` 治理、旧文档统一回写与最终发布口径统一仍未全量补齐 | 不得宣称完成 |
 
 ## 未完成与风险
 
-- Treant 全量仍未收口：15 张专属卡逐卡真实手牌入口 L3 已补，但基础技能/token/多目标多骰面组合仍是 L2 + 代表性 L3，不代表所有组合分支 L4 都已完成。
-- Ninja 全量仍未收口：Training、Poison Dart、Knife Fan、Dojo、Shuriken、Vanish、Escape 与 8 张升级卡已补真实手牌 L3，`smoke_bomb` 成功/失败分支已补真实 UI/E2E；技能本体也已补一组真实玩家板代表 L3，但不能外推为每个基础版/升级版、每种骰面组合和所有防御/响应/减伤分支 L4。
-- Gunslinger 本轮已补 `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷结构层 hook、行为回归与两条独立 UI/E2E 截图链，并补齐 The Law 单选最终态、Spin the Chamber、Eat My Lead；但 `mark-the-target` 仍缺真实 UI/E2E。Samurai 本轮只复跑 `Zanshin` 多骰攻击修正真实 UI 链路，其余对象仍以静态/既有证据复用为主。两者都不能写成“全面审计完成”。
+- Treant 全量仍未收口：升级技能对象级 `L3` 与关键 `L4` 已大幅补齐，若干基础对象也已补对象级真实链路 `L3`；但整英雄范围下，基础技能 / token / 多目标多骰面 / family 复用边界仍未重建成整批最终矩阵，不能外推为“所有组合分支 `L4` 都已完成”。
+- Ninja 全量仍未收口：升级技能对象级 `L3` 与关键 `L4` 已大幅补齐，行动卡 / 升级卡 / token 成功失败链也已有多条独立 evidence；但整英雄范围下，仍不能外推为每个基础版 / 升级版、每种骰面组合和所有防御 / 响应 / 减伤分支 `L4` 都已完成。
+- Gunslinger 当前已补 `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷结构层 hook、基础 `Loaded` 独立 evidence、The Law 单选最终态、Spin the Chamber、Eat My Lead 与 `mark-the-target` 的对象级证据；Samurai 也已补齐 `Honor / Shame` clamp 终态与 `Back Strike` 非攻击 `direct damage` 真实业务路径，因此两者都不再单列对象级 residual。这里的“不再单列”只代表对象级主 bug 已清，不得外推成整英雄或整批完成；整批仍不能写成“全面审计完成”，原因仍是 Treant / Ninja 的整英雄最终矩阵与批次级统一治理尾项。
 - Wild Growth 当前支持精确选择被移除的幼种/木苗/神性树灵；每回合每种树灵只能花费一次的通则已接入共享状态门禁，但仍需后续扩展更多真实入口覆盖。

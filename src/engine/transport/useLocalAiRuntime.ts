@@ -1,0 +1,179 @@
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type Dispatch,
+    type SetStateAction,
+} from 'react';
+import { startCancelableAiDelay } from '../ai/actionDelay';
+import type { AiSeatController } from '../ai/types';
+import type { MatchState } from '../types';
+import type { GameEngineConfig } from './server';
+import type { LocalAiCommandEffect } from './localAiCommandEffects';
+import type { LocalProviderRandom } from './localProviderBootstrap';
+import {
+    LOCAL_AI_IDLE_RETRY_MS,
+    LOCAL_AI_STALL_RECOVERY_GRACE_MS,
+    ensureLocalAiTurnTimeline,
+    type LocalAiTurnTimeline,
+} from './localAiDiagnostics';
+import { executeLocalDispatch } from './localDispatchExecution';
+import { startLocalAiAutomationEffect } from './localAiAutomationEffect';
+import {
+    logLocalAiProviderRuntimeTruth,
+    recoverLocalAiOnAppVisible,
+    syncLocalAiActivePhase,
+} from './localAiProviderLifecycle';
+import { onAppVisible } from '../../lib/mobile/appVisibility';
+
+type RefBox<T> = {
+    current: T;
+};
+
+export function useLocalAiRuntime(args: {
+    state: MatchState<unknown>;
+    config: GameEngineConfig;
+    seed: string;
+    seatControllers: Record<string, AiSeatController>;
+    localPregameControlledPlayerId: string | null;
+    setState: Dispatch<SetStateAction<MatchState<unknown>>>;
+    stateRef: RefBox<MatchState<unknown>>;
+    randomRef: RefBox<LocalProviderRandom>;
+    setupPlayerIds: string[];
+    onCommandRejectedRef: RefBox<((commandType: string, error: string) => void) | undefined>;
+}) {
+    const {
+        state,
+        config,
+        seed,
+        seatControllers,
+        localPregameControlledPlayerId,
+        setState,
+        stateRef,
+        randomRef,
+        setupPlayerIds,
+        onCommandRejectedRef,
+    } = args;
+    const lastAiAttemptKeyRef = useRef<string | null>(null);
+    const lastVisibleAiActionAtRef = useRef<number | null>(null);
+    const aiCommandEffectByTokenRef = useRef<Record<string, LocalAiCommandEffect>>({});
+    const [aiRetryVersion, setAiRetryVersion] = useState(0);
+    const aiActivePhaseRef = useRef<{ key: string; startedAt: number } | null>(null);
+    const aiTurnTimelineBySeatRef = useRef<Record<string, LocalAiTurnTimeline>>({});
+    const aiRuntimeTruthKeyRef = useRef<string | null>(null);
+    const scheduleAiRetry = useCallback(() => {
+        setAiRetryVersion((version) => version + 1);
+    }, []);
+    const dispatch = useCallback((type: string, payload: unknown) => {
+        setState((prev) => {
+            const nextState = executeLocalDispatch({
+                commandType: type,
+                payload,
+                prevState: prev,
+                config,
+                seed,
+                random: randomRef.current,
+                setupPlayerIds,
+                localPregameControlledPlayerId,
+                commandEffectsByToken: aiCommandEffectByTokenRef.current,
+                onCommandRejected: onCommandRejectedRef.current,
+            });
+            // 立即同步 ref，避免 AI 无进展检测读取到渲染前的旧快照而误触发重复重试
+            stateRef.current = nextState;
+            return nextState;
+        });
+    }, [
+        config,
+        localPregameControlledPlayerId,
+        onCommandRejectedRef,
+        randomRef,
+        seed,
+        setState,
+        setupPlayerIds,
+        stateRef,
+    ]);
+
+    const ensureAiTurnTimeline = useCallback((playerId: string, matchState: MatchState<unknown>) => {
+        return ensureLocalAiTurnTimeline({
+            timelines: aiTurnTimelineBySeatRef.current,
+            playerId,
+            matchState,
+            gameId: config.gameId,
+            seed,
+        });
+    }, [config.gameId, seed]);
+
+    useEffect(() => {
+        syncLocalAiActivePhase({
+            state,
+            seatControllers,
+            activePhaseRef: aiActivePhaseRef,
+            ensureAiTurnTimeline,
+        });
+    }, [ensureAiTurnTimeline, seatControllers, state]);
+
+    useEffect(() => {
+        logLocalAiProviderRuntimeTruth({
+            state,
+            gameId: config.gameId,
+            seatControllers,
+            localPregameControlledPlayerId,
+            runtimeTruthKeyRef: aiRuntimeTruthKeyRef,
+        });
+    }, [config.gameId, localPregameControlledPlayerId, seatControllers, state]);
+
+    useEffect(() => {
+        return onAppVisible(() => {
+            recoverLocalAiOnAppVisible({
+                seatControllers,
+                localPregameControlledPlayerId,
+                lastAiAttemptKeyRef,
+                lastVisibleAiActionAtRef,
+                aiCommandEffectByTokenRef,
+                onRetry: scheduleAiRetry,
+            });
+        });
+    }, [localPregameControlledPlayerId, scheduleAiRetry, seatControllers]);
+
+    useEffect(() => {
+        return startLocalAiAutomationEffect({
+            state,
+            config,
+            seed,
+            seatControllers,
+            localPregameControlledPlayerId,
+            activePhaseStartedAt: aiActivePhaseRef.current?.startedAt ?? null,
+            stallRecoveryGraceMs: LOCAL_AI_STALL_RECOVERY_GRACE_MS,
+            lastAiAttemptKeyRef,
+            lastVisibleAiActionAtRef,
+            aiCommandEffectByTokenRef,
+            aiTurnTimelineBySeatRef,
+            ensureAiTurnTimeline,
+            startDelay: startCancelableAiDelay,
+            dispatch,
+            getState: () => stateRef.current,
+            scheduleRetry: scheduleAiRetry,
+            onVisibleActionAt: (timestamp) => {
+                lastVisibleAiActionAtRef.current = timestamp;
+            },
+            idleRetryMs: LOCAL_AI_IDLE_RETRY_MS,
+        });
+    }, [
+        aiRetryVersion,
+        config,
+        localPregameControlledPlayerId,
+        seatControllers,
+        seed,
+        state,
+        stateRef,
+        dispatch,
+        ensureAiTurnTimeline,
+        scheduleAiRetry,
+    ]);
+
+    return {
+        aiCommandEffectByTokenRef,
+        dispatch,
+    };
+}

@@ -144,7 +144,7 @@ npm run dev:lite
 
 项目内置了完整的 AI 辅助创建工作流，分 6 个阶段逐步完成（骨架 → 类型 → 领域逻辑 → 系统组装 → UI → 收尾）。
 
-使用支持 Skill 的 AI 编辑器（或者直接扔文档），调用 `.windsurf/skills/create-new-game` 技能即可开始，AI 会引导你完成全部流程……大概。
+使用支持 Skill 的 AI 编辑器（或者直接扔文档），调用 `.codex/skill/create-new-game` 技能即可开始，AI 会引导你完成全部流程……大概。
 
 数据录入使用的截图工具推荐pixpin
 

@@ -97,3 +97,29 @@
 - 肉眼观察：
   - `Shielding` 附着标记出现在第二只 Cyberback 旁，第一只 Cyberback 未显示该附着行动。
   - 该截图与 E2E 状态断言一起证明多宿主精确目标选择已生效。
+
+## Addendum（2026-06-06）：Cyberback 弃牌持续行动真实入口复跑
+
+- 触发原因：本轮用户追问“赛博守护者为什么没有效果”后，当前主工作树已补回 `Board.tsx` 的弃牌持续行动真实入口，但仍需重新拿浏览器证据证明修复。
+- 首次复跑时，现役 E2E 第一条用例暴露出测试本身仍按旧路径写成“点基地收口”，与当前真实 UI 的“点高亮赛博守护者宿主”不一致；失败截图里可见绿色高亮目标明确落在 `赛博守护者` 本体上，而不是基地卡面。
+- 已修正 [e2e/smashup-yuanhou-factions.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/smashup-yuanhou-factions.e2e.ts:361)：
+  - 将第一条 `Cyberback` 真实入口用例从点击 `base-zone-0` 改为点击 `[data-minion-uid="cyberback-a"]`。
+- 本轮复跑结果：
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup-yuanhou-factions.e2e.ts "电子猿 Cyberback 可从弃牌堆真实选择持续行动并打到自己身上"`：`1 passed`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup-yuanhou-factions.e2e.ts "电子猿 Cyberback"`：`3 passed`
+
+### 本轮关键截图（绝对路径）
+
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Cyberback-可从弃牌堆真实选择持续行动并打到自己身上\yuanhou-cyberback-discard-action-visible.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Cyberback-可从弃牌堆真实选择持续行动并打到自己身上\yuanhou-cyberback-action-attached.png`
+
+### 肉眼核图结论
+
+- `yuanhou-cyberback-discard-action-visible.png`
+  - 弃牌堆面板已经展开，`电子猿进化（Cyberevolution）` 在右下弃牌候选里真实可见，不是伪造 prompt。
+  - 棋盘上的 `赛博守护者` 本体被绿色高亮，说明当前真实交互载体是“点宿主随从”，不是“点基地”。
+  - 该截图达到“真实入口已暴露正确可操作对象”的验收标准。
+- `yuanhou-cyberback-action-attached.png`
+  - `赛博守护者` 旁已出现附着行动缩略卡，力量从 `5` 变为 `8`，左上有 `+3` 标识。
+  - 右下弃牌堆按钮从 `弃牌(1)` 变为 `弃牌(0)`，说明该持续行动已从弃牌堆移出，而不是只保留高亮。
+  - 该截图结合 E2E 状态断言，达到“弃牌持续行动已真实附着到己方赛博守护者并完成收口”的验收标准。

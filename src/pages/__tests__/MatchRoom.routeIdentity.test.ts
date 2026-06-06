@@ -5,7 +5,7 @@ import {
     resolveSeatValidationPlayers,
     resolveStoredSeatValidationClearDecision,
     shouldUseTransportSeatValidationSnapshot,
-} from '../MatchRoom';
+} from '../matchRouteIdentity';
 
 describe('resolveMatchRoomRouteIdentity', () => {
     it('有 stored seat 且 URL 缺失时，仍保持 seat 身份而不是 spectator', () => {

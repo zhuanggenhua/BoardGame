@@ -6,7 +6,7 @@
 
 ## 项目内调用方式
 
-- 项目内默认优先通过 `.windsurf/skills/data-entry-workflow/SKILL.md` 进入录入流程。
+- 项目内默认优先通过 `.codex/skill/data-entry-workflow/SKILL.md` 进入录入流程。
 - 这个 skill 只负责通用门禁和 workflow 路由，不替代本文件。
 - 目前已接入的专用 workflow：
   - `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`

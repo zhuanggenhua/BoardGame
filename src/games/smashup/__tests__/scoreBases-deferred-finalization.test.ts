@@ -203,11 +203,22 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         const emittedEvents = result?.events as SmashUpEvent[] | undefined;
         expect(emittedEvents ?? []).toHaveLength(0);
 
-        const finalize = smashUpFlowHooks.onPhaseExit?.({
+        const beginDelay = smashUpFlowHooks.onPhaseExit?.({
             state: result?.state ?? state,
             from: 'scoreBases',
             to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2102 } as any,
+            random: defaultTestRandom,
+        });
+        const delayedState = (beginDelay as any)?.updatedState;
+        expect((beginDelay as any)?.events ?? []).toEqual([]);
+        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(4102);
+
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: delayedState ?? result?.state ?? state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 4102 } as any,
             random: defaultTestRandom,
         });
         const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
@@ -344,11 +355,22 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         expectNoPrompt(resolved!.state);
         expect((resolved?.state.sys as any)._waitForScoreBasesInteractionReduce).toBeUndefined();
 
-        const finalize = smashUpFlowHooks.onPhaseExit?.({
+        const beginDelay = smashUpFlowHooks.onPhaseExit?.({
             state: resolved?.state ?? state,
             from: 'scoreBases',
             to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2300 } as any,
+            random: defaultTestRandom,
+        });
+        const delayedState = (beginDelay as any)?.updatedState;
+        expect((beginDelay as any)?.events ?? []).toEqual([]);
+        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(4300);
+
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: delayedState ?? resolved?.state ?? state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 4300 } as any,
             random: defaultTestRandom,
         });
         const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
@@ -788,11 +810,22 @@ describe('scoreBases 延迟清场 / 最终化', () => {
             ...(result?.state ?? state),
             core: (emittedEvents ?? []).reduce((core, event) => reduce(core, event), state.core as SmashUpCore),
         };
-        const finalize = smashUpFlowHooks.onPhaseExit?.({
+        const beginDelay = smashUpFlowHooks.onPhaseExit?.({
             state: reducedState,
             from: 'scoreBases',
             to: 'draw',
-            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2500 } as any,
+            random: defaultTestRandom,
+        });
+        const delayedState = (beginDelay as any)?.updatedState;
+        expect((beginDelay as any)?.events ?? []).toEqual([]);
+        expect((delayedState?.sys as any)?._smashupPostScoringBaseRevealDelayUntil).toBe(4500);
+
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: delayedState ?? reducedState,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 4500 } as any,
             random: defaultTestRandom,
         });
         const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];

@@ -62,6 +62,7 @@ import {
 } from './reactionSession';
 import { getSmashUpReactionWindowContext } from './reactionWindowState';
 import { readSmashUpRuntimeSetupConfig } from '../roomSetup';
+import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
@@ -107,6 +108,9 @@ import {
     type SmashUpScoringBaseRef,
 } from './scoringSession';
 import { getActiveResolutionFrame } from '../../../engine/systems/resolutionStack';
+
+const POST_SCORING_BASE_REVEAL_DELAY_MS = 2000;
+const POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY = '_smashupPostScoringBaseRevealDelayUntil';
 
 function buildActionReturnToHandPromptKey(event: ActionReturnToHandOptionArmedEvent): string {
     return [
@@ -474,6 +478,50 @@ function finalizeCurrentScoringBase(
     return {
         updatedState: awaitingReduceState,
         events,
+    };
+}
+
+function beginPostScoringBaseRevealDelay(
+    state: MatchState<SmashUpCore>,
+    now: number,
+): MatchState<SmashUpCore> {
+    const delayStart = now > 0 ? now : Date.now();
+    const delayUntil = delayStart + POST_SCORING_BASE_REVEAL_DELAY_MS;
+    const delayedState = updateScoringSession(state, (session) => session
+        ? {
+            ...session,
+            currentStep: 'awaiting-post-scoring-delay',
+        }
+        : session,
+    );
+    return {
+        ...delayedState,
+        sys: {
+            ...delayedState.sys,
+            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: delayUntil,
+        } as typeof delayedState.sys,
+    };
+}
+
+function isPostScoringBaseRevealDelayActive(
+    state: MatchState<SmashUpCore>,
+    now: number,
+): boolean {
+    const delayUntil = (state.sys as Record<string, unknown>)[POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY];
+    const currentTime = now > 0 ? now : Date.now();
+    return typeof delayUntil === 'number' && delayUntil > currentTime;
+}
+
+function clearPostScoringBaseRevealDelay(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
+    if ((state.sys as Record<string, unknown>)[POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY] === undefined) {
+        return state;
+    }
+    return {
+        ...state,
+        sys: {
+            ...state.sys,
+            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: undefined,
+        } as typeof state.sys,
     };
 }
 
@@ -932,29 +980,28 @@ export function scoreOneBase(
         }
     }
 
-    const shouldDeferPostScoring = afterScoringCreatedInteraction || playersWithAfterScoringCards.length > 0;
-    if (shouldDeferPostScoring) {
-        const serializedDeferredEvents = serializePostScoringEvents(postScoringEvents);
-        if (ms && currentBaseRef) {
-            const waitingStep = getSmashUpReactionSession(ms)
+    const serializedDeferredEvents = serializePostScoringEvents(postScoringEvents);
+    if (ms && currentBaseRef) {
+        const waitingStep = afterScoringCreatedInteraction || playersWithAfterScoringCards.length > 0
+            ? getSmashUpReactionSession(ms)
                 ? 'awaiting-response-window'
-                : 'awaiting-interactions';
-            ms = updateScoringSession(ms, (session) => session
-                ? {
-                    ...session,
-                    currentBaseRef,
-                    currentStep: waitingStep,
-                }
-                : session,
-            );
-            ms = appendScoringFrameDeferredPayload(ms, {
-                deferredEvents: serializedDeferredEvents,
-            });
+                : 'awaiting-interactions'
+            : 'awaiting-post-scoring-delay';
+        ms = updateScoringSession(ms, (session) => session
+            ? {
+                ...session,
+                currentBaseRef,
+                currentStep: waitingStep,
+            }
+            : session,
+        );
+        ms = appendScoringFrameDeferredPayload(ms, {
+            deferredEvents: serializedDeferredEvents,
+        });
+        if (waitingStep === 'awaiting-post-scoring-delay') {
+            ms = beginPostScoringBaseRevealDelay(ms, now);
         }
-        return { events, newBaseDeck, matchState: ms };
     }
-
-    events.push(...postScoringEvents);
     return { events, newBaseDeck, matchState: ms };
 }
 
@@ -1374,11 +1421,7 @@ function normalizeLegacySmashUpMatchState(
         changed = true;
     }
 
-    if (!changed) {
-        return state;
-    }
-
-    return {
+    const normalizedState = changed ? {
         ...state,
         core: {
             ...core,
@@ -1386,7 +1429,9 @@ function normalizeLegacySmashUpMatchState(
             bases: normalizedBases,
             madnessDeck: normalizedMadnessDeck,
         },
-    };
+    } : state;
+
+    return normalizeSmashUpMatchStateForUi(normalizedState);
 }
 
 export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
@@ -1526,12 +1571,20 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 return { events: [], halt: true, updatedState: currentState } as PhaseExitResult;
             }
 
+            if (currentSession.currentStep === 'awaiting-post-scoring-delay') {
+                if (isPostScoringBaseRevealDelayActive(currentState, now)) {
+                    return { events: [], halt: true, updatedState: currentState } as PhaseExitResult;
+                }
+                const finalized = finalizeCurrentScoringBase(clearPostScoringBaseRevealDelay(currentState), now);
+                return { events: finalized.events, halt: true, updatedState: finalized.updatedState } as PhaseExitResult;
+            }
+
             if (currentSession.currentBaseRef && (
                 currentSession.currentStep === 'awaiting-interactions'
                 || currentSession.currentStep === 'awaiting-response-window'
             )) {
-                const finalized = finalizeCurrentScoringBase(currentState, now);
-                return { events: finalized.events, updatedState: finalized.updatedState } as PhaseExitResult;
+                const delayedState = beginPostScoringBaseRevealDelay(currentState, now);
+                return { events: [], halt: true, updatedState: delayedState } as PhaseExitResult;
             }
 
             if (!currentSession.currentBaseRef) {
@@ -1628,6 +1681,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 : nextState;
 
             if (pipelineReadyState.sys.interaction?.current || getSmashUpReactionSession(pipelineReadyState)) {
+                return { events: result.events, halt: true, updatedState: pipelineReadyState } as PhaseExitResult;
+            }
+
+            if (getScoringSession(pipelineReadyState)?.currentStep === 'awaiting-post-scoring-delay') {
                 return { events: result.events, halt: true, updatedState: pipelineReadyState } as PhaseExitResult;
             }
 
@@ -1941,6 +1998,9 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (phase === 'scoreBases') {
+            if (isPostScoringBaseRevealDelayActive(state, Date.now())) {
+                return undefined;
+            }
             if (getSmashUpReactionSession(state)) {
                 return undefined;
             }

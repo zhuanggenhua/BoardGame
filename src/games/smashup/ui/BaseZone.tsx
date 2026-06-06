@@ -849,6 +849,7 @@ export const BaseZone: React.FC<{
             >
                 {turnOrder.map(pid => {
                     const minions = minionsByController[pid] || [];
+                    const hasExpandedMinionInColumn = minions.some((minion) => minion.uid === expandedMinionUid);
 
                     // 个人总力量口径必须走统一计算入口，避免漏掉“只影响控制者总力量、不影响基地总力量”的持续效果。
                     const total = getPlayerEffectivePowerOnBase(core, base, baseIndex, pid);
@@ -865,7 +866,7 @@ export const BaseZone: React.FC<{
                             layout="position"
                             data-testid={`su-base-player-column-${baseIndex}-${pid}`}
                             data-player-id={pid}
-                            className="flex flex-col items-center relative"
+                            className={`flex flex-col items-center relative ${hasExpandedMinionInColumn ? 'z-[120]' : 'z-0'}`}
                             style={{ minWidth: layoutInlineSize(layout.minionCardWidth, layout) }}
                             transition={{ layout: { duration: 0.22, ease: 'easeOut' } }}
                         >
@@ -874,7 +875,7 @@ export const BaseZone: React.FC<{
                             <motion.div
                                 layout="position"
                                 data-testid={`su-base-stack-${baseIndex}-${pid}`}
-                                className="flex flex-col items-center isolate z-10 hover:z-[100]"
+                                className={`flex flex-col items-center isolate ${hasExpandedMinionInColumn ? 'z-[120]' : 'z-10 hover:z-[100]'}`}
                                 transition={{ layout: { duration: 0.22, ease: 'easeOut' } }}
                             >
                                 {(minions.length > 0 || (base.buriedCards?.some((buried) => buried.controllerId === pid) ?? false)) ? (
@@ -1196,8 +1197,9 @@ const MinionCard: React.FC<{
 
     const seed = minion.uid.charCodeAt(0) + index;
     const rotation = (seed % 6) - 3;
-    // 选择态必须给每张随从保留独立可点区域，避免负堆叠导致底部随从被上层盖住。
-    const selectionStackOffset = 0;
+    // 选择态每张只额外露出半张卡高：
+    // 比常态更容易辨认候选，但不会像完整展开那样把整列拉得过高。
+    const selectionStackOffset = Number((-(layout.minionCardWidth / CARD_ASPECT_RATIO) * 0.5).toFixed(4));
     const stackStyle = {
         marginTop: index === 0 ? 0 : layoutInlineSize(isMinionSelectMode ? selectionStackOffset : layout.minionStackOffset, layout),
         zIndex: isMinionSelectMode ? 100 + index : index + 1,
@@ -1284,14 +1286,16 @@ const MinionCard: React.FC<{
     const minionContainerClassName = `relative aspect-[0.714] group hover:!z-[999] ${
         isDimmed
             ? 'cursor-not-allowed'
+            : isSelectableMinion && !isDimmed
+            ? 'cursor-pointer -translate-y-[0.16vw] scale-[1.04]'
             : 'cursor-pointer'
     }`;
     const minionFrameClassName = `relative w-full h-full bg-white p-[0.2vw] rounded-[0.2vw] border-[0.15vw] transition-shadow duration-200
-        ${isDimmed ? 'opacity-40 grayscale' : isSelectableMinion ? '' : 'hover:scale-110'}
+        ${isDimmed ? 'opacity-45 saturate-[0.62] brightness-[0.88]' : isSelectableMinion ? '' : 'hover:scale-110'}
         ${isMultiSelected
-            ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.58),0_0_30px_rgba(74,222,128,0.26)]'
+            ? 'border-green-400 ring-[0.26vw] ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.72),0_0_40px_rgba(74,222,128,0.34)]'
             : isSelectableMinion
-            ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.52),0_0_30px_rgba(74,222,128,0.22)]'
+            ? 'border-green-400 ring-[0.26vw] ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.68),0_0_40px_rgba(74,222,128,0.3)]'
             : isExpanded
             ? isMinionActivationArmed
                 ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.75),0_0_36px_rgba(251,191,36,0.35)]'
@@ -1308,13 +1312,13 @@ const MinionCard: React.FC<{
         }`;
 
     const rotationAnimate = isSelectableMinion
-        ? { rotate: 0 }
+        ? { rotate: [rotation - 0.75, rotation + 0.75, rotation - 0.75] }
         : canActivate
             ? { rotate: [rotation - 2, rotation + 2, rotation - 2] }
             : { rotate: rotation };
 
     const rotationTransition = isSelectableMinion
-        ? { type: 'spring', stiffness: 320, damping: 26 }
+        ? { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' } }
         : canActivate
             ? { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } }
             : { type: 'spring', stiffness: 320, damping: 26 };

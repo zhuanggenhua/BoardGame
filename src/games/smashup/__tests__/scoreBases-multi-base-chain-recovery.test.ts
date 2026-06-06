@@ -38,6 +38,45 @@ function getActiveSimpleChoice(state: MatchState<SmashUpCore>) {
     return getOptionalSimpleChoicePrompt(state);
 }
 
+function getCurrentPlayerIdForTest(state: MatchState<SmashUpCore>): string {
+    return state.core.turnOrder[state.core.currentPlayerIndex]!;
+}
+
+function getPostScoringDelayUntil(state: MatchState<SmashUpCore>): number | undefined {
+    const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+    return typeof delayUntil === 'number' ? delayUntil : undefined;
+}
+
+function drainScoreBasesDelayUntilPromptOrIdle(
+    initialState: MatchState<SmashUpCore>,
+    runner: CommandRunner,
+    eventsAcc: SmashUpEvent[] = [],
+) {
+    let state = initialState;
+    for (let guard = 0; guard < 8; guard++) {
+        if (getActiveSimpleChoice(state)) {
+            break;
+        }
+        if (state.sys.phase !== 'scoreBases') {
+            break;
+        }
+        const delayUntil = getPostScoringDelayUntil(state);
+        if (delayUntil === undefined) {
+            break;
+        }
+        const advanced = runner(state, {
+            type: 'ADVANCE_PHASE',
+            playerId: getCurrentPlayerIdForTest(state),
+            payload: undefined,
+            timestamp: delayUntil,
+        } as SmashUpCommand);
+        expect(advanced.success).toBe(true);
+        eventsAcc.push(...(advanced.events as SmashUpEvent[]));
+        state = advanced.finalState;
+    }
+    return state;
+}
+
 function findReactionOptionOrPass(choice: any, keywords: string[]): string {
     const options = getPromptOptions(choice);
     const option = options.find((candidate: any) => {
@@ -87,6 +126,7 @@ function drainReactionQueueChoice(
 ) {
     let state = initialState;
     for (let guard = 0; guard < 6; guard++) {
+        state = drainScoreBasesDelayUntilPromptOrIdle(state, runner, eventsAcc);
         const current = getActiveSimpleChoice(state);
         if (!current || current.sourceId !== 'smashup_reaction_choose') {
             break;
@@ -125,6 +165,7 @@ function resolvePirateKingFirstMateScoringChain(
     let resolveFirstMate: { success: boolean; events: unknown; finalState: MatchState<SmashUpCore> } | undefined;
     let drainedState = drainReactionQueueChoice(resolvePirateKing.finalState, runner, eventsAcc);
     for (let guard = 0; guard < 80; guard++) {
+        drainedState = drainScoreBasesDelayUntilPromptOrIdle(drainedState, runner, eventsAcc);
         const cur = getActiveSimpleChoice(drainedState);
         if (!cur) break;
         let optionId: string;
@@ -184,6 +225,7 @@ function continuePirateKingFirstMateScoringChainV2(
     let drainedState = initialState;
 
     for (let guard = 0; guard < 80; guard++) {
+        drainedState = drainScoreBasesDelayUntilPromptOrIdle(drainedState, runner, eventsAcc);
         const cur = getActiveSimpleChoice(drainedState);
         if (!cur) break;
 
@@ -559,7 +601,7 @@ describe('scoreBases 多基地计分链恢复', () => {
             ],
         });
 
-        // 验证：应该有 BASE_SCORED 事件
+        // 当前实现采用“先计分，再延迟清空/翻新基地”的链路。
         const allEvents = result.steps.flatMap(step => step.events);
         const scoredEvents = allEvents.filter((e: string) => e === 'su:base_scored');
 
@@ -575,13 +617,26 @@ describe('scoreBases 多基地计分链恢复', () => {
             'su:when_scoring_triggered',
             'su:base_scored',
             'su:after_scoring_triggered',
-            'su:base_cleared',
-            'su:base_replaced',
         ]);
 
         expect(result.finalState.core.players['0'].vp).toBe(2);
         expect(result.finalState.core.players['1'].vp).toBe(0);
-        const nextPrompt = getActiveSimpleChoice(result.finalState);
+        const delayUntil = getPostScoringDelayUntil(result.finalState);
+        expect(delayUntil).toEqual(expect.any(Number));
+
+        const finalized = runCommand(result.finalState, {
+            type: 'ADVANCE_PHASE',
+            playerId: getCurrentPlayerIdForTest(result.finalState),
+            payload: undefined,
+            timestamp: delayUntil,
+        });
+        expect(finalized.success).toBe(true);
+        expect(finalized.events.map(event => event.type)).toEqual([
+            'su:base_cleared',
+            'su:base_replaced',
+        ]);
+
+        const nextPrompt = getActiveSimpleChoice(finalized.finalState);
         expect(nextPrompt?.sourceId).toBe('multi_base_scoring');
         expect(getPromptOptions(nextPrompt).map((option: any) => option.value.baseIndex).sort()).toEqual([1, 2]);
     });
@@ -602,7 +657,10 @@ describe('scoreBases 多基地计分链恢复', () => {
         const firstRespond = runCommand(advance.finalState, respondCommand(chooseTsars, '0'));
         expect(firstRespond.success).toBe(true);
 
-        const stateAfterOrdering = drainReactionQueueChoice(firstRespond.finalState, runCommand);
+        const stateAfterOrdering = drainScoreBasesDelayUntilPromptOrIdle(
+            drainReactionQueueChoice(firstRespond.finalState, runCommand),
+            runCommand,
+        );
         const secondChoice = getActiveSimpleChoice(stateAfterOrdering);
         let finalState = stateAfterOrdering;
         if (secondChoice) {
@@ -612,7 +670,7 @@ describe('scoreBases 多基地计分链恢复', () => {
 
             const secondRespond = runCommand(stateAfterOrdering, respondCommand(chooseJungle, '0'));
             expect(secondRespond.success).toBe(true);
-            finalState = secondRespond.finalState;
+            finalState = drainScoreBasesDelayUntilPromptOrIdle(secondRespond.finalState, runCommand);
         }
         expectNoPrompt(finalState);
 
@@ -625,6 +683,59 @@ describe('scoreBases 多基地计分链恢复', () => {
             'base_central_brain',
         ]);
         expect(finalState.core.baseDeck).toEqual(['base_the_factory']);
+    });
+
+    it('先结算低位基地后，右侧锁定基地不会在清空补位后丢失', () => {
+        const advance = runCommand(createThreeBaseAutoFinishSetup(), {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: undefined,
+        });
+        expect(advance.success).toBe(true);
+
+        const firstChoice = getActiveSimpleChoice(advance.finalState)!;
+        expect(firstChoice).toBeTruthy();
+        expect(firstChoice.sourceId).toBe('multi_base_scoring');
+        const chooseJungleFirst = findOption(firstChoice, (option: any) => option.value?.baseIndex === 0);
+
+        const firstRespond = runCommand(advance.finalState, respondCommand(chooseJungleFirst, '0'));
+        expect(firstRespond.success).toBe(true);
+
+        let state = drainScoreBasesDelayUntilPromptOrIdle(
+            drainReactionQueueChoice(firstRespond.finalState, runCommand),
+            runCommand,
+        );
+
+        const secondChoice = getActiveSimpleChoice(state);
+        expect(secondChoice?.sourceId).toBe('multi_base_scoring');
+        const secondOptions = getPromptOptions(secondChoice);
+        expect(secondOptions.map((option: any) => option.value?.baseDefId).sort()).toEqual([
+            'base_dread_lookout',
+            'base_tsars_palace',
+        ]);
+
+        const chooseDreadLookout = findOption(
+            secondChoice,
+            (option: any) => option.value?.baseDefId === 'base_dread_lookout',
+        );
+        const secondRespond = runCommand(state, respondCommand(chooseDreadLookout, '0'));
+        expect(secondRespond.success).toBe(true);
+
+        state = drainScoreBasesDelayUntilPromptOrIdle(
+            drainReactionQueueChoice(secondRespond.finalState, runCommand),
+            runCommand,
+        );
+
+        expectNoPrompt(state);
+        expect(state.sys.phase).toBe('playCards');
+        expect(state.core.currentPlayerIndex).toBe(1);
+        expect(state.core.players['0'].vp).toBe(9);
+        expect(state.core.players['1'].vp).toBe(7);
+        expect(state.core.bases.map(base => base.defId)).toEqual([
+            'base_central_brain',
+            'base_cave_of_shinies',
+            'base_rhodes_plaza',
+        ]);
     });
 
     it('复杂链路：海盗王 beforeScoring + 托尔图加 afterScoring + 大副 afterScoring 能完整走完计分链', () => {
@@ -1020,8 +1131,12 @@ describe('scoreBases 多基地计分链恢复', () => {
         allEvents.push(...(resolvePirateKing.events as SmashUpEvent[]));
         state = resolvePirateKing.finalState;
 
-        while (getActiveSimpleChoice(state)) {
-            const choice = getActiveSimpleChoice(state)!;
+        for (let guard = 0; guard < 80; guard++) {
+            state = drainScoreBasesDelayUntilPromptOrIdle(state, runCommandWithFullSystems, allEvents);
+            const choice = getActiveSimpleChoice(state);
+            if (!choice) {
+                break;
+            }
             expect(choice).toBeTruthy();
             sourceIds.push(choice.sourceId);
 
@@ -1087,8 +1202,12 @@ describe('scoreBases 多基地计分链恢复', () => {
         allEvents.push(...(resolvePirateKing.events as SmashUpEvent[]));
         state = resolvePirateKing.finalState;
 
-        while (getActiveSimpleChoice(state)) {
-            const choice = getActiveSimpleChoice(state)!;
+        for (let guard = 0; guard < 120; guard++) {
+            state = drainScoreBasesDelayUntilPromptOrIdle(state, runCommandWithFullSystems, allEvents);
+            const choice = getActiveSimpleChoice(state);
+            if (!choice) {
+                break;
+            }
             expect(choice).toBeTruthy();
 
             let optionId: string;

@@ -1276,11 +1276,191 @@ const adapterConfig = {
     commandTypes: COMMAND_TYPES,
 };
 
+const resolveDiceThroneForcedInteractionRecoveryCommand = (args: {
+    interaction: {
+        kind?: unknown;
+        data?: {
+            options?: unknown;
+        } | undefined;
+    };
+}) => {
+    const interactionKind = typeof args.interaction.kind === 'string' ? args.interaction.kind : '';
+    if (interactionKind === 'dt:token-response') {
+        return { type: 'SKIP_TOKEN_RESPONSE', payload: {} };
+    }
+    if (interactionKind === 'dt:bonus-dice') {
+        return { type: 'SKIP_BONUS_DICE_REROLL', payload: {} };
+    }
+    if (interactionKind !== 'dt:defender-choice') {
+        return null;
+    }
+
+    const options = Array.isArray(args.interaction.data?.options) ? args.interaction.data.options : [];
+    const enabledPlayerIds = options
+        .filter((option): option is { playerId: string; disabled?: unknown } =>
+            typeof (option as { playerId?: unknown } | undefined)?.playerId === 'string'
+                && (option as { disabled?: unknown } | undefined)?.disabled !== true,
+        )
+        .map((option) => option.playerId);
+
+    if (enabledPlayerIds.length !== 1) {
+        return null;
+    }
+
+    return {
+        type: 'SELECT_DEFENDER_TARGET',
+        payload: { defenderId: enabledPlayerIds[0] },
+    };
+};
+
+const buildDiceThronePendingDamageRecoveryFingerprintSignature = (pendingDamage: unknown): string => {
+    if (!pendingDamage || typeof pendingDamage !== 'object') {
+        return '';
+    }
+
+    const raw = pendingDamage as Record<string, unknown>;
+    return JSON.stringify({
+        id: typeof raw.id === 'string' ? raw.id : null,
+        responderId: typeof raw.responderId === 'string' ? raw.responderId : null,
+        responseType: typeof raw.responseType === 'string' ? raw.responseType : null,
+        currentDamage: typeof raw.currentDamage === 'number' ? raw.currentDamage : null,
+        sourceAbilityId: typeof raw.sourceAbilityId === 'string' ? raw.sourceAbilityId : null,
+        tokenUsageTotals: raw.tokenUsageTotals ?? null,
+    });
+};
+
+const buildDiceThronePendingBonusDiceSettlementRecoveryFingerprintSignature = (settlement: unknown): string => {
+    if (!settlement || typeof settlement !== 'object') {
+        return '';
+    }
+
+    const raw = settlement as Record<string, unknown>;
+    return JSON.stringify({
+        id: typeof raw.id === 'string' ? raw.id : null,
+        attackerId: typeof raw.attackerId === 'string' ? raw.attackerId : null,
+        displayOnly: raw.displayOnly === true ? true : null,
+        rerollCount: typeof raw.rerollCount === 'number' ? raw.rerollCount : null,
+        dice: raw.dice ?? null,
+    });
+};
+
+const buildDiceThroneDefenderChoiceRecoveryFingerprintOptionSignature = (options: unknown): string => {
+    if (!Array.isArray(options)) {
+        return '';
+    }
+
+    return options
+        .map((option) => {
+            const item = option as { playerId?: unknown; customId?: unknown; disabled?: unknown } | undefined;
+            const playerId = typeof item?.playerId === 'string' ? item.playerId : '';
+            const customId = typeof item?.customId === 'string' ? item.customId : '';
+            const disabledFlag = item?.disabled === true ? '1' : '0';
+            return `${playerId}:${customId}:${disabledFlag}`;
+        })
+        .join(',');
+};
+
+const buildDiceThroneInteractionRecoveryFingerprintHint = (args: {
+    state: MatchState<unknown>;
+    playerId: string;
+    phase: string;
+    interaction: {
+        id?: unknown;
+        kind?: unknown;
+        data?: Record<string, unknown> | undefined;
+    };
+}): string | null => {
+    const interactionKind = typeof args.interaction.kind === 'string' ? args.interaction.kind : '';
+    const interactionId = typeof args.interaction.id === 'string' ? args.interaction.id : '';
+    const sourceId = typeof args.interaction.data?.sourceId === 'string' ? args.interaction.data.sourceId : '';
+
+    if (interactionKind === 'dt:defender-choice') {
+        const attackerId = typeof args.interaction.data?.attackerId === 'string' ? args.interaction.data.attackerId : '';
+        const targetRollValue = typeof args.interaction.data?.targetRollValue === 'number'
+            ? String(args.interaction.data.targetRollValue)
+            : '';
+        const optionSignature = buildDiceThroneDefenderChoiceRecoveryFingerprintOptionSignature(args.interaction.data?.options);
+        return `interaction:${args.playerId}:${args.phase}:dt:defender-choice:${sourceId}:${attackerId}:${targetRollValue}:${optionSignature}:${interactionId}`;
+    }
+
+    const core = args.state.core as {
+        pendingDamage?: unknown;
+        pendingBonusDiceSettlement?: unknown;
+    } | undefined;
+    if (interactionKind === 'dt:token-response') {
+        return `interaction:${args.playerId}:${args.phase}:dt:token-response:${sourceId}:${buildDiceThronePendingDamageRecoveryFingerprintSignature(core?.pendingDamage)}:${interactionId}`;
+    }
+    if (interactionKind === 'dt:bonus-dice') {
+        return `interaction:${args.playerId}:${args.phase}:dt:bonus-dice:${sourceId}:${buildDiceThronePendingBonusDiceSettlementRecoveryFingerprintSignature(core?.pendingBonusDiceSettlement)}:${interactionId}`;
+    }
+
+    return null;
+};
+
+const shouldSuppressDiceThroneUnsatisfiableInteractionFeedback = (args: {
+    sharedInteraction: { kind?: unknown } | null;
+    seatInteraction: { kind?: unknown } | null;
+    sharedSelectability: { selectionState?: unknown } | null;
+    seatSelectability: { selectionState?: unknown } | null;
+}): boolean => (
+    args.sharedInteraction?.kind === 'dt:defender-choice'
+    && args.seatInteraction?.kind === 'dt:defender-choice'
+    && args.sharedSelectability?.selectionState === 'no-options'
+    && args.seatSelectability?.selectionState === 'no-options'
+);
+
+const resolveDiceThroneSeatLegalOnlyRecovery = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+}) => {
+    if (args.phase === 'offensiveRoll' || args.phase === 'targetingRoll' || args.phase === 'defensiveRoll') {
+        return null;
+    }
+
+    const core = args.state.core as {
+        pendingAttack?: unknown;
+        pendingBonusDiceSettlement?: {
+            id?: unknown;
+            attackerId?: unknown;
+            displayOnly?: unknown;
+        };
+    } | undefined;
+    if (core?.pendingAttack) {
+        return null;
+    }
+
+    const settlement = core?.pendingBonusDiceSettlement;
+    if (settlement?.displayOnly !== true || typeof settlement.attackerId !== 'string') {
+        return null;
+    }
+
+    const settlementId = typeof settlement.id === 'string' && settlement.id.length > 0
+        ? settlement.id
+        : 'unknown-display-only-settlement';
+
+    return {
+        playerId: settlement.attackerId,
+        fingerprintHint: `display-only-bonus:${settlement.attackerId}:${args.phase || 'unknown-phase'}:${settlementId}`,
+        attemptSuffix: `display-only-bonus:${settlement.attackerId}:${settlementId}`,
+        command: { type: 'SKIP_BONUS_DICE_REROLL', payload: {} },
+    };
+};
+
 // 引擎配置
 export const engineConfig = {
     ...createGameEngine(adapterConfig),
     resolveLocalPregameControlledPlayerId: resolveDiceThroneLocalPregameControlledPlayerId,
     onlineAiRecovery: {
+        humanTurnLegalActionProbePhases: ['defensiveRoll', 'targetingRoll'],
+        buildInteractionRecoveryFingerprintHint: ({ state, playerId, phase, interaction }) =>
+            buildDiceThroneInteractionRecoveryFingerprintHint({ state, playerId, phase, interaction }),
+        resolveForcedInteractionCommand: resolveDiceThroneForcedInteractionRecoveryCommand,
+        resolveSeatLegalOnlyRecovery: resolveDiceThroneSeatLegalOnlyRecovery,
+        shouldSuppressUnsatisfiableInteractionFeedback: shouldSuppressDiceThroneUnsatisfiableInteractionFeedback,
+        offlineAdjudicationCommandByInteractionKind: {
+            'dt:token-response': 'SKIP_TOKEN_RESPONSE',
+            'dt:bonus-dice': 'SKIP_BONUS_DICE_REROLL',
+        },
         allowForceCommandAfterLegalActionExhausted: ({ phase }) => phase === 'defensiveRoll',
     },
 };

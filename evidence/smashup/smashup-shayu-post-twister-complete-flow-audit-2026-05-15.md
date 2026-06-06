@@ -171,4 +171,4 @@ npm run test:e2e:ci:file -- e2e/smashup-shayu-factions.e2e.ts "Tornados 随风�
 
 45/45 对象完整技能流程矩阵已补齐，Twister 反馈新增的“可选否定路径”门禁已应用回 shayu 三派系全集。三条不同机制家族全链路抽查均通过，实际看图未发现新的实现错误。
 
-本轮没有触发新的规范升级：Twister 暴露的可选/否定路径缺口已经在 `docs/ai-rules/testing-audit.md`、`.windsurf/skills/add-new-faction/SKILL.md` 与 `.windsurf/skills/smashup-faction-addition/SKILL.md` 固化；本次 post-Twister 再审计没有发现第二类新不变量。
+本轮没有触发新的规范升级：Twister 暴露的可选/否定路径缺口已经在 `docs/ai-rules/testing-audit.md`、`.codex/skill/add-new-faction/SKILL.md` 与 `.codex/skill/smashup-faction-addition/SKILL.md` 固化；本次 post-Twister 再审计没有发现第二类新不变量。

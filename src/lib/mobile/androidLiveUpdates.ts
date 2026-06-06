@@ -102,6 +102,7 @@ export interface AndroidLiveUpdateSnapshot {
 
 export interface ReadAndroidLiveUpdateSnapshotOptions {
     includeManifest?: boolean;
+    envOverride?: Record<string, string | boolean | undefined>;
 }
 
 export interface AndroidOtaManifest {
@@ -203,6 +204,25 @@ let liveUpdateActivityState: AndroidLiveUpdateActivityState = IDLE_LIVE_UPDATE_A
 const parseBooleanEnv = (value: string | boolean | undefined) => {
     if (typeof value === 'boolean') return value;
     return /^(1|true|yes|on)$/i.test((value || '').trim());
+};
+
+const getErrorMessage = (error: unknown) => (
+    error instanceof Error ? error.message : String(error)
+);
+
+const isCapacitorUpdaterPluginUnavailableError = (error: unknown) => (
+    /"capacitorupdater" plugin is not implemented on android/i.test(getErrorMessage(error))
+);
+
+const disableCapacitorUpdaterPlugin = (reason: string) => {
+    updaterLoader = Promise.resolve(null);
+    listenerRegistrationPromise = Promise.resolve(null);
+    emitCriticalOtaLog('updater-plugin-unavailable', { reason });
+    updateOtaDebugState({
+        stage: 'updater-plugin-unavailable',
+        updaterLoaded: false,
+        reason,
+    });
 };
 
 const readTrimmedEnv = (value: string | boolean | undefined) => (
@@ -590,8 +610,8 @@ const readManifest = async (
 export const readAndroidLiveUpdateSnapshot = async (
     options: ReadAndroidLiveUpdateSnapshotOptions = {},
 ): Promise<AndroidLiveUpdateSnapshot> => {
-    const { includeManifest = true } = options;
-    const config = getConfigFromMetaEnv();
+    const { includeManifest = true, envOverride } = options;
+    const config = getConfigFromMetaEnv(envOverride);
     const baseSnapshot: AndroidLiveUpdateSnapshot = {
         enabled: config.enabled,
         manifestUrl: config.manifestUrl,
@@ -642,7 +662,22 @@ export const readAndroidLiveUpdateSnapshot = async (
     }
 
     const manifest = includeManifest ? await readManifest(config.manifestUrl) : null;
-    const current = await updaterModule.CapacitorUpdater.current();
+    let current: CurrentBundleResult;
+    try {
+        current = await updaterModule.CapacitorUpdater.current();
+    } catch (error) {
+        if (!isCapacitorUpdaterPluginUnavailableError(error)) {
+            throw error;
+        }
+        disableCapacitorUpdaterPlugin(getErrorMessage(error));
+        const snapshot = {
+            ...baseSnapshot,
+            nativeAndroid: nativeDiagnostics.nativeAndroid,
+            updaterLoaded: false,
+        };
+        emitCriticalOtaLog('snapshot-read-updater-unavailable', snapshot);
+        return snapshot;
+    }
     const compatibility = manifest
         ? isManifestCompatibleWithNativeVersion(manifest, current.native)
         : undefined;
@@ -743,6 +778,10 @@ export const notifyAndroidBundleReady = async () => {
                     stage: 'notify-app-ready-success',
                 });
             } catch (error) {
+                if (isCapacitorUpdaterPluginUnavailableError(error)) {
+                    disableCapacitorUpdaterPlugin(getErrorMessage(error));
+                    return;
+                }
                 console.warn('[OTA] notifyAppReady 调用失败', error);
                 logMobileRuntime('OTA', 'notify-app-ready-failed', { error }, 'error');
                 emitCriticalOtaLog('notify-app-ready-failed', { error });
@@ -775,59 +814,68 @@ export const registerAndroidLiveUpdateListeners = async () => {
             if (!updaterModule) return null;
 
             const { CapacitorUpdater } = updaterModule;
-            const handles = await Promise.all([
-                CapacitorUpdater.addListener('download', (event) => {
-                    updateOtaDebugState({
-                        stage: 'listener-download-progress',
-                        currentBundleVersion: event.bundle.version,
-                        currentBundleId: event.bundle.id,
-                        currentBundleStatus: event.bundle.status,
-                    });
-                    if (!liveUpdateActivityState.active) {
-                        return;
-                    }
-                    setLiveUpdateActivityState({
-                        active: true,
-                        phase: 'downloading',
-                        version: event.bundle.version,
-                        progressPercent: Math.max(0, Math.min(100, Math.round(event.percent))),
-                    });
-                }),
-                CapacitorUpdater.addListener('downloadComplete', (event) => {
-                    console.info('[OTA] bundle 下载完成', event.bundle.version || event.bundle.id || 'unknown');
-                    updateOtaDebugState({
-                        stage: 'listener-download-complete',
-                        currentBundleVersion: event.bundle.version,
-                        currentBundleId: event.bundle.id,
-                        currentBundleStatus: event.bundle.status,
-                    });
-                }),
-                CapacitorUpdater.addListener('downloadFailed', (event) => {
-                    console.warn('[OTA] bundle 下载失败', event.version || 'unknown');
-                    updateOtaDebugState({
-                        stage: 'listener-download-failed',
-                        reason: event.version,
-                    });
-                }),
-                CapacitorUpdater.addListener('updateFailed', (event) => {
-                    console.warn('[OTA] bundle 更新失败', event.bundle.version || event.bundle.id || 'unknown');
-                    updateOtaDebugState({
-                        stage: 'listener-update-failed',
-                        currentBundleVersion: event.bundle.version,
-                        currentBundleId: event.bundle.id,
-                        currentBundleStatus: event.bundle.status,
-                    });
-                }),
-                CapacitorUpdater.addListener('set', (event) => {
-                    console.info('[OTA] bundle 已切换', event.bundle.version || event.bundle.id || 'unknown');
-                    updateOtaDebugState({
-                        stage: 'listener-set',
-                        currentBundleVersion: event.bundle.version,
-                        currentBundleId: event.bundle.id,
-                        currentBundleStatus: event.bundle.status,
-                    });
-                }),
-            ]);
+            let handles: PluginListenerHandle[];
+            try {
+                handles = await Promise.all([
+                    CapacitorUpdater.addListener('download', (event) => {
+                        updateOtaDebugState({
+                            stage: 'listener-download-progress',
+                            currentBundleVersion: event.bundle.version,
+                            currentBundleId: event.bundle.id,
+                            currentBundleStatus: event.bundle.status,
+                        });
+                        if (!liveUpdateActivityState.active) {
+                            return;
+                        }
+                        setLiveUpdateActivityState({
+                            active: true,
+                            phase: 'downloading',
+                            version: event.bundle.version,
+                            progressPercent: Math.max(0, Math.min(100, Math.round(event.percent))),
+                        });
+                    }),
+                    CapacitorUpdater.addListener('downloadComplete', (event) => {
+                        console.info('[OTA] bundle 下载完成', event.bundle.version || event.bundle.id || 'unknown');
+                        updateOtaDebugState({
+                            stage: 'listener-download-complete',
+                            currentBundleVersion: event.bundle.version,
+                            currentBundleId: event.bundle.id,
+                            currentBundleStatus: event.bundle.status,
+                        });
+                    }),
+                    CapacitorUpdater.addListener('downloadFailed', (event) => {
+                        console.warn('[OTA] bundle 下载失败', event.version || 'unknown');
+                        updateOtaDebugState({
+                            stage: 'listener-download-failed',
+                            reason: event.version,
+                        });
+                    }),
+                    CapacitorUpdater.addListener('updateFailed', (event) => {
+                        console.warn('[OTA] bundle 更新失败', event.bundle.version || event.bundle.id || 'unknown');
+                        updateOtaDebugState({
+                            stage: 'listener-update-failed',
+                            currentBundleVersion: event.bundle.version,
+                            currentBundleId: event.bundle.id,
+                            currentBundleStatus: event.bundle.status,
+                        });
+                    }),
+                    CapacitorUpdater.addListener('set', (event) => {
+                        console.info('[OTA] bundle 已切换', event.bundle.version || event.bundle.id || 'unknown');
+                        updateOtaDebugState({
+                            stage: 'listener-set',
+                            currentBundleVersion: event.bundle.version,
+                            currentBundleId: event.bundle.id,
+                            currentBundleStatus: event.bundle.status,
+                        });
+                    }),
+                ]);
+            } catch (error) {
+                if (!isCapacitorUpdaterPluginUnavailableError(error)) {
+                    throw error;
+                }
+                disableCapacitorUpdaterPlugin(getErrorMessage(error));
+                return null;
+            }
 
             return handles;
         })();

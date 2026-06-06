@@ -401,3 +401,4 @@ watchOut.foot:
 watchOut.moon:
   涓枃: 鏈堭煂欙細鏂藉姞鑷寸洸
   鑻辨枃: Moon馃寵: Inflict Blinded
+2026-06-06 当前有效口径：本文件是历史 BONUS_DIE_ROLLED 文案审计的原始导出结果，不是当前 DiceThrone 审计主文档，也不是当前 bonus-die 链路已全面收口的证明。阅读时只能把它当作原始扫描产物；当前结论应以对应的 `evidence/dicethrone/*.md` 审计/修复文档为准。

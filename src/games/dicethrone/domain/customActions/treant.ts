@@ -4,8 +4,7 @@ import { getPlayerAbilityEffects } from '../abilityLookup';
 import { RESOURCE_IDS } from '../resources';
 import { buildDrawEvents } from '../deckEvents';
 import {
-    getActiveDice,
-    getMaxDuplicateValueCount,
+    getAttackMaxDuplicateValueCount,
     getOpponents,
     getPendingBonusSettlementDice,
     getPlayerDieFace,
@@ -533,7 +532,7 @@ function buildShatteringFistChoices({ attackerId, state }: CustomActionContext):
 }
 
 function hasThreeMatchingDieValues(ctx: CustomActionContext): boolean {
-    return getMaxDuplicateValueCount(getActiveDice(ctx.state)) >= 3;
+    return getAttackMaxDuplicateValueCount(ctx.state) >= 3;
 }
 
 function buildNatureTouchCultivateChoices(ctx: CustomActionContext): ChoiceRequestedEvent['payload']['options'] {
@@ -919,9 +918,14 @@ function handleForestAwakensChoice(ctx: CustomActionContext): DiceThroneEvent[] 
 
 function handleTendCare2Cultivate(ctx: CustomActionContext): DiceThroneEvent[] {
     const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), 6);
-    if (outcomes.length === 0) return [];
+    if (outcomes.length === 0) {
+        return [closeoutNonAttackVariant(ctx.attackerId, ctx.timestamp)];
+    }
     if (outcomes.length === 1) {
-        return buildSpiritTransitionEvents(ctx, outcomes[0]);
+        return [
+            ...buildSpiritTransitionEvents(ctx, outcomes[0]),
+            closeoutNonAttackVariant(ctx.attackerId, ctx.timestamp + 1),
+        ];
     }
 
     return [{
@@ -2164,7 +2168,7 @@ registerChoiceEffectHandler(CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[3], resolveCardCu
 registerChoiceEffectHandler(CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[4], resolveCardCultivateChoice(4));
 registerChoiceEffectHandler(TEND_CARE_CHOICE_ID_BY_AMOUNT[3], resolveTendCareChoice(3));
 registerChoiceEffectHandler(TEND_CARE_CHOICE_ID_BY_AMOUNT[4], resolveTendCareChoice(4));
-registerChoiceEffectHandler(TEND_CARE_2_CULTIVATE_CHOICE_ID, resolveCultivateOnlyChoice(TEND_CARE_2_CULTIVATE_SOURCE_IDS, 6));
+registerChoiceEffectHandler(TEND_CARE_2_CULTIVATE_CHOICE_ID, resolveCultivateOnlyChoice(TEND_CARE_2_CULTIVATE_SOURCE_IDS, 6, { closeout: true }));
 registerChoiceEffectHandler(NATURE_TOUCH_2_MERCY_CHOICE_ID, resolveCultivateOnlyChoice(NATURE_TOUCH_2_MERCY_SOURCE_IDS, 1, { closeout: true }));
 registerChoiceEffectHandler(WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[1], resolveCultivateOnlyChoice(WILD_GROWTH_2_MAIN_SOURCE_IDS, 1));
 registerChoiceEffectHandler(WILD_GROWTH_2_CULTIVATE_CHOICE_ID_BY_AMOUNT[2], resolveCultivateOnlyChoice(WILD_GROWTH_2_MAIN_SOURCE_IDS, 2));

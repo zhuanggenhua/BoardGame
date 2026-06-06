@@ -1,5 +1,7 @@
 # Dice Throne AI pendingDamage Token 响应修复（2026-04-09）
 
+> 2026-06-06 当前有效口径：本文只记录“`pendingDamage` 仍在但 `responseWindow` 已空时，AI token 响应分支失效”这一条历史专项修复，不是当前 DiceThrone 所有 AI token 响应、所有 pendingDamage 时序问题都已全面收口的证明，也不是新英雄补审出口。阅读时只能把它当作单问题修复记录。
+
 ## 反馈
 - feedbackId: `69d3572da812935931090493`
 - 标题：`AI强制接受不了回合`
@@ -25,3 +27,7 @@
 - 上述命令通过。
 - `basic-commands-coverage.test.ts` 共 `54 passed`。
 - 已覆盖“`pendingDamage` 仍存在但 `responseWindow` 已空时，本地 AI 仍应生成 token 响应动作 / 优先 skip-token-response 而不是普通阶段动作”。
+
+---
+
+**当前阅读说明**：本文只能证明 `pendingDamage + 空 responseWindow` 这条专项时序问题曾被修复，不能外推为当前所有 token 响应、所有 AI 响应时序或 DiceThrone 当前整体审计都已收口。

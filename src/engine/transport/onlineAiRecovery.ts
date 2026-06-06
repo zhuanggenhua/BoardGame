@@ -1,5 +1,14 @@
 import type { AiResolution, AiSeatController } from '../ai';
 import type { MatchState } from '../types';
+import type { GameEngineConfig } from './server';
+import {
+    shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice,
+    isOnlineAiWatchdogPublicPregameLegalActionPhase,
+    resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType,
+    shouldSuppressOnlineAiWatchdogActiveTurnCandidate,
+} from './onlineAiWatchdogGameSemantics';
+
+export type OnlineAiRecoveryEngineConfig = Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
 
 type HiddenSimpleChoiceOption = {
     id?: unknown;
@@ -13,7 +22,7 @@ type HiddenSimpleChoiceOption = {
     };
 };
 
-type HiddenSimpleChoiceInteraction = {
+export type HiddenSimpleChoiceInteraction = {
     id?: unknown;
     playerId?: unknown;
     kind?: unknown;
@@ -28,12 +37,6 @@ type HiddenSimpleChoiceInteraction = {
         allowedDieIds?: unknown;
         completedDieIds?: unknown;
     };
-};
-
-type DefenderChoiceOption = {
-    playerId?: unknown;
-    customId?: unknown;
-    disabled?: unknown;
 };
 
 export type HiddenInteractionDescriptor = {
@@ -51,6 +54,11 @@ export type HiddenInteractionDescriptor = {
         allowedDieIds?: unknown;
         completedDieIds?: unknown;
     };
+};
+
+type ForcedInteractionRecoveryCommand = {
+    type: string;
+    payload: Record<string, unknown>;
 };
 
 export type ForceSkippableHiddenAiInteraction = {
@@ -165,6 +173,30 @@ export function resolveCurrentPlayerId(sharedState: MatchState<unknown> | null |
     return null;
 }
 
+export function resolveOnlineAiCurrentPlayerId(
+    sharedState: MatchState<unknown> | null | undefined,
+    options?: {
+        engineConfig?: OnlineAiRecoveryEngineConfig | null;
+        gameId?: string | null;
+    },
+): string | null {
+    const fallbackPlayerId = resolveCurrentPlayerId(sharedState);
+    if (!sharedState) {
+        return fallbackPlayerId;
+    }
+
+    const phase = typeof sharedState.sys?.phase === 'string' ? sharedState.sys.phase : '';
+    const configuredPlayerId = options?.engineConfig?.onlineAiRecovery?.resolveCurrentPlayerId?.({
+        state: sharedState,
+        phase,
+        fallbackPlayerId,
+    });
+
+    return typeof configuredPlayerId === 'string' && configuredPlayerId.length > 0
+        ? configuredPlayerId
+        : fallbackPlayerId;
+}
+
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -232,7 +264,13 @@ function buildPregameSelectionProgressSignature(core: unknown): string {
     ].join('#');
 }
 
-export function buildAiProgressMarker(state: MatchState<unknown>): string {
+export function buildAiProgressMarker(
+    state: MatchState<unknown>,
+    options?: {
+        engineConfig?: OnlineAiRecoveryEngineConfig | null;
+        gameId?: string | null;
+    },
+): string {
     const turnNumber = typeof state.sys?.turnNumber === 'number' ? state.sys.turnNumber : '';
     const phase = typeof state.sys?.phase === 'string' ? state.sys.phase : '';
     const eventStreamNextId = typeof state.sys?.eventStream?.nextId === 'number'
@@ -280,7 +318,7 @@ export function buildAiProgressMarker(state: MatchState<unknown>): string {
     const responderIndex = typeof currentResponseWindow?.currentResponderIndex === 'number'
         ? currentResponseWindow.currentResponderIndex
         : '';
-    const currentPlayerId = resolveCurrentPlayerId(state) ?? '';
+    const currentPlayerId = resolveOnlineAiCurrentPlayerId(state, options) ?? '';
     const pregameSelectionProgressSignature = buildPregameSelectionProgressSignature(state.core);
 
     return [
@@ -315,22 +353,6 @@ function buildInteractionOptionSemanticSignature(options: unknown): string {
             const disabledFlag = item?.disabled === true ? '1' : '0';
             const valueSignature = buildInteractionOptionValueSignature(item?.value);
             return `${optionId}:${disabledFlag}:${valueSignature}`;
-        })
-        .join(',');
-}
-
-function buildDefenderChoiceOptionSemanticSignature(options: unknown): string {
-    if (!Array.isArray(options)) {
-        return '';
-    }
-
-    return options
-        .map((option) => {
-            const item = option as DefenderChoiceOption | undefined;
-            const playerId = typeof item?.playerId === 'string' ? item.playerId : '';
-            const customId = typeof item?.customId === 'string' ? item.customId : '';
-            const disabledFlag = item?.disabled === true ? '1' : '0';
-            return `${playerId}:${customId}:${disabledFlag}`;
         })
         .join(',');
 }
@@ -402,41 +424,14 @@ export function buildMultistepChoiceMetaSemanticSignature(meta: unknown): string
     });
 }
 
-export function buildPendingDamageSemanticSignature(pendingDamage: unknown): string {
-    if (!pendingDamage || typeof pendingDamage !== 'object') {
-        return '';
-    }
-
-    const raw = pendingDamage as Record<string, unknown>;
-    return JSON.stringify({
-        id: typeof raw.id === 'string' ? raw.id : null,
-        responderId: typeof raw.responderId === 'string' ? raw.responderId : null,
-        responseType: typeof raw.responseType === 'string' ? raw.responseType : null,
-        currentDamage: typeof raw.currentDamage === 'number' ? raw.currentDamage : null,
-        sourceAbilityId: typeof raw.sourceAbilityId === 'string' ? raw.sourceAbilityId : null,
-        tokenUsageTotals: raw.tokenUsageTotals ?? null,
-    });
-}
-
-export function buildPendingBonusDiceSettlementSemanticSignature(settlement: unknown): string {
-    if (!settlement || typeof settlement !== 'object') {
-        return '';
-    }
-
-    const raw = settlement as Record<string, unknown>;
-    return JSON.stringify({
-        id: typeof raw.id === 'string' ? raw.id : null,
-        attackerId: typeof raw.attackerId === 'string' ? raw.attackerId : null,
-        displayOnly: raw.displayOnly === true ? true : null,
-        rerollCount: typeof raw.rerollCount === 'number' ? raw.rerollCount : null,
-        dice: raw.dice ?? null,
-    });
-}
-
 export function buildInteractionRecoveryFingerprintHint(
     state: MatchState<unknown>,
     interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction | null | undefined,
     fallbackPlayerId: string,
+    options?: {
+        engineConfig?: OnlineAiRecoveryEngineConfig | null;
+        gameId?: string | null;
+    },
 ): string {
     const phase = typeof state.sys?.phase === 'string' ? state.sys.phase : '';
     const playerId = typeof interaction?.playerId === 'string' ? interaction.playerId : fallbackPlayerId;
@@ -446,51 +441,36 @@ export function buildInteractionRecoveryFingerprintHint(
     const title = typeof interaction?.data?.title === 'string' ? interaction.data.title : '';
     const optionSignature = buildInteractionOptionSemanticSignature(interaction?.data?.options);
     const sliderSignature = buildInteractionSliderSemanticSignature(interaction?.data?.slider);
-    const core = state.core as {
-        pendingDamage?: unknown;
-        pendingBonusDiceSettlement?: unknown;
-    } | undefined;
 
-    if (kind === 'simple-choice') {
-        const minCount = typeof interaction?.data?.multi?.min === 'number' ? interaction.data.multi.min : '';
-        return `interaction:${playerId}:${phase}:simple-choice:${sourceId}:${title}:${minCount}:${sliderSignature}:${optionSignature}`;
-    }
+    const fallbackFingerprintHint = kind === 'simple-choice'
+        ? (() => {
+            const minCount = typeof interaction?.data?.multi?.min === 'number' ? interaction.data.multi.min : '';
+            return `interaction:${playerId}:${phase}:simple-choice:${sourceId}:${title}:${minCount}:${sliderSignature}:${optionSignature}`;
+        })()
+        : kind === 'compare-roll-choice'
+            ? (() => {
+                const confirmValueSignature = buildInteractionOptionValueSignature(interaction?.data?.confirmValue);
+                return `interaction:${playerId}:${phase}:compare-roll-choice:${sourceId}:${confirmValueSignature}:${optionSignature}:${interactionId}`;
+            })()
+            : kind === 'multistep-choice'
+                    ? (() => {
+                        const allowedDieIdsSignature = buildNumberArraySemanticSignature(interaction?.data?.allowedDieIds);
+                        const completedDieIdsSignature = buildNumberArraySemanticSignature(interaction?.data?.completedDieIds);
+                        const metaSignature = buildMultistepChoiceMetaSemanticSignature(interaction?.data?.meta);
+                        return `interaction:${playerId}:${phase}:multistep-choice:${sourceId}:${allowedDieIdsSignature}:${completedDieIdsSignature}:${metaSignature}:${interactionId}`;
+                    })()
+                    : `interaction:${playerId}:${phase}:${kind}:${interactionId}`;
 
-    if (kind === 'compare-roll-choice') {
-        const confirmValueSignature = buildInteractionOptionValueSignature(interaction?.data?.confirmValue);
-        return `interaction:${playerId}:${phase}:compare-roll-choice:${sourceId}:${confirmValueSignature}:${optionSignature}:${interactionId}`;
-    }
-
-    if (kind === 'dt:defender-choice') {
-        const data = interaction?.data as {
-            attackerId?: unknown;
-            targetRollValue?: unknown;
-            options?: unknown;
-        } | undefined;
-        const attackerId = typeof data?.attackerId === 'string' ? data.attackerId : '';
-        const targetRollValue = typeof data?.targetRollValue === 'number' ? String(data.targetRollValue) : '';
-        const defenderOptionSignature = buildDefenderChoiceOptionSemanticSignature(data?.options);
-        return `interaction:${playerId}:${phase}:dt:defender-choice:${sourceId}:${attackerId}:${targetRollValue}:${defenderOptionSignature}:${interactionId}`;
-    }
-
-    if (kind === 'multistep-choice') {
-        const allowedDieIdsSignature = buildNumberArraySemanticSignature(interaction?.data?.allowedDieIds);
-        const completedDieIdsSignature = buildNumberArraySemanticSignature(interaction?.data?.completedDieIds);
-        const metaSignature = buildMultistepChoiceMetaSemanticSignature(interaction?.data?.meta);
-        return `interaction:${playerId}:${phase}:multistep-choice:${sourceId}:${allowedDieIdsSignature}:${completedDieIdsSignature}:${metaSignature}:${interactionId}`;
-    }
-
-    if (kind === 'dt:token-response') {
-        const pendingDamageSignature = buildPendingDamageSemanticSignature(core?.pendingDamage);
-        return `interaction:${playerId}:${phase}:dt:token-response:${sourceId}:${pendingDamageSignature}:${interactionId}`;
-    }
-
-    if (kind === 'dt:bonus-dice') {
-        const settlementSignature = buildPendingBonusDiceSettlementSemanticSignature(core?.pendingBonusDiceSettlement);
-        return `interaction:${playerId}:${phase}:dt:bonus-dice:${sourceId}:${settlementSignature}:${interactionId}`;
-    }
-
-    return `interaction:${playerId}:${phase}:${kind}:${interactionId}`;
+    const configuredFingerprintHint = options?.engineConfig?.onlineAiRecovery?.buildInteractionRecoveryFingerprintHint?.({
+        state,
+        playerId,
+        phase,
+        interaction: interaction as HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction,
+        fallbackFingerprintHint,
+    });
+    return typeof configuredFingerprintHint === 'string' && configuredFingerprintHint.length > 0
+        ? configuredFingerprintHint
+        : fallbackFingerprintHint;
 }
 
 export function buildResponseWindowRecoveryFingerprintHint(
@@ -545,15 +525,19 @@ function buildForceEndTurnFromInteractionState(
     state: MatchState<unknown>,
     playerId: string,
     reason: 'hidden-interaction' | 'visible-interaction',
+    options?: {
+        engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+        gameId?: string | null;
+    },
 ): ForceEndTurnStalledAiResolution | null {
     const current = (state.sys as { interaction?: { current?: unknown } } | undefined)?.interaction?.current as HiddenSimpleChoiceInteraction | undefined;
     if (!current || String(current.playerId) !== playerId) {
         return null;
     }
 
-    const fingerprintHint = buildInteractionRecoveryFingerprintHint(state, current, playerId);
+    const fingerprintHint = buildInteractionRecoveryFingerprintHint(state, current, playerId, options);
 
-    const forceSkipPayload = buildForceSkipPayloadFromSeatState(state, playerId);
+    const forceSkipPayload = buildForceSkipPayloadFromSeatState(state, playerId, options);
     if (forceSkipPayload) {
         return {
             playerId,
@@ -567,6 +551,13 @@ function buildForceEndTurnFromInteractionState(
             }),
         };
     }
+
+    const configuredForceCommand = options?.engineConfig?.onlineAiRecovery?.resolveForcedInteractionCommand?.({
+        state,
+        playerId,
+        interaction: current,
+        reason,
+    }) as ForcedInteractionRecoveryCommand | null | undefined;
 
     const fallbackInteractionId = typeof current.id === 'string' && current.id.length > 0
         ? current.id
@@ -582,18 +573,6 @@ function buildForceEndTurnFromInteractionState(
                 typeof option?.id === 'string' && option.disabled !== true)
             .map((option) => option.id)
         : [];
-    const defenderChoiceData = current.data as {
-        options?: Array<{ playerId?: unknown; disabled?: unknown }> | unknown;
-    } | undefined;
-    const defenderChoiceEnabledPlayerIds = interactionKind === 'dt:defender-choice' && Array.isArray(defenderChoiceData?.options)
-        ? defenderChoiceData.options
-            .filter((option): option is { playerId: string; disabled?: unknown } =>
-                typeof option?.playerId === 'string' && option.disabled !== true)
-            .map((option) => option.playerId)
-        : [];
-    const defenderChoiceSinglePlayerId = defenderChoiceEnabledPlayerIds.length === 1
-        ? defenderChoiceEnabledPlayerIds[0]
-        : null;
     const compareRollSingleOptionId = compareRollEnabledOptionIds.length === 1
         ? compareRollEnabledOptionIds[0]
         : null;
@@ -601,17 +580,12 @@ function buildForceEndTurnFromInteractionState(
         && compareRollEnabledOptionIds.length === 0
         && compareRollData !== undefined
         && Object.prototype.hasOwnProperty.call(compareRollData, 'confirmValue');
-    const forceCommand = interactionKind === 'dt:token-response'
-        ? { type: 'SKIP_TOKEN_RESPONSE', payload: {} }
-        : interactionKind === 'dt:bonus-dice'
-            ? { type: 'SKIP_BONUS_DICE_REROLL', payload: {} }
-            : defenderChoiceSinglePlayerId
-                ? { type: 'SELECT_DEFENDER_TARGET', payload: { defenderId: defenderChoiceSinglePlayerId } }
-            : compareRollSingleOptionId
-                ? { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: compareRollSingleOptionId } }
-                : shouldForceCompareRollConfirm
-                    ? { type: 'SYS_INTERACTION_CONFIRM', payload: {} }
-                    : { type: 'SYS_INTERACTION_CANCEL', payload: { interactionId: fallbackInteractionId } };
+    const forceCommand = configuredForceCommand
+        ?? (compareRollSingleOptionId
+            ? { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: compareRollSingleOptionId } }
+            : shouldForceCompareRollConfirm
+                ? { type: 'SYS_INTERACTION_CONFIRM', payload: {} }
+                : { type: 'SYS_INTERACTION_CANCEL', payload: { interactionId: fallbackInteractionId } });
 
     return {
         playerId,
@@ -635,83 +609,11 @@ function buildForceEndTurnFollowUpSuffix(state: MatchState<unknown>, playerId: s
     return `follow-up:${playerId}:${turnNumber}:${phase}:${eventStreamNextId}`;
 }
 
-function resolveWatchdogAdvancePhaseCommandType(gameId?: string | null): string | null {
-    if (gameId === 'summonerwars') {
-        return 'sw:end_phase';
-    }
-    if (gameId === 'splendor') {
-        return null;
-    }
-    return 'ADVANCE_PHASE';
-}
-
-function shouldSuppressSummonerWarsPregameWaitingState(args: {
-    sharedState: MatchState<unknown> | null | undefined;
-    currentPlayerId: string;
-    phase: string;
-    gameId?: string | null;
-}): boolean {
-    if (args.gameId !== 'summonerwars') {
-        return false;
-    }
-
-    if (args.phase !== 'summon' && args.phase !== 'factionSelect') {
-        return false;
-    }
-
-    const core = args.sharedState?.core as {
-        hostStarted?: unknown;
-        hostPlayerId?: unknown;
-        turnOrder?: unknown;
-        selectedFactions?: unknown;
-        readyPlayers?: unknown;
-    } | undefined;
-    if (core?.hostStarted !== false) {
-        return false;
-    }
-
-    const selectedFactions = isPlainRecord(core.selectedFactions) ? core.selectedFactions : {};
-    const readyPlayers = isPlainRecord(core.readyPlayers) ? core.readyPlayers : {};
-    const currentFaction = selectedFactions[args.currentPlayerId];
-    const hasSelectedFaction = typeof currentFaction === 'string'
-        && currentFaction.length > 0
-        && currentFaction !== 'unselected';
-    if (!hasSelectedFaction) {
-        return false;
-    }
-
-    const hostPlayerId = typeof core.hostPlayerId === 'string' ? core.hostPlayerId : null;
-    if (!hostPlayerId) {
-        return false;
-    }
-
-    if (args.currentPlayerId !== hostPlayerId) {
-        return readyPlayers[args.currentPlayerId] === true;
-    }
-
-    const allPlayerIds = Array.isArray(core.turnOrder)
-        ? core.turnOrder.filter((playerId): playerId is string => typeof playerId === 'string')
-        : Object.keys(selectedFactions);
-    const otherPlayerIds = allPlayerIds.filter((playerId) => playerId !== hostPlayerId);
-    if (otherPlayerIds.length === 0) {
-        return false;
-    }
-
-    const allOthersReady = otherPlayerIds.every((playerId) => {
-        const faction = selectedFactions[playerId];
-        return typeof faction === 'string'
-            && faction.length > 0
-            && faction !== 'unselected'
-            && readyPlayers[playerId] === true;
-    });
-
-    return !allOthersReady;
-}
-
 export function resolveForceAdvancePhaseAfterRecovery(args: {
     authoritativeState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     playerId: string;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
     gameId?: string | null;
 }): AiResolution | null {
     const { authoritativeState, seatControllers, playerId } = args;
@@ -721,7 +623,10 @@ export function resolveForceAdvancePhaseAfterRecovery(args: {
     if (seatControllers[playerId]?.type === 'human') {
         return null;
     }
-    if (resolveCurrentPlayerId(authoritativeState) !== playerId) {
+    if (resolveOnlineAiCurrentPlayerId(authoritativeState, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    }) !== playerId) {
         return null;
     }
 
@@ -740,7 +645,10 @@ export function resolveForceAdvancePhaseAfterRecovery(args: {
         return null;
     }
 
-    const advancePhaseCommandType = resolveWatchdogAdvancePhaseCommandType(args.gameId);
+    const advancePhaseCommandType = resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
     if (!advancePhaseCommandType) {
         return null;
     }
@@ -756,6 +664,7 @@ export function resolveForceEndTurnFollowUpAfterConfirmation(args: {
     candidate: ForceEndTurnStalledAiResolution;
     authoritativeState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
     gameId?: string | null;
 }): AiResolution | null {
     const { candidate, authoritativeState, seatControllers } = args;
@@ -767,6 +676,7 @@ export function resolveForceEndTurnFollowUpAfterConfirmation(args: {
         authoritativeState,
         seatControllers,
         playerId: candidate.playerId,
+        engineConfig: args.engineConfig,
         gameId: args.gameId,
     });
 }
@@ -797,7 +707,11 @@ function hasEnabledNonControlOptions(data: { options?: HiddenSimpleChoiceOption[
 function buildForceSkipPayloadFromSeatState(
     state: MatchState<unknown>,
     playerId: string,
-    options?: { allowWhenHasNonControl?: boolean },
+    options?: {
+        allowWhenHasNonControl?: boolean;
+        engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+        gameId?: string | null;
+    },
 ): {
     interactionId: string;
     payload: { interactionId: string; optionId?: string; optionIds?: string[] };
@@ -834,6 +748,26 @@ function buildForceSkipPayloadFromSeatState(
         return {
             interactionId: current.id,
             payload: { interactionId: current.id, optionId: skipOption.id },
+            sourceId,
+            title,
+        };
+    }
+
+    const enabledTriggerOptions = enabledOptions.filter((option) =>
+        !isControlChoiceOption(option) && option.value?.kind === 'trigger',
+    );
+    if (shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice({
+        sourceId,
+        engineConfig: options?.engineConfig,
+        gameId: options?.gameId,
+    })
+        && minCount === 1
+        && maxCount === 1
+        && enabledTriggerOptions.length > 0
+        && enabledTriggerOptions.length === enabledOptions.length) {
+        return {
+            interactionId: current.id,
+            payload: { interactionId: current.id, optionId: enabledTriggerOptions[0].id },
             sourceId,
             title,
         };
@@ -877,22 +811,6 @@ function buildForceSkipPayloadFromSeatState(
         };
     }
 
-    const enabledTriggerOptions = enabledOptions.filter((option) =>
-        !isControlChoiceOption(option) && option.value?.kind === 'trigger',
-    );
-    if (sourceId === 'smashup_reaction_choose'
-        && minCount === 1
-        && maxCount === 1
-        && enabledTriggerOptions.length > 0
-        && enabledTriggerOptions.length === enabledOptions.length) {
-        return {
-            interactionId: current.id,
-            payload: { interactionId: current.id, optionId: enabledTriggerOptions[0].id },
-            sourceId,
-            title,
-        };
-    }
-
     return null;
 }
 
@@ -928,6 +846,8 @@ export function resolveForceSkippableHiddenAiInteraction(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     seatStates: Record<string, MatchState<unknown> | null | undefined>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    gameId?: string | null;
 }): ForceSkippableHiddenAiInteraction | null {
     if (!shouldInspectSeatStatesForHiddenAiInteraction(args.sharedState)) {
         return null;
@@ -943,6 +863,8 @@ export function resolveForceSkippableHiddenAiInteraction(args: {
         }
         const forceSkipPayload = buildForceSkipPayloadFromSeatState(seatState, playerId, {
             allowWhenHasNonControl: false,
+            engineConfig: args.engineConfig,
+            gameId: args.gameId,
         });
         if (!forceSkipPayload) {
             continue;
@@ -973,60 +895,37 @@ export function resolveForceSkippableHiddenAiInteraction(args: {
     return null;
 }
 
-function resolveOrphanDisplayOnlyBonusDiceSettlement(args: {
+function resolveConfiguredSeatLegalOnlyRecovery(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
 }): ForceEndTurnStalledAiResolution | null {
     const phase = typeof args.sharedState?.sys?.phase === 'string'
         ? args.sharedState.sys.phase
         : '';
-    if (phase === 'offensiveRoll' || phase === 'targetingRoll' || phase === 'defensiveRoll') {
+    if (!args.sharedState) {
+        return null;
+    }
+    const configuredRecovery = args.engineConfig?.onlineAiRecovery?.resolveSeatLegalOnlyRecovery?.({
+        state: args.sharedState,
+        phase,
+    });
+    if (!configuredRecovery) {
         return null;
     }
 
-    const currentInteraction = args.sharedState?.sys?.interaction as { current?: unknown; isBlocked?: unknown } | undefined;
-    if (currentInteraction?.current || currentInteraction?.isBlocked === true) {
+    if (args.seatControllers[configuredRecovery.playerId]?.type === 'human') {
         return null;
     }
-
-    const responseWindow = args.sharedState?.sys?.responseWindow as { current?: unknown } | undefined;
-    if (responseWindow?.current) {
-        return null;
-    }
-
-    const core = args.sharedState?.core as {
-        pendingAttack?: unknown;
-        pendingBonusDiceSettlement?: {
-            id?: unknown;
-            attackerId?: unknown;
-            displayOnly?: unknown;
-        };
-    } | undefined;
-    if (core?.pendingAttack) {
-        return null;
-    }
-
-    const settlement = core?.pendingBonusDiceSettlement;
-    if (settlement?.displayOnly !== true || typeof settlement.attackerId !== 'string') {
-        return null;
-    }
-
-    if (args.seatControllers[settlement.attackerId]?.type === 'human') {
-        return null;
-    }
-
-    const settlementId = typeof settlement.id === 'string' && settlement.id.length > 0
-        ? settlement.id
-        : 'unknown-display-only-settlement';
 
     return {
-        playerId: settlement.attackerId,
+        playerId: configuredRecovery.playerId,
         reason: 'seat-legal-only',
-        fingerprintHint: `display-only-bonus:${settlement.attackerId}:${phase || 'unknown-phase'}:${settlementId}`,
+        fingerprintHint: configuredRecovery.fingerprintHint,
         resolution: buildForceEndTurnResolution({
-            playerId: settlement.attackerId,
-            suffix: `display-only-bonus:${settlement.attackerId}:${settlementId}`,
-            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+            playerId: configuredRecovery.playerId,
+            suffix: configuredRecovery.attemptSuffix ?? configuredRecovery.fingerprintHint,
+            commands: [configuredRecovery.command],
         }),
     };
 }
@@ -1035,6 +934,7 @@ export function resolveForceEndTurnForStalledAi(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     seatStates: Record<string, MatchState<unknown> | null | undefined>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
     gameId?: string | null;
 }): ForceEndTurnStalledAiResolution | null {
     if (args.sharedState?.sys?.gameover) {
@@ -1051,6 +951,10 @@ export function resolveForceEndTurnForStalledAi(args: {
             args.sharedState as MatchState<unknown>,
             interactionPlayerId,
             'visible-interaction',
+            {
+                engineConfig: args.engineConfig,
+                gameId: args.gameId,
+            },
         );
     }
 
@@ -1059,7 +963,10 @@ export function resolveForceEndTurnForStalledAi(args: {
             if (controller.type === 'human') continue;
             const seatState = args.seatStates[playerId];
             if (!seatState) continue;
-            const hiddenResolution = buildForceEndTurnFromInteractionState(seatState, playerId, 'hidden-interaction');
+            const hiddenResolution = buildForceEndTurnFromInteractionState(seatState, playerId, 'hidden-interaction', {
+                engineConfig: args.engineConfig,
+                gameId: args.gameId,
+            });
             if (hiddenResolution) {
                 return hiddenResolution;
             }
@@ -1103,69 +1010,35 @@ export function resolveForceEndTurnForStalledAi(args: {
         return null;
     }
 
-    const orphanDisplayOnlyBonusSettlement = resolveOrphanDisplayOnlyBonusDiceSettlement(args);
-    if (orphanDisplayOnlyBonusSettlement) {
-        return orphanDisplayOnlyBonusSettlement;
+    const configuredSeatLegalOnlyRecovery = resolveConfiguredSeatLegalOnlyRecovery(args);
+    if (configuredSeatLegalOnlyRecovery) {
+        return configuredSeatLegalOnlyRecovery;
     }
 
     const phase = typeof args.sharedState?.sys?.phase === 'string'
         ? args.sharedState.sys.phase
         : '';
-    const currentPlayerId = resolveCurrentPlayerId(args.sharedState);
+    const currentPlayerId = resolveOnlineAiCurrentPlayerId(args.sharedState, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
     const core = args.sharedState?.core as { hostStarted?: unknown } | undefined;
     const turnNumber = typeof args.sharedState?.sys?.turnNumber === 'number'
         ? args.sharedState.sys.turnNumber
         : null;
-    const isFactionSelectPhase = phase === 'factionSelect';
-    const isPublicPregameLegalActionPhase = core?.hostStarted === false && (
-        isFactionSelectPhase
-        || (args.gameId === 'summonerwars' && phase === 'summon')
-    );
-    const isSplendorPregameResidualState = args.gameId === 'splendor'
-        && core?.hostStarted !== true
-        && (!phase || turnNumber === 0);
-    const defensivePendingAttack = (args.sharedState?.core as {
-        pendingAttack?: { defenderId?: unknown };
-    } | undefined)?.pendingAttack;
-
-    // DiceThrone defensiveRoll 的真实操作者是防御方 defender（off-turn）。
-    // 当 activePlayer 是 AI 攻击方、但 defender 是 human 时，watchdog 不应误对 AI 攻击方执行 force-end-turn。
-    if (
-        phase === 'defensiveRoll'
-        && currentPlayerId
-        && defensivePendingAttack
-        && typeof defensivePendingAttack.defenderId === 'string'
-        && defensivePendingAttack.defenderId !== currentPlayerId
-        && args.seatControllers[currentPlayerId]?.type !== 'human'
-    ) {
-        const defenderId = defensivePendingAttack.defenderId;
-        if (args.seatControllers[defenderId]?.type === 'human') {
-            return null;
-        }
-        return {
-            playerId: defenderId,
-            reason: 'active-turn-legal-only',
-            legalActionOnly: true,
-            fingerprintHint: `active-turn-legal-only:${defenderId}:defensiveRoll`,
-            resolution: buildForceEndTurnResolution({
-                playerId: defenderId,
-                suffix: `active-turn-legal-only:${defenderId}:defensiveRoll`,
-                commands: [],
-            }),
-        };
-    }
-
+    const isPublicPregameLegalActionPhase = isOnlineAiWatchdogPublicPregameLegalActionPhase({
+        state: args.sharedState as MatchState<unknown>,
+        phase,
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    });
     if (currentPlayerId && args.seatControllers[currentPlayerId]?.type !== 'human') {
-        // Splendor 线上残态曾出现 turn=0 + phase='' + currentPlayerId 已写入，
-        // 但 hostStarted 丢失/未对齐的开局前快照。这里不能把它误当成 active AI 卡死，
-        // 否则只会写出 legal_action_unavailable 噪音反馈。
-        if (isSplendorPregameResidualState) {
-            return null;
-        }
-        if (shouldSuppressSummonerWarsPregameWaitingState({
-            sharedState: args.sharedState,
-            currentPlayerId,
+        if (shouldSuppressOnlineAiWatchdogActiveTurnCandidate({
+            state: args.sharedState as MatchState<unknown>,
             phase,
+            currentPlayerId,
+            turnNumber,
+            engineConfig: args.engineConfig,
             gameId: args.gameId,
         })) {
             return null;
@@ -1174,10 +1047,10 @@ export function resolveForceEndTurnForStalledAi(args: {
             return null;
         }
 
-        const isDiceRollPhase = phase === 'offensiveRoll'
-            || phase === 'targetingRoll'
-            || phase === 'defensiveRoll';
-        const advancePhaseCommandType = resolveWatchdogAdvancePhaseCommandType(args.gameId);
+        const advancePhaseCommandType = resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
+            engineConfig: args.engineConfig,
+            gameId: args.gameId,
+        });
 
         // 公开预开局选择阶段的 AI 没动作，通常是 seat 凭据/seat state 还没准备好。
         // 这里若强行发 ADVANCE_PHASE，会把 match 非法推进到 startTurn/playCards，
@@ -1185,11 +1058,9 @@ export function resolveForceEndTurnForStalledAi(args: {
         // 因此只能走“服务端代 AI 执行合法选阵营动作”这类 legal-action recovery，
         // 绝不能 watchdog 自动 ADVANCE_PHASE 跳过。
         //
-        // DiceThrone 的 roll 阶段也不能直接 fallback 到裸 ADVANCE_PHASE：
-        // offensiveRoll / targetingRoll / defensiveRoll 的真实推进依赖掷骰、确认、
-        // 选目标或防御响应。若 seat overlay stale 或 legalActions 暂时为 0，
-        // 强发 ADVANCE_PHASE 只会打出 command_failed，并制造高频误导性自动反馈。
-        if (isFactionSelectPhase || isPublicPregameLegalActionPhase || isDiceRollPhase || !advancePhaseCommandType) {
+        // 对于显式禁用 fallback advance 的游戏，active-turn recovery 只能走 legal-action，
+        // 因为该游戏的阶段推进依赖真实合法动作，而不是裸 ADVANCE_PHASE。
+        if (isPublicPregameLegalActionPhase || !advancePhaseCommandType) {
             return {
                 playerId: currentPlayerId,
                 reason: 'active-turn-legal-only',
@@ -1220,6 +1091,8 @@ export function resolveManualForceEndAiPhase(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     seatStates: Record<string, MatchState<unknown> | null | undefined>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    gameId?: string | null;
 }): ForceEndTurnStalledAiResolution | null {
     if (args.sharedState?.sys?.gameover) {
         return null;
@@ -1253,6 +1126,10 @@ export function resolveManualForceEndAiPhase(args: {
             args.sharedState,
             visibleCurrent,
             interactionPlayerId,
+            {
+                engineConfig: args.engineConfig,
+                gameId: args.gameId,
+            },
         )}`;
         return {
             playerId: interactionPlayerId,
@@ -1285,6 +1162,10 @@ export function resolveManualForceEndAiPhase(args: {
             seatState ?? args.sharedState,
             seatCurrent,
             playerId,
+            {
+                engineConfig: args.engineConfig,
+                gameId: args.gameId,
+            },
         )}`;
         return {
             playerId,
@@ -1345,6 +1226,7 @@ export function resolveForceEndTurnRecoveryStep(args: {
     seatControllers: Record<string, AiSeatController>;
     playerId: string;
     allowAdvancePhase?: boolean;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
     gameId?: string | null;
 }): AiResolution | null {
     const { authoritativeState, seatControllers, playerId, allowAdvancePhase = false } = args;
@@ -1354,7 +1236,10 @@ export function resolveForceEndTurnRecoveryStep(args: {
     if (seatControllers[playerId]?.type === 'human') {
         return null;
     }
-    if (resolveCurrentPlayerId(authoritativeState) !== playerId) {
+    if (resolveOnlineAiCurrentPlayerId(authoritativeState, {
+        engineConfig: args.engineConfig,
+        gameId: args.gameId,
+    }) !== playerId) {
         return null;
     }
 
@@ -1379,6 +1264,7 @@ export function resolveForceEndTurnRecoveryStep(args: {
         authoritativeState,
         seatControllers,
         playerId,
+        engineConfig: args.engineConfig,
         gameId: args.gameId,
     });
 }

@@ -490,8 +490,34 @@ export const waitForCharacterSelectionInRoom = async (
             payload: entry?.payload ?? null,
         }));
     }).catch(() => []);
+    const localStorageSnapshot = await page.evaluate((matchId) => {
+        const entries: Record<string, string | null> = {};
+        for (let index = 0; index < localStorage.length; index += 1) {
+            const key = localStorage.key(index);
+            if (!key) continue;
+            entries[key] = localStorage.getItem(key);
+        }
+        return {
+            matchCredentials: localStorage.getItem(`match_creds_${matchId}`),
+            entries,
+        };
+    }, options.matchId).catch(() => null);
+    const liveMatchRoomDebug = await page.evaluate(() => {
+        const holder = window as Window & {
+            __BG_MATCHROOM_DEBUG__?: {
+                getLiveSnapshot?: () => unknown;
+            };
+        };
+        return holder.__BG_MATCHROOM_DEBUG__?.getLiveSnapshot?.() ?? null;
+    }).catch(() => null);
     const matchLoadTraceText = recentMatchLoadTrace.length > 0
         ? JSON.stringify(recentMatchLoadTrace, null, 2)
+        : '无';
+    const localStorageText = localStorageSnapshot
+        ? JSON.stringify(localStorageSnapshot, null, 2)
+        : '无';
+    const liveMatchRoomDebugText = liveMatchRoomDebug
+        ? JSON.stringify(liveMatchRoomDebug, null, 2)
         : '无';
 
     throw new Error([
@@ -505,6 +531,8 @@ export const waitForCharacterSelectionInRoom = async (
             ? `最近页面错误:\n${recentDiagnostics.join('\n')}`
             : '最近页面错误: 无',
         `最近 MatchLoadTrace:\n${matchLoadTraceText}`,
+        `当前 localStorage:\n${localStorageText}`,
+        `当前 MatchRoomLiveDebug:\n${liveMatchRoomDebugText}`,
     ].join('\n'));
 };
 
@@ -538,23 +566,46 @@ export const selectCharacter = async (page: Page, characterId: string) => {
 };
 
 export const readyAndStartGame = async (hostPage: Page, guestPage: Page) => {
+    const clickRoleButtonWithRetry = async (
+        page: Page,
+        name: RegExp,
+        options: { visibleTimeoutMs: number; enabledTimeoutMs?: number; attempts?: number },
+    ) => {
+        const attempts = options.attempts ?? 3;
+        for (let attempt = 1; attempt <= attempts; attempt += 1) {
+            const button = page.getByRole('button', { name }).first();
+            await expect(button).toBeVisible({ timeout: options.visibleTimeoutMs });
+            if (options.enabledTimeoutMs) {
+                await expect(button).toBeEnabled({ timeout: options.enabledTimeoutMs });
+            }
+
+            try {
+                await button.click();
+                return;
+            } catch (error) {
+                if (attempt === attempts) throw error;
+                await page.waitForTimeout(300);
+            }
+        }
+    };
+
     // Guest 点击准备按钮
-    const guestReadyButton = guestPage.getByRole('button', { name: /Ready|准备/i });
-    await expect(guestReadyButton).toBeVisible({ timeout: 5000 });
-    await guestReadyButton.click();
+    await clickRoleButtonWithRetry(guestPage, /Ready|准备/i, {
+        visibleTimeoutMs: 8000,
+        enabledTimeoutMs: 5000,
+        attempts: 4,
+    });
     
     // 等待 Guest 页面状态更新（显示 "Ready, Waiting..." 或类似文本）
     await guestPage.waitForTimeout(500);
     
     // 等待 Host 页面接收到 Guest 的 Ready 状态并显示开始按钮
     // Host 点击开始游戏按钮 - 使用更宽松的选择器
-    const hostStartButton = hostPage.getByRole('button', { name: /Start Game|开始游戏|Press.*Start|按.*开始/i });
-    
-    // 等待按钮出现并启用（给足够时间让 WebSocket 同步状态）
-    await expect(hostStartButton).toBeVisible({ timeout: 10000 });
-    await expect(hostStartButton).toBeEnabled({ timeout: 5000 });
-    
-    await hostStartButton.click();
+    await clickRoleButtonWithRetry(hostPage, /Start Game|开始游戏|Press.*Start|按.*开始/i, {
+        visibleTimeoutMs: 15000,
+        enabledTimeoutMs: 8000,
+        attempts: 4,
+    });
     await hostPage.waitForTimeout(500);
 };
 
@@ -570,7 +621,7 @@ export const readyMultiplePlayersAndStartGame = async (
     }
 
     const hostStartButton = hostPage.getByRole('button', { name: /Start Game|开始游戏|Press.*Start|按.*开始/i });
-    await expect(hostStartButton).toBeVisible({ timeout: 10000 });
+    await expect(hostStartButton).toBeVisible({ timeout: 15000 });
     await expect(hostStartButton).toBeEnabled({ timeout: 5000 });
     await hostStartButton.click();
     await hostPage.waitForTimeout(500);
@@ -633,7 +684,10 @@ export const setupDTOnlineMatch = async (
     const matchId = await createDTRoomViaAPI(hostPage, hostGuestId);
     if (!matchId) return null;
 
-    const hostCredentials = await joinDTMatchViaAPI(hostPage, matchId, '0', `Host-${Date.now()}`, hostGuestId);
+    const hostCredentials = await claimDTSeatViaAPI(hostPage, matchId, '0', {
+        guestId: hostGuestId,
+        playerName: `Host-${Date.now()}`,
+    });
     if (!hostCredentials) return null;
 
     await seedDTMatchCredentials(hostContext, matchId, '0', hostCredentials);

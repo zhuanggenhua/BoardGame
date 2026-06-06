@@ -1,5 +1,8 @@
 # DiceThrone Treant / Ninja 头像图集修正证据
 
+> 2026-06-05 当前有效口径：本文只保留 Treant / Ninja 头像图集分流合同的专项修正证据，不代表 Treant 整英雄、Ninja 整英雄或 Treant/Ninja 整批当前完成态。当前若要判断对象级残余、兄弟能力补审范围或整批发布口径，应以两位英雄的主审计文档、升级重审文档与新英雄总汇总文档为准。
+> 2026-06-05 补充阅读门禁：本文里凡提到“实施中斜横幅”的截图观察，都只是在说明当时拍图时的选角 UI 伴随状态；它们不能再被读成“树精 / 忍者当前仍挂 implementation_in_progress”。
+
 ## 范围
 
 - 对象：Treant / 树精、Ninja / 忍者
@@ -27,10 +30,12 @@
   - 老角色列表仍保持旧共享图集灰度头像；未出现新图集尺寸套用到老角色导致的错裁。
 
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\character-selection.e2e\树精和忍者应该能够选角并进入游戏\treant-implementation-card.png`
-  - Treant 选角卡显示树精头像，实施中斜横幅仍覆盖在卡片上。
+  - Treant 选角卡显示树精头像。
+  - 若同图里还能看到实施中斜横幅，那只是 2026-05-16 当时截图的伴随历史状态，不代表 2026-06-05 当前主线。
 
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\character-selection.e2e\树精和忍者应该能够选角并进入游戏\ninja-implementation-card.png`
-  - Ninja 选角卡显示忍者头像，实施中斜横幅仍覆盖在卡片上。
+  - Ninja 选角卡显示忍者头像。
+  - 若同图里还能看到实施中斜横幅，那只是 2026-05-16 当时截图的伴随历史状态，不代表 2026-06-05 当前主线。
 
 ## 验证
 
@@ -72,7 +77,8 @@
 - 2026-05-16 截图观察：
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\character-selection.e2e\树精和忍者应该能够选角并进入游戏\treant-ninja-selection.png`
     - PC 选角左侧老角色显示为旧图集灰度头像，僧侣、狂战士、烈火术士、暗影刺客、月精灵、圣骑士、枪手、武士不再按新图集错裁。
-    - Treant / Ninja 仍显示新图集头像，并保留实施中斜横幅。
+    - Treant / Ninja 仍显示新图集头像。
+    - 若同图里看到实施中斜横幅，那只是 2026-05-16 当时拍图时的历史 UI 状态，不代表当前主线仍保留该横幅。
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\character-selection.e2e\树精和忍者应该能够选角并进入游戏\treant-ninja-selection-mobile-landscape.png`
     - 移动横屏下左侧老角色头像与 PC 同源，未出现新图集尺寸套用到老角色的错裁。
     - Treant / Ninja 底部卡片仍分别显示树精与忍者头像。

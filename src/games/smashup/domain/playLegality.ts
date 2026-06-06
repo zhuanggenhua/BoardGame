@@ -260,6 +260,13 @@ export function validateActionPlaySemantics(
             if (!targetMinion) {
                 return { valid: false, error: '基地上没有该随从' };
             }
+            const controllerConstraint = actionLikePlayTargetMinionController(def);
+            if (controllerConstraint === 'self' && targetMinion.controller !== playerId) {
+                return { valid: false, error: '该行动卡需要选择你的随从' };
+            }
+            if (controllerConstraint === 'opponent' && targetMinion.controller === playerId) {
+                return { valid: false, error: '该行动卡需要选择其他玩家的随从' };
+            }
         } else if (params.targetMinionUid !== undefined) {
             return { valid: false, error: '该持续行动卡不需要选择随从目标' };
         }
@@ -289,6 +296,98 @@ export function validateActionPlaySemantics(
     }
 
     return { valid: true };
+}
+
+export type ActionPlayTargetMode = 'none' | 'base' | 'minion';
+
+export interface LegalActionPlayTargets {
+    mode: ActionPlayTargetMode;
+    baseIndices: number[];
+    minionUids: string[];
+    firstError: string | null;
+}
+
+export function getActionPlayTargetMode(def: ActionCardDef | FusionCardDef): ActionPlayTargetMode {
+    const subtype = (def as any).type === 'fusion'
+        ? (def as FusionCardDef).actionSubtype
+        : (def as ActionCardDef).subtype;
+
+    if (subtype === 'ongoing') {
+        const ongoingTarget = (def as any).type === 'fusion'
+            ? ((def as FusionCardDef).actionOngoingTarget ?? 'base')
+            : ((def as ActionCardDef).ongoingTarget ?? 'base');
+        return ongoingTarget === 'minion' ? 'minion' : 'base';
+    }
+
+    if (actionLikeNeedsPlayMinion(def)) return 'minion';
+    if (actionLikeNeedsPlayBase(def)) return 'base';
+    return 'none';
+}
+
+export function collectLegalActionPlayTargets(
+    core: SmashUpCore,
+    playerId: string,
+    params: {
+        defId: string;
+        effectiveHandSize?: number;
+    },
+): LegalActionPlayTargets {
+    const def = getCardDef(params.defId) as ActionCardDef | FusionCardDef | undefined;
+    if (!def) {
+        return { mode: 'none', baseIndices: [], minionUids: [], firstError: '卡牌定义不存在' };
+    }
+
+    const mode = getActionPlayTargetMode(def);
+    const baseIndices: number[] = [];
+    const minionUids: string[] = [];
+    let firstError: string | null = null;
+
+    if (mode === 'none') {
+        const validation = validateActionPlaySemantics(core, playerId, params);
+        return {
+            mode,
+            baseIndices,
+            minionUids,
+            firstError: validation.valid ? null : validation.error ?? null,
+        };
+    }
+
+    if (mode === 'base') {
+        for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex += 1) {
+            const validation = validateActionPlaySemantics(core, playerId, {
+                ...params,
+                targetBaseIndex: baseIndex,
+            });
+            if (validation.valid) {
+                baseIndices.push(baseIndex);
+            } else if (!firstError && validation.error) {
+                firstError = validation.error;
+            }
+        }
+        return { mode, baseIndices, minionUids, firstError };
+    }
+
+    for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex += 1) {
+        let hasLegalMinionOnBase = false;
+        for (const minion of core.bases[baseIndex].minions) {
+            const validation = validateActionPlaySemantics(core, playerId, {
+                ...params,
+                targetBaseIndex: baseIndex,
+                targetMinionUid: minion.uid,
+            });
+            if (validation.valid) {
+                hasLegalMinionOnBase = true;
+                minionUids.push(minion.uid);
+            } else if (!firstError && validation.error) {
+                firstError = validation.error;
+            }
+        }
+        if (hasLegalMinionOnBase) {
+            baseIndices.push(baseIndex);
+        }
+    }
+
+    return { mode, baseIndices, minionUids, firstError };
 }
 
 export function checkPlayConstraint(

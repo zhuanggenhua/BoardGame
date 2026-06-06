@@ -14,23 +14,24 @@
 - `src/games/dicethrone/heroes/treant/cards.ts`
 - `src/games/dicethrone/heroes/treant/abilities.ts`
 
-## 2026-05-30 当前结论
+## 2026-06-05 当前结论
 
-- 树精升级卡的**图槽、卡牌对象、`replaceAbility(targetAbilityId=基础技能ID)` 这一层大体是对的**。
-- 真正错的是：多张升级卡替换进去的升级技能定义只录了主路线，没有按卡图保留下挂分支。
-- `upgrade-wild-growth-2` 更严重：不仅缺下挂分支，连主路线 trigger / 结算模型都疑似对错对象了。
+- 树精升级卡的**图槽、卡牌对象、`replaceAbility(targetAbilityId=基础技能ID)` 这一层仍然是对的**。
+- 截至 2026-06-04，`细心呵护 II / 培育`、`自然之触 II / 自然之怜`、`复仇枝蔓 II / 苦痛根系`、`野蛮生长 II / 乱花迷眼` 都已经补齐同卡双分支与对象级 direct closeout `L3`。
+- 截至 2026-06-05，`扎根 II`、`破碎之拳 II`、`破碎之拳 III` 也已经补到技能本体对象级 `L3`；其中 `扎根 II` 的防御收口态和 `破碎之拳 III` 的攻击快照条件判定，已继续补到关键 `L4` 子句。
+- 当前主问题不再是“升级卡接上了错误技能定义”，而是旧卡牌核对文档若不回写，会继续把后续审计误导成“这些升级技能还没实现”。
 
 ## 升级卡矩阵
 
 | slot | cardId | 中文 | `targetAbilityId` | 当前 `newAbilityDef` 状态 | 结论 |
 |---:|---|---|---|---|---|
-| 18 | `upgrade-tend-care-2` | 细心呵护 II | `tend-care` | `TEND_CARE_2` 只有主路线，缺 `培育` | **错录** |
-| 19 | `upgrade-rooted-2` | 扎根 II | `rooted` | `ROOTED_2` 当前主路线与卡图基本一致 | **当前主路线对齐** |
-| 21 | `upgrade-shattering-fist-3` | 破碎之拳 III | `shattering-fist` | `SHATTERING_FIST_3` 当前主路线与卡图基本一致 | **当前主路线对齐** |
-| 25 | `upgrade-nature-touch-2` | 自然之触 II | `nature-touch` | `NATURE_TOUCH_2` 只有主路线，缺 `自然之怜` | **错录** |
-| 28 | `upgrade-vengeful-vines-2` | 复仇枝蔓 II | `vengeful-vines` | `VENGEFUL_VINES_2` 只有主路线，缺 `苦痛根系` | **错录** |
-| 29 | `upgrade-wild-growth-2` | 野性怒吼 II | `wild-growth` | `WILD_GROWTH_2` 仍是旧 `2 树枝 + 3 树叶` 合同，主路线和分支都不对 | **严重错录** |
-| 30 | `upgrade-shattering-fist-2` | 破碎之拳 II | `shattering-fist` | `SHATTERING_FIST_2` 当前主路线与卡图基本一致 | **当前主路线对齐** |
+| 18 | `upgrade-tend-care-2` | 细心呵护 II | `tend-care` | `TEND_CARE_2` 当前已按主路线 + `培育` 双分支落地；对象级 direct closeout L3 已补齐，关键 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
+| 19 | `upgrade-rooted-2` | 扎根 II | `rooted` | `ROOTED_2` 当前主路线与卡图一致；技能本体对象级真实防御入口 `L3` 已补齐，关键防御收口态 `L4` 也已锁定 | **升级卡接线正确；目标升级技能当前已对齐，剩批次级治理与旧文档统一收口** |
+| 21 | `upgrade-shattering-fist-3` | 破碎之拳 III | `shattering-fist` | `SHATTERING_FIST_3` 当前主路线与卡图一致；技能本体对象级 `L3` 已补齐，关键“攻击快照 vs 当前活跃骰” `L4` 也已锁定 | **升级卡接线正确；目标升级技能当前已对齐，剩批次级治理与旧文档统一收口** |
+| 25 | `upgrade-nature-touch-2` | 自然之触 II | `nature-touch` | `NATURE_TOUCH_2` 当前已按主路线 + `自然之怜` 双分支落地；对象级 direct closeout L3 已补齐，关键 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
+| 28 | `upgrade-vengeful-vines-2` | 复仇枝蔓 II | `vengeful-vines` | `VENGEFUL_VINES_2` 当前已按主路线 + `苦痛根系` 双分支落地；对象级 direct closeout L3 已补齐，关键 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
+| 29 | `upgrade-wild-growth-2` | 野蛮生长 II | `wild-growth` | `WILD_GROWTH_2` 当前已按主路线 + `乱花迷眼` 双分支落地；对象级 direct closeout L3 已补齐，关键 displayOnly 收口 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
+| 30 | `upgrade-shattering-fist-2` | 破碎之拳 II | `shattering-fist` | `SHATTERING_FIST_2` 当前主路线与卡图一致；技能本体对象级 direct closeout `L3` 已补齐 | **升级卡接线正确；目标升级技能当前已对齐，剩批次级治理与旧文档统一收口** |
 
 ## 结构裁定
 

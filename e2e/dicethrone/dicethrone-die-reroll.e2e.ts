@@ -596,4 +596,5 @@ test.describe('DiceThrone - 选择骰子重投', () => {
 
         await game.screenshot('gunslinger-high-noon-bullseye-settled', testInfo);
     });
+
 });

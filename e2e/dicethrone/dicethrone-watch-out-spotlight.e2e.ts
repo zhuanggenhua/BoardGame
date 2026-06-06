@@ -11,6 +11,7 @@ import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../f
 import { initHeroState } from '../../src/games/dicethrone/domain/characters';
 import { BARBARIAN_CARDS } from '../../src/games/dicethrone/heroes/barbarian/cards';
 import { GUNSLINGER_CARDS } from '../../src/games/dicethrone/heroes/gunslinger/cards';
+import { NINJA_CARDS } from '../../src/games/dicethrone/heroes/ninja/cards';
 import { SAMURAI_CARDS } from '../../src/games/dicethrone/heroes/samurai/cards';
 import {
     advanceToOffensiveRoll,
@@ -3529,6 +3530,191 @@ test('samurai retribution token should retaliate through real click flow', async
     expect(finalState.lastEventTypes).toContain('DAMAGE_DEALT');
     await expect(useButton).toBeHidden({ timeout: 5000 });
     await game.screenshot('21-samurai-retribution-after-retaliation', testInfo);
+});
+
+test('online ninja knife fan should not open samurai retribution response window on direct damage', async ({ browser }, testInfo) => {
+    test.setTimeout(DICETHRONE_ONLINE_TEST_TIMEOUT_MS);
+    await clearEvidenceScreenshotsForTest(testInfo);
+
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const setup = await setupDTOnlineMatch(browser, baseURL);
+    if (!setup) {
+        test.skip(true, 'online setup unavailable in current environment');
+        return;
+    }
+
+    const { hostPage, guestPage, hostContext, guestContext } = setup;
+
+    try {
+        await selectCharacter(hostPage, 'samurai');
+        await selectCharacter(guestPage, 'ninja');
+        await readyAndStartGame(hostPage, guestPage);
+        await waitForGameBoard(hostPage);
+        await waitForGameBoard(guestPage);
+        await waitForTestHarness(hostPage, 10000);
+        await waitForTestHarness(guestPage, 10000);
+        await ensureDebugPanelClosed(hostPage);
+        await ensureDebugPanelClosed(guestPage);
+
+        const matchState = await readMatchStateFromDebugPanel(hostPage);
+        const injectedState = cloneJson(matchState);
+        const knifeFanCard = NINJA_CARDS.find((card) => card.id === 'ninja-card-knife-fan');
+        if (!knifeFanCard) {
+            throw new Error('ninja-card-knife-fan not found');
+        }
+
+        injectedState.sys = {
+            ...(injectedState.sys ?? {}),
+            phase: 'main1',
+            interaction: {
+                current: undefined,
+                queue: [],
+            },
+            responseWindow: {
+                current: undefined,
+            },
+        };
+        injectedState.core = {
+            ...(injectedState.core ?? {}),
+            activePlayerId: '1',
+            hostStarted: true,
+            selectedCharacters: {
+                ...(injectedState.core?.selectedCharacters ?? {}),
+                '0': 'samurai',
+                '1': 'ninja',
+            },
+            readyPlayers: {
+                ...(injectedState.core?.readyPlayers ?? {}),
+                '0': true,
+                '1': true,
+            },
+            rollCount: 0,
+            rollConfirmed: false,
+            players: {
+                ...(injectedState.core?.players ?? {}),
+                '0': {
+                    ...(injectedState.core?.players?.['0'] ?? {}),
+                    characterId: 'samurai',
+                    hand: [],
+                    discard: [],
+                    resources: {
+                        ...(injectedState.core?.players?.['0']?.resources ?? {}),
+                        CP: 2,
+                        HP: 50,
+                    },
+                    tokens: {
+                        ...(injectedState.core?.players?.['0']?.tokens ?? {}),
+                        samurai_retribution: 1,
+                    },
+                },
+                '1': {
+                    ...(injectedState.core?.players?.['1'] ?? {}),
+                    characterId: 'ninja',
+                    hand: [cloneJson(knifeFanCard)],
+                    discard: [],
+                    resources: {
+                        ...(injectedState.core?.players?.['1']?.resources ?? {}),
+                        CP: 3,
+                        HP: 50,
+                    },
+                },
+            },
+            pendingAttack: null,
+            pendingDamage: undefined,
+            pendingBonusDiceSettlement: undefined,
+        };
+
+        await applyFullStateDirect(hostPage, injectedState);
+        await ensureDebugPanelClosed(hostPage);
+        await ensureDebugPanelClosed(guestPage);
+
+        await guestPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return state?.sys?.phase === 'main1'
+                && state?.core?.activePlayerId === '1'
+                && state?.core?.selectedCharacters?.['0'] === 'samurai'
+                && state?.core?.selectedCharacters?.['1'] === 'ninja'
+                && state?.core?.players?.['0']?.tokens?.samurai_retribution === 1
+                && state?.core?.players?.['1']?.hand?.[0]?.id === 'ninja-card-knife-fan';
+        }, { timeout: 15000, polling: 200 });
+
+        await waitForHandCardVisualReady(guestPage, 'ninja-card-knife-fan');
+        await savePageEvidenceScreenshot(
+            guestPage,
+            testInfo,
+            'online-ninja-knife-fan-before-play',
+            '32-online-ninja-knife-fan-before-play.png',
+        );
+
+        await dragHandCardToPlay(guestPage, 'ninja-card-knife-fan');
+        await closeCardSpotlightByRealClickIfVisible(guestPage);
+
+        await hostPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const latestDamageEvent = [...entries]
+                .reverse()
+                .find((entry: any) => entry?.event?.type === 'DAMAGE_DEALT');
+            return state?.core?.players?.['0']?.resources?.hp === 49
+                && state?.core?.players?.['0']?.tokens?.samurai_retribution === 1
+                && !state?.core?.pendingDamage
+                && !state?.sys?.responseWindow?.current
+                && !state?.sys?.interaction?.current
+                && latestDamageEvent?.event?.payload?.damageScope === 'direct';
+        }, { timeout: 10000, polling: 200 });
+
+        const hostFinalState = await hostPage.evaluate(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const latestDamageEvent = [...entries]
+                .reverse()
+                .find((entry: any) => entry?.event?.type === 'DAMAGE_DEALT');
+            return {
+                samuraiHp: state?.core?.players?.['0']?.resources?.hp ?? null,
+                retribution: state?.core?.players?.['0']?.tokens?.samurai_retribution ?? 0,
+                pendingDamage: state?.core?.pendingDamage ?? null,
+                responseWindowType: state?.sys?.responseWindow?.current?.windowType ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                lastDamageScope: latestDamageEvent?.event?.payload?.damageScope ?? null,
+                lastDamageTargetId: latestDamageEvent?.event?.payload?.targetId ?? null,
+                lastEventTypes: entries.slice(-8).map((entry: any) => entry?.event?.type ?? null),
+            };
+        });
+        const guestFinalState = await guestPage.evaluate(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return {
+                ninjaCp: state?.core?.players?.['1']?.resources?.cp ?? state?.core?.players?.['1']?.resources?.CP ?? null,
+                handIds: (state?.core?.players?.['1']?.hand ?? []).map((card: any) => card.id),
+                discardIds: (state?.core?.players?.['1']?.discard ?? []).map((card: any) => card.id),
+            };
+        });
+
+        expect(hostFinalState.samuraiHp).toBe(49);
+        expect(hostFinalState.retribution).toBe(1);
+        expect(hostFinalState.pendingDamage).toBeNull();
+        expect(hostFinalState.responseWindowType).toBeNull();
+        expect(hostFinalState.interactionKind).toBeNull();
+        expect(hostFinalState.lastDamageScope).toBe('direct');
+        expect(hostFinalState.lastDamageTargetId).toBe('0');
+        expect(hostFinalState.lastEventTypes).toContain('CARD_PLAYED');
+        expect(hostFinalState.lastEventTypes).toContain('DAMAGE_DEALT');
+
+        expect(guestFinalState.ninjaCp).toBe(0);
+        expect(guestFinalState.handIds).not.toContain('ninja-card-knife-fan');
+        expect(guestFinalState.discardIds).toContain('ninja-card-knife-fan');
+
+        await hostPage.waitForTimeout(1000);
+        await expect(hostPage.getByTestId('token-response-modal')).toBeHidden({ timeout: 5000 });
+        await savePageEvidenceScreenshot(
+            hostPage,
+            testInfo,
+            'online-samurai-no-back-strike-on-direct-damage',
+            '33-online-samurai-no-back-strike-on-direct-damage.png',
+        );
+    } finally {
+        await guestContext.close();
+        await hostContext.close();
+    }
 });
 
 test('me too copy mode should allow locked source and target dice', async ({ page, game }, testInfo) => {

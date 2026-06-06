@@ -1,5 +1,7 @@
 # POD 提交重新审计进度跟踪
 
+> 状态提示（2026-06-05）：已归档的历史阶段进度快照。当前 POD 重审最终口径以 `evidence/pod-reaudit-conclusion.md`、`evidence/POD-REAUDIT-COMPLETE-FINAL.md` 等完成文档为准；本文件不能再作为当前待办入口。
+
 **审计时间**: 2026-03-04  
 **审计目标**: 对比 POD 提交（6ea1f9f）的修改与当前 HEAD 的实际状态  
 **审计方法**: 逐个检查 POD 无关文件的每个修改，确认是否已恢复

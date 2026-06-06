@@ -1,5 +1,7 @@
 # Dice Throne 线上反馈修复：watchdog 误把 human 响应窗口当成 AI 卡死
 
+> 2026-06-06 当前有效口径：本文只对应反馈 `69f4806c156a1838e4c26dd7` 这条 transport/watchdog 专项修复，不是当前所有 online AI 卡死问题都已总收口的证明，也不是新英雄补审出口。阅读时必须把它当作单条线上反馈 closeout 证据；当前在线 AI 其他残余要看更晚的 watchdog/audit 文档与现行测试。
+
 ## 反馈映射
 
 - 反馈 ID：`69f4806c156a1838e4c26dd7`
@@ -47,3 +49,7 @@
 - 其余未关闭单里：
   - `69f40b9e9efe1f53e1e9c700` 更像 `afterCardPlayed + AI responder/pendingInteractionId` 的另一条响应链问题，不是本次同根现场。
   - `69edd4f3aaf1b13c50d21cf3` 目前更像 action log 观感问题，不像真实“AI 连续两个回合”。
+
+---
+
+**当前阅读说明**：本文只能说明这条“human 响应窗口被误判成 AI 卡死”的专项问题曾被修复，不能外推为 DiceThrone online AI/watchdog 全链路已经无残余。

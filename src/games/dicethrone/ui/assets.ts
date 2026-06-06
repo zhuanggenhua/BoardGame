@@ -1,7 +1,13 @@
 import type { CSSProperties } from 'react';
 import type { HeroState } from '../types';
 import type { TranslateFn } from './utils';
-import { buildLocalizedImageSet, getAssetsBaseUrl, getLocalizedImageUrls } from '../../../core';
+import {
+    buildLocalizedImageSet,
+    buildSpriteBackgroundImage as buildGenericSpriteBackgroundImage,
+    isDirectSpriteAsset,
+    resolveSpriteAssetUrl as resolveGenericSpriteAssetUrl,
+    resolveSpriteAssetUrls as resolveGenericSpriteAssetUrls,
+} from '../../../core';
 import { createScopedLogger } from '../../../lib/logger';
 import { getDiceDefinition, getDieFaceByValue } from '../domain/diceRegistry';
 
@@ -54,7 +60,6 @@ export const ASSETS = {
     NEW_AVATAR: 'dicethrone/images/Common/characterhead2',
 };
 
-const DIRECT_SPRITE_ASSET_RE = /^(?:https?:|data:|blob:|\/game-data\/)/i;
 const GAME_DATA_DICE_SPRITE_RE = /^\/game-data\/dicethrone\/([^/]+)\/dice-sprite\.png$/i;
 const LOGICAL_DICE_SPRITE_RE =
     /^(?:\/assets\/|https?:\/\/[^/]+\/official\/)?(?:i18n\/[^/]+\/)?dicethrone\/images\/([^/]+)\/(?:compressed\/)?(dice(?:-sprite)?)(?:\.(?:png|webp|avif))?$/i;
@@ -115,65 +120,17 @@ const getSpriteAssetPathCandidates = (assetPath?: string | null) => {
     ]);
 };
 
-const getLogicalSpriteUrlCandidates = (assetPath: string, locale?: string) => {
-    const localized = getLocalizedImageUrls(assetPath, locale);
-    const urls = dedupeStringList([
-        localized.primary.webp,
-        localized.fallback.webp,
-    ]);
-    // DiceThrone 骰图优先走语言化压缩资源；
-    // 但如果定义里给的是 /game-data 直链，resolveSpriteAssetUrls 仍会把原始 PNG 保留为最后回退，
-    // 避免某些角色的压缩资源链路缺失时整块骰面空白。
-    // 这里依然不追加未语言化的本地 /assets 回退，避免 dev server 把 SPA HTML 误探测成图片。
-    const base = getAssetsBaseUrl().replace(/\/+$/, '');
-    const toR2AbsoluteUrl = (url: string) => {
-        if (url.startsWith('/assets/')) {
-            if (base.startsWith('http://') || base.startsWith('https://')) {
-                return `${base}/${url.replace(/^\/+assets\/+/, '')}`;
-            }
-            return url;
-        }
-        if (url.startsWith('/')) {
-            if (base.startsWith('http://') || base.startsWith('https://')) {
-                return `${base}/${url.replace(/^\/+/, '')}`;
-            }
-            return url;
-        }
-        return url;
-    };
-
-    const candidates = dedupeStringList(urls.map(toR2AbsoluteUrl));
-    diceAssetsLogger.debug('logical-url-candidates', {
-        assetPath,
-        locale: locale ?? null,
-        base,
-        candidates,
-    });
-    return candidates;
-};
-
-export const isDirectSpriteAsset = (assetPath?: string | null) => (
-    Boolean(assetPath && DIRECT_SPRITE_ASSET_RE.test(assetPath.trim()))
-);
-
 export const resolveSpriteAssetUrls = (assetPath?: string | null, locale?: string) => {
     const paths = getSpriteAssetPathCandidates(assetPath);
-    const urls: string[] = [];
-    for (const path of paths) {
-        if (isDirectSpriteAsset(path)) {
-            diceAssetsLogger.debug('resolve-direct-url', {
-                locale: locale ?? null,
-                path,
-            });
-            urls.push(path);
-            continue;
-        }
-        diceAssetsLogger.debug('resolve-logical-path', {
+    const urls = paths.flatMap((path) => {
+        const resolved = resolveGenericSpriteAssetUrls(path, locale);
+        diceAssetsLogger.debug(isDirectSpriteAsset(path) ? 'resolve-direct-url' : 'resolve-logical-path', {
             locale: locale ?? null,
             path,
+            resolved,
         });
-        urls.push(...getLogicalSpriteUrlCandidates(path, locale));
-    }
+        return resolved;
+    });
     const deduped = dedupeStringList(urls);
     diceAssetsLogger.debug('resolve-final-urls', {
         input: assetPath ?? null,
@@ -185,12 +142,11 @@ export const resolveSpriteAssetUrls = (assetPath?: string | null, locale?: strin
 
 export const resolveSpriteAssetUrl = (assetPath?: string | null, locale?: string) => {
     const urls = resolveSpriteAssetUrls(assetPath, locale);
-    return urls[0];
+    return urls[0] ?? resolveGenericSpriteAssetUrl(normalizeDiceSpriteAssetPath(assetPath), locale);
 };
 
 export const buildSpriteBackgroundImage = (assetPath?: string | null, locale?: string) => {
-    const spriteUrl = resolveSpriteAssetUrl(assetPath, locale);
-    return spriteUrl ? `url("${spriteUrl}")` : '';
+    return buildGenericSpriteBackgroundImage(resolveSpriteAssetUrl(assetPath, locale));
 };
 
 export const getDiceSpriteAssetPath = (definitionId?: string, characterId: string = 'monk') => {

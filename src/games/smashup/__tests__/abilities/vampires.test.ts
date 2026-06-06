@@ -4,7 +4,7 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry, resolveOnPlay } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers, isOperationRestricted } from '../../domain/ongoingEffects';
 import {
     makeMinion,
     makeCard,
@@ -166,6 +166,50 @@ describe('Vampires abilities', () => {
                 && (event as any).payload.reason === 'vampire_opportunist',
         );
         expect(opportunistEvt).toBeUndefined();
+    });
+
+    it('同一宿主上两张 vampire_opportunist 在对手随从被消灭后，应逐实例各给宿主放 1 个指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'vampire_big_gulp', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('m0', 'test_host', '0', 5, {
+                        attachedActions: [
+                            { uid: 'oa1', defId: 'vampire_opportunist', ownerId: '0' },
+                            { uid: 'oa2', defId: 'vampire_opportunist', ownerId: '0' },
+                        ],
+                    }),
+                    makeMinion('e1', 'enemy_low', '1', 2, { powerModifier: 0 }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'vampire_big_gulp');
+        const enemyOption = getPromptOption(prompt, option => option.value?.minionUid === 'e1', 'enemy target');
+        const resolved = respondToPrompt(played.finalState, enemyOption.id);
+
+        const opportunistEvents = resolved.events.filter(
+            event => event.type === SU_EVENTS.POWER_COUNTER_ADDED
+                && (event as any).payload.reason === 'vampire_opportunist',
+        );
+        expect(opportunistEvents).toHaveLength(2);
+        expect(opportunistEvents.every(event => (event as any).payload.minionUid === 'm0')).toBe(true);
+        expect(
+            resolved.finalState.core.bases[0]?.minions.find(minion => minion.uid === 'm0')?.powerCounters,
+        ).toBe(2);
     });
 
     it('vampire_the_count 己方随从被消灭时不应触发', () => {
@@ -901,6 +945,69 @@ describe('vampires_pod: Buffet POD', () => {
 });
 
 describe('vampires_pod: The Count POD', () => {
+    it('borrowed Stakeout POD talent 应按控制者建立封锁，并只豁免控制者', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            basePowerDecreasedPlayersThisTurn: { 0: ['1'] },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('stake-borrowed', 'vampire_stakeout_pod', '0', 4, { owner: '1' }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const useTalent = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'stake-borrowed', baseIndex: 0 } } as any,
+            defaultTestRandom,
+        );
+
+        expect(useTalent.success).toBe(true);
+        const blockEvent = useTalent.events.find(event => event.type === SU_EVENTS.STAKEOUT_POD_BLOCK_ADDED) as any;
+        expect(blockEvent).toBeDefined();
+        expect(blockEvent.payload.ownerId).toBe('0');
+
+        const state = useTalent.finalState.core;
+        expect(isOperationRestricted(state, 0, '0', 'play_minion', { basePower: 3 })).toBe(false);
+        expect(isOperationRestricted(state, 0, '1', 'play_minion', { basePower: 3 })).toBe(true);
+    });
+
+    it('同一基地两条不同 owner 的 Stakeout POD block 并存时，不应因第一条自豁免 block 漏掉后面另一条真实限制', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 5,
+            stakeoutPodBlocks: [
+                { baseIndex: 0, ownerId: '1', expiresOnTurnNumber: 7, reason: 'test-self-exempt-first' },
+                { baseIndex: 0, ownerId: '0', expiresOnTurnNumber: 7, reason: 'test-real-block-second' },
+            ],
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('stake-p0', 'vampire_stakeout_pod', '0', 4),
+                    makeMinion('stake-p1', 'vampire_stakeout_pod', '1', 4),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        expect(isOperationRestricted(core, 0, '1', 'play_minion', { basePower: 3 })).toBe(true);
+        expect(isOperationRestricted(core, 0, '0', 'play_minion', { basePower: 3 })).toBe(true);
+        expect(isOperationRestricted(core, 0, '1', 'play_minion', { basePower: 2 })).toBe(false);
+    });
+
     it('ongoing 应在任意基地触发（不是仅同基地）', () => {
         const core = makeState({
             players: {

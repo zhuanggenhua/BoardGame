@@ -216,6 +216,68 @@ describe('killer_plant_entangled 移动保护与回合开始自毁', () => {
         expect(isMinionProtected(state, enemyMinion, 0, '1', 'move')).toBe(true);
     });
 
+    it('同一基地上若同时有两张不同控制者的 Entangled，不应因第一张同名来源而放行对手移动', () => {
+        const controllerMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const state = makeState({
+            bases: [
+                makeBase({
+                    minions: [controllerMinion, enemyMinion],
+                    ongoingActions: [
+                        { uid: 'ent-owner', defId: 'killer_plant_entangled', ownerId: '1' } as any,
+                        {
+                            uid: 'ent-borrowed',
+                            defId: 'killer_plant_entangled',
+                            ownerId: '1',
+                            metadata: { sourceControllerId: '0' },
+                        } as any,
+                    ],
+                }),
+            ],
+        });
+
+        expect(isMinionProtected(state, controllerMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, enemyMinion, 0, '1', 'move')).toBe(true);
+    });
+
+    it('borrowed Entangled 不应把控制者自己的 borrowed 效果误判成“其他玩家的卡牌影响”而被 In Plain Sight 抵消', () => {
+        const controllerWeakMinion = makeMinion('weak-0', 'test_minion', '0', 2, {
+            owner: '0',
+            powerModifier: 0,
+            tempPowerModifier: 0,
+        });
+        const enemyMinion = makeMinion('enemy-1', 'test_minion', '1', 3, {
+            owner: '1',
+            powerModifier: 0,
+            tempPowerModifier: 0,
+        });
+        const state = makeState({
+            bases: [
+                makeBase({
+                    minions: [controllerWeakMinion, enemyMinion],
+                    ongoingActions: [
+                        {
+                            uid: 'ips-borrowed',
+                            defId: 'innsmouth_in_plain_sight',
+                            ownerId: '1',
+                            metadata: { sourcePlayerId: '0', sourceControllerId: '0' },
+                        } as any,
+                        {
+                            uid: 'ent-borrowed',
+                            defId: 'killer_plant_entangled',
+                            ownerId: '1',
+                            metadata: { sourceControllerId: '0' },
+                        } as any,
+                    ],
+                }),
+            ],
+        });
+
+        expect(isMinionProtected(state, controllerWeakMinion, 0, '1', 'affect')).toBe(true);
+        expect(isMinionProtected(state, controllerWeakMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, enemyMinion, 0, '1', 'move')).toBe(true);
+    });
+
     it('控制者回合开始时会自毁', () => {
         const state = makeState({
             bases: [
@@ -1044,6 +1106,32 @@ describe('killer_plant_deep_roots 移动保护', () => {
 
         expect(isMinionProtected(state, myMinion, 0, '0', 'move')).toBe(false);
     });
+
+    it('同一基地上若同时有两张不同控制者的 deep_roots，不应因第一张同名来源而放行对手移动', () => {
+        const controllerMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const enemyMinion = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const state = makeState({
+            bases: [
+                makeBase({
+                    minions: [controllerMinion, enemyMinion],
+                    ongoingActions: [
+                        { uid: 'dr-owner', defId: 'killer_plant_deep_roots', ownerId: '1' } as any,
+                        {
+                            uid: 'dr-borrowed',
+                            defId: 'killer_plant_deep_roots',
+                            ownerId: '1',
+                            metadata: { sourceControllerId: '0' },
+                        } as any,
+                    ],
+                }),
+            ],
+        });
+
+        expect(isMinionProtected(state, controllerMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, enemyMinion, 0, '1', 'move')).toBe(false);
+        expect(isMinionProtected(state, enemyMinion, 0, '0', 'move')).toBe(true);
+        expect(isMinionProtected(state, controllerMinion, 0, '0', 'move')).toBe(false);
+    });
 });
 
 describe('killer_plant_choking_vines 回合开始触发', () => {
@@ -1469,6 +1557,21 @@ describe('killer_plants POD 数据与特殊回归', () => {
 
         expect(result.success).toBe(true);
         expect(result.events.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(1);
-        expect(result.events.filter(event => event.type === SU_EVENTS.BASE_CLEARED)).toHaveLength(1);
+        expect(result.events.filter(event => event.type === SU_EVENTS.BASE_CLEARED)).toHaveLength(0);
+
+        const delayUntil = (result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        expect(result.finalState.sys.phase).toBe('scoreBases');
+
+        const finalized = runCommand(result.finalState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '0',
+            payload: undefined,
+            timestamp: delayUntil,
+        });
+
+        expect(finalized.success).toBe(true);
+        expect(finalized.events.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(0);
+        expect(finalized.events.filter(event => event.type === SU_EVENTS.BASE_CLEARED)).toHaveLength(1);
     });
 });

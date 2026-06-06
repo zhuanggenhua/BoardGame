@@ -57,12 +57,166 @@ describe('bear_cavalry_general_ivan 保护', () => {
         expect(isMinionProtected(state, ally, 0, '1', 'destroy')).toBe(true);
     });
 
+    it('同一基地上若同时有两张不同控制者的 General Ivan，不应因第一张同名来源而丢失另一方的 destroy 保护', () => {
+        const ivanP0 = makeMinion('ivan-p0', 'bear_cavalry_general_ivan', '0', 6, { powerModifier: 0 });
+        const ivanP1 = makeMinion('ivan-p1', 'bear_cavalry_general_ivan', '1', 6, { powerModifier: 0 });
+        const allyP1 = makeMinion('ally-p1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const state = makeState({ bases: [makeBase({ minions: [ivanP0, ivanP1, allyP1] })] });
+
+        expect(isMinionProtected(state, allyP1, 0, '0', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, allyP1, 0, '1', 'destroy')).toBe(true);
+    });
+
     it('POD 版伊万将军也会保护己方其他随从', () => {
         const ivan = makeMinion('ivan-pod', 'bear_cavalry_general_ivan_pod', '0', 6, { powerModifier: 0 });
         const ally = makeMinion('ally', 'test_minion', '0', 3, { powerModifier: 0 });
         const state = makeState({ bases: [makeBase({ minions: [ivan, ally] })] });
 
         expect(isMinionProtected(state, ally, 0, '1', 'destroy')).toBe(true);
+    });
+
+    it('同一基地上若同时有两张不同控制者的 General Ivan POD，不应因第一张同名来源而丢失另一方的 destroy 保护', () => {
+        const ivanPodP0 = makeMinion('ivan-pod-p0', 'bear_cavalry_general_ivan_pod', '0', 6, { powerModifier: 0 });
+        const ivanPodP1 = makeMinion('ivan-pod-p1', 'bear_cavalry_general_ivan_pod', '1', 6, { powerModifier: 0 });
+        const allyP1 = makeMinion('ally-p1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const state = makeState({ bases: [makeBase({ minions: [ivanPodP0, ivanPodP1, allyP1] })] });
+
+        expect(isMinionProtected(state, allyP1, 0, '0', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, allyP1, 0, '1', 'destroy')).toBe(true);
+    });
+
+    it('同一基地第一张 General Ivan POD 不符合条件时，不应吞掉后面另一控制者的真实 prompt', () => {
+        const ivanPodP0 = makeMinion('ivan-pod-p0', 'bear_cavalry_general_ivan_pod', '0', 6, { powerModifier: 0 });
+        const ivanPodP1 = makeMinion('ivan-pod-p1', 'bear_cavalry_general_ivan_pod', '1', 6, { powerModifier: 0 });
+        const movedP0 = makeMinion('moved-p0', 'test_minion', '0', 3, { powerModifier: 0 });
+        const allyP1 = makeMinion('ally-p1', 'test_minion', '1', 4, { powerModifier: 0 });
+        const enemyElsewhere = makeMinion('enemy-elsewhere', 'test_minion', '1', 2, { powerModifier: 0 });
+        const state = makeMatchState(makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [enemyElsewhere],
+                }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [ivanPodP0, ivanPodP1, movedP0, allyP1],
+                }),
+            ],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+        }));
+
+        const movedEvent = {
+            type: SU_EVENTS.MINION_MOVED,
+            payload: {
+                minionUid: 'moved-p0',
+                minionDefId: 'test_minion',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                ownerId: '0',
+                controllerId: '0',
+                reason: 'test_move',
+            },
+            timestamp: 12,
+        } as any;
+
+        const result = fireTriggers(state.core, 'onMinionMoved', {
+            state: state.core,
+            matchState: state,
+            playerId: '0',
+            baseIndex: 1,
+            moveFromBaseIndex: 0,
+            moveToBaseIndex: 1,
+            triggerMinionUid: 'moved-p0',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 12,
+        });
+        const promptedState = result.matchState ?? state;
+        const prompt = getSimpleChoicePrompt(promptedState, 'bear_cavalry_general_ivan_pod_trigger');
+
+        expect(prompt.playerId).toBe('1');
+
+        const resolved = respondToPrompt(
+            promptedState,
+            getPromptOption(prompt, option => option?.value?.action === 'yes', 'general ivan pod yes option').id,
+            '1',
+            dummyRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.specialLimitUsed?.bear_cavalry_general_ivan_pod_1?.length).toBe(1);
+        const tempPowerTargets = resolved.events
+            .filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)
+            .map(event => (event as any).payload?.minionUid);
+        expect(tempPowerTargets).toEqual(expect.arrayContaining(['ally-p1', 'ivan-pod-p1']));
+        expect(tempPowerTargets).not.toContain('moved-p0');
+        expect(tempPowerTargets).not.toContain('ivan-pod-p0');
+    });
+
+    it('bear_cavalry_general_ivan_pod 在真实 prompt 响应 yes 后应保留每回合限一次记录，并阻止同回合第二次触发', () => {
+        const ivanPod = makeMinion('ivan-pod-0', 'bear_cavalry_general_ivan_pod', '0', 6, { powerModifier: 0 });
+        const ally = makeMinion('ally-0', 'test_minion', '0', 4, { powerModifier: 0 });
+        const firstEnemy = makeMinion('enemy-1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const secondEnemy = makeMinion('enemy-2', 'test_minion', '1', 2, { powerModifier: 0 });
+        const state = makeMatchState(makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [],
+                }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [ivanPod, ally, firstEnemy, secondEnemy],
+                }),
+            ],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+        }));
+
+        const firstTrigger = fireTriggers(state.core, 'onMinionMoved', {
+            state: state.core,
+            matchState: state,
+            playerId: '1',
+            baseIndex: 1,
+            moveFromBaseIndex: 0,
+            moveToBaseIndex: 1,
+            triggerMinionUid: 'enemy-1',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 20,
+        });
+        const firstPromptState = firstTrigger.matchState ?? state;
+        const firstPrompt = getSimpleChoicePrompt(firstPromptState, 'bear_cavalry_general_ivan_pod_trigger');
+
+        const resolved = respondToPrompt(
+            firstPromptState,
+            getPromptOption(firstPrompt, option => option?.value?.action === 'yes', 'general ivan pod yes option').id,
+            '0',
+            dummyRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.specialLimitUsed?.bear_cavalry_general_ivan_pod_0).toEqual([0]);
+
+        const secondTrigger = fireTriggers(resolved.finalState.core, 'onMinionMoved', {
+            state: resolved.finalState.core,
+            matchState: resolved.finalState,
+            playerId: '1',
+            baseIndex: 1,
+            moveFromBaseIndex: 0,
+            moveToBaseIndex: 1,
+            triggerMinionUid: 'enemy-2',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 21,
+        });
+
+        expectNoPrompt(secondTrigger.matchState ?? resolved.finalState);
     });
 
     it('伊万将军自身也受保护（符合 FAQ）', () => {
@@ -133,6 +287,17 @@ describe('bear_cavalry_polar_commando 保护', () => {
         const state = makeState({ bases: [makeBase({ minions: [commando] })] });
 
         expect(isMinionProtected(state, commando, 0, '1', 'destroy')).toBe(true);
+    });
+
+    it('borrowed bear_cavalry_polar_commando 应按控制者而不是真实 owner 在唯一己方时保护自己', () => {
+        const borrowedCommando = makeMinion('pc-borrowed', 'bear_cavalry_polar_commando', '0', 4, {
+            owner: '1',
+            powerModifier: 0,
+        });
+        const ownerSideMinion = makeMinion('owner-side', 'test_minion', '1', 2, { powerModifier: 0 });
+        const state = makeState({ bases: [makeBase({ minions: [borrowedCommando, ownerSideMinion] })] });
+
+        expect(isMinionProtected(state, borrowedCommando, 0, '1', 'destroy')).toBe(true);
     });
 
     it('POD 版唯一己方随从时也不可消灭', () => {
@@ -236,7 +401,12 @@ describe('bear_cavalry_cub_scout 触发', () => {
             now: 0,
         });
 
-        expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        const destroyEvent = events.find(event => event.type === SU_EVENTS.MINION_DESTROYED) as any;
+
+        expect(destroyEvent).toBeTruthy();
+        expect(destroyEvent.payload.minionUid).toBe('moved');
+        expect(destroyEvent.payload.destroyerId).toBe('0');
+        expect(destroyEvent.payload.ownerId).toBe('1');
     });
 
     it('POD 版斥候也会消灭移入的低力量对手随从', () => {
@@ -336,6 +506,44 @@ describe('bear_cavalry_high_ground 触发', () => {
         });
 
         expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+    });
+
+    it('borrowed bear_cavalry_high_ground 应按控制者而不是真实 owner 消灭移入的对手随从', () => {
+        const myMinion = makeMinion('borrowed-controller-minion', 'test_minion', '0', 3, { powerModifier: 0 });
+        const moved = makeMinion('borrowed-target', 'test_minion', '1', 5, { powerModifier: 0 });
+        const state = makeState({
+            bases: [
+                makeBase({
+                    minions: [myMinion],
+                    ongoingActions: [{
+                        uid: 'borrowed-hg-1',
+                        defId: 'bear_cavalry_high_ground',
+                        ownerId: '1',
+                        metadata: {
+                            sourcePlayerId: '0',
+                            sourceControllerId: '0',
+                        },
+                    } as any],
+                }),
+                makeBase({ minions: [moved] }),
+            ],
+        });
+
+        const { events } = fireTriggers(state, 'onMinionMoved', {
+            state,
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'borrowed-target',
+            triggerMinionDefId: 'test_minion',
+            random: dummyRandom,
+            now: 0,
+        });
+
+        const destroyEvent = events.find(event => event.type === SU_EVENTS.MINION_DESTROYED) as any;
+        expect(destroyEvent).toBeTruthy();
+        expect(destroyEvent.payload.minionUid).toBe('borrowed-target');
+        expect(destroyEvent.payload.destroyerId).toBe('0');
+        expect(destroyEvent.payload.ownerId).toBe('1');
     });
 
     it('POD 版高地也会消灭移入的对手随从', () => {
@@ -475,6 +683,78 @@ describe('bear_cavalry_major_ursa 移动触发', () => {
 
         expect(queuedCore.triggerQueue?.filter(trigger => trigger.sourceDefId === 'bear_cavalry_major_ursa') ?? []).toHaveLength(0);
     });
+
+    it('同基地有两只大熊座时，若被选中的那只在第二步前离场，则不应继续移动目标随从', () => {
+        const promptCore = makeState({
+            bases: [
+                makeBase({ defId: 'base_a', minions: [] }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [makeMinion('enemy-minion', 'ghosts_spectre', '1', 3, { powerModifier: 0 })],
+                }),
+                makeBase({ defId: 'base_c', minions: [] }),
+            ],
+            titans: [
+                {
+                    uid: 'ursa-a',
+                    defId: 'bear_cavalry_major_ursa',
+                    faction: 'bear_cavalry',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: true,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+                } as any,
+                {
+                    uid: 'ursa-b',
+                    defId: 'bear_cavalry_major_ursa',
+                    faction: 'bear_cavalry',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 1,
+                    talentUsed: true,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 2 },
+                } as any,
+            ],
+        });
+
+        const staleCore = makeState({
+            ...promptCore,
+            titans: [
+                {
+                    uid: 'ursa-a',
+                    defId: 'bear_cavalry_major_ursa',
+                    faction: 'bear_cavalry',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: true,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+                } as any,
+            ],
+        });
+
+        const resolved = invokeRegisteredInteractionHandlerContract(
+            'titan_bear_cavalry_major_ursa_choose_base',
+            makeMatchState(staleCore),
+            '0',
+            { baseIndex: 2, baseDefId: 'base_c' },
+            {
+                continuationContext: {
+                    titanUid: 'ursa-b',
+                    minionUid: 'enemy-minion',
+                    minionDefId: 'ghosts_spectre',
+                    fromBaseIndex: 1,
+                },
+            },
+            12,
+            dummyRandom,
+        );
+
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        expect(resolved.state.core.bases[1].minions.some(minion => minion.uid === 'enemy-minion')).toBe(true);
+        expect(resolved.state.core.bases[2].minions.some(minion => minion.uid === 'enemy-minion')).toBe(false);
+    });
 });
 
 describe('bear_cavalry_bearing_down_pod 动态爆破点修正', () => {
@@ -488,9 +768,9 @@ describe('bear_cavalry_bearing_down_pod 动态爆破点修正', () => {
             ongoingActions: [{ uid: 'oa1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' } as any],
         });
 
-        const state = makeState([base]);
+        const state = makeState({ bases: [base] });
         const baseBreakpoint = getEffectiveBreakpoint(
-            makeState([makeBase({ defId: 'base_the_jungle' })]),
+            makeState({ bases: [makeBase({ defId: 'base_the_jungle' })] }),
             0,
         );
 
@@ -507,11 +787,67 @@ describe('bear_cavalry_bearing_down_pod 动态爆破点修正', () => {
             ongoingActions: [{ uid: 'oa1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' } as any],
         });
 
-        const state = makeState([base], {
-            movedToBasesThisTurn: { 0: true },
+        const state = makeState({
+            bases: [base],
+            movedToBasesThisTurn: { 0: { '0': true } },
         });
         const baseBreakpoint = getEffectiveBreakpoint(
-            makeState([makeBase({ defId: 'base_the_jungle' })]),
+            makeState({ bases: [makeBase({ defId: 'base_the_jungle' })] }),
+            0,
+        );
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint - 4);
+    });
+
+    it('同一基地两张不同控制者的 bearing_down_pod 不会因只有一方满足条件就一起翻负，最终净效果回到 0', () => {
+        const base = makeBase({
+            defId: 'base_the_jungle',
+            minions: [
+                makeMinion('m0', 'test_minion', '0', 3),
+                makeMinion('m1', 'test_minion', '1', 3),
+            ],
+            ongoingActions: [
+                { uid: 'oa-p0', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' } as any,
+                { uid: 'oa-p1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '1' } as any,
+            ],
+        });
+
+        const state = makeState({
+            bases: [base],
+            movedToBasesThisTurn: { 0: { '0': true } },
+        });
+        const baseBreakpoint = getEffectiveBreakpoint(
+            makeState({ bases: [makeBase({ defId: 'base_the_jungle' })] }),
+            0,
+        );
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint);
+    });
+
+    it('borrowed bearing_down_pod 会按 sourceControllerId 而不是真实 owner 改成负修正', () => {
+        const base = makeBase({
+            defId: 'base_the_jungle',
+            minions: [
+                makeMinion('m0', 'test_minion', '0', 3),
+                makeMinion('m1', 'test_minion', '1', 3),
+            ],
+            ongoingActions: [{
+                uid: 'oa-borrowed',
+                defId: 'bear_cavalry_bearing_down_pod',
+                ownerId: '1',
+                metadata: {
+                    sourcePlayerId: '0',
+                    sourceControllerId: '0',
+                },
+            } as any],
+        });
+
+        const state = makeState({
+            bases: [base],
+            movedToBasesThisTurn: { 0: { '0': true } },
+        });
+        const baseBreakpoint = getEffectiveBreakpoint(
+            makeState({ bases: [makeBase({ defId: 'base_the_jungle' })] }),
             0,
         );
 
@@ -528,7 +864,8 @@ describe('bear_cavalry_bearing_down_pod 动态爆破点修正', () => {
             ongoingActions: [{ uid: 'oa1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' } as any],
         });
 
-        const state = makeState([base], {
+        const state = makeState({
+            bases: [base],
             suppressedCardsUntilTurnStart: [{
                 cardUid: 'oa1',
                 baseIndex: 0,
@@ -537,7 +874,7 @@ describe('bear_cavalry_bearing_down_pod 动态爆破点修正', () => {
             }],
         } as any);
         const baseBreakpoint = getEffectiveBreakpoint(
-            makeState([makeBase({ defId: 'base_the_jungle' })]),
+            makeState({ bases: [makeBase({ defId: 'base_the_jungle' })] }),
             0,
         );
 
@@ -659,6 +996,35 @@ describe('bear_cavalry_bear_necessities_pod 限制', () => {
 });
 
 describe('bear_cavalry_superiority_pod 低层合同：保护模式', () => {
+    it('borrowed bear_cavalry_superiority_pod 的 protect 模式也应按控制者而不是真实 owner 保护己方随从', () => {
+        const protectedMinion = makeMinion('protected-p0', 'test_minion', '0', 3, { powerModifier: 0 });
+        const enemyMinion = makeMinion('enemy-p1', 'test_minion', '1', 3, { powerModifier: 0 });
+        const state = makeState({
+            bases: [
+                makeBase({
+                    minions: [protectedMinion, enemyMinion],
+                    ongoingActions: [{
+                        uid: 'borrowed-sup-pod',
+                        defId: 'bear_cavalry_superiority_pod',
+                        ownerId: '1',
+                        talentUsed: true,
+                        metadata: {
+                            superiorityProtect: true,
+                            sourcePlayerId: '0',
+                            sourceControllerId: '0',
+                        },
+                    } as any],
+                }),
+            ],
+        });
+
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'affect')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '0', 'destroy')).toBe(false);
+        expect(isMinionProtected(state, enemyMinion, 0, '0', 'destroy')).toBe(false);
+    });
+
     it('protect 分支开启保护，且在拥有者下回合开始后失效', () => {
         const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const state = makeState({
@@ -689,6 +1055,57 @@ describe('bear_cavalry_superiority_pod 低层合同：保护模式', () => {
 
         expect(isMinionProtected(protectResult.state.core, myMinion, 0, '1', 'destroy')).toBe(true);
         expect(isMinionProtected(afterTurnStart, myMinion, 0, '1', 'destroy')).toBe(false);
+    });
+
+    it('bear_cavalry_superiority_pod 在真实 prompt 响应 draw 后应关闭保护标记并正常摸牌', () => {
+        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const state = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [{ uid: 'd1', defId: 'test_action', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    minions: [myMinion],
+                    ongoingActions: [
+                        {
+                            uid: 'sup-1',
+                            defId: 'bear_cavalry_superiority_pod',
+                            ownerId: '0',
+                            talentUsed: false,
+                            metadata: { superiorityProtect: true },
+                        } as any,
+                    ],
+                }),
+            ],
+        }));
+
+        const used = runCommand(
+            state,
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'sup-1', baseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
+        expect(used.success).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(used.finalState, 'bear_cavalry_superiority_pod_talent');
+        const resolved = respondToPrompt(
+            used.finalState,
+            getPromptOption(prompt, option => option?.value?.action === 'draw', 'Superiority POD draw option').id,
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+        expect(isMinionProtected(resolved.finalState.core, myMinion, 0, '1', 'destroy')).toBe(false);
+        expect(
+            resolved.finalState.core.players['0'].hand.some(card => card.uid === 'd1'),
+        ).toBe(true);
     });
 
     it('draw 分支会关闭保护标记并正常摸牌', () => {
@@ -885,7 +1302,7 @@ describe('bear_cavalry_bear_hug 行为', () => {
         expect(destroyEvents).toHaveLength(1);
         expect(destroyEvents[0]).toEqual(
             expect.objectContaining({
-                payload: expect.objectContaining({ minionUid: 'm3', destroyerId: '1' }),
+                payload: expect.objectContaining({ minionUid: 'm3', destroyerId: '0' }),
             }),
         );
     });
@@ -1080,5 +1497,94 @@ describe('bear_cavalry_commission 额外随从交互', () => {
 
         expect(result.events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toHaveLength(1);
         expect(getPromptsBySourceId(result.finalState, 'bear_cavalry_commission_choose_minion')).toHaveLength(0);
+    });
+
+    it('单基地直落 borrowed 手牌随从时，应保留真实 owner', () => {
+        const playedState = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [
+                            { uid: 'a1', defId: 'bear_cavalry_commission', type: 'action', owner: '0' } as CardInstance,
+                            { uid: 'borrowed-minion', defId: 'robot_microbot_guard', type: 'minion', owner: '1' } as CardInstance,
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [makeBase({ defId: 'base_alpha' })],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const chooseMinion = getSimpleChoicePrompt(playedState.finalState, 'bear_cavalry_commission_choose_minion');
+        const resolved = respondToPrompt(
+            playedState.finalState,
+            getPromptOption(chooseMinion, option => option?.value?.cardUid === 'borrowed-minion', 'borrowed minion option').id,
+            '0',
+            dummyRandom,
+        );
+
+        const playedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+        const minion = resolved.finalState.core.bases[0].minions.find(entry => entry.uid === 'borrowed-minion');
+
+        expect(resolved.success).toBe(true);
+        expect(playedEvent?.payload?.ownerId).toBe('1');
+        expect(minion).toEqual(expect.objectContaining({ uid: 'borrowed-minion', controller: '0', owner: '1' }));
+        expect(getPromptsBySourceId(resolved.finalState, 'bear_cavalry_commission_move_minion')).toHaveLength(0);
+    });
+
+    it('二段选基地打出 borrowed 手牌随从时，也应保留真实 owner', () => {
+        const playedState = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [
+                            { uid: 'a1', defId: 'bear_cavalry_commission', type: 'action', owner: '0' } as CardInstance,
+                            { uid: 'borrowed-minion', defId: 'robot_microbot_guard', type: 'minion', owner: '1' } as CardInstance,
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase({ defId: 'base_alpha' }),
+                    makeBase({ defId: 'base_beta' }),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const chooseMinion = getSimpleChoicePrompt(playedState.finalState, 'bear_cavalry_commission_choose_minion');
+        const pickedMinion = respondToPrompt(
+            playedState.finalState,
+            getPromptOption(chooseMinion, option => option?.value?.cardUid === 'borrowed-minion', 'borrowed minion option').id,
+            '0',
+            dummyRandom,
+        );
+        const chooseBase = getSimpleChoicePrompt(pickedMinion.finalState, 'bear_cavalry_commission_choose_base');
+        const resolved = respondToPrompt(
+            pickedMinion.finalState,
+            getPromptOption(chooseBase, option => option?.value?.baseIndex === 1, 'commission target base option').id,
+            '0',
+            dummyRandom,
+        );
+
+        const playedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+        const minion = resolved.finalState.core.bases[1].minions.find(entry => entry.uid === 'borrowed-minion');
+
+        expect(pickedMinion.success).toBe(true);
+        expect(resolved.success).toBe(true);
+        expect(playedEvent?.payload).toEqual(expect.objectContaining({ cardUid: 'borrowed-minion', ownerId: '1', baseIndex: 1 }));
+        expect(minion).toEqual(expect.objectContaining({ uid: 'borrowed-minion', controller: '0', owner: '1' }));
+        expect(getPromptsBySourceId(resolved.finalState, 'bear_cavalry_commission_move_minion')).toHaveLength(0);
     });
 });

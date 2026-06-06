@@ -40,18 +40,44 @@ function gainCpWithTacticalAdvantage({
 }
 
 function applyTargetedWithTacticalAdvantage({
+    attackerId,
     targetId,
     sourceAbilityId,
     state,
     timestamp,
 }: CustomActionContext): DiceThroneEvent[] {
-    const currentStacks = state.players[targetId]?.statusEffects[STATUS_IDS.TARGETED] ?? 0;
-    const maxStacks = getTokenStackLimit(state, targetId, STATUS_IDS.TARGETED);
+    const opponentIds = getOpponents(state, attackerId);
+    if (opponentIds.length === 0) return [];
+
+    if (opponentIds.length > 1) {
+        const interaction: PendingInteraction = {
+            id: `${sourceAbilityId}-${timestamp}`,
+            playerId: attackerId,
+            sourceCardId: sourceAbilityId,
+            type: 'selectPlayer',
+            titleKey: 'interaction.selectPlayer',
+            selectCount: 1,
+            selected: [],
+            targetPlayerIds: opponentIds,
+            statusGrantConfig: { statusId: STATUS_IDS.TARGETED, amount: 1 },
+        };
+
+        return [{
+            type: 'INTERACTION_REQUESTED',
+            payload: { interaction },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as InteractionRequestedEvent];
+    }
+
+    const resolvedTargetId = opponentIds.includes(targetId) ? targetId : opponentIds[0];
+    const currentStacks = state.players[resolvedTargetId]?.statusEffects[STATUS_IDS.TARGETED] ?? 0;
+    const maxStacks = getTokenStackLimit(state, resolvedTargetId, STATUS_IDS.TARGETED);
     const newTotal = Math.min(currentStacks + 1, maxStacks);
     return [{
         type: 'STATUS_APPLIED',
         payload: {
-            targetId,
+            targetId: resolvedTargetId,
             statusId: STATUS_IDS.TARGETED,
             stacks: Math.max(0, newTotal - currentStacks),
             newTotal,
@@ -499,6 +525,7 @@ export function registerZhanshujiaCustomActions(): void {
     });
     registerCustomActionHandler('zhanshujia-tactical-advantage-apply-targeted', applyTargetedWithTacticalAdvantage, {
         categories: ['status', 'passive'],
+        requiresInteraction: true,
     });
     registerCustomActionHandler('zhanshujia-tactical-advantage-grant-protect', grantProtectWithTacticalAdvantage, {
         categories: ['token', 'passive'],

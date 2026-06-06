@@ -32,6 +32,7 @@ import {
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import { registerDiscardActionPlayProvider } from '../domain/discardActionPlayability';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import { reduce } from '../domain/reduce';
 import {
@@ -2616,6 +2617,50 @@ export function registerYuanhouAbilities(): void {
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
         effectContract: SHAYU_TRIGGER_CONTRACT,
+    });
+    registerDiscardActionPlayProvider({
+        id: 'cyborg_apes_cyberback',
+        getPlayableCards(core, playerId) {
+            const player = core.players[playerId];
+            if (!player) return [];
+
+            const cyberbacks = allMinions(core).filter(({ minion }) =>
+                minion.controller === playerId && matchesDefId(minion.defId, 'cyborg_apes_cyberback'),
+            );
+            if (cyberbacks.length === 0) return [];
+
+            return player.discard
+                .filter(isActionCard)
+                .flatMap(card => {
+                    const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
+                    if (!def) return [];
+                    const subtype = def.type === 'fusion' ? def.actionSubtype : def.subtype;
+                    const ongoingTarget = def.type === 'fusion'
+                        ? (def.actionOngoingTarget ?? 'base')
+                        : (def.ongoingTarget ?? 'base');
+                    if (subtype !== 'ongoing' || ongoingTarget !== 'minion') return [];
+
+                    const legalTargets = cyberbacks.filter(({ minion, baseIndex }) =>
+                        validateActionPlaySemantics(core, playerId, {
+                            defId: card.defId,
+                            targetBaseIndex: baseIndex,
+                            targetMinionUid: minion.uid,
+                            effectiveHandSize: player.hand.length,
+                        }).valid,
+                    );
+                    if (legalTargets.length === 0) return [];
+
+                    const allowedBaseIndices = [...new Set(legalTargets.map(({ baseIndex }) => baseIndex))];
+                    return [{
+                        card,
+                        allowedBaseIndices,
+                        allowedMinionUids: legalTargets.map(({ minion }) => minion.uid),
+                        sourceId: 'cyborg_apes_cyberback',
+                        defId: card.defId,
+                        name: getCardDef(card.defId)?.name ?? card.defId,
+                    }];
+                });
+        },
     });
     registerTrigger('cyborg_apes_clyde_2_0', 'onTurnEnd', () => [], { effectContract: SHAYU_TRIGGER_CONTRACT });
     registerTrigger('cyborg_apes_cyberback', 'onTurnEnd', () => [], { effectContract: SHAYU_TRIGGER_CONTRACT });

@@ -252,6 +252,38 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(interceptEvent(state, detachEvt)).toBeNull();
         });
 
+        test('borrowed ongoing 行动也应按控制者受到 Steam Queen 保护', () => {
+            const queen = makeMinion({ defId: 'steampunk_steam_queen', uid: 'sq-1', controller: '0' });
+            const base = makeBase({
+                minions: [queen],
+                ongoingActions: [{
+                    uid: 'oa-borrowed',
+                    defId: 'test_ongoing',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            });
+            const state = makeState([base]);
+
+            const detachEvt = {
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: {
+                    cardUid: 'oa-borrowed',
+                    defId: 'test_ongoing',
+                    ownerId: '1',
+                    reason: 'opponent_action',
+                    sourcePlayerId: '1',
+                    sourceCardUid: 'opp-action-1',
+                    sourceDefId: 'pirate_shanghai',
+                    sourceControllerId: '1',
+                    sourceBaseIndex: 0,
+                },
+                timestamp: 0,
+            };
+
+            expect(interceptEvent(state, detachEvt)).toBeNull();
+        });
+
         test('不会误拦截自毁导致的行动牌离场', () => {
             const queen = makeMinion({ defId: 'steampunk_steam_queen', uid: 'sq-1', controller: '0' });
             const base = makeBase({
@@ -335,6 +367,39 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(isOperationRestricted(state, 0, '0', 'play_action')).toBe(false);
         });
 
+        test('borrowed ornate_dome 应按控制者而不是真实 owner 限制其他玩家打行动', () => {
+            const base = makeBase({
+                ongoingActions: [{
+                    uid: 'od-borrowed',
+                    defId: 'steampunk_ornate_dome',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                } as any],
+            });
+            const state = makeState([base]);
+
+            expect(isOperationRestricted(state, 0, '1', 'play_action')).toBe(true);
+            expect(isOperationRestricted(state, 0, '0', 'play_action')).toBe(false);
+        });
+
+        test('同一基地上若同时有两张不同控制者的 ornate_dome，不应因第一张同名来源而放行对手打行动', () => {
+            const base = makeBase({
+                ongoingActions: [
+                    { uid: 'od-owner', defId: 'steampunk_ornate_dome', ownerId: '1' },
+                    {
+                        uid: 'od-borrowed',
+                        defId: 'steampunk_ornate_dome',
+                        ownerId: '1',
+                        metadata: { sourcePlayerId: '0', sourceControllerId: '0' },
+                    } as any,
+                ],
+            });
+            const state = makeState([base]);
+
+            expect(isOperationRestricted(state, 0, '1', 'play_action')).toBe(true);
+            expect(isOperationRestricted(state, 0, '0', 'play_action')).toBe(true);
+        });
+
         test('POD 版打出时只移除对手持续行动，不应把自己一起拆掉', () => {
             const myDome = { uid: 'dome-pod', defId: 'steampunk_ornate_dome_pod', ownerId: '0' } as any;
             const opponentAction = { uid: 'opp-act', defId: 'some_action', ownerId: '1' } as any;
@@ -359,6 +424,39 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(detachedEvents).toHaveLength(1);
             expect(detachedEvents[0].payload.cardUid).toBe('opp-act');
             expect(detachedEvents.find(event => event.payload.cardUid === 'dome-pod')).toBeUndefined();
+        });
+
+        test('borrowed ornate_dome onPlay 应按控制者而不是真实 owner 仅摧毁其他玩家行动', () => {
+            const borrowedDome = {
+                uid: 'dome-borrowed',
+                defId: 'steampunk_ornate_dome',
+                ownerId: '1',
+                metadata: { sourceControllerId: '0' },
+            } as any;
+            const ownAction = { uid: 'own-act', defId: 'some_action', ownerId: '0' } as any;
+            const opponentAction = { uid: 'opp-act', defId: 'some_other_action', ownerId: '1' } as any;
+
+            const base = makeBase({
+                ongoingActions: [borrowedDome, ownAction, opponentAction],
+            });
+            const state = makeState([base]);
+
+            const result = steampunkOrnateDomeOnPlay({
+                state,
+                matchState: makeMatchState(state),
+                playerId: '0',
+                cardUid: 'dome-borrowed',
+                defId: 'steampunk_ornate_dome',
+                baseIndex: 0,
+                random: defaultTestRandom,
+                now: 1,
+            } as any);
+
+            const detachedEvents = result.events.filter(event => event.type === SU_EVENTS.ONGOING_DETACHED) as any[];
+            expect(detachedEvents).toHaveLength(1);
+            expect(detachedEvents[0].payload.cardUid).toBe('opp-act');
+            expect(detachedEvents.find(event => event.payload.cardUid === 'own-act')).toBeUndefined();
+            expect(detachedEvents.find(event => event.payload.cardUid === 'dome-borrowed')).toBeUndefined();
         });
     });
 
@@ -489,6 +587,38 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(events).toHaveLength(1);
             expect(events[0].type).toBe(SU_EVENTS.MINION_RETURNED);
             expect(events[0].payload.minionUid).toBe('m1');
+        });
+
+        test('borrowed Escape Hatch 应按控制者而不是真实 owner 保护控制者的随从', () => {
+            const borrowedMinion = makeMinion({
+                defId: 'steampunk_a',
+                uid: 'sa-borrowed',
+                controller: '0',
+                owner: '1',
+            });
+            const base = makeBase({
+                minions: [borrowedMinion],
+                ongoingActions: [
+                    { uid: 'borrowed-hatch', defId: 'steampunk_escape_hatch', ownerId: '1', metadata: { sourceControllerId: '0' } } as any,
+                ],
+            });
+            const state = makeState([base]);
+
+            const events = steampunkEscapeHatchTrigger({
+                state,
+                playerId: '0',
+                baseIndex: 0,
+                triggerMinionUid: 'sa-borrowed',
+                random: dummyRandom,
+                now: 1,
+            } as any) as any[];
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_RETURNED);
+            expect(events[0].payload.minionUid).toBe('sa-borrowed');
+            expect(events[0].payload.toPlayerId).toBe('1');
+            expect(events[0].payload.sourcePlayerId).toBe('0');
+            expect(events[0].payload.reason).toBe('steampunk_escape_hatch');
         });
 
         test('borrowed Escape Hatch 不应被同基地其他玩家的同名 ongoing 抢走 source', () => {
@@ -928,9 +1058,273 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(resolved.finalState.core.bases[0].ongoingActions).toHaveLength(0);
             expect(resolved.finalState.core.players['0'].hand).toHaveLength(0);
         });
+
+        test('steampunk_mechanic_target: 重打被他人拥有的 ongoing 时仍应保留 owner 并带 sourcePlayerId', () => {
+            const base = makeBase();
+            const state = makeState([base]);
+            state.players['0'].hand = [
+                makeCard('mech-1', 'steampunk_mechanic', 'minion', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
+                ...state.players['0'].hand,
+            ];
+            state.players['0'].discard = [
+                makeCard('dis-borrowed', 'steampunk_escape_hatch', 'action', '1', SMASHUP_FACTION_IDS.STEAMPUNKS),
+            ];
+
+            const playedMechanic = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'mech-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+
+            expect(playedMechanic.success, playedMechanic.error).toBe(true);
+
+            const choseCard = respondToPromptOption(
+                playedMechanic.finalState,
+                option => option.value?.cardUid === 'dis-borrowed',
+                'steampunk mechanic borrowed ongoing option',
+                '0',
+                dummyRandom,
+            );
+            expect(choseCard.success, choseCard.error).toBe(true);
+            expect(choseCard.finalState.core.players['0'].hand.some(card => card.uid === 'dis-borrowed' && card.owner === '1')).toBe(true);
+
+            const attached = respondToPromptOption(
+                choseCard.finalState,
+                option => option.value?.baseIndex === 0,
+                'steampunk mechanic borrowed ongoing target base 0 option',
+                '0',
+                dummyRandom,
+            );
+
+            expect(attached.success, attached.error).toBe(true);
+            expect(attached.events).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.ACTION_PLAYED,
+                    payload: expect.objectContaining({
+                        cardUid: 'dis-borrowed',
+                        ownerId: '1',
+                        playerId: '0',
+                        targetBaseIndex: 0,
+                    }),
+                }),
+                expect.objectContaining({
+                    type: SU_EVENTS.ONGOING_ATTACHED,
+                    payload: expect.objectContaining({
+                        cardUid: 'dis-borrowed',
+                        ownerId: '1',
+                        sourcePlayerId: '0',
+                        targetBaseIndex: 0,
+                        targetType: 'base',
+                    }),
+                }),
+            ]));
+            expect(attached.finalState.core.players['0'].hand.some(card => card.uid === 'dis-borrowed')).toBe(false);
+            expect(attached.finalState.core.bases[0].ongoingActions).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    uid: 'dis-borrowed',
+                    defId: 'steampunk_escape_hatch',
+                    ownerId: '1',
+                    metadata: expect.objectContaining({
+                        sourcePlayerId: '0',
+                    }),
+                }),
+            ]));
+        });
     });
 
     describe('steampunk_change_of_venue: 换场', () => {
+        test('steampunk_change_of_venue: 应允许取回由自己控制但真实 owner 不同的 borrowed ongoing', () => {
+            const base = makeBase({
+                ongoingActions: [{
+                    uid: 'borrowed-ongoing-1',
+                    defId: 'steampunk_escape_hatch',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                    talentUsed: false,
+                } as any],
+            });
+            const state = makeState([base]);
+            state.players['0'].hand = [
+                makeCard('cov-1', 'steampunk_change_of_venue', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
+                ...state.players['0'].hand,
+            ];
+
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'cov-1' },
+            } as any, defaultTestRandom);
+
+            expect(result.success, result.error).toBe(true);
+            const current = getSimpleChoicePrompt(result.finalState, 'steampunk_change_of_venue');
+            const borrowedOption = getPromptOptions(current).find(option => option.value?.cardUid === 'borrowed-ongoing-1');
+            expect(borrowedOption).toBeDefined();
+        });
+
+        test('steampunk_change_of_venue_choose_base: 重打被他人拥有的 ongoing 时仍应保留 owner 并带 sourcePlayerId', () => {
+            const base = makeBase({
+                ongoingActions: [{
+                    uid: 'borrowed-ongoing-1',
+                    defId: 'steampunk_escape_hatch',
+                    ownerId: '1',
+                    metadata: { sourceControllerId: '0' },
+                    talentUsed: false,
+                } as any],
+            });
+            const state = makeState([base]);
+            state.players['0'].hand = [
+                makeCard('cov-1', 'steampunk_change_of_venue', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
+                ...state.players['0'].hand,
+            ];
+
+            const played = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'cov-1' },
+            } as any, defaultTestRandom);
+
+            expect(played.success, played.error).toBe(true);
+
+            const choseOngoing = respondToPromptOption(
+                played.finalState,
+                option => option.value?.cardUid === 'borrowed-ongoing-1',
+                'change of venue borrowed ongoing option',
+                '0',
+                dummyRandom,
+            );
+            expect(choseOngoing.success, choseOngoing.error).toBe(true);
+
+            const reattached = respondToPromptOption(
+                choseOngoing.finalState,
+                option => option.value?.baseIndex === 0,
+                'change of venue borrowed ongoing base 0 option',
+                '0',
+                dummyRandom,
+            );
+
+            expect(reattached.success, reattached.error).toBe(true);
+            expect(reattached.events).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.ACTION_PLAYED,
+                    payload: expect.objectContaining({
+                        cardUid: 'borrowed-ongoing-1',
+                        ownerId: '1',
+                        playerId: '0',
+                        targetBaseIndex: 0,
+                    }),
+                }),
+                expect.objectContaining({
+                    type: SU_EVENTS.ONGOING_ATTACHED,
+                    payload: expect.objectContaining({
+                        cardUid: 'borrowed-ongoing-1',
+                        ownerId: '1',
+                        sourcePlayerId: '0',
+                        targetBaseIndex: 0,
+                        targetType: 'base',
+                    }),
+                }),
+            ]));
+            expect(reattached.finalState.core.bases[0].ongoingActions).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    uid: 'borrowed-ongoing-1',
+                    ownerId: '1',
+                    metadata: expect.objectContaining({
+                        sourcePlayerId: '0',
+                    }),
+                }),
+            ]));
+        });
+
+        test('steampunk_change_of_venue_choose_minion: 重打被他人拥有的随从附着 ongoing 时仍应保留 owner 并带 sourcePlayerId', () => {
+            const host = makeMinion({
+                uid: 'host-1',
+                defId: 'pirate_first_mate',
+                controller: '0',
+            });
+            const target = makeMinion({
+                uid: 'target-1',
+                defId: 'test_minion_target',
+                controller: '0',
+            });
+            const state = makeState([
+                makeBase({
+                    minions: [{
+                        ...host,
+                        attachedActions: [{
+                            uid: 'borrowed-smoke-1',
+                            defId: 'ninja_smoke_bomb',
+                            ownerId: '1',
+                            metadata: { sourceControllerId: '0' },
+                        } as any],
+                    }, target],
+                }),
+            ]);
+            state.players['0'].hand = [
+                makeCard('cov-1', 'steampunk_change_of_venue', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
+                ...state.players['0'].hand,
+            ];
+
+            const played = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'cov-1' },
+            } as any, defaultTestRandom);
+
+            expect(played.success, played.error).toBe(true);
+
+            const choseOngoing = respondToPromptOption(
+                played.finalState,
+                option => option.value?.cardUid === 'borrowed-smoke-1',
+                'change of venue borrowed minion ongoing option',
+                '0',
+                dummyRandom,
+            );
+            expect(choseOngoing.success, choseOngoing.error).toBe(true);
+
+            const reattached = respondToPromptOption(
+                choseOngoing.finalState,
+                option => option.value?.minionUid === 'target-1',
+                'change of venue borrowed minion ongoing target-1 option',
+                '0',
+                dummyRandom,
+            );
+
+            expect(reattached.success, reattached.error).toBe(true);
+            expect(reattached.events).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.ACTION_PLAYED,
+                    payload: expect.objectContaining({
+                        cardUid: 'borrowed-smoke-1',
+                        ownerId: '1',
+                        playerId: '0',
+                        targetBaseIndex: 0,
+                        targetMinionUid: 'target-1',
+                    }),
+                }),
+                expect.objectContaining({
+                    type: SU_EVENTS.ONGOING_ATTACHED,
+                    payload: expect.objectContaining({
+                        cardUid: 'borrowed-smoke-1',
+                        ownerId: '1',
+                        sourcePlayerId: '0',
+                        targetBaseIndex: 0,
+                        targetType: 'minion',
+                        targetMinionUid: 'target-1',
+                    }),
+                }),
+            ]));
+            const liveTarget = reattached.finalState.core.bases[0].minions.find(minion => minion.uid === 'target-1');
+            expect(liveTarget?.attachedActions).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    uid: 'borrowed-smoke-1',
+                    ownerId: '1',
+                    metadata: expect.objectContaining({
+                        sourcePlayerId: '0',
+                    }),
+                }),
+            ]));
+        });
+
         test('steampunk_change_of_venue_choose_base: 若待重打的 ongoing 已不在手牌则不再附着', () => {
             const base = makeBase({
                 ongoingActions: [{
@@ -996,6 +1390,31 @@ describe('蒸汽朋克 ongoing 能力', () => {
     });
 
     describe('steampunk_captain_ahab: 亚哈船长', () => {
+        test('borrowed ongoing 也应被视为 captain_ahab 的可选目标基地', () => {
+            const captain = makeMinion({ uid: 'ahab-1', defId: 'steampunk_captain_ahab', controller: '0', owner: '0' });
+            const state = makeState([
+                makeBase({ minions: [captain] }),
+                makeBase({
+                    ongoingActions: [{
+                        uid: 'borrowed-ongoing-1',
+                        defId: 'steampunk_escape_hatch',
+                        ownerId: '1',
+                        metadata: { sourceControllerId: '0' },
+                        talentUsed: false,
+                    } as any],
+                }),
+                makeBase(),
+            ]);
+
+            const validation = validate(makeMatchState(state), {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'ahab-1', baseIndex: 0 },
+            } as any);
+
+            expect(validation).toEqual({ valid: true });
+        });
+
         test('另一基地有己方基地行动卡时，USE_TALENT 校验通过，可进入高亮集合', () => {
             const captain = makeMinion({ uid: 'ahab-1', defId: 'steampunk_captain_ahab', controller: '0', owner: '0' });
             const state = makeState([
@@ -1158,6 +1577,56 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 withOnlyCurrentPrompt(makeMatchState(staleCore), chooseBasePrompt),
                 option => option.value?.baseIndex === 0,
                 'zeppelin destination base 0 option',
+                '0',
+                dummyRandom,
+            );
+            expect(step2.success, step2.error).toBe(true);
+            expect(step2.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        });
+
+        test('同基地有两张齐柏林飞艇时，若被选中的那张在第二步前离场，则不应继续移动随从', () => {
+            const core = makeState([
+                makeBase({
+                    minions: [makeMinion({ uid: 'home-minion', defId: 'pirate_first_mate', controller: '0', owner: '0', basePower: 3 })],
+                    ongoingActions: [
+                        { uid: 'oa1', defId: 'steampunk_zeppelin', ownerId: '0', talentUsed: false } as any,
+                        { uid: 'oa2', defId: 'steampunk_zeppelin', ownerId: '0', talentUsed: false } as any,
+                    ],
+                }),
+                makeBase({
+                    minions: [makeMinion({ uid: 'm2', defId: 'pirate_saucy_wench', controller: '0', owner: '0', basePower: 2 })],
+                }),
+                makeBase(),
+            ]);
+
+            const firstStep = useOngoingTalent(core, '0', 'oa2', 0);
+            expect(firstStep.success, firstStep.error).toBe(true);
+            const step1 = respondToPromptOption(
+                firstStep.finalState,
+                option => option.value?.minionUid === 'm2',
+                'zeppelin second source minion option',
+                '0',
+                dummyRandom,
+            );
+            expect(step1.success, step1.error).toBe(true);
+
+            const chooseBasePrompt = getSimpleChoicePrompt(step1.finalState, 'steampunk_zeppelin_choose_base');
+            const staleCore = makeState({
+                ...core,
+                bases: [
+                    {
+                        ...core.bases[0],
+                        ongoingActions: [{ uid: 'oa1', defId: 'steampunk_zeppelin', ownerId: '0', talentUsed: false } as any],
+                    },
+                    core.bases[1],
+                    core.bases[2],
+                ],
+            });
+
+            const step2 = respondToPromptOption(
+                withOnlyCurrentPrompt(makeMatchState(staleCore), chooseBasePrompt),
+                option => option.value?.baseIndex === 0,
+                'zeppelin stale source base option',
                 '0',
                 dummyRandom,
             );

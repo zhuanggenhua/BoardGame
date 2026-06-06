@@ -1723,11 +1723,13 @@ const buildPurifyActions = (state: DiceThroneState, playerId: PlayerId): AiLegal
     if (!player || !hasPurifyToken(state.core, playerId) || !hasDebuffs(state.core, playerId)) {
         return actions;
     }
+    const playerStatusEffects = player.statusEffects ?? {};
+    const playerTokens = player.tokens ?? {};
 
     const removableDebuffs = (state.core.tokenDefinitions ?? [])
         .filter((definition) => definition.category === 'debuff' && (definition.passiveTrigger?.removable ?? true))
         .map((definition) => definition.id)
-        .filter((statusId) => (player.statusEffects[statusId] ?? 0) > 0 || (player.tokens[statusId] ?? 0) > 0);
+        .filter((statusId) => (playerStatusEffects[statusId] ?? 0) > 0 || (playerTokens[statusId] ?? 0) > 0);
 
     for (const statusId of removableDebuffs) {
         appendAction(actions, state, playerId, {

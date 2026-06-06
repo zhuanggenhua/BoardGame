@@ -473,7 +473,7 @@ function bearCavalryBearHug(ctx: AbilityContext): AbilityResult {
         if (weakest.length === 1) {
             // 唯一最弱，直接消灭
             events.push(destroyMinion(
-                weakest[0].minion.uid, weakest[0].minion.defId, weakest[0].baseIndex, weakest[0].minion.owner, opId, 'bear_cavalry_bear_hug', ctx.now
+                weakest[0].minion.uid, weakest[0].minion.defId, weakest[0].baseIndex, weakest[0].minion.owner, ctx.playerId, 'bear_cavalry_bear_hug', ctx.now
             ));
         } else {
             // 平局：由拥有者选择
@@ -510,7 +510,7 @@ function bearHugProcessNext(
         const weakest = minions.filter(m => m.power === minPower);
         if (weakest.length <= 1) {
             if (weakest.length === 1) {
-                events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, opId, 'bear_cavalry_bear_hug', ctx.now));
+                events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, ctx.playerId, 'bear_cavalry_bear_hug', ctx.now));
             }
             idx++;
             continue;

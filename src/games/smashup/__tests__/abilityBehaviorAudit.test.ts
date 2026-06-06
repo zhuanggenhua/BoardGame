@@ -195,6 +195,7 @@ function collectAllRegisteredIds(): Set<string> {
         interceptorIds,
         baseAbilitySuppressionIds,
         baseScoringSuppressionIds,
+        baseVpModifierIds,
         cardAbilitySuppressionIds,
     } = getRegisteredOngoingEffectIds();
     const { powerModifierIds, breakpointModifierIds } = getRegisteredModifierIds();
@@ -206,6 +207,7 @@ function collectAllRegisteredIds(): Set<string> {
     for (const id of interceptorIds) all.add(id);
     for (const id of baseAbilitySuppressionIds) all.add(id);
     for (const id of baseScoringSuppressionIds) all.add(id);
+    for (const id of baseVpModifierIds) all.add(id);
     for (const id of cardAbilitySuppressionIds) all.add(id);
     for (const id of powerModifierIds) all.add(id);
     for (const id of breakpointModifierIds) all.add(id);
@@ -245,6 +247,7 @@ describe('SmashUp 能力行为审计', () => {
                 'cowboys.ts',
                 'elder_things.ts',
                 'giant_ants.ts',
+                'huluwawa.ts',
                 'kaiju.ts',
                 'magical_girls.ts',
                 'mega_troopers.ts',
@@ -267,10 +270,14 @@ describe('SmashUp 能力行为审计', () => {
         it('遗留 registerInteractionHandler 仅允许存在于明确未迁完的旧能力文件', () => {
             const allowedLegacyHandlerFiles = [
                 'bear_cavalry.ts',
+                'dragons.ts',
+                'geeks.ts',
+                'huluwawa.ts',
                 'kaiju.ts',
                 'magical_girls.ts',
                 'mega_troopers.ts',
                 'skeletons.ts',
+                'superheroes.ts',
                 'titans.ts',
                 'yuanhou.ts',
             ];

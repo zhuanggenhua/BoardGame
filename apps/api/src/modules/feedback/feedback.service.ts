@@ -15,8 +15,7 @@ type FeedbackManagerScope = {
 };
 
 const DEFAULT_USER_SOURCE = 'feedback-modal';
-const ALLOWED_USER_SOURCES = new Set([
-    DEFAULT_USER_SOURCE,
+const PUBLIC_AUTO_FEEDBACK_SOURCES = new Set([
     'client-auto-report',
     'client-runtime-guard',
     'client-window-error',
@@ -24,6 +23,11 @@ const ALLOWED_USER_SOURCES = new Set([
     'react-error-boundary',
     'board-render-error',
     'home-modal-error-boundary',
+]);
+const PUBLIC_AUTO_FEEDBACK_SOURCE_LIST = Array.from(PUBLIC_AUTO_FEEDBACK_SOURCES);
+const ALLOWED_USER_SOURCES = new Set([
+    DEFAULT_USER_SOURCE,
+    ...PUBLIC_AUTO_FEEDBACK_SOURCE_LIST,
 ]);
 const LEGACY_WATCHDOG_SOURCE = 'online-ai-watchdog';
 const WATCHDOG_AGGREGATION_SOURCE = 'online-ai-watchdog';
@@ -57,11 +61,12 @@ export class FeedbackService {
     ) { }
 
     async create(userId: string | null, dto: CreateFeedbackDto): Promise<Feedback> {
+        const source = this.normalizeUserSource(dto.source);
         return this.feedbackModel.create({
             ...dto,
             gameId: this.normalizeFeedbackGameIdCandidates(dto.clientContext?.gameId, dto.gameName),
-            reporterType: FeedbackReporterType.USER,
-            source: this.normalizeUserSource(dto.source),
+            reporterType: this.resolvePublicReporterType(source),
+            source,
             ...(userId && { userId }),
         });
     }
@@ -281,6 +286,16 @@ export class FeedbackService {
             return normalized;
         }
         return DEFAULT_USER_SOURCE;
+    }
+
+    private isPublicAutoFeedbackSource(source?: string | null): boolean {
+        return Boolean(source && PUBLIC_AUTO_FEEDBACK_SOURCES.has(source));
+    }
+
+    private resolvePublicReporterType(source: string): FeedbackReporterType {
+        return this.isPublicAutoFeedbackSource(source)
+            ? FeedbackReporterType.SYSTEM
+            : FeedbackReporterType.USER;
     }
 
     private shouldAggregateSystemFeedback(
@@ -843,13 +858,50 @@ export class FeedbackService {
         if (reporterType) base.reporterType = reporterType;
         if (normalizedSource) base.source = normalizedSource;
 
-        if (reporterType === FeedbackReporterType.SYSTEM
-            && (!normalizedSource || normalizedSource === LEGACY_WATCHDOG_SOURCE)) {
-            const legacyFilter = this.buildLegacyWatchdogFilter();
-            return { $or: [base, legacyFilter] };
+        if (reporterType === FeedbackReporterType.USER) {
+            if (normalizedSource && this.isPublicAutoFeedbackSource(normalizedSource)) {
+                return { _id: { $exists: false } };
+            }
+            return normalizedSource
+                ? base
+                : {
+                    ...base,
+                    source: { $nin: PUBLIC_AUTO_FEEDBACK_SOURCE_LIST },
+                };
+        }
+
+        const legacyFilters: Record<string, unknown>[] = [];
+        const legacyWatchdogFilter = this.buildLegacyWatchdogFilterForOrigin(normalizedSource);
+        if (legacyWatchdogFilter) {
+            legacyFilters.push(legacyWatchdogFilter);
+        }
+        const legacyPublicAutoFilter = this.buildLegacyPublicAutoFilter(normalizedSource);
+        if (legacyPublicAutoFilter) {
+            legacyFilters.push(legacyPublicAutoFilter);
+        }
+
+        if (legacyFilters.length > 0) {
+            return { $or: [base, ...legacyFilters] };
         }
 
         return base;
+    }
+
+    private buildLegacyWatchdogFilterForOrigin(source?: string): Record<string, unknown> | null {
+        if (source && source !== LEGACY_WATCHDOG_SOURCE) {
+            return null;
+        }
+        return this.buildLegacyWatchdogFilter();
+    }
+
+    private buildLegacyPublicAutoFilter(source?: string): Record<string, unknown> | null {
+        if (source && !this.isPublicAutoFeedbackSource(source)) {
+            return null;
+        }
+        return {
+            reporterType: FeedbackReporterType.USER,
+            source: source ?? { $in: PUBLIC_AUTO_FEEDBACK_SOURCE_LIST },
+        };
     }
 
     private buildLegacyWatchdogFilter(): Record<string, unknown> {
@@ -865,6 +917,14 @@ export class FeedbackService {
 
     private decorateLegacyOrigin(item: FeedbackDocument | Feedback): Feedback {
         const raw = this.toFeedbackObject(item);
+        const isLegacyPublicAuto = this.isPublicAutoFeedbackSource(raw.source)
+            && raw.reporterType !== FeedbackReporterType.SYSTEM;
+        if (isLegacyPublicAuto) {
+            return {
+                ...raw,
+                reporterType: FeedbackReporterType.SYSTEM,
+            };
+        }
         const isLegacyWatchdog = raw.contactInfo === 'system:online-ai-watchdog'
             || raw.errorContext?.source === LEGACY_WATCHDOG_SOURCE
             || /^\[system\]\[online-ai-watchdog\]\s+/.test(raw.content);

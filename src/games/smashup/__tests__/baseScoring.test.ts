@@ -47,6 +47,19 @@ function makeBaseOngoing(uid: string, defId: string, ownerId: string): OngoingAc
     return { uid, defId, ownerId };
 }
 
+function countPromptsBySourceId(matchState: MatchState<SmashUpCore> | undefined, sourceId: string): number {
+    if (!matchState) return 0;
+    const interaction = matchState.sys.interaction as {
+        current?: { sourceId?: string; data?: { sourceId?: string } } | null;
+        queue?: Array<{ sourceId?: string; data?: { sourceId?: string } }>;
+    } | undefined;
+    const prompts = [
+        ...(interaction?.current ? [interaction.current] : []),
+        ...((interaction?.queue ?? []).filter(Boolean)),
+    ];
+    return prompts.filter((prompt) => (prompt.sourceId ?? prompt.data?.sourceId) === sourceId).length;
+}
+
 describe('基地记分与力量计算', () => {
     // Property 13: 力量指示物不变量
     describe('Property 13: 力量指示物', () => {
@@ -458,6 +471,47 @@ describe('基地记分与力量计算', () => {
             expect(finalState.players['0'].discard.map((card: any) => card.uid)).not.toContain('sleep-1');
         });
 
+        it('princesses_sleeping_beauty 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重洗回牌库', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', {
+                        factions: [SMASHUP_FACTION_IDS.PRINCESSES, SMASHUP_FACTION_IDS.ALIENS],
+                        deck: [
+                            { uid: 'sleep-deck-a', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' },
+                            { uid: 'sleep-deck-b', defId: 'robot_microbot_beta', type: 'minion', owner: '0' },
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [{
+                    defId: 'base_tar_pits',
+                    minions: [
+                        { uid: 'sleep-1', defId: 'princesses_sleeping_beauty', controller: '0', owner: '0', basePower: 5, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'ally-20', defId: 'ally_big', controller: '0', owner: '0', basePower: 20, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [],
+                }],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const reorderEvents = result.events.filter((event) =>
+                event.type === SU_EVENTS.DECK_REORDERED
+                && (event as any).payload?.playerId === '0'
+                && ((event as any).payload?.deckUids ?? []).includes('sleep-1'),
+            );
+
+            expect(reorderEvents).toHaveLength(1);
+
+            const finalState = result.events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), state);
+            expect(finalState.players['0'].deck.map((card: any) => card.uid).filter((uid: string) => uid === 'sleep-1')).toHaveLength(1);
+            expect(finalState.players['0'].discard.map((card: any) => card.uid)).not.toContain('sleep-1');
+        });
+
         it('scoreOneBase 会让 Doppelganger 在基地计分弃牌后提示从牌库打随从到原基地', () => {
             const state: SmashUpCore = {
                 players: {
@@ -607,6 +661,43 @@ describe('基地记分与力量计算', () => {
             )).toBe(true);
         });
 
+        it('base_sakura_garden 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重抽牌', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', {
+                        factions: [SMASHUP_FACTION_IDS.SAMURAI, SMASHUP_FACTION_IDS.ALIENS],
+                        deck: [
+                            { uid: 'sakura-draw-a', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' },
+                            { uid: 'sakura-draw-b', defId: 'robot_microbot_beta', type: 'minion', owner: '0' },
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [{
+                    defId: 'base_sakura_garden',
+                    minions: [
+                        { uid: 'sakura-dead-a', defId: 'samurai_ronin', controller: '0', owner: '0', basePower: 20, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [],
+                }],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const drawEvents = result.events.filter(event =>
+                event.type === SU_EVENTS.CARDS_DRAWN
+                && (event as any).payload?.playerId === '0'
+                && ((event as any).payload?.cardUids ?? []).includes('sakura-draw-a'),
+            );
+
+            expect(drawEvents).toHaveLength(1);
+            expect((drawEvents[0] as any).payload?.cardUids).not.toContain('sakura-draw-b');
+        });
+
         it('scoreOneBase 会让 Samurai Chan 自身在基地计分弃牌后按 self-source LKI 抽牌', () => {
             const state: SmashUpCore = {
                 players: {
@@ -673,6 +764,43 @@ describe('基地记分与力量计算', () => {
                 && (event as any).payload?.playerId === '0'
                 && (event as any).payload?.cardUids?.includes('wc-chan-draw-a')
             )).toBe(true);
+        });
+
+        it('world_champs_samurai_chan 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', {
+                        factions: [SMASHUP_FACTION_IDS.WORLD_CHAMPS, SMASHUP_FACTION_IDS.ALIENS],
+                        deck: [
+                            { uid: 'wc-chan-draw-a', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' },
+                            { uid: 'wc-chan-draw-b', defId: 'robot_microbot_beta', type: 'minion', owner: '0' },
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [{
+                    defId: 'base_faceless_city',
+                    minions: [
+                        { uid: 'wc-chan-a', defId: 'world_champs_samurai_chan', controller: '0', owner: '0', basePower: 20, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [],
+                }],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const drawEvents = result.events.filter(event =>
+                event.type === SU_EVENTS.CARDS_DRAWN
+                && (event as any).payload?.playerId === '0'
+                && ((event as any).payload?.cardUids ?? []).includes('wc-chan-draw-a'),
+            );
+
+            expect(drawEvents).toHaveLength(1);
+            expect((drawEvents[0] as any).payload?.cardUids).not.toContain('wc-chan-draw-b');
         });
 
         it('scoreOneBase 会让 Shogun 在其他己方随从计分弃牌后获得 1 个力量指示物', () => {
@@ -1084,6 +1212,59 @@ describe('基地记分与力量计算', () => {
             }));
         });
 
+        it('world_champs_bewitched 在 destroy -> processDestroyTriggers 真链里不应因同一宿主同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双起转移交互', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', {
+                        factions: [SMASHUP_FACTION_IDS.WORLD_CHAMPS, SMASHUP_FACTION_IDS.ALIENS],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 1,
+                bases: [
+                    {
+                        defId: 'base_faceless_city',
+                        minions: [{
+                            uid: 'bewitched-host-a',
+                            defId: 'robot_microbot_alpha',
+                            controller: '1',
+                            owner: '1',
+                            basePower: 20,
+                            powerCounters: 0,
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                            talentUsed: false,
+                            attachedActions: [{ uid: 'bewitched-action-a', defId: 'world_champs_bewitched', ownerId: '0' }] as any,
+                        }],
+                        ongoingActions: [],
+                    },
+                    {
+                        defId: 'base_great_library',
+                        minions: [
+                            { uid: 'bewitched-target-a', defId: 'robot_microbot_alpha', controller: '1', owner: '1', basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        ],
+                        ongoingActions: [],
+                    },
+                ],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+            const systems = [
+                createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+                ...createBaseSystems<SmashUpCore>(),
+            ];
+            const matchState: MatchState<SmashUpCore> = {
+                core: state,
+                sys: createInitialSystemState(PLAYER_IDS, systems),
+            };
+
+            const result = scoreOneBase(state, 0, [], '1', 1000, undefined, matchState);
+
+            expect(countPromptsBySourceId(result.matchState, 'world_champs_bewitched_transfer')).toBe(1);
+        });
+
         it('scoreOneBase 会让 Gremlin POD 在被他人控制但归自己拥有时计分弃牌后给拥有者抽牌', () => {
             const state: SmashUpCore = {
                 players: {
@@ -1133,6 +1314,55 @@ describe('基地记分与力量计算', () => {
                 event.type === SU_EVENTS.CARDS_DRAWN
                 && (event as any).payload?.playerId === '1'
             )).toBe(false);
+        });
+
+        it('trickster_gremlin_pod 在 destroy -> processDestroyTriggers 真链进入弃牌堆时不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双抽', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', {
+                        factions: [SMASHUP_FACTION_IDS.TRICKSTERS, SMASHUP_FACTION_IDS.ALIENS],
+                        deck: [
+                            { uid: 'gremlin-draw-a', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' },
+                            { uid: 'gremlin-draw-b', defId: 'robot_microbot_beta', type: 'minion', owner: '0' },
+                        ],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [
+                            { uid: 'enemy-deck-a', defId: 'robot_warbot', type: 'minion', owner: '1' },
+                        ],
+                    }),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 1,
+                bases: [{
+                    defId: 'base_faceless_city',
+                    minions: [{
+                        uid: 'gremlin-a',
+                        defId: 'trickster_gremlin_pod',
+                        controller: '1',
+                        owner: '0',
+                        basePower: 20,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        talentUsed: false,
+                        attachedActions: [],
+                    }],
+                    ongoingActions: [],
+                }],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreOneBase(state, 0, [], '1', 1000);
+            const drawEvents = result.events.filter(event =>
+                event.type === SU_EVENTS.CARDS_DRAWN
+                && (event as any).payload?.playerId === '0',
+            );
+
+            expect(drawEvents).toHaveLength(1);
+            expect((drawEvents[0] as any).payload?.cardUids).toEqual(['gremlin-draw-a']);
         });
 
         it('scoreOneBase 会让 Worker POD 在计分弃牌后提示从弃牌堆打到另一基地', () => {
@@ -1191,6 +1421,57 @@ describe('基地记分与力量计算', () => {
             expect(current?.playerId).toBe('0');
             expect(optionBaseIndices).toContain(1);
             expect(optionBaseIndices).not.toContain(0);
+        });
+
+        it('giant_ant_worker_pod 在 destroy -> processDestroyTriggers 真链里不应同时走 onMinionDestroyed 与 onMinionDiscardedFromBase 双重 replay', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', {
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.ALIENS],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [
+                    {
+                        defId: 'base_faceless_city',
+                        minions: [{
+                            uid: 'worker-pod-score-a',
+                            defId: 'giant_ant_worker_pod',
+                            controller: '0',
+                            owner: '0',
+                            basePower: 20,
+                            powerCounters: 0,
+                            powerModifier: 0,
+                            tempPowerModifier: 0,
+                            talentUsed: false,
+                            attachedActions: [],
+                        }],
+                        ongoingActions: [],
+                    },
+                    {
+                        defId: 'base_great_library',
+                        minions: [],
+                        ongoingActions: [],
+                    },
+                ],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+            const systems = [
+                createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+                ...createBaseSystems<SmashUpCore>(),
+            ];
+            const matchState: MatchState<SmashUpCore> = {
+                core: state,
+                sys: createInitialSystemState(PLAYER_IDS, systems),
+            };
+
+            const result = scoreOneBase(state, 0, [], '0', 1000, undefined, matchState);
+
+            expect(countPromptsBySourceId(result.matchState, 'giant_ant_worker_pod_replay')).toBe(1);
         });
 
         it('scoreOneBase 会让 Igor 在计分弃牌后给控制者创建放置指示物目标选择', () => {
@@ -1302,6 +1583,56 @@ describe('基地记分与力量计算', () => {
                 && (event as any).payload?.amount === 1
                 && (event as any).payload?.reason === 'giant_ants_death_on_six_legs'
             )).toBe(true);
+        });
+
+        it('giant_ants_death_on_six_legs 在 destroy -> processDestroyTriggers 真链里不应因同一名己方随从双加指示物', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', {
+                        factions: [SMASHUP_FACTION_IDS.GIANT_ANTS, SMASHUP_FACTION_IDS.ALIENS],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [
+                    {
+                        defId: 'base_faceless_city',
+                        minions: [
+                            { uid: 'six-legs-minion-a', defId: 'giant_ant_worker', controller: '0', owner: '0', basePower: 20, powerCounters: 2, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        ],
+                        ongoingActions: [],
+                    },
+                    {
+                        defId: 'base_great_library',
+                        minions: [],
+                        ongoingActions: [],
+                    },
+                ],
+                titans: [{
+                    uid: 'six-legs-titan-a',
+                    defId: 'giant_ants_death_on_six_legs',
+                    faction: SMASHUP_FACTION_IDS.GIANT_ANTS,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+                } as any],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const counterEvents = result.events.filter(event =>
+                event.type === SU_EVENTS.TITAN_POWER_COUNTER_ADDED
+                && (event as any).payload?.titanUid === 'six-legs-titan-a'
+                && (event as any).payload?.reason === 'giant_ants_death_on_six_legs',
+            );
+
+            expect(counterEvents).toHaveLength(1);
+            expect((counterEvents[0] as any).payload?.amount).toBe(1);
         });
 
         it('scoreOneBase 会让 Bushi 自身在基地计分弃牌后按离场力量 LKI 得分', () => {

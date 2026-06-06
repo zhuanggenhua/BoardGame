@@ -24,6 +24,7 @@ import { useUndo, useUndoStatus } from '../../../../contexts/UndoContext';
 import { UI_Z_INDEX, HudPortal } from '../../../../core';
 import { FabMenu, type FabAction } from '../../../system/FabMenu';
 import { UNDO_COMMANDS } from '../../../../engine';
+import type { MatchState } from '../../../../engine/types';
 import { AudioControlSection } from './AudioControlSection';
 import { AboutModal } from '../../../system/AboutModal';
 import { FeedbackModal } from '../../../system/FeedbackModal';
@@ -41,11 +42,8 @@ import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../registry/cardP
 import { generateId, copyToClipboard } from '../../../../lib/utils';
 import { OpponentOfflineBanner } from './OpponentOfflineBanner';
 import { logger } from '../../../../lib/logger';
-import { useSmashUpOverlay } from '../../../../games/smashup/ui/SmashUpOverlayContext';
 import { isNativeAndroidRuntime } from '../../../../lib/mobile/androidRuntime';
-import type { MatchState } from '../../../../engine/types';
-import { getSmashUpReactionWindowPresentation } from '../../../../games/smashup/domain/reactionWindowState';
-import { isSmashUpPromptOwnedByPlayer } from '../../../../games/smashup/ui/interactionMode';
+import { GameHudRuntimeSettingsSection, shouldSuppressGameHudFab } from '../../../../games/gameHudRuntimeAdapter';
 import { OptimizedImage } from '../../../common/media/OptimizedImage';
 import { EmotePicker } from './EmotePicker';
 import { SeatEmoteOverlay } from './SeatEmoteOverlay';
@@ -129,48 +127,102 @@ export const trimChatMessages = (
     return messages.slice(messages.length - maxMessages);
 };
 
-type SmashUpHudSuppressionInput = {
-    gameId?: string;
-    mode?: GameHUDProps['mode'];
-    state?: MatchState<unknown> | null;
-    playerId?: string | null;
+export const GAME_HUD_FAB_Z_INDEX = UI_Z_INDEX.emergencyHud;
+
+const FEEDBACK_ACTION_LOG_TAIL_LIMIT = 12;
+const FEEDBACK_EVENT_STREAM_TAIL_LIMIT = 12;
+const FEEDBACK_UNDO_SNAPSHOT_LIMIT = 3;
+
+type FeedbackActionLogRow = {
+    timeLabel: string;
+    playerLabel: string;
+    text: string;
 };
 
-export function shouldSuppressSmashUpHudFab({
-    gameId,
-    mode,
-    state,
-    playerId,
-}: SmashUpHudSuppressionInput): boolean {
-    if (gameId !== 'smashup' || !state) return false;
-
-    const currentPrompt = state.sys?.interaction?.current as { playerId?: unknown } | null | undefined;
-    const effectivePlayerId = playerId ?? (
-        (mode === 'local' || mode === 'tutorial')
-            ? ((state.core as Record<string, unknown> | undefined)?.currentPlayer as string | undefined) ?? null
-            : null
-    );
-
-    if (!effectivePlayerId) {
-        return Boolean(currentPrompt) || Boolean(getSmashUpReactionWindowPresentation(state as MatchState<any>));
+const sanitizeFeedbackCore = (core: unknown): unknown => {
+    if (!core || typeof core !== 'object') return core;
+    const obj = core as Record<string, unknown>;
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(obj)) {
+        if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && val[0] !== null) {
+            const first = val[0] as Record<string, unknown>;
+            const isStaticDef = 'description' in first || 'effects' in first || 'i18n' in first || 'colorTheme' in first;
+            if (isStaticDef) {
+                result[key] = val.map((item: Record<string, unknown>) => item.id ?? item.name ?? '?');
+                continue;
+            }
+        }
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+            result[key] = sanitizeFeedbackCore(val);
+        } else {
+            result[key] = val;
+        }
     }
+    return result;
+};
 
-    if (isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID: effectivePlayerId })) {
-        return true;
+const cloneJsonValue = <T,>(value: T): T | undefined => {
+    if (value === undefined) return undefined;
+    try {
+        return JSON.parse(JSON.stringify(value)) as T;
+    } catch {
+        return undefined;
     }
+};
 
-    const reactionWindow = getSmashUpReactionWindowPresentation(state as MatchState<any>);
-    if (!reactionWindow) return false;
+export const buildGameHudFeedbackActionLog = (
+    state: MatchState<unknown>,
+    actionLogRows: FeedbackActionLogRow[],
+): string => {
+    const actionLogEntries = Array.isArray(state.sys?.actionLog?.entries)
+        ? state.sys.actionLog.entries
+        : [];
+    const eventStreamEntries = Array.isArray(state.sys?.eventStream?.entries)
+        ? state.sys.eventStream.entries
+        : [];
+    const undoSnapshots = Array.isArray(state.sys?.undo?.snapshots)
+        ? state.sys.undo.snapshots
+        : [];
+    const interaction = cloneJsonValue(state.sys?.interaction?.current);
+    const responseWindow = cloneJsonValue(state.sys?.responseWindow?.current);
+    const humanReadableLog = actionLogRows.length > 0
+        ? actionLogRows.map((row) => `[${row.timeLabel}] ${row.playerLabel}: ${row.text}`).join('\n')
+        : '';
 
-    if (reactionWindow.activePlayerId === effectivePlayerId) {
-        return true;
-    }
+    return JSON.stringify({
+        kind: 'user-feedback-diagnostic',
+        phase: state.sys?.phase,
+        turnNumber: state.sys?.turnNumber,
+        humanReadableLog,
+        actionLogTail: actionLogEntries.slice(-FEEDBACK_ACTION_LOG_TAIL_LIMIT).map((entry) => ({
+            text: typeof entry?.text === 'string' ? entry.text : undefined,
+            type: entry?.event?.type,
+            timestamp: entry?.timestamp,
+        })),
+        eventStreamTail: eventStreamEntries.slice(-FEEDBACK_EVENT_STREAM_TAIL_LIMIT).map((entry) => ({
+            type: entry?.type,
+            timestamp: entry?.timestamp,
+            payload: cloneJsonValue(entry?.payload),
+        })),
+        interaction,
+        responseWindow,
+        undoSnapshots: undoSnapshots.slice(-FEEDBACK_UNDO_SNAPSHOT_LIMIT).map((snapshot, index) => ({
+            index: undoSnapshots.length - Math.min(undoSnapshots.length, FEEDBACK_UNDO_SNAPSHOT_LIMIT) + index,
+            turnNumber: snapshot?.sys?.turnNumber,
+            phase: snapshot?.sys?.phase,
+            core: sanitizeFeedbackCore(snapshot?.core),
+        })),
+        currentStateSummary: {
+            turnNumber: state.sys?.turnNumber,
+            phase: state.sys?.phase,
+            core: sanitizeFeedbackCore(state.core),
+        },
+    }, null, 2);
+};
 
-    const pendingInteractionId = state.sys?.responseWindow?.current?.pendingInteractionId;
-    return !currentPrompt && !pendingInteractionId;
-}
-
-export const GAME_HUD_FAB_Z_INDEX = UI_Z_INDEX.emergencyHud;
+export const buildGameHudFeedbackStateSnapshot = (state: MatchState<unknown>): string => (
+    JSON.stringify(state, null, 2)
+);
 
 export const GameHUD = ({
     mode,
@@ -203,7 +255,6 @@ export const GameHUD = ({
     const { t, i18n } = useTranslation('game');
     const toast = useToast();
     const { user } = useAuth();
-    const { overlayEnabled, interactionMode, toggleOverlay, setInteractionMode } = useSmashUpOverlay();
 
     // 从注册表获取游戏特定的卡牌预览函数
     const getCardPreviewRef = useMemo(() => {
@@ -231,7 +282,6 @@ export const GameHUD = ({
     const isTutorial = mode === 'tutorial';
     const undoRequestPayload = undoState?.isLocalMode ? { localAutoApprove: true } : undefined;
     const isNativeAndroid = isNativeAndroidRuntime();
-    const isSmashUp = _gameId === 'smashup';
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
     const isSetupPhase = isPregameSetupPhase
         ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
@@ -282,7 +332,7 @@ export const GameHUD = ({
         const entries = undoState?.G?.sys?.actionLog?.entries ?? [];
         return buildActionLogRows(entries, { getPlayerLabel: getActionLogPlayerLabel });
     }, [getActionLogPlayerLabel, undoState?.G?.sys?.actionLog?.entries]);
-    const shouldSuppressFabMenu = useMemo(() => shouldSuppressSmashUpHudFab({
+    const shouldSuppressFabMenu = useMemo(() => shouldSuppressGameHudFab({
         gameId: _gameId,
         mode,
         state: undoState?.G ?? null,
@@ -850,54 +900,7 @@ export const GameHUD = ({
                     </div>
                 )}
 
-                {isSmashUp && (
-                    <div className="mt-4 space-y-3 rounded-lg border border-violet-400/20 bg-violet-500/10 p-3">
-                        <div>
-                            <div className="text-xs font-bold uppercase tracking-wider text-violet-200">{t('hud.smashup.title')}</div>
-                            <div className="mt-1 text-[11px] text-white/55">{t('hud.smashup.interactionHint')}</div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="text-[10px] font-bold uppercase text-white/45">{t('hud.smashup.interaction')}</div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setInteractionMode('click')}
-                                    className={`rounded-md border px-3 py-2 text-xs font-bold transition-colors ${interactionMode === 'click'
-                                        ? 'border-violet-300 bg-violet-300/25 text-white'
-                                        : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'}`}
-                                >
-                                    {t('hud.smashup.modeClick')}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setInteractionMode('drag')}
-                                    className={`rounded-md border px-3 py-2 text-xs font-bold transition-colors ${interactionMode === 'drag'
-                                        ? 'border-violet-300 bg-violet-300/25 text-white'
-                                        : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'}`}
-                                >
-                                    {t('hud.smashup.modeDrag')}
-                                </button>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={toggleOverlay}
-                            className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-left transition-colors hover:bg-white/10"
-                        >
-                            <div className="flex items-center justify-between gap-3">
-                                <div>
-                                    <div className="text-xs font-bold text-white">{t('hud.smashup.overlay')}</div>
-                                    <div className="mt-1 text-[11px] text-white/55">{t('hud.smashup.overlayHint')}</div>
-                                </div>
-                                <div className={`rounded-full px-2 py-1 text-[10px] font-bold ${overlayEnabled
-                                    ? 'bg-emerald-400/20 text-emerald-200'
-                                    : 'bg-white/10 text-white/60'}`}>
-                                    {overlayEnabled ? t('hud.smashup.enabled') : t('hud.smashup.disabled')}
-                                </div>
-                            </div>
-                        </button>
-                    </div>
-                )}
+                <GameHudRuntimeSettingsSection gameId={_gameId} t={t} />
 
                 <AudioControlSection isDark={true} />
             </div>
@@ -1270,56 +1273,12 @@ export const GameHUD = ({
                     actionLogText={(() => {
                         const G = undoState?.G;
                         if (!G) return undefined;
-                        // 操作日志（人类可读）
-                        const logLines = actionLogRows.length > 0
-                            ? actionLogRows.map(r => `[${r.timeLabel}] ${r.playerLabel}: ${r.text}`).join('\n')
-                            : '';
-                        // 精简 core 状态：去掉静态定义，只保留动态数据
-                        const summarizeCore = (core: unknown): unknown => {
-                            if (!core || typeof core !== 'object') return core;
-                            const obj = core as Record<string, unknown>;
-                            const result: Record<string, unknown> = {};
-                            for (const [key, val] of Object.entries(obj)) {
-                                // 跳过大型静态定义数组（token 定义、技能定义、被动定义）
-                                // 只保留 id 列表作为摘要
-                                if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && val[0] !== null) {
-                                    const first = val[0] as Record<string, unknown>;
-                                    const isStaticDef = 'description' in first || 'effects' in first || 'i18n' in first || 'colorTheme' in first;
-                                    if (isStaticDef) {
-                                        result[key] = val.map((item: Record<string, unknown>) => item.id ?? item.name ?? '?');
-                                        continue;
-                                    }
-                                }
-                                // 递归处理 players 等嵌套对象
-                                if (val && typeof val === 'object' && !Array.isArray(val)) {
-                                    result[key] = summarizeCore(val);
-                                } else {
-                                    result[key] = val;
-                                }
-                            }
-                            return result;
-                        };
-                        // 撤回栈快照（精简版）
-                        const snapshots = (G.sys.undo.snapshots ?? []) as Array<{ sys: { turnNumber: number; phase: string }; core: unknown }>;
-                        const snapshotEntries = snapshots.map((snap, i) => {
-                            return `[${i}] turn=${snap.sys.turnNumber} phase=${snap.sys.phase}\n${JSON.stringify(summarizeCore(snap.core))}`;
-                        });
-                        // 当前状态（精简版）
-                        const current = `[current] turn=${G.sys.turnNumber} phase=${G.sys.phase}\n${JSON.stringify(summarizeCore(G.core))}`;
-                        return [
-                            `--- Action Log ---`,
-                            logLines,
-                            ``,
-                            `--- State Snapshots (${snapshotEntries.length} undo + current) ---`,
-                            ...snapshotEntries,
-                            current,
-                        ].join('\n');
+                        return buildGameHudFeedbackActionLog(G, actionLogRows);
                     })()}
                     stateSnapshot={(() => {
                         const G = undoState?.G;
                         if (!G) return undefined;
-                        // 完整状态 JSON（用于精确复现）
-                        return JSON.stringify({ core: G.core, sys: G.sys }, null, 2);
+                        return buildGameHudFeedbackStateSnapshot(G);
                     })()}
                 />
             )}

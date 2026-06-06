@@ -102,6 +102,7 @@ import { GameProvider, useGameClient } from '../react';
 import { useEventStreamRollback } from '../../hooks/EventStreamRollbackContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
 import { PromptOverlay } from '../../../games/smashup/ui/PromptOverlay';
+import { normalizeSmashUpMatchStateForUi } from '../../../games/smashup/ui/normalizeRuntimeState';
 
 function StateProbe(): JSX.Element {
     const { state } = useGameClient();
@@ -140,6 +141,13 @@ describe('GameProvider transport baseline', () => {
     afterEach(() => {
         cleanup();
     });
+
+    const smashupRuntimeNormalizedEngineConfig = {
+        gameId: 'smashup',
+        domain: {
+            normalizeRuntimeState: (state: any) => normalizeSmashUpMatchStateForUi(state),
+        },
+    } as any;
 
     it('writes back authoritative newState to client patch base instead of refreshed render state', () => {
         render(
@@ -195,7 +203,7 @@ describe('GameProvider transport baseline', () => {
                 server="http://127.0.0.1:3000"
                 matchId="match-react-smashup-runtime-guard-normalize"
                 playerId="0"
-                engineConfig={{ gameId: 'smashup' } as any}
+                engineConfig={smashupRuntimeNormalizedEngineConfig}
             >
                 <StateProbe />
             </GameProvider>,
@@ -360,6 +368,80 @@ describe('GameProvider transport baseline', () => {
         expect(client.latestState).toBe(closedPromptState);
         expect(screen.getByTestId('state').textContent).toContain('"hp":9');
         expect(screen.getByTestId('state').textContent).not.toContain('owner-only-current-a');
+    });
+
+    it('renders a newly opened owner-only current prompt when authoritative update adds it', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-open-owner-only-current"
+                playerId="0"
+            >
+                <StateProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const baselineState = {
+            core: { hp: 10 },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(baselineState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(1);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(baselineState);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(1);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(baselineState);
+        expect(screen.getByTestId('state').textContent).not.toContain('owner-only-current-open-a');
+
+        const ownerOnlyPromptState = {
+            core: { hp: 11 },
+            sys: {
+                interaction: {
+                    current: {
+                        id: 'owner-only-current-open-a',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                        data: {
+                            title: '是否获得诅咒金币？',
+                            sourceId: 'verdict-command',
+                            options: [
+                                { id: 'yes', label: '是', value: { gainCursedCoin: true } },
+                                { id: 'no', label: '否', value: { gainCursedCoin: false } },
+                            ],
+                        },
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(ownerOnlyPromptState, [], { stateID: 2, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(2);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(ownerOnlyPromptState);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(2);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(ownerOnlyPromptState);
+        expect(client.latestState).toBe(ownerOnlyPromptState);
+        expect(screen.getByTestId('state').textContent).toContain('"hp":11');
+        expect(screen.getByTestId('state').textContent).toContain('owner-only-current-open-a');
+        expect(screen.getByTestId('state').textContent).toContain('是否获得诅咒金币？');
     });
 
     it('clears stale hidden-interaction isBlocked from rendered state when authoritative update unblocks it', () => {

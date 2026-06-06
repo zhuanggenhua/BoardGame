@@ -1,5 +1,7 @@
 # 攻击修正指示器撤回修复
 
+> 2026-06-06 当前有效口径：本文只记录“攻击修正指示器在撤回/刷新后状态错误”这一条历史专项修复，不是当前 DiceThrone 所有攻击修正徽章、所有 EventStream 恢复逻辑都已收口的证明，也不是新英雄补审出口。阅读时只能把它当作单问题修复记录。
+
 ## 问题描述
 
 用户报告了两个相关的 bug：
@@ -147,3 +149,7 @@ if (didReset) {
 - `src/games/dicethrone/hooks/useActiveModifiers.ts` - 修复核心逻辑
 - `src/games/dicethrone/__tests__/active-modifiers-undo.test.ts` - 测试用例
 - `src/engine/hooks/useEventStreamCursor.ts` - EventStream 游标管理（已有功能，无需修改）
+
+---
+
+**当前阅读说明**：本文只能证明“攻击修正指示器在撤回/刷新后恢复错误”这条专项问题曾被修复，不能外推为当前所有攻击修正徽章链路、所有 hook 状态恢复或 DiceThrone 当前整体审计都已收口。

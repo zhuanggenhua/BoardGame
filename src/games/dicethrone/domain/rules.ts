@@ -105,7 +105,9 @@ export const getFaceCounts = (dice: Die[]): Record<DieFace, number> => {
  * 获取活跃骰子（根据 rollDiceCount）
  */
 export const getActiveDice = (state: DiceThroneCore): Die[] => {
-    return state.dice.slice(0, state.rollDiceCount);
+    const dice = Array.isArray(state.dice) ? state.dice : [];
+    const rollDiceCount = typeof state.rollDiceCount === 'number' ? state.rollDiceCount : dice.length;
+    return dice.slice(0, rollDiceCount);
 };
 
 /**

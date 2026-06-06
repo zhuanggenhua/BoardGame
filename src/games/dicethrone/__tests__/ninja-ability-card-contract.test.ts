@@ -8,14 +8,27 @@ import { RESOURCE_IDS } from '../domain/resources';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../domain/ids';
 import { resolveAttack } from '../domain/attack';
 import { resolveEffectsToEvents } from '../domain/effects';
+import { getChoiceResolvedEventHandler } from '../domain/choiceResolvedEvents';
 import { checkPlayCard, getAvailableAbilityIds } from '../domain/rules';
 import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
-import { BLINK_2, DEATH_BLOSSOM_2, GOING_FORWARD_2, SHADOW_FANG_2, SHADOW_STEP_2 } from '../heroes/ninja/abilities';
+import { BLINK_2, DEATH_BLOSSOM_2, GOING_FORWARD_2, POISON_BLADE_2, SHADOW_FANG_2, SHADOW_STEP_2, SLASH_2, SMOKE_SCREEN_2 } from '../heroes/ninja/abilities';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
+
+const createNinjaTeamMatchup = () => {
+    const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+    state.core.players['2'] = JSON.parse(JSON.stringify(state.core.players['0']));
+    state.core.players['2'].id = '2';
+    state.core.players['3'] = JSON.parse(JSON.stringify(state.core.players['1']));
+    state.core.players['3'].id = '3';
+    state.core.seatingOrder = ['0', '1', '2', '3'];
+    state.core.teamIdByPlayerId = { '0': 'A', '1': 'B', '2': 'A', '3': 'B' };
+    state.core.teamHealth = { A: 50, B: 50 };
+    return state;
+};
 
 function createNinjaDie(value: number): Die {
     const faceMap: Record<number, string> = {
@@ -107,6 +120,348 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             'shadow-fang-2-main',
             'shadow-fang-2-deceive',
         ]);
+    });
+
+    it('暗影步 II 的勒杀分支应施加 3 忍术与 2 慢性中毒，并作为非攻击分支收口', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shadow-step-2-strangle',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveEffectsToEvents(
+            SHADOW_STEP_2.variants?.[1].effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'shadow-step-2-strangle',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 120,
+            },
+            { random: createQueuedRandom([1]) },
+        );
+        const next = applyEvents(state.core, events);
+
+        expect(events.some(event => event.type === 'DAMAGE_DEALT')).toBe(false);
+        expect(events.some(event => event.type === 'TOKEN_RESPONSE_REQUESTED')).toBe(false);
+        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(3);
+        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(2);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(30);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingDamage).toBeUndefined();
+    });
+
+    it('烟雾阵 II 主分支应在选择目标后给目标玩家烟雾弹与 3 忍术，并对目标对手施加慢性中毒', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'smoke-screen-2-main',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveEffectsToEvents(
+            SMOKE_SCREEN_2.variants?.[0].effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'smoke-screen-2-main',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 140,
+            },
+            { random: createQueuedRandom([1]) },
+        );
+        const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
+        const selectedOption = (choiceEvent as any)?.payload?.options?.find((option: { labelKey?: string }) =>
+            option.labelKey === '令1号玩家获得烟雾弹与3忍术；对2号玩家施加慢性中毒'
+        );
+        expect(selectedOption).toBeDefined();
+
+        let next = applyEvents(state.core, events);
+        const followupHandler = getChoiceResolvedEventHandler(selectedOption.customId);
+        expect(followupHandler).toBeDefined();
+        const followupEvents = followupHandler?.({
+            state: next,
+            playerId: '0',
+            customId: selectedOption.customId,
+            sourceAbilityId: 'smoke-screen-2-main',
+            value: selectedOption.value,
+            timestamp: 141,
+        }) ?? [];
+
+        next = reduce(next, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'smoke-screen-2-main',
+                customId: selectedOption.customId,
+                value: selectedOption.value,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 141,
+        } as DiceThroneEvent);
+        next = applyEvents(next, followupEvents);
+
+        expect(next.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(3);
+        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingDamage).toBeUndefined();
+    });
+
+    it('烟雾阵 II 的九字切分支应允许同一名对手吃两次 4 点真实伤害，并作为非攻击分支收口', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveEffectsToEvents(
+            SMOKE_SCREEN_2.variants?.[1].effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 160,
+            },
+            { random: createQueuedRandom([1]) },
+        );
+        const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
+        const selectedOption = (choiceEvent as any)?.payload?.options?.find((option: { labelKey?: string }) =>
+            option.labelKey === '对2号玩家造成两次 4 点真实伤害'
+        );
+        expect(selectedOption).toBeDefined();
+
+        let next = applyEvents(state.core, events);
+        const followupHandler = getChoiceResolvedEventHandler(selectedOption.customId);
+        expect(followupHandler).toBeDefined();
+        const followupEvents = followupHandler?.({
+            state: next,
+            playerId: '0',
+            customId: selectedOption.customId,
+            sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+            value: selectedOption.value,
+            timestamp: 161,
+        }) ?? [];
+
+        next = reduce(next, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+                customId: selectedOption.customId,
+                value: selectedOption.value,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 161,
+        } as DiceThroneEvent);
+        next = applyEvents(next, followupEvents);
+
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(22);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingDamage).toBeUndefined();
+    });
+
+    it('烟雾阵 II 主分支在 4 人局应暴露完整玩家-对手目标矩阵，并允许把增益给队友、把慢性中毒给另一名对手', () => {
+        const state = createNinjaTeamMatchup();
+        state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        state.core.players['2'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.players['2'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+        state.core.players['3'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'smoke-screen-2-main',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveEffectsToEvents(
+            SMOKE_SCREEN_2.variants?.[0].effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'smoke-screen-2-main',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 150,
+            },
+            { random: createQueuedRandom([1]) },
+        );
+        const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
+        const options = ((choiceEvent as any)?.payload?.options ?? []) as Array<{ labelKey?: string; customId: string; value: number }>;
+
+        expect(options).toHaveLength(8);
+        const selectedOption = options.find((option) =>
+            option.labelKey === '令3号玩家获得烟雾弹与3忍术；对4号玩家施加慢性中毒'
+        );
+        expect(selectedOption).toBeDefined();
+
+        let next = applyEvents(state.core, events);
+        const followupHandler = getChoiceResolvedEventHandler(selectedOption!.customId);
+        expect(followupHandler).toBeDefined();
+        const followupEvents = followupHandler?.({
+            state: next,
+            playerId: '0',
+            customId: selectedOption!.customId,
+            sourceAbilityId: 'smoke-screen-2-main',
+            value: selectedOption!.value,
+            timestamp: 151,
+        }) ?? [];
+
+        next = reduce(next, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'smoke-screen-2-main',
+                customId: selectedOption!.customId,
+                value: selectedOption!.value,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 151,
+        } as DiceThroneEvent);
+        next = applyEvents(next, followupEvents);
+
+        expect(next.players['2'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+        expect(next.players['2'].tokens[TOKEN_IDS.NINJUTSU]).toBe(3);
+        expect(next.players['3'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
+        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(0);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingDamage).toBeUndefined();
+    });
+
+    it('烟雾阵 II 的九字切分支在 4 人局应允许两个不同对手各吃 4 点真实伤害', () => {
+        const state = createNinjaTeamMatchup();
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.players['3'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveEffectsToEvents(
+            SMOKE_SCREEN_2.variants?.[1].effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 160,
+            },
+            { random: createQueuedRandom([1]) },
+        );
+        const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
+        const options = ((choiceEvent as any)?.payload?.options ?? []) as Array<{ labelKey?: string; customId: string; value: number }>;
+
+        expect(options).toHaveLength(3);
+        const selectedOption = options.find((option) =>
+            option.labelKey === '对2号与4号玩家各造成 4 点真实伤害'
+        );
+        expect(selectedOption).toBeDefined();
+
+        let next = applyEvents(state.core, events);
+        const followupHandler = getChoiceResolvedEventHandler(selectedOption!.customId);
+        expect(followupHandler).toBeDefined();
+        const followupEvents = followupHandler?.({
+            state: next,
+            playerId: '0',
+            customId: selectedOption!.customId,
+            sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+            value: selectedOption!.value,
+            timestamp: 161,
+        }) ?? [];
+
+        next = reduce(next, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+                customId: selectedOption!.customId,
+                value: selectedOption!.value,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 161,
+        } as DiceThroneEvent);
+        next = applyEvents(next, followupEvents);
+
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(22);
+        expect(next.players['3'].resources[RESOURCE_IDS.HP]).toBe(22);
+        expect(next.teamHealth?.B).toBe(22);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingDamage).toBeUndefined();
+    });
+
+    it('烟雾阵 II 的选择 followup 应拒绝越界的 forged choice value，避免把效果路由到错误目标', () => {
+        const mainState = createNinjaTeamMatchup();
+        mainState.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'smoke-screen-2-main',
+            isDefendable: true,
+            damage: 0,
+        };
+        const mainHandler = getChoiceResolvedEventHandler('ninja-smoke-screen-2-choice');
+        expect(mainHandler).toBeDefined();
+        const forgedMainEvents = mainHandler?.({
+            state: mainState.core,
+            playerId: '0',
+            customId: 'ninja-smoke-screen-2-choice',
+            sourceAbilityId: 'smoke-screen-2-main',
+            value: 99,
+            timestamp: 170,
+        }) ?? [];
+        expect(forgedMainEvents).toEqual([]);
+
+        const kujiState = createNinjaTeamMatchup();
+        kujiState.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        kujiState.core.players['3'].resources[RESOURCE_IDS.HP] = 30;
+        kujiState.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+            isDefendable: true,
+            damage: 0,
+        };
+        const kujiHandler = getChoiceResolvedEventHandler('ninja-smoke-screen-kuji-kiri-choice');
+        expect(kujiHandler).toBeDefined();
+        const forgedKujiEvents = kujiHandler?.({
+            state: kujiState.core,
+            playerId: '0',
+            customId: 'ninja-smoke-screen-kuji-kiri-choice',
+            sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+            value: 99,
+            timestamp: 171,
+        }) ?? [];
+        expect(forgedKujiEvents).toEqual([]);
     });
 
     it('Blink 基础版应按防御投已出的骰面结算固定反击与烟雾弹，而不是额外奖励骰累计', () => {
@@ -277,6 +632,49 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(next.pendingAttack?.isDefendable).toBe(false);
     });
 
+    it('一往无前 II 主分支在奖励骰总和大于 6 时不应错误改成不可防御', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'going-forward-2-main',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const openEvents = resolveEffectsToEvents(
+            GOING_FORWARD_2.variants?.[0].effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'going-forward-2-main',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 130,
+            },
+            { random: createQueuedRandom([4, 4]) },
+        );
+        let next = applyEvents(state.core, openEvents);
+
+        expect(next.pendingBonusDiceSettlement).toMatchObject({
+            sourceAbilityId: 'going-forward-2-main',
+            rerollCount: 0,
+            maxRerollCount: 1,
+        });
+
+        const settleEvents = execute(
+            { core: next, sys: { phase: 'offensiveRoll' } },
+            command('SKIP_BONUS_DICE_REROLL', '0'),
+            createQueuedRandom([1]),
+        );
+        next = applyEvents(next, settleEvents);
+
+        expect(next.pendingBonusDiceSettlement).toBeUndefined();
+        expect(next.pendingAttack?.bonusDamage).toBe(8);
+        expect(next.pendingAttack?.isDefendable).toBe(true);
+    });
+
     it('一往无前 II 的刀尖舔血分支应按单骰结果造成等值真实伤害并直接收口攻击链', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
@@ -313,6 +711,230 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         });
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(25);
         expect(next.pendingAttack?.isDefendable).toBe(false);
+    });
+
+    it('斩击 II 在 3 忍刀时应造成 4 点伤害，并在攻击骰为 3 个同点后于 postDamage 获得 1 忍术', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
+            ability.id === 'slash' ? SLASH_2 : ability
+        ));
+        state.core.players['0'].abilityLevels.slash = 2;
+        state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'slash-2-3',
+            isDefendable: true,
+            damage: 0,
+            attackDiceValues: [1, 1, 1, 4, 5],
+        };
+
+        const events = resolveAttack(state.core, createQueuedRandom([1]), { includePreDefense: true }, 165);
+        const next = applyEvents(state.core, events);
+
+        const damageEvent = events.find(event => event.type === 'DAMAGE_DEALT');
+        expect((damageEvent as any)?.payload?.amount).toBe(4);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(26);
+        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(1);
+    });
+
+    it('斩击 II 在 5 忍刀时应造成 8 点伤害，且非 3 同点时不授予额外忍术', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
+            ability.id === 'slash' ? SLASH_2 : ability
+        ));
+        state.core.players['0'].abilityLevels.slash = 2;
+        state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'slash-2-5',
+            isDefendable: true,
+            damage: 0,
+            attackDiceValues: [1, 2, 3, 4, 5],
+        };
+
+        const events = resolveAttack(state.core, createQueuedRandom([1]), { includePreDefense: true }, 166);
+        const next = applyEvents(state.core, events);
+
+        const damageEvent = events.find(event => event.type === 'DAMAGE_DEALT');
+        expect((damageEvent as any)?.payload?.amount).toBe(8);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(22);
+        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
+    });
+
+    it('斩击 II 的 postDamage 忍术奖励应只读取攻击快照，而不是当前活跃骰面', () => {
+        const tripletAttackState = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        tripletAttackState.core.players['0'].abilities = tripletAttackState.core.players['0'].abilities.map((ability) => (
+            ability.id === 'slash' ? SLASH_2 : ability
+        ));
+        tripletAttackState.core.players['0'].abilityLevels.slash = 2;
+        tripletAttackState.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        tripletAttackState.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        tripletAttackState.core.dice = [1, 2, 4].map(createNinjaDie);
+        tripletAttackState.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'slash-2-4',
+            isDefendable: true,
+            damage: 0,
+            attackDiceValues: [2, 2, 2, 4, 5],
+        };
+
+        const tripletEvents = resolveAttack(tripletAttackState.core, createQueuedRandom([1]), { includePreDefense: true }, 167);
+        const tripletNext = applyEvents(tripletAttackState.core, tripletEvents);
+
+        expect(tripletNext.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(1);
+
+        const nonTripletAttackState = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        nonTripletAttackState.core.players['0'].abilities = nonTripletAttackState.core.players['0'].abilities.map((ability) => (
+            ability.id === 'slash' ? SLASH_2 : ability
+        ));
+        nonTripletAttackState.core.players['0'].abilityLevels.slash = 2;
+        nonTripletAttackState.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        nonTripletAttackState.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        nonTripletAttackState.core.dice = [6, 6, 6].map(createNinjaDie);
+        nonTripletAttackState.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'slash-2-4',
+            isDefendable: true,
+            damage: 0,
+            attackDiceValues: [1, 2, 3, 4, 5],
+        };
+
+        const nonTripletEvents = resolveAttack(nonTripletAttackState.core, createQueuedRandom([1]), { includePreDefense: true }, 168);
+        const nonTripletNext = applyEvents(nonTripletAttackState.core, nonTripletEvents);
+
+        expect(nonTripletNext.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
+    });
+
+    it('影牙 II 主分支应获得 1 烟雾弹、2 忍术并造成 8 点伤害', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
+            ability.id === 'shadow-fang' ? SHADOW_FANG_2 : ability
+        ));
+        state.core.players['0'].abilityLevels['shadow-fang'] = 2;
+        state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shadow-fang-2-main',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveAttack(state.core, createQueuedRandom([1]), { includePreDefense: true }, 167);
+        let next = applyEvents(state.core, events);
+
+        expect(events.some(event => event.type === 'TOKEN_RESPONSE_REQUESTED')).toBe(true);
+        expect(next.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(2);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(30);
+        expect(next.pendingDamage?.responseType).toBe('beforeDamageDealt');
+        expect(next.pendingDamage?.currentDamage).toBe(8);
+        expect(next.pendingDamage?.responderId).toBe('0');
+
+        const skipEvents = execute(
+            { core: next, sys: { phase: 'offensiveRoll' } },
+            command('SKIP_TOKEN_RESPONSE', '0'),
+            createQueuedRandom([1]),
+        );
+        next = applyEvents(next, skipEvents);
+
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(22);
+        expect(next.pendingDamage).toBeUndefined();
+        expect(next.pendingAttack).toMatchObject({
+            sourceAbilityId: 'shadow-fang-2-main',
+            damageResolved: true,
+            resolvedDamage: 8,
+        });
+    });
+
+    it('影牙 II 的诳惑分支应获得 1 烟雾弹并造成 2 点不可防御伤害', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
+            ability.id === 'shadow-fang' ? SHADOW_FANG_2 : ability
+        ));
+        state.core.players['0'].abilityLevels['shadow-fang'] = 2;
+        state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shadow-fang-2-deceive',
+            isDefendable: false,
+            damage: 0,
+        };
+
+        const events = resolveAttack(state.core, createQueuedRandom([1]), { includePreDefense: true }, 168);
+        const next = applyEvents(state.core, events);
+
+        const damageEvent = events.find(event => event.type === 'DAMAGE_DEALT');
+        expect(events.some(event => event.type === 'TOKEN_RESPONSE_REQUESTED')).toBe(false);
+        expect((damageEvent as any)?.payload?.amount).toBe(2);
+        expect((damageEvent as any)?.payload?.unblockable).toBe(true);
+        expect(next.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(28);
+        expect(next.pendingDamage).toBeUndefined();
+    });
+
+    it('毒刃 II 在奖励骰投出忍刀时应完成 1 个慢性中毒 + 5 点伤害的完整攻击收口', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+        state.core.players['0'].abilities = state.core.players['0'].abilities.map(ability => (
+            ability.id === 'poison-blade' ? POISON_BLADE_2 : ability
+        ));
+        state.core.players['0'].abilityLevels['poison-blade'] = 2;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'poison-blade',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveAttack(state.core, createQueuedRandom([1]), { includePreDefense: true }, 170);
+        const next = applyEvents(state.core, events);
+
+        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(1);
+        expect(events.filter(event => event.type === 'BONUS_DICE_REROLL_REQUESTED')).toHaveLength(1);
+        expect(events.some(event => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED')).toBe(true);
+        expect(events.some(event => event.type === 'ATTACK_RESOLVED')).toBe(true);
+        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(25);
+    });
+
+    it('毒刃 II 在奖励骰投出手里剑或面具时应完成 2 个慢性中毒 + 5 点伤害的完整攻击收口', () => {
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+        state.core.players['0'].abilities = state.core.players['0'].abilities.map(ability => (
+            ability.id === 'poison-blade' ? POISON_BLADE_2 : ability
+        ));
+        state.core.players['0'].abilityLevels['poison-blade'] = 2;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'poison-blade',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveAttack(state.core, createQueuedRandom([6]), { includePreDefense: true }, 180);
+        const next = applyEvents(state.core, events);
+
+        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(1);
+        expect(events.filter(event => event.type === 'BONUS_DICE_REROLL_REQUESTED')).toHaveLength(1);
+        expect(events.some(event => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED')).toBe(true);
+        expect(events.some(event => event.type === 'ATTACK_RESOLVED')).toBe(true);
+        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(2);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(25);
     });
 
     it('死亡盛放 II 应通过共享奖励骰链限制为至多重掷 2 次，并在双面具时施加慢性中毒且改成不可防御', () => {
@@ -390,6 +1012,77 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(next.pendingAttack?.bonusDamage).toBe(5);
         expect(next.pendingAttack?.isDefendable).toBe(false);
         expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
+    });
+
+    it('死亡盛放 II 应按面具数量分别收口为无追加、仅不可防御、不可防御加慢性中毒', () => {
+        const scenarios = [
+            {
+                label: '0 面具',
+                diceValues: [1, 1, 4, 4, 4],
+                expectedBonusDamage: 8,
+                expectedDefendable: true,
+                expectedPoison: 0,
+            },
+            {
+                label: '1 面具',
+                diceValues: [1, 4, 4, 4, 6],
+                expectedBonusDamage: 7,
+                expectedDefendable: false,
+                expectedPoison: 0,
+            },
+            {
+                label: '2 面具',
+                diceValues: [1, 4, 4, 6, 6],
+                expectedBonusDamage: 5,
+                expectedDefendable: false,
+                expectedPoison: 1,
+            },
+        ] as const;
+
+        for (const scenario of scenarios) {
+            const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+            state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+            state.core.pendingAttack = {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'death-blossom-2',
+                isDefendable: true,
+                damage: 0,
+            };
+
+            const openEvents = resolveEffectsToEvents(
+                DEATH_BLOSSOM_2.effects ?? [],
+                'preDefense',
+                {
+                    attackerId: '0',
+                    defenderId: '1',
+                    sourceAbilityId: 'death-blossom-2',
+                    state: state.core,
+                    damageDealt: 0,
+                    timestamp: 230,
+                },
+                { random: createQueuedRandom([...scenario.diceValues]) },
+            );
+            let next = applyEvents(state.core, openEvents);
+
+            expect(next.pendingBonusDiceSettlement, `${scenario.label} 应创建奖励骰结算`).toMatchObject({
+                sourceAbilityId: 'death-blossom-2',
+                rerollCount: 0,
+                maxRerollCount: 2,
+            });
+
+            const settleEvents = execute(
+                { core: next, sys: { phase: 'offensiveRoll' } },
+                command('SKIP_BONUS_DICE_REROLL', '0'),
+                createQueuedRandom([1]),
+            );
+            next = applyEvents(next, settleEvents);
+
+            expect(next.pendingBonusDiceSettlement, `${scenario.label} 收口后应清空奖励骰结算`).toBeUndefined();
+            expect(next.pendingAttack?.bonusDamage, `${scenario.label} 应写入正确 bonusDamage`).toBe(scenario.expectedBonusDamage);
+            expect(next.pendingAttack?.isDefendable, `${scenario.label} 应命中正确可防御状态`).toBe(scenario.expectedDefendable);
+            expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON], `${scenario.label} 应命中正确慢性中毒`).toBe(scenario.expectedPoison);
+        }
     });
 
     it('upgrade-blink-2 打出后应通过真实升级链替换防御技能并按 Blink II 结算', () => {

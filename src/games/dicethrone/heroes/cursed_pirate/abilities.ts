@@ -100,7 +100,7 @@ const CURSED: AbilityDef = {
     effects: [
         custom('cursed-pirate-cursed-upkeep-self-damage', '维持阶段受 4 点不可减少/防止伤害。', { timing: 'immediate' }),
         {
-            description: '如果一名对手在其进攻投掷阶段未造成一次攻击，则对该对手施加火药桶。该回合级追踪待机制收口。',
+            description: '如果一名对手在其进攻投掷阶段未造成一次攻击，则对该对手施加火药桶。',
         },
     ],
 };

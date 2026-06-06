@@ -15,7 +15,7 @@
 - `docs/ai-rules/testing-audit.md`：新增并升级“抽样不得冒充全面审计”“全链路审计必须逐效果原子覆盖”“共享合同可复用但必须可追溯”“语义审计不得被结构审计替代”。
 - `docs/games/smashup/workflows/smashup-faction-implementation.md`：新增并升级“抽样发现问题后必须回到 effect atom 全量矩阵”“shared-contract dirty/clean 可追溯”。
 - `docs/games/smashup/workflows/smashup-faction-intake.md`：新增大图读取门禁，超过阈值必须先做低清总览、分块图和单格裁片。
-- `.windsurf/skills/add-new-faction/SKILL.md`：同步新增大 atlas / 扫描图禁止整张反复视觉读取的工作流要求。
+- `.codex/skill/add-new-faction/SKILL.md`：同步新增大 atlas / 扫描图禁止整张反复视觉读取的工作流要求。
 
 ## 权威来源
 

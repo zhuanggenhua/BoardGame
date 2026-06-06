@@ -213,7 +213,13 @@ describe('Me First! 响应窗口', () => {
         });
 
         expect(result.finalState.sys.responseWindow.current).toBeUndefined();
-        expect(result.finalState.sys.phase).not.toBe('scoreBases');
+        expect(result.finalState.sys.phase).toBe('scoreBases');
+        expect(result.finalState.sys.flowHalted).toBe(true);
+        expect((result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toEqual(expect.any(Number));
+        expect(result.finalState.sys.resolution?.frames?.find((frame: any) => frame.id === 'smashup:score-bases')).toMatchObject({
+            step: 'awaiting-post-scoring-delay',
+            phase: 'scoreBases',
+        });
     });
 
     it('有基地达标时跳过无特殊牌玩家，从有特殊牌玩家开始响应', () => {

@@ -62,7 +62,7 @@ function createRuntimeLogWriter(logFile, logger) {
 export function resolveSingleWorkerRuntimeContext(env = process.env, overrides = {}) {
   assertSafeE2EServerMode(env);
   const useDevServers = overrides.useDevServers ?? resolveUseDevServers(env);
-  const bundleWatchEnabled = overrides.bundleWatchEnabled ?? env.PW_SERVER_WATCH !== 'false';
+  const bundleWatchEnabled = overrides.bundleWatchEnabled ?? env.PW_SERVER_WATCH === 'true';
   const selectedRuntime = overrides.selectedRuntime ?? (env.PW_SERVER_RUNTIME?.trim() || 'bundle');
   const useTsxRuntime = selectedRuntime === 'tsx';
   const useTsLoaderRuntime = selectedRuntime === 'ts-loader';

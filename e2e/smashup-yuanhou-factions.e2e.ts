@@ -365,8 +365,9 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
     await game.screenshot('yuanhou-cyberback-discard-action-visible', testInfo);
 
     await discardCard.click();
-    await expect(page.getByTestId('base-zone-0')).toBeVisible({ timeout: 15000 });
-    await page.getByTestId('base-zone-0').click();
+    const cyberbackHost = page.locator('[data-minion-uid="cyberback-a"]');
+    await expect(cyberbackHost).toBeVisible({ timeout: 15000 });
+    await cyberbackHost.click();
 
     await expect.poll(async () => {
       const state = await game.getState();

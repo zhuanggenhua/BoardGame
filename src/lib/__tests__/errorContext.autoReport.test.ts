@@ -95,6 +95,37 @@ describe('errorContext 自动反馈', () => {
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it('动态导入模块加载失败不会自动上报', async () => {
+        const { installGlobalErrorContextCapture } = await import('../feedback/errorContext');
+        installGlobalErrorContextCapture();
+
+        const rejectionEvent = new Event('unhandledrejection') as Event & { reason?: unknown };
+        rejectionEvent.reason = new Error('error loading dynamically imported module: https://easyboardgame.top/assets/cursor-BonIRdwH.js');
+        window.dispatchEvent(rejectionEvent);
+
+        await Promise.resolve();
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('旧 Android 壳缺少 App 插件的 unhandledrejection 不会自动上报，但会保留最近错误上下文', async () => {
+        const { installGlobalErrorContextCapture, getLastErrorContext } = await import('../feedback/errorContext');
+        installGlobalErrorContextCapture();
+
+        const rejectionEvent = new Event('unhandledrejection') as Event & { reason?: unknown };
+        rejectionEvent.reason = new Error('"App" plugin is not implemented on android');
+        window.dispatchEvent(rejectionEvent);
+
+        await Promise.resolve();
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getLastErrorContext()).toMatchObject({
+            name: 'Error',
+            message: '"App" plugin is not implemented on android',
+            source: 'window.unhandledrejection',
+        });
+    });
+
     it('音频设备启动失败的 unhandledrejection 不会自动上报，但会保留最近错误上下文', async () => {
         const { installGlobalErrorContextCapture, getLastErrorContext } = await import('../feedback/errorContext');
         installGlobalErrorContextCapture();

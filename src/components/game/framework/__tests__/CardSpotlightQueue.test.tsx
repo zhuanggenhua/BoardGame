@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CardSpotlightQueue } from '../CardSpotlightQueue';
 
 describe('CardSpotlightQueue', () => {
-    it('保持非阻塞壳层，并用更紧凑的默认提示文案', () => {
+    it('应支持点击空白背景关闭，并保留更紧凑的默认提示文案', () => {
         const onDismiss = vi.fn();
 
         render(
@@ -21,13 +21,14 @@ describe('CardSpotlightQueue', () => {
             />,
         );
 
-        const queue = screen.getByTestId('card-spotlight-queue');
         const content = screen.getByTestId('card-spotlight-content');
 
-        expect(queue.className).toContain('pointer-events-none');
-        expect(content.className).toContain('pointer-events-auto');
         expect(screen.getByText('关闭后继续')).toBeInTheDocument();
 
+        fireEvent.click(screen.getByRole('button', { name: '关闭特写' }));
+        expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
+
+        onDismiss.mockClear();
         fireEvent.click(content);
         expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
     });

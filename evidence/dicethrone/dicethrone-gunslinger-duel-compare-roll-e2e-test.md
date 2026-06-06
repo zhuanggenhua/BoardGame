@@ -1,5 +1,7 @@
 # DiceThrone 枪手 Duel E2E 证据（2026-04-23）
 
+> 2026-06-05 当前有效口径：本文只保留枪手 `Duel` 早期“结束防御后进入对掷”单链路 `L3` 历史证据，不代表枪手对象级当前完成态。当前若要判断 `Duel` 的现行口径与后续回归范围，应优先以 `evidence/dicethrone/dicethrone-gunslinger-duel-regression-e2e-2026-05-17.md`、`evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md` 与 `src/games/dicethrone/rule/枪手录入核对.md` 为准。
+
 ## 测试目标
 - 验证 `duel` 在防御阶段是“只能直接结束防御”，而不是普通手动掷骰流程。
 - 验证直接结束防御后会进入 `compare-roll-choice` 双骰特写，并可正常收口。

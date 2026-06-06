@@ -171,6 +171,44 @@ async function waitForManagedRuntimeReady(managedRuntimeId: string, scope: strin
     return lastRuntime;
 }
 
+async function waitForManagedRuntimeUrls(
+    runtime: {
+        ports?: {
+            frontend?: number;
+            gameServer?: number;
+            apiServer?: number;
+        };
+    } | null,
+    timeoutMs = 15000,
+): Promise<boolean> {
+    const frontendPort = Number(runtime?.ports?.frontend);
+    const gameServerPort = Number(runtime?.ports?.gameServer);
+    const apiServerPort = Number(runtime?.ports?.apiServer);
+
+    if (!Number.isFinite(frontendPort) || !Number.isFinite(gameServerPort) || !Number.isFinite(apiServerPort)) {
+        return false;
+    }
+
+    const urls = [
+        `http://127.0.0.1:${frontendPort}/__ready`,
+        `http://127.0.0.1:${frontendPort}/@vite/client`,
+        `http://127.0.0.1:${frontendPort}/src/main.tsx`,
+        `http://127.0.0.1:${gameServerPort}/games`,
+        `http://127.0.0.1:${apiServerPort}/health`,
+    ];
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const ready = await Promise.all(urls.map(isUrlReady));
+        if (ready.every(Boolean)) {
+            return true;
+        }
+        await sleep(1000);
+    }
+
+    return false;
+}
+
 async function cleanupSingleWorkerPorts(): Promise<void> {
     const conflicts = findRuntimesByPorts(singleWorkerPorts);
     if (conflicts.length > 0) {
@@ -300,11 +338,31 @@ export default async function globalSetup() {
     }
 
     if (workers <= 1 && shouldSkipBootstrap && managedRuntimeId) {
-        const runtime = await waitForManagedRuntimeReady(
+        let runtime = await waitForManagedRuntimeReady(
             managedRuntimeId,
             getRuntimeScope(),
             Number.parseInt(process.env.PW_MANAGED_RUNTIME_ATTACH_TIMEOUT_MS || '30000', 10),
         );
+        if (!runtime?.health?.ready) {
+            const directReady = await waitForManagedRuntimeUrls(runtime, Number.parseInt(process.env.PW_MANAGED_RUNTIME_ATTACH_TIMEOUT_MS || '30000', 10));
+            if (directReady && runtime) {
+                runtime = {
+                    ...runtime,
+                    health: {
+                        ...(runtime.health ?? {}),
+                        ready: true,
+                        checks: {
+                            ...(runtime.health?.checks ?? {}),
+                            frontendReady: true,
+                            viteClient: true,
+                            mainEntry: true,
+                            gameServer: true,
+                            apiServer: true,
+                        },
+                    },
+                };
+            }
+        }
         if (!runtime?.health?.ready) {
             throw new Error(
                 [

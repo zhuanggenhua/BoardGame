@@ -4,6 +4,7 @@ import { collectBaseAbilityTriggers } from '../../domain/baseAbilityQueue';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import {
     appendScoringFrameDeferredPayload,
+    buildPendingPostScoringActionEvents,
     consumeScoringFrameDeferredPayload,
     createScoringSession,
     setScoringSession,
@@ -133,6 +134,42 @@ describe('AL9000 bases', () => {
         expect(consumeScoringFrameDeferredPayload(resolved.finalState).deferredActions).toEqual([]);
     });
 
+    it('base_greenhouse: 直接打出 borrowed 牌库随从时应保留真实 owner', () => {
+        const result = triggerBaseAbilityWithMS('base_greenhouse', 'afterScoring', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_greenhouse')],
+                players: {
+                    '0': makePlayer('0', {
+                        deck: [makeCard('dk-borrowed', 'alien_collector', '1')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+            }),
+            baseDefId: 'base_greenhouse',
+            rankings: [{ playerId: '0', power: 5, vp: 4 }],
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        expect(getPromptOption(interaction, (entry: any) => entry.value?.cardUid === 'dk-borrowed')).toBeDefined();
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            (entry: any) => entry.value?.cardUid === 'dk-borrowed',
+            'Greenhouse borrowed direct option',
+            '0',
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+
+        const playedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+        expect(playedEvent).toBeDefined();
+        expect(playedEvent.payload).toEqual(expect.objectContaining({
+            playerId: '0',
+            cardUid: 'dk-borrowed',
+            defId: 'alien_collector',
+            ownerId: '1',
+            fromDeck: true,
+        }));
+    });
+
     it('base_greenhouse: replacement follow-up 应写入 scoring session，不写 core', () => {
         const result = triggerBaseAbilityWithMS('base_greenhouse', 'afterScoring', makeCtx({
             state: makeState({
@@ -206,11 +243,113 @@ describe('AL9000 bases', () => {
                 playerId: '0',
                 cardUid: 'dk1',
                 defId: 'alien_collector',
+                ownerId: '0',
                 baseIndex: 0,
                 targetBaseDefId: 'base_secret_garden',
                 power: 2,
             },
         ]);
+    });
+
+    it('base_greenhouse: replacement deferred 打出 borrowed 牌库随从时应保留真实 owner', () => {
+        const result = triggerBaseAbilityWithMS('base_greenhouse', 'afterScoring', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_greenhouse')],
+                players: {
+                    '0': makePlayer('0', {
+                        deck: [makeCard('dk-borrowed', 'alien_collector', '1')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+            }),
+            baseDefId: 'base_greenhouse',
+            rankings: [{ playerId: '0', power: 5, vp: 4 }],
+        }));
+        const interaction = getInteractionsFromResult(result)[0];
+        expect(getPromptOption(interaction, (entry: any) => entry.value?.cardUid === 'dk-borrowed')).toBeDefined();
+
+        const scoredState = makeMatchState(makeState({
+            bases: [makeBase('base_greenhouse')],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('dk-borrowed', 'alien_collector', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+        }));
+
+        const stagedState = withOnlyCurrentPrompt(
+            appendScoringFrameDeferredPayload(
+                setScoringSession(scoredState, {
+                    ...createScoringSession(scoredState.core, [0]),
+                    currentBaseRef: { slotIndex: 0, baseDefId: 'base_greenhouse' },
+                    currentStep: 'awaiting-interactions',
+                }),
+                {
+                    deferredEvents: [
+                        {
+                            type: SU_EVENTS.BASE_CLEARED,
+                            payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
+                            timestamp: 1852,
+                        },
+                        {
+                            type: SU_EVENTS.BASE_REPLACED,
+                            payload: {
+                                baseIndex: 0,
+                                oldBaseDefId: 'base_greenhouse',
+                                newBaseDefId: 'base_secret_garden',
+                            },
+                            timestamp: 1852,
+                        },
+                    ],
+                },
+            ),
+            interaction,
+        );
+
+        const resolved = respondToPromptOption(
+            stagedState,
+            (entry: any) => entry.value?.cardUid === 'dk-borrowed',
+            'Greenhouse borrowed deferred option',
+            '0',
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events).toEqual(expect.not.arrayContaining([
+            expect.objectContaining({ type: SU_EVENTS.MINION_PLAYED }),
+        ]));
+
+        const consumed = consumeScoringFrameDeferredPayload(resolved.finalState);
+        expect(consumed.deferredActions).toEqual([
+            {
+                kind: 'playMinionOnReplacementBase',
+                playerId: '0',
+                cardUid: 'dk-borrowed',
+                defId: 'alien_collector',
+                ownerId: '1',
+                baseIndex: 0,
+                targetBaseDefId: 'base_secret_garden',
+                power: 2,
+            },
+        ]);
+
+        const pendingEvents = buildPendingPostScoringActionEvents(
+            { core: resolved.finalState.core },
+            consumed.deferredActions,
+            2000,
+        ) as any[];
+        expect(pendingEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_PLAYED,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    cardUid: 'dk-borrowed',
+                    defId: 'alien_collector',
+                    ownerId: '1',
+                    fromDeck: true,
+                    baseDefId: 'base_secret_garden',
+                }),
+            }),
+        ]));
     });
 
     it('base_greenhouse 触发反应队列后仍会留下可响应交互', () => {
@@ -238,15 +377,23 @@ describe('AL9000 bases', () => {
             defaultTestRandom,
             1001,
         );
-        const resolved = respondToPromptOption(
-            reaction!.state as any,
-            (entry: any) => entry.id.startsWith('trigger:'),
-            'Greenhouse reaction trigger option',
-            '0',
-        );
-        expect(resolved.success).toBe(true);
-        expect(resolved?.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
-        expect(getSimpleChoicePrompt(resolved.finalState as any, 'base_greenhouse')).toBeDefined();
+        const currentPrompt = reaction?.state?.sys?.interaction?.current as any;
+        if (currentPrompt?.data?.sourceId === 'smashup_reaction_choose') {
+            const queueById = new Map((reaction!.state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
+            const resolved = respondToPromptOption(
+                reaction!.state as any,
+                (entry: any) => queueById.get(entry.value?.triggerId)?.sourceDefId === 'base_greenhouse',
+                'Greenhouse reaction trigger option',
+                '0',
+            );
+            expect(resolved.success).toBe(true);
+            expect(resolved.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
+            expect(getSimpleChoicePrompt(resolved.finalState as any, 'base_greenhouse')).toBeDefined();
+            return;
+        }
+
+        expect(currentPrompt?.data?.sourceId).toBe('base_greenhouse');
+        expect(getSimpleChoicePrompt(reaction!.state as any, 'base_greenhouse')).toBeDefined();
     });
 
     it('base_secret_garden: onTurnStart 发放仅限本基地的 banked 额外随从额度', () => {

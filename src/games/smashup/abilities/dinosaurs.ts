@@ -103,6 +103,25 @@ type DinoRampageMinionContext = DinoPromptContext & {
     candidates: DinoRampageMinionCandidate[];
 };
 
+function filterProtectedDestroyTargets(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    sourceDefId: string,
+    targets: DinoMinionTarget[],
+): DinoMinionTarget[] {
+    if (targets.length === 0) return targets;
+    const allowedKeys = new Set(
+        buildMinionTargetOptions(targets, {
+            state: matchState.core,
+            sourcePlayerId: playerId,
+            sourceDefId,
+            sourceKind: 'nonAction',
+            effectType: 'destroy',
+        }).map((option) => `${option.value.minionUid}:${option.value.baseIndex}`),
+    );
+    return targets.filter((target) => allowedKeys.has(`${target.uid}:${target.baseIndex}`));
+}
+
 /** 注册恐龙派系所有能力 */
 export function registerDinosaurAbilities(): void {
     registerAbilityProgram('dino_laser_triceratops', 'onPlay', {
@@ -174,7 +193,7 @@ function createDinoLaserTriceratopsContext(ctx: AbilityContext): DinoLaserTricer
     if (!base) {
         return { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now, targets: [] };
     }
-    const targets = base.minions
+    const targets = filterProtectedDestroyTargets(ctx.matchState, ctx.playerId, 'dino_laser_triceratops', base.minions
         .filter((minion) => minion.uid !== ctx.cardUid && getMinionPower(ctx.state, minion, ctx.baseIndex) <= 2)
         .map((minion) => {
             const def = getCardDef(minion.defId) as MinionCardDef | undefined;
@@ -186,7 +205,7 @@ function createDinoLaserTriceratopsContext(ctx: AbilityContext): DinoLaserTricer
                 baseIndex: ctx.baseIndex,
                 label: `${name} (力量 ${power})`,
             };
-        });
+        }));
     return {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -200,7 +219,7 @@ function createDinoLaserTriceratopsPodContext(ctx: AbilityContext): DinoLaserTri
     if (!base) {
         return { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now, targets: [] };
     }
-    const targets = base.minions
+    const targets = filterProtectedDestroyTargets(ctx.matchState, ctx.playerId, 'dino_laser_triceratops_pod', base.minions
         .filter((minion) => {
             if (minion.uid === ctx.cardUid) return false;
             const def = getCardDef(minion.defId) as MinionCardDef | undefined;
@@ -216,7 +235,7 @@ function createDinoLaserTriceratopsPodContext(ctx: AbilityContext): DinoLaserTri
                 baseIndex: ctx.baseIndex,
                 label: `${name} (印制力量 ${printedPower})`,
             };
-        });
+        }));
     return {
         matchState: ctx.matchState,
         playerId: ctx.playerId,

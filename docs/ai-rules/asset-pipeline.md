@@ -369,7 +369,7 @@ registerCriticalImageResolver('<gameId>', <gameId>CriticalImageResolver);
 
 ## 🔊 音频资源规范
 
-> 新增音频全链路流程详见：`docs/audio/add-audio.md`
+> 音频 workflow 优先走 `./.codex/skill/audio-integration/SKILL.md`；新增外部素材的产物合同详见：`docs/audio/add-audio.md`
 
 ### 音频资源架构（强制）
 
@@ -479,6 +479,6 @@ pushFlyingEffect({
 - **生成 registry**：`node scripts/audio/generate_common_audio_registry.js`
 - **生成语义目录**：`npm run audio:catalog`（产出 `docs/audio/audio-catalog.md`，AI 查找音效首选）
 - **资源清单**：`node scripts/audio/generate_audio_assets_md.js`
-- **详见文档**：`docs/audio/audio-usage.md`
+- **详见入口**：`./.codex/skill/audio-integration/SKILL.md`（workflow） + `docs/audio/audio-usage.md`（架构与运行时合同）
 
 **相关提案**：`openspec/changes/refactor-audio-common-layer/specs/audio-path-auto-compression.md`

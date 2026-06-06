@@ -241,6 +241,93 @@ describe('巫师派系能力', () => {
         expect(finalState.players['0'].actionsPlayed).toBe(0);
     });
 
+    it('wizard_neophyte: borrowed 顶牌选择放入手牌时，仍应进入当前玩家手牌而不改真实 owner 牌库', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'wizard_neophyte', 'minion', '0')],
+                    deck: [
+                        makeCard('borrowed-summon', 'wizard_summon', 'action', '1'),
+                        makeCard('p0-tail', 'test_minion', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'test_action', 'action', '1')],
+                }),
+            },
+            bases: [makeBase()],
+        });
+
+        const { matchState } = execPlayMinion(state, '0', 'm1', 0);
+        const prompt = getSimpleChoicePrompt(matchState, 'wizard_neophyte');
+        expect(getPromptTargetType(prompt)).toBe('button');
+
+        const resolved = respondToPrompt(matchState, 'to_hand', '0', defaultTestRandom);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.CARDS_DRAWN
+            && (event as any).payload?.playerId === '0'
+            && (event as any).payload?.cardUids?.includes('borrowed-summon'),
+        )).toBe(true);
+
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('borrowed-summon');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-tail']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail']);
+    });
+
+    it('wizard_neophyte: borrowed 顶牌作为额外行动打出时，应保留 ACTION_PLAYED 与 ONGOING_ATTACHED 的真实 owner', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'wizard_neophyte', 'minion', '0')],
+                    deck: [
+                        makeCard('borrowed-overrun', 'zombie_overrun', 'action', '1'),
+                        makeCard('p0-tail', 'test_minion', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'test_action', 'action', '1')],
+                }),
+            },
+            bases: [makeBase(), makeBase()],
+        });
+
+        const { matchState } = execPlayMinion(state, '0', 'm1', 0);
+        const playExtra = respondToPrompt(matchState, 'play_extra', '0', defaultTestRandom);
+        expect(playExtra.success).toBe(true);
+
+        const chooseBasePrompt = getSimpleChoicePrompt(playExtra.finalState, 'wizard_neophyte_choose_base');
+        const options = getPromptOptions(chooseBasePrompt);
+        const attached = respondToPrompt(playExtra.finalState, options[0].id, '0', defaultTestRandom);
+        expect(attached.success).toBe(true);
+
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.CARD_REMOVED_FROM_DECK
+            && (event as any).payload?.playerId === '0'
+            && (event as any).payload?.cardUid === 'borrowed-overrun',
+        )).toBe(true);
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.ACTION_PLAYED
+            && (event as any).payload?.cardUid === 'borrowed-overrun'
+            && (event as any).payload?.ownerId === '1',
+        )).toBe(true);
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.ONGOING_ATTACHED
+            && (event as any).payload?.cardUid === 'borrowed-overrun'
+            && (event as any).payload?.ownerId === '1',
+        )).toBe(true);
+
+        const ongoing = attached.finalState.core.bases[0].ongoingActions.find(card => card.uid === 'borrowed-overrun');
+        expect(ongoing).toEqual(expect.objectContaining({
+            uid: 'borrowed-overrun',
+            defId: 'zombie_overrun',
+            ownerId: '1',
+        }));
+        expect((ongoing as any)?.metadata?.sourceControllerId).toBe('0');
+        expect(attached.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-tail']);
+        expect(attached.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail']);
+    });
+
     it('wizard_mass_enchantment: 单个对手时创建 Prompt', () => {
         const state = makeState({
             players: {
@@ -309,6 +396,168 @@ describe('巫师派系能力', () => {
         const { events, matchState } = execPlayAction(state, '0', 'a1');
         expect(events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN)).toHaveLength(0);
         expectNoPrompt(matchState);
+    });
+
+    it('wizard_mass_enchantment: borrowed 随从附着行动应保留 ACTION_PLAYED/ONGOING_ATTACHED provenance 并触发 base_enchanted_glade', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_mass_enchantment', 'action', '0')],
+                    deck: [makeCard('draw-a', 'test_action', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('borrowed-smoke', 'ninja_smoke_bomb', 'action', '1'),
+                        makeCard('p1-tail', 'test_minion', 'minion', '1'),
+                    ],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_enchanted_glade',
+                    minions: [makeMinion('host-0', 'robot_microbot_alpha', '0', 3)],
+                    ongoingActions: [],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const chooseCardPrompt = getSimpleChoicePrompt(matchState, 'wizard_mass_enchantment');
+        const chooseCard = respondToPrompt(
+            matchState,
+            getPromptOption(chooseCardPrompt, option => option?.value?.cardUid === 'borrowed-smoke', 'Mass Enchantment borrowed minion ongoing').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseCard.success).toBe(true);
+
+        const chooseMinionPrompt = getSimpleChoicePrompt(chooseCard.finalState, 'wizard_mass_enchantment_choose_minion');
+        const attached = respondToPrompt(
+            chooseCard.finalState,
+            getPromptOption(chooseMinionPrompt, option => option?.value?.minionUid === 'host-0', 'Mass Enchantment target minion').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(attached.success).toBe(true);
+
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.CARD_TRANSFERRED
+            && (event as any).payload?.cardUid === 'borrowed-smoke'
+            && (event as any).payload?.fromPlayerId === '1'
+            && (event as any).payload?.toPlayerId === '0',
+        )).toBe(true);
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.ACTION_PLAYED
+            && (event as any).payload?.cardUid === 'borrowed-smoke'
+            && (event as any).payload?.ownerId === '1'
+            && (event as any).payload?.targetBaseIndex === 0
+            && (event as any).payload?.targetType === 'minion'
+            && (event as any).payload?.targetMinionUid === 'host-0',
+        )).toBe(true);
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.ONGOING_ATTACHED
+            && (event as any).payload?.cardUid === 'borrowed-smoke'
+            && (event as any).payload?.ownerId === '1'
+            && (event as any).payload?.sourcePlayerId === '0'
+            && (event as any).payload?.targetType === 'minion'
+            && (event as any).payload?.targetBaseIndex === 0
+            && (event as any).payload?.targetMinionUid === 'host-0',
+        )).toBe(true);
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.CARDS_DRAWN
+            && (event as any).payload?.playerId === '0'
+            && (event as any).payload?.cardUids?.includes('draw-a'),
+        )).toBe(true);
+
+        const host = attached.finalState.core.bases[0].minions.find(minion => minion.uid === 'host-0');
+        const ongoing = host?.attachedActions.find(card => card.uid === 'borrowed-smoke');
+        expect(ongoing).toEqual(expect.objectContaining({
+            uid: 'borrowed-smoke',
+            defId: 'ninja_smoke_bomb',
+            ownerId: '1',
+        }));
+        expect((ongoing as any)?.metadata?.sourcePlayerId).toBe('0');
+        expect((ongoing as any)?.metadata?.sourceControllerId).toBe('0');
+        expect(attached.finalState.core.players['0'].deck).toEqual([]);
+        expect(attached.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail']);
+    });
+
+    it('wizard_mass_enchantment: borrowed 基地 ongoing 应保留 provenance 且维持 base-target 语义不额外抽牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_mass_enchantment', 'action', '0')],
+                    deck: [makeCard('draw-a', 'test_action', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('borrowed-overrun', 'zombie_overrun', 'action', '1'),
+                        makeCard('p1-tail', 'test_minion', 'minion', '1'),
+                    ],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_enchanted_glade',
+                    minions: [makeMinion('host-0', 'robot_microbot_alpha', '0', 3)],
+                    ongoingActions: [],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const chooseCardPrompt = getSimpleChoicePrompt(matchState, 'wizard_mass_enchantment');
+        const chooseCard = respondToPrompt(
+            matchState,
+            getPromptOption(chooseCardPrompt, option => option?.value?.cardUid === 'borrowed-overrun', 'Mass Enchantment borrowed base ongoing').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseCard.success).toBe(true);
+
+        const chooseBasePrompt = getSimpleChoicePrompt(chooseCard.finalState, 'wizard_mass_enchantment_choose_base');
+        const attached = respondToPrompt(
+            chooseCard.finalState,
+            getPromptOption(chooseBasePrompt, option => option?.value?.baseIndex === 0, 'Mass Enchantment target base').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(attached.success).toBe(true);
+
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.CARD_TRANSFERRED
+            && (event as any).payload?.cardUid === 'borrowed-overrun'
+            && (event as any).payload?.fromPlayerId === '1'
+            && (event as any).payload?.toPlayerId === '0',
+        )).toBe(true);
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.ACTION_PLAYED
+            && (event as any).payload?.cardUid === 'borrowed-overrun'
+            && (event as any).payload?.ownerId === '1'
+            && (event as any).payload?.targetBaseIndex === 0
+            && (event as any).payload?.targetType === 'base'
+            && !(event as any).payload?.targetMinionUid,
+        )).toBe(true);
+        expect(attached.events.some(event =>
+            event.type === SU_EVENTS.ONGOING_ATTACHED
+            && (event as any).payload?.cardUid === 'borrowed-overrun'
+            && (event as any).payload?.ownerId === '1'
+            && (event as any).payload?.sourcePlayerId === '0'
+            && (event as any).payload?.targetType === 'base'
+            && (event as any).payload?.targetBaseIndex === 0,
+        )).toBe(true);
+        expect(attached.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+
+        const ongoing = attached.finalState.core.bases[0].ongoingActions.find(card => card.uid === 'borrowed-overrun');
+        expect(ongoing).toEqual(expect.objectContaining({
+            uid: 'borrowed-overrun',
+            defId: 'zombie_overrun',
+            ownerId: '1',
+        }));
+        expect((ongoing as any)?.metadata?.sourcePlayerId).toBe('0');
+        expect((ongoing as any)?.metadata?.sourceControllerId).toBe('0');
+        expect(attached.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['draw-a']);
+        expect(attached.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail']);
     });
 
     it('wizard_portal: 有随从时创建选择 Prompt 让玩家选随从', () => {
@@ -467,6 +716,46 @@ describe('巫师派系能力', () => {
         const optionUids = getPromptOptions(prompt).map(option => option.value?.cardUid).filter(Boolean);
         expect(optionUids).toEqual(['fresh-action', 'fresh-action-2']);
         expect(optionUids).not.toContain('old-action');
+    });
+
+    it('wizard_scry: borrowed 行动卡应进入当前玩家手牌且只重排当前玩家牌库', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_scry', 'action', '0')],
+                    deck: [
+                        makeCard('borrowed-action', 'test_a', 'action', '1'),
+                        makeCard('own-minion', 'test_m', 'minion', '0'),
+                        makeCard('own-action', 'test_a2', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-tail', 'test_a3', 'action', '1')],
+                }),
+            },
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const prompt = getSimpleChoicePrompt(matchState, 'wizard_scry');
+        const borrowedOption = getPromptOptions(prompt).find(option => option.value?.cardUid === 'borrowed-action');
+        expect(borrowedOption).toBeDefined();
+
+        const resolved = respondToPrompt(matchState, borrowedOption!.id, '0', defaultTestRandom);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.CARDS_DRAWN
+            && (event as any).payload?.playerId === '0'
+            && (event as any).payload?.cardUids?.includes('borrowed-action'),
+        )).toBe(true);
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.DECK_REORDERED
+            && (event as any).payload?.playerId === '0'
+            && !(event as any).payload?.sourcePlayerId,
+        )).toBe(true);
+
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('borrowed-action');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid).sort()).toEqual(['own-action', 'own-minion']);
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['p1-tail']);
     });
 
     it('wizard_scry: 牌库无行动卡时无事件', () => {

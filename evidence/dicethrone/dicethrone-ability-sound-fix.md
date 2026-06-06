@@ -1,5 +1,7 @@
 # DiceThrone 技能音效问题修复
 
+> 2026-06-06 当前有效口径：本文只覆盖“攻击时不播放技能/攻击音效”这一条历史音频专项修复，不是当前 DiceThrone 所有技能音效、所有攻击反馈音频问题都已收口的证明，也不是新英雄补审出口。阅读时只能把它理解成单条音效时机修复记录。
+
 ## 问题描述
 
 用户反馈：DiceThrone 攻击时不播放音效。
@@ -202,3 +204,7 @@ npx eslint src/games/dicethrone/audio.config.ts
 - `src/games/dicethrone/domain/combat/types.ts` - 技能定义（包含 `sfxKey` 字段）
 - `docs/ai-rules/engine-systems.md` - 音频架构规范
 - `AGENTS.md` - 音频事件定义规范
+
+---
+
+**当前阅读说明**：本文只能证明“攻击音效播放时机/技能音效触发时机”这条专项问题曾被修复，不能外推为当前所有 ability sfx、所有攻击反馈音频或 DiceThrone 当前整体审计都已收口。

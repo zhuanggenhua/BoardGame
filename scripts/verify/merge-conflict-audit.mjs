@@ -9,7 +9,7 @@ function printUsage() {
 说明:
   - 默认审计 HEAD，且 HEAD 必须是双亲 merge commit。
   - 如果 merge commit message 中带有 "#\\t<path>" 冲突记录，优先审计这些文件。
-  - 否则退化为审计同时相对两个父提交都发生变化的文件。
+  - 否则退化为审计从 merge-base 到两个父提交都发生变化的文件。
   - --fail-on-single-side: 只要有文件结果完全等于某一侧父提交，就以非 0 退出。
 `);
 }
@@ -97,20 +97,40 @@ function getConflictFilesFromMessage(commit) {
     return [...files];
 }
 
-function getIntersectingChangedFiles(parentA, parentB, commit) {
+function getMergeBase(parentA, parentB) {
+    return runGit(['merge-base', parentA, parentB]);
+}
+
+function getFilesChangedSinceBase(base, ref) {
+    return new Set(
+        runGit(['diff', '--name-only', '--no-renames', base, ref])
+            .split(/\r?\n/)
+            .map(v => v.trim())
+            .filter(Boolean),
+    );
+}
+
+function getIntersectingChangedFiles(parentA, parentB) {
+    const mergeBase = getMergeBase(parentA, parentB);
+    const changedA = getFilesChangedSinceBase(mergeBase, parentA);
+    const changedB = getFilesChangedSinceBase(mergeBase, parentB);
+    return [...changedA].filter(file => changedB.has(file)).sort();
+}
+
+function getChangedFileSet(commit, parentA, parentB) {
     const changedA = new Set(
-        runGit(['diff', '--name-only', parentA, commit])
+        runGit(['diff', '--name-only', '--no-renames', parentA, commit])
             .split(/\r?\n/)
             .map(v => v.trim())
             .filter(Boolean),
     );
     const changedB = new Set(
-        runGit(['diff', '--name-only', parentB, commit])
+        runGit(['diff', '--name-only', '--no-renames', parentB, commit])
             .split(/\r?\n/)
             .map(v => v.trim())
             .filter(Boolean),
     );
-    return [...changedA].filter(file => changedB.has(file)).sort();
+    return { changedA, changedB };
 }
 
 function getBlobId(ref, file) {
@@ -154,16 +174,19 @@ function main() {
     const filesFromMessage = getConflictFilesFromMessage(commit);
     const files = filesFromMessage.length > 0
         ? filesFromMessage
-        : getIntersectingChangedFiles(parent1, parent2, commit);
+        : getIntersectingChangedFiles(parent1, parent2);
 
     if (files.length === 0) {
         console.log(`未在 ${commit} 上识别到可审计的冲突文件`);
         return;
     }
 
+    const { changedA, changedB } = getChangedFileSet(commit, parent1, parent2);
     const results = files.map(file => ({
         file,
         classification: classifyFile(commit, parent1, parent2, file),
+        differsFromParent1: changedA.has(file),
+        differsFromParent2: changedB.has(file),
     }));
 
     const singleSideFiles = results.filter(
@@ -177,7 +200,12 @@ function main() {
     console.log('');
 
     for (const item of results) {
-        console.log(`${toLabel(item.classification)}\t${item.file}`);
+        const diffHint = item.differsFromParent1 === item.differsFromParent2
+            ? ''
+            : item.differsFromParent1
+                ? ' (仅相对父1有结果差异)'
+                : ' (仅相对父2有结果差异)';
+        console.log(`${toLabel(item.classification)}\t${item.file}${diffHint}`);
     }
 
     console.log('');

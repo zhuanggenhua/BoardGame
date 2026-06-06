@@ -567,6 +567,20 @@ function resolvePostAttackFollowUp(
     timestamp: number,
     phase: TurnPhase
 ): PhaseExitResult {
+    const parleyStacks = core.players[core.activePlayerId]?.statusEffects[STATUS_IDS.PARLEY] ?? 0;
+    if (parleyStacks > 0) {
+        events.push({
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: core.activePlayerId,
+                statusId: STATUS_IDS.PARLEY,
+                stacks: parleyStacks,
+            },
+            sourceCommandType: commandType,
+            timestamp,
+        } as StatusRemovedEvent);
+    }
+
     const { dazeEvents, triggered } = checkDazeExtraAttack(core, events, commandType, timestamp);
     if (triggered) {
         events.push(...dazeEvents);
@@ -889,7 +903,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             }
 
             const parleyStacks = activePlayer?.statusEffects[STATUS_IDS.PARLEY] ?? 0;
-            if (parleyStacks > 0) {
+            if (parleyStacks > 0 && !core.pendingAttack) {
                 events.push({
                     type: 'STATUS_REMOVED',
                     payload: {

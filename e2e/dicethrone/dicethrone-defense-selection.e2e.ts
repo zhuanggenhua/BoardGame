@@ -866,14 +866,44 @@ test.describe('DiceThrone - 防御技能选择', () => {
             dice: [1, 4, 6],
         });
         await game.screenshot('ninja-blink-2-defense-first-roll', testInfo);
+        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
 
         const firstDieButton = page.getByTestId('die-button-0');
+        await expect(firstDieButton).toHaveAttribute('data-display-value', '1');
+        await expect(firstDieButton).toHaveAttribute('data-clickable', 'true');
         await expect(firstDieButton).toBeVisible({ timeout: 5000 });
-        await firstDieButton.click();
-        await expect.poll(async () => {
+        await firstDieButton.click({ force: true });
+        const dieLockedByUi = await expect.poll(async () => {
             const state = await game.getState();
             return state?.core?.dice?.[0]?.isKept ?? null;
-        }, { timeout: 5000 }).toBe(true);
+        }, { timeout: 1500 }).toBe(true).then(() => true).catch(() => false);
+
+        if (!dieLockedByUi) {
+            const postUiClickState = await game.getState();
+            const postUiClickDiceButtons = await page.evaluate(() => (
+                Array.from(document.querySelectorAll('[data-testid^="die-button-"]')).map((node) => {
+                    const element = node as HTMLElement;
+                    return {
+                        testId: element.getAttribute('data-testid'),
+                        displayValue: element.getAttribute('data-display-value'),
+                        clickable: element.getAttribute('data-clickable'),
+                        selected: element.getAttribute('data-selected'),
+                    };
+                })
+            ));
+
+            await dispatchHarnessCommand(page, 'TOGGLE_DIE_LOCK', '1', { dieId: 0 });
+            const dieLockedByHarness = await expect.poll(async () => {
+                const state = await game.getState();
+                return state?.core?.dice?.[0]?.isKept ?? null;
+            }, { timeout: 2000 }).toBe(true).then(() => true).catch(() => false);
+
+            if (!dieLockedByHarness) {
+                throw new Error(`瞬身 II 防御锁骰失败：真实 UI 点击与 harness 命令都未能锁定 die 0。postUiClickState=${JSON.stringify(postUiClickState?.core?.dice?.slice(0, 5) ?? null)} postUiClickDiceButtons=${JSON.stringify(postUiClickDiceButtons)}`);
+            }
+
+            throw new Error(`瞬身 II 防御锁骰失败：真实 UI 点击未锁定 die 0，但 harness 命令可以锁定，说明红点落在 UI 点击链而非技能实现。postUiClickState=${JSON.stringify(postUiClickState?.core?.dice?.slice(0, 5) ?? null)} postUiClickDiceButtons=${JSON.stringify(postUiClickDiceButtons)}`);
+        }
 
         await page.evaluate(() => {
             window.__BG_TEST_HARNESS__?.dice.setValues([6, 6]);

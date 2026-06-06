@@ -711,6 +711,43 @@ describe('Samurai abilities', () => {
         expect(play.finalState.core.players['0'].discard.some(card => card.uid === 'discard-1')).toBe(false);
     });
 
+    it('samurai_honor_the_ancestors 洗回被他人拥有的弃牌随从时，仍应洗回其拥有者牌库', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('ancestors-borrowed-1', 'samurai_honor_the_ancestors', 'action', '0')],
+                    deck: [makeCard('p0-deck-1', 'robot_microbot_alpha', 'minion', '0')],
+                    discard: [makeCard('borrowed-ronin', 'pirate_first_mate', 'minion', '1')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-1', 'wizard_archmage', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-1', 'samurai_bushi', '0', 4)],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'ancestors-borrowed-1' } },
+            defaultTestRandom,
+        );
+
+        expect(play.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '1',
+                sourcePlayerId: '0',
+            }),
+        }));
+        expect(play.finalState.core.players['0'].discard.some(card => card.uid === 'borrowed-ronin')).toBe(false);
+        expect(play.finalState.core.players['0'].deck.some(card => card.uid === 'borrowed-ronin')).toBe(false);
+        expect(play.finalState.core.players['1'].deck.some(card => card.uid === 'borrowed-ronin')).toBe(true);
+    });
+
     it('samurai_way_of_the_warrior 会让目标本回合进入弃牌堆时抽一张牌', () => {
         const core = makeState({
             players: {

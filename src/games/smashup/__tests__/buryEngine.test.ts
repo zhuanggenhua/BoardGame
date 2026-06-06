@@ -14,7 +14,7 @@ import {
 } from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent } from '../domain/bury';
+import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent, uncoverBuriedCard } from '../domain/bury';
 
 beforeAll(() => {
     clearRegistry();
@@ -175,6 +175,79 @@ describe('bury engine', () => {
         expect(resolved.finalState.core.bases[0].buriedCards?.length ?? 0).toBe(0);
         expect(resolved.finalState.core.bases[0].ongoingActions).toHaveLength(0);
         expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'curse-1')).toBe(true);
+    });
+
+    it('bury.uncoverBuriedCard 翻开 fairies_enchantment 后响应 minus 时，应在 prompt state 上看到已附着的 ongoing 并写入 metadata', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [], deck: [], discard: [] }),
+                '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [{
+                    uid: 'ally-1',
+                    defId: 'robot_microbot_alpha',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 3,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                } as any],
+                ongoingActions: [],
+                buriedCards: [{
+                    uid: 'buried-enchantment',
+                    defId: 'fairies_enchantment',
+                    trueOwnerId: '0',
+                    controllerId: '0',
+                    buriedFrom: 'play',
+                }],
+            }],
+        });
+
+        const uncovered = uncoverBuriedCard({
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'buried-enchantment',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 301,
+            reason: 'test_uncover_fairies_enchantment_minus',
+        });
+
+        const prompt = getSimpleChoicePrompt(uncovered.state, 'fairies_enchantment');
+        expect(uncovered.state.core.bases[0].ongoingActions).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                uid: 'buried-enchantment',
+                defId: 'fairies_enchantment',
+                ownerId: '0',
+            }),
+        ]));
+
+        const minusOption = getPromptOption(prompt, option => option.value?.branchId === 'minus', 'buried fairies enchantment minus option');
+        const resolved = respondToPrompt(uncovered.state, minusOption.id, '0', defaultTestRandom);
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'buried-enchantment',
+                defId: 'fairies_enchantment',
+                ownerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 0,
+                metadata: expect.objectContaining({ fairiesEnchantmentMode: 'minus' }),
+            }),
+        }));
+        expect(resolved.finalState.core.bases[0].ongoingActions).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                uid: 'buried-enchantment',
+                defId: 'fairies_enchantment',
+                metadata: expect.objectContaining({ fairiesEnchantmentMode: 'minus' }),
+            }),
+        ]));
     });
 
     it('base cleared discards buried cards to true owners without uncovering', () => {

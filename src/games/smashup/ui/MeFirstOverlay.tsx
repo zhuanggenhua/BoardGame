@@ -10,8 +10,8 @@ import { GameButton } from './GameButton';
 import type { MatchState } from '../../../engine/types';
 import { SU_COMMANDS, type CardInstance, type SmashUpCommand, type SmashUpCore } from '../domain/types';
 import {
-    canCardBePlayedInResponseWindow,
-    getResponseWindowPlayableBaseIndicesForCard,
+    canCardBePlayedInResponseWindowForMatchState,
+    getResponseWindowPlayableBaseIndicesForMatchState,
     isCardActionLike,
     isCardMinionLike,
 } from '../domain/utils';
@@ -36,10 +36,9 @@ function hasValidatedResponseOption(
     card: CardInstance,
     windowType: 'meFirst' | 'afterScoring',
 ): boolean {
-    const core = G.core;
-    if (!canCardBePlayedInResponseWindow(core, card, windowType)) return false;
+    if (!canCardBePlayedInResponseWindowForMatchState(G, card, windowType)) return false;
 
-    const baseIndices = getResponseWindowPlayableBaseIndicesForCard(core, card.defId, windowType);
+    const baseIndices = getResponseWindowPlayableBaseIndicesForMatchState(G, card.defId, windowType);
     if (isCardMinionLike(card)) {
         return baseIndices.some(baseIndex => {
             const command: SmashUpCommand = {
@@ -87,8 +86,10 @@ export const MeFirstOverlay: React.FC<{
         dispatch('RESPONSE_PASS');
     }, [dispatch, onSelectCard]);
 
-    // 有交互/正在选择基地出牌时隐藏，避免遮挡场景操作
-    const hasInteraction = !!G.sys.interaction?.current;
+    // `smashup_reaction_choose` 本身就是计分响应的中间承载语义，不应把这层提示弹窗隐藏掉。
+    const currentInteraction = G.sys.interaction?.current;
+    const interactionSourceId = (currentInteraction?.data as { sourceId?: unknown } | undefined)?.sourceId;
+    const hasInteraction = !!currentInteraction && interactionSourceId !== 'smashup_reaction_choose';
     const hasLockedHiddenInteraction = !!G.sys.responseWindow?.current?.pendingInteractionId;
 
     // 支持 meFirst 和 afterScoring 两种窗口类型

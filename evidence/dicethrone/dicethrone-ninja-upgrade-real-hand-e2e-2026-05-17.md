@@ -1,5 +1,7 @@
 # DiceThrone Ninja 升级卡真实手牌 E2E（2026-05-17）
 
+> 2026-06-05 当前有效口径：本文只证明 8 张 Ninja 升级卡的真实手牌打出与替换合同成立，不代表升级后每个技能本体的当前对象级 `L3/L4` 已经在本文内完成。Ninja 升级技能家族的当前有效结论，应继续以 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/ninja录入核对.md` 的最新矩阵为准。
+
 ## 范围与结论
 
 本证据覆盖 Ninja 8 张升级卡的真实手牌入口：
@@ -61,7 +63,7 @@ npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者升�
 | `upgrade-poison-blade-2` | `poison-blade` | 真实手牌可拖拽并打出 | `abilityLevels.poison-blade=2` |
 | `upgrade-death-blossom-2` | `death-blossom` | 真实手牌可拖拽并打出 | `abilityLevels.death-blossom=2` |
 
-残余范围：
+历史边界与当前阅读门禁：
 
-- Ninja 基础/升级技能本体仍未逐技能覆盖所有骰面与分支 L3；本文件只证明升级卡真实手牌打出和替换合同。
+- 本文件只证明升级卡真实手牌打出和替换合同。Ninja 升级技能对象级 L3 与关键 L4 的当前有效结论，应以 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/ninja录入核对.md` 的最新矩阵为准；不得继续把本文件单独读成“升级技能本体仍普遍缺 L3”。
 - `smoke_bomb` 失败骰面分支已另见 `evidence/dicethrone/dicethrone-ninja-smoke-bomb-failure-e2e-2026-05-17.md`；该 token 分支证据不证明升级后每个技能本体都已逐技能 L3。

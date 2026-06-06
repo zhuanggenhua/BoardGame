@@ -201,14 +201,17 @@ describe('AbilityOverlays', () => {
         const { container } = renderAbilityOverlays({
             characterId: 'cursed_pirate',
             playerBoardFace: 'normal',
-            availableAbilityIds: ['verdict-command', 'merciless-plunder'],
+            availableAbilityIds: ['light-the-fuse-small', 'verdict-command', 'merciless-plunder'],
             canHighlight: true,
             abilityLevels: {},
         });
 
+        const comboSlot = container.querySelector('[data-ability-slot="combo"]');
         const lightningSlot = container.querySelector('[data-ability-slot="lightning"]');
         const ultimateSlot = container.querySelector('[data-ability-slot="ultimate"]');
 
+        expect(comboSlot).toHaveAttribute('data-base-ability-id', 'light-the-fuse');
+        expect(comboSlot).toHaveAttribute('data-resolved-ability-id', 'light-the-fuse-small');
         expect(lightningSlot).toHaveAttribute('data-base-ability-id', 'verdict-command');
         expect(lightningSlot).toHaveAttribute('data-resolved-ability-id', 'verdict-command');
         expect(ultimateSlot).toHaveAttribute('data-base-ability-id', 'merciless-plunder');

@@ -150,6 +150,42 @@ describe('clientAutoReport', () => {
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it('动态导入模块加载失败噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('dynamic-import-module-error', {
+            content: '[auto][unhandledrejection] error loading dynamically imported module: https://easyboardgame.top/assets/cursor-BonIRdwH.js',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 'error loading dynamically imported module: https://easyboardgame.top/assets/cursor-BonIRdwH.js',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('模块脚本 MIME type 噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('invalid-module-mime-type', {
+            content: "[auto][react.error_boundary] 'text/html' is not a valid JavaScript MIME type.",
+            autoReportKind: 'react-render-error',
+            source: 'react-error-boundary',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "'text/html' is not a valid JavaScript MIME type.",
+            errorSource: 'react.error_boundary',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
     it('音频设备启动失败噪音会被过滤，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
@@ -162,6 +198,60 @@ describe('clientAutoReport', () => {
             gameName: 'client',
             errorName: 'InvalidStateError',
             errorMessage: 'Failed to start the audio device',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('旧 Android 壳缺少 App 插件时会过滤噪音，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('android-app-plugin-missing', {
+            content: '[auto][unhandledrejection] "App" plugin is not implemented on android',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: '"App" plugin is not implemented on android',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('旧 Android 壳缺少 CapacitorUpdater 插件时会过滤噪音，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('android-capacitor-updater-plugin-missing', {
+            content: '[auto][unhandledrejection] "CapacitorUpdater" plugin is not implemented on android',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: '"CapacitorUpdater" plugin is not implemented on android',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('通用 AbortError 噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('generic-abort-error', {
+            content: '[auto][unhandledrejection] The operation was aborted.',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'AbortError',
+            errorMessage: 'The operation was aborted.',
             errorSource: 'window.unhandledrejection',
         });
 
@@ -184,5 +274,64 @@ describe('clientAutoReport', () => {
         });
 
         expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('匿名页面级注入脚本的全局未定义噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        window.history.replaceState({}, '', '/?homeStyle=classic');
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('anonymous-global-reference-noise', {
+            content: '[auto][window.error] LIDNotifyId is not defined',
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'ReferenceError',
+            errorMessage: 'LIDNotifyId is not defined',
+            errorSource: 'https://easyboardgame.top/?homeStyle=classic:1:1',
+            stack: 'ReferenceError: LIDNotifyId is not defined\n    at <anonymous>:1:1',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('匿名页面级注入脚本的属性读取噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        window.history.replaceState({}, '', '/?homeStyle=classic');
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('anonymous-property-read-noise', {
+            content: "[auto][window.error] Cannot read properties of undefined (reading 'logout')",
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "Cannot read properties of undefined (reading 'logout')",
+            errorSource: 'https://easyboardgame.top/?homeStyle=classic:1:26',
+            stack: "TypeError: Cannot read properties of undefined (reading 'logout')\n    at <anonymous>:1:26",
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('站内真实堆栈的 window error 不会被匿名注入噪音规则误过滤', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('real-app-window-error', {
+            content: "[auto][window.error] Cannot read properties of undefined (reading 'logout')",
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "Cannot read properties of undefined (reading 'logout')",
+            errorSource: 'https://easyboardgame.top/src/components/social/UserMenu.tsx:320:15',
+            stack: "TypeError: Cannot read properties of undefined (reading 'logout')\n    at handleLogout (https://easyboardgame.top/src/components/social/UserMenu.tsx:320:15)",
+        });
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     });
 });

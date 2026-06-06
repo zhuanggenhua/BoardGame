@@ -1,5 +1,7 @@
 # DiceThrone Ninja Dojo 真实手牌 E2E（2026-05-17）
 
+> 2026-06-05 当前有效口径：本文只保留 `ninja-card-dojo / 道场！` 这张卡的对象级真实手牌 `L3` 证据，不代表 Ninja 其它行动卡、升级卡或技能本体的当前完成态。若要判断 Ninja 当前整英雄残余，应回到 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md` 与升级重审主文档。
+
 ## 范围
 
 - 对象：`ninja-card-dojo / 道场！`

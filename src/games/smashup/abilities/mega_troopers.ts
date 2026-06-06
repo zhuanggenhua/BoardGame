@@ -89,7 +89,7 @@ function noTargets(ctx: AbilityContext): AbilityResult {
 }
 
 function getMegabot(state: SmashUpCore, playerId: PlayerId): TitanState | undefined {
-    return (state.titans ?? []).find(titan => titan.defId === MEGABOT && titan.ownerId === playerId);
+    return (state.titans ?? []).find(titan => titan.defId === MEGABOT && titan.controllerId === playerId);
 }
 
 function countOwnMinions(state: SmashUpCore, baseIndex: number, playerId: PlayerId): number {

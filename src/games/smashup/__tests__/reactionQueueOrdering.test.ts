@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, SmashUpEvent, TriggerInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
+import { clearRegistry } from '../domain/abilityRegistry';
+import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import {
+  applyEvents,
   expectNoPrompt,
   getPromptOption,
   getPromptOptions,
@@ -21,12 +24,17 @@ import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueu
 import { resolveSmashUpReactionChoice, startSmashUpReactionSession } from '../domain/reactionSession';
 import { processAffectTriggers, processDeckInspectionTriggers, processMoveTriggers } from '../domain/reducer';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { initAllAbilities, resetAbilityInit } from '../abilities';
+import { createAbilityRuntimeExecutor, createEffectProgram } from '../domain/abilityRuntime';
+import { registerTriggerProgramExecutor } from '../domain/triggerExecutors';
 import {
   clearReactionFootprintFallbackAudit,
   deriveFootprintFromEvent,
   deriveFootprintFromInteraction,
+  deriveFootprintFromTriggerProbe,
   getReactionFootprintFallbackAudit,
   reactionResourceKey,
+  resourceFootprintsConflict,
 } from '../domain/reactionResources';
 import '../domain/index';
 
@@ -41,9 +49,13 @@ function baseCore(overrides?: Partial<SmashUpCore>): SmashUpCore {
 }
 
 beforeEach(() => {
+  clearRegistry();
+  clearBaseAbilityRegistry();
   clearOngoingEffectRegistry();
   clearInteractionHandlers();
   clearReactionFootprintFallbackAudit();
+  resetAbilityInit();
+  initAllAbilities();
   registerReactionQueueInteractionHandlers();
 });
 
@@ -158,6 +170,41 @@ describe('Smash Up reaction resource footprint inference', () => {
     expect(footprint!.fallbackReason).toBeUndefined();
   });
 
+  it('continuationContext.selectedTargetUids 数组应映射到多张 minion footprint，而不是只记当前第二次分支选中的目标', () => {
+    const interaction = createSimpleChoice(
+      'the_bride_second_target',
+      '0',
+      '新娘：选择第二个目标',
+      [
+        { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        {
+          id: 'second-target-a',
+          label: '第二目标 A',
+          value: { targetUid: 'second-target-a', defId: 'zombie_walker', kind: 'hand' },
+          displayMode: 'button' as const,
+        },
+      ],
+      {
+        sourceId: 'titan_frankenstein_the_bride_start_choose_target',
+        targetType: 'button',
+      },
+    );
+    const interactionWithContext = withPromptHandlerData(interaction, {
+      continuationContext: {
+        titanUid: 'bride-titan',
+        selectedTargetUids: ['first-target-a'],
+      },
+    });
+
+    const footprint = deriveFootprintFromInteraction(interactionWithContext);
+    expect(footprint).toBeDefined();
+    const writes = new Set(footprint!.writes.map(reactionResourceKey));
+    expect(writes).toContain('minion:first-target-a');
+    expect(writes).toContain('minion:second-target-a');
+    expect(writes).toContain('cardInstance:bride-titan');
+    expect(footprint!.fallbackReason).toBeUndefined();
+  });
+
   it.each([
     ['Mushroom Kingdom', 'base_mushroom_kingdom', { minionUid: 'mk-target', baseIndex: 0 }],
     ['Sprout', 'killer_plant_sprout_search', { cardUid: 'sprout-deck-card', baseIndex: 0, playerId: '0' }],
@@ -201,6 +248,108 @@ describe('Smash Up reaction resource footprint inference', () => {
     expect(writes).toContain('playerDiscard:0');
     expect(writes).toContain('playerDiscard:1');
     expect(writes).toContain('playerPlayLimit:0');
+  });
+
+  it('borrowed ONGOING_ATTACHED 事件应显式暴露 sourcePlayerId 与 ownerId 的牌区写入', () => {
+    const footprint = deriveFootprintFromEvent({
+      type: SU_EVENTS.ONGOING_ATTACHED,
+      payload: {
+        cardUid: 'borrowed-ongoing-a',
+        defId: 'test_ongoing',
+        ownerId: '1',
+        sourcePlayerId: '0',
+        targetType: 'minion',
+        targetBaseIndex: 0,
+        targetMinionUid: 'target-minion-a',
+      },
+      timestamp: 1,
+    } as SmashUpEvent);
+
+    const writes = new Set(footprint.writes.map(reactionResourceKey));
+    expect(writes).toContain('cardInstance:borrowed-ongoing-a');
+    expect(writes).toContain('base:0');
+    expect(writes).toContain('playerHand:0');
+    expect(writes).toContain('playerDeck:0');
+    expect(writes).toContain('playerDiscard:0');
+    expect(writes).toContain('playerHand:1');
+    expect(writes).toContain('playerDeck:1');
+    expect(writes).toContain('playerDiscard:1');
+  });
+
+  it('su:card_to_deck_top 在 borrowed/sourcePlayer 场景下应同时暴露 sourcePlayerId 与 ownerId 的牌区写入', () => {
+    const footprint = deriveFootprintFromEvent({
+      type: SU_EVENTS.CARD_TO_DECK_TOP,
+      payload: {
+        cardUid: 'borrowed-card-top',
+        defId: 'test_minion',
+        ownerId: '1',
+        sourcePlayerId: '0',
+        sourceControllerId: '0',
+        sourceCardUid: 'borrowed-card-top',
+        sourceDefId: 'test_minion',
+        sourceBaseIndex: 0,
+        playerId: '0',
+        fromPlayerId: '0',
+      },
+      timestamp: 1,
+    } as SmashUpEvent);
+
+    const writes = new Set(footprint.writes.map(reactionResourceKey));
+    expect(writes).toContain('cardInstance:borrowed-card-top');
+    expect(writes).toContain('playerHand:0');
+    expect(writes).toContain('playerDeck:0');
+    expect(writes).toContain('playerDiscard:0');
+    expect(writes).toContain('playerDeck:1');
+    expect(writes).toContain('playerDiscard:1');
+  });
+
+  it('su:card_to_deck_bottom 在 borrowed/sourcePlayer 场景下应同时暴露 sourcePlayerId 与 ownerId 的牌区写入', () => {
+    const footprint = deriveFootprintFromEvent({
+      type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+      payload: {
+        cardUid: 'borrowed-card-bottom',
+        defId: 'test_minion',
+        ownerId: '1',
+        sourcePlayerId: '0',
+        sourceControllerId: '0',
+        sourceCardUid: 'borrowed-card-bottom',
+        sourceDefId: 'test_minion',
+        sourceBaseIndex: 0,
+        playerId: '0',
+        fromPlayerId: '0',
+      },
+      timestamp: 1,
+    } as SmashUpEvent);
+
+    const writes = new Set(footprint.writes.map(reactionResourceKey));
+    expect(writes).toContain('cardInstance:borrowed-card-bottom');
+    expect(writes).toContain('playerHand:0');
+    expect(writes).toContain('playerDeck:0');
+    expect(writes).toContain('playerDiscard:0');
+    expect(writes).toContain('playerDeck:1');
+    expect(writes).toContain('playerDiscard:1');
+  });
+
+  it('ONGOING_DETACHED 事件应显式暴露真实 owner discard 写入，而不是只记 cardInstance', () => {
+    const footprint = deriveFootprintFromEvent({
+      type: SU_EVENTS.ONGOING_DETACHED,
+      payload: {
+        cardUid: 'borrowed-overrun-a',
+        defId: 'zombie_overrun',
+        ownerId: '1',
+        reason: 'zombie_overrun_self_destruct',
+        sourcePlayerId: '0',
+        sourceCardUid: 'borrowed-overrun-a',
+        sourceDefId: 'zombie_overrun',
+        sourceControllerId: '0',
+        sourceBaseIndex: 0,
+      },
+      timestamp: 1,
+    } as SmashUpEvent);
+
+    const writes = new Set(footprint.writes.map(reactionResourceKey));
+    expect(writes).toContain('cardInstance:borrowed-overrun-a');
+    expect(writes).toContain('playerDiscard:1');
   });
 
   it('交互 option 无结构化目标时只标记明确 fallback，不伪造成全局冲突', () => {
@@ -259,6 +408,138 @@ describe('Smash Up reaction resource footprint inference', () => {
       sourceDefId: 'test_fallback_reader',
       reason: 'test reads hand through non-event query',
     }));
+  });
+
+  it('queued trigger 的 program.deriveFootprint 即使 runtime artifacts 为空，仍应参与排序', () => {
+    registerTrigger('program_probe_no_runtime_artifacts', 'onTurnStart', () => [], {});
+    registerTriggerProgramExecutor(
+      'program_probe_no_runtime_artifacts',
+      'onTurnStart',
+      createAbilityRuntimeExecutor(createEffectProgram(
+        () => [],
+        {
+          deriveFootprint: () => ({
+            reads: [{ kind: 'playerHand', playerId: '0' }],
+            writes: [],
+          }),
+        },
+      )),
+    );
+
+    const trigger = {
+      id: 'program-probe-no-runtime-artifacts',
+      timing: 'onTurnStart',
+      sourceDefId: 'program_probe_no_runtime_artifacts',
+      ownerPlayerId: '0',
+      sourceControllerId: '0',
+      mandatory: true,
+      resolutionClass: 'mandatory',
+    } as TriggerInstance;
+
+    const footprint = deriveFootprintFromTriggerProbe(
+      makeMatchState(baseCore()),
+      trigger,
+      { shuffle: (items: any[]) => items } as any,
+      1,
+    );
+
+    expect(footprint.fallbackReason).toBeUndefined();
+    expect(footprint.reads.map(reactionResourceKey)).toContain('playerHand:0');
+  });
+
+  it('borrowed source 的 program.deriveFootprint 若依赖 sourceOwnerPlayerId 读取 true owner 手牌区时，应生成 true owner 手牌区 footprint 并与 writer 判定冲突', () => {
+    registerTrigger('program_probe_owner_reader', 'onTurnStart', () => [], {});
+    registerTriggerProgramExecutor(
+      'program_probe_owner_reader',
+      'onTurnStart',
+      createAbilityRuntimeExecutor(createEffectProgram(
+        () => [],
+        {
+          deriveFootprint: (ctx: any) => ({
+            reads: [{ kind: 'playerHand', playerId: ctx.sourceOwnerPlayerId }],
+            writes: [],
+          }),
+        },
+      )),
+    );
+
+    const readerTrigger = {
+      id: 'program-probe-owner-reader',
+      timing: 'onTurnStart',
+      sourceDefId: 'program_probe_owner_reader',
+      ownerPlayerId: '0',
+      sourceControllerId: '0',
+      sourceOwnerPlayerId: '1',
+      mandatory: true,
+      resolutionClass: 'mandatory',
+    } as TriggerInstance;
+
+    const readerFootprint = deriveFootprintFromTriggerProbe(
+      makeMatchState(baseCore()),
+      readerTrigger,
+      { shuffle: (items: any[]) => items } as any,
+      1,
+    );
+    const writerFootprint = {
+      reads: [],
+      writes: [{ kind: 'playerHand', playerId: '1' }],
+    } as any;
+
+    expect(readerFootprint.fallbackReason).toBeUndefined();
+    expect(readerFootprint.reads.map(reactionResourceKey)).toContain('playerHand:1');
+    expect(resourceFootprintsConflict(readerFootprint, writerFootprint)).toBe(true);
+  });
+
+  it('manual queued borrowed reader/writer triggers 在 true owner 手牌区 footprint 冲突时，应进入排序选择', () => {
+    const frameId = 'manual-owner-hand-ordering-frame';
+    const sourceEventId = 'manual-owner-hand-ordering-event';
+    const state = makeMatchState(baseCore({
+      triggerQueue: [
+        {
+          id: 'manual-owner-reader',
+          timing: 'onTurnStart',
+          sourceDefId: 'program_probe_owner_reader_manual',
+          ownerPlayerId: '0',
+          sourceControllerId: '0',
+          sourceOwnerPlayerId: '1',
+          mandatory: true,
+          resolutionClass: 'mandatory',
+          frameId,
+          sourceEventId,
+          fallbackFootprint: {
+            reads: [{ kind: 'playerHand', playerId: '1' }],
+            writes: [],
+            fallbackReason: 'manual queued borrowed reader observes true owner hand',
+          },
+        },
+        {
+          id: 'manual-owner-writer',
+          timing: 'onTurnStart',
+          sourceDefId: 'program_probe_owner_writer_manual',
+          ownerPlayerId: '0',
+          sourceControllerId: '0',
+          sourceOwnerPlayerId: '1',
+          mandatory: true,
+          resolutionClass: 'mandatory',
+          frameId,
+          sourceEventId,
+          fallbackFootprint: {
+            reads: [],
+            writes: [{ kind: 'playerHand', playerId: '1' }],
+            fallbackReason: 'manual queued borrowed writer writes true owner hand',
+          },
+        },
+      ] as any,
+    }));
+
+    const rq = maybeResolveReactionQueue(
+      state,
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      1,
+    );
+
+    expect(rq).toBeDefined();
+    expect(getSimpleChoicePrompt(rq!.state, 'smashup_reaction_choose')).toBeDefined();
   });
 });
 
@@ -469,6 +750,63 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(optionLabels.some((label: string) => label.includes('test_component_conflict_reader'))).toBe(true);
   });
 
+  it('borrowed ONGOING_ATTACHED 若会清 sourcePlayerId 手牌区时，应与读取该手牌区的 queued trigger 进入排序选择', () => {
+    registerTrigger('test_borrowed_attach_writer', 'onTurnStart', () => ([{
+      type: SU_EVENTS.ONGOING_ATTACHED,
+      payload: {
+        cardUid: 'borrowed-ongoing-a',
+        defId: 'test_borrowed_attach_writer',
+        ownerId: '1',
+        sourcePlayerId: '0',
+        targetType: 'minion',
+        targetBaseIndex: 0,
+        targetMinionUid: 'host-a',
+      },
+      timestamp: 1,
+    }] as any));
+    registerTrigger('test_borrowed_attach_reader', 'onTurnStart', () => ([{
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'borrowed_attach_reader', tone: 'info' },
+      timestamp: 1,
+    }] as any), {
+      fallbackFootprint: {
+        reads: [{ kind: 'playerHand', playerId: '0' }],
+        writes: [],
+        fallbackReason: 'test borrowed attach reader observes source player hand',
+      },
+    });
+
+    const core = baseCore({
+      players: {
+        '0': { ...makeState().players['0'], hand: [{ uid: 'hand-a', defId: 'test_action', owner: '0', type: 'action' }] as any },
+        '1': makeState().players['1'],
+      },
+      bases: [
+        makeBase('test_base_1', [
+          makeMinion('writer-a', 'test_borrowed_attach_writer', '0', 3),
+          makeMinion('reader-a', 'test_borrowed_attach_reader', '0', 3),
+          makeMinion('host-a', 'test_host', '0', 3),
+        ]),
+      ],
+    });
+
+    const queued = collectTriggers(core, 'onTurnStart', {
+      state: core,
+      matchState: makeMatchState(core),
+      playerId: '0',
+      random: { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      now: 1,
+    });
+    expect(queued).toBeDefined();
+
+    const rq = maybeResolveReactionQueue(
+      makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      1,
+    );
+    expect(getSimpleChoicePrompt(rq!.state, 'smashup_reaction_choose')).toBeDefined();
+  });
+
   it('互不冲突的 mandatory triggers 若会进入真实交互，应直接进入真实交互而不是先弹排序', () => {
     registerTrigger('test_real_prompt', 'onTurnStart', (ctx: any) => {
       const interaction = createSimpleChoice(
@@ -512,6 +850,65 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
     expect(getSimpleChoicePrompt(rq!.state, 'test_real_prompt')).toBeDefined();
+  });
+
+  it('同 owner 两张 borrowed zombie_overrun 同回合开始自毁时，应因共享真实 owner discard 写入进入排序选择', () => {
+    const base = makeBase({
+      defId: 'base_portal_room',
+      ongoingActions: [],
+    });
+    const baseCoreState = makeState({
+      turnOrder: ['0', '1'],
+      currentPlayerIndex: 0,
+      players: {
+        '0': makeState().players['0'],
+        '1': makeState().players['1'],
+      },
+      bases: [base],
+      turnNumber: 31,
+    });
+    const firstAttach = processAffectTriggers([{
+      type: SU_EVENTS.ONGOING_ATTACHED,
+      payload: {
+        cardUid: 'borrowed-overrun-a',
+        defId: 'zombie_overrun',
+        ownerId: '1',
+        sourcePlayerId: '0',
+        targetType: 'base',
+        targetBaseIndex: 0,
+      },
+      timestamp: 30,
+    } as any], makeMatchState(baseCoreState), '0', { shuffle: (a: any[]) => a } as any, 30);
+    const withFirst = applyEvents(baseCoreState, firstAttach.events);
+    const secondAttach = processAffectTriggers([{
+      type: SU_EVENTS.ONGOING_ATTACHED,
+      payload: {
+        cardUid: 'borrowed-overrun-b',
+        defId: 'zombie_overrun',
+        ownerId: '1',
+        sourcePlayerId: '0',
+        targetType: 'base',
+        targetBaseIndex: 0,
+      },
+      timestamp: 30.1,
+    } as any], makeMatchState(withFirst), '0', { shuffle: (a: any[]) => a } as any, 30.1);
+    const core = applyEvents(withFirst, secondAttach.events);
+
+    const queued = collectTriggers(core, 'onTurnStart', {
+      state: core,
+      matchState: makeMatchState(core),
+      playerId: '0',
+      random: { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      now: 31,
+    });
+    expect(queued).toBeDefined();
+
+    const rq = maybeResolveReactionQueue(
+      makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      31,
+    );
+    expect(getSimpleChoicePrompt(rq!.state, 'smashup_reaction_choose')).toBeDefined();
   });
 
   it('存在读写冲突的 mandatory triggers 仍应保留排序交互', () => {

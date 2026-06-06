@@ -18,10 +18,11 @@ import {
     makePlayer,
     makeState,
     respondToPrompt,
+    respondToPromptOption,
     respondToPromptOptions,
 } from '../helpers';
 import { runCommand } from '../testRunner';
-import { SU_COMMANDS } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 
 beforeAll(() => {
     clearRegistry();
@@ -175,5 +176,66 @@ describe('Cowboys queued source-controller runtime context', () => {
         expect(moved?.ownerId).toBe('1');
         expect(moved?.metadata?.sourcePlayerId).toBe('0');
         expect(moved?.metadata?.sourceControllerId).toBe('0');
+    });
+
+    it('cowboys_gold_in_them_thar_hills 未选中的 borrowed 揭示牌应回到拥有者牌库而不是当前玩家牌库', () => {
+        const reverseRandom = {
+            shuffle: <T,>(items: T[]) => [...items].reverse(),
+            random: () => 0.5,
+            d: () => 1,
+            range: (min: number) => min,
+        };
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('gold-1', 'cowboys_gold_in_them_thar_hills', 'action', '0')],
+                    deck: [
+                        makeCard('borrowed-top-a', 'ghosts_spectre', 'minion', '1'),
+                        makeCard('top-b', 'sharks_mako', 'minion', '0'),
+                        makeCard('top-c', 'sharks_great_white', 'minion', '0'),
+                        makeCard('rest-1', 'pirate_first_mate', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-a', 'ghosts_apparition', 'minion', '1')],
+                }),
+            },
+            bases: [makeBase({ defId: 'base_a', minions: [], ongoingActions: [] })],
+        });
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'gold-1' },
+        } as any, reverseRandom);
+        expect(played.success).toBe(true);
+
+        const choseCard = respondToPromptOption(
+            played.finalState,
+            option => option.value?.cardUid === 'top-b',
+            'gold chosen card',
+            '0',
+            reverseRandom,
+        );
+        const orderedRemaining = respondToPromptOption(
+            choseCard.finalState,
+            option => option.value?.topCardUid === 'top-c',
+            'gold remaining top card order',
+            '0',
+            reverseRandom,
+        );
+        expectNoPrompt(orderedRemaining.finalState);
+        expect(orderedRemaining.finalState.core.players['0'].hand.map(card => card.uid)).toContain('top-b');
+        expect(orderedRemaining.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['top-c', 'rest-1']);
+        expect(orderedRemaining.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-top-a', 'p1-deck-a']);
+
+        expect(orderedRemaining.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '1',
+                sourcePlayerId: '0',
+                deckUids: ['borrowed-top-a', 'p1-deck-a'],
+            }),
+        }));
     });
 });

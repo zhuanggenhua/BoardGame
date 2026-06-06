@@ -2,7 +2,7 @@
  * 通用卡牌特写队列组件
  *
  * 展示其他玩家打出的卡牌特写，支持队列堆叠。
- * 默认不阻塞底层游戏操作；点击卡牌本体即可关闭当前特写。
+ * 点击空白背景或卡牌本体均可关闭当前特写。
  *
  * 面向百游戏设计：
  * - 游戏层通过 renderCard 注入卡牌渲染
@@ -59,7 +59,7 @@ function CardSpotlightQueueInner<TData = unknown>({
         <AnimatePresence mode="wait">
             <motion.div
                 key={current.id}
-                className="fixed inset-0 flex items-center justify-center pointer-events-none"
+                className="fixed inset-0 flex items-center justify-center"
                 style={{ zIndex: UI_Z_INDEX.overlayRaised }}
                 data-testid="card-spotlight-queue"
                 initial={{ opacity: 0 }}
@@ -69,11 +69,16 @@ function CardSpotlightQueueInner<TData = unknown>({
                 data-interaction-allow
             >
                 {/* 半透明背景 */}
-                <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+                <button
+                    type="button"
+                    aria-label="关闭特写"
+                    className="absolute inset-0 bg-black/20"
+                    onClick={handleDismiss}
+                />
 
                 {/* 卡牌内容 */}
                 <motion.div
-                    className="relative pointer-events-auto cursor-pointer"
+                    className="relative cursor-pointer"
                     data-testid="card-spotlight-content"
                     initial={{ scale: 0.5, opacity: 0, y: 40 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}

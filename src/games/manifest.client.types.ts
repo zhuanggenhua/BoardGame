@@ -4,6 +4,7 @@ import type { GameManifestEntry } from './manifest.types';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { LatencyOptimizationConfig } from '../engine/transport/latency/types';
 import type { CriticalImageResolver } from '../core/types';
+import type { GameRuntimeAdapter } from './gameRuntimeAdapter';
 
 /** 游戏运行时实现（Board/engineConfig/tutorial/latencyConfig），按需懒加载 */
 export interface GameClientRuntimeModule {
@@ -14,6 +15,7 @@ export interface GameClientRuntimeModule {
     tutorial?: TutorialManifest;
     tutorialCatalog?: TutorialCollection;
     latencyConfig?: LatencyOptimizationConfig;
+    runtimeAdapter?: GameRuntimeAdapter;
 }
 
 export interface GameClientManifestEntry {

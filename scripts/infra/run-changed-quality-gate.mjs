@@ -53,6 +53,64 @@ const PRE_PUSH_GAME_SMOKE_TARGETS = {
   tictactoe: ['src/games/tictactoe/__tests__/flow.test.ts'],
   cardia: ['src/games/cardia/__tests__/smoke.test.ts'],
 };
+const DICETHRONE_SYNC_BLOCKER_PATTERNS = [
+  /^src\/engine\/transport\//,
+  /^src\/games\/dicethrone\/domain\//,
+  /^src\/games\/dicethrone\/game\.ts$/,
+];
+const DICETHRONE_SYNC_BLOCKER_TESTS = [
+  {
+    label: 'BLOCKER: DiceThrone sync transport contract',
+    reason: '王权同步/旧状态兼容链路改动，强制回归 state:sync、playerView 与 legacy state 包装合同',
+    target: 'src/engine/transport/__tests__/server.test.ts',
+    testNamePattern: 'dicethrone sync',
+    vitestArgs: FAST_VITEST_ARGS,
+  },
+  {
+    label: 'BLOCKER: DiceThrone legacy runtime-state contract',
+    reason: '王权同步/旧状态兼容链路改动，强制回归 authoritative 旧状态与 pendingBonusDiceSettlement 归一化合同',
+    target: 'src/games/dicethrone/__tests__/flow.test.ts',
+    testNamePattern: '旧 pendingBonusDiceSettlement 脏 dice shape',
+    vitestArgs: GAME_VITEST_ARGS,
+  },
+];
+const GAME_ENTRY_BLOCKER_PATTERNS = [
+  /^src\/App\.tsx$/,
+  /^src\/pages\/MatchRoom.*\.tsx$/,
+  /^src\/pages\/matchRoom.*\.(ts|tsx)$/,
+  /^src\/pages\/useMatchRoom.*\.(ts|tsx)$/,
+  /^src\/pages\/useOnlineAiSeat.*\.(ts|tsx)$/,
+  /^src\/pages\/onlineAi.*\.(ts|tsx)$/,
+  /^src\/lib\/prefetchPlayRoute\.ts$/,
+  /^src\/lib\/staleChunkReloadGuard\.ts$/,
+  /^src\/components\/system\/GlobalErrorBoundary\.tsx$/,
+  /^src\/hooks\/useGameImplementationReady\.ts$/,
+  /^src\/games\/registry\.ts$/,
+  /^src\/engine\/transport\/client\.ts$/,
+];
+const GAME_ENTRY_BLOCKER_TESTS = [
+  {
+    label: 'BLOCKER: Play route stale chunk recovery',
+    reason: '进房入口链路改动，强制回归 lazy route / stale chunk 自动恢复，不允许卡死在错误边界',
+    target: 'src/components/system/__tests__/GlobalErrorBoundary.test.tsx',
+    testNamePattern: 'stale chunk 渲染错误会触发自动刷新',
+    vitestArgs: FAST_VITEST_ARGS,
+  },
+  {
+    label: 'BLOCKER: Game runtime stale chunk recovery',
+    reason: '进房入口链路改动，强制回归游戏 runtime 动态导入 stale chunk 自动恢复',
+    target: 'src/pages/__tests__/Maintenance.test.tsx',
+    testNamePattern: '游戏 runtime 动态导入命中 stale chunk 时会触发一次页面刷新',
+    vitestArgs: FAST_VITEST_ARGS,
+  },
+  {
+    label: 'BLOCKER: MatchRoom blocking-state contract',
+    reason: '进房入口链路改动，强制回归 MatchRoom 阻塞态优先级，防止实现加载失败被伪装成 loading',
+    target: 'src/pages/__tests__/matchRoomBlockingState.test.ts',
+    testNamePattern: 'implementation 加载失败时，应返回明确错误态',
+    vitestArgs: FAST_VITEST_ARGS,
+  },
+];
 const PLAY_ROUTE_ENTRY_GUARD_PATTERNS = new Set([
   'src/App.tsx',
   'src/lib/prefetchPlayRoute.ts',
@@ -665,12 +723,26 @@ function affectsPlayRouteEntry(file) {
   return PLAY_ROUTE_ENTRY_GUARD_PATTERNS.has(normalizeFile(file));
 }
 
+function affectsSharedGameEntrySmoke(file) {
+  return affectsPlayRouteEntry(file) || affectsGameEntryBlocker(file);
+}
+
 function affectsSmashUpRuntimeRandomSeam(file) {
   const normalized = normalizeFile(file);
   return normalized === 'src/games/smashup/domain/abilityHelpers.ts'
     || normalized === 'src/games/smashup/domain/abilityRuntime.ts'
     || normalized === 'src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts'
     || normalized.startsWith('src/games/smashup/abilities/');
+}
+
+function affectsDiceThroneSyncBlocker(file) {
+  const normalized = normalizeFile(file);
+  return DICETHRONE_SYNC_BLOCKER_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function affectsGameEntryBlocker(file) {
+  const normalized = normalizeFile(file);
+  return GAME_ENTRY_BLOCKER_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
 function isNonGameTestFile(file) {
@@ -953,10 +1025,10 @@ function collectCommands(files, baseRef, affectsTypecheck) {
     });
   }
 
-  if (isPrePushMode && hasAny(workspaceScopeFiles, affectsPlayRouteEntry)) {
+  if (isPrePushMode && hasAny(workspaceScopeFiles, affectsSharedGameEntrySmoke)) {
     commands.push({
       label: 'Play route smoke (online)',
-      reason: '在线对局入口改动，真实浏览器进房兜底动态 import / 路由白屏 / TDZ 运行时错误',
+      reason: '共享进房链路改动，真实浏览器进房兜底动态 import / 路由白屏 / 房间阻塞态错误',
       command: process.execPath,
       args: [
         'scripts/infra/run-e2e-single.mjs',
@@ -964,6 +1036,46 @@ function collectCommands(files, baseRef, affectsTypecheck) {
         'e2e/dicethrone/dicethrone-simple-start.e2e.ts',
         'Online match: Can start a game successfully',
       ],
+    });
+  }
+
+  if (isPrePushMode && hasAny(workspaceScopeFiles, affectsDiceThroneSyncBlocker)) {
+    DICETHRONE_SYNC_BLOCKER_TESTS.forEach((blocker) => {
+      commands.push({
+        label: blocker.label,
+        reason: blocker.reason,
+        command: process.execPath,
+        args: [
+          ...VITEST_SAFE_ENTRY,
+          'run',
+          blocker.target,
+          '--configLoader',
+          'native',
+          ...ensurePassWithNoTests(blocker.vitestArgs),
+          '-t',
+          blocker.testNamePattern,
+        ],
+      });
+    });
+  }
+
+  if (isPrePushMode && hasAny(workspaceScopeFiles, affectsGameEntryBlocker)) {
+    GAME_ENTRY_BLOCKER_TESTS.forEach((blocker) => {
+      commands.push({
+        label: blocker.label,
+        reason: blocker.reason,
+        command: process.execPath,
+        args: [
+          ...VITEST_SAFE_ENTRY,
+          'run',
+          blocker.target,
+          '--configLoader',
+          'native',
+          ...ensurePassWithNoTests(blocker.vitestArgs),
+          '-t',
+          blocker.testNamePattern,
+        ],
+      });
     });
   }
 

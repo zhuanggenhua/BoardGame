@@ -12,6 +12,8 @@ import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import {
     closeDebugPanelIfOpen,
     dispatchDiceThroneCommand,
+    dispatchDiceThroneCommandWithTimeout,
+    maybePassResponse,
     readyAndStartGame,
     selectCharacter,
     setupOnlineMatch,
@@ -187,6 +189,109 @@ const closeBonusDieOverlay = async (page: Page) => {
     await closeButton.click();
 };
 
+const chooseVariantByLabelIfVisible = async (page: Page, label: RegExp) => {
+    const variantTitle = page.getByRole('heading', { name: '选择发动变体' }).first();
+    if (!await variantTitle.isVisible({ timeout: 1500 }).catch(() => false)) {
+        return;
+    }
+    const optionButton = page.getByRole('button', { name: label }).first();
+    await expect(optionButton).toBeVisible({ timeout: 5000 });
+    await optionButton.click();
+    await expect(variantTitle).toBeHidden({ timeout: 10000 }).catch(() => {});
+};
+
+const dismissAttackShowcaseIfVisible = async (page: Page) => {
+    const continueButton = page.getByRole('button', { name: /开始防御|继续|Start Defense|Continue/i }).first();
+    if (await continueButton.isVisible({ timeout: 1500 }).catch(() => false)) {
+        await continueButton.click();
+        await expect(continueButton).toBeHidden({ timeout: 5000 }).catch(() => {});
+    }
+};
+
+const resolveDefenseOnPage = async (page: Page) => {
+    await dismissAttackShowcaseIfVisible(page);
+
+    const startDefenseButton = page.getByRole('button', { name: /开始防御|Start Defense/i }).first();
+    const rollButton = page.locator('[data-tutorial-id="dice-roll-button"]').first();
+    const confirmButton = page.locator('[data-tutorial-id="dice-confirm-button"]').first();
+    const rootedChoiceTitle = page.getByText('扎根：选择额外效果');
+
+    if (await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice), { timeout: 5000 }).then(() => true).catch(() => false)) {
+        await page.evaluate(() => {
+            window.__BG_TEST_HARNESS__?.dice.setValues([1, 2, 3]);
+        }).catch(() => {});
+    }
+
+    if (await startDefenseButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await startDefenseButton.click();
+        await expect(startDefenseButton).toBeHidden({ timeout: 10000 }).catch(() => {});
+    }
+
+    if (await rollButton.isEnabled({ timeout: 2000 }).catch(() => false)) {
+        await rollButton.click();
+        await page.waitForTimeout(300);
+    }
+
+    const beforeConfirm = await readHarnessCoreState(page);
+    if (beforeConfirm.rollCount && !beforeConfirm.rollConfirmed) {
+
+        const confirmVisible = await confirmButton.isVisible({ timeout: 5000 }).catch(() => false);
+        const confirmEnabled = confirmVisible
+            ? await confirmButton.isEnabled({ timeout: 2000 }).catch(() => false)
+            : false;
+        if (confirmVisible && confirmEnabled) {
+            await confirmButton.click().catch(() => {});
+        }
+        await page.waitForTimeout(400);
+
+        const afterUiClick = await readHarnessCoreState(page);
+        if (!afterUiClick.rollConfirmed) {
+            await dispatchDiceThroneCommandWithTimeout(page, {
+                type: 'CONFIRM_ROLL',
+                playerId: '0',
+                payload: {},
+            }, 5000);
+            await page.waitForTimeout(400);
+        }
+
+        await expect.poll(async () => (await readHarnessCoreState(page)).rollConfirmed, { timeout: 5000 }).toBe(true);
+    }
+
+    await clickAdvancePhase(page, '0');
+
+    const rootedChoiceVisible = await rootedChoiceTitle.isVisible({ timeout: 3000 }).catch(() => false);
+    if (rootedChoiceVisible) {
+        const rootedChoiceButton = page.getByRole('button', { name: /养成后：幼种 1/i }).first();
+        const lifeSapChoiceButton = page.getByRole('button', { name: /获得生命源泉/i }).first();
+        if (await rootedChoiceButton.isVisible({ timeout: 1500 }).catch(() => false)) {
+            await rootedChoiceButton.click();
+        } else if (await lifeSapChoiceButton.isVisible({ timeout: 1500 }).catch(() => false)) {
+            await lifeSapChoiceButton.click();
+        } else {
+            await page.getByRole('button').filter({ hasText: /\S+/ }).first().click();
+        }
+        await expect(rootedChoiceTitle).toBeHidden({ timeout: 10000 });
+        await page.waitForTimeout(300);
+        if ((await readHarnessCoreState(page)).pendingAttack) {
+            await clickAdvancePhase(page, '0');
+        }
+    }
+};
+
+const drainResponseWindows = async (...pages: Page[]) => {
+    for (let round = 0; round < 4; round += 1) {
+        let passed = false;
+        for (const page of pages) {
+            // 某些攻击会在结束防御后进入 token/response 窗口；不显式 pass 会导致 pendingAttack 卡住不收口。
+            const didPass = await maybePassResponse(page);
+            passed = passed || didPass;
+        }
+        if (!passed) {
+            return;
+        }
+    }
+};
+
 const clickAdvancePhase = async (page: Page, playerId: string) => {
     await closeDebugPanelIfOpen(page);
     await closeCardSpotlightIfOpen(page);
@@ -236,8 +341,15 @@ const clickResolvedAbilitySlot = async (
 ) => {
     const slot = page.locator(`[data-testid="player-board-surface"] [data-ability-slot="${slotId}"]`).first();
     await expect(slot).toHaveAttribute('data-resolved-ability-id', expectedAbilityId, { timeout: 10000 });
-    await expect(slot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+    await clickAbilitySlot(page, slotId);
+};
 
+const clickAbilitySlot = async (
+    page: Page,
+    slotId: string,
+) => {
+    const slot = page.locator(`[data-testid="player-board-surface"] [data-ability-slot="${slotId}"]`).first();
+    await expect(slot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
     const clickPoint = await page.evaluate((targetSlotId) => {
         const element = document.querySelector(
             `[data-testid="player-board-surface"] [data-ability-slot="${targetSlotId}"]`,
@@ -265,6 +377,17 @@ const clickResolvedAbilitySlot = async (
 
     expect(clickPoint, `${slotId} 槽位必须存在真实可点击点`).not.toBeNull();
     await page.mouse.click(clickPoint!.x, clickPoint!.y);
+};
+
+const chooseFirstSimpleChoiceIfVisible = async (page: Page, title: RegExp, buttonLabel: RegExp) => {
+    const modalTitle = page.locator('#modal-root').getByText(title).first();
+    if (!await modalTitle.isVisible({ timeout: 1200 }).catch(() => false)) {
+        return false;
+    }
+    const optionButton = page.locator('#modal-root').getByRole('button', { name: buttonLabel }).first();
+    await expect(optionButton).toBeVisible({ timeout: 5000 });
+    await optionButton.click();
+    return true;
 };
 
 const upgradeDefinitions: Record<string, { cardId: string; def: AbilityDef }> = {
@@ -364,18 +487,15 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
         test.setTimeout(180000);
         const match = await setupNinjaMatch(browser, testInfo.project.use.baseURL as string | undefined);
         const testName = '基础与升级技能应从真实玩家板槽位进入正确 sourceAbilityId';
-        const cases = [
+        const directCases = [
             { label: 'slash-2', values: [1, 1, 2, 2, 3], slot: 'fist', expected: 'slash-2-5', upgrades: ['slash'] },
-            { label: 'going-forward-2', values: [4, 4, 5, 5, 6], slot: 'chi', expected: 'going-forward', upgrades: ['going-forward'] },
-            { label: 'shadow-step-2', values: [6, 6, 6, 6, 1], slot: 'lightning', expected: 'shadow-step', upgrades: ['shadow-step'] },
-            { label: 'smoke-screen-2', values: [1, 4, 5, 6, 1], slot: 'lotus', expected: 'smoke-screen', upgrades: ['smoke-screen'] },
-            { label: 'shadow-fang-2', values: [1, 2, 3, 4, 5], slot: 'calm', expected: 'shadow-fang', upgrades: ['shadow-fang'] },
+            { label: 'shadow-fang-2', values: [1, 2, 3, 4, 5], slot: 'calm', expected: 'shadow-fang-2-main', upgrades: ['shadow-fang'] },
             { label: 'assassinate', values: [6, 6, 6, 6, 6], slot: 'ultimate', expected: 'ninja-assassinate', upgrades: [] },
         ];
 
         try {
-            for (let index = 0; index < cases.length; index += 1) {
-                const item = cases[index];
+            for (let index = 0; index < directCases.length; index += 1) {
+                const item = directCases[index];
                 await setNinjaScenario(match, item.values, { upgradedAbilityIds: item.upgrades });
                 await screenshot(match.guestPage, testName, `${String(index + 1).padStart(2, '0')}-${item.label}-before-click.png`);
                 await clickResolvedAbilitySlot(match.guestPage, item.slot, item.expected);
@@ -385,6 +505,38 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
                 }, { timeout: 10000 }).toBe(item.expected);
                 await screenshot(match.guestPage, testName, `${String(index + 1).padStart(2, '0')}-${item.label}-after-click.png`);
             }
+
+            await setNinjaScenario(match, [4, 4, 5, 5, 6], { upgradedAbilityIds: ['going-forward'] });
+            await screenshot(match.guestPage, testName, '04-going-forward-2-before-click.png');
+            await clickResolvedAbilitySlot(match.guestPage, 'chi', 'going-forward-2-main');
+            await chooseVariantByLabelIfVisible(match.guestPage, /一往无前 II（4个手里剑）/);
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                return asRecord(core.pendingAttack).sourceAbilityId;
+            }, { timeout: 10000 }).toBe('going-forward-2-main');
+            await screenshot(match.guestPage, testName, '04-going-forward-2-after-click.png');
+
+            await setNinjaScenario(match, [6, 6, 6, 6, 1], { upgradedAbilityIds: ['shadow-step'] });
+            await screenshot(match.guestPage, testName, '05-shadow-step-2-before-click.png');
+            await clickResolvedAbilitySlot(match.guestPage, 'lightning', 'shadow-step-2-main');
+            await chooseVariantByLabelIfVisible(match.guestPage, /暗影步 II（4个面具）/);
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                return asRecord(core.pendingAttack).sourceAbilityId;
+            }, { timeout: 10000 }).toBe('shadow-step-2-main');
+            await screenshot(match.guestPage, testName, '05-shadow-step-2-after-click.png');
+
+            await setNinjaScenario(match, [1, 4, 5, 6, 1], { upgradedAbilityIds: ['smoke-screen'] });
+            await screenshot(match.guestPage, testName, '06-smoke-screen-2-before-click.png');
+            const smokeScreenSlot = match.guestPage.locator('[data-testid="player-board-surface"] [data-ability-slot="lotus"]').first();
+            await expect(smokeScreenSlot).toHaveAttribute('data-base-ability-id', 'smoke-screen', { timeout: 10000 });
+            await expect(smokeScreenSlot).toHaveAttribute('data-resolved-ability-id', 'smoke-screen-2-main', { timeout: 10000 });
+            await clickAbilitySlot(match.guestPage, 'lotus');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                return asRecord(core.pendingAttack).sourceAbilityId;
+            }, { timeout: 10000 }).toBe('smoke-screen-2-main');
+            await screenshot(match.guestPage, testName, '06-smoke-screen-2-after-click.png');
         } finally {
             await closeMatchContexts(match);
         }
@@ -398,7 +550,8 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
         try {
             await setNinjaScenario(match, [6, 6, 6, 6, 1], { upgradedAbilityIds: ['shadow-step'] });
             await screenshot(match.guestPage, testName, '01-shadow-step-2-before-click.png');
-            await clickResolvedAbilitySlot(match.guestPage, 'lightning', 'shadow-step');
+            await clickResolvedAbilitySlot(match.guestPage, 'lightning', 'shadow-step-2-main');
+            await chooseVariantByLabelIfVisible(match.guestPage, /暗影步 II（4个面具）/);
             await clickAdvancePhase(match.guestPage, '1');
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
@@ -415,7 +568,7 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
                     pendingAttack: Boolean(core.pendingAttack),
                 };
             }, { timeout: 15000 }).toEqual({
-                opponentHp: 23,
+                opponentHp: 25,
                 delayedPoison: 2,
                 smokeBomb: 1,
                 pendingAttack: false,
@@ -423,33 +576,11 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
             await advanceOutOfOffensiveRollAfterAttackIfNeeded(match.guestPage, '1');
             await screenshot(match.guestPage, testName, '02-shadow-step-2-after-resolve.png');
 
-            await setNinjaScenario(match, [1, 2, 3, 4, 5], { upgradedAbilityIds: ['poison-blade'] });
-            await screenshot(match.guestPage, testName, '03-poison-blade-2-before-click.png');
-            await clickResolvedAbilitySlot(match.guestPage, 'combo', 'poison-blade');
-            await clickAdvancePhase(match.guestPage, '1');
-            await expect.poll(async () => {
-                const core = await readHarnessCoreState(match.guestPage);
-                const players = asRecordMap(core.players);
-                const p0 = asRecord(players['0']);
-                const p0Resources = asRecord(p0.resources) as Record<string, number>;
-                const p0Tokens = asRecord(p0.tokens) as Record<string, number>;
-                    return {
-                        opponentHp: p0Resources[RESOURCE_IDS.HP],
-                        delayedPoison: p0Tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
-                        pendingAttack: Boolean(core.pendingAttack),
-                    };
-                }, { timeout: 15000 }).toEqual({
-                    opponentHp: 24,
-                    delayedPoison: 1,
-                    pendingAttack: false,
-                });
-            await advanceOutOfOffensiveRollAfterAttackIfNeeded(match.guestPage, '1');
-            await screenshot(match.guestPage, testName, '04-poison-blade-2-after-resolve.png');
-
             await setNinjaScenario(match, [1, 4, 5, 6, 1], { upgradedAbilityIds: ['smoke-screen'] });
-            await screenshot(match.guestPage, testName, '05-smoke-screen-2-before-click.png');
-            await clickResolvedAbilitySlot(match.guestPage, 'lotus', 'smoke-screen');
+            await screenshot(match.guestPage, testName, '03-smoke-screen-2-before-click.png');
+            await clickResolvedAbilitySlot(match.guestPage, 'lotus', 'smoke-screen-2-main');
             await clickAdvancePhase(match.guestPage, '1');
+            await chooseFirstSimpleChoiceIfVisible(match.guestPage, /选择烟雾阵 II 的目标/i, /令2号玩家获得|2号玩家获得|P2/i);
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
                 const players = asRecordMap(core.players);
@@ -458,25 +589,25 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
                 const p0Resources = asRecord(p0.resources) as Record<string, number>;
                 const p0Tokens = asRecord(p0.tokens) as Record<string, number>;
                 const p1Tokens = asRecord(p1.tokens) as Record<string, number>;
-                    return {
-                        opponentHp: p0Resources[RESOURCE_IDS.HP],
-                        delayedPoison: p0Tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
-                        smokeBomb: p1Tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
-                        ninjutsu: p1Tokens[TOKEN_IDS.NINJUTSU] ?? 0,
-                        pendingAttack: Boolean(core.pendingAttack),
-                    };
-                }, { timeout: 15000 }).toEqual({
-                    opponentHp: 30,
-                    delayedPoison: 1,
-                    smokeBomb: 1,
-                    ninjutsu: 3,
-                    pendingAttack: false,
-                });
+                return {
+                    opponentHp: p0Resources[RESOURCE_IDS.HP],
+                    delayedPoison: p0Tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
+                    smokeBomb: p1Tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
+                    ninjutsu: p1Tokens[TOKEN_IDS.NINJUTSU] ?? 0,
+                    pendingAttack: Boolean(core.pendingAttack),
+                };
+            }, { timeout: 15000 }).toEqual({
+                opponentHp: 30,
+                delayedPoison: 1,
+                smokeBomb: 1,
+                ninjutsu: 3,
+                pendingAttack: false,
+            });
             await advanceOutOfOffensiveRollAfterAttackIfNeeded(match.guestPage, '1');
-            await screenshot(match.guestPage, testName, '06-smoke-screen-2-after-resolve.png');
+            await screenshot(match.guestPage, testName, '04-smoke-screen-2-after-resolve.png');
 
             await setNinjaScenario(match, [6, 6, 6, 6, 6]);
-            await screenshot(match.guestPage, testName, '07-assassinate-before-click.png');
+            await screenshot(match.guestPage, testName, '05-assassinate-before-click.png');
             await clickResolvedAbilitySlot(match.guestPage, 'ultimate', 'ninja-assassinate');
             await clickAdvancePhase(match.guestPage, '1');
             await expect.poll(async () => {
@@ -487,20 +618,67 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
                 const p0Resources = asRecord(p0.resources) as Record<string, number>;
                 const p0Tokens = asRecord(p0.tokens) as Record<string, number>;
                 const p1Tokens = asRecord(p1.tokens) as Record<string, number>;
-                    return {
-                        opponentHp: p0Resources[RESOURCE_IDS.HP],
-                        delayedPoison: p0Tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
-                        smokeBomb: p1Tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
-                        pendingAttack: Boolean(core.pendingAttack),
-                    };
-                }, { timeout: 15000 }).toEqual({
-                    opponentHp: 20,
-                    delayedPoison: 2,
-                    smokeBomb: 1,
-                    pendingAttack: false,
-                });
+                return {
+                    opponentHp: p0Resources[RESOURCE_IDS.HP],
+                    delayedPoison: p0Tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
+                    smokeBomb: p1Tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
+                    pendingAttack: Boolean(core.pendingAttack),
+                };
+            }, { timeout: 15000 }).toEqual({
+                opponentHp: 20,
+                delayedPoison: 2,
+                smokeBomb: 1,
+                pendingAttack: false,
+            });
             await advanceOutOfOffensiveRollAfterAttackIfNeeded(match.guestPage, '1');
-            await screenshot(match.guestPage, testName, '08-assassinate-after-resolve.png');
+            await screenshot(match.guestPage, testName, '06-assassinate-after-resolve.png');
+
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('毒刃 II 在奖励骰投出面具时应从真实槽位收口到 2 慢性中毒 + 5 点伤害', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const match = await setupNinjaMatch(browser, testInfo.project.use.baseURL as string | undefined);
+        const testName = '毒刃 II 在奖励骰投出面具时应从真实槽位收口到 2 慢性中毒 + 5 点伤害';
+
+        try {
+            await setNinjaScenario(match, [1, 2, 3, 4, 5], {
+                upgradedAbilityIds: ['poison-blade'],
+                randomValues: [6, 1, 6, 6],
+            });
+            await screenshot(match.guestPage, testName, '01-poison-blade-2-mask-before-click.png');
+            await clickResolvedAbilitySlot(match.guestPage, 'combo', 'poison-blade');
+            await clickAdvancePhase(match.guestPage, '1');
+
+            const overlay = match.guestPage.getByTestId('bonus-die-overlay');
+            await expect(overlay).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '02-poison-blade-2-mask-overlay.png');
+            await screenshotLocator(overlay, testName, '03-poison-blade-2-mask-overlay-detail.png');
+
+            await closeBonusDieOverlay(match.guestPage);
+            await expect(overlay).toBeHidden({ timeout: 10000 });
+            await resolveDefenseOnPage(match.hostPage);
+            await drainResponseWindows(match.hostPage, match.guestPage);
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p0Resources = asRecord(p0.resources) as Record<string, number>;
+                const p0Tokens = asRecord(p0.tokens) as Record<string, number>;
+                return {
+                    opponentHp: p0Resources[RESOURCE_IDS.HP],
+                    delayedPoison: p0Tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
+                    pendingAttack: Boolean(core.pendingAttack),
+                };
+            }, { timeout: 15000 }).toEqual({
+                opponentHp: 28,
+                delayedPoison: 2,
+                pendingAttack: false,
+            });
+            await advanceOutOfOffensiveRollAfterAttackIfNeeded(match.guestPage, '1');
+            await screenshot(match.guestPage, testName, '04-poison-blade-2-mask-after-resolve.png');
         } finally {
             await closeMatchContexts(match);
         }
@@ -549,4 +727,5 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
             await closeMatchContexts(match);
         }
     });
+
 });

@@ -18,6 +18,7 @@ import {
 } from '../onlineAiRecovery';
 import type { MatchState } from '../../types';
 import type { AiSeatController } from '../../ai';
+import diceThroneEngineConfig from '../../../games/dicethrone/game';
 
 describe('onlineAiRecovery - 游戏结束检查', () => {
     it('legal-action-only reason 必须同步到 emergency overlay fallback 白名单', () => {
@@ -59,6 +60,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         // 验证：应该返回 null，不再尝试强制推进
@@ -92,6 +94,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         // 验证：应该返回强制推进方案
@@ -104,6 +107,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
+                hostStarted: false,
             },
             sys: {
                 gameover: undefined,
@@ -124,6 +128,12 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: {
+                gameId: 'smashup',
+                onlineAiRecovery: {
+                    publicPregameLegalActionPhases: ['factionSelect'],
+                },
+            },
         });
 
         expect(result).toMatchObject({
@@ -158,6 +168,12 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: {
+                gameId: 'dicethrone',
+                onlineAiRecovery: {
+                    humanTurnLegalActionProbePhases: ['defensiveRoll', 'targetingRoll'],
+                },
+            },
         });
 
         expect(result).toMatchObject({
@@ -195,7 +211,12 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            gameId: 'splendor',
+            engineConfig: {
+                gameId: 'splendor',
+                onlineAiRecovery: {
+                    disableFallbackAdvancePhase: true,
+                },
+            },
         });
 
         expect(result).toMatchObject({
@@ -234,7 +255,16 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            gameId: 'splendor',
+            engineConfig: {
+                gameId: 'splendor',
+                onlineAiRecovery: {
+                    disableFallbackAdvancePhase: true,
+                    shouldSuppressActiveTurnCandidate: ({ state, phase, turnNumber }) => {
+                        const core = state.core as { hostStarted?: unknown } | undefined;
+                        return core?.hostStarted !== true && (!phase || turnNumber === 0);
+                    },
+                },
+            },
         });
 
         expect(result).toBeNull();
@@ -268,7 +298,16 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            gameId: 'splendor',
+            engineConfig: {
+                gameId: 'splendor',
+                onlineAiRecovery: {
+                    disableFallbackAdvancePhase: true,
+                    shouldSuppressActiveTurnCandidate: ({ state, phase, turnNumber }) => {
+                        const core = state.core as { hostStarted?: unknown } | undefined;
+                        return core?.hostStarted !== true && (!phase || turnNumber === 0);
+                    },
+                },
+            },
         });
 
         expect(result).toBeNull();
@@ -312,6 +351,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         // 验证：应该返回 null，不再尝试处理交互
@@ -353,6 +393,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         // 验证：应该返回 null，不再尝试处理响应窗口
@@ -403,6 +444,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
@@ -471,6 +513,61 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
             payload: { interactionId: 'reaction-order-choice', optionId: 'pass' },
+        });
+    });
+
+    it('trigger-only simple-choice 应按 engineConfig 自动选择首个 trigger，而不是依赖 shared 里的 smashup sourceId 硬编码', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'scoreBases',
+                interaction: {
+                    current: {
+                        id: 'reaction-order-choice',
+                        playerId: '1',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个反应动作',
+                            multi: { min: 1, max: 1 },
+                            options: [
+                                {
+                                    id: 'trigger:afterScoring:base_a:1:0',
+                                    label: '先结算触发 A',
+                                    value: { kind: 'trigger', triggerId: 'afterScoring:base_a:1:0' },
+                                },
+                            ],
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+            engineConfig: {
+                gameId: 'smashup',
+                onlineAiRecovery: {
+                    autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
+                },
+            },
+        });
+
+        expect(result?.reason).toBe('visible-interaction');
+        expect(result?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: { interactionId: 'reaction-order-choice', optionId: 'trigger:afterScoring:base_a:1:0' },
         });
     });
 
@@ -546,6 +643,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
         const driftedResult = resolveForceEndTurnForStalledAi({
             sharedState: driftedState,
@@ -554,6 +652,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(baseResult?.resolution.attemptKey).not.toBe(driftedResult?.resolution.attemptKey);
@@ -808,6 +907,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
@@ -903,6 +1003,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
@@ -945,6 +1046,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
@@ -952,6 +1054,127 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result?.resolution.action.commands[0]).toEqual({
             type: 'SKIP_BONUS_DICE_REROLL',
             payload: {},
+        });
+    });
+
+    it('自定义 interaction kind 可通过 engineConfig seam 提供 force command，而不必改 shared transport', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'timingWindow',
+                interaction: {
+                    current: {
+                        id: 'custom-timing-window-1',
+                        playerId: '1',
+                        kind: 'custom:timing-window',
+                        data: {
+                            sourceId: 'custom_window_source',
+                            title: '是否跳过自定义时机窗',
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+            engineConfig: {
+                gameId: 'test-custom-game',
+                onlineAiRecovery: {
+                    resolveForcedInteractionCommand: ({ interaction }) => interaction.kind === 'custom:timing-window'
+                        ? {
+                            type: 'CUSTOM_SKIP_TIMING_WINDOW',
+                            payload: {},
+                        }
+                        : null,
+                },
+            },
+        });
+
+        expect(result?.reason).toBe('visible-interaction');
+        expect(result?.requiresConfirmedAdvancePhase).toBe(true);
+        expect(result?.resolution.action.commands[0]).toEqual({
+            type: 'CUSTOM_SKIP_TIMING_WINDOW',
+            payload: {},
+        });
+    });
+
+    it('自定义 seat-legal-only recovery 可通过 engineConfig seam 提供 force command，而不必改 shared transport', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '0',
+                pendingAutoResolve: {
+                    playerId: '1',
+                    stepId: 'cleanup-bonus-window',
+                },
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'main2',
+                interaction: {
+                    current: undefined,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+            engineConfig: {
+                gameId: 'test-custom-game',
+                onlineAiRecovery: {
+                    resolveSeatLegalOnlyRecovery: ({ state, phase }) => {
+                        const core = state.core as {
+                            pendingAutoResolve?: {
+                                playerId?: unknown;
+                                stepId?: unknown;
+                            };
+                        } | undefined;
+                        const recovery = core?.pendingAutoResolve;
+                        if (typeof recovery?.playerId !== 'string' || typeof recovery?.stepId !== 'string') {
+                            return null;
+                        }
+                        return {
+                            playerId: recovery.playerId,
+                            fingerprintHint: `custom-seat-legal-only:${recovery.playerId}:${phase}:${recovery.stepId}`,
+                            attemptSuffix: `custom-seat-legal-only:${recovery.playerId}:${recovery.stepId}`,
+                            command: {
+                                type: 'CUSTOM_RESOLVE_PENDING_STEP',
+                                payload: { stepId: recovery.stepId },
+                            },
+                        };
+                    },
+                },
+            },
+        });
+
+        expect(result?.reason).toBe('seat-legal-only');
+        expect(result?.playerId).toBe('1');
+        expect(result?.fingerprintHint).toBe('custom-seat-legal-only:1:main2:cleanup-bonus-window');
+        expect(result?.resolution.action.commands[0]).toEqual({
+            type: 'CUSTOM_RESOLVE_PENDING_STEP',
+            payload: { stepId: 'cleanup-bonus-window' },
         });
     });
 
@@ -993,6 +1216,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
         const second = resolveForceEndTurnForStalledAi({
             sharedState: buildState(4),
@@ -1001,6 +1225,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
@@ -1043,6 +1268,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
         const second = resolveForceEndTurnForStalledAi({
             sharedState: buildState(2),
@@ -1051,6 +1277,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
@@ -1112,6 +1339,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
         const driftedResult = resolveForceEndTurnForStalledAi({
             sharedState: driftedState,
@@ -1120,6 +1348,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(baseResult?.resolution.attemptKey).not.toBe(driftedResult?.resolution.attemptKey);
@@ -1189,6 +1418,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
         const driftedResult = resolveForceEndTurnForStalledAi({
             sharedState: driftedState,
@@ -1197,6 +1427,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
                 '1': { type: 'local-ai', policyId: 'baseline' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(baseResult?.resolution.attemptKey).not.toBe(driftedResult?.resolution.attemptKey);
@@ -1244,6 +1475,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState,
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(result?.reason).toBe('visible-interaction');
@@ -1295,11 +1527,13 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             sharedState: buildState('2'),
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
         const second = resolveForceEndTurnForStalledAi({
             sharedState: buildState('3'),
             seatControllers,
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
         });
 
         expect(first?.resolution.action.commands[0]).toEqual({
@@ -1310,6 +1544,64 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             type: 'SELECT_DEFENDER_TARGET',
             payload: { defenderId: '3' },
         });
+        expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
+    });
+
+    it('自定义 interaction fingerprint seam 在同 interactionId 下若 meta.step 漂移，watchdog 的 attemptKey 也必须跟着变化', () => {
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+        const engineConfig = {
+            gameId: 'test-game',
+            onlineAiRecovery: {
+                buildInteractionRecoveryFingerprintHint: ({ fallbackFingerprintHint, interaction }: {
+                    fallbackFingerprintHint: string;
+                    interaction: { data?: Record<string, unknown> | undefined };
+                }) => {
+                    const meta = interaction.data?.meta as { step?: unknown } | undefined;
+                    const step = typeof meta?.step === 'number' ? meta.step : 'unknown';
+                    return `${fallbackFingerprintHint}:custom-step:${step}`;
+                },
+            },
+        };
+        const buildState = (step: number): MatchState<unknown> => ({
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'main2',
+                interaction: {
+                    current: {
+                        id: 'custom-timing-window-1',
+                        playerId: '1',
+                        kind: 'custom:timing-window',
+                        data: {
+                            sourceId: 'custom-window',
+                            meta: { step },
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        });
+
+        const first = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(1),
+            seatControllers,
+            seatStates: {},
+            engineConfig,
+        });
+        const second = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(2),
+            seatControllers,
+            seatStates: {},
+            engineConfig,
+        });
+
+        expect(first?.fingerprintHint).toBe('interaction:1:main2:custom:timing-window:custom-timing-window-1:custom-step:1');
+        expect(second?.fingerprintHint).toBe('interaction:1:main2:custom:timing-window:custom-timing-window-1:custom-step:2');
         expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
     });
 
@@ -1417,10 +1709,53 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
             authoritativeState,
             seatControllers,
             playerId: '1',
-            gameId: 'splendor',
+            engineConfig: {
+                gameId: 'splendor',
+                onlineAiRecovery: {
+                    disableFallbackAdvancePhase: true,
+                },
+            },
         });
 
         expect(result).toBeNull();
+    });
+
+    it('Summoner Wars 交互收口后应按 engineConfig 使用 sw:end_phase 推进阶段', () => {
+        const authoritativeState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState,
+            seatControllers,
+            playerId: '1',
+            engineConfig: {
+                gameId: 'summonerwars',
+                onlineAiRecovery: {
+                    advancePhaseCommandType: 'sw:end_phase',
+                },
+            },
+        });
+
+        expect(result?.action.commands[0]?.type).toBe('sw:end_phase');
     });
 });
 

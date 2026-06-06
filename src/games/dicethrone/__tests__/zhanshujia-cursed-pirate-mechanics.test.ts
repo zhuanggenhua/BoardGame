@@ -9,10 +9,11 @@ import { createDiceThroneEventSystem } from '../domain/systems';
 import { initializeCustomActions } from '../domain/customActions';
 import { validateCommand } from '../domain/commandValidation';
 import { getTokenStackLimit } from '../domain/rules';
+import { createPendingDamage, finalizeTokenResponse } from '../domain/tokenResponse';
 import { RESOURCE_IDS } from '../domain/resources';
-import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
+import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../domain/ids';
 import type { CharacterId, DiceThroneCommand, DiceThroneCore, DiceThroneEvent, TurnPhase } from '../domain/types';
-import { initHeroState } from '../domain/characters';
+import { getCharacterAbilitiesForFace, initHeroState } from '../domain/characters';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
@@ -699,6 +700,61 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.players['0'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
     });
 
+    it('休战也会阻止 Token 响应收口后落地的攻击伤害事件', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core.players['0'].statusEffects[STATUS_IDS.PARLEY] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-parley-token-response',
+            isDefendable: true,
+            resolvedDamage: 0,
+            damageResolved: false,
+        } as DiceThroneCore['pendingAttack'];
+
+        const pendingDamage = createPendingDamage(
+            '0',
+            '1',
+            5,
+            'beforeDamageReceived',
+            'test-parley-token-response',
+            100,
+            undefined,
+            'attack',
+        );
+        const closeEvents = finalizeTokenResponse(pendingDamage, state.core, 100);
+        const next = applyEvents(state.core, closeEvents as DiceThroneEvent[]);
+
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH);
+        expect(next.pendingAttack?.resolvedDamage ?? 0).toBe(0);
+    });
+
+    it('休战在攻击已发起时不会于 offensiveRoll -> defensiveRoll 提前移除', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core.players['0'].statusEffects[STATUS_IDS.PARLEY] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-parley-phase-exit',
+            isDefendable: true,
+            damageResolved: false,
+            resolvedDamage: 0,
+        } as DiceThroneCore['pendingAttack'];
+
+        const result = diceThroneFlowHooks.onPhaseExit?.({
+            state: { core: state.core, sys: { phase: 'offensiveRoll' } },
+            from: 'offensiveRoll',
+            to: 'defensiveRoll',
+            command: command('ADVANCE_PHASE', '0'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const exitEvents = Array.isArray(result) ? result : (result?.events ?? []);
+        const parleyRemoved = eventsOfType(exitEvents as DiceThroneEvent[], 'STATUS_REMOVED')
+            .some((event) => event.payload.statusId === STATUS_IDS.PARLEY);
+
+        expect(parleyRemoved).toBe(false);
+    });
+
     it('紧缚让额外进攻投掷每次消耗 1CP，CP 不足时拒绝并在阶段结束移除', () => {
         const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
         state.sys.phase = 'offensiveRoll';
@@ -786,6 +842,41 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         next = applyEvents(targeted.core, events);
         expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(0);
         expect(next.players['1'].statusEffects[STATUS_IDS.TARGETED]).toBe(1);
+
+        const targetedFourPlayer = createFourPlayerZhanshujiaState();
+        targetedFourPlayer.sys.phase = 'main1';
+        targetedFourPlayer.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] = 3;
+        events = execute(targetedFourPlayer, command('USE_PASSIVE_ABILITY', '0', {
+            passiveId: 'zhanshujia-tactical-advantage',
+            actionIndex: 3,
+        }), fixedRandom);
+        const targetedFourPlayerReducedCore = applyEvents(targetedFourPlayer.core, events);
+        const targetedFourPlayerSystem = createDiceThroneEventSystem();
+        const targetedFourPlayerAfterEvents = targetedFourPlayerSystem.afterEvents?.({
+            state: { ...targetedFourPlayer, core: targetedFourPlayerReducedCore },
+            events,
+            random: fixedRandom,
+        } as any);
+        if (!targetedFourPlayerAfterEvents || Array.isArray(targetedFourPlayerAfterEvents) || !('state' in targetedFourPlayerAfterEvents)) {
+            throw new Error('战术优势锁定未创建多人目标选择交互');
+        }
+        const targetedFourPlayerPromptState = targetedFourPlayerAfterEvents.state as MatchState<DiceThroneCore>;
+        const targetedInteraction = getCardInteractionPrompt(targetedFourPlayerPromptState, 'zhanshujia-tactical-advantage');
+        expect(targetedInteraction).toMatchObject({
+            type: 'selectPlayer',
+            sourceCardId: 'zhanshujia-tactical-advantage',
+            selectCount: 1,
+            statusGrantConfig: { statusId: STATUS_IDS.TARGETED, amount: 1 },
+        });
+        expect(targetedInteraction.targetPlayerIds).toEqual(['1', '3']);
+
+        const targetedResolveEvents = execute(targetedFourPlayerPromptState, command('RESOLVE_INTERACTION', '0', {
+            selectedPlayerIds: ['3'],
+        }), fixedRandom);
+        next = applyEvents(targetedFourPlayerPromptState.core, targetedResolveEvents);
+        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(0);
+        expect(next.players['1'].statusEffects[STATUS_IDS.TARGETED] ?? 0).toBe(0);
+        expect(next.players['3'].statusEffects[STATUS_IDS.TARGETED]).toBe(1);
 
         const protect = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
         protect.sys.phase = 'main1';
@@ -1001,6 +1092,123 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             statusId: STATUS_IDS.BIND,
         });
         expect(eventsOfType(damageEvents, 'DAMAGE_DEALT')[0]?.payload.amount).toBe(5);
+    });
+
+    it('战术家升级后的战略转移 II 侦察分支只获得 5 战术优势', () => {
+        const { state } = playZhanshujiaUpgrade('upgrade-zhanshujia-strategic-shift-2');
+        const events = resolveEffectsToEvents(
+            getAbilityVariantEffects(state.core, '0', 'strategic-shift', 'strategic-shift-2-recon'),
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'strategic-shift-2-recon',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: fixedRandom },
+        );
+        const next = applyEvents(state.core, events);
+
+        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(5);
+        expect(eventsOfType(events, 'STATUS_APPLIED')).toHaveLength(0);
+        expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+    });
+
+    it('战术家升级后的开拓战场 II lockdown 分支抽 2 并施加紧缚', () => {
+        const { state } = playZhanshujiaUpgrade('upgrade-zhanshujia-expand-battlefield-2');
+        const handBefore = state.core.players['0'].hand.length;
+        const events = resolveEffectsToEvents(
+            getAbilityVariantEffects(state.core, '0', 'expand-battlefield', 'expand-battlefield-2-lockdown'),
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'expand-battlefield-2-lockdown',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: fixedRandom },
+        );
+        const next = applyEvents(state.core, events);
+
+        expect(next.players['0'].hand.length).toBe(handBefore + 2);
+        expect(eventsOfType(events, 'STATUS_APPLIED')[0]?.payload).toMatchObject({
+            targetId: '1',
+            statusId: STATUS_IDS.BIND,
+        });
+        expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+    });
+
+    it('战术家升级后的摇鼓运动 II 间接接敌分支获得 2 战术优势并造成 2 点不可防御伤害', () => {
+        const { state } = playZhanshujiaUpgrade('upgrade-zhanshujia-drum-movement-2');
+        const preDefenseEvents = resolveEffectsToEvents(
+            getAbilityVariantEffects(state.core, '0', 'drum-movement', 'drum-movement-2-indirect'),
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'drum-movement-2-indirect',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: fixedRandom },
+        );
+        const afterToken = applyEvents(state.core, preDefenseEvents);
+        const damageEvents = resolveEffectsToEvents(
+            getAbilityVariantEffects(afterToken, '0', 'drum-movement', 'drum-movement-2-indirect'),
+            'withDamage',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'drum-movement-2-indirect',
+                state: afterToken,
+                damageDealt: 0,
+                timestamp: 101,
+            },
+            { random: fixedRandom },
+        );
+
+        expect(applyEvents(state.core, preDefenseEvents).players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
+        expect(eventsOfType(damageEvents, 'DAMAGE_DEALT')[0]?.payload).toMatchObject({
+            targetId: '1',
+            amount: 2,
+            unblockable: true,
+        });
+    });
+
+    it('战术家升级后的摇鼓运动 II 间接接敌分支在真实选择后应标记为不可防御', () => {
+        const { state } = playZhanshujiaUpgrade('upgrade-zhanshujia-drum-movement-2');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            value: [1, 2, 3, 4, 6][index] ?? die.value,
+            symbol: [ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.MEDAL][index] ?? die.symbol,
+        }));
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'drum-movement-2-indirect' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'drum-movement-2-indirect',
+            isDefendable: false,
+        });
     });
 
     it('战术家升级后的战争贩子 II 在勋章分支抽牌并触发额外进攻投掷阶段', () => {
@@ -2245,6 +2453,155 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
     });
 
+    it('human 面判决指令在真实进攻 pipeline 中会于 ADVANCE_PHASE 后进入诅咒金币 simple-choice', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'normal');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+        setCursedPirateDiceValues(state, [1, 6, 6, 6, 6]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'verdict-command' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'verdict-command',
+            isDefendable: true,
+        });
+        expect(selected.state.sys.interaction.current).toBeUndefined();
+
+        const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+        expect(advanced.state.sys.phase).toBe('offensiveRoll');
+        expect(advanced.state.core.currentChoiceSourceAbilityId).toBe('verdict-command');
+        expect(advanced.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'verdict-command',
+            isDefendable: true,
+            preDefenseResolved: true,
+        });
+
+        const prompt = getSimpleChoicePrompt(advanced.state, 'verdict-command');
+        expect(prompt.playerId).toBe('0');
+        expect(prompt.options).toHaveLength(2);
+        expect(prompt.options.map(option => option.label)).toEqual([
+            'choices.cursedCoinGain.accept',
+            'choices.cursedCoinGain.decline',
+        ]);
+
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const resolved = respondToPrompt(advanced.state, accept!.id, '0');
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === 'ATTACK_MADE_UNDEFENDABLE')).toBe(true);
+        expect(resolved.state.sys.phase).toBe('main2');
+        expect(resolved.state.core.pendingAttack).toBeNull();
+        expect(resolved.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 7);
+    });
+
+    it('human 面判决指令在镜像 E2E 注入态下仍会于 ADVANCE_PHASE 后进入诅咒金币 simple-choice', () => {
+        const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.sys.currentPlayerIndex = 1;
+        state.sys.interaction = { current: undefined, queue: [] } as typeof state.sys.interaction;
+        state.sys.responseWindow = { current: undefined } as typeof state.sys.responseWindow;
+        state.core.activePlayerId = '1';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.selectedAbilityId = undefined;
+        state.core.activatingAbilityId = undefined;
+        state.core.pendingAttack = undefined as unknown as typeof state.core.pendingAttack;
+        state.core.pendingBonusDiceSettlement = undefined;
+        state.core.pendingDamage = undefined;
+        state.core.extraAttackInProgress = undefined;
+        state.core.players['0'].hand = [];
+        state.core.players['0'].discard = [];
+        state.core.players['0'].tokens = {};
+        state.core.players['0'].statusEffects = {};
+        state.core.players['0'].damageShields = [];
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 50;
+        state.core.players['1'].hand = [];
+        state.core.players['1'].discard = [];
+        state.core.players['1'].playerBoardFace = 'normal';
+        state.core.players['1'].abilities = structuredClone(getCharacterAbilitiesForFace('cursed_pirate', 'normal'));
+        state.core.players['1'].tokens = {};
+        state.core.players['1'].statusEffects = {};
+        state.core.players['1'].damageShields = [];
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        setCursedPirateDiceValues(state, [1, 6, 6, 6, 6]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '1', { abilityId: 'verdict-command' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '1',
+            defenderId: '0',
+            sourceAbilityId: 'verdict-command',
+            isDefendable: true,
+        });
+        expect(selected.state.core.players['1'].playerBoardFace).toBe('normal');
+        expect(selected.state.core.players['1'].abilities.some((ability) => ability.id === 'verdict-command')).toBe(true);
+        expect(selected.state.core.pendingAttack?.preDefenseResolved).toBeUndefined();
+
+        const hpBefore = selected.state.core.players['0'].resources[RESOURCE_IDS.HP] ?? 0;
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '1'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
+        expect(advanced.state.core.players['0'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+        expect(advanced.state.core.currentChoiceSourceAbilityId).toBe('verdict-command');
+
+        const prompt = getSimpleChoicePrompt(advanced.state, 'verdict-command');
+        expect(prompt.playerId).toBe('1');
+        expect(prompt.options).toHaveLength(2);
+        expect(prompt.options.map(option => option.label)).toEqual([
+            'choices.cursedCoinGain.accept',
+            'choices.cursedCoinGain.decline',
+        ]);
+    });
+
     it('human 面惊魂动魄可移除任意数量的诅咒金币', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         state.core = applyEvents(state.core, [{
@@ -2270,6 +2627,69 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const afterRemove = respondToPrompt(result.state, removeTwo!.id, '0');
         expect(afterRemove.success).toBe(true);
         expect(afterRemove.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+    });
+
+    it('human 面惊魂动魄在真实进攻 pipeline 中会于移除诅咒金币选择后收口攻击链', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'normal');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 3;
+        setCursedPirateDiceValues(state, [1, 4, 6, 6, 6]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'astonishing' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'astonishing',
+            isDefendable: false,
+        });
+        expect(selected.state.sys.interaction.current).toBeUndefined();
+
+        const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 7);
+        expect(advanced.state.core.currentChoiceSourceAbilityId).toBe('astonishing');
+
+        const prompt = getSimpleChoicePrompt(advanced.state, 'astonishing');
+        expect(prompt.playerId).toBe('0');
+        expect(prompt.options).toHaveLength(4);
+        expect(prompt.options.map(option => option.label)).toEqual([
+            'choices.cursedPirateHumanRemoveCoins.keep',
+            'choices.cursedPirateHumanRemoveCoins.remove',
+            'choices.cursedPirateHumanRemoveCoins.remove',
+            'choices.cursedPirateHumanRemoveCoins.remove',
+        ]);
+
+        const removeTwo = prompt.options[2];
+        expect(removeTwo).toBeDefined();
+
+        const resolved = respondToPrompt(advanced.state, removeTwo!.id, '0');
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.sys.phase).toBe('main2');
+        expect(resolved.state.core.pendingAttack).toBeNull();
+        expect(resolved.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 7);
     });
 
     it('human 面无情劫掠会造成伤害、自得 2 个诅咒金币并施加休战和火药桶', () => {
@@ -2315,6 +2735,70 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(accepted.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
         expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
         expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('human 面无情劫掠在真实进攻 pipeline 中会于诅咒金币选择后收口攻击链', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'normal');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+        setCursedPirateDiceValues(state, [6, 6, 6, 6, 6]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'merciless-plunder' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'merciless-plunder',
+            isDefendable: false,
+        });
+        expect(selected.state.sys.interaction.current).toBeUndefined();
+
+        const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 12);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
+        expect(advanced.state.core.currentChoiceSourceAbilityId).toBe('merciless-plunder');
+
+        const prompt = getSimpleChoicePrompt(advanced.state, 'merciless-plunder');
+        expect(prompt.playerId).toBe('0');
+        expect(prompt.options).toHaveLength(2);
+
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const resolved = respondToPrompt(advanced.state, accept!.id, '0');
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === 'ATTACK_MADE_UNDEFENDABLE')).toBe(true);
+        expect(resolved.state.sys.phase).toBe('main2');
+        expect(resolved.state.core.pendingAttack).toBeNull();
+        expect(resolved.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+        expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 12);
     });
 
     it('human 面嘿，老兄会结算反击、CP、防伤与诅咒金币选择', () => {

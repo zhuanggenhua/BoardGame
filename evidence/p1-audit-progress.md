@@ -1,5 +1,7 @@
 # P1 审计进度跟踪文档
 
+> 状态提示（2026-06-05）：已归档的历史阶段进度稿。当前 P1 审计完成/补查口径以 `evidence/p1-audit-complete.md`、`evidence/p1-audit-followup-2026-03-10.md` 和各批次明细为准；本文件不得再被解释为当前进行中的默认入口。
+
 > **2026-03-10 校正说明**：本文档里的 `DiceThrone` / 总计 `100%` 统计 **不可信**。后续复核发现同一文档下方仍保留了多个 `⏳ 待审计` / `需要进一步检查` 项（例如 `src/games/dicethrone/domain/customActions/moon_elf.ts`），不能再把本文件当作“已全审完成”的依据。当前应以各批次明细文档 + 新的 follow-up 记录为准。
 >
 > **2026-03-10 补充说明**：针对 POD 混入提交 `9c9dd78` 的后续复核，`DiceThrone` 的遗留待审项见 `evidence/dicethrone-audit-followup-2026-03-10.md`，`SummonerWars` 与通用组件遗留待审项见 `evidence/p1-audit-followup-2026-03-10.md`。下方老表中的 `⏳` 行很多已经被后续复核覆盖，**不能再直接作为最新状态使用**。

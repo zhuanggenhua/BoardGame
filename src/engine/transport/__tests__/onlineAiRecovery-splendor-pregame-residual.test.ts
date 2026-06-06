@@ -33,7 +33,16 @@ describe('onlineAiRecovery - splendor pregame residual watchdog', () => {
             sharedState,
             seatControllers,
             seatStates: {},
-            gameId: 'splendor',
+            engineConfig: {
+                gameId: 'splendor',
+                onlineAiRecovery: {
+                    disableFallbackAdvancePhase: true,
+                    shouldSuppressActiveTurnCandidate: ({ state, phase, turnNumber }) => {
+                        const core = state.core as { hostStarted?: unknown } | undefined;
+                        return core?.hostStarted !== true && (!phase || turnNumber === 0);
+                    },
+                },
+            },
         });
 
         expect(result).toBeNull();

@@ -1,7 +1,9 @@
-# 增量同步系统修复完成 ✅
+# 增量同步系统专项修复证据
+
+> 2026-06-06 当前有效口径：本文只保留服务端增量同步缓存写回这一条基础设施专项修复证据，不代表 DiceThrone 游戏规则层、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明 `src/engine/transport/server.ts` 的这条 shared infra seam 在当轮被修正并跑过相关测试，不能外推成 DiceThrone 当前整体收口。
 
 **修复时间**: 2026-03-04  
-**状态**: ✅ 已完成
+**状态**: 当轮专项完成
 
 ---
 
@@ -190,7 +192,7 @@ match.lastBroadcastedViews.set(playerID ?? 'spectator', JSON.parse(JSON.stringif
 
 ## 🎉 结论
 
-增量同步系统修复完成！
+增量同步系统这一条专项问题在当轮已修复。
 
 - ✅ 功能完全恢复
 - ✅ 所有测试通过
@@ -205,6 +207,11 @@ match.lastBroadcastedViews.set(playerID ?? 'spectator', JSON.parse(JSON.stringif
 ---
 
 **创建时间**: 2026-03-04  
-**状态**: ✅ 已完成  
+**状态**: 当轮专项完成
 **修复者**: AI Assistant
+
+## 当前阅读说明
+
+- 本文是基础设施级专项修复证据，不是 DiceThrone 当前总审计出口。
+- 本文不能替代新英雄默认全面审计留档所需的对象级 direct E2E、批次级 `L4` 判等与旧 evidence / rule 统一回写。
 

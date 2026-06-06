@@ -47,21 +47,25 @@ import {
 } from '../onlineAiForceSkip';
 import {
     isTutorialRoutePath,
-    resolveManualOnlineAiRecovery,
-    resolveMatchRoomRouteIdentity,
-    resolveMissingMatchConfirmationSignal,
-    resolveManualSetupSelectionTakeoverPlayerId,
+    shouldShowOnlineGameErrorToast,
+} from '../matchRoomRuntime';
+import {
     resolveManualSetupAttemptReleaseSource,
+    resolveManualSetupSelectionTakeoverPlayerId,
+    shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt,
+    shouldReleaseFactionSelectAttemptFromSharedState,
+    shouldReleaseManualSetupAttemptFromSharedState,
+    shouldTakeOverManualSetupSelection,
+} from '../matchManualSetup';
+import { resolveMissingMatchConfirmationSignal } from '../matchMissingConfirmation';
+import {
+    resolveManualOnlineAiRecovery,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
-    shouldReleaseManualSetupAttemptFromSharedState,
     shouldRetainOnlineAiSeatOverrideAfterLatestState,
-    shouldReleaseFactionSelectAttemptFromSharedState,
-    shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt,
-    shouldTakeOverManualSetupSelection,
-    shouldShowOnlineGameErrorToast,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
-} from '../MatchRoom';
+} from '../onlineAiRecovery';
+import { resolveMatchRoomRouteIdentity } from '../matchRouteIdentity';
 import { resolveSmashUpLocalPregameControlledPlayerId } from '../../games/smashup/localPregameControl';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
 import { resolveMatchSeatSwapContext } from '../../components/game/framework/matchSeatSwap';
@@ -69,6 +73,36 @@ import { findMatchPlayerInfo, resolveMatchPlayerConnected } from '../../engine/t
 import { resolveExitMatchErrorMessageKey } from '../../components/lobby/roomActions';
 
 type Player = { id: number; name?: string | null };
+
+vi.mock('../../games/registry', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../games/registry')>();
+    const { diceThroneGameRuntimeAdapter } = await import('../../games/dicethrone/runtimeAdapter');
+    const { smashUpGameRuntimeAdapter } = await import('../../games/smashup/runtimeAdapter');
+    const { summonerWarsGameRuntimeAdapter } = await import('../../games/summonerwars/runtimeAdapter');
+
+    return {
+        ...actual,
+        getGameImplementation: (gameId: string) => {
+            const implementation = actual.getGameImplementation(gameId);
+            if (gameId === 'dicethrone') {
+                return implementation
+                    ? { ...implementation, runtimeAdapter: diceThroneGameRuntimeAdapter }
+                    : { runtimeAdapter: diceThroneGameRuntimeAdapter };
+            }
+            if (gameId === 'smashup') {
+                return implementation
+                    ? { ...implementation, runtimeAdapter: smashUpGameRuntimeAdapter }
+                    : { runtimeAdapter: smashUpGameRuntimeAdapter };
+            }
+            if (gameId === 'summonerwars') {
+                return implementation
+                    ? { ...implementation, runtimeAdapter: summonerWarsGameRuntimeAdapter }
+                    : { runtimeAdapter: summonerWarsGameRuntimeAdapter };
+            }
+            return implementation;
+        },
+    };
+});
 
 const buildStored = (overrides?: Partial<StoredMatchCredentials>): StoredMatchCredentials => ({
     matchID: 'match-1',
@@ -1052,6 +1086,12 @@ describe('onlineAiSeats', () => {
             } as MatchState<unknown>,
             seatControllers: onlineAiState.seatControllers,
             seatStates: {},
+            engineConfig: {
+                gameId: 'smashup',
+                onlineAiRecovery: {
+                    publicPregameLegalActionPhases: ['factionSelect'],
+                },
+            },
         });
 
         expect(candidate?.reason).toBe('active-turn');
@@ -1084,6 +1124,7 @@ describe('onlineAiSeats', () => {
             sharedState: {
                 core: {
                     activePlayerId: '1',
+                    hostStarted: false,
                     turnOrder: ['0', '1'],
                     currentPlayerIndex: 1,
                     factionSelection: {
@@ -1109,6 +1150,12 @@ describe('onlineAiSeats', () => {
             } as MatchState<unknown>,
             seatControllers: onlineAiState.seatControllers,
             seatStates: {},
+            engineConfig: {
+                gameId: 'smashup',
+                onlineAiRecovery: {
+                    publicPregameLegalActionPhases: ['factionSelect'],
+                },
+            },
         });
 
         expect(candidate).toMatchObject({
@@ -3526,6 +3573,61 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
         });
 
         expect(candidate).toBeNull();
+    });
+
+    it('trigger-only hidden simple-choice 应按 engineConfig 自动选择首个 trigger', () => {
+        const candidate = resolveForceSkippableHiddenAiInteraction({
+            sharedState: {
+                core: {},
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: true,
+                    },
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {
+                '1': {
+                    core: {},
+                    sys: {
+                        interaction: {
+                            current: {
+                                id: 'trigger-hidden',
+                                playerId: '1',
+                                kind: 'simple-choice',
+                                data: {
+                                    sourceId: 'smashup_reaction_choose',
+                                    multi: { min: 1, max: 1 },
+                                    options: [
+                                        {
+                                            id: 'trigger-a',
+                                            label: '触发 A',
+                                            value: { kind: 'trigger', triggerId: 'afterScoring:a' },
+                                        },
+                                    ],
+                                },
+                            },
+                            queue: [],
+                        },
+                    },
+                } as MatchState<unknown>,
+            },
+            engineConfig: {
+                gameId: 'smashup',
+                onlineAiRecovery: {
+                    autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
+                },
+            },
+        });
+
+        expect(candidate?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: { interactionId: 'trigger-hidden', optionId: 'trigger-a' },
+        });
     });
 
     it('非阻塞态或不可跳过的交互时，不应返回强制跳过 resolution', () => {

@@ -245,7 +245,7 @@ test('测试名', async ({ page, game }, testInfo) => {
 
 ## 进度追踪
 
-创建 `evidence/smashup/smashup-e2e-migration-progress.md` 追踪进度：
+历史上曾创建 `evidence/smashup/smashup-e2e-migration-progress.md` 追踪进度（现已归档，仅作阶段证据）：
 - 每天更新迁移进度
 - 记录遇到的问题和解决方案
 - 记录测试截图和验证结果

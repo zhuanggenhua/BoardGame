@@ -58,15 +58,17 @@ const loadCriticalImageResolver3 = async () => {
 };
 
 const loadRuntime4 = async (): Promise<GameClientRuntimeModule> => {
-    const [gameModule, boardModule, latencyModule] = await Promise.all([
+    const [gameModule, boardModule, latencyModule, runtimeAdapterModule] = await Promise.all([
         import('./dicethrone/game'),
         import('./dicethrone/Board'),
         import('./dicethrone/latencyConfig'),
+        import('./dicethrone/runtimeAdapter'),
     ]);
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
         latencyConfig: latencyModule.diceThroneLatencyConfig,
+        runtimeAdapter: runtimeAdapterModule.diceThroneGameRuntimeAdapter,
     };
 };
 
@@ -97,15 +99,17 @@ const loadCriticalImageResolver6 = async () => {
 };
 
 const loadRuntime7 = async (): Promise<GameClientRuntimeModule> => {
-    const [gameModule, boardModule, latencyModule] = await Promise.all([
+    const [gameModule, boardModule, latencyModule, runtimeAdapterModule] = await Promise.all([
         import('./smashup/game'),
         import('./smashup/Board'),
         import('./smashup/latencyConfig'),
+        import('./smashup/runtimeAdapter'),
     ]);
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
         latencyConfig: latencyModule.smashUpLatencyConfig,
+        runtimeAdapter: runtimeAdapterModule.smashUpGameRuntimeAdapter,
     };
 };
 
@@ -141,15 +145,17 @@ const loadCriticalImageResolver8 = async () => {
 };
 
 const loadRuntime9 = async (): Promise<GameClientRuntimeModule> => {
-    const [gameModule, boardModule, latencyModule] = await Promise.all([
+    const [gameModule, boardModule, latencyModule, runtimeAdapterModule] = await Promise.all([
         import('./summonerwars/game'),
         import('./summonerwars/Board'),
         import('./summonerwars/latencyConfig'),
+        import('./summonerwars/runtimeAdapter'),
     ]);
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
         latencyConfig: latencyModule.summonerWarsLatencyConfig,
+        runtimeAdapter: runtimeAdapterModule.summonerWarsGameRuntimeAdapter,
     };
 };
 

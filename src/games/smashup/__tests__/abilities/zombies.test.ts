@@ -428,6 +428,43 @@ describe('僵尸派系能力', () => {
         expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'd2')).toBe(false);
     });
 
+    it('zombie_lend_a_hand: 选择被他人拥有的弃牌时，仍应洗回其拥有者牌库', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'zombie_lend_a_hand', 'action', '0')],
+                    deck: [makeCard('p0-deck-1', 'card_a', 'minion', '0')],
+                    discard: [makeCard('borrowed-discard', 'card_b', 'minion', '1')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('p1-deck-1', 'card_c', 'minion', '1')],
+                }),
+            },
+        });
+
+        const resolved = respondToPromptOption(
+            execPlayAction(state, '0', 'a1').matchState,
+            option => option.value?.cardUid === 'borrowed-discard',
+            'lend a hand borrowed discard option',
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: expect.objectContaining({
+                    playerId: '1',
+                    sourcePlayerId: '0',
+                }),
+            }),
+        ]));
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).not.toContain('borrowed-discard');
+        expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toContain('borrowed-discard');
+    });
+
     it('zombie_outbreak: 多个空基地时选择基地后直接授予额度', () => {
         const state = makeState({
             players: {

@@ -20,6 +20,7 @@ import {
     type CheatResourceModifier,
 } from '../../engine';
 import { createGameEngine } from '../../engine/adapter';
+import type { MatchState } from '../../engine/types';
 import { SummonerWarsDomain, SW_COMMANDS } from './domain';
 import type { Card, FactionId, GamePhase, PlayerId, SummonerWarsCore } from './domain/types';
 import { summonerWarsFlowHooks } from './domain/flowHooks';
@@ -370,8 +371,75 @@ const adapterConfig = {
     ],
 };
 
+const shouldSuppressSummonerWarsOnlineAiActiveTurnCandidate = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+    currentPlayerId: string;
+}): boolean => {
+    if (args.phase !== 'summon' && args.phase !== 'factionSelect') {
+        return false;
+    }
+
+    const core = args.state.core as {
+        hostStarted?: unknown;
+        hostPlayerId?: unknown;
+        turnOrder?: unknown;
+        selectedFactions?: unknown;
+        readyPlayers?: unknown;
+    } | undefined;
+    if (core?.hostStarted !== false) {
+        return false;
+    }
+
+    const selectedFactions = core?.selectedFactions && typeof core.selectedFactions === 'object'
+        ? core.selectedFactions as Record<string, unknown>
+        : {};
+    const readyPlayers = core?.readyPlayers && typeof core.readyPlayers === 'object'
+        ? core.readyPlayers as Record<string, unknown>
+        : {};
+    const currentFaction = selectedFactions[args.currentPlayerId];
+    const hasSelectedFaction = typeof currentFaction === 'string'
+        && currentFaction.length > 0
+        && currentFaction !== 'unselected';
+    if (!hasSelectedFaction) {
+        return false;
+    }
+
+    const hostPlayerId = typeof core.hostPlayerId === 'string' ? core.hostPlayerId : null;
+    if (!hostPlayerId) {
+        return false;
+    }
+
+    if (args.currentPlayerId !== hostPlayerId) {
+        return readyPlayers[args.currentPlayerId] === true;
+    }
+
+    const allPlayerIds = Array.isArray(core.turnOrder)
+        ? core.turnOrder.filter((playerId): playerId is string => typeof playerId === 'string')
+        : Object.keys(selectedFactions);
+    const otherPlayerIds = allPlayerIds.filter((playerId) => playerId !== hostPlayerId);
+    if (otherPlayerIds.length === 0) {
+        return false;
+    }
+
+    return !otherPlayerIds.every((playerId) => {
+        const faction = selectedFactions[playerId];
+        return typeof faction === 'string'
+            && faction.length > 0
+            && faction !== 'unselected'
+            && readyPlayers[playerId] === true;
+    });
+};
+
 // 引擎配置
-export const engineConfig = createGameEngine(adapterConfig);
+export const engineConfig = {
+    ...createGameEngine(adapterConfig),
+    onlineAiRecovery: {
+        advancePhaseCommandType: 'sw:end_phase',
+        publicPregameLegalActionPhases: ['factionSelect', 'summon'],
+        shouldSuppressActiveTurnCandidate: shouldSuppressSummonerWarsOnlineAiActiveTurnCandidate,
+    },
+};
 registerGameAiRuntime(summonerWarsAiRuntime);
 
 export default engineConfig;

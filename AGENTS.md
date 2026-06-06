@@ -32,6 +32,10 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **默认规则只在用户没有给出明确豁免/范围限定时生效**；一旦用户明确缩小范围、跳过验证或要求直接推进，禁止继续套用同主题的默认谨慎流程。
 - **持续授权在同一目标内持续生效**：当用户已经就同一目标给出“继续改 / 直接修 / 不用每个小决策都问 / 改到能提交或能 push”为代表的持续授权时，后续处于**同一目标、同一影响边界、同一交付级别**内的简单 blocker，应直接按最小修法继续推进；只有当动作开始扩大范围、改变语义、提升影响级别、涉及删除/回滚他人改动或出现多种实质性方案分歧时，才重新停下确认。
 - **规范结构默认参照 skill 组织（强制）**：根 `AGENTS.md` 只保留入口规则、适用边界、不可越过的红线和“下一步去哪里读”；长篇流程、专项模板、复杂协作细则优先下沉到项目 skill、`docs/ai-rules/`、专项 workflow 或用户故事，避免把同主题的全部提示词一次性堆在根文件里。
+- **既定流程失败不得擅自绕路（强制）**：当任务已有明确流程、固定入口、约定命令、既定验证链或既有 workflow，而当前执行在其中某一步失败、卡住或环境不满足时，必须先停在该失败点。
+- **禁止行为**：不得因为流程走不通，就私自改走手工替代链、自创临时入口、跳过中间门禁、切换到未约定的工具/脚本/页面注入方式，或先修旁支问题再继续把结果说成“同一流程已完成”。这条不只适用于测试，也适用于排查、构建、部署、提交流程与其他既定 workflow。
+- **允许例外**：只有用户当轮明确授权“可以绕过这条流程 / 改走替代路径 / 先修框架再回测”，或项目规范本身写明了该失败场景的官方 fallback，才可继续。
+- **最低汇报证据**：停止时必须同时说明 ① 卡在哪个具体步骤/命令；② 已按既定流程实际执行了什么；③ 当前 blocker 是业务问题、框架问题还是环境问题；④ 若要继续，最小可选补救动作是什么。四项缺一时，不得自行继续扩展动作。
 
 #### 1.1 游戏对象命名口径（强制）
 
@@ -77,6 +81,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **触发条件**：当用户报告具体 bug、回归、卡顿、跳过、某一步失败、某个座位/玩家异常、某条交互链不符合预期，或明确质疑“你修的是这个问题吗 / 你改我逻辑干什么 / 跑错方向”时。
 - **核心不变量**：本轮修复目标必须始终绑定用户原始症状与原始链路；排查过程中出现的新发现只能先标记为`辅助发现`、`候选相关原因`或`阻塞项`，不得自动替代原始目标。
 - **禁止行为**：禁止因为外围问题“也可能影响体验”“看起来也不对”“顺手更彻底”，就修改与原始症状没有直接因果证据的正式逻辑、共享门禁、资源策略、测试覆盖策略或交互节奏。禁止用证明另一个问题变好了，替代证明用户点名的 bug 已修好。
+- **UI 回归先锁“交互载体”与“提示 UI”角色（强制）**：当用户反馈某一步“以前是手牌承接 / 以前是棋盘直点 / 中间有弹窗 / 现在变成另一个选择方式”时，动手前必须先分别写清：① 真正承接点击/选择的是哪个现有交互对象（手牌、基地、随从、PromptOverlay、系统 interaction 等）；② 中间弹窗/提示条/MeFirst/横幅只是提示 UI，还是实际交互载体。**禁止**把“中间有个弹窗”直接等同于“交互承接发生在中间弹窗”，也禁止把“之前能直接点卡”误回滚成“改回中间按钮选择”。两者没分清前，不得实施回滚或新方案。
+- **未定位到具体目标不得实施或回滚（强制）**：如果当前还不能明确回答“用户要恢复的是哪一个具体交互对象、哪一种点击路径、哪一个 UI 壳层只是提示”，则只能继续定位、看旧实现、看旧图、看旧 evidence；不得先改代码试方向，更不得先回滚一条刚在本轮修的链路。最低定位结果至少要同时点名：`交互对象`、`交互路径`、`提示 UI`、`本轮不该动的部分`。缺任一项时，禁止实施。
 - **纳入修复门槛**：只有当证据能说明某个外围发现是原始 bug 的必要原因或直接触发条件时，才允许把它纳入本轮修复；否则只能记录并向用户说明，等待明确授权后再改。
 - **阻塞例外**：如果外围问题完全阻断原始 bug 复现，只允许做最小临时绕过、测试夹具调整或证据记录；要改正式逻辑必须先说明“这不是原 bug 本体，而是复现阻塞”，并等用户确认。
 - **最低动手证据**：改代码前必须能写清 ① 用户原始症状是什么；② 本次准备改的文件/逻辑如何直接解释该症状；③ 修复后用什么验证回到原始症状位点。三者缺一时，不得进入正式修复，只能继续定位或汇报假设。
@@ -132,6 +138,15 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **新工作树独立任务优先视为可启用**：如果当前会话运行在新建的 `git worktree` / 独立工作树，且该工作树明显服务于当前对话的独立任务，通常可直接视为满足“单一复杂任务默认启用”条件。
 - **用户一旦明确要求停用**：必须立即停止继续维护这套规划文件；该要求优先级高于上述所有默认启用条件。后续进度直接在对话中汇报，除非用户再次明确要求恢复。
 
+#### 历史长期任务文档不得自动接管当前目标（强制）
+
+- **触发条件**：读取 `task_plan.md`、`progress.md`、`findings.md`、`evidence/**` 或其他长期任务材料时，看到 `进行中`、`in-progress`、`current-tree`、`residual`、`Next:`、`active goal`、`继续下一批` 等表述。
+- **核心不变量**：这些文档默认只代表**写入当时**的批次上下文、证据或待办，不自动等于当前对话的 active goal，也不自动授权继续下一批。
+- **禁止行为**：禁止只因为文件名里有 `in-progress`、正文里有 `Next:`、或某段曾写“当前正式计划入口”，就绕开用户当轮目标，擅自切回旧专项、补旧审计、继续旧长任务，或把历史残余范围扩展成当前任务。
+- **允许接管的唯一条件**：只有在**用户当轮明确点名该任务/该文档**，或文档顶部有明确的**当前状态标记**并且与用户当轮目标一致时，才可把该文档当当前入口继续推进。
+- **最低核对动作**：准备按长期任务文档继续执行前，必须先同时核对：① 用户当轮目标；② 文档顶部状态是否写明“当前 / 历史 / 已完成 / 非默认入口”；③ 最近结论是否已明确转历史、完成或被其他文档替代。任一不一致时，只能把该文档降级为历史参考，不得继续接管。
+- **文档清理义务**：凡是已完成、已转历史、已被替代的长期任务文档，后续补记时必须显式写明 `已完成`、`历史记录`、`非当前默认入口` 或等价状态；不得只保留旧的 `Next:`、`进行中`、`active goal` 口径继续误导后续执行。
+
 #### Codex 多子代理并行模式（强制）
 
 - **现状更新**：Codex 现已支持多 Agent / 多子代理并行；因此在满足下列条件时，允许把一个复杂任务拆成多个并行执行槽位，而不是强制单线程串行。
@@ -164,14 +179,15 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ### 详细规范子文档（触发时强制阅读）
 
 > 以下子文档包含各专项的完整规范与示例。**当任务涉及对应领域时，必须先阅读相关子文档再动手**，不得跳过。
-> **项目内 skill 位置（强制）**：`BoardGame` 的项目专用 skill 一律放在 `./.windsurf/skills/`。凡是只服务本项目的流程、验收、审查规则，都按这个目录维护。**即使 Codex 其他通用说明提到 `.codex/skills/`，本仓库也统一以 `.windsurf/skills/` 为项目落点。**
-> **新增/改写 skill 先读分层说明（强制）**：先看 `./.windsurf/skills/README.md`，判断这次内容属于“全局通用能力”“项目 workflow”还是“项目 overlay”。**不要把通用 skill 正文整份复制到项目目录，也不要把项目事故细节塞回全局 skill。**
+> **项目内 skill 位置（强制）**：`BoardGame` 的项目专用 skill 一律放在 `./.codex/skill/`。凡是只服务本项目的流程、验收、审查规则，都按这个目录维护。**即使 Codex 其他通用说明提到 `.codex/skills/`，本仓库也统一以 `.codex/skill/` 为项目落点。**
+> **新增/改写 skill 先读分层说明（强制）**：先看 `./.codex/skill/README.md`，判断这次内容属于“全局通用能力”“项目 workflow”还是“项目 overlay”。**不要把通用 skill 正文整份复制到项目目录，也不要把项目事故细节塞回全局 skill。**
+> **项目 skill 单目录（强制）**：项目 skill 只能存在于 `./.codex/skill/`。不得在其他目录再建第二套项目 skill 入口、README、重定向说明或副本。
 > **根规范的职责是“路由 + 红线 + 入口用法”（强制）**：根 `AGENTS.md` 不应追求把所有提示词、例外和长篇示例一次性写全；它应像 skill 首页一样，先告诉 AI 这是什么场景、先看哪条、哪些红线不能碰、下一层去哪里读。长篇流程、专项审计模板、复杂协作细则、游戏专属口径应优先下沉到 `docs/ai-rules/`、项目 skill、专项 workflow 或用户故事，而不是继续堆回根文件。
 > **通用规范定义（强制）**：根 `AGENTS.md` 与 `docs/ai-rules/` 默认是“所有游戏通用规范”，只能约束流程、方法、验证和文档要求，不能把某个游戏当前任务里的局部字段命名、卡牌结构或专用抓取源直接写成全局默认。游戏专属口径必须落到该游戏自己的 `rule/` 文档或专项规范里。
 > **根规范作用域标注（强制）**：根 `AGENTS.md` 允许出现游戏专属条目，但标题或正文必须显式写明适用游戏/模块/触发条件；只要条目里出现具体游戏名、具体抓取源、具体字段结构，就不得再被解释成“所有游戏默认规则”。
 >
 > **Skill 选型与网页能力分工（强制）**：
-> - **项目专用 workflow 优先**：如果 `.windsurf/skills/`、项目脚本或项目文档已经覆盖当前场景，优先走项目内 workflow；禁止先跳到通用 skill 或外部抓取平台，绕开现有项目流程。
+> - **项目专用 workflow 优先**：如果 `.codex/skill/`、项目脚本或项目文档已经覆盖当前场景，优先走项目内 workflow；禁止先跳到通用 skill 或外部抓取平台，绕开现有项目流程。
 > - **读链接 / 搜网页 / 查在线资料优先级**：用户给出 URL、要求搜索网页、读取 Wiki、查社媒/视频/社区内容时，默认优先使用**当前会话自带浏览/搜索能力**，并按需配合 `agent-reach`；需要多搜索引擎对照、`site:` / `filetype:` / 时间过滤时，再补 `multi-search-engine`。一般研究、单页阅读、小范围核对，不默认引入额外抓取平台。
 > - **UI/UX skill 分工**：当前会话可用 `frontend-design` 与 `ui-ux-pro-max` 时，默认前者负责**审美方向、页面概念、避免 AI 味**，后者负责**风格检索、设计系统、配色/字体候选与落地检查项**。两者冲突时，以 `frontend-design` 定方向，以 `ui-ux-pro-max` 做收敛与验证，不得让后者把前者已定的视觉路线带偏。
 > - **Firecrawl 定位**：`Firecrawl` 视为**工程化网页抓取/浏览器自动化能力**，不是本项目默认的“搜一下/读个页面”入口。只有在以下场景才评估使用或安装：① 需要批量 `crawl/map/scrape` 大量页面；② 需要真实浏览器交互、登录态、点按钮/翻页后再取内容；③ 需要把网页采集能力沉淀进长期可复用的脚本、服务或流水线。除此之外，默认优先当前 Codex 会话浏览能力与现有 skills。
@@ -179,11 +195,11 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/ai-rules/golden-rules.md` — React 渲染错误、白屏、函数未定义、高频交互异常时必读。
 - `docs/ai-rules/animation-effects.md` — 动画、特效、粒子效果时必读。
 - `docs/ai-rules/asset-pipeline.md` — 图片或音频资源引用时必读。
-- `.windsurf/skills/sticker-imagegen/SKILL.md` — 生成或正式接入项目表情、贴纸、seat emote / match emote 资源时必读。
+- `.codex/skill/sticker-imagegen/SKILL.md` — 生成或正式接入项目表情、贴纸、seat emote / match emote 资源时必读。
 - `docs/ai-rules/data-entry.md` — 按图片/规则书/Wiki/截图录入业务数据时必读。
   - **图片优先于 Wiki（强制）**：凡清晰图片、截图或扫描件能覆盖当前字段，图片就是当前字段主真相源；Wiki 只能作为对照源。只有用户故事/需求单/当轮用户明确说明要偏离图片时，才允许覆盖图片口径，且必须留档写明覆盖原因、影响范围和验收标准。
 - `docs/user-stories/README.md` — 用户在对话中明确提出、会影响规则裁定/实现口径/验收方式/长期流程的需求留档入口。项目级需求放 `docs/user-stories/project/`，游戏级需求放 `docs/user-stories/<gameId>/`；凡允许偏离图片、规则书或既有实现的用户故事，必须在这里留档。
-- `docs/audio/add-audio.md` — 导入新音效素材时必读；配套参考 `docs/tools.md`、`docs/audio/audio-usage.md`、`docs/audio/audio-catalog.md`。
+- `.codex/skill/audio-integration/SKILL.md` — 音频对接、查找/替换音效 key、补预加载或导入新音效素材时必读；配套参考 `docs/audio/audio-usage.md`、`docs/audio/add-audio.md`、`docs/audio/audio-catalog.md`、`docs/tools.md`。
 - `docs/ai-rules/engine-systems.md` — 引擎系统、框架层、游戏 `move/command` 时必读。
 - `docs/ai-rules/undo-auto-advance.md` — 排查撤回后自动推进问题时必读；引擎层已统一处理，游戏层通常无需额外代码。
 - **多 afterScoring 交互链式传递（通用方案）**：`_deferredPostScoringEvents` 必须沿交互链传递；引擎层已在 `InteractionSystem.resolveInteraction` 自动转交到下一个交互。游戏层只需在最后一个交互补发延迟事件，并在补发后立即清空，避免重复补发。详见 `evidence/smashup/smashup-multi-base-infinite-loop-fix.md` 和 `evidence/smashup/smashup-multi-base-duplicate-events-fix.md`。
@@ -198,9 +214,9 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/ai-rules/doc-index.md` — **不确定该读哪个文档时必读**。按场景查找需要阅读的文档。
 - `docs/temp-files-management.md` — **创建临时文件或清理根目录时必读**。含临时文件分类规则、目录结构、.gitignore 规则、开发规范。
 - `docs/git-merge-checklist.md` — 执行 `git merge` 前必读并完成预检查。
-- `.windsurf/skills/adapt-game-mobile/SKILL.md` — 给现有游戏做移动端适配时必读。
-- `.windsurf/skills/git-operations/SKILL.md` — 需要提交、push、同步主分支、处理 pre-push 阻塞、PR、merge、fork、worktree、远端协议时必读。
-- `.windsurf/skills/create-new-game/SKILL.md` — 创建/添加新游戏时必读，且必须先开 `feat/game-<gameId>` 分支。
+- `.codex/skill/adapt-game-mobile/SKILL.md` — 给现有游戏做移动端适配时必读。
+- `.codex/skill/git-operations/SKILL.md` — 需要提交、push、同步主分支、处理 pre-push 阻塞、PR、merge、fork、worktree、远端协议时必读。
+- `.codex/skill/create-new-game/SKILL.md` — 创建/添加新游戏时必读，且必须先开 `feat/game-<gameId>` 分支。
 - `docs/deploy.md` — 部署、构建产物、环境变量注入、线上/本地差异、CDN/R2 资源问题时必读。
   - **生产部署操作规范（强制）**：生产环境更新必须使用 `bash scripts/deploy/deploy-image.sh update`（基于 `docker-compose.prod.yml`）。**禁止在生产服务器上直接运行 `docker compose up -d`**（会使用默认的 `docker-compose.yml`，端口映射和环境变量与生产不同）。排查生产问题时，必须先读 `docs/deploy.md` 了解部署架构，禁止凭猜测给出服务器操作命令。
   - **生产最新部署 tag 口径（强制）**：用户说“更新部署 / 部署最新 / 发线上”且未明确指定版本时，唯一默认命令是 `bash scripts/deploy/deploy-image.sh update`，也就是部署 CI 推送到 GHCR 的 `latest`。禁止根据 commit SHA、短 SHA、run number 或个人推测临时拼出 `update <tag>`；只有用户明确指定 tag，或已经用 CI 输出 / GHCR / `docker manifest inspect` 证明 `web` 与 `game-server` 两个镜像都存在同一个精确 tag 时，才允许执行 `update <tag>`，并必须在汇报中写明验证证据。
@@ -376,7 +392,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **本地启动默认用 lite（强制）**：未确认 Docker 已安装、可用，且本地 Mongo / 相关环境已配置前，默认使用 `npm run dev:lite` 作为启动方式。只有在任务明确依赖完整后端环境时，才切换到 `npm run dev`，例如认证/社交/管理后台、本地 Mongo 数据排查、需要 API 的联机链路、或完整 E2E 环境。禁止把 `npm run dev` 当作所有任务的默认起点。
 
 #### 1.4 分支、协作与 Git 纪律（强制）
-- **Git 复杂细则下沉到项目 skill（强制）**：根 `AGENTS.md` 只保留日常 `status/diff/commit/push` 入口和不可越过的红线；同步主分支、远端协议、pre-push 阻塞、PR、merge、fork、worktree 等细则统一以 `.windsurf/skills/git-operations/SKILL.md` 为准，不要再把整套 Git 提示词堆回根文件。
+- **Git 复杂细则下沉到项目 skill（强制）**：根 `AGENTS.md` 只保留日常 `status/diff/commit/push` 入口和不可越过的红线；同步主分支、远端协议、pre-push 阻塞、PR、merge、fork、worktree 等细则统一以 `.codex/skill/git-operations/SKILL.md` 为准，不要再把整套 Git 提示词堆回根文件。
 - **开工先查分支职责**：开始任何实质工作前，必须确认当前分支/工作树与当前任务职责一致。若当前分支明显服务于另一任务线、另一游戏、另一 PR 或另一 worktree，禁止直接在此继续改。
 - **分支和 worktree 有固定职责**：新分支必须从主分支创建；仓库根目录默认只承担 main 主工作树职责；未获确认时禁止自行创建 git worktree。
 - **协作默认优先 clone 主仓库，不默认 fork（强制）**：多人协作、AI 协作、修 PR、并行 worktree、日常功能开发时，默认基于主仓库本地 clone / 已授权工作副本开分支推进。只有在当前身份对主仓库**无写权限**、必须做账号或权限隔离、或用户当轮明确要求走跨仓库 PR 时，才允许采用 fork 路线。禁止把 fork 当成“更安全”的默认动作，也不得在未核实权限与协作目标前擅自切到 fork 工作流。
@@ -412,6 +428,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **调用链逐层检查三件事**：存在性、契约、返回值。不得只查“我改的那一层”，也不得看到一个定义就假设唯一。
 - **代码审查优先于日志**：先审查调用链、early return、数据流和消费链；代码审查仍找不到问题，才在关键决策点补日志。
 - **回归问题先找最后正常证据**：优先用 `git log`、`git show`、历史截图、evidence、测试产物定位最后正常版本；找到后必须继续实际阅读该版本对应实现和证据，再决定修法。默认优先恢复历史正确行为，而不是另造新方案；**未读旧实现不得先发明新布局/新策略/新抽象**。
+- **候选历史版本不得冒充“原本实现”（强制）**：当用户要求“看以前版本 / 恢复原来的 UI / 你是不是找到原本实现了”时，如果当前结论只是来自关键词搜索、局部 `git show`、视觉相似性、单个提交片段或未核实相邻提交的历史片段，必须明确称为“候选旧实现 / 历史近似版本 / 待核实基线”，**不得**直接说成“已经找到原本实现”或“以前就是这样”。只有同时满足 ① 已锁定具体 `commit + file + 相关交互范围`；② 已实际阅读该实现及相邻 `1-2` 次相关提交/证据，确认它不是后续被替换、回补或局部试验态；③ 已明确区分“当前改动是 1:1 恢复旧实现”还是“仅参考旧实现重新设计”，才允许对外使用“找到原本实现 / 恢复到以前版本”口径。三项缺任一项时，必须停止基于该结论继续推进，并先补证据。
 - **合并后回归默认先查 merge commit 与冲突裁决记录**：优先判断是否发生了目标外回退、旧实现回补、单边覆盖或共享 UI 误合并，不要直接把表象当成独立新 bug 修。
 - **方案前先列事实 / 未知 / 假设**：证据不足时不得直接改代码试错，也不得靠放开限制、扩大白名单、关闭校验来“绕过去”。
 - **必要时沿完整数据流排查**：按写入-消费时间线、`API → Context → UI` 或其他真实消费链路一路查到底。
@@ -423,7 +440,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **先搜代码、读规则、看真相源，再改实现**：禁止凭记忆改代码。
 - **用户报 bug 的处理口径与排查流程以上文 1.1 + 1.5 为准**。
 - **React 渲染错误 / 白屏 / 高频交互异常先看 `docs/ai-rules/golden-rules.md`**。
-- **动画 / 特效先看 `docs/ai-rules/animation-effects.md`；UI / 双端 / 布局先看 `docs/ai-rules/ui-ux.md` 与 `docs/architecture/ui-dual-platform-architecture.md`；引擎 / 领域 / move / command 先看 `docs/ai-rules/engine-systems.md`；资源 / 图集 / 音频 / CDN 先看 `docs/ai-rules/asset-pipeline.md`、`docs/audio/add-audio.md`、`docs/tools.md`。**
+- **动画 / 特效先看 `docs/ai-rules/animation-effects.md`；UI / 双端 / 布局先看 `docs/ai-rules/ui-ux.md` 与 `docs/architecture/ui-dual-platform-architecture.md`；引擎 / 领域 / move / command 先看 `docs/ai-rules/engine-systems.md`；资源 / 图集 / 音频 / CDN 先看 `docs/ai-rules/asset-pipeline.md`、`.codex/skill/audio-integration/SKILL.md`、`docs/tools.md`。**
 
 ## React 核心规范（强制）
 

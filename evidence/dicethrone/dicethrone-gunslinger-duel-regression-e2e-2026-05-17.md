@@ -1,5 +1,7 @@
 # DiceThrone 枪手 Duel 回归 E2E（2026-05-17）
 
+> 2026-06-05 当前有效口径：本文只保留枪手 `Duel` 对掷展示与“抵挡一半后仍播放伤害浮字”两条回归链的对象级证据，不代表枪手整英雄或枪手/武士整批当前完成态。当前若要判断枪手对象级残余、兄弟能力补审范围或整英雄口径，应以 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-gunslinger-samurai-vs-legacy-audit-2026-04-06.md` 与 `src/games/dicethrone/rule/枪手录入核对.md` 为准。
+
 ## 范围
 
 - 用户反馈 1：AI 僧侣使用“天人合一（harmony）”攻击时，枪手用 `duel` 防御后没有播放伤害浮字。

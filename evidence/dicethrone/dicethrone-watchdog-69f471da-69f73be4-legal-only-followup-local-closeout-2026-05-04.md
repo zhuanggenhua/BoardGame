@@ -1,5 +1,7 @@
 # Dice Throne watchdog `69f471da` / `69f73be4` 本地验收收口说明（2026-05-04）
 
+> 2026-06-06 当前有效口径：本文只对应 watchdog 反馈 `69f471da / 69f73be4` 这一组本地 closeout 记录，不是当前 DiceThrone 所有 `legal-only followup` / `legal_action_unavailable` 问题都已彻底收口的证明，也不是新英雄补审出口。阅读时只能把它理解成单条反馈簇的历史验收记录。
+
 ## 反馈对象
 
 - `69f471da9ec13b96d7109902`

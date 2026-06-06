@@ -22,7 +22,16 @@ import { getActiveResolutionFrame, syncActiveResolutionWithInteraction, syncActi
 
 export interface ResponseWindowSystemConfig {
     /** 检测玩家是否有可响应内容的函数（由游戏实现注入） */
-    hasRespondableContent?: (state: unknown, playerId: PlayerId, windowType: ResponseWindowType, sourceId?: string) => boolean;
+    hasRespondableContent?: (
+        state: unknown,
+        playerId: PlayerId,
+        windowType: ResponseWindowType,
+        sourceId?: string,
+        context?: {
+            matchState: MatchState<unknown>;
+            window: NonNullable<ResponseWindowState['current']>;
+        },
+    ) => boolean;
 
     /**
      * 构建响应窗口语义指纹（用于去重与冷却）。
@@ -401,7 +410,16 @@ function skipToNextRespondableResponder<TCore>(
 
         while (index < scanWindow.responderQueue.length) {
             const playerId = scanWindow.responderQueue[index];
-            const hasContent = hasRespondableContent(state.core as unknown, playerId, scanWindow.windowType, scanWindow.sourceId);
+            const hasContent = hasRespondableContent(
+                state.core as unknown,
+                playerId,
+                scanWindow.windowType,
+                scanWindow.sourceId,
+                {
+                    matchState: state as MatchState<unknown>,
+                    window: scanWindow,
+                },
+            );
             
             console.log('[skipToNextRespondableResponder] 检查玩家:', {
                 index,
@@ -848,7 +866,16 @@ export function createResponseWindowSystem<TCore>(
                             const unlockedWindow = { ...currentWindow, pendingInteractionId: undefined };
                             const currentResponderId = getCurrentResponderId(unlockedWindow);
                             const canStillRespond = currentResponderId && hasRespondableContent
-                                ? hasRespondableContent(newState.core as unknown, currentResponderId, unlockedWindow.windowType, unlockedWindow.sourceId)
+                                ? hasRespondableContent(
+                                    newState.core as unknown,
+                                    currentResponderId,
+                                    unlockedWindow.windowType,
+                                    unlockedWindow.sourceId,
+                                    {
+                                        matchState: newState as MatchState<unknown>,
+                                        window: unlockedWindow,
+                                    },
+                                )
                                 : true;
 
                             if (!canStillRespond && currentResponderId) {
@@ -950,7 +977,16 @@ export function createResponseWindowSystem<TCore>(
                             const unlockedWindow = { ...currentWindow, pendingInteractionId: undefined };
                             const currentResponderId = getCurrentResponderId(unlockedWindow);
                             const canStillRespond = currentResponderId && hasRespondableContent
-                                ? hasRespondableContent(newState.core as unknown, currentResponderId, unlockedWindow.windowType, unlockedWindow.sourceId)
+                                ? hasRespondableContent(
+                                    newState.core as unknown,
+                                    currentResponderId,
+                                    unlockedWindow.windowType,
+                                    unlockedWindow.sourceId,
+                                    {
+                                        matchState: newState as MatchState<unknown>,
+                                        window: unlockedWindow,
+                                    },
+                                )
                                 : true;
 
                             if (!canStillRespond && currentResponderId) {

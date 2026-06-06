@@ -29,12 +29,13 @@ import { validateTitanOngoingActivation, validateTitanSpecialActivation, validat
 import { hasCardActivatableAbility } from './activationMetadata';
 import {
     actionLikeNeedsResponseWindowBase,
-    canCardBePlayedInResponseWindow,
+    canCardBePlayedInResponseWindowForMatchState,
     getActionLikeResponseWindowTiming,
     canUseBaseLimitedMinionQuota,
     canUseSameNameMinionQuota,
     getMaxRemainingBaseLimitedPowerQuota,
     getMaxRemainingGlobalPowerLimitedQuota,
+    getResponseWindowPlayableBaseIndicesForMatchState,
     isMinionLikeRespondableInWindow,
     isSameNameDefId,
     mustUseBaseLimitedMinionQuota,
@@ -68,6 +69,9 @@ function getCurrentManualActivationWindow(state: MatchState<SmashUpCore>): Smash
     if (legacyQueue.some((playerId) => !turnOrder.includes(playerId))) {
         return 'playCards';
     }
+    const reactionWindow = getSmashUpReactionWindowContext(state);
+    if (reactionWindow?.windowType === 'meFirst') return 'beforeScoring';
+    if (reactionWindow?.windowType === 'afterScoring') return 'afterScoring';
     return getAfterScoringSourceBaseIndex(state) !== undefined ? 'afterScoring' : 'beforeScoring';
 }
 
@@ -103,6 +107,11 @@ export function getManualSpecialScoringBaseIndices(
 ): number[] {
     if (state.sys.phase !== 'scoreBases') {
         return [];
+    }
+
+    const reactionWindow = getSmashUpReactionWindowContext(state);
+    if (reactionWindow?.windowType === 'meFirst' && typeof reactionWindow.sourceBaseIndex === 'number') {
+        return [reactionWindow.sourceBaseIndex];
     }
 
     const afterScoringSourceBaseIndex = getAfterScoringSourceBaseIndex(state);
@@ -336,7 +345,7 @@ export function validate(
                 if (mfBaseIndex < 0 || mfBaseIndex >= core.bases.length) {
                     return { valid: false, error: '无效的基地索引' };
                 }
-                const mfEligible = getScoringEligibleBaseIndices(core);
+                const mfEligible = getResponseWindowPlayableBaseIndicesForMatchState(state, mfCard.defId, 'meFirst');
                 if (!mfEligible.includes(mfBaseIndex)) {
                     return { valid: false, error: '只能打出到即将计分的基地' };
                 }
@@ -596,7 +605,7 @@ export function validate(
                 const targetBase = command.payload.targetBaseIndex;
 
                 const needsBase = actionLikeNeedsResponseWindowBase(rDef);
-                if (!canCardBePlayedInResponseWindow(core, rCard, reactionWindow.windowType)) {
+                if (!canCardBePlayedInResponseWindowForMatchState(state, rCard, reactionWindow.windowType)) {
                     return { valid: false, error: '该行动卡当前没有可执行的响应目标' };
                 }
                 if (needsBase) {
@@ -608,19 +617,11 @@ export function validate(
                         return { valid: false, error: '无效的基地索引' };
                     }
 
-                    const afterScoringSourceBaseIndex = getAfterScoringSourceBaseIndex(state);
-                    if (
-                        reactionWindow.windowType === 'afterScoring'
-                        && afterScoringSourceBaseIndex !== undefined
-                        && targetBaseIndex !== afterScoringSourceBaseIndex
-                    ) {
-                        return { valid: false, error: 'afterScoring 只能选择当前正在结算的基地' };
-                    }
-
-                    // 使用统一查询函数（优先锁定列表，回退实时计算）
-                    const eligibleIndices = afterScoringSourceBaseIndex !== undefined
-                        ? [afterScoringSourceBaseIndex]
-                        : getScoringEligibleBaseIndices(core);
+                    const eligibleIndices = getResponseWindowPlayableBaseIndicesForMatchState(
+                        state,
+                        rCard.defId,
+                        reactionWindow.windowType,
+                    );
 
                     if (!eligibleIndices.includes(targetBaseIndex)) {
                         return { valid: false, error: '只能选择达到临界点的基地' };

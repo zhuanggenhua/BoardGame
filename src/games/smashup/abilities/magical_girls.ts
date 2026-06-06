@@ -90,6 +90,32 @@ function countOwnMinionsAtBase(state: SmashUpCore, baseIndex: number, playerId: 
     return state.bases[baseIndex]?.minions.filter(minion => minion.controller === playerId).length ?? 0;
 }
 
+function getWalkingCastle(state: SmashUpCore, playerId: PlayerId) {
+    return (state.titans ?? []).find(candidate =>
+        candidate.defId === WALKING_CASTLE && candidate.controllerId === playerId);
+}
+
+function getWalkingCastleEligibleBases(state: SmashUpCore, playerId: PlayerId) {
+    return state.bases
+        .map((_base, baseIndex) => ({ baseIndex, label: baseLabel(state, baseIndex) }))
+        .filter(candidate => countOwnMinionsAtBase(state, candidate.baseIndex, playerId) >= 2);
+}
+
+function buildPlayWalkingCastleEvents(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    targetBaseIndex: number,
+    reason: string,
+    now: number,
+): SmashUpEvent[] {
+    const titan = getWalkingCastle(state, playerId);
+    const targetBase = state.bases[targetBaseIndex];
+    if (!titan || !targetBase) return [];
+    if (countOwnMinionsAtBase(state, targetBaseIndex, playerId) < 2) return [];
+    if (!canControllerPlayTitan(state, playerId, titan.uid)) return [];
+    return [playTitan(titan, playerId, targetBaseIndex, reason, now, targetBase.defId)];
+}
+
 function collectMinions(state: SmashUpCore, predicate: (minion: MinionOnBase, baseIndex: number) => boolean): MinionTarget[] {
     const targets: MinionTarget[] = [];
     state.bases.forEach((base, baseIndex) => {
@@ -352,9 +378,11 @@ function celestialTeleport(ctx: AbilityContext): AbilityResult {
 }
 
 function coordination(ctx: AbilityContext): AbilityResult {
-    const titan = (ctx.state.titans ?? []).find(candidate =>
-        candidate.defId === WALKING_CASTLE && candidate.ownerId === ctx.playerId);
-    const canPlayWalkingCastle = !!titan && canControllerPlayTitan(ctx.state, ctx.playerId, titan.uid);
+    const titan = getWalkingCastle(ctx.state, ctx.playerId);
+    const eligibleBases = getWalkingCastleEligibleBases(ctx.state, ctx.playerId);
+    const canPlayWalkingCastle = !!titan
+        && eligibleBases.length > 0
+        && canControllerPlayTitan(ctx.state, ctx.playerId, titan.uid);
     if (!canPlayWalkingCastle) {
         return { events: [grantContextualExtraMinion(ctx, 'magical_girls_coordination')] };
     }
@@ -863,11 +891,49 @@ export function registerMagicalGirlsInteractionHandlers(): void {
             return { state, events: [grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'magical_girls_coordination')] };
         }
         if (selected.choice !== 'walking_castle' || !selected.titanUid) return { state, events: [] };
-        const titan = state.core.titans?.find(candidate => candidate.uid === selected.titanUid);
-        if (!titan || !canControllerPlayTitan(state.core, playerId, titan.uid)) return { state, events: [] };
-        const targetBaseIndex = state.core.bases.findIndex(base => base.minions.some(minion => minion.controller === playerId));
-        if (targetBaseIndex < 0) return { state, events: [] };
-        return { state, events: [playTitan(titan, playerId, targetBaseIndex, 'magical_girls_coordination', timestamp, state.core.bases[targetBaseIndex]?.defId)] };
+        const titan = getWalkingCastle(state.core, playerId);
+        if (!titan || titan.uid !== selected.titanUid || !canControllerPlayTitan(state.core, playerId, titan.uid)) {
+            return { state, events: [] };
+        }
+
+        const eligibleBases = getWalkingCastleEligibleBases(state.core, playerId);
+        if (eligibleBases.length === 0) return { state, events: [] };
+        if (eligibleBases.length === 1) {
+            return {
+                state,
+                events: buildPlayWalkingCastleEvents(
+                    state.core,
+                    playerId,
+                    eligibleBases[0].baseIndex,
+                    'magical_girls_coordination',
+                    timestamp,
+                ),
+            };
+        }
+
+        const interaction = createSimpleChoice(
+            `magical_girls_coordination_base_${timestamp}`,
+            playerId,
+            '和谐：选择 Walking Castle 要进入的基地',
+            buildBaseTargetOptions(eligibleBases, state.core),
+            { sourceId: 'magical_girls_coordination_base', targetType: 'base' },
+        );
+        return { state: queueInteraction(state, interaction), events: [] };
+    });
+
+    registerInteractionHandler('magical_girls_coordination_base', (state, playerId, value, _data, _random, timestamp) => {
+        const selected = value as { baseIndex?: number } | undefined;
+        if (selected?.baseIndex === undefined) return { state, events: [] };
+        return {
+            state,
+            events: buildPlayWalkingCastleEvents(
+                state.core,
+                playerId,
+                selected.baseIndex,
+                'magical_girls_coordination',
+                timestamp,
+            ),
+        };
     });
 
     registerInteractionHandler('magical_girls_lunar_captain', (state, playerId, value, _data, _random, timestamp) => {

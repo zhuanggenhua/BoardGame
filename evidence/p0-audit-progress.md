@@ -1,5 +1,7 @@
 # P0 Deletions Audit Progress (≥100 Lines)
 
+> 状态提示（2026-06-05）：已归档的历史阶段进度稿。当前 P0 审计完成口径以 `evidence/p0-audit-final-complete.md` 为准；本文件只保留当时的中间分析，不得再作为当前未完成任务或默认入口。
+
 ## Audit Methodology
 
 For each file:

@@ -68,6 +68,7 @@ import { registerAllOngoingModifiers } from './ongoing_modifiers';
 import { clearPowerModifierRegistry, registerPodPowerModifierAliases } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry, registerPodOngoingAliases } from '../domain/ongoingEffects';
 import { clearDiscardPlayProviders } from '../domain/discardPlayability';
+import { clearDiscardActionPlayProviders } from '../domain/discardActionPlayability';
 import { clearDiscardSpecialProviders } from '../domain/discardSpecialAbilities';
 import { clearRegistry, registerPodAbilityAliases } from '../domain/abilityRegistry';
 import { clearInteractionHandlers, registerPodInteractionAliases } from '../domain/abilityInteractionHandlers';
@@ -87,6 +88,7 @@ export function initAllAbilities(): void {
     clearPowerModifierRegistry();
     clearOngoingEffectRegistry();
     clearDiscardPlayProviders();
+    clearDiscardActionPlayProviders();
     clearDiscardSpecialProviders();
     clearTitanAbilityValidators();
 
@@ -194,5 +196,6 @@ export function resetAbilityInit(): void {
     clearPowerModifierRegistry();
     clearOngoingEffectRegistry();
     clearDiscardPlayProviders();
+    clearDiscardActionPlayProviders();
     clearTitanAbilityValidators();
 }

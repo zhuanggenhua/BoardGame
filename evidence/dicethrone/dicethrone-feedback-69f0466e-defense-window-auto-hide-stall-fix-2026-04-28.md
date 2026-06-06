@@ -1,5 +1,7 @@
 # Dice Throne 反馈 69f0466e 修复证据（2026-04-28）
 
+> 2026-06-06 当前有效口径：本文只对应反馈 `69f0466e...` 这一条“防御窗口一闪而过后卡住”的历史专项修复证据，不是当前 DiceThrone 所有 defense window / auto-response / defensive stall 问题都已收口的证明，也不是新英雄补审出口。阅读时只能把它当作单条反馈修复记录。
+
 ## 反馈来源
 - 线上反馈源。
 - 通过 `ssh admin@8.148.71.102` 进入生产机，再执行 `docker exec -i boardgame-mongodb mongosh --quiet boardgame` 查询 `feedbacks` 集合确认。
@@ -27,3 +29,7 @@
 ## 风险
 - 本次没有补 E2E 截图，只做了定向单测/集成回归。
 - 但已覆盖防御阶段、响应窗口锁、服务端传输三条相关链路。
+
+---
+
+**当前阅读说明**：本文只能证明“防御窗口自动隐藏后卡住”这条专项问题曾被修复，不能外推为当前所有 defense window、所有 auto-response 交互或 DiceThrone 当前整体审计都已收口。

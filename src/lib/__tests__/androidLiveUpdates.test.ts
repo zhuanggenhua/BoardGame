@@ -281,6 +281,84 @@ describe('androidLiveUpdates', () => {
         expect(addListenerMock).toHaveBeenCalledWith('updateStateChanged', expect.any(Function));
     });
 
+    it('旧 Android 壳缺少 CapacitorUpdater 插件时，注册 OTA 监听应静默降级而不是抛出未处理拒绝', async () => {
+        vi.resetModules();
+
+        const addListenerMock = vi.fn().mockRejectedValue(
+            new Error('"CapacitorUpdater" plugin is not implemented on android'),
+        );
+
+        vi.doMock('@capacitor/core', () => ({
+            Capacitor: {
+                isNativePlatform: () => true,
+                getPlatform: () => 'android',
+            },
+            registerPlugin: vi.fn(() => ({})),
+        }));
+        vi.doMock('@capgo/capacitor-updater', () => ({
+            CapacitorUpdater: {
+                notifyAppReady: vi.fn(),
+                current: vi.fn(),
+                list: vi.fn(),
+                download: vi.fn(),
+                next: vi.fn(),
+                set: vi.fn(),
+                reload: vi.fn(),
+                setMultiDelay: vi.fn(),
+                addListener: addListenerMock,
+            },
+        }));
+
+        const { registerAndroidLiveUpdateListeners } = await import('../mobile/androidLiveUpdates');
+        const result = await registerAndroidLiveUpdateListeners();
+
+        expect(result).toBeNull();
+        expect(addListenerMock).toHaveBeenCalledWith('download', expect.any(Function));
+    });
+
+    it('旧 Android 壳缺少 CapacitorUpdater 插件时，读取 OTA 快照应回退成 updaterLoaded=false', async () => {
+        vi.resetModules();
+
+        vi.doMock('@capacitor/core', () => ({
+            Capacitor: {
+                isNativePlatform: () => true,
+                getPlatform: () => 'android',
+            },
+            registerPlugin: vi.fn(() => ({})),
+        }));
+        vi.doMock('@capgo/capacitor-updater', () => ({
+            CapacitorUpdater: {
+                notifyAppReady: vi.fn(),
+                current: vi.fn().mockRejectedValue(
+                    new Error('"CapacitorUpdater" plugin is not implemented on android'),
+                ),
+                list: vi.fn(),
+                download: vi.fn(),
+                next: vi.fn(),
+                set: vi.fn(),
+                reload: vi.fn(),
+                setMultiDelay: vi.fn(),
+                addListener: vi.fn(),
+            },
+        }));
+
+        const { readAndroidLiveUpdateSnapshot } = await import('../mobile/androidLiveUpdates');
+        const snapshot = await readAndroidLiveUpdateSnapshot({
+            includeManifest: false,
+            envOverride: {
+                VITE_ANDROID_OTA_ENABLED: 'true',
+                VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                VITE_ANDROID_OTA_CHANNEL: 'stable',
+            },
+        });
+
+        expect(snapshot).toMatchObject({
+            enabled: true,
+            nativeAndroid: true,
+            updaterLoaded: false,
+        });
+    });
+
     it('manifest 兼容性支持 targetNativeVersion 精确命中', () => {
         expect(isManifestCompatibleWithNativeVersion({
             version: '0.5.0-ota.1',

@@ -1,5 +1,7 @@
 # DiceThrone 线上孤儿 displayOnly 奖励骰残留修复（2026-05-02）
 
+> 2026-06-06 当前有效口径：本文只覆盖反馈 `69f5be8c9ec13b96d710baa4` 相关的 `displayOnly bonus settlement` 孤儿残留问题，不是当前 DiceThrone 全部 online AI/bonus dice 问题已彻底收口的证明，也不是新英雄补审出口。阅读时只能把它当作单条线上修复证据。
+
 ## 反馈来源
 
 - 真实线上 `open` 单：`69f5be8c9ec13b96d710baa4`
@@ -89,3 +91,7 @@ npm run typecheck
 
 这条反馈至少命中了一个真实 transport/watchdog 漏口，且该漏口现已补上。
 但它的用户描述同时提到了 `transfer-status` 与“枪手防御技能”，后续若生产再出现同单，还需要继续确认是否还叠加别的链路问题。
+
+---
+
+**当前阅读说明**：本文只能证明 `displayOnly bonus settlement` 孤儿残留这条专项问题曾被修复，不能外推成 DiceThrone online AI、奖励骰结算或 transport/watchdog 全链路都已最终收口。

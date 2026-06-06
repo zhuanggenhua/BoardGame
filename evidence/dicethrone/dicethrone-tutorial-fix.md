@@ -1,5 +1,7 @@
 # DiceThrone 教学模式修复记录
 
+> 2026-06-06 当前有效口径：本文只对应 DiceThrone 教学模式无法进入游戏界面的历史修复记录，不是当前 DiceThrone 教学模式、也不是当前总审计主线的完成证明，更不是新英雄补审出口。阅读时只能把它当作单条 tutorial 修复记录。
+
 ## 问题描述
 进入 DiceThrone 教学模式（`/play/dicethrone/tutorial`）后，界面一直显示"加载游戏状态"，游戏界面无法显示。
 
@@ -99,3 +101,7 @@ React.useEffect(() => {
 - `src/games/dicethrone/tutorial.ts` - 教学清单
 - `src/contexts/TutorialContext.tsx` - 教学系统上下文
 - `src/pages/MatchRoom.tsx` - 对局房间页面
+
+---
+
+**当前阅读说明**：本文只能证明“DiceThrone 教学模式卡在加载游戏状态”这条专项问题曾被修复，不能外推为当前所有 tutorial 流程、所有 setup 自动推进或 DiceThrone 当前整体审计都已收口。

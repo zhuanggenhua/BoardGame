@@ -1,5 +1,7 @@
 # DiceThrone 枪手 `Loaded / 装填弹药` 时机裁定
 
+> 2026-06-05 当前有效口径：本文只保留枪手 `Loaded / 装填弹药` 时机裁定与对象级规则对账，不代表枪手整英雄或枪手/武士整批当前完成态。当前若要判断 `Loaded` 现行实现、兄弟能力补审范围或整英雄口径，应以 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-gunslinger-samurai-vs-legacy-audit-2026-04-06.md` 与 `src/games/dicethrone/rule/枪手录入核对.md` 为准。
+
 ## 目标
 
 裁定枪手 `Loaded / 装填弹药` 的最终使用时机，解决“汉化提示板 vs Wiki Clarification”之间的口径冲突。
