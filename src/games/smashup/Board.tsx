@@ -1073,7 +1073,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         label: string;
         optionId?: string;
         optionValue?: unknown;
-        mode: 'interaction' | 'play_minion' | 'play_action_minion' | 'activate_special';
+        mode: 'interaction' | 'play_minion' | 'play_action_minion' | 'activate_special_base' | 'activate_special_minion';
     }>>(() => {
         // interaction 驱动模式优先（僵尸领主等）
         if (isDiscardMinionPrompt && currentPrompt) {
@@ -1094,7 +1094,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     uid: opt.card.uid, defId: opt.defId, label: opt.name, mode: 'play_action_minion' as const,
                 })),
                 ...discardSpecialOptions.map(opt => ({
-                    uid: opt.card.uid, defId: opt.defId, label: opt.name, mode: 'activate_special' as const,
+                    uid: opt.card.uid,
+                    defId: opt.defId,
+                    label: opt.name,
+                    mode: opt.allowedMinionUids?.length ? 'activate_special_minion' as const : 'activate_special_base' as const,
                 })),
             ];
         }
@@ -1128,7 +1131,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         // 正常弃牌堆出牌：从 discardPlayOptions 读取
         const discardCard = discardStripCards.find(card => card.uid === discardStripSelectedUid);
         if (!discardCard) return new Set();
-        const allowedBaseIndices = discardCard.mode === 'activate_special'
+        const allowedBaseIndices = discardCard.mode === 'activate_special_base'
             ? discardSpecialOptions.find(option => option.card.uid === discardStripSelectedUid)?.allowedBaseIndices
             : discardCard.mode === 'play_action_minion'
                 ? discardActionPlayOptions.find(option => option.card.uid === discardStripSelectedUid)?.allowedBaseIndices
@@ -1142,9 +1145,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     const discardStripAllowedMinionUids = useMemo<Set<string>>(() => {
         if (!discardStripSelectedUid || isDiscardMinionPrompt) return new Set();
+        const specialOption = discardSpecialOptions.find(candidate => candidate.card.uid === discardStripSelectedUid);
+        if (specialOption?.allowedMinionUids?.length) {
+            return new Set(specialOption.allowedMinionUids);
+        }
         const option = discardActionPlayOptions.find(candidate => candidate.card.uid === discardStripSelectedUid);
         return new Set(option?.allowedMinionUids ?? []);
-    }, [discardStripSelectedUid, isDiscardMinionPrompt, discardActionPlayOptions]);
+    }, [discardStripSelectedUid, isDiscardMinionPrompt, discardActionPlayOptions, discardSpecialOptions]);
 
 
     // 响应窗口期间禁用不匹配的卡牌（置灰）
@@ -2073,9 +2080,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 setDiscardStripSelectedUid(null);
                 return;
             }
-            if (discardCard.mode === 'activate_special') {
+            if (discardCard.mode === 'activate_special_base') {
                 dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { discardCardUid: discardStripSelectedUid, baseIndex: index });
                 setDiscardStripSelectedUid(null);
+                return;
+            }
+            if (discardCard.mode === 'activate_special_minion') {
+                toast(t('ui.select_minion_hint', { defaultValue: '请选择一个随从' }));
                 return;
             }
             if (discardCard.mode === 'play_action_minion') {
@@ -2466,19 +2477,30 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         if (discardStripSelectedUid) {
             const discardCard = discardStripCards.find(card => card.uid === discardStripSelectedUid);
-            if (discardCard?.mode !== 'play_action_minion') return;
-            if (!discardStripAllowedMinionUids.has(minionUid)) return;
-            if (!isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)) {
-                playDeniedSound();
+            if (discardCard?.mode === 'play_action_minion') {
+                if (!discardStripAllowedMinionUids.has(minionUid)) return;
+                if (!isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)) {
+                    playDeniedSound();
+                    return;
+                }
+                dispatch(SU_COMMANDS.PLAY_ACTION, {
+                    cardUid: discardStripSelectedUid,
+                    targetBaseIndex: baseIndex,
+                    targetMinionUid: minionUid,
+                    fromDiscard: true,
+                });
+                setDiscardStripSelectedUid(null);
                 return;
             }
-            dispatch(SU_COMMANDS.PLAY_ACTION, {
-                cardUid: discardStripSelectedUid,
-                targetBaseIndex: baseIndex,
-                targetMinionUid: minionUid,
-                fromDiscard: true,
-            });
-            setDiscardStripSelectedUid(null);
+            if (discardCard?.mode === 'activate_special_minion') {
+                if (!discardStripAllowedMinionUids.has(minionUid)) return;
+                dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, {
+                    discardCardUid: discardStripSelectedUid,
+                    baseIndex,
+                    targetMinionUid: minionUid,
+                });
+                setDiscardStripSelectedUid(null);
+            }
         }
     }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isMultiMinionSelect, multiMinionConstraints, selectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids, discardStripSelectedUid, discardStripCards, discardStripAllowedMinionUids, isTutorialCommandAllowed]);
 
@@ -3736,8 +3758,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             selectHint={discardStripSelectedUid
                                 ? (() => {
                                     const selected = discardStripCards.find(card => card.uid === discardStripSelectedUid);
-                                    if (selected?.mode === 'activate_special') {
-                                        return t('ui.click_base_to_bury', { defaultValue: '点击基地埋葬这张牌' });
+                                    if (selected?.mode === 'activate_special_base') {
+                                        return t('ui.click_base_to_activate_discard_special', { defaultValue: '点击基地发动这张牌' });
+                                    }
+                                    if (selected?.mode === 'activate_special_minion') {
+                                        return t('ui.select_minion_hint', { defaultValue: '请选择一个随从' });
                                     }
                                     if (selected?.mode === 'play_action_minion') {
                                         return t('ui.select_minion_hint', { defaultValue: '请选择一个随从' });

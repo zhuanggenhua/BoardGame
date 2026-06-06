@@ -37,6 +37,7 @@
 
 ## Current Notes
 
+- 2026-06-06：human 面 `判决指令 / 无情劫掠` 的最新红灯已收掉。当前定向机制回归 `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "human 面判决指令|human 面无情劫掠" --configLoader native` 已恢复为 `7 passed`。这里修掉的真实问题有两类：一是 `无情劫掠` 的 `自得 2 个诅咒金币` 之前错误依赖 `pendingAttack` 仍挂着，导致 direct `postDamage` seam 漏加；二是 `判决指令` 的 4 人回归旧断言把 `2v2` 队伍共享血量误判成“命中错目标”。当前口径应保持为：human 面续结链已重新打绿，但整派系仍未完成，剩余继续回到双面 completion audit、family 级 `L4` 合法复用登记，以及最终是否允许移除 `implementation_in_progress`。
 - 2026-06-06：咒缚海盗 `火药桶` 的最新真实 blocker 已从“维持阶段转交链未闭合”收掉。当前 `flowHooks.ts` 已补齐 `upkeep/income` 自动继续的阻塞门禁，机制回归已新增“生成转交交互时 upkeep 不应自动继续推进”，并且两条真实入口链 `火药桶维持阶段投 6 后的转交链 / 转交给已持有者时原桶爆炸链` 都已重新打绿。这里收掉的是火药桶对象级真实链缺口，不等于整派系规则已全部实施完；当前剩余仍是双面 completion audit、family 级 `L4` 合法复用登记，以及最终是否允许移除 `implementation_in_progress`。
 - 2026-06-06：关于 `public/assets/i18n/zh-CN/dicethrone/images/cursed/人类面板.png`，当前口径继续保持为“已接入正式运行时，但不能据此跳过双面审计”。同时，旧的“技能需要整套从零重录”结论也应失效：human 面 9 个对象与 cursed 面 9 个对象都已进入运行时并拿到对象级直证；当前真正要继续做的是人类面逐槽重核、双面 completion audit，以及状态/手牌/奖励骰 family 的 `L4` 合法复用登记，而不是再把问题表述成整套技能尚未录入。
 - 2026-06-06：战术家升级次级分支 `战略转移 II（侦察）/ 摇鼓运动 II（间接接敌）/ 开拓战场 II（全面封锁）` 已全部补到对象级真实入口。当前新增并打绿的权威单跑包括：`战略转移 II 的侦察分支`（截图 `207-209`）、`摇鼓运动 II 的间接接敌分支`（截图 `210-212`）与 `开拓战场 II 的全面封锁分支`（截图 `213-215`）；三条都使用显式后台日志落盘 + `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1` 路线绕过本机当前 heavy-budget/guard 噪声，结果均为 `3 passed`。这一步收掉的是“这 3 条升级次级分支只有 L2、是否需要独立 L3 未知”的旧口径；当前剩余项继续回到升级/变体 family 的 `L4` 合法复用登记、双面 completion audit，以及最终是否允许移除 `implementation_in_progress`。

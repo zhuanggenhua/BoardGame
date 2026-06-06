@@ -635,6 +635,21 @@ export interface GameEngineConfig<
             phase: string;
             fallbackPlayerId: string | null;
         }) => string | null;
+        resolveManualSetupSelectionTakeoverPlayerId?: (args: {
+            sharedState: MatchState<unknown>;
+            currentPlayerId: string | null;
+            seatControllers: Record<string, {
+                type?: unknown;
+                manualFactionSelection?: unknown;
+            } | undefined>;
+            hasManualDispatch: boolean;
+        }) => string | null | undefined;
+        shouldReleaseManualSetupAttemptFromSharedState?: (args: {
+            sharedState: MatchState<unknown>;
+            playerId: string;
+            actionKind: 'select-faction' | 'setup-select-faction' | 'setup-select-character';
+            selectionId: string;
+        }) => boolean | undefined;
         buildInteractionRecoveryFingerprintHint?: (args: {
             state: MatchState<unknown>;
             playerId: string;

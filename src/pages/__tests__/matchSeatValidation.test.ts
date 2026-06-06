@@ -23,6 +23,7 @@ import {
 import { loadGameImplementation } from '../../games/registry';
 import type { GameManifestEntry } from '../../games/manifest.types';
 import type { MatchState } from '../../engine/types';
+import type { GameEngineConfig } from '../../engine/transport/server';
 import { registerGameAiRuntime, resolveNextAiAction, resolveNextAiDispatch, resolveOnlineAiDecisionView } from '../../engine/ai';
 import {
     buildAiProgressMarker,
@@ -59,12 +60,18 @@ import {
 } from '../matchManualSetup';
 import { resolveMissingMatchConfirmationSignal } from '../matchMissingConfirmation';
 import {
+    buildOnlineAiIdleSeatRecoveryKey,
+    buildOnlineAiSeamAwareAttemptMarkers,
+    buildOnlineAiSeamAwareProgressMarker,
+    buildOnlineAiSubmitBlockedRecoveryKey,
     resolveManualOnlineAiRecovery,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
     shouldRetainOnlineAiSeatOverrideAfterLatestState,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../onlineAiRecovery';
+import { resolveOnlineManualSetupTakeoverPlayerId } from '../onlineManualFactionSelectionBridge';
+import { resolveOnlineAiActivePlayerId } from '../useOnlineAiSeatAutoDispatch';
 import { resolveMatchRoomRouteIdentity } from '../matchRouteIdentity';
 import { resolveSmashUpLocalPregameControlledPlayerId } from '../../games/smashup/localPregameControl';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
@@ -164,6 +171,25 @@ const buildOnlineAiSeatState = (args?: {
         responseWindow: {},
     },
 }) as MatchState<unknown>;
+
+const createOnlineAiMarkerEngineConfig = (): Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> => ({
+    gameId: 'dicethrone',
+    onlineAiRecovery: {
+        resolveCurrentPlayerId: ({ state, phase, fallbackPlayerId }) => {
+            if (phase !== 'defensiveRoll') {
+                return fallbackPlayerId;
+            }
+            const pendingAttack = (state.core as {
+                pendingAttack?: {
+                    defenderId?: unknown;
+                };
+            } | undefined)?.pendingAttack;
+            return typeof pendingAttack?.defenderId === 'string'
+                ? pendingAttack.defenderId
+                : fallbackPlayerId;
+        },
+    },
+});
 
 describe('validateStoredMatchSeat', () => {
     it('缺失本地信息时不清理', () => {
@@ -724,6 +750,27 @@ describe('resolveOnlineAiAutoRecoveryCompletionNotice', () => {
             title: 'AI 强制结束回合',
             message: 'AI 已强制结束回合。',
         });
+    });
+
+    it('custom current-player seam 变化时，恢复完成提示应按 seam-aware current player 抑制人类回合 toast', () => {
+        const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
+            candidateReason: 'response-window',
+            authoritativeState: {
+                core: {
+                    activePlayerId: '1',
+                    pendingAttack: {
+                        defenderId: '0',
+                    },
+                },
+                sys: {
+                    phase: 'defensiveRoll',
+                },
+            } as MatchState<unknown>,
+            seatControllers,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        });
+
+        expect(notice).toBeNull();
     });
 });
 
@@ -2564,6 +2611,32 @@ describe('submitOnlineAiResolution', () => {
         })).toBe(true);
     });
 
+    it('custom current-player seam 变化时，confirmed staging 应按 seam-aware marker 判定', () => {
+        const latestState = buildOnlineAiSeatState({
+            nextId: 18,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const confirmedState = buildOnlineAiSeatState({
+            nextId: 18,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (latestState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (confirmedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(shouldStageOnlineAiSeatOverrideFromConfirmedState({
+            authoritativeState: confirmedState,
+            latestSeatState: latestState,
+        })).toBe(false);
+
+        expect(shouldStageOnlineAiSeatOverrideFromConfirmedState({
+            authoritativeState: confirmedState,
+            latestSeatState: latestState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).toBe(true);
+    });
+
     it('staged override 只应作为 confirmed 到 state update 之间的一拍桥接，latestState 追平后应退回最新 seat state', () => {
         const staleSeatState = buildOnlineAiSeatState({
             nextId: 10,
@@ -2620,6 +2693,233 @@ describe('submitOnlineAiResolution', () => {
             seatStateOverrides: { '1': confirmedSeatState },
             seatLatestStates: { '1': staleSeatState },
         })).toBe(confirmedSeatState);
+    });
+
+    it('custom current-player seam 变化时，latest seat state 不应误判为已追平 override', () => {
+        const overrideState = buildOnlineAiSeatState({
+            nextId: 22,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const latestSeatState = buildOnlineAiSeatState({
+            nextId: 22,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (overrideState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+        (latestSeatState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: overrideState,
+            latestSeatState,
+        })).toBe(false);
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: overrideState,
+            latestSeatState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).toBe(true);
+    });
+
+    it('custom current-player seam 变化时，recovery marker 必须使用 seam-aware 语义', () => {
+        const previousState = buildOnlineAiSeatState({
+            nextId: 30,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const nextState = buildOnlineAiSeatState({
+            nextId: 30,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (previousState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (nextState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(buildAiProgressMarker(previousState)).toBe(buildAiProgressMarker(nextState));
+
+        expect(buildOnlineAiSeamAwareProgressMarker({
+            state: previousState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).not.toBe(buildOnlineAiSeamAwareProgressMarker({
+            state: nextState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        }));
+    });
+
+    it('custom current-player seam 变化时，online-ai attempt marker 必须按 seam-aware snapshot 比较', () => {
+        const previousSharedState = buildOnlineAiSeatState({
+            nextId: 31,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const nextSharedState = buildOnlineAiSeatState({
+            nextId: 31,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const previousSeatState = buildOnlineAiSeatState({
+            nextId: 31,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const nextSeatState = buildOnlineAiSeatState({
+            nextId: 31,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (previousSharedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (nextSharedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+        (previousSeatState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (nextSeatState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(buildAiProgressMarker(previousSharedState)).toBe(buildAiProgressMarker(nextSharedState));
+        expect(buildAiProgressMarker(previousSeatState)).toBe(buildAiProgressMarker(nextSeatState));
+
+        expect(buildOnlineAiSeamAwareAttemptMarkers({
+            sharedState: previousSharedState,
+            seatState: previousSeatState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).toEqual({
+            sharedMarker: expect.any(String),
+            seatMarker: expect.any(String),
+        });
+        expect(buildOnlineAiSeamAwareAttemptMarkers({
+            sharedState: previousSharedState,
+            seatState: previousSeatState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).not.toEqual(buildOnlineAiSeamAwareAttemptMarkers({
+            sharedState: nextSharedState,
+            seatState: nextSeatState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        }));
+    });
+
+    it('custom current-player seam 变化时，idle / submit-blocked recovery key 必须按 seam-aware marker 去重', () => {
+        const previousState = buildOnlineAiSeatState({
+            nextId: 32,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const nextState = buildOnlineAiSeatState({
+            nextId: 32,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (previousState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (nextState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: previousState,
+        })).toBe(buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: nextState,
+        }));
+
+        expect(buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: previousState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).not.toBe(buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: nextState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        }));
+
+        expect(buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'attempt-1',
+                action: { kind: 'advance-phase' },
+            },
+            authoritativeState: previousState,
+        })).toBe(buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'attempt-1',
+                action: { kind: 'advance-phase' },
+            },
+            authoritativeState: nextState,
+        }));
+
+        expect(buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'attempt-1',
+                action: { kind: 'advance-phase' },
+            },
+            authoritativeState: previousState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).not.toBe(buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'attempt-1',
+                action: { kind: 'advance-phase' },
+            },
+            authoritativeState: nextState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        }));
+    });
+
+    it('custom current-player seam 变化时，应按 seam-aware current player 识别 active ai seat', () => {
+        const sharedState = buildOnlineAiSeatState({
+            nextId: 33,
+            phase: 'defensiveRoll',
+            currentPlayerId: '0',
+        });
+        (sharedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(resolveOnlineAiActivePlayerId({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+        })).toBeNull();
+
+        expect(resolveOnlineAiActivePlayerId({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).toBe('1');
+    });
+
+    it('custom current-player seam 变化时，manual setup bridge 应按 seam-aware current player 接管 AI 座位', () => {
+        const manualSetupEngineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> = {
+            gameId: 'custom-manual-setup-game',
+            onlineAiRecovery: {
+                resolveCurrentPlayerId: ({ phase, fallbackPlayerId }) => (
+                    phase === 'factionSelect' ? '1' : fallbackPlayerId
+                ),
+            },
+        };
+        const sharedState = buildOnlineAiSeatState({
+            nextId: 34,
+            phase: 'factionSelect',
+            currentPlayerId: '0',
+        });
+
+        expect(resolveOnlineManualSetupTakeoverPlayerId({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human', manualFactionSelection: true },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBeNull();
+
+        expect(resolveOnlineManualSetupTakeoverPlayerId({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human', manualFactionSelection: true },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('1');
     });
 
     it('seat latest state 在重连后即使 nextId 更低，只要已明确关闭旧 owner-only prompt，也不应继续沿用 override 阴影状态', () => {
@@ -2865,6 +3165,154 @@ describe('submitOnlineAiResolution', () => {
             actionKind: 'setup-select-faction',
             selectionId: 'paladin',
         })).toBe(true);
+    });
+
+    it('自定义前置选择状态未提供 override 时，shared fallback 不应误判 takeover 或 release', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                draftSetupSelections: {
+                    '0': 'cleric',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBeNull();
+
+        expect(shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState: {
+                ...sharedState,
+                core: {
+                    hostStarted: false,
+                    draftSetupSelections: {
+                        '0': 'cleric',
+                        '1': 'ranger',
+                    },
+                },
+            } as MatchState<unknown>,
+            playerId: '1',
+            actionKind: 'setup-select-character',
+            selectionId: 'ranger',
+        })).toBe(false);
+    });
+
+    it('自定义前置选择状态提供 override 时，应按 adapter takeover 并释放 shared attempt', () => {
+        const manualSetupEngineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> = {
+            gameId: 'custom-manual-setup-game',
+            onlineAiRecovery: {
+                resolveManualSetupSelectionTakeoverPlayerId: ({
+                    sharedState,
+                    currentPlayerId,
+                    seatControllers,
+                    hasManualDispatch,
+                }) => {
+                    if (!hasManualDispatch) {
+                        return null;
+                    }
+                    const selectedByPlayer = (sharedState.core as {
+                        draftSetupSelections?: Record<string, unknown>;
+                    } | undefined)?.draftSetupSelections;
+                    if (!selectedByPlayer || typeof selectedByPlayer !== 'object') {
+                        return undefined;
+                    }
+                    if (currentPlayerId && seatControllers[currentPlayerId]?.type === 'human') {
+                        const currentSelection = selectedByPlayer[currentPlayerId];
+                        if (typeof currentSelection !== 'string' || currentSelection === 'unselected') {
+                            return null;
+                        }
+                    }
+                    return Object.entries(seatControllers).find(([playerId, controller]) => (
+                        controller?.type !== 'human'
+                        && controller?.manualFactionSelection === true
+                        && (
+                            typeof selectedByPlayer[playerId] !== 'string'
+                            || selectedByPlayer[playerId] === 'unselected'
+                        )
+                    ))?.[0] ?? null;
+                },
+                shouldReleaseManualSetupAttemptFromSharedState: ({
+                    sharedState,
+                    playerId,
+                    actionKind,
+                    selectionId,
+                }) => {
+                    if (actionKind !== 'setup-select-character') {
+                        return undefined;
+                    }
+                    const selectedByPlayer = (sharedState.core as {
+                        draftSetupSelections?: Record<string, unknown>;
+                    } | undefined)?.draftSetupSelections;
+                    if (!selectedByPlayer || typeof selectedByPlayer !== 'object') {
+                        return undefined;
+                    }
+                    return selectedByPlayer[playerId] === selectionId;
+                },
+            },
+        };
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                draftSetupSelections: {
+                    '0': 'cleric',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+        const confirmedSharedState = {
+            core: {
+                hostStarted: false,
+                draftSetupSelections: {
+                    '0': 'cleric',
+                    '1': 'ranger',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('1');
+
+        expect(shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState: confirmedSharedState,
+            playerId: '1',
+            actionKind: 'setup-select-character',
+            selectionId: 'ranger',
+            engineConfig: manualSetupEngineConfig,
+        })).toBe(true);
+
+        expect(resolveManualSetupAttemptReleaseSource({
+            sharedState: confirmedSharedState,
+            seatState: sharedState,
+            playerId: '1',
+            actionKind: 'setup-select-character',
+            selectionId: 'ranger',
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('shared');
     });
 
     it('shared state 未记录该派系且仍在 factionSelect 时，不应提前释放 select-faction attempt', () => {
@@ -3202,6 +3650,75 @@ describe('submitOnlineAiResolution', () => {
                 }),
                 lastAiAttemptKeyRef: { current: null },
                 scheduleRetry: vi.fn(),
+                onConfirmed,
+                onRejected,
+                onWillResync,
+            });
+
+            stateListener?.(confirmedState);
+            expect(onConfirmed).toHaveBeenCalledWith(confirmedState);
+
+            await vi.advanceTimersByTimeAsync(4000);
+            expect(onRejected).not.toHaveBeenCalled();
+            expect(onWillResync).not.toHaveBeenCalled();
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('custom current-player seam 变化时，单命令确认应按 seam-aware marker 判定推进', async () => {
+        vi.useFakeTimers();
+        try {
+            const onConfirmed = vi.fn();
+            const onRejected = vi.fn();
+            const onWillResync = vi.fn();
+            const unsubscribe = vi.fn();
+            const sendBatch = vi.fn();
+            const sendCommand = vi.fn();
+            let stateListener: ((state: unknown) => void) | null = null;
+            const subscribeStateUpdate = vi.fn((listener: (state: unknown) => void) => {
+                stateListener = listener;
+                return unsubscribe;
+            });
+
+            const latestState = buildOnlineAiSeatState({
+                nextId: 16,
+                phase: 'defensiveRoll',
+                currentPlayerId: '1',
+            });
+            const confirmedState = buildOnlineAiSeatState({
+                nextId: 16,
+                phase: 'defensiveRoll',
+                currentPlayerId: '1',
+            });
+            (latestState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+            (confirmedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+            expect(buildAiProgressMarker(latestState)).toBe(buildAiProgressMarker(confirmedState));
+            expect(buildAiProgressMarker(latestState, {
+                engineConfig: createOnlineAiMarkerEngineConfig(),
+            })).not.toBe(buildAiProgressMarker(confirmedState, {
+                engineConfig: createOnlineAiMarkerEngineConfig(),
+            }));
+
+            submitOnlineAiResolution({
+                client: {
+                    sendBatch,
+                    sendCommand,
+                    subscribeStateUpdate,
+                    latestState,
+                    updateLatestState: vi.fn(),
+                    resync: vi.fn(),
+                },
+                resolution: buildResolution({
+                    playerId: '1',
+                    attemptKey: 'attempt-custom-current-player-progress',
+                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'confirm' } }],
+                }),
+                lastAiAttemptKeyRef: { current: null },
+                scheduleRetry: vi.fn(),
+                engineConfig: createOnlineAiMarkerEngineConfig(),
                 onConfirmed,
                 onRejected,
                 onWillResync,

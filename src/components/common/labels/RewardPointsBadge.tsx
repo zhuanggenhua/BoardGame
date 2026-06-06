@@ -17,14 +17,14 @@ export function RewardPointsStarIcon({ className, title, ...props }: RewardPoint
         >
             {title ? <title>{title}</title> : null}
             <path
-                d="M12 2.75l2.77 5.61 6.19.9-4.48 4.37 1.06 6.17L12 16.89 6.46 19.8l1.06-6.17-4.48-4.37 6.19-.9L12 2.75z"
+                d="M12 1.75l2.05 8.2L22.25 12l-8.2 2.05L12 22.25l-2.05-8.2L1.75 12l8.2-2.05L12 1.75z"
                 fill="currentColor"
                 stroke="currentColor"
                 strokeWidth="1.15"
                 strokeLinejoin="round"
             />
             <path
-                d="M12 6.1l1.15 2.34 2.58.37-1.86 1.82.44 2.57L12 11.98l-2.31 1.22.44-2.57-1.86-1.82 2.58-.37L12 6.1z"
+                d="M12 5.55l0.92 5.53 5.98 0.92-5.98 0.92L12 18.45l-0.92-5.53-5.53-0.92 5.53-0.92L12 5.55z"
                 fill="#fff7d6"
                 opacity="0.92"
             />

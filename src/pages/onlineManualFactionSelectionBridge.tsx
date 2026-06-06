@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { GameClientOverrideProvider, useGameClient } from '../engine/transport/react';
+import { resolveOnlineAiCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
+import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';
-import { resolveCurrentPlayerId } from './onlineAiForceSkip';
 import {
     resolveManualSetupSelectionActionKindFromCommand,
     resolveManualSetupSelectionId,
@@ -19,23 +20,40 @@ type PendingManualSetupSelection = {
     selectionId: string;
 };
 
+export function resolveOnlineManualSetupTakeoverPlayerId(args: {
+    sharedState: MatchState<unknown> | null;
+    seatControllers: Record<string, AiSeatController>;
+    hasManualDispatch: boolean;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+}): string | null {
+    return resolveManualSetupSelectionTakeoverPlayerId({
+        sharedState: args.sharedState,
+        currentPlayerId: resolveOnlineAiCurrentPlayerId(args.sharedState, {
+            engineConfig: args.engineConfig,
+        }),
+        seatControllers: args.seatControllers,
+        hasManualDispatch: args.hasManualDispatch,
+    });
+}
+
 export const OnlineManualFactionSelectionBridge = ({
     children,
     seatControllers,
     dispatchManualAiCommand,
+    engineConfig,
 }: {
     children: ReactNode;
     seatControllers: Record<string, AiSeatController>;
     dispatchManualAiCommand: ManualAiSeatDispatch | null;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
 }) => {
     const { state, dispatch } = useGameClient();
     const sharedState = state as MatchState<unknown> | null;
-    const currentPlayerId = resolveCurrentPlayerId(sharedState);
-    const manualSetupPlayerId = resolveManualSetupSelectionTakeoverPlayerId({
+    const manualSetupPlayerId = resolveOnlineManualSetupTakeoverPlayerId({
         sharedState,
-        currentPlayerId,
         seatControllers,
         hasManualDispatch: Boolean(dispatchManualAiCommand),
+        engineConfig,
     });
     const shouldTakeOver = manualSetupPlayerId !== null;
     const latestSharedStateRef = useRef<MatchState<unknown> | null>(sharedState);
@@ -54,6 +72,7 @@ export const OnlineManualFactionSelectionBridge = ({
             playerId: pendingManualSetupSelection.playerId,
             actionKind: pendingManualSetupSelection.actionKind,
             selectionId: pendingManualSetupSelection.selectionId,
+            engineConfig,
         });
     const shouldOverrideManualSetupSelection = shouldTakeOver && !isManualSetupSelectionPending;
 
@@ -74,6 +93,7 @@ export const OnlineManualFactionSelectionBridge = ({
                 playerId: pending.playerId,
                 actionKind: pending.actionKind,
                 selectionId: pending.selectionId,
+                engineConfig,
             });
             if (!pendingReleased) {
                 return;
@@ -81,12 +101,11 @@ export const OnlineManualFactionSelectionBridge = ({
             setPendingManualSetupSelection(null);
         }
 
-        const latestCurrentPlayerId = resolveCurrentPlayerId(latestSharedState);
-        const latestManualSetupPlayerId = resolveManualSetupSelectionTakeoverPlayerId({
+        const latestManualSetupPlayerId = resolveOnlineManualSetupTakeoverPlayerId({
             sharedState: latestSharedState,
-            currentPlayerId: latestCurrentPlayerId,
             seatControllers,
             hasManualDispatch: Boolean(latestManualDispatchRef.current),
+            engineConfig,
         });
         if (latestManualSetupPlayerId) {
             const actionKind = resolveManualSetupSelectionActionKindFromCommand({ type, payload });
@@ -107,7 +126,7 @@ export const OnlineManualFactionSelectionBridge = ({
             return;
         }
         dispatch(type, payload);
-    }, [dispatch, seatControllers, setPendingManualSetupSelection]);
+    }, [dispatch, engineConfig, seatControllers, setPendingManualSetupSelection]);
 
     return (
         <GameClientOverrideProvider

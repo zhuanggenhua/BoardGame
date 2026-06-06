@@ -1114,6 +1114,29 @@ function worldChampsSmartSetUpOnPlay(ctx: AbilityContext): AbilityResult {
 }
 
 function worldChampsEhSpecial(ctx: AbilityContext): AbilityResult {
+    if (ctx.targetMinionUid) {
+        const base = ctx.state.bases[ctx.baseIndex];
+        const target = base?.minions.find(minion =>
+            minion.uid === ctx.targetMinionUid && minion.controller === ctx.playerId,
+        );
+        if (!target) {
+            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        }
+        return {
+            events: [
+                {
+                    type: SU_EVENTS.DISCARD_ABILITY_USED,
+                    payload: {
+                        playerId: ctx.playerId,
+                        sourceId: 'world_champs_eh',
+                    },
+                    timestamp: ctx.now,
+                },
+                addTempPower(target.uid, ctx.baseIndex, 1, 'world_champs_eh', ctx.now),
+                recoverCardsFromDiscard(ctx.playerId, [ctx.cardUid], 'world_champs_eh', ctx.now),
+            ],
+        };
+    }
     const ownMinions = collectOwnMinions(ctx.state, ctx.playerId);
     if (ownMinions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
@@ -1498,12 +1521,14 @@ export function registerWorldChampsAbilities(): void {
             if (!player) return [];
             if (player.actionsPlayed < 1) return [];
             if (player.usedDiscardPlayAbilities?.includes('world_champs_eh')) return [];
-            if (collectOwnMinions(core, playerId).length === 0) return [];
+            const ownMinions = collectOwnMinions(core, playerId);
+            if (ownMinions.length === 0) return [];
             return player.discard
                 .filter(card => card.defId === 'world_champs_eh')
                 .map(card => ({
                     card,
-                    allowedBaseIndices: 'all' as const,
+                    allowedBaseIndices: [...new Set(ownMinions.map(minion => minion.baseIndex))],
+                    allowedMinionUids: ownMinions.map(minion => minion.uid),
                     sourceId: 'world_champs_eh',
                     defId: card.defId,
                     name: getCardDef(card.defId)?.name ?? card.defId,

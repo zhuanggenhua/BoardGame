@@ -103,6 +103,7 @@ export type MatchRoomOnlineOverlayBridgesModel = {
 export type MatchRoomOnlineSeatBridgeModel = {
     seatControllers: Record<string, AiSeatController>;
     dispatchManualAiCommand: ManualAiSeatDispatch | null;
+    engineConfig: GameEngineConfig | null;
     ai: MatchRoomOnlineAiRuntimeModel | null;
 };
 
@@ -333,6 +334,7 @@ const MatchRoomOnlineSeatBridge = ({
             <OnlineManualFactionSelectionBridge
                 seatControllers={seatBridge.seatControllers}
                 dispatchManualAiCommand={seatBridge.dispatchManualAiCommand}
+                engineConfig={seatBridge.engineConfig}
             >
                 {children}
             </OnlineManualFactionSelectionBridge>

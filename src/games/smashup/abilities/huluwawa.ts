@@ -32,7 +32,7 @@ import {
     playTitan,
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
-import { registerDiscardSpecialProvider } from '../domain/discardSpecialAbilities';
+import { registerDiscardActionPlayProvider } from '../domain/discardActionPlayability';
 import { registerBaseAbility } from '../domain/baseAbilities';
 import { registerProtection, registerRestriction, registerTrigger } from '../domain/ongoingEffects';
 import type {
@@ -1853,26 +1853,40 @@ export function registerHuluwawaAbilities(): void {
         };
     });
 
-    registerDiscardSpecialProvider({
+    registerDiscardActionPlayProvider({
         id: 'huluwawa_purple_gold_gourd',
-        getActivatableCards(core, playerId) {
+        getPlayableCards(core, playerId) {
             const currentTurnPlayerId = core.turnOrder[core.currentPlayerIndex];
             if (currentTurnPlayerId !== playerId) return [];
             const player = core.players[playerId];
             if (!player) return [];
-            const qiWaOnBoard = core.bases.some(base => base.minions.some(minion =>
-                minion.controller === playerId && minion.defId === 'huluwawa_qi_wa',
-            ));
-            if (!qiWaOnBoard) return [];
+            const qiWaTargets = core.bases.flatMap((base, baseIndex) =>
+                base.minions
+                    .filter(minion => minion.controller === playerId && minion.defId === 'huluwawa_qi_wa')
+                    .map(minion => ({ baseIndex, minion })),
+            );
+            if (qiWaTargets.length === 0) return [];
             return player.discard
                 .filter(card => card.defId === 'huluwawa_purple_gold_gourd')
-                .map(card => ({
-                    card,
-                    allowedBaseIndices: 'all' as const,
-                    sourceId: 'huluwawa_purple_gold_gourd',
-                    defId: card.defId,
-                    name: getCardDef(card.defId)?.name ?? card.defId,
-                }));
+                .flatMap(card => {
+                    const legalTargets = qiWaTargets.filter(({ baseIndex, minion }) =>
+                        validateActionPlaySemantics(core, playerId, {
+                            defId: card.defId,
+                            targetBaseIndex: baseIndex,
+                            targetMinionUid: minion.uid,
+                            effectiveHandSize: player.hand.length,
+                        }).valid,
+                    );
+                    if (legalTargets.length === 0) return [];
+                    return [{
+                        card,
+                        allowedBaseIndices: [...new Set(legalTargets.map(({ baseIndex }) => baseIndex))],
+                        allowedMinionUids: legalTargets.map(({ minion }) => minion.uid),
+                        sourceId: 'huluwawa_purple_gold_gourd',
+                        defId: card.defId,
+                        name: getCardDef(card.defId)?.name ?? card.defId,
+                    }];
+                });
         },
     });
 

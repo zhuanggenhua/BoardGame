@@ -7,7 +7,11 @@ import type {
     ForceEndTurnStalledAiReason,
     ForceEndTurnStalledAiResolution,
 } from '../engine/transport/onlineAiRecovery';
-import { buildAiProgressMarker, resolveCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
+import {
+    buildAiProgressMarker,
+    resolveCurrentPlayerId,
+    resolveOnlineAiCurrentPlayerId,
+} from '../engine/transport/onlineAiRecovery';
 
 export {
     applyAiAutoRecoveryRejection,
@@ -35,8 +39,9 @@ export function resolveOnlineAiAutoRecoveryCompletionNotice(args: {
     candidateReason: ForceEndTurnStalledAiReason;
     authoritativeState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
 }): OnlineAiAutoRecoveryCompletionNotice | null {
-    const { candidateReason, authoritativeState, seatControllers } = args;
+    const { candidateReason, authoritativeState, seatControllers, engineConfig } = args;
 
     if (candidateReason === 'active-turn') {
         return {
@@ -55,7 +60,9 @@ export function resolveOnlineAiAutoRecoveryCompletionNotice(args: {
         return null;
     }
 
-    const currentPlayerId = resolveCurrentPlayerId(authoritativeState);
+    const currentPlayerId = resolveOnlineAiCurrentPlayerId(authoritativeState, {
+        engineConfig,
+    });
     if (currentPlayerId && seatControllers[currentPlayerId]?.type === 'human') {
         return null;
     }
@@ -77,6 +84,7 @@ type SubmitOnlineAiResolutionArgs = {
     resolution: AiResolution;
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
     onWillResync?: (reason: string) => void;
     onConfirmed?: (authoritativeState: MatchState<unknown> | unknown) => void;
     onRejected?: (reason: string) => void;
@@ -87,6 +95,7 @@ type SubmitOnlineAiResolutionSequenceArgs = {
     initialResolution: AiResolution;
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
     resolveNextResolution: (args: {
         authoritativeState: MatchState<unknown> | unknown;
         confirmedResolution: AiResolution;
@@ -156,6 +165,7 @@ function submitSingleOnlineAiResolution(args: SubmitOnlineAiResolutionArgs): voi
         resolution,
         lastAiAttemptKeyRef,
         scheduleRetry,
+        engineConfig,
         onWillResync,
         onConfirmed,
         onRejected,
@@ -165,7 +175,7 @@ function submitSingleOnlineAiResolution(args: SubmitOnlineAiResolutionArgs): voi
     if (resolution.action.commands.length === 1) {
         const [command] = resolution.action.commands;
         const markerBefore = client.latestState && typeof client.latestState === 'object'
-            ? buildAiProgressMarker(client.latestState as MatchState<unknown>)
+            ? buildAiProgressMarker(client.latestState as MatchState<unknown>, { engineConfig })
             : null;
         let settled = false;
         let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
@@ -184,7 +194,7 @@ function submitSingleOnlineAiResolution(args: SubmitOnlineAiResolutionArgs): voi
             if (settled || !nextState || typeof nextState !== 'object') {
                 return;
             }
-            const nextMarker = buildAiProgressMarker(nextState as MatchState<unknown>);
+            const nextMarker = buildAiProgressMarker(nextState as MatchState<unknown>, { engineConfig });
             if (markerBefore !== null && nextMarker === markerBefore) {
                 return;
             }
@@ -258,6 +268,7 @@ export function submitOnlineAiResolutionSequence(args: SubmitOnlineAiResolutionS
         initialResolution,
         lastAiAttemptKeyRef,
         scheduleRetry,
+        engineConfig,
         resolveNextResolution,
         maxSteps = 8,
         onStepConfirmed,
@@ -276,6 +287,7 @@ export function submitOnlineAiResolutionSequence(args: SubmitOnlineAiResolutionS
             resolution,
             lastAiAttemptKeyRef,
             scheduleRetry,
+            engineConfig,
             onConfirmed: (authoritativeState) => {
                 onStepConfirmed?.({
                     authoritativeState,
@@ -326,6 +338,7 @@ export function submitForceEndTurnRecoverySequence(args: SubmitForceEndTurnRecov
         initialResolution: candidate.resolution,
         lastAiAttemptKeyRef,
         scheduleRetry,
+        engineConfig,
         maxSteps: followUpSteps + 1,
         resolveNextResolution: ({ authoritativeState, stepIndex }) => {
             if (stepIndex >= followUpSteps) {

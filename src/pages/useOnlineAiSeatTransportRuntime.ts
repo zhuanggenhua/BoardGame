@@ -6,6 +6,7 @@ import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';
 import { onAppVisible } from '../lib/mobile/appVisibility';
 import {
+    buildOnlineAiSeamAwareProgressMarker,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
     shouldRetainOnlineAiSeatOverrideAfterLatestState,
@@ -55,7 +56,7 @@ export type OnlineAiSeatTransportRuntime = {
 export function useOnlineAiSeatTransportRuntime(args: {
     server: string;
     matchId: string;
-    engineConfig: Pick<GameEngineConfig, 'gameId'>;
+    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
     seatControllers: Record<string, AiSeatController>;
     seatCredentials: Record<string, string>;
     state: MatchState<unknown> | null;
@@ -131,8 +132,9 @@ export function useOnlineAiSeatTransportRuntime(args: {
             seatLatestStates: {
                 [playerId]: getSeatLatestState(playerId),
             },
+            engineConfig,
         })
-    ), [getSeatLatestState]);
+    ), [engineConfig, getSeatLatestState]);
 
     const getEffectiveSeatStates = useCallback((): Record<string, MatchState<unknown> | null> => (
         resolveOnlineAiEffectiveSeatStates({
@@ -141,8 +143,9 @@ export function useOnlineAiSeatTransportRuntime(args: {
             seatLatestStates: Object.fromEntries(
                 Object.keys(clientsRef.current).map((playerId) => [playerId, getSeatLatestState(playerId)]),
             ),
+            engineConfig,
         })
-    ), [getSeatLatestState]);
+    ), [engineConfig, getSeatLatestState]);
 
     useEffect(() => {
         latestSharedStateRef.current = state;
@@ -152,6 +155,8 @@ export function useOnlineAiSeatTransportRuntime(args: {
         const sharedState = state;
         const seatControllerTypes = summarizeSeatControllerTypes(seatControllers);
         const hasAiSeat = Object.values(seatControllerTypes).some((type) => type !== 'human');
+        // Anti-pattern: this legacy current-player snapshot is for runtime telemetry only.
+        // Do not promote it back into seam-aware dispatch or recovery behavior.
         const currentPlayerId = sharedState ? resolveCurrentPlayerId(sharedState) : null;
         const currentControllerType = currentPlayerId
             ? (seatControllerTypes[currentPlayerId] ?? 'human')
@@ -251,6 +256,8 @@ export function useOnlineAiSeatTransportRuntime(args: {
             reason,
             meta,
         };
+        // Anti-pattern: this payload is debug-only and still uses the legacy marker shape.
+        // Do not reuse it for seam-aware recovery or dispatch decisions.
         const payload = {
             matchId,
             gameId: engineConfig.gameId,
@@ -278,11 +285,17 @@ export function useOnlineAiSeatTransportRuntime(args: {
         const timer = setTimeout(() => {
             pendingRecoveryCheckTimersRef.current.delete(timer);
             const sharedMarker = latestSharedStateRef.current
-                ? buildAiProgressMarker(latestSharedStateRef.current)
+                ? buildOnlineAiSeamAwareProgressMarker({
+                    state: latestSharedStateRef.current,
+                    engineConfig,
+                })
                 : markerBefore;
             const seatState = getEffectiveSeatState(playerId);
             const seatMarker = seatState
-                ? buildAiProgressMarker(seatState)
+                ? buildOnlineAiSeamAwareProgressMarker({
+                    state: seatState,
+                    engineConfig,
+                })
                 : markerBefore;
             if (sharedMarker !== markerBefore || seatMarker !== markerBefore) {
                 return;
@@ -290,7 +303,7 @@ export function useOnlineAiSeatTransportRuntime(args: {
             onStillStalled();
         }, RECOVERY_FAILURE_SYNC_GRACE_MS);
         pendingRecoveryCheckTimersRef.current.add(timer);
-    }, [getEffectiveSeatState, requestSeatResync]);
+    }, [engineConfig, getEffectiveSeatState, requestSeatResync]);
 
     useEffect(() => {
         const nextClientKeys = new Set(
@@ -328,6 +341,8 @@ export function useOnlineAiSeatTransportRuntime(args: {
                         playerId,
                         phase: authoritativeState?.sys?.phase ?? null,
                         turnNumber: authoritativeState?.sys?.turnNumber ?? null,
+                        // Anti-pattern: transport debug logs still expose legacy current-player / marker fields.
+                        // They are observational only and must not be promoted back into behavior gates.
                         currentPlayerId: authoritativeState ? resolveCurrentPlayerId(authoritativeState) : null,
                         marker,
                         pendingResyncReason: pendingResync?.reason ?? null,
@@ -340,6 +355,7 @@ export function useOnlineAiSeatTransportRuntime(args: {
                     if (!shouldRetainOnlineAiSeatOverrideAfterLatestState({
                         seatStateOverride: existingOverride,
                         latestSeatState: authoritativeState,
+                        engineConfig,
                     })) {
                         delete aiSeatStateOverridesRef.current[playerId];
                     }
@@ -400,6 +416,7 @@ export function useOnlineAiSeatTransportRuntime(args: {
             clientsRef.current = {};
         };
     }, [
+        engineConfig,
         engineConfig.gameId,
         matchId,
         scheduleAiRetry,

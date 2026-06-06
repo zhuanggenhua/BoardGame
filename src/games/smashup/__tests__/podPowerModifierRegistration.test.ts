@@ -4,10 +4,12 @@ import {
     clearPowerModifierRegistry,
     getBasePowerModifiers,
     getEffectiveBreakpoint,
+    getEffectivePower,
     getRegisteredModifierIds,
     registerBasePowerModifier,
     registerBreakpointModifier,
     registerPodPowerModifierAliases,
+    registerPowerModifier,
 } from '../domain/ongoingModifiers';
 import { makeBase, makeMinion, makeStateWithBases } from './helpers';
 
@@ -44,6 +46,49 @@ describe('registerPodPowerModifierAliases completion audit', () => {
 
     afterEach(() => {
         clearPowerModifierRegistry();
+    });
+
+    it('POD power modifier alias 在未显式覆写时，仍应继承基础版 modifier', () => {
+        registerPowerModifier('alias_power_card', (ctx) => (
+            ctx.minion.defId === 'alias_power_card' || ctx.minion.defId === 'alias_power_card_pod' ? 3 : 0
+        ));
+        registerPodPowerModifierAliases();
+
+        const podMinion = makeMinion('m0', 'alias_power_card_pod', '0', 4, { powerModifier: 0 });
+        const state = makeStateWithBases([makeBase('base_the_jungle', [podMinion])]);
+
+        expect(getEffectivePower(state, podMinion, 0)).toBe(7);
+    });
+
+    it('POD power modifier 在显式覆写时，应覆盖基础版而不是补充', () => {
+        registerPowerModifier('alias_power_card', (ctx) => (
+            ctx.minion.defId === 'alias_power_card' || ctx.minion.defId === 'alias_power_card_pod' ? 3 : 0
+        ));
+        registerPowerModifier('alias_power_card_pod', (ctx) => (
+            ctx.minion.defId === 'alias_power_card_pod' ? 7 : 0
+        ));
+        registerPodPowerModifierAliases();
+
+        const podMinion = makeMinion('m0', 'alias_power_card_pod', '0', 4, { powerModifier: 0 });
+        const state = makeStateWithBases([makeBase('base_the_jungle', [podMinion])]);
+
+        expect(getEffectivePower(state, podMinion, 0)).toBe(11);
+    });
+
+    it('baseOnly power modifier 不应自动生成 POD alias 或影响 POD 版本', () => {
+        registerPowerModifier('alias_power_card', (ctx) => (
+            ctx.minion.defId === 'alias_power_card' ? 3 : 0
+        ), { podStrategy: 'baseOnly' });
+        registerPodPowerModifierAliases();
+
+        const baseMinion = makeMinion('m-base', 'alias_power_card', '0', 4, { powerModifier: 0 });
+        const podMinion = makeMinion('m-pod', 'alias_power_card_pod', '0', 4, { powerModifier: 0 });
+        const state = makeStateWithBases([makeBase('base_the_jungle', [baseMinion, podMinion])]);
+        const { powerModifierIds } = getRegisteredModifierIds();
+
+        expect(getEffectivePower(state, baseMinion, 0)).toBe(7);
+        expect(getEffectivePower(state, podMinion, 0)).toBe(4);
+        expect(powerModifierIds.has('alias_power_card_pod')).toBe(false);
     });
 
     it('POD breakpoint alias 在未显式覆写时，仍应继承基础版 modifier', () => {

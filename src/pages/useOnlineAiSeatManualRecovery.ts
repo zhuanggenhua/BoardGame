@@ -140,6 +140,7 @@ export function useOnlineAiSeatManualRecovery(args: UseOnlineAiSeatManualRecover
                 resolution,
                 lastAiAttemptKeyRef,
                 scheduleRetry: scheduleAiRetry,
+                engineConfig,
                 onConfirmed: () => {
                     toast.warning(
                         tGame('hud.ai.forceEndPhaseSuccess', { ns: 'game' }),

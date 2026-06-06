@@ -9,19 +9,19 @@
 | 范围 | 当前已收敛到的层级 | 当前真实未收口项 | 不得再外推的旧口径 |
 | --- | --- | --- | --- |
 | `zhanshujia` / 战术家 | 选角、开局、玩家板、提示板、手牌 atlas、基础与升级进攻链、防御/响应链、多个奖励骰/随机链都已有对象级或 representative `L2/L3`，且整份 intake 最新权威整跑为 `71 passed / 0 failed` | 当前已不再有 remaining representative 对象级 residual；`包夹侧翼 II / 反制措施 II-III / 埋伏 / 9 张升级牌` 都已补回对象级直证，剩余主要回到升级/防御/即时手牌/奖励骰等 family 的 `L4` 合法复用登记与最终 completion audit | 不得再写成“当前 intake 整跑仍红”或“战术家大面积仍未进入真实入口” |
-| `cursed_pirate` / 咒缚海盗 `human` 面 | `human` 面 9 个对象已全部进入运行时，且 `9 / 9` 都已有独立 direct E2E 或对象级真实入口证据；开局也已纠偏为 human 面 + 3 个诅咒金币 | 仍需做 face-by-face completion audit，把对象级 L3/L4、手牌家族与合法复用登记统一收口 | 不得再写成“normal/human 面仍未接入”或“9 个对象只是名称/槽位占位” |
-| `cursed_pirate` / 咒缚海盗 `cursed` 面 | 咒缚面 9 个对象、诅咒金币/火药桶/凋零/休战等关键状态链已有对象级或 representative `L2/L3/L4`，`灵魂突刺 / 灵魂指令 / 死亡吐息` 等也已有独立真实入口链 | 仍需把状态家族生命周期、remaining representative 条目、双面合法复用登记与最终 completion audit 统一收口 | 不得再写成“咒缚面多处仍在 implementation_in_progress”或“关键面板对象仍缺首条 direct E2E” |
+| `cursed_pirate` / 咒缚海盗 `human` 面 | `human` 面 9 个对象已全部进入运行时，且 `9 / 9` 都已有独立 direct E2E 或对象级真实入口证据；开局也已纠偏为 human 面 + 3 个诅咒金币 | 仍需做 face-by-face completion audit，把与咒缚面的合法复用边界、双面切面差异与最终 completion audit 统一收口 | 不得再写成“normal/human 面仍未接入”或“9 个对象只是名称/槽位占位” |
+| `cursed_pirate` / 咒缚海盗 `cursed` 面 | 咒缚面 9 个对象、16 张专属手牌、诅咒金币/火药桶/凋零/休战等关键状态链已有对象级或 representative `L2/L3/L4`，`灵魂突刺 / 灵魂指令 / 死亡吐息 / 海盗的一生` 等也已有独立真实入口链 | 仍需把状态家族生命周期、奖励骰 family 边界、双面合法复用登记与最终 completion audit 统一收口 | 不得再写成“咒缚面多处仍在 implementation_in_progress”或“关键面板对象仍缺首条 direct E2E” |
 
 当前真正未收口的不是“是否已接线”或“是否还存在整跑红灯”，而是更高层级的对象矩阵、家族级合法复用边界与最终 completion audit。
 
 ## 结论
 
-本文件是对象级审计进度证据，不是完整交付证明。两名新英雄已经达到 L1 静态接入，多个机制达到 L2 行为证据；真实入口双玩家 E2E、资源上传与远端 HEAD 回查已完成。最新整份 intake 权威整跑已更新为 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` -> `71 passed / 0 failed`，说明当前 intake 并不存在“必现整跑红灯”。本轮还补上了 `休战` 的真实运行时修复：它现在不仅有写入证据，也能在真实攻击链中阻断攻击伤害，并在阶段结束后正确清理状态。咒缚海盗当前真实合同已纠偏为：开局 `human` 面朝上并自带 3 个诅咒金币；`HeroState.playerBoardFace` 已参与主棋盘、攻击特写、能力集切换与 `海盗的一生` 分支；诅咒金币维持阶段掉血只作用于非海盗持有者。normal/human 面也不再是“完全未接入”：runtime 已接入 `弯刀突刺 / 做好标记 / 咒缚 / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` 9 个对象，且运行时底图链已指向你新增的人类面板资源。当前真正未收口的是：human 面逐对象更高层级 L3/L4 与合法复用登记、双面对象级重审计、representative L3 到逐对象 L3/L4 的边界，以及是否允许移除 `implementation_in_progress` 的最终 completion audit。
+本文件是对象级审计进度证据，不是完整交付证明。两名新英雄已经达到 L1 静态接入，多个机制达到 L2 行为证据；真实入口双玩家 E2E、资源上传与远端 HEAD 回查已完成。最新整份 intake 权威整跑已更新为 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` -> `71 passed / 0 failed`，说明当前 intake 并不存在“必现整跑红灯”。本轮还补上了 `休战` 的真实运行时修复：它现在不仅有写入证据，也能在真实攻击链中阻断攻击伤害，并在阶段结束后正确清理状态。咒缚海盗当前真实合同已纠偏为：开局 `human` 面朝上并自带 3 个诅咒金币；`HeroState.playerBoardFace` 已参与主棋盘、攻击特写、能力集切换与 `海盗的一生` 分支；诅咒金币维持阶段掉血只作用于非海盗持有者。normal/human 面也不再是“完全未接入”：runtime 已接入 `弯刀突刺 / 做好标记 / 咒缚 / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` 9 个对象，16 张专属手牌也都已在 mechanics / direct E2E / evidence 三处对齐到对象级入口或对象级收口。当前真正未收口的是：状态家族生命周期、奖励骰 family 的合法复用边界、双面 face-by-face completion audit，以及是否允许移除 `implementation_in_progress` 的最终收口结论。
 
 ## 修订记录
 
 - 旧结论失效：`火药桶` upkeep 转交真实链仍未闭合，或一旦命中 `6` 就会被阶段自动继续直接踩过。失效原因：`flowHooks.ts` 的 `upkeep/income` 自动继续此前没有把 `interaction.current`、`responseWindow.current`、`pendingDamage` 与奖励骰结算中的阻塞条件算进去，导致火药桶维持投 `6` 生成转交交互时，流程可能继续向前推进；现已补齐这些门禁，并把 `火药桶维持投骰 6 生成转交交互时，upkeep 不应自动继续推进` 写成机制回归，同时两条真实入口链 `火药桶维持阶段投 6 后的转交链 / 转交给已持有者时的原桶爆炸链` 都已重新打绿。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\flowHooks.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`、`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`。新结论：`火药桶` 当前剩余已经从“对象级真实链未闭合”收敛为状态 family 的 `L4` 生命周期登记与双面 completion audit，不能再把转交链缺失当成主 blocker。
-- 旧结论失效：咒缚海盗当前仍需要“整套技能从零重录”。失效原因：随着 human 面 9 个对象、cursed 面 9 个对象全部进入运行时并拿到对象级直证，当前问题已不再是“整套技能尚未录入”；`public/assets/i18n/zh-CN/dicethrone/images/cursed/人类面板.png` 对应的人类面底图也已进入正式运行时消费链。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\cursed_pirate\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-intake.test.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`、`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`。新结论：当前更准确的剩余项是双面逐槽 completion audit、状态/手牌/奖励骰 family 的 `L4` 合法复用登记，以及最终是否允许移除 `implementation_in_progress`，而不是再把它表述为整套技能尚未重录。
+- 旧结论失效：咒缚海盗当前仍需要“整套技能从零重录”。失效原因：随着 human 面 9 个对象、cursed 面 9 个对象全部进入运行时并拿到对象级直证，当前问题已不再是“整套技能尚未录入”；`public/assets/i18n/zh-CN/dicethrone/images/cursed/人类面板.png` 对应的人类面底图也已进入正式运行时消费链。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\cursed_pirate\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\cursed_pirate\cards.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-intake.test.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`、`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`。新结论：当前更准确的剩余项是双面逐槽 completion audit、状态/奖励骰 family 的 `L4` 合法复用登记，以及最终是否允许移除 `implementation_in_progress`，而不是再把它表述为整套技能尚未重录。
 - 旧口径失效：把咒缚海盗 `诅咒金币 / 火药桶 / 凋零 / 休战` 只笼统写成一个“状态家族 completion audit 尾项”，但没有继续拆当前代码里的写入 seam 与共享消费者。失效原因：本轮反查确认，四个状态虽然都可能经过 `buildStatusAppliedOrChoiceEvents(...)` 进入部分写入链，但消费层分别落在 `getTokenStackLimit + cursed coin accept/decline`、`重复获得即爆炸 + upkeep 投骰/转交`、`token passiveTrigger(onDamageDealt)`、`effects.ts / reduceCombat.ts / flowHooks.ts` 等不同 seam；如果不把 seam 拆开，无法判断哪些入口只是共用同一写入 helper，哪些才是真的共用完整生命周期。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\statusEvents.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\flowHooks.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\customActions\cursed_pirate.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\cursed_pirate\tokens.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\rule\咒缚海盗录入核对.md`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`、`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts`。新结论：咒缚海盗状态家族当前剩余的主任务不是“再找一张能写状态的牌”，而是把每个状态的 `写入 seam -> 消费点 -> 清理/后续 -> 已验证入口` 明确登记成 L4 判等矩阵，并据此限制合法复用边界。
 - 旧口径失效：把 DiceThrone 新英雄里的“可重掷/可再投/奖励骰可重投”都视为同一种共享上限语义。失效原因：2026-06-06 继续扩审忍者 `瞬身 II` 时确认，“还能再掷几轮”和“每轮最多重掷几颗骰子”是两条独立合同；旧实现只接到了前者，后者直到本轮才通过 `rerollDieLimit` + `commandValidation` 补齐。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\combat\conditions.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\commandValidation.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\ninja\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\ninja-ability-card-contract.test.ts`、`D:\gongzuo\webgame\BoardGame\docs\ai-rules\testing-audit.md`、`D:\gongzuo\webgame\BoardGame\.codex\skill\game-audit-workflow\SKILL.md`。新结论：后续 DiceThrone 新派系全面审计必须把 `rollLimit / selectCount / maxRerollCount / rerollDieLimit` 分开登记；截至本轮扩审，`selectDie` 家族与 bonusDice `maxRerollCount` 家族暂未发现与 `瞬身 II` 同坑的共享实现缺口。
 - 旧结论失效：整份 intake 仍缺稳定整跑证据，或仍应把最新状态写成 `39 passed` / `57/3` / `59/1` / `60 passed / 0 failed` 一类历史结果。失效原因：最新权威整跑 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 已为 `71 passed / 0 failed`；本轮收掉的既有测试侧残余漂移，也有 `休战` 的真实运行时机制 bug。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts` 当前 helper/断言写法、`src/games/dicethrone/domain/flowHooks.ts`、`src/games/dicethrone/domain/tokenResponse.ts`、`src/games/dicethrone/domain/reduceCombat.ts`，以及同命令的最新整跑结果。新结论：当前 intake soak/整跑红灯已不再是事实；剩余项回到双面对象级 completion audit、family 级 L4 合法复用登记、逐对象更高层级 L3/L4 与最终收口审计，不能再把“整跑仍红”作为主 blocker。
@@ -66,7 +66,7 @@
 
 | 维度 | 结论 | 证据 |
 | --- | --- | --- |
-| D1 语义保真 | 部分通过 | 已按真相源拆卡牌/状态/能力；海盗的一生按 `playerBoardFace` 分支实现咒缚面治疗 3 与普通面金币路径，真实开局已纠偏为 human 面 + 3 个诅咒金币，且人类面 9 个对象已接入运行时；但仍未完成 human 面逐对象 L2-L4 审计 |
+| D1 语义保真 | 部分通过 | 已按真相源拆卡牌/状态/能力；海盗的一生按 `playerBoardFace` 分支实现咒缚面治疗 3 与普通面金币路径，真实开局已纠偏为 human 面 + 3 个诅咒金币，human 面 `9 / 9` 对象与 16 张专属手牌都已进入运行时并拿到对象级证据；当前剩余主要回到双面合法复用边界、状态家族生命周期与奖励骰 family 的 `L4` completion audit |
 | D2 边界完整 | 部分通过 | 2v2 对手筛选、至多/跳过路径已覆盖；真实入口开局与手牌 atlas 已覆盖，复杂交互 L3 仍未逐项覆盖 |
 | D3 数据流闭环 | 部分通过 | 定义/注册/执行/状态/i18n/测试/E2E/上传链已闭环；复杂交互 UI 未逐项 L3/L4 |
 | D5 交互完整 | 部分通过 | 战略防御、地毯式轰炸、无情诅咒、送你们去喂鱼、赎金、瞭望台、啜呼、深海潜行、干票大的、占得上风、起锚、虚张声势、诱饵、战争贩子 II、开拓战场 II、抽筋剥皮、死亡印记、诅咒卡牌、封舱、分点给我、亡灵之爪、诅咒金币、火药桶均有 L2 交互证据；真实 UI 已覆盖选角、开局、手牌 atlas、战略防御、送你们去喂鱼正向施桶链 + 有合法目标时的 skip 否定链、手牌选择、瞭望台三分支、作战室奖励骰展示、占得上风勋章分支、起锚骷髅分支与默认抽牌分支、虚张声势弯刀 / 战利品抽 2 / 骷髅施加火药桶三分支、诱饵真实攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、开拓战场 II 大顺主分支变体选择链、`战略转移 II` 侦察分支、`摇鼓运动 II` 间接接敌分支、`开拓战场 II` 全面封锁分支、`反制措施 II / III` 升级防御链、`包夹侧翼 II` 升级主链、`埋伏` 即时手牌链、4 人地毯式轰炸双敌目标链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、两条防御响应链、深海潜行完整攻击入口、4 人无情诅咒 `targetingRoll / preDefense` 火药桶正向选择链 + 不施加否定链、诅咒卡牌自伤抽牌分支、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链、火药桶维持阶段爆炸链，以及 `休战` 挂在攻击者身上后仍会真实建立攻击链、打开防御阶段并在收口时把伤害归零的消费链；其余复杂交互仍待逐项 L3 |
@@ -178,8 +178,34 @@
 
 | 面 | 对象级 L3 直证覆盖 | 当前证据 | 当前剩余 |
 | --- | --- | --- | --- |
-| human 面 | `9 / 9` | `弯刀突刺 / 做好标记 / human-cursed / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` 已分别由截图 `105-134` 锁定真实槽位入口、交互链与收口 | 不再缺对象级 L3 首条直证；剩余回到更高层 L4、状态/手牌家族合法复用登记与双面总审计 |
-| 咒缚面 | `9 / 9` | `灵魂突刺 / 死亡印记 / 咒缚 / 深海潜行 / 死亡吐息 / 灵魂指令 / 亡灵之爪 / 你还嫩了点 / 无情诅咒` 已分别由截图 `22-23 / 24-26 / 33-45 / 52-53 / 76-79 / 135-142 / 161-162` 锁定真实槽位入口或真实阶段入口与收口 | 不再缺面板对象级 L3 首条直证；剩余回到状态家族、手牌家族和双面 completion audit 的更高层 L4 收口 |
+| human 面 | `9 / 9` | `弯刀突刺 / 做好标记 / human-cursed / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` 已分别由截图 `105-134` 锁定真实槽位入口、交互链与收口 | 不再缺对象级 L3 首条直证；剩余回到更高层 L4、双面合法复用登记与最终 completion audit |
+| 咒缚面 | `9 / 9` | `灵魂突刺 / 死亡印记 / 咒缚 / 深海潜行 / 死亡吐息 / 灵魂指令 / 亡灵之爪 / 你还嫩了点 / 无情诅咒` 已分别由截图 `22-23 / 24-26 / 33-45 / 52-53 / 76-79 / 135-142 / 161-162` 锁定真实槽位入口或真实阶段入口与收口 | 不再缺面板对象级 L3 首条直证；剩余回到状态家族、奖励骰 family 与双面 completion audit 的更高层 L4 收口 |
+
+### 2026-06-06 咒缚海盗双面 face-by-face completion 边界
+
+| 维度 | 当前已锁定事实 | 当前权威证据 | 当前仍未收口的边界 |
+| --- | --- | --- | --- |
+| 开局面与初始状态 | 真实开局是 `human/normal` 面朝上，并自带 `诅咒金币 3`，不是旧口径里的 `cursed` 面开局 | `characters.ts` 的 `initialPlayerBoardFace / initialStatusEffects`，`zhanshujia-cursed-pirate-intake.test.ts` 的初始化断言，主文结论段与开局 E2E | 已不再缺“哪一面先出场”的事实核定；剩余只在双面总审计如何把这条与后续翻面/状态生命周期统一登记 |
+| 双面能力集切换 | `getCursedPirateAbilitiesForFace(...)` 已把 `normal -> HUMAN_ABILITIES`、其他 -> `CURSED_ABILITIES` 写死；`human-cursed` 已证明“有币留 human / 无币翻回 cursed” | `abilities.ts` 的 `getCursedPirateAbilitiesForFace`，mechanics `human-cursed` 两条，E2E `117-120` | 已不再缺“翻面是否真实切能力集”；剩余是把这条与双面总审计里的合法复用边界一起收口 |
+| 双面专属语义对象 | `海盗的一生` 现在已明确是双面差异对象：normal 面保留“获得 1 个诅咒金币”选择链，cursed 面改为直接治疗 `3` | `cards.ts` 的 `cursed-pirate-pirates-life`，mechanics 两条分支测试，E2E `210-214` | 已不再缺双面专属对象的对象级证据；剩余只在双面差异对象如何纳入最终 completion audit |
+| 面板对象全集 | `human 9 / 9` 与 `cursed 9 / 9` 面板对象都已有对象级 `L3` 直证 | 上方双面面板对象级 completion 表，`intake.e2e.ts` 各对象截图链 | 已不再缺“哪面还有面板对象没直证”；剩余是更高层 family/L4 与双面总审计 |
+| 专属手牌全集 | `cards.ts` 下 16 张专属手牌都已在 `mechanics / direct E2E / evidence` 三处命中；不再存在“某张专属手牌还没首条真实入口” | 下方“咒缚海盗专属手牌 completion 边界”表，`cards.ts`、mechanics、`intake.e2e.ts` | 已不再缺对象级手牌证据；剩余只在这些手牌关联到的状态 family、奖励骰 family 与双面总审计 |
+| 双面面板资源与关键预热 | `ASSETS.PLAYER_BOARD('cursed_pirate', 'normal')` 已指向 `human-player-board`；`criticalImageResolver` 也把 `human-player-board` 列入 `cursed_pirate` 的额外关键资源 | `ui/assets.ts`、`criticalImageResolver.ts`、`zhanshujia-cursed-pirate-intake.test.ts` 对 `human-player-board.png/.webp` 的断言 | 已不再缺“human 面只是文档合同、并未进入运行时资源链”的 blocker；剩余只在双面资源链与对象级审计如何统一归档 |
+| 通用牌索引 | 咒缚海盗共享牌堆与 common atlas slot `33` 已有静态与真实 UI 证据，不再是双面总审计里的不确定项 | `CURSED_PIRATE_COMMON_ATLAS_INDEX`、`zhanshujia-cursed-pirate-intake.test.ts`、截图 `06-guest-cursed-pirate-hand-card-atlas` | 已不再缺“通用牌索引是否接线”；剩余只在如何与双面总审计一并收口 |
+| 双面总口径 | 当前可以明确：双面 remaining 不再是“哪面未接入/哪张手牌未录入/哪条首个入口未补”，而是状态家族生命周期、奖励骰 family 合法复用登记、双面差异对象的最终 completion audit | 本节 + 状态家族 L4 seam 矩阵 + 奖励骰 family completion 边界 | 这仍是当前双面总审计未完成的真实边界，不能因为 `18 / 18` 面板对象与 `16 / 16` 专属手牌都到 `L3`，就外推成双面全面审计完成 |
+
+### 2026-06-06 咒缚海盗双面 final gate
+
+| gate | 当前状态 | 当前可直接下结论的边界 |
+| --- | --- | --- |
+| 开局面 / 初始状态 | passed | `initialPlayerBoardFace='normal'` + `initialStatusEffects.cursed_coin=3` 已锁定，当前不再属于“双面是否接线”的不确定项 |
+| 翻面 / 能力集切换 | passed | `human-cursed` 的“有币留 human / 无币翻回 cursed”与 `getCursedPirateAbilitiesForFace(...)` 已共同证明双面切面会真实切运行时能力集 |
+| 双面面板对象 | passed | `human 9 / 9 + cursed 9 / 9` 都已有对象级 `L3`；当前双面 remaining 不再是某一面板对象没首条真实入口 |
+| 双面专属手牌 | passed | `cards.ts` 下 `16 / 16` 专属手牌都已命中 `mechanics / direct E2E / evidence`，当前不再是“哪张牌还没接线” |
+| 双面资源 / 通用牌索引 | passed | `human-player-board` 资源链与 common atlas slot `33` 都已锁定到正式运行时消费者 |
+| 双面状态 family | audit-only | 当前真实剩余不是规则没实施，而是 `诅咒金币 / 火药桶 / 凋零 / 休战` 的 family 级合法复用登记与最终 completion verdict 仍未封版 |
+| 双面奖励骰 family | audit-only | 当前真实剩余不是 overlay 没开，而是奖励骰对象的 downstream consumer seam 差异仍需按子 family 留档 |
+| 双面最终 verdict | hold | 在状态 family 与奖励骰 family 仍是 `audit-only` 前，不能把 `18 / 18` 面板对象 + `16 / 16` 专属手牌外推成“双面全面审计完成” |
 
 ## 当前验证记录
 
@@ -607,7 +633,7 @@
 | 战术家防御/响应链：`反制措施 II/III / 脱战 / 伴装撤退 / 紧缚` | 代表对象为 `反制措施`、`脱战`、`伴装撤退`、`紧缚` 自身真实入口 | 部分满足 | `反制措施 II/III` 现已具备各自升级后真实防御入口，可按同 defensive slot + 同 `customActionId` + 仅 `sabrePairDamage` 参数差异判定为近似同构；但 `脱战` 奖励骰三分支、`伴装撤退` 直接施加紧缚、`紧缚` 额外投掷时序清理并非同一家族 | `反制措施 II/III` 当前剩余仅回到 shared defensive family 的 `L4` 判等；其余对象应按独立对象保留，不宜再合并成一个“防御家族已收口”口径 |
 | 战术家奖励骰/随机家族：`作战室 / 占得上风 / 战争贩子 / 战争贩子 II / 脱战` | 代表对象散落在主阶段手牌、玩家板与防御响应 | 否 | 虽都打开单骰奖励骰覆盖层，但后续消费者已分叉到 `TOKEN_GRANTED(ceil(d6/2))`、`drawCard/defaultEffect`、`bonusDamage`、`EXTRA_ATTACK_TRIGGERED`、`grantDamageShield` 与 `grantToken(PROTECT)`；当前只能确认“奖励骰 overlay 能正常打开/关闭与收口”早已不是 blocker | 仍需按战术家内部子 family 维护合法复用边界，不能整体按“同是 rollDie/bonus overlay”外推 |
 | 咒缚海盗状态家族：`诅咒金币 / 火药桶 / 凋零 / 休战` | 代表对象来自 `无情诅咒 / 起锚 / 深海潜行 / 啜呼 / upkeep` 等不同入口 | 否 | 虽然共享 `grantStatus` / `flowHooks` / 伤害修正消费者已被证明可用，但这些状态来自不同入口、不同时机、不同后续清理，不能仅凭“都能写入状态”就互相外推到对象级完成 | 仍需继续把“对象写入状态”和“状态本体完整生命周期”分开审，必要时补更多对象级或时序级证据 |
-| 咒缚海盗双面总审计：`human` 9 个对象 + 咒缚面 9 个对象 | 代表对象为双面 `18 / 18` 面板对象级直证矩阵 | 部分满足 | `human` 与咒缚面两套玩家板对象现在都已有 `9 / 9` 对象级 L3 直证，双面“面板对象仍缺首条 direct E2E”的旧口径已失效；但状态家族、手牌家族、通用牌索引与合法复用登记仍未统一升到最终 completion audit | 仍需 face-by-face completion audit，但当前剩余已从“面板对象是否直证”收窄为“更高层 L4 / 家族级合法复用 / 最终收口” |
+| 咒缚海盗双面总审计：`human` 9 个对象 + 咒缚面 9 个对象 | 代表对象为双面 `18 / 18` 面板对象级直证矩阵 | 部分满足 | `human` 与咒缚面两套玩家板对象现在都已有 `9 / 9` 对象级 L3 直证，双面“面板对象仍缺首条 direct E2E”的旧口径已失效；专属手牌也已按 `cards.ts` 全集收敛到 `16 / 16` 对象级证据。当前真正未统一升到最终 completion audit 的，是状态家族、奖励骰 family、通用牌索引与双面合法复用登记 | 仍需 face-by-face completion audit，但当前剩余已从“面板对象或专属手牌是否直证”收窄为“更高层 L4 / 家族级合法复用 / 最终收口” |
 | 咒缚海盗奖励骰/随机家族：`起锚 / 瞭望台 / 虚张声势 / 干票大的 / 死亡印记 / 抽筋剥皮 / 啜呼` | 代表对象散落在多张手牌和多个面板技能 | 否 | 虽都经过 `rollDie` 或奖励骰覆盖层，但后续消费者有抽牌、伤害、状态、对手选择与随机弃牌等显著差异，不能整体按“同是奖励骰”复用 L4 | 当前只能逐对象说明哪些分支已拿到直证；整家族还不能宣称“只差配置” |
 
 ### 2026-06-06 状态家族 completion 边界
@@ -628,6 +654,15 @@
 | `火药桶` | A. 直接 `grantStatus -> buildStatusAppliedOrChoiceEvents(...)`：`点燃炸药 / 灵魂指令 / 给我点上 / 虚张声势(骷髅)`；B. 阈值类 custom action：`灵魂突刺 / 弯刀突刺 / 抽筋剥皮`；C. 多目标 `choiceResolved`：`无情诅咒 / 送你们去喂鱼`；D. `啜呼` 的“直接获得”或“投骰命中后获得”；E. `flowHooks.ts` 里 `cursed` 被动的“对手没发起攻击则施桶” | `statusEvents.ts` 负责“重复获得时先爆炸旧桶再保留新桶”；`flowHooks.ts` 负责 upkeep 投骰、`1-2` 爆炸、`3-5` 保留、`6` 打开转交 choice；`POWDER_KEG_TRANSFER_CHOICE_ID` 负责从原持有者移除并对目标重新施加 | 所有最终落到 `buildStatusAppliedOrChoiceEvents(...)` 的写入者，可以合法共用“重复获得即爆炸/保留新桶”这层 L4；而 upkeep 的爆炸/转交链也可以被单独视为另一条共享生命周期 seam | 不能把“某入口能施加火药桶”直接外推成“该入口已证明转交/重复获得/被动未攻击施桶也同构”；写入 seam 与 upkeep/transfer seam 必须分开登记 |
 | `凋零` | A. 直接 `grantStatus` writer：`深海潜行 / 死亡吐息 / 灵魂指令 / 无情诅咒 / 坏血病`；B. `啜呼` 的 `SIP_CHOICE_ID` 命中 `3-6` 后，经 `choiceResolved` 写入 | 真正消费不在咒缚海盗 custom action，而在 `heroes/cursed_pirate/tokens.ts` 的 `passiveTrigger(onDamageDealt, damageTriggerScope='opponentAttackDamage', modifyStat=-1)`，并由 `DamageCalculation.collectSourceStatusModifiers` 在攻击伤害链里统一读取；`__tests__/zhanshujia-cursed-pirate-mechanics.test.ts` 已证明 direct damage 不受影响 | 所有写入者都能合法复用同一个“来源侧攻击伤害 -1/层，direct damage 不减”的消费 seam；`深海潜行 / 死亡吐息 / 灵魂指令 / 啜呼 / 坏血病` 的差异主要还在入口与附带效果，不在 `凋零` 本体消费者 | 仍不能把“任一写入者已命中凋零”直接外推成所有攻击来源都完成了真实消费链；当前真实消费链只补到了 `灵魂突刺`，更多来源侧攻击消费者仍属 family 级 completion audit |
 | `休战` | A. 直接 `grantStatus` writer：`灵魂指令 / 无情诅咒 / 停战协议 / 起锚(骷髅)`；B. `HUMAN_VERDICT_COMMAND_CHOICE_ID / HUMAN_MERCILESS_PLUNDER_CHOICE_ID` 这类先 continuation 再写状态的 human 面链 | `effects.ts` 会在生成 attack damage action 时直接跳过；`reduceCombat.ts` 又对真实落地的 `DAMAGE_DEALT(damageScope='attack')` 做二次兜底拦截；`flowHooks.ts` 在 `offensiveRoll` 收口与“无 pendingAttack 的进攻阶段退出”两条 seam 清理 `PARLEY` | 所有 writer 可以共用“攻击伤害被阻止 + 阶段结束清理”这一组共享消费者；本轮已确认它不是某张牌的局部逻辑，而是 `effects.ts + reduceCombat.ts + flowHooks.ts` 的多消费者合同 | 仍不能把“写入休战”直接外推成所有攻击来源都补齐了真实消费链；当前真实消费 L3 主要锁在 `灵魂突刺 / cutlass-stab-4` 两条攻击链，其余攻击来源仍只到 shared lifecycle 判等 |
+
+### 2026-06-06 咒缚海盗状态 family 最终 verdict
+
+| 状态 | 当前实现判断 | 当前仍需 completion audit 的真实原因 | 当前不得再写的误报 |
+| --- | --- | --- | --- |
+| `诅咒金币` | `rules.ts + statusEvents.ts + flowHooks.ts + customActions/cursed_pirate.ts` 已共同形成完整生命周期：海盗 `5` 层 / 其他 `3` 层、海盗可拒绝获得、非海盗 upkeep 掉血、`human-cursed` 回合结束移除、`亡灵之爪 / 惊魂动魄 / 海盗的一生` 等后续消费都已有明确 seam | 剩余是把 direct writer、continuation writer、self remove 与后续 consumer 的合法复用边界封成 family verdict，而不是状态本体没实施 | 不得再写成“诅咒金币还只是显示层”“海盗可拒绝获得未落地”或“没有真实消费者” |
+| `火药桶` | `statusEvents.ts` 的重复获得即爆炸、`flowHooks.ts` 的 upkeep 投骰/爆炸/转交、`customActions/cursed_pirate.ts` 的 threshold/choice/no-attack writer 已共同证明本体生命周期已实施 | 剩余是 direct grant、阈值写入、多目标 choice、upkeep transfer、被动未攻击施桶这些 writer seam 的 family 级封版，不是“转交链没实现” | 不得再写成“火药桶只会被施加，不会转交/重复爆炸”或“被动施桶仍待实现” |
+| `凋零` | `tokens.ts` 的 `passiveTrigger(onDamageDealt, opponentAttackDamage, modifyStat=-1)` 与伤害计算消费链已经就位，`direct damage` 不受影响的合同也已明确 | 剩余是更多来源侧真实攻击消费者要不要继续补证并纳入 family verdict；当前问题是审计覆盖度，不是 `WITHER` 消费者缺失 | 不得再写成“凋零只写得到状态栏，不会真实减攻击伤害” |
+| `休战` | `effects.ts` 的攻击伤害前置跳过、`reduceCombat.ts` 的 `DAMAGE_DEALT(damageScope='attack')` 兜底、`flowHooks.ts` 的阶段结束清理，已经共同构成完整 consumer seam | 剩余是更多攻击来源的真实消费链是否还要补到对象级；当前问题是 family 封版，而不是“休战不会真实阻断攻击伤害” | 不得再写成“休战只会写入，不会消费”或“阶段结束不会清理” |
 
 ### 2026-06-06 战术家升级链 L4 seam 矩阵
 
@@ -651,6 +686,25 @@
 | `脱战` | 真实防御窗口中的单骰奖励骰覆盖层；不会回到主阶段，也不会进入额外进攻 | 三分支分别落到 `bonusDamage 2 / grantDamageShield 3 / grantToken(PROTECT)`，都在 defense response 内即时收口 | 可以把“防御响应单骰奖励牌已打通三类消费者”登记为对象内 L4 | 不能把它和 `作战室 / 占得上风` 或 `战争贩子` 家族合并，因为 phase、目标与消费者都不同 |
 | 战术家奖励骰总口径 | family 级未收口 | 可以确认“战术家单骰奖励对象的 overlay 打开/关闭与基本收口”早已不是 blocker | 真正未收口的是：哪几类消费者可以按同一主阶段/防御/额外进攻 family 合法复用，哪几类仍需独立保留 |
 
+### 2026-06-06 战术家升级 family 最终 verdict
+
+| 子 family | 当前实现判断 | 当前仍需 completion audit 的真实原因 | 当前不得再写的误报 |
+| --- | --- | --- | --- |
+| 升级牌壳（`9` 张 upgrade） | `cards.ts -> replaceAbility -> ABILITY_REPLACED / abilityLevels / upgradeCardByAbilityId` 的共享升级壳已经成型，mechanics 与 E2E 都证明 `9 / 9` 升级牌能真实打出并写入升级槽 | 剩余是“升级后 replacement ability 的 family 差异如何封版”，不是升级牌还没接线 | 不得再写成“某些升级牌仍只是卡面录入”“升级写入能力槽未落地” |
+| 防御升级 family（`反制措施 II / III`） | 同一 `zhanshujia-countermeasures-defense` customAction 已覆盖 `5` 骰、防伤、反击、战术优势三消费者，II/III 差异只剩 `sabrePairDamage` 参数 | 剩余是 II/III 与其他防御响应对象的 family 边界登记，不是升级防御逻辑缺实现 | 不得再写成“反制措施 II / III 还没真实进入防御链” |
+| 进攻参数升级 family（`包夹侧翼 II / 军刀突刺 II`） | `包夹侧翼 II` 的 token 参数链与 `军刀突刺 II` 的 `bind-if-three-kind + damage` 链都已在 mechanics/E2E 中证明 | 剩余是“近似同构到什么程度”的 family 封版，而不是对象仍待实施 | 不得再写成“军刀突刺 II 只是基础版加 1 伤”“包夹侧翼 II 还缺真实入口” |
+| 复合升级 family（`战略转移 II / 摇鼓运动 II / 开拓战场 II / 地毯式轰炸 II`） | 这些 replacement ability 的主分支与 secondary variant 都已能真实进入各自 modal / interaction / damage consumer | 剩余是不同 variant 是否能按同一复合升级 family 合法复用，而不是 secondary branch 仍未实现 | 不得再写成“这些升级牌只证明了主分支，副分支还没落地” |
+| `战争贩子 II` | 升级后已不再走基础版 `postDamage extraRoll`，而是完整切到 `zhanshujia-war-monger-2-roll` customAction，并已证明勋章分支会进额外进攻 | 剩余是 II 与基础版奖励骰/额外进攻 family 的边界封版，不是 II 仍缺专门实现 | 不得再写成“战争贩子 II 只是基础版同壳”或“额外进攻仍未真实进入” |
+
+### 2026-06-06 战术家奖励骰 family 最终 verdict
+
+| 子 family | 当前实现判断 | 当前仍需 completion audit 的真实原因 | 当前不得再写的误报 |
+| --- | --- | --- | --- |
+| `作战室 / 占得上风` | 主阶段单骰奖励壳已稳定：overlay 打开/关闭、立即收口、且不建立攻击链 | 剩余是 `ceil(d6/2)` 战术优势、`grantToken(4)`、`draw 1` 这些 downstream consumer 如何分 family 留档，不是奖励骰 UI 或单骰派发没实现 | 不得再写成“作战室/占得上风仍缺奖励骰真实链” |
+| `战争贩子` | 基础版奖励骰与 `postDamage -> EXTRA_ATTACK_TRIGGERED` 已共同形成完整 family，实现上不是空壳 | 剩余是它与 `战争贩子 II` 是否能共享同一奖励骰 family verdict；当前问题是分层，不是未实施 | 不得再写成“战争贩子额外进攻还只是理论合同” |
+| `战争贩子 II` | `zhanshujia-war-monger-2-roll` 已把刀/旗/勋章三分支与 `displayOnlySettlement` 统一收口，勋章专门链也有真实入口 | 剩余是 II 的三分支与基础版 family 的差异封版，不是 customAction 未完成 | 不得再写成“战争贩子 II 奖励骰只有 overlay，没有真实消费者” |
+| `脱战` | 防御阶段单骰奖励壳已经证明能分叉到 `damage / shield / protect` 三类消费者 | 剩余是它与主阶段奖励骰对象之间的 phase 边界登记，不是对象本体缺实现 | 不得再写成“脱战奖励骰仍只停在展示层” |
+
 ### 2026-06-06 咒缚海盗奖励骰/随机家族 completion 边界
 
 | 对象/子家族 | 当前直证层级 | 当前可确认的 completion 边界 | 当前仍未收口的边界 |
@@ -659,6 +713,39 @@
 | `干票大的 / 死亡印记 / 抽筋剥皮 / 啜呼` | 对象级 `L3` | 都已有真实入口奖励骰覆盖层与核心收口态，不再是“奖励骰 UI 没验证”或“对象仍只到 representative L3” | 它们的后续消费者分别落在抽牌/CP、伤害、状态、目标选择等不同 seam，当前仍不能整体按“同是奖励骰”复用 `L4` |
 | 咒缚海盗奖励骰总口径 | family 级未收口 | 可以确认“咒缚海盗奖励骰对象的 overlay 打开/关闭”也早已不是 blocker | 真正未收口的是：同为 `rollDie` / bonus overlay 的对象，后续消费 seam 差异过大，仍需逐对象或逐子 family 维护合法复用边界 |
 
+### 2026-06-06 咒缚海盗奖励骰/随机 L4 seam 矩阵
+
+| 对象/子 family | 当前可确认的 overlay / dispatch seam | 当前可确认的后续消费者 | 当前可以合法复用的边界 | 当前仍不能外推的差异 |
+| --- | --- | --- | --- | --- |
+| `起锚` | `cards.ts` 直接走单骰 `rollDie`；只有 `skull` 命中状态分支，其他点数统一走 `defaultEffect` | `skull -> 休战`；非 `skull -> draw 1` | 只能把它登记为“单骰 overlay + status/default draw 二分派发”已实施 | 不能把它外推成 `干票大的` 的 `draw + CP`，也不能外推成 `瞭望台` 的目标交互或 `死亡印记` 的攻击期多骰消费者 |
+| `虚张声势` | `cards.ts` 直接走单骰 `rollDie conditionalEffects` | `cutlass -> bonusDamage 2`、`loot -> draw 2`、`skull -> 火药桶` | 只能复用“单骰 overlay + 三分支即时收口”这一层壳 | 不能把 `bonusDamage / draw / powder_keg` 这三类结果视为与 `死亡印记` 或 `抽筋剥皮` 同构；phase 与后续 seam 都不同 |
+| `瞭望台` | `customActions/cursed_pirate.ts:resolveCrowsNest(...)` 先 `createBonusDieEvents(...)`，再按单骰 face 分派到交互 | `cutlass -> 查看手牌确认 choice`、`loot -> 对手自选弃 1`、`skull -> 随机弃 1` | 只能复用“overlay 打开后再分派到手牌信息/弃牌交互”这一对象内壳 | 不能把它与任何纯状态/纯伤害/纯抽牌奖励骰合并；它的主要消费者是 hand-view / discard 交互 |
+| `干票大的` | `customActions/cursed_pirate.ts:resolveHefty(...)` 走双骰 display-only overlay，再判 `hasLoot` | 命中至少一个 `loot` 后统一 `draw 2 + CP +2`；否则只展示 overlay | 可以把它登记为“display-only 双骰 overlay + 聚合条件消费者”已实施 | 不能把它外推成 `起锚` 的 default draw，也不能把 `draw + CP` 外推到 `死亡印记 / 虚张声势` |
+| `死亡印记` | 咒缚面技能内直接走 `4` 骰 `rollDie conditionalEffects`，属于攻击期 preDefense 奖励骰 | `cutlass -> 2 点不可防御伤害`、`loot -> draw 1`、`skull -> 诅咒金币` | 只能复用“攻击期多骰 overlay + 每颗骰子的独立分支派发”这一层 | 不能把它与 `虚张声势` 视为同一 mixed reward family；一个在攻击链里写 `unblockableDamage / cursed_coin`，一个在主阶段写 `bonusDamage / powder_keg` |
+| `抽筋剥皮` | `customActions/cursed_pirate.ts:resolveFlay(...)` 走 `5` 骰 overlay，并按 `cutlass` 计数聚合 | `cutlassCount -> BONUS_DAMAGE_ADDED`；`cutlassCount>=3 -> 火药桶` | 可以把它登记为“计数型奖励骰 -> bonus damage accumulator -> 阈值状态写入”已实施 | 不能把它外推成普通单骰分支对象；它依赖计数聚合与阈值副产物 |
+| `啜呼` | 先 `SIP_CHOICE_ID` 目标选择，再决定“直接吃桶”还是“改为投 1 骰”；改投后才走 overlay | `不改投 -> 直接火药桶`；`改投且 3-6 -> 火药桶 + 凋零`；`1-2 -> 无事发生` | 只能把它登记为“目标方 choice -> 可选 overlay -> 命中后状态双写入”这一独有 seam | 不能把它并入 `起锚 / 虚张声势 / 干票大的` 这类纯施放方奖励骰；`啜呼` 的关键差异在目标方 choice 与状态双写入 |
+| 咒缚海盗奖励骰总口径 | overlay / dispatch 已实施 | 当前所有奖励骰对象都已证明 overlay 能打开/关闭；真正分叉发生在 `draw / CP / damage / hand-view / discard / status / target choice` 这些 downstream consumer | 只能把“overlay 壳已打通”视为 shared L4 事实 | 仍不能把“同样会投奖励骰”外推成“咒缚海盗奖励骰 family 只差配置” |
+
+### 2026-06-06 family next-proof gate
+
+| remaining | 当前已能下的最硬结论 | 当前最强证据 | 若继续推进，真正还差的 next proof | 当前已不允许再倒退成什么问题 |
+| --- | --- | --- | --- | --- |
+| 咒缚海盗 `凋零` family | 已可判定为“实现存在，consumer 已真实生效”，不是未实施 | mechanics：`凋零只减少持有者对对手造成的攻击伤害，不影响直接伤害`；E2E：`真实入口应在持有凋零时通过咒缚面 fist 槽位触发并减少灵魂突刺的攻击伤害` | 若要把 family 完全封版，只剩“是否再补 1 条不同攻击来源的 live consumer 直证”这一审计门槛选择 | 不得再退回“凋零不会真实减攻击伤害” |
+| 咒缚海盗 `休战` family | 已可判定为“实现存在，writer/consumer/cleanup 都真实闭环”，不是未实施 | mechanics：`休战阻止攻击伤害但不阻止直接伤害`、`Token 响应收口后落地的攻击伤害事件`、`offensiveRoll -> defensiveRoll 不提前移除`；E2E：`攻击者带有休战时阻断攻击伤害并在阶段结束清理状态` | 若要把 family 完全封版，只剩“是否再补 1 条非 cutlass-stab / soul-stab 攻击来源的 live consumer 直证”这一审计门槛选择 | 不得再退回“休战只会写入，不会消费或不会清理” |
+| 咒缚海盗奖励骰 family | 已可判定为“overlay 壳与各对象核心 downstream consumer 都已实施”，不是奖励骰未落地 | `起锚 / 虚张声势 / 瞭望台 / 干票大的 / 死亡印记 / 抽筋剥皮 / 啜呼` 当前都已有 mechanics 或 direct E2E 对应的 overlay 与收口态 | 真正还差的是把这些对象按 `draw-cp / damage / hand-view-discard / status-choice` 之类子 family 封版，而不是继续找“第一条真实入口” | 不得再退回“奖励骰 UI 没验证”或“这些对象仍只是 representative” |
+| 战术家升级 family | 已可判定为“升级牌壳与关键 replacement ability 都已实施”，不是升级链未落地 | mechanics：`9 张 upgrade` 替换、`反制措施 III / 军刀突刺 II / 战略转移 II / 开拓战场 II / 摇鼓运动 II / 地毯式轰炸 II / 战争贩子 II`；E2E：对应升级牌真实写入与对象分支链 | 真正还差的是决定哪些 replacement ability 可以按同一 family 合法复用，不是再证明升级牌能打出或能替换 | 不得再退回“升级牌还没接线”“副分支仍未实现” |
+| 战术家奖励骰 family | 已可判定为“主阶段 / 防御 / 额外进攻三类奖励骰消费者都已实施”，不是随机链缺口 | mechanics：`作战室 / 脱战 / 战争贩子 / 战争贩子 II`；E2E：`作战室`、`占得上风`、`战争贩子`、`战争贩子 II`、`脱战` 的 overlay 与收口链 | 真正还差的是 family 分组与边界封版，例如 `主阶段单骰`、`防御单骰`、`额外进攻` 是否各自单列 | 不得再退回“战争贩子 II 只有 overlay 没有真实消费者”或“脱战只停在展示层” |
+| 咒缚海盗双面最终 verdict | 目前仍只能是 `hold`，但 hold 的原因已缩到审计封版，不是双面未接线 | `human 9 / 9 + cursed 9 / 9`、`16 / 16` 专属手牌、`human-cursed` 翻面链、`海盗的一生` 双面分支、`human-player-board` 资源链都已锁定 | 真正还差的是状态 family 与奖励骰 family 的最终封版决策，而不是再去补“哪一面没对象级直证” | 不得再退回“human 面未接入”“双面仍是 implementation_in_progress 主 blocker” |
+
+### 2026-06-06 咒缚海盗专属手牌 completion 边界
+
+| 子 family | 当前覆盖对象 | 当前直证层级 | 当前可确认的 completion 边界 | 当前仍未收口的边界 |
+| --- | --- | --- | --- | --- |
+| 直接收口 / 即时攻击修正 | `诱饵 / 坏血病 / 劫掠 / 停战协议 / 分点给我` | 对象级 `L3` | 五张牌都已拿到真实手牌入口与最终权威状态收口，不再属于“只靠 mechanics 外推”的手牌 residual | 仍需把它们各自涉及的伤害 / 状态 / 资源消费者回写到对应 family 的 `L4` 复用边界，不能把“对象已收口”外推成相关 family 已全绿 |
+| 奖励骰 / 多分支手牌 | `起锚 / 虚张声势 / 瞭望台 / 干票大的 / 抽筋剥皮 / 啜呼` | 对象级 `L3` | 六张牌都已不止一条代表链；关键分支、overlay 展示与最终收口都已有真实入口证据 | 剩余只在奖励骰 / 随机 family 的跨对象合法复用登记，不再是“哪张手牌还没真实入口” |
+| 选择 / continuation 手牌 | `诅咒卡牌 / 封舱 / 赎金 / 送你们去喂鱼 / 海盗的一生` | 对象级 `L3` | 五张牌都已真实覆盖 `choice -> continuation -> 收口`；其中 `诅咒卡牌` 已锁 3 分支，`海盗的一生` 已锁 normal/cursed 双面分支 | 剩余只在双面总审计与相关状态 family 的更高层 `L4`，不再是手牌对象本体缺分支证据 |
+| 专属手牌总口径 | `16 / 16` 专属手牌 | 对象级 `L3` 或更高 | 以 `cards.ts` 的 16 张专属牌为全集核对，当前都已在 `mechanics / direct E2E / evidence` 三处命中，不再存在“专属手牌 family 仍缺首条真实入口”的 blocker | 不能把“16 / 16 对象已到 L3”外推成状态家族、奖励骰 family 或双面 completion audit 已完成；这些仍需单列 `L4` 判等 |
+
 ### 2026-06-06 战术家 remaining representative 条目边界
 
 - 当前战术家已无 remaining representative 对象级条目。
@@ -666,14 +753,14 @@
 
 ### 2026-06-06 咒缚海盗 remaining representative 条目边界
 
-- 当前咒缚海盗也已无“手牌对象本体仍缺首条真实入口”的 remaining representative 条目。
-- `封舱 / 诱饵 / 抽筋剥皮 / 赎金 / 给我点上 / 啜呼 / 停战协议 / 送你们去喂鱼 / 起锚 / 虚张声势 / 诅咒卡牌` 这些过去常被并称为 remaining representative 的手牌对象，现在都已拿到对象级真实入口或对象级 `L3`。
-- 当前剩余已上升为 family 级 `L4` / completion audit，主要集中在状态家族生命周期、奖励骰/随机家族合法复用登记、双面合法复用登记与最终双面总审计。
+- 当前咒缚海盗已无“专属手牌对象本体仍缺首条真实入口”的 remaining representative 条目。
+- 以 `cards.ts` 的 16 张专属牌为全集核对，`起锚 / 诅咒卡牌 / 封舱 / 诱饵 / 抽筋剥皮 / 赎金 / 虚张声势 / 坏血病 / 劫掠 / 停战协议 / 瞭望台 / 干票大的 / 海盗的一生 / 送你们去喂鱼 / 分点给我 / 啜呼` 都已拿到对象级真实入口或对象级 `L3`。
+- 当前剩余已上升为 family 级 `L4` / completion audit，主要集中在状态家族生命周期、奖励骰/随机家族合法复用登记、双面合法复用登记与最终双面总审计，而不再是专属手牌 family 本体缺口。
 
 | 门禁 | 状态 | 说明 |
 | --- | --- | --- |
-| 官方 human/normal 面完整实现 | scoped-debt | 当前已确认 normal 面与咒缚面存在独立技能文本与被动语义；仓库已完成底图接入、选图链、两套逐槽图面合同、9 个 human 面对象的运行时接入、自动翻面 direct E2E 与 9 条独立 direct E2E，但仍未完成双面对象级重审计、remaining representative 条目的逐对象 L3/L4 与最终 completion audit |
-| 对象级 L3/L4 | partial | 真实入口选角、开局、玩家板/提示板、手牌 atlas 已覆盖；战略防御、送你们去喂鱼、手牌选择、瞭望台三分支、作战室奖励骰、占得上风勋章分支、起锚骷髅分支与默认抽牌分支、虚张声势三分支、诱饵真实攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰、战争贩子基础奖励骰链、战争贩子 II 勋章专门链、9 张升级牌真实打出 -> 升级槽位写入链、抽筋剥皮奖励骰链、死亡印记奖励骰链、`咒缚` 自伤/施桶链、`伴装撤退 / 脱战` 真实防御响应手牌链、`反制措施 / 反制措施 II / 反制措施 III / 你还嫩了点` 防御阶段入口、`包夹侧翼 / 包夹侧翼 II` 真实攻击入口、`埋伏` 真实手牌链、深海潜行完整攻击入口、`灵魂突刺` 独立真实入口链、`死亡吐息` 独立真实入口链、`灵魂指令` 独立真实入口链、human 面 9 个对象独立 direct E2E、4 人无情诅咒火药桶链、诅咒卡牌三分支、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链与火药桶维持阶段爆炸链都已有对象级或状态对象级截图链；当前 `partial` 的真实原因已进一步具体化为：战术家已无 remaining representative residual，剩余主要是升级牌 family、状态家族、奖励骰家族与双面总审计的 `L4` 与最终 completion audit，因此还不能把最新整份 intake `71 passed / 0 failed` 直接外推成整批对象级全绿 |
+| 官方 human/normal 面完整实现 | scoped-debt | 当前已确认 normal 面与咒缚面存在独立技能文本与被动语义；仓库已完成底图接入、选图链、两套逐槽图面合同、9 个 human 面对象的运行时接入、自动翻面 direct E2E 与 9 条独立 direct E2E，但仍未完成双面对象级重审计、face-by-face 合法复用登记与最终 completion audit |
+| 对象级 L3/L4 | partial | 真实入口选角、开局、玩家板/提示板、手牌 atlas 已覆盖；战略防御、送你们去喂鱼、手牌选择、瞭望台三分支、作战室奖励骰、占得上风勋章分支、起锚骷髅分支与默认抽牌分支、虚张声势三分支、诱饵真实攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰、战争贩子基础奖励骰链、战争贩子 II 勋章专门链、9 张升级牌真实打出 -> 升级槽位写入链、抽筋剥皮奖励骰链、死亡印记奖励骰链、`咒缚` 自伤/施桶链、`伴装撤退 / 脱战` 真实防御响应手牌链、`反制措施 / 反制措施 II / 反制措施 III / 你还嫩了点` 防御阶段入口、`包夹侧翼 / 包夹侧翼 II` 真实攻击入口、`埋伏` 真实手牌链、深海潜行完整攻击入口、`灵魂突刺` 独立真实入口链、`死亡吐息` 独立真实入口链、`灵魂指令` 独立真实入口链、human 面 9 个对象独立 direct E2E、16 张咒缚海盗专属手牌对象级证据、4 人无情诅咒火药桶链、诅咒金币维持阶段掉血链与火药桶维持阶段爆炸链都已有对象级或状态对象级截图链；当前 `partial` 的真实原因已进一步具体化为：战术家已无 remaining representative residual，咒缚海盗也已无专属手牌对象级 residual，剩余主要是升级牌 family、状态家族、奖励骰家族与双面总审计的 `L4` 与最终 completion audit，因此还不能把最新整份 intake `71 passed / 0 failed` 直接外推成整批对象级全绿 |
 | 4 人 online readiness 通用稳定性 | watch | 当前无情诅咒 4 人真实链已通过，旧防御链也已在绕过路径下恢复；最新整份 intake 已 `71 passed / 0 failed`，因此这项不再是当前 blocker，但后续若继续补更长链 completion audit，仍需顺手观察是否出现环境回摆 |
 | isolated single-worker DiceThrone runtime 启动稳定性 | watch | 近期简单开局基线与最新整份 intake 都已在当前链路下打绿，说明最小进房与当前 intake 整跑都不再是稳定 blocker；这项只保留观察，不再作为当前“规则未实施”的依据 |
 | `implementation_in_progress` | 保留 | 全流程未完成，不允许移除 |
@@ -681,4 +768,4 @@
 ## 当前阅读说明
 
 - 本文是这两名新英雄的现行对象级主审计入口之一，但不是最终 completion 证明。
-- 当前真正有效的口径是：对象级补证已大幅推进，但双面对象级 completion audit、remaining representative 条目的逐对象 L3/L4、合法复用登记与最终收口仍未完成；因此不能把本文外推成“战术家 / 咒缚海盗已全面审计完成”。
+- 当前真正有效的口径是：对象级补证已大幅推进，但状态家族、奖励骰 family、双面 face-by-face completion audit、合法复用登记与最终收口仍未完成；因此不能把本文外推成“战术家 / 咒缚海盗已全面审计完成”。

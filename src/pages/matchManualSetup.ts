@@ -1,5 +1,6 @@
 import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';
+import type { GameEngineConfig } from '../engine/transport/server';
 
 export type ManualSetupSelectionActionKind =
     | 'select-faction'
@@ -12,6 +13,8 @@ const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
     'setup-select-character',
 ]);
 
+type ManualSetupRecoveryEngineConfig = Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -20,11 +23,50 @@ export function isManualSetupSelectionActionKind(kind: string): kind is ManualSe
     return MANUAL_SETUP_SELECTION_ACTION_KINDS.has(kind);
 }
 
+function resolveManualSetupSelectionTakeoverOverride(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    currentPlayerId: string | null;
+    seatControllers: Record<string, AiSeatController>;
+    hasManualDispatch: boolean;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
+}): string | null | undefined {
+    const resolver = args.engineConfig?.onlineAiRecovery?.resolveManualSetupSelectionTakeoverPlayerId;
+    if (!resolver || !args.sharedState) {
+        return undefined;
+    }
+    return resolver({
+        sharedState: args.sharedState,
+        currentPlayerId: args.currentPlayerId,
+        seatControllers: args.seatControllers,
+        hasManualDispatch: args.hasManualDispatch,
+    });
+}
+
+function resolveManualSetupAttemptReleaseOverride(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    playerId: string;
+    actionKind: ManualSetupSelectionActionKind;
+    selectionId: string;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
+}): boolean | undefined {
+    const resolver = args.engineConfig?.onlineAiRecovery?.shouldReleaseManualSetupAttemptFromSharedState;
+    if (!resolver || !args.sharedState) {
+        return undefined;
+    }
+    return resolver({
+        sharedState: args.sharedState,
+        playerId: args.playerId,
+        actionKind: args.actionKind,
+        selectionId: args.selectionId,
+    });
+}
+
 export function shouldTakeOverManualSetupSelection(args: {
     sharedState: MatchState<unknown> | null | undefined;
     currentPlayerId: string | null;
     seatControllers: Record<string, AiSeatController>;
     hasManualDispatch: boolean;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): boolean {
     return resolveManualSetupSelectionTakeoverPlayerId(args) !== null;
 }
@@ -34,6 +76,7 @@ export function resolveManualSetupSelectionTakeoverPlayerId(args: {
     currentPlayerId: string | null;
     seatControllers: Record<string, AiSeatController>;
     hasManualDispatch: boolean;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): string | null {
     if (!args.hasManualDispatch || !args.sharedState || typeof args.sharedState !== 'object') {
         return null;
@@ -44,6 +87,11 @@ export function resolveManualSetupSelectionTakeoverPlayerId(args: {
         .map(([playerId]) => playerId);
     if (manualAiSeatIds.length === 0) {
         return null;
+    }
+
+    const overriddenPlayerId = resolveManualSetupSelectionTakeoverOverride(args);
+    if (overriddenPlayerId !== undefined) {
+        return overriddenPlayerId;
     }
 
     const phase = typeof args.sharedState.sys?.phase === 'string'
@@ -92,10 +140,22 @@ export function shouldReleaseManualSetupAttemptFromSharedState(args: {
     playerId: string;
     actionKind: ManualSetupSelectionActionKind;
     selectionId: string | null | undefined;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): boolean {
     const selectionId = typeof args.selectionId === 'string' ? args.selectionId : '';
     if (!selectionId || !args.sharedState || typeof args.sharedState !== 'object') {
         return false;
+    }
+
+    const overriddenReleaseDecision = resolveManualSetupAttemptReleaseOverride({
+        sharedState: args.sharedState,
+        playerId: args.playerId,
+        actionKind: args.actionKind,
+        selectionId,
+        engineConfig: args.engineConfig,
+    });
+    if (overriddenReleaseDecision !== undefined) {
+        return overriddenReleaseDecision;
     }
 
     const phase = typeof args.sharedState.sys?.phase === 'string'
@@ -138,12 +198,14 @@ export function shouldReleaseFactionSelectAttemptFromSharedState(args: {
     sharedState: MatchState<unknown> | null | undefined;
     playerId: string;
     factionId: string | null | undefined;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): boolean {
     return shouldReleaseManualSetupAttemptFromSharedState({
         sharedState: args.sharedState,
         playerId: args.playerId,
         actionKind: 'select-faction',
         selectionId: args.factionId,
+        engineConfig: args.engineConfig,
     });
 }
 
@@ -172,12 +234,14 @@ export function resolveManualSetupAttemptReleaseSource(args: {
     playerId: string;
     actionKind: ManualSetupSelectionActionKind;
     selectionId: string | null | undefined;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): 'shared' | 'seat' | null {
     if (shouldReleaseManualSetupAttemptFromSharedState({
         sharedState: args.sharedState,
         playerId: args.playerId,
         actionKind: args.actionKind,
         selectionId: args.selectionId,
+        engineConfig: args.engineConfig,
     })) {
         return 'shared';
     }
@@ -187,6 +251,7 @@ export function resolveManualSetupAttemptReleaseSource(args: {
         playerId: args.playerId,
         actionKind: args.actionKind,
         selectionId: args.selectionId,
+        engineConfig: args.engineConfig,
     })) {
         return 'seat';
     }

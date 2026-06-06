@@ -77,7 +77,7 @@ function registerDinosaurModifiers(): void {
         const isPod = ctx.minion.defId.endsWith('_pod');
         if (isPod && !ctx.minion.talentUsed) return 0;
         return 2;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     // 战争猛龙：同基地每个己方战争猛龙（含自身）+1 力量
     registerPowerModifier('dino_war_raptor', (ctx: PowerModifierContext) => {
@@ -88,7 +88,7 @@ function registerDinosaurModifiers(): void {
             m => ['dino_war_raptor', 'dino_war_raptor_pod'].includes(m.defId) && m.controller === ctx.minion.controller
         ).length;
         return raptorCount;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     // 升级（ongoing 行动卡附着在随从上）：每张 +2 力量
     registerOngoingPowerModifier('dino_upgrade', 'minion', 'self', 2);
@@ -114,7 +114,7 @@ function registerRobotModifiers(): void {
             }
         }
         return otherMinionCount;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     // 微型机修理工 ongoing：己方每个微型机 +1 力量
     // 描述：“你的每个微型机的力量 +1”
@@ -124,7 +124,7 @@ function registerRobotModifiers(): void {
         if (!isMicrobot(ctx.state, ctx.minion)) return 0;
         // 计算场上与目标随从同控制者的修理工数量（包括 POD 版本）
         return countMinionsWithDefId(ctx.state, 'robot_microbot_fixer', ctx.minion.controller);
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 }
 
 // ============================================================================
@@ -138,7 +138,7 @@ function registerGhostModifiers(): void {
         const player = ctx.state.players[ctx.minion.controller];
         if (!player) return 0;
         return player.hand.length <= 2 ? 3 : 0;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     // 通灵之门（ongoing 行动卡附着在基地上）：手牌 2 张或更少时同基地己方随从每张 +2 力量
     registerOngoingPowerModifier('ghost_door_to_the_beyond', 'base', 'ownerMinions', 2, (ctx) => {
@@ -199,7 +199,7 @@ function registerSteampunkModifiers(): void {
             }
         }
         return 0;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     // 蒸汽机车（ongoing 行动卡附着在基地上）：拥有者在此基地有随从时，每张 +5 总力量
     // 注意：这是 BasePowerModifier，ctx.playerId 是正在计算总力量的玩家
@@ -234,7 +234,7 @@ function registerBearCavalryModifiers(): void {
             m => m.controller === ctx.minion.controller
         ).length;
         return myMinionCount === 1 ? 2 : 0;
-    });
+    }, { podStrategy: 'baseOnly' });
 
     // Bearing Down POD（ongoing 行动卡附着在基地上）：动态调整爆破点
     // 规则：每个在此基地有随从的玩家 +2 爆破点；如果本回合你曾把对手随从移动到此基地，则改为每个玩家 -2
@@ -279,7 +279,7 @@ function registerAncientEgyptiansModifiers(): void {
         const hasOwnedBuried = (ctx.base.buriedCards ?? []).some(card => card.controllerId === ctx.minion.controller);
         if (!hasOwnedBuried) return 0;
         return 2;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     registerOngoingPowerModifier('ancient_egyptians_ancient_curse', 'minion', 'self', -2);
 }
@@ -304,7 +304,7 @@ function registerMermaidsModifiers(): void {
         const movedOpponentHereThisTurn = Object.entries(ctx.state.minionsMovedToBaseThisTurn ?? {})
             .some(([playerId, movedBases]) => playerId !== ctx.minion.controller && (movedBases?.[ctx.baseIndex] ?? 0) > 0);
         return movedOpponentHereThisTurn ? 2 : 0;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 }
 
 function registerWorldChampsModifiers(): void {
@@ -324,7 +324,7 @@ function registerFairiesModifiers(): void {
             }
             return total + ((((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.minion.controller) ? 2 : -2);
         }, 0);
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     // 结果：根据交互选择为整座基地提供 +1 / -1 / both(净 0)。
     registerPowerModifier('fairies_enchantment', (ctx: PowerModifierContext) => {
@@ -338,7 +338,7 @@ function registerFairiesModifiers(): void {
             if (mode === 'minus') return total - 1;
             return total;
         }, 0);
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 }
 
 function registerPrincessesModifiers(): void {
@@ -360,7 +360,7 @@ function registerYuanhouModifiers(): void {
         if (!matchesDefId(ctx.minion, 'shapeshifters_mimic')) return 0;
         const highestPrintedPower = getHighestPrintedPower(ctx.state);
         return highestPrintedPower - getCardPrintedPower(ctx.minion.defId);
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     registerPowerModifier('shapeshifters_copycat_copied_power', (ctx: PowerModifierContext) => {
         if (!matchesDefId(ctx.minion, 'shapeshifters_copycat')) return 0;
@@ -373,7 +373,7 @@ function registerYuanhouModifiers(): void {
             return ctx.minion.attachedActions.length;
         }
         return 0;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     registerOngoingPowerModifier('shapeshifters_splice_as_nice', 'minion', 'self', 2);
 
@@ -386,12 +386,12 @@ function registerYuanhouModifiers(): void {
         if (copiedDefId === 'cyborg_apes_cyberevolution') return 3;
         if (copiedDefId === 'cyborg_apes_juiced_up') return ctx.minion.attachedActions.length * 2;
         return 0;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     registerPowerModifier('cyborg_apes_furious_george', (ctx: PowerModifierContext) => {
         if (!matchesDefId(ctx.minion, 'cyborg_apes_furious_george')) return 0;
         return ctx.minion.attachedActions.length;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     registerOngoingPowerModifier('cyborg_apes_cyberevolution', 'minion', 'self', 3);
 
@@ -400,13 +400,13 @@ function registerYuanhouModifiers(): void {
             if (action.defId !== 'cyborg_apes_juiced_up' && action.defId !== 'cyborg_apes_juiced_up_pod') return total;
             return total + (ctx.minion.attachedActions.length * 2);
         }, 0);
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     registerPowerModifier('base_monkey_lab', (ctx: PowerModifierContext) => {
         if (ctx.base.defId !== 'base_monkey_lab') return 0;
         if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
         return ctx.minion.attachedActions.length;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 }
 
 function getCardPrintedPower(defId: string): number {
@@ -446,7 +446,7 @@ function registerKaijuModifiers(): void {
     registerPowerModifier('kaiju_kaijookey', (ctx: PowerModifierContext) => {
         if (ctx.minion.defId.replace(/_pod$/, '') !== 'kaiju_kaijookey') return 0;
         return countOwnedActionsOnBase(ctx, ctx.minion.controller);
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
 
     registerTitanPowerModifier('kaiju_gorgodzolla', (ctx) => {
         const baseDef = getBaseDef(ctx.base.defId);
@@ -466,7 +466,7 @@ function registerBaseModifiers(): void {
         }
         const baseDef = getBaseDef(ctx.base.defId);
         return baseDef?.minionPowerBonus ?? 0;
-    }, { handlesPodInternally: true }); // 标记已处理 POD（通用修正器，不需要 POD 别名）
+    }, { podStrategy: 'selfManaged' }); // 通用修正器内部已自管变体，不需要额外 POD alias
 }
 
 // ============================================================================
@@ -483,7 +483,7 @@ function registerDragonModifiers(): void {
         if (ctx.base.defId !== 'base_wyrms_desolation') return 0;
         if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
         return -1;
-    }, { handlesPodInternally: true });
+    }, { podStrategy: 'selfManaged' });
     registerOngoingPowerModifier('dragons_dragon_lands', 'base', 'ownerMinions', 1);
     registerOngoingPowerModifier('dragons_intimidating_presence', 'base', 'opponentMinions', -1);
 }

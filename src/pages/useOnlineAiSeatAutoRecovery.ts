@@ -7,6 +7,7 @@ import type { AiSeatController } from '../engine/ai';
 import {
     buildOnlineAiForceEndTurnTrackerKey,
     buildOnlineAiForceSkipTrackerKey,
+    buildOnlineAiSeamAwareProgressMarker,
 } from './onlineAiRecovery';
 import {
     applyAiAutoRecoveryRejection,
@@ -70,7 +71,10 @@ export function useOnlineAiSeatAutoRecovery(args: OnlineAiSeatAutoRecoveryArgs):
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout> | null = null;
         const progressMarker = state && typeof state === 'object'
-            ? buildAiProgressMarker(state as MatchState<unknown>)
+            ? buildOnlineAiSeamAwareProgressMarker({
+                state: state as MatchState<unknown>,
+                engineConfig,
+            })
             : 'no-shared-state';
         const seatStates = getEffectiveSeatStates();
 
@@ -147,6 +151,7 @@ export function useOnlineAiSeatAutoRecovery(args: OnlineAiSeatAutoRecoveryArgs):
             resolution: latestCandidate.resolution,
             lastAiAttemptKeyRef,
             scheduleRetry: scheduleAiRetry,
+            engineConfig,
             onConfirmed: () => {
                 toast.warning(
                     'AI 自动跳过。',
@@ -221,7 +226,10 @@ export function useOnlineAiSeatAutoRecovery(args: OnlineAiSeatAutoRecoveryArgs):
             return;
         }
 
-        const progressMarker = buildAiProgressMarker(state as MatchState<unknown>);
+        const progressMarker = buildOnlineAiSeamAwareProgressMarker({
+            state: state as MatchState<unknown>,
+            engineConfig,
+        });
         const turnNumber = (state as MatchState<unknown>).sys?.turnNumber ?? 'no-turn';
         const phase = (state as MatchState<unknown>).sys?.phase ?? 'no-phase';
         const trackerKey = buildOnlineAiForceEndTurnTrackerKey({
@@ -291,6 +299,7 @@ export function useOnlineAiSeatAutoRecovery(args: OnlineAiSeatAutoRecoveryArgs):
                     candidateReason: candidate.reason,
                     authoritativeState: authoritativeState as MatchState<unknown> | null | undefined,
                     seatControllers,
+                    engineConfig,
                 });
                 if (!notice) {
                     return;

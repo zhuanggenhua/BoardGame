@@ -661,6 +661,7 @@ function executeCommand(
                 discardCardUid: spDiscardUid,
                 handCardUid: spHandUid,
                 baseIndex: spIdx,
+                targetMinionUid: spTargetMinionUid,
             } = command.payload;
             const spBase = core.bases[spIdx];
             if (spTitanUid) {
@@ -677,6 +678,7 @@ function executeCommand(
                     cardUid: spTitanUid,
                     defId: titan.defId,
                     baseIndex: spIdx,
+                    targetMinionUid: spTargetMinionUid,
                     random,
                     now,
                 };
@@ -701,6 +703,7 @@ function executeCommand(
                     cardUid: spDiscardUid,
                     defId: discardCard.defId,
                     baseIndex: spIdx,
+                    targetMinionUid: spTargetMinionUid,
                     random,
                     now,
                 };
@@ -725,6 +728,7 @@ function executeCommand(
                     cardUid: spHandUid,
                     defId: handCard.defId,
                     baseIndex: spIdx,
+                    targetMinionUid: spTargetMinionUid,
                     random,
                     now,
                 };
@@ -747,6 +751,7 @@ function executeCommand(
                 cardUid: spUid,
                 defId: spMinion.defId,
                 baseIndex: spIdx,
+                targetMinionUid: spTargetMinionUid,
                 random,
                 now,
             };

@@ -1,5 +1,26 @@
 > 状态提示（2026-06-05）：本文件包含多条历史长期任务推进记录；其中的 `Next:`、`当前状态`、`继续下一批` 只对各自写入当时有效，**不自动构成当前对话任务**。未被用户当轮明确点名的条目，一律只作历史进度参考。
 
+## 2026-06-06 human 面判决指令 / 无情劫掠续结回归已收口，但整派系仍未完成
+
+- 收口对象：
+  - `判决指令`
+  - `无情劫掠`
+- 代码动作：
+  - `src/games/dicethrone/domain/customActions/cursed_pirate.ts`
+    - 修正 `HUMAN_MERCILESS_PLUNDER_CHOICE_ID` 的 choiceEffect：`自得 2 个诅咒金币` 不再错误依赖 `pendingAttack` 仍然存在；现在即使 direct `postDamage` seam 里攻击链已收口，仍会正确加币。
+    - 同时仅在当前 `pendingAttack.sourceAbilityId` 仍匹配 `merciless-plunder` 时，才补 `bonusDiceResolved=true`，避免把“加币”与“攻击链收口标记”绑成一个前置条件。
+  - `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`
+    - 修正 `human 面判决指令在多人局选择诅咒金币后仍应命中原防守方` 的断言口径：4 人 `2v2` 下 `P2` 与 `P4` 共享队伍血量，因此应断言队伍血量同步掉 `7`，而不是错误要求 `P2` HP 不变。
+    - 保留真正锁原防守方的状态断言：`P2` 不获得 `休战`，`P4` 获得 `休战`。
+- 验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "human 面判决指令|human 面无情劫掠" --configLoader native`
+    - `7 passed`
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native`
+    - `68 passed`
+- 当前边界：
+  - 这一步收掉的是 human 面两条续结链的最新机制回归，不等于 `cursed_pirate` 或整派系规则已全部实施完。
+  - 当前剩余仍是双面 completion audit、family 级 `L4` 合法复用登记，以及最终是否允许移除 `implementation_in_progress`。
+
 ## 2026-06-06 火药桶维持转交链已补齐，但整派系仍未收口
 
 - 收口对象：

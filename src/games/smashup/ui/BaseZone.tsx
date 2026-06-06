@@ -100,6 +100,7 @@ export const BaseZone: React.FC<{
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
     const [expandedMinionUid, setExpandedMinionUid] = React.useState<string | null>(null);
+    const [floatingAttachedMinionUid, setFloatingAttachedMinionUid] = React.useState<string | null>(null);
     
     // 响应式布局配置
     const playerCount = turnOrder.length;
@@ -850,6 +851,7 @@ export const BaseZone: React.FC<{
                 {turnOrder.map(pid => {
                     const minions = minionsByController[pid] || [];
                     const hasExpandedMinionInColumn = minions.some((minion) => minion.uid === expandedMinionUid);
+                    const hasFloatingAttachedMinionInColumn = minions.some((minion) => minion.uid === floatingAttachedMinionUid);
 
                     // 个人总力量口径必须走统一计算入口，避免漏掉“只影响控制者总力量、不影响基地总力量”的持续效果。
                     const total = getPlayerEffectivePowerOnBase(core, base, baseIndex, pid);
@@ -866,7 +868,7 @@ export const BaseZone: React.FC<{
                             layout="position"
                             data-testid={`su-base-player-column-${baseIndex}-${pid}`}
                             data-player-id={pid}
-                            className={`flex flex-col items-center relative ${hasExpandedMinionInColumn ? 'z-[120]' : 'z-0'}`}
+                            className={`flex flex-col items-center relative ${hasExpandedMinionInColumn || hasFloatingAttachedMinionInColumn ? 'z-[1400]' : 'z-0'}`}
                             style={{ minWidth: layoutInlineSize(layout.minionCardWidth, layout) }}
                             transition={{ layout: { duration: 0.22, ease: 'easeOut' } }}
                         >
@@ -875,7 +877,7 @@ export const BaseZone: React.FC<{
                             <motion.div
                                 layout="position"
                                 data-testid={`su-base-stack-${baseIndex}-${pid}`}
-                                className={`flex flex-col items-center isolate ${hasExpandedMinionInColumn ? 'z-[120]' : 'z-10 hover:z-[100]'}`}
+                                className={`flex flex-col items-center isolate ${hasExpandedMinionInColumn || hasFloatingAttachedMinionInColumn ? 'z-[1400]' : 'z-10 hover:z-[100]'}`}
                                 transition={{ layout: { duration: 0.22, ease: 'easeOut' } }}
                             >
                                 {(minions.length > 0 || (base.buriedCards?.some((buried) => buried.controllerId === pid) ?? false)) ? (
@@ -1016,6 +1018,12 @@ export const BaseZone: React.FC<{
                                             isExpanded={expandedMinionUid === m.uid}
                                             onToggleExpanded={toggleExpandedMinion}
                                             onExpandMinion={setExpandedMinionUid}
+                                            onAttachedOverlayVisibilityChange={(visible) => {
+                                                setFloatingAttachedMinionUid((current) => {
+                                                    if (visible) return m.uid;
+                                                    return current === m.uid ? null : current;
+                                                });
+                                            }}
                                             isActivationArmed={isActivationArmed}
                                             clearArmedActivation={clearArmedActivation}
                                             armOrActivate={armOrActivate}
@@ -1149,6 +1157,7 @@ const MinionCard: React.FC<{
     isExpanded?: boolean;
     onToggleExpanded?: (minionUid: string) => void;
     onExpandMinion?: React.Dispatch<React.SetStateAction<string | null>>;
+    onAttachedOverlayVisibilityChange?: (visible: boolean) => void;
     isActivationArmed: (activationKey: string) => boolean;
     clearArmedActivation: () => void;
     armOrActivate: (activationKey: string, callbacks: { onArm?: () => void; onActivate: () => void }) => boolean;
@@ -1160,7 +1169,7 @@ const MinionCard: React.FC<{
     isCoarsePointer: boolean;
     /** 该随从是否是本次状态变更中新进入基地的实体 */
     shouldAnimateEntry?: boolean;
-}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
+}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, onAttachedOverlayVisibilityChange, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
     const { t } = useTranslation('game-smashup');
     // 兼容融合卡：Wolf Pact 这类作为随从打出时仍使用融合卡定义的图与文案
     const minionDef = getMinionDef(minion.defId);
@@ -1188,12 +1197,52 @@ const MinionCard: React.FC<{
     const isFourPlayerGame = turnOrder.length === 4;
     const shouldShowAttachedLeft = isRightmostBase && isRightmostPlayer && isFourPlayerGame;
     const shouldShowAttachedActions = Boolean(selectableOngoingUids) || (isCoarsePointer ? !!isExpanded : false);
+    const [isAttachedOverlayPinned, setIsAttachedOverlayPinned] = React.useState(false);
+    const attachedOverlayHideTimerRef = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
     const attachedActionsPositionClass = shouldShowAttachedLeft
         ? 'right-full flex-col-reverse pr-[0.6vw]'
         : 'left-full flex-col pl-[0.6vw]';
     const minionActivationKey = `minion-${minion.uid}`;
     const isMinionActivationArmed = isActivationArmed(minionActivationKey);
     const showTouchActivationHint = isCoarsePointer && isMinionActivationArmed && canActivate;
+    const clearAttachedOverlayHideTimer = useCallback(() => {
+        if (attachedOverlayHideTimerRef.current !== null) {
+            window.clearTimeout(attachedOverlayHideTimerRef.current);
+            attachedOverlayHideTimerRef.current = null;
+        }
+    }, []);
+    const setAttachedOverlayPinnedState = useCallback((visible: boolean) => {
+        clearAttachedOverlayHideTimer();
+        setIsAttachedOverlayPinned(visible);
+        onAttachedOverlayVisibilityChange?.(visible);
+    }, [clearAttachedOverlayHideTimer, onAttachedOverlayVisibilityChange]);
+    const scheduleAttachedOverlayHide = useCallback(() => {
+        if (shouldShowAttachedActions) return;
+        clearAttachedOverlayHideTimer();
+        attachedOverlayHideTimerRef.current = window.setTimeout(() => {
+            setIsAttachedOverlayPinned(false);
+            onAttachedOverlayVisibilityChange?.(false);
+        }, 140);
+    }, [clearAttachedOverlayHideTimer, onAttachedOverlayVisibilityChange, shouldShowAttachedActions]);
+    const isAttachedOverlayVisible = hasAttachedActions && (shouldShowAttachedActions || isAttachedOverlayPinned);
+
+    React.useEffect(() => {
+        if (!hasAttachedActions) {
+            setAttachedOverlayPinnedState(false);
+            return;
+        }
+        if (shouldShowAttachedActions) {
+            setAttachedOverlayPinnedState(true);
+        } else {
+            setIsAttachedOverlayPinned(false);
+            onAttachedOverlayVisibilityChange?.(false);
+        }
+    }, [hasAttachedActions, onAttachedOverlayVisibilityChange, setAttachedOverlayPinnedState, shouldShowAttachedActions]);
+
+    React.useEffect(() => () => {
+        clearAttachedOverlayHideTimer();
+        onAttachedOverlayVisibilityChange?.(false);
+    }, [clearAttachedOverlayHideTimer, onAttachedOverlayVisibilityChange]);
 
     const seed = minion.uid.charCodeAt(0) + index;
     const rotation = (seed % 6) - 3;
@@ -1283,7 +1332,7 @@ const MinionCard: React.FC<{
     // 随从选择模式下的高亮
     const isSelectableMinion = !!isMinionSelectMode;
     const showUsedMinionState = hasTalent && minion.talentUsed && !canActivate;
-    const minionContainerClassName = `relative aspect-[0.714] group hover:!z-[999] ${
+    const minionContainerClassName = `relative aspect-[0.714] group ${isAttachedOverlayVisible ? '!z-[1300]' : 'hover:!z-[999]'} ${
         isDimmed
             ? 'cursor-not-allowed'
             : isSelectableMinion && !isDimmed
@@ -1330,10 +1379,21 @@ const MinionCard: React.FC<{
             data-duel-participant={isDuelParticipant ? 'true' : 'false'}
             data-expanded={isExpanded ? 'true' : 'false'}
             data-attached-actions-visible={hasAttachedActions ? (shouldShowAttachedActions ? 'true' : 'false') : 'none'}
+            data-attached-overlay-visible={hasAttachedActions ? (isAttachedOverlayVisible ? 'true' : 'false') : 'none'}
             data-activation-armed={isMinionActivationArmed ? 'true' : 'false'}
             {...getMinionTouchInspectProps(`minion-${minion.uid}`, undefined)}
             onClickCapture={handleSelectCapture}
             onClick={handleClick}
+            onMouseEnter={() => {
+                if (hasAttachedActions && !shouldShowAttachedActions) {
+                    setAttachedOverlayPinnedState(true);
+                }
+            }}
+            onMouseLeave={() => {
+                if (hasAttachedActions && !shouldShowAttachedActions) {
+                    scheduleAttachedOverlayHide();
+                }
+            }}
             className={minionContainerClassName}
             style={stackStyle}
             initial={shouldAnimateEntry ? { scale: 0.3, y: -60, opacity: 0 } : false}
@@ -1468,12 +1528,23 @@ const MinionCard: React.FC<{
                     {/* 行动卡选择模式下始终显示（不需要 hover） */}
                     {/* 最右侧基地的最右边玩家：显示在左侧；其他：显示在右侧 */}
                     <div
+                        data-attached-overlay-owner={minion.uid}
                         className={`absolute top-0 flex ${attachedActionsPositionClass}
-                            ${shouldShowAttachedActions
+                            ${isAttachedOverlayVisible
                                 ? 'opacity-100 scale-100 pointer-events-auto'
-                                : 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-150 pointer-events-none group-hover:pointer-events-auto'
+                                : 'opacity-0 scale-90 transition-all duration-150 pointer-events-none'
                             }`}
                         style={{ zIndex: UI_Z_INDEX.tooltip, gap: layoutInlineSize(0.2, layout) }}
+                        onMouseEnter={() => {
+                            if (!shouldShowAttachedActions) {
+                                setAttachedOverlayPinnedState(true);
+                            }
+                        }}
+                        onMouseLeave={() => {
+                            if (!shouldShowAttachedActions) {
+                                scheduleAttachedOverlayHide();
+                            }
+                        }}
                     >
                         {minion.attachedActions.map((aa) => {
                             const actionDef = getCardDef(aa.defId);

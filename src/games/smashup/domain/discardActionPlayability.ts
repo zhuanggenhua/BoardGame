@@ -39,3 +39,25 @@ export function getDiscardActionPlayOptions(core: SmashUpCore, playerId: PlayerI
     }
     return result;
 }
+
+export function canPlayActionFromDiscard(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    cardUid: string,
+    targetBaseIndex: number,
+    targetMinionUid?: string,
+): { allowed: true; sourceId: string } | null {
+    const option = getDiscardActionPlayOptions(core, playerId).find(entry => entry.card.uid === cardUid);
+    if (!option) return null;
+    if (option.allowedBaseIndices !== 'all' && !option.allowedBaseIndices.includes(targetBaseIndex)) {
+        return null;
+    }
+    if (option.allowedMinionUids && option.allowedMinionUids.length > 0) {
+        if (!targetMinionUid || !option.allowedMinionUids.includes(targetMinionUid)) {
+            return null;
+        }
+    } else if (targetMinionUid !== undefined) {
+        return null;
+    }
+    return { allowed: true, sourceId: option.sourceId };
+}

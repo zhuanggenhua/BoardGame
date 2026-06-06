@@ -3133,34 +3133,12 @@ test.describe('Smash Up 牌库检索交互', () => {
         await saveStableScreenshot(page, testInfo, 'smashup-world-champs-eh-discard-available-2026-04-28');
 
         await page.locator('[data-card-def-id="world_champs_eh"]').click();
-        await page.getByTestId('base-zone-0').click({ force: true });
-        await game.waitForInteraction('world_champs_eh');
+        await expect(page.getByText('请选择一个随从')).toBeVisible({ timeout: 5000 });
 
-        const promptMeta = await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            const current = harness?.state?.get?.()?.sys?.interaction?.current;
-            return {
-                sourceId: current?.data?.sourceId,
-                options: (current?.data?.options ?? []).map((option: any) => ({
-                    id: option.id,
-                    minionUid: option.value?.minionUid ?? null,
-                    baseIndex: option.value?.baseIndex ?? null,
-                })),
-            };
-        });
+        await game.screenshot('eh-discard-minion-select-visible', testInfo);
+        await saveStableScreenshot(page, testInfo, 'smashup-world-champs-eh-minion-select-2026-04-28');
 
-        expect(promptMeta.sourceId).toBe('world_champs_eh');
-        expect(promptMeta.options.map((option: any) => option.minionUid)).toEqual(
-            expect.arrayContaining(['eh-ally-1', 'eh-ally-2']),
-        );
-
-        await game.screenshot('eh-minion-prompt-visible', testInfo);
-        await saveStableScreenshot(page, testInfo, 'smashup-world-champs-eh-prompt-2026-04-28');
-
-        await game.selectInteractionOptionBy(
-            (option: any) => option.value?.minionUid === 'eh-ally-2',
-            '嗯？选择第二个己方随从',
-        );
+        await page.locator('[data-minion-uid="eh-ally-2"]').click({ force: true });
         await game.waitForNoInteraction();
 
         const finalState = await game.getState();

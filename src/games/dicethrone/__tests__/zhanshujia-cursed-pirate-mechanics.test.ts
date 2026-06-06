@@ -2634,6 +2634,42 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         ]);
     });
 
+    it('human 面判决指令在多人局选择诅咒金币后仍应命中原防守方', () => {
+        const state = createFourPlayerCursedPirateState();
+        setPlayerBoardFace(state, '0', 'normal');
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '3',
+            sourceAbilityId: 'verdict-command',
+            isDefendable: true,
+            preDefenseResolved: true,
+        } as DiceThroneCore['pendingAttack'];
+
+        const hpBeforeP2 = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const hpBeforeP4 = state.core.players['3'].resources[RESOURCE_IDS.HP] ?? 0;
+        const result = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityEffects(state.core, '0', 'verdict-command'),
+            'preDefense',
+            { attackerId: '0', defenderId: '3', sourceAbilityId: 'verdict-command' },
+        );
+
+        const prompt = getSimpleChoicePrompt(result.state, 'verdict-command');
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const accepted = respondToPrompt(result.state, accept!.id, '0');
+        expect(accepted.success).toBe(true);
+        expect(accepted.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+        expect(accepted.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBeforeP2 - 7);
+        expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+        expect(accepted.state.core.players['3'].resources[RESOURCE_IDS.HP]).toBe(hpBeforeP4 - 7);
+        expect(accepted.state.core.players['3'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+    });
+
     it('human 面惊魂动魄可移除任意数量的诅咒金币', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         state.core = applyEvents(state.core, [{
@@ -2831,6 +2867,39 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
         expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
         expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 12);
+    });
+
+    it('human 面无情劫掠在多人局选择诅咒金币后仍应把休战和火药桶施加给原防守方', () => {
+        const state = createFourPlayerCursedPirateState();
+        setPlayerBoardFace(state, '0', 'normal');
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '3',
+            sourceAbilityId: 'merciless-plunder',
+            isDefendable: false,
+        } as DiceThroneCore['pendingAttack'];
+
+        const result = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityEffects(state.core, '0', 'merciless-plunder'),
+            'postDamage',
+            { attackerId: '0', defenderId: '3', sourceAbilityId: 'merciless-plunder', damageDealt: 12 },
+        );
+
+        const prompt = getSimpleChoicePrompt(result.state, 'merciless-plunder');
+        const accept = prompt.options.find(option => (
+            option.value as { statusId?: string; value?: number }
+        ).statusId === STATUS_IDS.CURSED_COIN);
+        expect(accept).toBeDefined();
+
+        const accepted = respondToPrompt(result.state, accept!.id, '0');
+        expect(accepted.success).toBe(true);
+        expect(accepted.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
+        expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+        expect(accepted.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
+        expect(accepted.state.core.players['3'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+        expect(accepted.state.core.players['3'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
     });
 
     it('human 面嘿，老兄会结算反击、CP、防伤与诅咒金币选择', () => {

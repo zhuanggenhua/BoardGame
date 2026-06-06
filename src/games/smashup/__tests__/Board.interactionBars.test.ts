@@ -29,4 +29,15 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain('targetMinionUid: minionUid');
         expect(source).toContain('fromDiscard: true');
     });
+
+    it('弃牌堆 special 只保留点基地激活族，点随从的弃牌持续行动不应复用 activate_special 提示', () => {
+        const source = readBoardSource();
+        expect(source).toContain("'activate_special_base'");
+        expect(source).toContain("'activate_special_minion'");
+        expect(source).toContain("selected?.mode === 'activate_special_base'");
+        expect(source).toContain("selected?.mode === 'activate_special_minion'");
+        expect(source).toContain("defaultValue: '点击基地发动这张牌'");
+        expect(source).toContain("dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, {");
+        expect(source).toContain('targetMinionUid: minionUid');
+    });
 });

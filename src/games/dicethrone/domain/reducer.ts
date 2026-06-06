@@ -583,13 +583,18 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
                 tokenActiveUseTiming === 'onOffensiveRollEnd'
                 || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
             );
+        const shouldSkipGenericStatusDelta = statusId === 'cursed_coin'
+            && (
+                customId === 'cursed-pirate-human-verdict-command-choice'
+                || customId === 'cursed-pirate-human-merciless-plunder-choice'
+            );
 
         if (tokenId && !shouldSkipGenericTokenDelta && hasValidChoiceDelta && allowGenericChoiceDelta) {
             const maxStacks = getTokenStackLimit(state, playerId, tokenId);
             const currentAmount = player.tokens[tokenId] || 0;
             const nextAmount = Math.max(0, Math.min(currentAmount + value, maxStacks));
             playerUpdates = { tokens: { ...player.tokens, [tokenId]: nextAmount } };
-        } else if (statusId && hasValidChoiceDelta && allowGenericChoiceDelta) {
+        } else if (statusId && !shouldSkipGenericStatusDelta && hasValidChoiceDelta && allowGenericChoiceDelta) {
             const def = state.tokenDefinitions.find(e => e.id === statusId);
             const maxStacks = def?.stackLimit || 99;
             const currentStacks = player.statusEffects[statusId] || 0;

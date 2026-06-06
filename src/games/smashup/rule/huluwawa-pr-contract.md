@@ -20,7 +20,7 @@
 | 六娃 | 天赋将自身初始力量临时改为 0，直到下个己方回合开始；计分前可取消 | `huluwawaLiuWaTalent`、`huluwawa_liu_wa_before_scoring` handler | `huluwawa.test.ts` 覆盖取消后移除 timed modifier 并恢复力量 |
 | 七娃 | 天赋从牌库搜 1 张行动入手，若搜牌库则重洗；有附着行动时回合结束额外抽牌 | `huluwawaQiWaTalent`、`huluwawaSearchCardProgram`、`huluwawaQiWaTurnEnd` | `huluwawa.test.ts` 覆盖搜牌库后重洗剩余牌库 |
 | 一根藤上七朵花 | 弃牌堆不同名仆从各 1 张洗回牌库 | `huluwawaOneVineSevenFlowers` | `huluwawa.test.ts` 覆盖不同名各取一张、重复名保留 |
-| 紫金宝葫芦 | 附着到己方仆从；天赋二选一：移动小仆从到这里，或弃牌堆行动放牌库底；七娃在场可弃牌堆额外打出到其身上 | `huluwawaPurpleGoldGourdTalent`、`huluwawa_purple_gold_gourd_bottom` handler、discard special provider | `huluwawa.test.ts` 覆盖弃牌堆行动放牌库底 handler |
+| 紫金宝葫芦 | 附着到己方仆从；天赋二选一：移动小仆从到这里，或弃牌堆行动放牌库底；七娃在场可弃牌堆额外打出到其身上 | `huluwawaPurpleGoldGourdTalent`、`huluwawa_purple_gold_gourd_bottom` handler、discard action provider（目标族=随从） | `huluwawa.test.ts` 覆盖弃牌堆行动放牌库底 handler |
 | 人多力量大 | 选择基地，己方每个仆从 +1 到回合结束 | `huluwawaStrengthInNumbers` | `huluwawa.test.ts` 覆盖目标基地己方临时 +1，敌方不变 |
 | 妖精哪里逃 | 摧毁力量 3 或更小仆从，或移动一个仆从 | `huluwawaWhereDoYouThinkYoureGoing` | `huluwawa.test.ts` 覆盖分支 prompt 与摧毁小仆从路径 |
 | 玉如意 | 从牌库/弃牌堆搜 1 张入手；若搜牌库则重洗；可额外打出行动 | `huluwawaJadeRuyi`、`huluwawaSearchCardProgram` | 搜牌库重洗逻辑与七娃共用测试覆盖 |

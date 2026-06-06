@@ -48,6 +48,7 @@ const RANSOM_DECISION_FACTOR = 10;
 const WALK_THE_PLANK_TARGET_FACTOR = 10;
 const WALK_THE_PLANK_STEAL_MODE = 1;
 const WALK_THE_PLANK_DISCARD_MODE = 2;
+const HUMAN_TARGETED_CURSED_COIN_FACTOR = 100;
 
 const countBits = (value: number): number => {
     let count = 0;
@@ -78,6 +79,18 @@ const getGoFishPowderKegTargetIds = (state: CustomActionContext['state'], attack
 
 const getSortedPlayerIds = (state: CustomActionContext['state']): string[] =>
     Object.keys(state.players).sort((a, b) => Number(a) - Number(b));
+
+const getPendingAttackDefenderId = (
+    state: CustomActionContext['state'],
+    attackerId: string,
+    sourceAbilityId?: string,
+): string | undefined => {
+    const pendingAttack = state.pendingAttack;
+    if (!pendingAttack) return undefined;
+    if (pendingAttack.attackerId !== attackerId) return undefined;
+    if (sourceAbilityId && pendingAttack.sourceAbilityId !== sourceAbilityId) return undefined;
+    return pendingAttack.defenderId;
+};
 
 const encodeRansomSelectionValue = (
     state: CustomActionContext['state'],
@@ -128,6 +141,29 @@ const decodeWalkThePlankSelectionValue = (
     return {
         targetId: playerIds[targetIndex],
         mode: normalized % WALK_THE_PLANK_TARGET_FACTOR,
+    };
+};
+
+const encodeHumanTargetedCursedCoinChoiceValue = (
+    state: CustomActionContext['state'],
+    targetId: string,
+    cursedCoinGain: number,
+): number => {
+    const playerIds = getSortedPlayerIds(state);
+    const targetIndex = Math.max(0, playerIds.indexOf(targetId));
+    return targetIndex * HUMAN_TARGETED_CURSED_COIN_FACTOR + Math.max(0, Math.trunc(cursedCoinGain));
+};
+
+const decodeHumanTargetedCursedCoinChoiceValue = (
+    state: CustomActionContext['state'],
+    value: number,
+): { targetId?: string; cursedCoinGain: number } => {
+    const playerIds = getSortedPlayerIds(state);
+    const normalized = Math.max(0, Math.trunc(value));
+    const targetIndex = Math.floor(normalized / HUMAN_TARGETED_CURSED_COIN_FACTOR);
+    return {
+        targetId: playerIds[targetIndex],
+        cursedCoinGain: normalized % HUMAN_TARGETED_CURSED_COIN_FACTOR,
     };
 };
 
@@ -721,10 +757,17 @@ function requestHumanRemoveCursedCoinsChoice({
 }
 
 function requestHumanVerdictCommand({
+    ctx,
     attackerId,
     sourceAbilityId,
+    state,
     timestamp,
 }: CustomActionContext): DiceThroneEvent[] {
+    const resolvedTargetId = ctx?.defenderId
+        ?? getPendingAttackDefenderId(state, attackerId, sourceAbilityId)
+        ?? getOpponents(state, attackerId)[0];
+    if (!resolvedTargetId) return [];
+
     return [{
         type: 'CHOICE_REQUESTED',
         payload: {
@@ -734,12 +777,12 @@ function requestHumanVerdictCommand({
             options: [
                 {
                     statusId: STATUS_IDS.CURSED_COIN,
-                    value: 1,
+                    value: encodeHumanTargetedCursedCoinChoiceValue(state, resolvedTargetId, 1),
                     customId: HUMAN_VERDICT_COMMAND_CHOICE_ID,
                     labelKey: 'choices.cursedCoinGain.accept',
                 },
                 {
-                    value: 0,
+                    value: encodeHumanTargetedCursedCoinChoiceValue(state, resolvedTargetId, 0),
                     customId: HUMAN_VERDICT_COMMAND_CHOICE_ID,
                     labelKey: 'choices.cursedCoinGain.decline',
                 },
@@ -751,10 +794,17 @@ function requestHumanVerdictCommand({
 }
 
 function requestHumanMercilessPlunder({
+    ctx,
     attackerId,
     sourceAbilityId,
+    state,
     timestamp,
 }: CustomActionContext): DiceThroneEvent[] {
+    const resolvedTargetId = ctx?.defenderId
+        ?? getPendingAttackDefenderId(state, attackerId, sourceAbilityId)
+        ?? getOpponents(state, attackerId)[0];
+    if (!resolvedTargetId) return [];
+
     return [{
         type: 'CHOICE_REQUESTED',
         payload: {
@@ -764,12 +814,12 @@ function requestHumanMercilessPlunder({
             options: [
                 {
                     statusId: STATUS_IDS.CURSED_COIN,
-                    value: 2,
+                    value: encodeHumanTargetedCursedCoinChoiceValue(state, resolvedTargetId, 2),
                     customId: HUMAN_MERCILESS_PLUNDER_CHOICE_ID,
                     labelKey: 'choices.cursedCoinGain.accept',
                 },
                 {
-                    value: 0,
+                    value: encodeHumanTargetedCursedCoinChoiceValue(state, resolvedTargetId, 0),
                     customId: HUMAN_MERCILESS_PLUNDER_CHOICE_ID,
                     labelKey: 'choices.cursedCoinGain.decline',
                 },
@@ -1320,10 +1370,14 @@ export function registerCursedPirateCustomActions(): void {
         state,
         playerId,
         sourceAbilityId,
+        value,
         timestamp,
     }) => {
         if (!sourceAbilityId) return [];
-        const targetId = getOpponents(state, playerId)[0];
+        const { targetId: encodedTargetId } = decodeHumanTargetedCursedCoinChoiceValue(state, value ?? 0);
+        const targetId = encodedTargetId
+            ?? getPendingAttackDefenderId(state, playerId, sourceAbilityId)
+            ?? getOpponents(state, playerId)[0];
         const target = targetId ? state.players[targetId] : undefined;
         if (!targetId || !target) return [];
 
@@ -1363,10 +1417,14 @@ export function registerCursedPirateCustomActions(): void {
         state,
         playerId,
         sourceAbilityId,
+        value,
         timestamp,
     }) => {
         if (!sourceAbilityId) return [];
-        const targetId = getOpponents(state, playerId)[0];
+        const { targetId: encodedTargetId } = decodeHumanTargetedCursedCoinChoiceValue(state, value ?? 0);
+        const targetId = encodedTargetId
+            ?? getPendingAttackDefenderId(state, playerId, sourceAbilityId)
+            ?? getOpponents(state, playerId)[0];
         if (!targetId || !state.players[targetId]) return [];
 
         return [
@@ -1396,16 +1454,50 @@ export function registerCursedPirateCustomActions(): void {
             }),
         ];
     });
-    registerChoiceEffectHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({ state, sourceAbilityId }) => {
-        if (!sourceAbilityId || state.pendingAttack?.sourceAbilityId !== sourceAbilityId) {
-            return undefined;
-        }
-        return {
-            pendingAttack: {
+    registerChoiceEffectHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({ state, playerId, sourceAbilityId, value }) => {
+        const { cursedCoinGain } = decodeHumanTargetedCursedCoinChoiceValue(state, value ?? 0);
+        const player = state.players[playerId];
+        if (!player) return undefined;
+        const currentStacks = player.statusEffects[STATUS_IDS.CURSED_COIN] ?? 0;
+        const maxStacks = getTokenStackLimit(state, playerId, STATUS_IDS.CURSED_COIN);
+        const result: Partial<CustomActionContext['state']> = {
+            players: {
+                ...state.players,
+                [playerId]: {
+                    ...player,
+                    statusEffects: {
+                        ...player.statusEffects,
+                        [STATUS_IDS.CURSED_COIN]: Math.min(currentStacks + cursedCoinGain, maxStacks),
+                    },
+                },
+            },
+        };
+        if (sourceAbilityId && state.pendingAttack?.sourceAbilityId === sourceAbilityId) {
+            result.pendingAttack = {
                 ...state.pendingAttack,
                 // 无情劫掠的 12 点主伤害已在 withDamage 阶段落地；
                 // 选择诅咒金币后只需要收口 ATTACK_RESOLVED，不应再次重放整段攻击链。
                 bonusDiceResolved: true,
+            };
+        }
+        return result;
+    });
+    registerChoiceEffectHandler(HUMAN_VERDICT_COMMAND_CHOICE_ID, ({ state, playerId, value }) => {
+        const player = state.players[playerId];
+        if (!player) return undefined;
+        const { cursedCoinGain } = decodeHumanTargetedCursedCoinChoiceValue(state, value ?? 0);
+        const currentStacks = player.statusEffects[STATUS_IDS.CURSED_COIN] ?? 0;
+        const maxStacks = getTokenStackLimit(state, playerId, STATUS_IDS.CURSED_COIN);
+        return {
+            players: {
+                ...state.players,
+                [playerId]: {
+                    ...player,
+                    statusEffects: {
+                        ...player.statusEffects,
+                        [STATUS_IDS.CURSED_COIN]: Math.min(currentStacks + cursedCoinGain, maxStacks),
+                    },
+                },
             },
         };
     });

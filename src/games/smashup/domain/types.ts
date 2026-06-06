@@ -1060,6 +1060,7 @@ export interface ActivateSpecialCommand extends Command<typeof SU_COMMANDS.ACTIV
         discardCardUid?: string;
         handCardUid?: string;
         baseIndex: number;
+        targetMinionUid?: string;
     };
 }
 

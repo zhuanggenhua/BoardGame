@@ -34,14 +34,29 @@ export interface PowerModifierContext {
 /** 力量修正函数：返回力量增减值（正数=加，负数=减） */
 export type PowerModifierFn = (ctx: PowerModifierContext) => number;
 
+/** POD 变体注册策略 */
+export type PodVariantStrategy =
+    | 'inherit'     // 基础版默认可被 POD 继承；若存在显式 _pod 注册则由 _pod 覆盖
+    | 'selfManaged' // 规则函数内部自行处理基础版 / POD 差异，不再自动生成 _pod alias
+    | 'baseOnly';   // 规则只属于基础版，不自动生成 _pod alias，也不暴露 _pod 审计项
+
+interface ModifierRegistrationOptions {
+    podStrategy?: PodVariantStrategy;
+}
+
+export interface PowerModifierDefinition extends ModifierRegistrationOptions {
+    sourceDefId: string;
+    modifier: PowerModifierFn;
+}
+
 /** 修正来源信息 */
 interface ModifierEntry {
     /** 来源随从 defId（提供修正的随从） */
     sourceDefId: string;
     /** 修正函数 */
     modifier: PowerModifierFn;
-    /** 是否已在函数内部处理 POD 版本（如果是，则不需要创建 POD 别名） */
-    handlesPodInternally?: boolean;
+    /** POD 变体注册策略 */
+    podStrategy: PodVariantStrategy;
 }
 
 /** 临界点修正上下文 */
@@ -80,6 +95,23 @@ export type BasePowerModifierFn = (ctx: BasePowerModifierContext) => number;
 interface BreakpointModifierEntry {
     sourceDefId: string;
     modifier: BreakpointModifierFn;
+    podStrategy: PodVariantStrategy;
+}
+
+export interface BreakpointModifierDefinition extends ModifierRegistrationOptions {
+    sourceDefId: string;
+    modifier: BreakpointModifierFn;
+}
+
+interface BasePowerModifierEntry {
+    defId: string;
+    modifier: BasePowerModifierFn;
+    podStrategy: PodVariantStrategy;
+}
+
+export interface BasePowerModifierDefinition extends ModifierRegistrationOptions {
+    defId: string;
+    modifier: BasePowerModifierFn;
 }
 
 // ============================================================================
@@ -95,7 +127,7 @@ const breakpointModifierRegistry: BreakpointModifierEntry[] = [];
 const generatedPodBreakpointAliases = new Set<string>();
 
 /** 基地级别力量修正注册表 */
-const basePowerModifiers: Map<string, BasePowerModifierFn> = new Map();
+const basePowerModifiers: Map<string, BasePowerModifierEntry> = new Map();
 const generatedPodBasePowerAliases = new Set<string>();
 
 export interface TitanPowerModifierContext {
@@ -124,6 +156,40 @@ function shouldExposePodModifierAlias(defId: string): boolean {
         return podCard.abilityTags?.includes('ongoing') ?? false;
     }
     return Boolean(getBaseDef(`${defId}_pod`));
+}
+
+function getPodStrategy(options?: ModifierRegistrationOptions): PodVariantStrategy {
+    return options?.podStrategy ?? 'inherit';
+}
+
+function shouldAutoCreatePodAlias(strategy: PodVariantStrategy): boolean {
+    return strategy === 'inherit';
+}
+
+function shouldExposeSelfManagedPodAudit(defId: string, strategy: PodVariantStrategy): boolean {
+    return strategy === 'selfManaged'
+        && isEntityBackedModifierSource(defId)
+        && shouldExposePodModifierAlias(defId);
+}
+
+function shouldSkipPowerModifierForTarget(
+    entry: ModifierEntry,
+    minion: MinionOnBase,
+): boolean {
+    if (entry.sourceDefId.endsWith('_pod')) {
+        return minion.defId === entry.sourceDefId.slice(0, -4);
+    }
+
+    const podId = `${entry.sourceDefId}_pod`;
+    if (minion.defId !== podId) {
+        return false;
+    }
+
+    if (entry.podStrategy === 'baseOnly') {
+        return true;
+    }
+
+    return modifierRegistry.some((candidate) => candidate.sourceDefId === podId);
 }
 
 function getFilteredPowerModifierContext(
@@ -189,16 +255,33 @@ function rewriteBaseOngoingDefIdForPodAlias(
  * @param sourceDefId 提供修正的随从 defId（如 'robot_microbot_alpha'）
  * @param modifier 修正函数
  * @param options 可选配置
- * @param options.handlesPodInternally 修正函数是否已在内部处理 POD 版本（通过 baseId = defId.replace(/_pod$/, '')）。如果是，则不会为其创建 POD 别名。
+ * @param options.podStrategy POD 变体策略。默认 `inherit`：
+ * - `inherit`：基础版默认可被 POD 继承，若存在显式 `_pod` 注册则由 `_pod` 覆盖
+ * - `selfManaged`：规则函数内部自行处理基础版 / POD 差异，不自动生成 `_pod`
+ * - `baseOnly`：规则只属于基础版，不自动生成 `_pod`
  */
 export function registerPowerModifier(
     sourceDefId: string,
     modifier: PowerModifierFn,
-    options?: { handlesPodInternally?: boolean }
+    options?: ModifierRegistrationOptions,
 ): void {
     // 去重保护：同一 sourceDefId 只注册一次（防止 HMR 重复注册）
     if (modifierRegistry.some(e => e.sourceDefId === sourceDefId)) return;
-    modifierRegistry.push({ sourceDefId, modifier, handlesPodInternally: options?.handlesPodInternally });
+    modifierRegistry.push({
+        sourceDefId,
+        modifier,
+        podStrategy: getPodStrategy(options),
+    });
+}
+
+export function registerPowerModifiers(
+    definitions: readonly PowerModifierDefinition[],
+): void {
+    for (const definition of definitions) {
+        registerPowerModifier(definition.sourceDefId, definition.modifier, {
+            podStrategy: definition.podStrategy,
+        });
+    }
 }
 
 /**
@@ -207,8 +290,26 @@ export function registerPowerModifier(
  * @param defId ongoing 行动卡的 defId（如 'steampunk_aggromotive'）
  * @param modifier 修正函数
  */
-export function registerBasePowerModifier(defId: string, modifier: BasePowerModifierFn): void {
-    basePowerModifiers.set(defId, modifier);
+export function registerBasePowerModifier(
+    defId: string,
+    modifier: BasePowerModifierFn,
+    options?: ModifierRegistrationOptions,
+): void {
+    basePowerModifiers.set(defId, {
+        defId,
+        modifier,
+        podStrategy: getPodStrategy(options),
+    });
+}
+
+export function registerBasePowerModifiers(
+    definitions: readonly BasePowerModifierDefinition[],
+): void {
+    for (const definition of definitions) {
+        registerBasePowerModifier(definition.defId, definition.modifier, {
+            podStrategy: definition.podStrategy,
+        });
+    }
 }
 
 export function registerTitanPowerModifier(defId: string, modifier: TitanPowerModifierFn): void {
@@ -234,10 +335,10 @@ export function getBasePowerModifiers(
     // 遍历基地上的所有 ongoing 行动卡
     for (const ongoing of base.ongoingActions) {
         if (isCardSuppressed(state, ongoing.uid)) continue;
-        const modifier = basePowerModifiers.get(ongoing.defId);
-        if (modifier) {
+        const entry = basePowerModifiers.get(ongoing.defId);
+        if (entry) {
             const filteredState = getSuppressionFilteredStateForSource(state, ongoing.defId);
-            total += modifier({
+            total += entry.modifier({
                 state: filteredState,
                 baseIndex,
                 base: filteredState.bases[baseIndex] ?? base,
@@ -263,15 +364,23 @@ export function getTempBasePowerModifier(
 // ============================================================================
 
 /** ongoing 卡附着位置 */
-type OngoingLocation = 'base' | 'minion';
+export type OngoingLocation = 'base' | 'minion';
 
 /** ongoing 卡生效目标 */
-type OngoingTarget =
+export type OngoingTarget =
     | 'allMinions'       // 基地上所有随从
     | 'opponentMinions'  // 基地上非 owner 的随从
     | 'ownerMinions'     // 基地上 owner 的随从
     | 'self'             // 被附着的随从自身
     | 'firstOwnerMinion'; // owner 在此基地的第一个随从（用于"总力量+N"效果）
+
+export interface OngoingPowerModifierDefinition {
+    defId: string;
+    location: OngoingLocation;
+    target: OngoingTarget;
+    delta: number;
+    condition?: (ctx: PowerModifierContext) => boolean;
+}
 
 /**
  * 声明式注册 ongoing 力量修正（通用，自动按实例数叠加）
@@ -348,7 +457,7 @@ export function registerOngoingPowerModifier(
             default:
                 return 0; // 'self' 对基地 ongoing 无意义
         }
-    }, { handlesPodInternally: true }); // 标记已处理 POD
+    }, { podStrategy: 'selfManaged' });
 }
 
 /**
@@ -359,11 +468,16 @@ export function registerOngoingPowerModifier(
  */
 export function registerBreakpointModifier(
     sourceDefId: string,
-    modifier: BreakpointModifierFn
+    modifier: BreakpointModifierFn,
+    options?: ModifierRegistrationOptions,
 ): void {
     // 去重保护：同一 sourceDefId 只注册一次（防止 HMR 重复注册）
     if (breakpointModifierRegistry.some(e => e.sourceDefId === sourceDefId)) return;
-    breakpointModifierRegistry.push({ sourceDefId, modifier });
+    breakpointModifierRegistry.push({
+        sourceDefId,
+        modifier,
+        podStrategy: getPodStrategy(options),
+    });
 }
 
 /** 清空所有修正注册表（测试用） */
@@ -381,7 +495,7 @@ export function clearPowerModifierRegistry(): void {
  * 自动为所有基础版力量修正创建 POD 版本映射
  * 
  * 必须在所有力量修正注册完毕后调用此函数。
- * 跳过那些已在函数内部处理 POD 版本的修正（handlesPodInternally: true）。
+ * 默认只为 `inherit` 策略生成 `_pod` alias。
  */
 export function registerPodPowerModifierAliases(): void {
     let _mappedCount = 0;
@@ -394,12 +508,15 @@ export function registerPodPowerModifierAliases(): void {
             const podId = entry.sourceDefId + '_pod';
             // 检查是否已经手动注册了 POD 版本
             if (!modifierRegistry.some(e => e.sourceDefId === podId)) {
-                // 跳过已在函数内部处理 POD 版本的修正
-                if (entry.handlesPodInternally) {
+                if (!shouldAutoCreatePodAlias(entry.podStrategy)) {
                     _skippedCount++;
                     continue;
                 }
-                powerModsToAdd.push({ sourceDefId: podId, modifier: entry.modifier });
+                powerModsToAdd.push({
+                    sourceDefId: podId,
+                    modifier: entry.modifier,
+                    podStrategy: 'inherit',
+                });
                 generatedPodModifierAliases.add(podId);
                 _mappedCount++;
             }
@@ -414,6 +531,10 @@ export function registerPodPowerModifierAliases(): void {
             const baseDefId = entry.sourceDefId;
             const podId = `${baseDefId}_pod`;
             if (!breakpointModifierRegistry.some(e => e.sourceDefId === podId)) {
+                if (!shouldAutoCreatePodAlias(entry.podStrategy)) {
+                    _skippedCount++;
+                    continue;
+                }
                 breakpointModsToAdd.push({
                     sourceDefId: podId,
                     modifier: (ctx) => {
@@ -429,6 +550,7 @@ export function registerPodPowerModifierAliases(): void {
                             base: rewritten.base,
                         });
                     },
+                    podStrategy: 'inherit',
                 });
                 generatedPodBreakpointAliases.add(podId);
                 _mappedCount++;
@@ -438,20 +560,26 @@ export function registerPodPowerModifierAliases(): void {
     breakpointModifierRegistry.push(...breakpointModsToAdd);
     
     // 3. 基地级别力量修正（basePowerModifiers）
-    const basePowerModsToAdd: Array<[string, BasePowerModifierFn]> = [];
-    for (const [defId, modifier] of basePowerModifiers.entries()) {
+    const basePowerModsToAdd: BasePowerModifierEntry[] = [];
+    for (const [defId, entry] of basePowerModifiers.entries()) {
         if (!defId.endsWith('_pod')) {
             const baseDefId = defId;
             const podId = `${baseDefId}_pod`;
             if (!basePowerModifiers.has(podId)) {
-                basePowerModsToAdd.push([podId, (ctx) => {
+                if (!shouldAutoCreatePodAlias(entry.podStrategy)) {
+                    _skippedCount++;
+                    continue;
+                }
+                basePowerModsToAdd.push({
+                    defId: podId,
+                    modifier: (ctx) => {
                     const rewritten = rewriteBaseOngoingDefIdForPodAlias(
                         ctx.state,
                         ctx.baseIndex,
                         podId,
                         baseDefId,
                     );
-                    return modifier({
+                    return entry.modifier({
                         ...ctx,
                         state: rewritten.state,
                         base: rewritten.base,
@@ -459,14 +587,16 @@ export function registerPodPowerModifierAliases(): void {
                             ? { ...ctx.ongoing, defId: baseDefId }
                             : ctx.ongoing,
                     });
-                }]);
+                    },
+                    podStrategy: 'inherit',
+                });
                 generatedPodBasePowerAliases.add(podId);
                 _mappedCount++;
             }
         }
     }
-    for (const [podId, modifier] of basePowerModsToAdd) {
-        basePowerModifiers.set(podId, modifier);
+    for (const entry of basePowerModsToAdd) {
+        basePowerModifiers.set(entry.defId, entry);
     }
     
     // 映射完成（已自动映射 POD 版本的力量修正）
@@ -488,17 +618,14 @@ export function getRegisteredModifierIds(): {
             continue;
         }
         powerModifierIds.add(entry.sourceDefId);
-        if (
-            entry.handlesPodInternally
-            && !entry.sourceDefId.endsWith('_pod')
-            && isEntityBackedModifierSource(entry.sourceDefId)
-            && shouldExposePodModifierAlias(entry.sourceDefId)
-        ) {
+        if (!entry.sourceDefId.endsWith('_pod')
+            && shouldExposeSelfManagedPodAudit(entry.sourceDefId, entry.podStrategy)) {
             powerModifierIds.add(`${entry.sourceDefId}_pod`);
         }
     }
 
-    for (const defId of basePowerModifiers.keys()) {
+    for (const entry of basePowerModifiers.values()) {
+        const defId = entry.defId;
         if (
             generatedPodBasePowerAliases.has(defId)
             && defId.endsWith('_pod')
@@ -507,7 +634,8 @@ export function getRegisteredModifierIds(): {
             continue;
         }
         powerModifierIds.add(defId);
-        if (!defId.endsWith('_pod') && shouldExposePodModifierAlias(defId)) {
+        if (!defId.endsWith('_pod')
+            && shouldExposeSelfManagedPodAudit(defId, entry.podStrategy)) {
             powerModifierIds.add(`${defId}_pod`);
         }
     }
@@ -525,7 +653,14 @@ export function getRegisteredModifierIds(): {
                     && entry.sourceDefId.endsWith('_pod')
                     && !shouldExposePodModifierAlias(entry.sourceDefId.slice(0, -4))
                 ))
-                .map(e => e.sourceDefId),
+                .flatMap((entry) => {
+                    const ids = [entry.sourceDefId];
+                    if (!entry.sourceDefId.endsWith('_pod')
+                        && shouldExposeSelfManagedPodAudit(entry.sourceDefId, entry.podStrategy)) {
+                        ids.push(`${entry.sourceDefId}_pod`);
+                    }
+                    return ids;
+                }),
         ),
     };
 }
@@ -562,6 +697,9 @@ export function getOngoingPowerModifierDetails(
 
     const details: PowerModifierDetail[] = [];
     for (const entry of modifierRegistry) {
+        if (shouldSkipPowerModifierForTarget(entry, minion)) {
+            continue;
+        }
         if (isCardSuppressed(state, minion.uid)
             && normalizeDefId(minion.defId) === normalizeDefId(entry.sourceDefId)) {
             continue;
@@ -571,7 +709,7 @@ export function getOngoingPowerModifierDetails(
             minion,
             baseIndex,
             entry.sourceDefId,
-            entry.handlesPodInternally,
+            entry.podStrategy === 'selfManaged',
         );
         const value = entry.modifier(ctx);
         if (value !== 0) {
@@ -636,6 +774,9 @@ export function getOngoingPowerModifier(
 
     let total = 0;
     for (const entry of modifierRegistry) {
+        if (shouldSkipPowerModifierForTarget(entry, minion)) {
+            continue;
+        }
         if (isCardSuppressed(state, minion.uid)
             && normalizeDefId(minion.defId) === normalizeDefId(entry.sourceDefId)) {
             continue;
@@ -645,7 +786,7 @@ export function getOngoingPowerModifier(
             minion,
             baseIndex,
             entry.sourceDefId,
-            entry.handlesPodInternally,
+            entry.podStrategy === 'selfManaged',
         );
         total += entry.modifier(ctx);
     }

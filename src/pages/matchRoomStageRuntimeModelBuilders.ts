@@ -89,6 +89,7 @@ function buildMatchRoomOnlineSeatBridgeModel(args: {
     return {
         seatControllers: seatRuntime.seatControllers,
         dispatchManualAiCommand: seatRuntime.dispatchManualAiCommand,
+        engineConfig: seatRuntime.engineConfig,
         ai: aiRuntime,
     };
 }

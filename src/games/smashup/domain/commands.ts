@@ -19,6 +19,7 @@ import {
     getScoringEligibleBaseIndices,
     getPlayerEffectivePowerOnBase,
 } from './ongoingModifiers';
+import { canPlayActionFromDiscard } from './discardActionPlayability';
 import { canPlayFromDiscard } from './discardPlayability';
 import { canActivateSpecialFromDiscard } from './discardSpecialAbilities';
 import { getTitanByUid, isSpecialLimitBlocked } from './abilityHelpers';
@@ -679,15 +680,10 @@ export function validate(
                 const targetBaseIndex = command.payload.targetBaseIndex;
                 const targetMinionUid = command.payload.targetMinionUid;
                 if (typeof targetBaseIndex !== 'number' || !targetMinionUid) {
-                    return { valid: false, error: '从弃牌堆打出该行动需要选择赛博守护者' };
+                    return { valid: false, error: '从弃牌堆打出该行动需要选择合法的基地和随从目标' };
                 }
-                const target = core.bases[targetBaseIndex]?.minions.find(minion => minion.uid === targetMinionUid);
-                if (!target || target.defId !== 'cyborg_apes_cyberback' || target.controller !== command.playerId) {
-                    return { valid: false, error: '该行动只能从弃牌堆打到你的赛博守护者身上' };
-                }
-                const actionDef = def.type === 'action' ? def : undefined;
-                if (!actionDef || actionDef.subtype !== 'ongoing' || actionDef.ongoingTarget !== 'minion') {
-                    return { valid: false, error: '赛博守护者只能从弃牌堆打出附着到随从的持续行动' };
+                if (!canPlayActionFromDiscard(core, command.playerId, card.uid, targetBaseIndex, targetMinionUid)) {
+                    return { valid: false, error: '该行动当前不能从弃牌堆以该目标打出' };
                 }
             }
             return validateActionPlaySemantics(core, command.playerId, {
@@ -966,6 +962,7 @@ export function validate(
                 discardCardUid: spDiscardCardUid,
                 handCardUid: spHandCardUid,
                 baseIndex: spBaseIndex,
+                targetMinionUid: spTargetMinionUid,
             } = command.payload;
             const targetCount = [spMinionUid, spTitanUid, spDiscardCardUid, spHandCardUid].filter(Boolean).length;
             if (targetCount !== 1) {
@@ -1042,7 +1039,7 @@ export function validate(
                 if (!specialAvailability.hasSpecialExecutor) {
                     return { valid: false, error: '该弃牌堆随从的特殊能力不能手动激活' };
                 }
-                const discardSpecialCheck = canActivateSpecialFromDiscard(core, command.playerId, spDiscardCardUid, spBaseIndex);
+                const discardSpecialCheck = canActivateSpecialFromDiscard(core, command.playerId, spDiscardCardUid, spBaseIndex, spTargetMinionUid);
                 if (!discardSpecialCheck) {
                     return { valid: false, error: '该弃牌堆随从当前不能这样激活特殊能力' };
                 }
@@ -1053,6 +1050,7 @@ export function validate(
                     cardUid: spDiscardCardUid,
                     defId: discardCard.defId,
                     baseIndex: spBaseIndex,
+                    targetMinionUid: spTargetMinionUid,
                     random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                     now: core.turnNumber ?? 0,
                 });

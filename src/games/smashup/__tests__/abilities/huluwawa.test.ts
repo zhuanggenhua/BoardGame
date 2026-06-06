@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { getFactionCards } from '../../data/cards';
+import { getDiscardActionPlayOptions } from '../../domain/discardActionPlayability';
 import { getDiscardSpecialOptions } from '../../domain/discardSpecialAbilities';
 import { fireTriggers, isMinionProtected } from '../../domain/ongoingEffects';
 import { getVisibleFactionMetadata } from '../../ui/factionMeta';
@@ -282,7 +283,7 @@ describe('葫芦娃派系作者 PR 级行为合同', () => {
         expect(core.players['0'].discard.map(card => card.uid)).toEqual([]);
     });
 
-    it('紫金宝葫芦在七娃在场时会作为弃牌堆 special 选项暴露', () => {
+    it('紫金宝葫芦在七娃在场时会作为弃牌堆附着行动入口暴露，而不是 discard special', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -292,13 +293,66 @@ describe('葫芦娃派系作者 PR 级行为合同', () => {
             },
             bases: [makeBase('base_huluwawa_mountain', [
                 makeMinion('qiwa', 'huluwawa_qi_wa', '0', 4),
+                makeMinion('other-self', 'huluwawa_da_wa', '0', 4),
             ])],
         });
 
-        const options = getDiscardSpecialOptions(core, '0');
+        const options = getDiscardActionPlayOptions(core, '0');
         expect(options).toHaveLength(1);
         expect(options[0]?.card.uid).toBe('gourd-card');
         expect(options[0]?.sourceId).toBe('huluwawa_purple_gold_gourd');
+        expect(options[0]?.allowedBaseIndices).toEqual([0]);
+        expect(options[0]?.allowedMinionUids).toEqual(['qiwa']);
+        expect(getDiscardSpecialOptions(core, '0')).toEqual([]);
+    });
+
+    it('紫金宝葫芦从弃牌堆额外打出时只能附着到己方七娃身上', () => {
+        const initial = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('gourd-card', 'huluwawa_purple_gold_gourd', 'action', '0')],
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_huluwawa_mountain', [
+                makeMinion('qiwa', 'huluwawa_qi_wa', '0', 4),
+                makeMinion('other-self', 'huluwawa_da_wa', '0', 4),
+            ])],
+            turnNumber: 1,
+            nextUid: 100,
+        }));
+
+        const illegal = runCommand(initial, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: {
+                cardUid: 'gourd-card',
+                targetBaseIndex: 0,
+                targetMinionUid: 'other-self',
+                fromDiscard: true,
+            },
+        } as any);
+        expect(illegal.success).toBe(false);
+        expect(illegal.error).toContain('不能从弃牌堆');
+
+        const legal = runCommand(initial, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: {
+                cardUid: 'gourd-card',
+                targetBaseIndex: 0,
+                targetMinionUid: 'qiwa',
+                fromDiscard: true,
+            },
+        } as any);
+        expect(legal.success).toBe(true);
+        const qiwa = legal.finalState.core.bases[0].minions.find(minion => minion.uid === 'qiwa');
+        expect(qiwa?.attachedActions.map(action => action.uid)).toContain('gourd-card');
+        expect(legal.finalState.core.players['0'].discard.some(card => card.uid === 'gourd-card')).toBe(false);
     });
 
     it('一根藤上七朵花会把弃牌堆中不同名仆从各一张洗回牌库', () => {

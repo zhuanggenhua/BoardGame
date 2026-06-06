@@ -1466,6 +1466,71 @@ const resolveDiceThroneOnlineAiCurrentPlayerId = (args: {
         : args.fallbackPlayerId;
 };
 
+const resolveDiceThroneManualSetupSelectionTakeoverPlayerId = (args: {
+    sharedState: MatchState<unknown>;
+    currentPlayerId: string | null;
+    seatControllers: Record<string, {
+        type?: unknown;
+        manualFactionSelection?: unknown;
+    } | undefined>;
+    hasManualDispatch: boolean;
+}): string | null => {
+    if (!args.hasManualDispatch) {
+        return null;
+    }
+
+    const manualAiSeatIds = Object.entries(args.seatControllers)
+        .filter(([, controller]) => controller?.type !== 'human' && controller?.manualFactionSelection === true)
+        .map(([playerId]) => playerId);
+    if (manualAiSeatIds.length === 0) {
+        return null;
+    }
+
+    const core = (args.sharedState.core as {
+        hostStarted?: unknown;
+        selectedCharacters?: unknown;
+    } | undefined);
+    if (core?.hostStarted !== false || !core.selectedCharacters || typeof core.selectedCharacters !== 'object') {
+        return null;
+    }
+
+    const selectedCharacters = core.selectedCharacters as Record<string, unknown>;
+    if (args.currentPlayerId && args.seatControllers[args.currentPlayerId]?.type === 'human') {
+        const currentPlayerCharacter = selectedCharacters[args.currentPlayerId];
+        if (typeof currentPlayerCharacter !== 'string' || currentPlayerCharacter === 'unselected') {
+            return null;
+        }
+    }
+
+    return manualAiSeatIds.find((playerId) => {
+        const selectedCharacter = selectedCharacters[playerId];
+        return typeof selectedCharacter !== 'string' || selectedCharacter === 'unselected';
+    }) ?? null;
+};
+
+const shouldReleaseDiceThroneManualSetupAttemptFromSharedState = (args: {
+    sharedState: MatchState<unknown>;
+    playerId: string;
+    actionKind: 'select-faction' | 'setup-select-faction' | 'setup-select-character';
+    selectionId: string;
+}): boolean | undefined => {
+    if (args.actionKind !== 'setup-select-character') {
+        return undefined;
+    }
+
+    const core = (args.sharedState.core as {
+        hostStarted?: unknown;
+        selectedCharacters?: unknown;
+    } | undefined);
+    const selectedCharacters = core?.selectedCharacters && typeof core.selectedCharacters === 'object'
+        ? core.selectedCharacters as Record<string, unknown>
+        : null;
+    if (selectedCharacters?.[args.playerId] === args.selectionId) {
+        return true;
+    }
+    return core?.hostStarted === true;
+};
+
 // 引擎配置
 export const engineConfig = {
     ...createGameEngine(adapterConfig),
@@ -1473,6 +1538,8 @@ export const engineConfig = {
     onlineAiRecovery: {
         humanTurnLegalActionProbePhases: ['defensiveRoll', 'targetingRoll'],
         resolveCurrentPlayerId: resolveDiceThroneOnlineAiCurrentPlayerId,
+        resolveManualSetupSelectionTakeoverPlayerId: resolveDiceThroneManualSetupSelectionTakeoverPlayerId,
+        shouldReleaseManualSetupAttemptFromSharedState: shouldReleaseDiceThroneManualSetupAttemptFromSharedState,
         buildInteractionRecoveryFingerprintHint: ({ state, playerId, phase, interaction }) =>
             buildDiceThroneInteractionRecoveryFingerprintHint({ state, playerId, phase, interaction }),
         resolveForcedInteractionCommand: resolveDiceThroneForcedInteractionRecoveryCommand,

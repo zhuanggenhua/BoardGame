@@ -13299,15 +13299,19 @@ describe('GameTransportServer（离座与重连）', () => {
         });
 
         const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
             candidate,
-            createDefaultOnlineAiRecoverySeatControllers(),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
         hiddenStillPresent = false;
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
             candidate,
-            createDefaultOnlineAiRecoverySeatControllers(),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(unresolved).toBe(false);
@@ -13528,9 +13532,11 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
             candidate,
-            createDefaultOnlineAiRecoverySeatControllers(),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(resolved).toBe(true);
@@ -13608,9 +13614,11 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
             candidate,
-            createDefaultOnlineAiRecoverySeatControllers(),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(resolved).toBe(true);
@@ -13664,15 +13672,17 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
             candidate,
-            createDefaultOnlineAiRecoverySeatControllers(),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(resolved).toBe(false);
     });
 
-    it('online AI watchdog 的 active-turn-legal-only resolved 判定在同一 AI 仍处于同一 legal-only surface 时，不应提前判定为 resolved', async () => {
+    it('online AI watchdog 的 active-turn-legal-only resolved 判定在 live candidate 已回到同一 AI 的 active-turn force-fallback surface 时，应视为旧 legal-only incident 已 resolved', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
 
@@ -13705,15 +13715,15 @@ describe('GameTransportServer（离座与重连）', () => {
         const match = await serverInternal.loadMatch('match-watchdog-active-turn-legal-only-resolve-same-surface');
         const candidate = {
             playerId: '1',
-            reason: 'active-turn-legal-only',
+            reason: 'active-turn',
             legalActionOnly: true,
             fingerprintHint: 'active-turn-legal-only:1:defensiveRoll',
             resolution: {
                 playerId: '1',
-                attemptKey: 'force-end-turn:1:active-turn-legal-only:1:defensiveRoll',
+                attemptKey: 'force-end-turn:1:active-turn:legal-only:1:defensiveRoll',
                 source: 'local-ai',
                 action: {
-                    actionId: 'force-end-turn:active-turn-legal-only:1:defensiveRoll',
+                    actionId: 'force-end-turn:active-turn:legal-only:1:defensiveRoll',
                     kind: 'force-end-turn',
                     label: '服务端代 AI 执行合法动作',
                     commands: [],
@@ -13722,12 +13732,14 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
             candidate,
-            createDefaultOnlineAiRecoverySeatControllers(),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
-        expect(resolved).toBe(false);
+        expect(resolved).toBe(true);
     });
 
     it('online AI watchdog 的 active-turn-legal-only resolved 判定在同一 AI 已切到新的 legal-only phase 时，应视为旧 incident 已 resolved', async () => {
@@ -13788,9 +13800,11 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
             candidate,
-            createDefaultOnlineAiRecoverySeatControllers(),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(resolved).toBe(true);
@@ -14081,9 +14095,11 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
             candidate,
-            createDefaultOnlineAiRecoverySeatControllers(),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(resolved).toBe(true);
@@ -14139,9 +14155,11 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
-            match,
             candidate,
-            createDefaultOnlineAiRecoverySeatControllers(),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(resolved).toBe(true);

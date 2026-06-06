@@ -5,6 +5,7 @@ import {
     releaseAiAttemptKeyIfMatches,
     tryReserveAiAttemptKey,
 } from '../engine/transport/react';
+import { resolveOnlineAiCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
 import type { GameTransportClient } from '../engine/transport/client';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
@@ -21,6 +22,7 @@ import { resolveLocalAiActionVisibility } from '../engine/ai/actionVisibility';
 import { appendMatchLoadTrace } from '../lib/matchLoadTrace';
 import { logMobileRuntimeCritical } from '../lib/mobile/mobileRuntimeDebug';
 import {
+    buildOnlineAiSeamAwareAttemptMarkers,
     buildOnlineAiIdleSeatRecoveryKey,
     buildOnlineAiSubmitBlockedRecoveryKey,
     resolveOnlineAiSeatRecoveryAttempt,
@@ -65,7 +67,7 @@ type OnlineAiAttemptReleaseStage = 'shared-faction-select-confirmed' | 'seat-fac
 
 type OnlineAiResolutionSubmissionLifecycleArgs = {
     matchId: string;
-    engineConfig: Pick<GameEngineConfig, 'gameId'>;
+    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
     sharedState: MatchState<unknown>;
     resolution: AiResolution;
     commandTypes: string[];
@@ -88,6 +90,7 @@ type OnlineAiSeatRecoveryFlowArgs = {
 };
 
 type OnlineAiActiveAttemptLifecycleArgs = {
+    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
     sharedState: MatchState<unknown>;
     activeAiAttemptRef: { current: ActiveAiAttempt | null };
     aiSeatDecisionDebugRef: { current: Record<string, Record<string, unknown>> };
@@ -96,6 +99,20 @@ type OnlineAiActiveAttemptLifecycleArgs = {
     requestSeatResync: OnlineAiSeatTransportRuntime['requestSeatResync'];
     clearActiveAiAttemptIfMatches: (attemptKey: string) => void;
 };
+
+export function resolveOnlineAiActivePlayerId(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    seatControllers: Record<string, AiSeatController>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+}): string | null {
+    const currentPlayerId = resolveOnlineAiCurrentPlayerId(args.sharedState, {
+        engineConfig: args.engineConfig,
+    });
+    if (!currentPlayerId || args.seatControllers[currentPlayerId]?.type === 'human') {
+        return null;
+    }
+    return currentPlayerId;
+}
 
 function setOnlineAiSeatDecisionDebug(
     ref: { current: Record<string, Record<string, unknown>> },
@@ -114,6 +131,7 @@ function resolveOnlineAiAttemptReleaseStage(args: {
     playerId: string;
     actionKind: string;
     selectionId: string | null;
+    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
 }): OnlineAiAttemptReleaseStage | null {
     if (!shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt(args.actionKind)) {
         return null;
@@ -127,6 +145,7 @@ function resolveOnlineAiAttemptReleaseStage(args: {
         playerId: args.playerId,
         actionKind: args.actionKind,
         selectionId: args.selectionId,
+        engineConfig: args.engineConfig,
     });
     if (!releaseSource) {
         return null;
@@ -182,6 +201,7 @@ function createOnlineAiResolutionSubmissionLifecycle(args: OnlineAiResolutionSub
             const shouldStageOverride = shouldStageOnlineAiSeatOverrideFromConfirmedState({
                 authoritativeState,
                 latestSeatState: getSeatLatestState(resolution.playerId),
+                engineConfig,
             });
             if (shouldStageOverride && confirmedSeatState) {
                 aiSeatStateOverridesRef.current[resolution.playerId] = confirmedSeatState;
@@ -235,6 +255,7 @@ function createOnlineAiResolutionSubmissionLifecycle(args: OnlineAiResolutionSub
                     actionKind: resolution.action.kind,
                     payload: resolution.action.commands[0]?.payload,
                 }),
+                engineConfig,
             });
             if (releaseStage) {
                 setOnlineAiSeatDecisionDebug(aiSeatDecisionDebugRef, resolution.playerId, {
@@ -351,6 +372,7 @@ function releaseConfirmedOnlineAiAttempt(args: OnlineAiActiveAttemptLifecycleArg
 
 function releaseStaleOnlineAiAttempt(args: OnlineAiActiveAttemptLifecycleArgs): void {
     const {
+        engineConfig,
         sharedState,
         activeAiAttemptRef,
         aiSeatDecisionDebugRef,
@@ -364,9 +386,15 @@ function releaseStaleOnlineAiAttempt(args: OnlineAiActiveAttemptLifecycleArgs): 
         return;
     }
     const elapsedMs = Date.now() - activeAttempt.reservedAt;
-    const currentSharedMarker = buildAiProgressMarker(sharedState);
     const currentSeatState = getEffectiveSeatState(activeAttempt.playerId);
-    const currentSeatMarker = currentSeatState ? buildAiProgressMarker(currentSeatState) : null;
+    const {
+        sharedMarker: currentSharedMarker,
+        seatMarker: currentSeatMarker,
+    } = buildOnlineAiSeamAwareAttemptMarkers({
+        sharedState,
+        seatState: currentSeatState,
+        engineConfig,
+    });
     if (
         elapsedMs < STALE_ONLINE_AI_ATTEMPT_TIMEOUT_MS
         || currentSharedMarker !== activeAttempt.sharedMarker
@@ -399,7 +427,7 @@ function releaseStaleOnlineAiAttempt(args: OnlineAiActiveAttemptLifecycleArgs): 
 
 type OnlineAiSeatAutoDispatchArgs = {
     matchId: string;
-    engineConfig: Pick<GameEngineConfig, 'gameId'>;
+    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
     state: MatchState<unknown> | null;
     seatControllers: Record<string, AiSeatController>;
     seatCredentials: Record<string, string>;
@@ -449,19 +477,23 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
             return;
         }
         const sharedState = state as MatchState<unknown>;
-        const currentPlayerId = resolveCurrentPlayerId(sharedState);
-        if (!currentPlayerId || seatControllers[currentPlayerId]?.type === 'human') {
+        const activeAiPlayerId = resolveOnlineAiActivePlayerId({
+            sharedState,
+            seatControllers,
+            engineConfig,
+        });
+        if (!activeAiPlayerId) {
             aiActivePhaseRef.current = null;
             return;
         }
         const phase = sharedState.sys?.phase ?? 'unknown';
         const turnNumber = sharedState.sys?.turnNumber ?? 'no-turn';
         const nextId = sharedState.sys?.eventStream?.nextId ?? 'no-event';
-        const key = `${currentPlayerId}:${turnNumber}:${phase}:${nextId}`;
+        const key = `${activeAiPlayerId}:${turnNumber}:${phase}:${nextId}`;
         if (aiActivePhaseRef.current?.key !== key) {
             aiActivePhaseRef.current = { key, startedAt: Date.now() };
         }
-    }, [seatControllers, state]);
+    }, [engineConfig, seatControllers, state]);
 
     useEffect(() => {
         const hasAiSeat = Object.values(seatControllers).some((controller) => controller.type !== 'human');
@@ -526,6 +558,8 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                 diagnostics: aiDispatchResult.diagnostics,
                 updatedAt: Date.now(),
             };
+            // Anti-pattern: this legacy current-player field is emitted for diagnostics only.
+            // Do not feed it back into seam-aware recovery or dispatch gates.
             logMobileRuntimeCritical('MatchRoom', 'online-ai-dispatch-blocked', {
                 gameId: engineConfig.gameId,
                 matchId,
@@ -608,10 +642,11 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
             decisionElapsedMs: number,
         ) => {
             const sharedState = state as MatchState<unknown>;
-            const currentPlayerId = resolveCurrentPlayerId(sharedState);
-            const activeAiPlayerId = currentPlayerId && seatControllers[currentPlayerId]?.type !== 'human'
-                ? currentPlayerId
-                : null;
+            const activeAiPlayerId = resolveOnlineAiActivePlayerId({
+                sharedState,
+                seatControllers,
+                engineConfig,
+            });
             if (activeAiPlayerId) {
                 aiSeatDecisionDebugRef.current[activeAiPlayerId] = {
                     stage: 'idle',
@@ -619,6 +654,8 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                     updatedAt: Date.now(),
                 };
             }
+            // Anti-pattern: this legacy current-player field is emitted for diagnostics only.
+            // Do not feed it back into seam-aware recovery or dispatch gates.
             logMobileRuntimeCritical('MatchRoom', 'online-ai-dispatch-idle', {
                 gameId: engineConfig.gameId,
                 matchId,
@@ -646,6 +683,7 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                 const idleDecisionKey = buildOnlineAiIdleSeatRecoveryKey({
                     playerId: activeAiPlayerId,
                     authoritativeState: sharedState,
+                    engineConfig,
                 });
                 tryRecoverOnlineAiSeat({
                     recoveryKey: idleDecisionKey,
@@ -674,6 +712,8 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                 commandTypes,
                 updatedAt: Date.now(),
             };
+            // Anti-pattern: this legacy current-player field is emitted for diagnostics only.
+            // Do not feed it back into seam-aware recovery or dispatch gates.
             logMobileRuntimeCritical('MatchRoom', 'online-ai-dispatch-action', {
                 gameId: engineConfig.gameId,
                 matchId,
@@ -701,10 +741,11 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                 attemptKey: resolution.attemptKey,
                 playerId: resolution.playerId,
                 reservedAt: Date.now(),
-                sharedMarker: buildAiProgressMarker(sharedState),
-                seatMarker: getEffectiveSeatState(resolution.playerId)
-                    ? buildAiProgressMarker(getEffectiveSeatState(resolution.playerId) as MatchState<unknown>)
-                    : null,
+                ...buildOnlineAiSeamAwareAttemptMarkers({
+                    sharedState,
+                    seatState: getEffectiveSeatState(resolution.playerId),
+                    engineConfig,
+                }),
                 actionKind: resolution.action.kind,
                 pendingSelectionId: (() => {
                     const firstCommand = resolution.action.commands[0];
@@ -718,6 +759,8 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
             const controller = seatControllers[resolution.playerId];
             const client = getSeatClient(resolution.playerId);
             if (!controller || controller.type === 'human' || !client?.isConnected) {
+                // Anti-pattern: this legacy current-player field is emitted for diagnostics only.
+                // Do not feed it back into seam-aware recovery or dispatch gates.
                 logMobileRuntimeCritical('MatchRoom', 'online-ai-submit-blocked', {
                     gameId: engineConfig.gameId,
                     matchId,
@@ -739,6 +782,7 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                         playerId: resolution.playerId,
                         resolution,
                         authoritativeState: sharedState,
+                        engineConfig,
                     });
                     tryRecoverOnlineAiSeat({
                         recoveryKey: submitBlockedRecoveryKey,
@@ -976,6 +1020,7 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                 resolution,
                 lastAiAttemptKeyRef,
                 scheduleRetry: submissionLifecycle.scheduleRetry,
+                engineConfig,
                 onWillResync: submissionLifecycle.onWillResync,
                 onConfirmed: submissionLifecycle.onConfirmed,
                 onRejected: submissionLifecycle.onRejected,
@@ -993,6 +1038,7 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                 clearActiveAiAttemptIfMatches,
             });
             releaseStaleOnlineAiAttempt({
+                engineConfig,
                 sharedState,
                 activeAiAttemptRef,
                 aiSeatDecisionDebugRef,

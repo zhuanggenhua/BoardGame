@@ -184,6 +184,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 > **项目 skill 单目录（强制）**：项目 skill 只能存在于 `./.codex/skill/`。不得在其他目录再建第二套项目 skill 入口、README、重定向说明或副本。
 > **根规范的职责是“路由 + 红线 + 入口用法”（强制）**：根 `AGENTS.md` 不应追求把所有提示词、例外和长篇示例一次性写全；它应像 skill 首页一样，先告诉 AI 这是什么场景、先看哪条、哪些红线不能碰、下一层去哪里读。长篇流程、专项审计模板、复杂协作细则、游戏专属口径应优先下沉到 `docs/ai-rules/`、项目 skill、专项 workflow 或用户故事，而不是继续堆回根文件。
 > **通用规范定义（强制）**：根 `AGENTS.md` 与 `docs/ai-rules/` 默认是“所有游戏通用规范”，只能约束流程、方法、验证和文档要求，不能把某个游戏当前任务里的局部字段命名、卡牌结构或专用抓取源直接写成全局默认。游戏专属口径必须落到该游戏自己的 `rule/` 文档或专项规范里。
+> **游戏级文档统一目录（强制）**：凡只服务单个游戏的规则补充、用户故事、专项流程、设计稿、计划、改进记录与说明文档，默认统一放在 `docs/games/<gameId>/` 下再按主题分子目录；顶层 `docs/` 只保留跨游戏/项目级公共文档。不要在 `docs/` 顶层再为单个游戏长期扩出第二套平行入口。
 > **根规范作用域标注（强制）**：根 `AGENTS.md` 允许出现游戏专属条目，但标题或正文必须显式写明适用游戏/模块/触发条件；只要条目里出现具体游戏名、具体抓取源、具体字段结构，就不得再被解释成“所有游戏默认规则”。
 >
 > **Skill 选型与网页能力分工（强制）**：
@@ -198,7 +199,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `.codex/skill/sticker-imagegen/SKILL.md` — 生成或正式接入项目表情、贴纸、seat emote / match emote 资源时必读。
 - `docs/ai-rules/data-entry.md` — 按图片/规则书/Wiki/截图录入业务数据时必读。
   - **图片优先于 Wiki（强制）**：凡清晰图片、截图或扫描件能覆盖当前字段，图片就是当前字段主真相源；Wiki 只能作为对照源。只有用户故事/需求单/当轮用户明确说明要偏离图片时，才允许覆盖图片口径，且必须留档写明覆盖原因、影响范围和验收标准。
-- `docs/user-stories/README.md` — 用户在对话中明确提出、会影响规则裁定/实现口径/验收方式/长期流程的需求留档入口。项目级需求放 `docs/user-stories/project/`，游戏级需求放 `docs/user-stories/<gameId>/`；凡允许偏离图片、规则书或既有实现的用户故事，必须在这里留档。
+- `docs/user-stories/README.md` — 用户在对话中明确提出、会影响规则裁定/实现口径/验收方式/长期流程的需求留档入口。项目级需求放 `docs/user-stories/project/`，游戏级需求统一放 `docs/games/<gameId>/user-stories/`；凡允许偏离图片、规则书或既有实现的用户故事，必须在这里留档。
 - `.codex/skill/audio-integration/SKILL.md` — 音频对接、查找/替换音效 key、补预加载或导入新音效素材时必读；配套参考 `docs/audio/audio-usage.md`、`docs/audio/add-audio.md`、`docs/audio/audio-catalog.md`、`docs/tools.md`。
 - `docs/ai-rules/engine-systems.md` — 引擎系统、框架层、游戏 `move/command` 时必读。
 - `docs/ai-rules/undo-auto-advance.md` — 排查撤回后自动推进问题时必读；引擎层已统一处理，游戏层通常无需额外代码。

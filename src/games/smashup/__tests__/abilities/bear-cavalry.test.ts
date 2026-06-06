@@ -10,7 +10,12 @@ import {
     fireTriggers,
     isMinionProtected,
 } from '../../domain/ongoingEffects';
-import { clearPowerModifierRegistry, getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
+import {
+    clearPowerModifierRegistry,
+    getEffectiveBreakpoint,
+    getEffectivePower,
+    getEffectivePowerBreakdown,
+} from '../../domain/ongoingModifiers';
 import { processMoveTriggers, reduce } from '../../domain/reducer';
 import type { CardInstance, TurnStartedEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
@@ -319,8 +324,16 @@ describe('bear_cavalry_polar_commando 保护', () => {
         const commando = makeMinion('pc', 'bear_cavalry_polar_commando', '0', 4, { powerModifier: 0 });
         const state = makeState({ bases: [makeBase({ minions: [commando] })] });
 
-        // getEffectivePower 使用卡牌定义中的 printed power（bear_cavalry_polar_commando 为 6），再叠加唯一随从 +2。
-        expect(getEffectivePower(state, commando, 0)).toBe(8);
+        expect(getEffectivePower(state, commando, 0)).toBe(6);
+
+        const breakdown = getEffectivePowerBreakdown(state, commando, 0);
+        expect(breakdown.ongoingDetails).toEqual([
+            {
+                sourceDefId: 'bear_cavalry_polar_commando',
+                sourceName: '极地突击队员',
+                value: 2,
+            },
+        ]);
     });
 });
 

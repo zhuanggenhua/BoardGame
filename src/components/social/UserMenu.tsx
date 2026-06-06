@@ -244,20 +244,6 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
 
     return (
         <div className="relative flex h-8 items-center gap-1" ref={menuRef}>
-            {/* 通知入口 */}
-            <button
-                onClick={handleOpenNotifications}
-                className="group relative inline-flex h-8 items-center pl-1 pr-3 text-parchment-base-text hover:text-parchment-brown transition-colors cursor-pointer"
-                aria-label={t('social:menu.notifications')}
-                data-testid="user-menu-notifications"
-            >
-                <span className="font-bold text-sm leading-none tracking-tight">{t('social:menu.notifications')}</span>
-                <span className="underline-center" />
-                {hasBellBadge && (
-                    <span className="absolute right-0 top-0.5 h-2 w-2 rounded-full bg-red-500" />
-                )}
-            </button>
-
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="group relative flex h-8 items-center gap-2 cursor-pointer px-2 outline-none transition-colors"
@@ -275,6 +261,20 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                         <span className="font-bold text-sm tracking-tight">{user.username}</span>
                         <span className="underline-center" />
                     </div>
+                )}
+            </button>
+
+            {/* 通知入口 */}
+            <button
+                onClick={handleOpenNotifications}
+                className="group relative inline-flex h-8 items-center pl-1 pr-3 text-parchment-base-text hover:text-parchment-brown transition-colors cursor-pointer"
+                aria-label={t('social:menu.notifications')}
+                data-testid="user-menu-notifications"
+            >
+                <span className="font-bold text-sm leading-none tracking-tight">{t('social:menu.notifications')}</span>
+                <span className="underline-center" />
+                {hasBellBadge && (
+                    <span className="absolute right-0 top-0.5 h-2 w-2 rounded-full bg-red-500" />
                 )}
             </button>
 

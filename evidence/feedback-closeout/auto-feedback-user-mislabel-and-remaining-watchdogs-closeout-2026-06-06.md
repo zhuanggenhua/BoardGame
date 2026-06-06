@@ -171,3 +171,46 @@ node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server
 - 生产 `reporterType=user AND status in ['open','in_progress']` 应为 `0`
 - 生产 `reporterType=system AND status in ['open','in_progress']` 应为 `0`
 - 用户筛选“用户反馈”时，不应再看到这批自动反馈残余
+
+## 实际回写结果
+
+- 正式回写脚本：
+  - `temp/feedback-closeout/update-feedback-status-20260606-auto-user-mislabels-and-watchdogs.js`
+- 正式回写时间：
+  - `2026-06-06 11:10 +08:00`
+- 实际结果：
+  - 13 条全部 `matchedCount=1`
+  - 13 条全部 `modifiedCount=1`
+
+## 回写后复核
+
+### 1. 单条抽样
+
+- `6a2371125ea63084e89bc7f0`
+  - `status=resolved`
+  - `reporterType=system`
+- `6a22f0005ea63084e89bc6a3`
+  - `status=resolved`
+  - `reporterType=system`
+
+### 2. 队列余量
+
+- 生产 `reporterType=user AND status=open`：`0`
+- 生产 `reporterType=user AND status=in_progress`：`0`
+- 生产 `reporterType=system AND status=open`：`0`
+- 生产 `reporterType=system AND status=in_progress`：`0`
+
+### 3. 本地台账
+
+- `temp/feedback-closeout/status-board.json`
+  - 已补入这 13 条
+- 校验：
+  - `node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-board.json`
+  - 结果：`feedback-status: ok`
+
+## 最终结论
+
+- 当前线上未收口的人类反馈已保持 `0`
+- 本轮新增把 11 条历史错标自动反馈正式从 `user` 归一化为 `system`
+- 剩余 2 条 `system open` watchdog 也已按当前树证据正式推进 `resolved`
+- 回写后，生产 `open / in_progress` 在这两条主口径下都已清零

@@ -13,7 +13,7 @@
 | 来源 | 内容 | 结论 |
 | --- | --- | --- |
 | 图片主真相源：`public/assets/i18n/zh-CN/dicethrone/images/pyromancer/compressed/tip.webp` | “燃烧（负面效果，不可叠加）/ Does not stack”；“持续效果。有此标记的玩家在他的每个维持阶段受到2伤害。” | 主裁决：不叠加、固定 2、持续，不因 upkeep 自动移除 |
-| 用户故事：`docs/user-stories/dicethrone/pyromancer-burn-image-standard-2026-05-12.md` | 图片优先于 Wiki；除非用户故事明确覆盖 | 本轮无覆盖图片的例外用户故事 |
+| 用户故事：`docs/games/dicethrone/user-stories/pyromancer-burn-image-standard-2026-05-12.md` | 图片优先于 Wiki；除非用户故事明确覆盖 | 本轮无覆盖图片的例外用户故事 |
 | Dice Throne Wiki / Burn | Stack limit: 1；Upkeep 受到 2 点伤害；Persistent | 仅作对照；本轮不作为主标准 |
 
 ## 看图描述

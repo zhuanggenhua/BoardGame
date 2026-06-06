@@ -141,6 +141,8 @@ export function shouldSilentlyRetryOnlineAiBatchRejection(reason: string): boole
     return SILENT_ONLINE_AI_BATCH_REJECTION_REASONS.has(reason);
 }
 
+// Raw fallback only. Online AI behavior code should prefer resolveOnlineAiCurrentPlayerId()
+// whenever engineConfig.onlineAiRecovery may redefine whose turn/seat currently owns recovery.
 export function resolveCurrentPlayerId(sharedState: MatchState<unknown> | null | undefined): string | null {
     const core = sharedState?.core as {
         activePlayerId?: unknown;
