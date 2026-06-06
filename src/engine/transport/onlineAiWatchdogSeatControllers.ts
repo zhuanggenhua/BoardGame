@@ -1,6 +1,5 @@
 import {
     isManualSetupSelectionEnabledForSeat,
-    normalizeSeatController,
     withManualSetupSelectionAliases,
     type AiSeatController,
     type ManualSetupSeatControllerLike,
@@ -73,21 +72,41 @@ function buildOnlineAiWatchdogSeatController(args: {
         return { type: 'human' };
     }
 
-    return normalizeSeatController(
-        {
-            ...(controller as {
-                policyId?: string;
-                fallbackPolicyId?: string;
-                providerId?: string;
-                minimumActionDelayMs?: number;
-            }),
-            type: normalizedType,
-            ...(isManualSetupSelectionEnabledForSeat(controller)
-                ? withManualSetupSelectionAliases({})
-                : {}),
-        },
-        gameManifests[gameId]?.ai,
-    );
+    const manualSetupAliases = isManualSetupSelectionEnabledForSeat(controller)
+        ? withManualSetupSelectionAliases({})
+        : {};
+    const policyId = typeof controller.policyId === 'string' && controller.policyId.trim()
+        ? controller.policyId.trim()
+        : undefined;
+    const fallbackPolicyId = typeof controller.fallbackPolicyId === 'string' && controller.fallbackPolicyId.trim()
+        ? controller.fallbackPolicyId.trim()
+        : undefined;
+    const minimumActionDelayMs = typeof (controller as { minimumActionDelayMs?: unknown }).minimumActionDelayMs === 'number'
+        ? (controller as { minimumActionDelayMs: number }).minimumActionDelayMs
+        : undefined;
+
+    if (normalizedType === 'local-ai') {
+        return {
+            type: 'local-ai',
+            ...(policyId ? { policyId } : {}),
+            ...(fallbackPolicyId ? { fallbackPolicyId } : {}),
+            ...(minimumActionDelayMs !== undefined ? { minimumActionDelayMs } : {}),
+            ...manualSetupAliases,
+        };
+    }
+
+    const providerId = typeof (controller as { providerId?: unknown }).providerId === 'string'
+        && (controller as { providerId: string }).providerId.trim()
+        ? (controller as { providerId: string }).providerId.trim()
+        : 'astrbot';
+
+    return {
+        type: 'remote-ai',
+        providerId,
+        ...(fallbackPolicyId ? { fallbackPolicyId } : {}),
+        ...(minimumActionDelayMs !== undefined ? { minimumActionDelayMs } : {}),
+        ...manualSetupAliases,
+    };
 }
 
 export function resolveOnlineAiWatchdogSeatControllers(args: {

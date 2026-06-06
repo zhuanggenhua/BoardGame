@@ -25,6 +25,8 @@ import type {
 import type { TrainingDataRecorder, TrainingDecisionSample } from '../trainingData';
 import smashUpEngineConfig, { smashUpSystemsForTest } from '../../../games/smashup/game';
 import diceThroneEngineConfig from '../../../games/dicethrone/game';
+import splendorEngineConfig from '../../../games/splendor/game';
+import summonerWarsEngineConfig from '../../../games/summonerwars/game';
 import { smashUpAiRuntime } from '../../../games/smashup/ai';
 import { splendorAiRuntime } from '../../../games/splendor/ai';
 import { startSmashUpReactionSession } from '../../../games/smashup/domain/reactionSession';
@@ -234,14 +236,32 @@ const createEngineConfig = (): GameEngineConfig => ({
         reduce: (core) => core,
     },
     systems: [],
+    onlineAiRecovery: {
+        publicPregameLegalActionPhases: ['factionSelect'],
+    },
 });
 
 const createEngineConfigWithId = (gameId: string): GameEngineConfig => {
     const base = createEngineConfig();
+    const knownOnlineAiRecovery = gameId === 'dicethrone'
+        ? diceThroneEngineConfig.onlineAiRecovery
+        : gameId === 'smashup'
+            ? smashUpEngineConfig.onlineAiRecovery
+            : gameId === 'splendor'
+                ? splendorEngineConfig.onlineAiRecovery
+                : gameId === 'summonerwars'
+                    ? summonerWarsEngineConfig.onlineAiRecovery
+                    : undefined;
     return {
         ...base,
         gameId,
         onlineAiRecovery: {
+            ...base.onlineAiRecovery,
+            autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
+            activeTurnLegalActionOnlyPhases: gameId === 'dicethrone'
+                ? ['offensiveRoll', 'targetingRoll', 'defensiveRoll']
+                : ['targetingRoll'],
+            ...knownOnlineAiRecovery,
             resolveCurrentPlayerId: gameId === 'dicethrone'
                 ? ({ state, phase, fallbackPlayerId }) => {
                     if (phase !== 'defensiveRoll') {
@@ -304,6 +324,24 @@ const createEngineConfigWithId = (gameId: string): GameEngineConfig => {
                     && seatSelectability?.selectionState === 'no-options'
                 )
                 : undefined,
+            advancePhaseCommandType: gameId === 'summonerwars'
+                ? 'sw:end_phase'
+                : knownOnlineAiRecovery?.advancePhaseCommandType,
+            disableFallbackAdvancePhase: gameId === 'splendor'
+                ? true
+                : knownOnlineAiRecovery?.disableFallbackAdvancePhase,
+            publicPregameLegalActionPhases: gameId === 'summonerwars'
+                ? ['factionSelect', 'summon']
+                : knownOnlineAiRecovery?.publicPregameLegalActionPhases ?? base.onlineAiRecovery?.publicPregameLegalActionPhases,
+            buildInteractionRecoveryFingerprintHint: gameId === 'dicethrone'
+                ? diceThroneEngineConfig.onlineAiRecovery?.buildInteractionRecoveryFingerprintHint
+                : knownOnlineAiRecovery?.buildInteractionRecoveryFingerprintHint,
+            resolveForcedInteractionCommand: gameId === 'dicethrone'
+                ? diceThroneEngineConfig.onlineAiRecovery?.resolveForcedInteractionCommand
+                : knownOnlineAiRecovery?.resolveForcedInteractionCommand,
+            offlineAdjudicationCommandByInteractionKind: gameId === 'dicethrone'
+                ? diceThroneEngineConfig.onlineAiRecovery?.offlineAdjudicationCommandByInteractionKind
+                : knownOnlineAiRecovery?.offlineAdjudicationCommandByInteractionKind,
             allowForceCommandAfterLegalActionExhausted: ({ phase, previousCandidate, nextCandidate }) => {
                 if (gameId === 'dicethrone') {
                     return phase === 'defensiveRoll';
@@ -389,6 +427,9 @@ const createInteractiveEngineConfig = (): GameEngineConfig => ({
         createInteractionSystem(),
         createSimpleChoiceSystem(),
     ],
+    onlineAiRecovery: {
+        autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
+    },
 });
 
 const createStoredState = (): StoredMatchState => ({
@@ -2439,11 +2480,14 @@ describe('GameTransportServer（离座与重连）', () => {
 
         await storage.createMatch(`match-offline-${kind}`, {
             initialState,
-            metadata: createMetadata('offline-cred'),
+            metadata: {
+                ...createMetadata('offline-cred'),
+                gameName: kind.startsWith('dt:') ? 'dicethrone' : 'test-game',
+            },
         });
 
         const engineConfig: GameEngineConfig = {
-            ...createEngineConfig(),
+            ...(kind.startsWith('dt:') ? createEngineConfigWithId('dicethrone') : createEngineConfig()),
             domain: {
                 ...createEngineConfig().domain,
                 validate: (_state, command) => {
@@ -4581,6 +4625,10 @@ describe('GameTransportServer（离座与重连）', () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const feedbackReporter = vi.fn(async () => undefined);
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'idle',
+            idleReason: 'no-action',
+        });
 
         await storage.createMatch('match-watchdog-sw-end-phase', {
             initialState: createOnlineAiRecoveryState(),
@@ -4617,74 +4665,79 @@ describe('GameTransportServer（离座与重连）', () => {
             ) => Promise<void>;
         };
 
-        const match = await serverInternal.loadMatch('match-watchdog-sw-end-phase');
-        expect(match).toBeTruthy();
+        try {
+            const match = await serverInternal.loadMatch('match-watchdog-sw-end-phase');
+            expect(match).toBeTruthy();
 
-        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType) => {
-            if (commandType !== 'sw:end_phase') {
-                return false;
-            }
-            activeMatch.state = {
-                ...activeMatch.state,
-                sys: {
-                    ...activeMatch.state.sys,
-                    phase: 'discard',
+            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, _playerID, commandType) => {
+                if (commandType !== 'sw:end_phase') {
+                    return false;
+                }
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        phase: 'discard',
+                    },
+                };
+                return true;
+            });
+
+            const candidate = {
+                playerId: '1',
+                reason: 'active-turn',
+                resolution: {
+                    playerId: '1',
+                    attemptKey: 'force-end-turn:1:test',
+                    source: 'local-ai',
+                    action: {
+                        actionId: 'force-end-turn:test',
+                        kind: 'force-end-turn',
+                        label: '强制结束 AI 回合',
+                        commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                    },
                 },
             };
-            return true;
-        });
-
-        const candidate = {
-            playerId: '1',
-            reason: 'active-turn',
-            resolution: {
-                playerId: '1',
-                attemptKey: 'force-end-turn:1:test',
-                source: 'local-ai',
-                action: {
-                    actionId: 'force-end-turn:test',
-                    kind: 'force-end-turn',
-                    label: '强制结束 AI 回合',
-                    commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+            const tracker = {
+                key: '',
+                firstSeenAt: Date.now(),
+                autoSubmittedAt: null,
+                lastReportedFailureReason: null,
+                failureCount: 0,
+            };
+            const progressMarker = buildAiProgressMarker(match.state);
+            tracker.key = `${candidate.playerId}:${candidate.reason}:${progressMarker}`;
+            await serverInternal.runOnlineAiRecoverySequence(
+                match,
+                tracker,
+                candidate,
+                progressMarker,
+                {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai' },
                 },
-            },
-        };
-        const tracker = {
-            key: '',
-            firstSeenAt: Date.now(),
-            autoSubmittedAt: null,
-            lastReportedFailureReason: null,
-            failureCount: 0,
-        };
-        const progressMarker = buildAiProgressMarker(match.state);
-        tracker.key = `${candidate.playerId}:${candidate.reason}:${progressMarker}`;
-        await serverInternal.runOnlineAiRecoverySequence(
-            match,
-            tracker,
-            candidate,
-            progressMarker,
-            {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            },
-        );
+            );
 
-        // 初始 + 一次 follow-up（maxAdvanceSteps=1）都应映射成 sw:end_phase
-        expect(executeSpy).toHaveBeenCalledTimes(2);
-        expect(executeSpy).toHaveBeenNthCalledWith(
-            1,
-            expect.anything(),
-            '1',
-            'sw:end_phase',
-            expect.anything(),
-        );
-        expect(executeSpy).toHaveBeenNthCalledWith(
-            2,
-            expect.anything(),
-            '1',
-            'sw:end_phase',
-            expect.anything(),
-        );
+            // 初始 + 一次 follow-up（maxAdvanceSteps=1）都应映射成 sw:end_phase
+            expect(executeSpy).toHaveBeenCalledTimes(2);
+            expect(executeSpy).toHaveBeenNthCalledWith(
+                1,
+                expect.anything(),
+                '1',
+                'sw:end_phase',
+                expect.anything(),
+            );
+            expect(executeSpy).toHaveBeenNthCalledWith(
+                2,
+                expect.anything(),
+                '1',
+                'sw:end_phase',
+                expect.anything(),
+            );
+            executeSpy.mockRestore();
+        } finally {
+            resolutionSpy.mockRestore();
+        }
     });
 
     it('online AI watchdog 对 manifest 明确禁用 AI 的游戏应忽略残留 seatControllers', async () => {
@@ -18146,6 +18199,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         activePlayerId: '2',
                         currentPlayerIndex: 2,
                         turnOrder: ['0', '1', '2', '3'],
+                        hostStarted: false,
                         factionSelection: {
                             takenFactions: ['aliens', 'pirates'],
                             playerSelections: {
@@ -18459,6 +18513,10 @@ describe('GameTransportServer（离座与重连）', () => {
                     selectedFactions: {
                         ...activeMatch.state.core.selectedFactions,
                         '1': 'paladin',
+                    },
+                    readyPlayers: {
+                        ...activeMatch.state.core.readyPlayers,
+                        '1': true,
                     },
                 },
                 sys: {

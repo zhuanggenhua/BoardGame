@@ -628,6 +628,7 @@ export interface GameEngineConfig<
     onlineAiRecovery?: {
         advancePhaseCommandType?: string;
         disableFallbackAdvancePhase?: boolean;
+        activeTurnLegalActionOnlyPhases?: string[];
         publicPregameLegalActionPhases?: string[];
         humanTurnLegalActionProbePhases?: string[];
         autoSelectFirstTriggerOnlySimpleChoiceSourceIds?: string[];

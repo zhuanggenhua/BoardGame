@@ -1,5 +1,26 @@
 > 状态提示（2026-06-05）：本文件包含多条历史长期任务推进记录；其中的 `Next:`、`当前状态`、`继续下一批` 只对各自写入当时有效，**不自动构成当前对话任务**。未被用户当轮明确点名的条目，一律只作历史进度参考。
 
+## 2026-06-06 DiceThrone 战术家 / 咒缚海盗 closeout 终版同步
+
+- 收口对象：
+  - `战术家 / 咒缚海盗` family closeout gate 的最后两条新增审计测试
+  - 仍保留 `L4 / completion audit / 审计 hold` 旧口径的 rule/evidence 文档顶部摘要
+- 代码动作：
+  - `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts`
+    - 新增并收绿 `direct writer 集合固定` 与 `custom action seam / metadata 固定` 两条 closeout gate
+    - 顺手修正测试自身的 owner id / custom seam 抽取口径，避免把历史 `undefined` 和错误 owner id 误判成实现回退
+  - `src/games/dicethrone/rule/*.md`
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-intake-progress-2026-05-30.md`
+    - 在顶部补记当前权威状态：规则实现已落地、human 面板已接入、不需要整套重录、审计 closeout 已完成；下文残留的 `L4 / completion audit` 文案改按历史阶段记录理解
+- 验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts --configLoader native`
+    - `1 file / 6 passed`
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native`
+    - `4 files / 97 passed`
+- 当前边界：
+  - 这一步推进的是“closeout 权威门禁 + 文档顶部口径”一致化。
+  - 下方更早的 `95/96 passed`、`继续挂 implementation_in_progress`、`审计未封版` 等表述，都只保留为阶段流水，不再代表当前结论。
+
 ## 2026-06-06 DiceThrone 历史 raw 合同文本已清空，`i18n:check` 全仓归零
 
 - 收口对象：

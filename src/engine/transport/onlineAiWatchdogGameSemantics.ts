@@ -2,6 +2,7 @@ import type { MatchState } from '../types';
 import type { OnlineAiRecoveryEngineConfig } from './onlineAiRecovery';
 
 const EMPTY_ONLINE_AI_PHASE_SET = new Set<string>();
+const DEFAULT_HUMAN_TURN_LEGAL_ACTION_PROBE_PHASES = new Set(['defensiveRoll']);
 
 const resolveConfiguredPhaseSet = (
     phases: string[] | undefined,
@@ -55,6 +56,26 @@ export function isOnlineAiWatchdogPublicPregameLegalActionPhase(args: {
     return configuredPhases.has(currentPhase);
 }
 
+export function isOnlineAiWatchdogActiveTurnLegalActionOnlyPhase(args: {
+    state: MatchState<unknown>;
+    phase?: string | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
+}): boolean {
+    const currentPhase = typeof args.phase === 'string'
+        ? args.phase
+        : typeof args.state.sys?.phase === 'string'
+            ? args.state.sys.phase
+            : '';
+    if (!currentPhase) {
+        return false;
+    }
+
+    const configuredPhases = resolveConfiguredPhaseSet(
+        args.engineConfig?.onlineAiRecovery?.activeTurnLegalActionOnlyPhases,
+    );
+    return configuredPhases.has(currentPhase);
+}
+
 export function shouldProbeOnlineAiLegalActionOnlyCandidateForHumanTurn(args: {
     state: MatchState<unknown>;
     currentPlayerId: string;
@@ -78,7 +99,8 @@ export function shouldProbeOnlineAiLegalActionOnlyCandidateForHumanTurn(args: {
     const humanTurnProbePhases = resolveConfiguredPhaseSet(
         args.engineConfig?.onlineAiRecovery?.humanTurnLegalActionProbePhases,
     );
-    const isHumanActiveOffTurnRollPhase = humanTurnProbePhases.has(currentPhase);
+    const isHumanActiveOffTurnRollPhase = DEFAULT_HUMAN_TURN_LEGAL_ACTION_PROBE_PHASES.has(currentPhase)
+        || humanTurnProbePhases.has(currentPhase);
     if (!isHumanActiveOffTurnRollPhase && !isPublicPregameSetup) {
         return false;
     }

@@ -1537,6 +1537,7 @@ export const engineConfig = {
     ...createGameEngine(adapterConfig),
     resolveLocalPregameControlledPlayerId: resolveDiceThroneLocalPregameControlledPlayerId,
     onlineAiRecovery: {
+        activeTurnLegalActionOnlyPhases: ['offensiveRoll', 'targetingRoll', 'defensiveRoll'],
         humanTurnLegalActionProbePhases: ['defensiveRoll', 'targetingRoll'],
         resolveCurrentPlayerId: resolveDiceThroneOnlineAiCurrentPlayerId,
         resolveManualSetupSelectionTakeoverPlayerId: resolveDiceThroneManualSetupSelectionTakeoverPlayerId,

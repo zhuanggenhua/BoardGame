@@ -506,6 +506,26 @@ const waitForBoardImageReady = async (page: Page, testId: string) => {
     await page.waitForTimeout(300);
 };
 
+const waitForCursedPirateBoardFaceReady = async (
+    page: Page,
+    face: 'normal' | 'cursed',
+) => {
+    const boardSurface = page.getByTestId('player-board-surface').first();
+    const boardImage = page.getByTestId('player-board-image').first();
+    await expect(boardSurface).toHaveAttribute('data-character-id', 'cursed_pirate', { timeout: 10000 });
+    await waitForBoardImageReady(page, 'player-board-image');
+
+    if (face === 'normal') {
+        await expect(boardImage).toHaveAttribute('data-debug-current-src', /human-player-board/, { timeout: 10000 });
+        await expect(boardSurface.locator('[data-ability-slot="sky"]').first()).toHaveAttribute('data-base-ability-id', 'human-cursed', { timeout: 10000 });
+        await expect(boardSurface.locator('[data-ability-slot="combo"]').first()).toHaveAttribute('data-base-ability-id', 'light-the-fuse', { timeout: 10000 });
+    } else {
+        await expect(boardImage).toHaveAttribute('data-debug-current-src', /\/player-board(?:[./?#]|$)/, { timeout: 10000 });
+        await expect(boardSurface.locator('[data-ability-slot="fist"]').first()).toHaveAttribute('data-base-ability-id', 'soul-stab', { timeout: 10000 });
+        await expect(boardSurface.locator('[data-ability-slot="sky"]').first()).toHaveAttribute('data-base-ability-id', 'cursed', { timeout: 10000 });
+    }
+};
+
 const readServerCore = async (matchId: string, page: Page): Promise<JsonRecord> => {
     const state = await getMatchState(matchId, page) as JsonRecord;
     const root = asRecord(state.G ?? state);
@@ -3163,7 +3183,7 @@ const setupHumanCursedEndTurnScenario = async (
             ...core,
             players,
             activePlayerId: '1',
-            phase: 'discard',
+            phase: 'main2',
             selectedAbilityId: undefined,
             activatingAbilityId: undefined,
             pendingAttack: undefined,
@@ -3173,7 +3193,7 @@ const setupHumanCursedEndTurnScenario = async (
         };
         root.sys = {
             ...sys,
-            phase: 'discard',
+            phase: 'main2',
             currentPlayerIndex: 1,
             interaction: { current: undefined, queue: [] },
             responseWindow: { current: undefined },
@@ -9797,6 +9817,26 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await setupHumanCursedEndTurnScenario(match, 3);
             await dismissCardSpotlightIfPresent(match.hostPage);
             await dismissCardSpotlightIfPresent(match.guestPage);
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
+                const players = asRecordMap(core.players);
+                const guest = asRecord(players['1']);
+                const abilities = Array.isArray(guest.abilities)
+                    ? guest.abilities.map((ability) => asRecord(ability).id ?? null)
+                    : [];
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    playerBoardFace: guest.playerBoardFace ?? null,
+                    hasHumanCursed: abilities.includes('human-cursed'),
+                    cursedCoin: Number(asRecord(guest.statusEffects)[STATUS_IDS.CURSED_COIN] ?? 0),
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'main2',
+                playerBoardFace: 'normal',
+                hasHumanCursed: true,
+                cursedCoin: 3,
+            });
+            await waitForCursedPirateBoardFaceReady(match.guestPage, 'normal');
 
             await saveEvidenceScreenshot(match.guestPage, testInfo, '117-guest-human-cursed-before-end-turn');
 
@@ -9806,24 +9846,56 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 payload: {},
             });
 
-            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.CURSED_COIN, 2);
+            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.CURSED_COIN, 3);
             await expect.poll(async () => {
-                const core = await readServerCore(match.matchId, match.guestPage);
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
                 const players = asRecordMap(core.players);
                 const guest = asRecord(players['1']);
                 const abilities = Array.isArray(guest.abilities)
                     ? guest.abilities.map((ability) => asRecord(ability).id ?? null)
                     : [];
                 return {
+                    phase: sys.phase ?? core.phase ?? null,
                     playerBoardFace: guest.playerBoardFace ?? null,
                     hasHumanCursed: abilities.includes('human-cursed'),
                     hasSoulStab: abilities.includes('soul-stab'),
                 };
             }, { timeout: 10000 }).toMatchObject({
+                phase: 'discard',
                 playerBoardFace: 'normal',
                 hasHumanCursed: true,
                 hasSoulStab: false,
             });
+            await waitForCursedPirateBoardFaceReady(match.guestPage, 'normal');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '117b-guest-human-cursed-discard-phase');
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '1',
+                payload: {},
+            });
+
+            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.CURSED_COIN, 2);
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
+                const players = asRecordMap(core.players);
+                const guest = asRecord(players['1']);
+                const abilities = Array.isArray(guest.abilities)
+                    ? guest.abilities.map((ability) => asRecord(ability).id ?? null)
+                    : [];
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    playerBoardFace: guest.playerBoardFace ?? null,
+                    hasHumanCursed: abilities.includes('human-cursed'),
+                    hasSoulStab: abilities.includes('soul-stab'),
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'main1',
+                playerBoardFace: 'normal',
+                hasHumanCursed: true,
+                hasSoulStab: false,
+            });
+            await waitForCursedPirateBoardFaceReady(match.guestPage, 'normal');
             await saveEvidenceScreenshot(match.guestPage, testInfo, '118-guest-human-cursed-coin-removed');
         } finally {
             await cleanupDTMatch(match);
@@ -9841,6 +9913,26 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await setupHumanCursedEndTurnScenario(match, 0);
             await dismissCardSpotlightIfPresent(match.hostPage);
             await dismissCardSpotlightIfPresent(match.guestPage);
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
+                const players = asRecordMap(core.players);
+                const guest = asRecord(players['1']);
+                const abilities = Array.isArray(guest.abilities)
+                    ? guest.abilities.map((ability) => asRecord(ability).id ?? null)
+                    : [];
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    playerBoardFace: guest.playerBoardFace ?? null,
+                    hasHumanCursed: abilities.includes('human-cursed'),
+                    cursedCoin: Number(asRecord(guest.statusEffects)[STATUS_IDS.CURSED_COIN] ?? 0),
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'main2',
+                playerBoardFace: 'normal',
+                hasHumanCursed: true,
+                cursedCoin: 0,
+            });
+            await waitForCursedPirateBoardFaceReady(match.guestPage, 'normal');
 
             await saveEvidenceScreenshot(match.guestPage, testInfo, '119-guest-human-cursed-flip-before-end-turn');
 
@@ -9851,24 +9943,55 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             });
 
             await expect.poll(async () => {
-                const core = await readServerCore(match.matchId, match.guestPage);
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
                 const players = asRecordMap(core.players);
                 const guest = asRecord(players['1']);
                 const abilities = Array.isArray(guest.abilities)
                     ? guest.abilities.map((ability) => asRecord(ability).id ?? null)
                     : [];
                 return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    playerBoardFace: guest.playerBoardFace ?? null,
+                    hasHumanCursed: abilities.includes('human-cursed'),
+                    cursedCoin: Number(asRecord(guest.statusEffects)[STATUS_IDS.CURSED_COIN] ?? 0),
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'discard',
+                playerBoardFace: 'normal',
+                hasHumanCursed: true,
+                cursedCoin: 0,
+            });
+            await waitForCursedPirateBoardFaceReady(match.guestPage, 'normal');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '119b-guest-human-cursed-discard-phase');
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '1',
+                payload: {},
+            });
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.guestPage);
+                const players = asRecordMap(core.players);
+                const guest = asRecord(players['1']);
+                const abilities = Array.isArray(guest.abilities)
+                    ? guest.abilities.map((ability) => asRecord(ability).id ?? null)
+                    : [];
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
                     playerBoardFace: guest.playerBoardFace ?? null,
                     hasHumanCursed: abilities.includes('human-cursed'),
                     hasSoulStab: abilities.includes('soul-stab'),
                     cursedCoin: Number(asRecord(guest.statusEffects)[STATUS_IDS.CURSED_COIN] ?? 0),
                 };
             }, { timeout: 10000 }).toMatchObject({
+                phase: 'main1',
                 playerBoardFace: 'cursed',
                 hasHumanCursed: false,
                 hasSoulStab: true,
                 cursedCoin: 0,
             });
+            await waitForCursedPirateBoardFaceReady(match.guestPage, 'cursed');
             await saveEvidenceScreenshot(match.guestPage, testInfo, '120-guest-human-cursed-flipped');
         } finally {
             await cleanupDTMatch(match);

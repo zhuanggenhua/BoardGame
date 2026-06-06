@@ -6,7 +6,7 @@
 - 当前最新代码与验证口径为：
   - `src/games/dicethrone/domain/core-types.ts` 已移除 `zhanshujia / cursed_pirate` 的 `implementation_in_progress` 徽标。
   - `src/games/dicethrone/__tests__/character-catalog-status.test.ts` 已改为锁定 `gunslinger / samurai / treant / ninja / zhanshujia / cursed_pirate` 都不再保留该徽标。
-  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native` -> `4 files / 95 passed`
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native` -> `4 files / 97 passed`
   - `npx tsc --noEmit --pretty false` -> 通过
   - `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` -> 通过
   - `temp/dicethrone-intake-full-run-2026-06-06-pass2.log` 记录的 latest full-file 权威整跑结果为 `80 passed (20.3m)`
@@ -14,6 +14,7 @@
   - 规则实现已落地。
   - 不需要整套重录。
   - 审计已完成 closeout，本轮剩余只是不再扩大范围地回写文档口径。
+- 下方 2026-06-06 各条历史分段里若仍出现“不能摘标 / 审计 hold / completion audit 未封版”的说法，均只代表当时阶段快照，不再是当前权威结论。
 
 ## Current Note（2026-06-06）
 
@@ -56,7 +57,7 @@
 - [x] S2 资源链接入：生成正式英文运行时资源、状态图集、卡牌 atlas JSON，重建 manifest。
 - [x] S3 静态英雄接入：新增英雄目录、骰面、Token、能力、卡牌、i18n、注册表、关键图片 resolver。
 - [x] S4 机制实现：战术家与咒缚海盗的规则实现、双面切换、状态链、奖励骰链、升级链、专属手牌链与真实入口收口已补齐到当前正式合同；本轮 completion audit 未再发现新的实现 blocker。
-- [x] S5 测试与审计：closeout / 目录状态 / intake / mechanics 四组权威测试已收口到 `4 files / 95 passed`，主审计文档与长期任务文档已回写完成态，当前不再保留“审计 hold”结论。
+- [x] S5 测试与审计：closeout / 目录状态 / intake / mechanics 四组权威测试已收口到 `4 files / 97 passed`，主审计文档与长期任务文档已回写完成态，当前不再保留“审计 hold”结论。
 - [x] S6 端到端与上传：真实在线双玩家 E2E、截图核验、资源上传、代表 URL HEAD 回查已完成。
 
 ## Current Notes

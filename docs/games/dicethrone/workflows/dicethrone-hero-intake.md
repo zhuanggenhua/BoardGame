@@ -417,6 +417,7 @@ npm run assets:upload
    - 两个新角色都能在选角入口选中。
    - Host 和 Guest 都能进入对局。
    - Host/Guest 截图分别看到对应新角色玩家面板、提示板、手牌/卡图、HUD。
+   - 只要涉及翻面、形态切换、状态切换、阶段推进或多段结算，截图证据至少覆盖“初始态 + 结束态”；若有可见中间交互，还必须补“交互中”截图，且每张图都要能肉眼证明对应状态已成立。
    - 如果新角色有 Token / 状态图标，必须至少有一条真实 DOM 断言证明血条上方 `[data-tutorial-id="status-tokens"]` 内的徽章命中 `status-icons-atlas` sprite，且父徽章不含纯色 fallback 类（如 `bg-gradient-to-br`）。只证明 token/status 徽章可见，不得算图标显示通过。
 
 若机制实现超出 L1/L2，还必须补对应 L3/L4 成功路径截图；不能用“进入对局成功”替代复杂机制验证。

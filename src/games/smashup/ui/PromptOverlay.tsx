@@ -1422,7 +1422,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 rounded-lg bg-slate-950/85 p-2 shadow-[0_14px_28px_rgba(0,0,0,0.45)] transition-[background-color,box-shadow]
                                                 ${isSelected
                                                     ? 'ring-4 ring-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.45)]'
-                                                    : 'ring-2 ring-white/15 group-hover:bg-slate-900 group-hover:ring-white/45 group-hover:shadow-2xl'}
+                                                    : 'group-hover:bg-slate-900 group-hover:shadow-2xl'}
                                             `}>
                                                 {previewRef ? (
                                                     <CardPreview

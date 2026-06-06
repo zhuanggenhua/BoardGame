@@ -3,6 +3,7 @@ import type { MatchState } from '../types';
 import { resolveCurrentTurnPlayerIdFromState } from '../sessionContext';
 import type { GameEngineConfig } from './server';
 import {
+    isOnlineAiWatchdogActiveTurnLegalActionOnlyPhase,
     shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice,
     isOnlineAiWatchdogPublicPregameLegalActionPhase,
     resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType,
@@ -1043,6 +1044,24 @@ export function resolveForceEndTurnForStalledAi(args: {
         }
         if (core?.hostStarted === false && !isPublicPregameLegalActionPhase) {
             return null;
+        }
+
+        if (isOnlineAiWatchdogActiveTurnLegalActionOnlyPhase({
+            state: args.sharedState as MatchState<unknown>,
+            phase,
+            engineConfig: args.engineConfig,
+        })) {
+            return {
+                playerId: currentPlayerId,
+                reason: 'active-turn-legal-only',
+                legalActionOnly: true,
+                fingerprintHint: `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}`,
+                resolution: buildForceEndTurnResolution({
+                    playerId: currentPlayerId,
+                    suffix: `active-turn-legal-only:${currentPlayerId}:${phase || 'unknown-phase'}`,
+                    commands: [],
+                }),
+            };
         }
 
         const advancePhaseCommandType = resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType({
