@@ -1607,7 +1607,19 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const justEnteredPhase = events.some(
                 e => e.type === 'SYS_PHASE_CHANGED' && (e as any).payload?.to === phase
             );
-            if (justEnteredPhase && canAdvancePhase(core, phase)) {
+            const hasActiveInteraction = state.sys.interaction?.current !== undefined;
+            const hasActiveResponseWindow = state.sys.responseWindow?.current !== undefined;
+            const hasPendingDamage = core.pendingDamage !== null && core.pendingDamage !== undefined;
+            const hasPendingBonusDice = hasInteractivePendingBonusDiceSettlement(core);
+
+            if (
+                justEnteredPhase
+                && canAdvancePhase(core, phase)
+                && !hasActiveInteraction
+                && !hasActiveResponseWindow
+                && !hasPendingDamage
+                && !hasPendingBonusDice
+            ) {
                 return { autoContinue: true, playerId: core.activePlayerId };
             }
             return undefined;

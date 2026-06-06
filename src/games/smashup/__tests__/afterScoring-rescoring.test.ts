@@ -529,18 +529,20 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         const { eventLog, choice } = advanceToAfterScoring(runner, '0', {
             allowDirectAfterScoringSourceIds: ['base_greenhouse'],
         });
-        const chooseGreenhouse = runner.resolveInteraction('0', {
-            optionId: findQueuedTriggerOptionId(
-                runner.getState(),
-                choice,
-                'base_greenhouse',
-                '找不到温室的统一反应入口',
-            ),
-        });
-        expect(chooseGreenhouse.success).toBe(true);
-        eventLog.push(...chooseGreenhouse.events);
-
-        const greenhouseChoice = getCurrentChoice(runner.getState());
+        let greenhouseChoice = choice;
+        if (choice.sourceId === 'smashup_reaction_choose') {
+            const chooseGreenhouse = runner.resolveInteraction('0', {
+                optionId: findQueuedTriggerOptionId(
+                    runner.getState(),
+                    choice,
+                    'base_greenhouse',
+                    '找不到温室的统一反应入口',
+                ),
+            });
+            expect(chooseGreenhouse.success).toBe(true);
+            eventLog.push(...chooseGreenhouse.events);
+            greenhouseChoice = getCurrentChoice(runner.getState())!;
+        }
         expect(greenhouseChoice?.sourceId).toBe('base_greenhouse');
         const chooseDeckMinion = runner.resolveInteraction('0', {
             optionId: findOptionId(

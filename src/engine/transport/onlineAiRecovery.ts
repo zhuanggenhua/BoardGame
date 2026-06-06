@@ -142,26 +142,14 @@ export function shouldSilentlyRetryOnlineAiBatchRejection(reason: string): boole
 }
 
 export function resolveCurrentPlayerId(sharedState: MatchState<unknown> | null | undefined): string | null {
-    const phase = typeof sharedState?.sys?.phase === 'string' ? sharedState.sys.phase : '';
     const core = sharedState?.core as {
         activePlayerId?: unknown;
         currentPlayerId?: unknown;
         currentPlayer?: unknown;
         turnOrder?: unknown;
         currentPlayerIndex?: unknown;
-        pendingAttack?: unknown;
     } | undefined;
     if (!core) return null;
-
-    // DiceThrone defensiveRoll 的阶段推进操作者是防御方（defender），
-    // 并不总是 core.activePlayerId。这里统一对齐 FlowHooks#getCurrentPlayerId 语义，
-    // 避免 watchdog 在防御阶段误判当前操作者，触发 not_active_player 噪音。
-    if (phase === 'defensiveRoll') {
-        const pendingAttack = core.pendingAttack as { defenderId?: unknown } | undefined;
-        if (typeof pendingAttack?.defenderId === 'string') {
-            return pendingAttack.defenderId;
-        }
-    }
 
     if (typeof core.activePlayerId === 'string') return core.activePlayerId;
     if (typeof core.currentPlayerId === 'string') return core.currentPlayerId;

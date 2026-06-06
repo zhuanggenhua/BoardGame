@@ -3552,6 +3552,7 @@ const setupPowderKegUpkeepScenario = async (
     match: MatchSetup,
     powderKegCount: number,
     guestPowderKegCount = 0,
+    guestCursedCoinCount = 0,
     randomValues?: number[],
 ) => {
     await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
@@ -3588,11 +3589,18 @@ const setupPowderKegUpkeepScenario = async (
                 [RESOURCE_IDS.HP]: 50,
             },
             tokens: {},
-            statusEffects: guestPowderKegCount > 0
-                ? {
-                    [STATUS_IDS.POWDER_KEG]: guestPowderKegCount,
-                }
-                : {},
+            statusEffects: {
+                ...(guestPowderKegCount > 0
+                    ? {
+                        [STATUS_IDS.POWDER_KEG]: guestPowderKegCount,
+                    }
+                    : {}),
+                ...(guestCursedCoinCount > 0
+                    ? {
+                        [STATUS_IDS.CURSED_COIN]: guestCursedCoinCount,
+                    }
+                    : {}),
+            },
         };
 
         root.core = {
@@ -3602,6 +3610,7 @@ const setupPowderKegUpkeepScenario = async (
             phase: 'discard',
             selectedAbilityId: undefined,
             activatingAbilityId: undefined,
+            currentChoiceSourceAbilityId: undefined,
             pendingAttack: undefined,
             pendingBonusDiceSettlement: undefined,
             pendingDamage: undefined,
@@ -3611,6 +3620,7 @@ const setupPowderKegUpkeepScenario = async (
                 ...sys,
                 phase: 'discard',
                 currentPlayerIndex: 1,
+                flowHalted: false,
                 interaction: { current: undefined, queue: [] },
                 responseWindow: { current: undefined },
             }, randomValues)
@@ -3618,6 +3628,7 @@ const setupPowderKegUpkeepScenario = async (
                 ...sys,
                 phase: 'discard',
                 currentPlayerIndex: 1,
+                flowHalted: false,
                 interaction: { current: undefined, queue: [] },
                 responseWindow: { current: undefined },
             };
@@ -5583,17 +5594,28 @@ const playPowderKegUpkeepTransfer = async (
         applied: string;
     },
 ) => {
-    await setupPowderKegUpkeepScenario(match, 1, guestPowderKegCount, repeatRandomValue(6, 8));
+    await setupPowderKegUpkeepScenario(match, 1, guestPowderKegCount, 1, repeatRandomValue(6, 8));
     await dismissCardSpotlightIfPresent(match.hostPage);
     await dismissCardSpotlightIfPresent(match.guestPage);
+    await expect.poll(async () => {
+        const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+        const interaction = asRecord(asRecord(sys.interaction).current);
+        return {
+            phase: String(sys.phase ?? core.phase ?? ''),
+            flowHalted: Boolean(sys.flowHalted),
+            sourceAbilityId: String(interaction.sourceAbilityId ?? ''),
+            type: String(interaction.type ?? ''),
+            currentChoiceSourceAbilityId: String(core.currentChoiceSourceAbilityId ?? ''),
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        phase: 'discard',
+        flowHalted: false,
+        sourceAbilityId: '',
+        type: '',
+        currentChoiceSourceAbilityId: '',
+    });
 
     await saveEvidenceScreenshot(match.hostPage, testInfo, screenshotPrefix.before);
-
-    await dispatchDiceThroneCommand(match.guestPage, {
-        type: 'ADVANCE_PHASE',
-        playerId: '1',
-        payload: {},
-    });
 
     await expect.poll(async () => {
         const root = await readServerRoot(match.matchId, match.hostPage);

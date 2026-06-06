@@ -1,5 +1,43 @@
 import { test, expect } from '../framework';
 
+async function waitForFirstMateSequenceStart(game: {
+    getState: () => Promise<any>;
+    passResponseWindow: (playerId?: string) => Promise<void>;
+}, page: {
+    waitForTimeout: (ms: number) => Promise<void>;
+}, timeoutMs = 20000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        const state = await game.getState();
+        const sourceId = state?.sys?.interaction?.current?.data?.sourceId ?? null;
+        const windowType = state?.sys?.responseWindow?.current?.windowType ?? null;
+        const options = state?.sys?.interaction?.current?.data?.options ?? [];
+        const hasRealTriggerOption = options.some((option: any) =>
+            option?.id !== 'skip'
+            && option?.id !== 'pass'
+            && option?.value?.kind !== 'pass'
+            && option?.value?.skip !== true,
+        );
+
+        if (sourceId === 'pirate_first_mate_choose_base') {
+            return;
+        }
+
+        if (sourceId === 'smashup_reaction_choose' && hasRealTriggerOption) {
+            return;
+        }
+
+        if (windowType === 'meFirst' || windowType === 'afterScoring') {
+            await game.passResponseWindow();
+            continue;
+        }
+
+        await page.waitForTimeout(250);
+    }
+
+    throw new Error('等待 4P 大副 afterScoring 触发超时');
+}
+
 function makePlayer(id: string, factions: [string, string]) {
     return {
         id,
@@ -134,7 +172,7 @@ test.describe('SmashUp 4P First Mate afterScoring 顺序', () => {
         await game.screenshot('01-initial-4p-first-mates', testInfo);
 
         await game.advancePhase();
-        await game.waitForInteraction('smashup_reaction_choose', 20000);
+        await waitForFirstMateSequenceStart(game, page, 20000);
 
         let reactionChooseCount = 0;
         const matePromptPlayers: string[] = [];

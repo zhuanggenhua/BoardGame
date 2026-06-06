@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { useToast, type Toast, type ToastAction, type ToastContent, type ToastTone } from '../../../contexts/ToastContext';
 import clsx from 'clsx';
+import { RewardPointsBadge } from '../labels/RewardPointsBadge';
 
 const ToneIcons: Record<ToastTone, React.ReactNode> = {
     success: <CheckCircle2 className="w-5 h-5 text-[#2f855a]" />,
@@ -28,11 +29,19 @@ export const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
     const { t } = useTranslation();
     const { dismiss } = useToast();
 
-    const renderContent = (content: ToastContent) => {
+    const renderContent = (content: ToastContent): React.ReactNode => {
         if (content.kind === 'text') {
             return content.text;
         }
-        return t(content.key, { ns: content.ns, ...content.params });
+        if (content.kind === 'i18n') {
+            return t(content.key, { ns: content.ns, ...content.params });
+        }
+        return (
+            <span className="inline-flex items-center gap-2">
+                <span>{content.text}</span>
+                <RewardPointsBadge points={content.points} signed className="shrink-0" />
+            </span>
+        );
     };
 
     const handleActionClick = (action: ToastAction) => {
@@ -63,9 +72,9 @@ export const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
                         {renderContent(toast.title)}
                     </h4>
                 )}
-                <p className="text-xs text-[#8c7b64] leading-relaxed font-serif">
+                <div className="text-xs text-[#8c7b64] leading-relaxed font-serif">
                     {renderContent(toast.message)}
-                </p>
+                </div>
                 {toast.actions?.length ? (
                     <div className="mt-3 flex flex-wrap gap-2">
                         {toast.actions.map((action, index) => {

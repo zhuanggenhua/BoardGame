@@ -1,6 +1,6 @@
 # DiceThrone 新英雄全量重审与抽查循环（2026-05-15）
 
-> 2026-06-05 当前有效口径：本文件现在应被视为“四位新英雄总补审”的主汇总之一，但它本身历史上主要承载的是 Treant / Ninja 在 2026-05-15 到 2026-05-17 这一段的深审循环与共享根因修复。因此，当前阅读顺序应优先看本文件里的总范围说明、批次级 `L4` 判等矩阵与最新结论，不再把中前段历史对象级残余直接当成当前状态。对 Treant / Ninja 而言，升级技能对象级 `L3` 与关键 `L4` 已在后续补审中大幅补齐；当前残余应读作批次级 `L4` 治理、旧文档统一回写与最终发布口径统一，而不是“仍有一批对象级关键实现未补”。
+> 2026-06-06 当前有效口径：本文件现在应被视为“四位新英雄总补审”的主汇总之一，但它本身历史上主要承载的是 Treant / Ninja 在 2026-05-15 到 2026-05-17 这一段的深审循环与共享根因修复。因此，当前阅读顺序应优先看本文件里的总范围说明、批次级 `L4` 判等矩阵与最新结论，不再把中前段历史对象级残余直接当成当前状态。对 Treant / Ninja 而言，升级技能对象级 `L3` 与关键 `L4` 已在后续补审中大幅补齐；当前残余应读作批次级 `L4` 治理、旧文档统一回写与最终发布口径统一，而不是“仍有一批对象级关键实现未补”。
 
 ## 2026-06-06 当前真实未收口矩阵
 
@@ -196,7 +196,7 @@ Ninja 已在 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.
 - Token 复杂链路已有 L2/L4：`ninjutsu`、`smoke_bomb` 成功免伤与失败扣伤害分支、`delayed_poison` 回合结束。
 - 旧“Ninja 部分基础/升级技能本体仍缺专属 L3”口径已失效：按 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的 2026-06-04/2026-06-05 补记，当前 Ninja 升级技能对象级 `L3` 与关键 `L4` 已大幅补齐；本文件现阶段对 Ninja 只能保留“不能外推为整批最终矩阵，剩余主要是批次级 `L4` 判等矩阵、外围旧文档统一回写与治理口径统一”。
 - Treant 需要和 Ninja 分开读：截至 2026-06-05，Treant **升级技能**的对象级 L3/L4 已按升级重审文档大幅补齐；基础对象里的 `shattering-fist`、`tend-care`、`vengeful-vines`、`nature-touch`、`quiet-cultivation`、`forest-awakens` 已补对象级 direct closeout / upkeep closeout L3，`rooted` 也已回写到真实防御链 L3。当前主要残余已不再是基础对象“仍缺对象级 L3”，而是批次级 `L4` 判等矩阵、外围旧文档统一回写与治理口径统一。
-- 当前最新口径必须以 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 为准：尤其是 Ninja `瞬身 II` 已在 2026-06-05 被重新定性为 **UI 命中层回归** 而非“技能未实装”，且 Ninja / Treant 整批升级技能仍**不能**在本文件中被表述为“已全面审计完成”。
+- 当前最新口径必须以 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 为准：尤其是 Ninja `瞬身 II` 当前已明确不是“技能未实装”，但它的最新权威归因也不再只是 **UI 命中层回归**，而是 `rollLimit=2 + rerollDieLimit=2 + DiceTray / Dice3D 命中层` 三线共同收口；与此同时，Ninja / Treant 整批升级技能仍**不能**在本文件中被表述为“已全面审计完成”。
 
 ## 2026-06-05 批次级 L4 共享链判等矩阵
 
@@ -208,7 +208,7 @@ Ninja 已在 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.
 | 刀尖舔血 | 单骰展示后真实伤害直收口 | — | 否 | `displayOnly` 单骰后直接 `nonattack closeout`，不与其他奖励骰攻击链同构 | 对象级 L3/L4 已补；剩批次口径统一 |
 | 死亡盛放 II | 奖励骰重投攻击加伤链 | — | 否 | settlement 读取 5 骰的忍刀/手里剑/面具计数，并按 `0/1/2` 面具数量分层 | 对象级 L3/L4 已补；剩更高阶组合分支与批次口径统一 |
 | 毒刃 II | display-only 奖励骰后继续攻击链 | — | 否 | 奖励骰只负责慢性中毒，伤害仍走原攻击/防御清理链 | 对象级 L3/L4 已补；剩批次口径统一 |
-| 瞬身 II | 防御重投 + 防御选择收口链 | — | 否 | `defensiveRoll + rollLimit=2 + ninja-blink-2` 属防御专用 family，且 2026-06-05 已额外命中过 UI 命中层回归 | 对象级 L3/L4 已补；剩批次口径统一 |
+| 瞬身 II | 防御重投 + 防御选择收口链 | — | 否 | `defensiveRoll + rollLimit=2 + rerollDieLimit=2 + ninja-blink-2` 属防御专用 family；2026-06-05 命中过 `DiceTray / Dice3D` UI 命中层回归，2026-06-06 又补上“第二次不能放行 3 颗全重掷”的共享校验缺口 | 对象级 L3/L4 已补；剩批次口径统一 |
 | 暗影步 II 主分支 / 诳惑 | 标准 token + 不可防御伤害直结算链 | `诳惑` | 是 | 不走 custom handler / 选择窗 / bonus settlement，只走标准 `grantToken + damage(unblockable)` 攻击清理管线 | 可按代表对象复用 L4，当前无额外对象级差异 |
 | 影牙 II 主分支 / 破碎之拳 II | 标准 token + 普通伤害直结算链 | `影牙 II 主分支` | 是 | 两者都走标准 `grantToken + damage` 攻击清理管线，差异只剩静态伤害值与 token 数量 | `破碎之拳 II` 可复用该 family 的 L4；剩批次口径统一 |
 | 斩击 II | 直接伤害 + postDamage 快照链 | — | 否 | `postDamage` 需要读取攻击快照授予忍术，不是纯标准伤害 family | 对象级 L3/L4 已补；剩批次口径统一 |

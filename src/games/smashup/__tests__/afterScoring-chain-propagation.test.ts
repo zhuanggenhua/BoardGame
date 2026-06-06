@@ -17,9 +17,9 @@ import type { SmashUpCommand, SmashUpCore, SmashUpEvent } from '../domain/types'
 import {
     expectNoPrompt,
     getPromptOption,
+    getSimpleChoicePrompt,
     getReactionPrompt,
     getReactionPromptOptionBySourceDefId,
-    getSimpleChoicePrompt,
     makeBase,
     makeMinion,
 } from './helpers';
@@ -54,6 +54,60 @@ function resolveCurrentOption(
     const result = runner.resolveInteraction(playerId, { optionId });
     expect(result.success).toBe(true);
     return result.finalState;
+}
+
+function advancePostScoringDelay(
+    runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
+) {
+    const state = runner.getState();
+    const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+    expect(typeof delayUntil).toBe('number');
+    const playerId = state.core.turnOrder[state.core.currentPlayerIndex]!;
+    const result = runner.dispatch('ADVANCE_PHASE', { playerId, timestamp: delayUntil as number });
+    expect(result.success).toBe(true);
+    return result.finalState;
+}
+
+function drainScoreBasesDelayUntilPromptOrIdle(
+    runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
+) {
+    let state = runner.getState();
+    for (let guard = 0; guard < 8; guard += 1) {
+        if (state.sys.phase !== 'scoreBases') {
+            break;
+        }
+        const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+        if (getSimpleChoicePromptMaybe(state) || typeof delayUntil !== 'number') {
+            break;
+        }
+        state = advancePostScoringDelay(runner);
+    }
+    return state;
+}
+
+function getSimpleChoicePromptMaybe(
+    state: MatchState<SmashUpCore>,
+    expectedSourceId?: string,
+) {
+    try {
+        return getSimpleChoicePrompt(state, expectedSourceId);
+    } catch {
+        return undefined;
+    }
+}
+
+function resolveReactionSourceOrDirectPrompt(
+    runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
+    sourceDefId: string,
+    directSourceId: string,
+    playerId = '0',
+) {
+    const reactionPrompt = getSimpleChoicePromptMaybe(runner.getState(), 'smashup_reaction_choose');
+    if (reactionPrompt) {
+        const option = getReactionPromptOptionBySourceDefId(runner.getState(), reactionPrompt, sourceDefId);
+        return resolveCurrentOption(runner, option.id, playerId);
+    }
+    return runner.getState();
 }
 
 beforeAll(() => {
@@ -100,6 +154,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
         expect(state.core.players['0'].hand.map(card => card.uid)).toContain('weak1');
         expect(state.core.bases[0].minions.map(minion => minion.uid)).toContain('scout1');
 
+        state = resolveReactionSourceOrDirectPrompt(runner, 'alien_scout', 'alien_scout_return');
         const scoutPrompt = getSimpleChoicePrompt(state, 'alien_scout_return');
         const returnScoutOption = getPromptOption(
             scoutPrompt,
@@ -107,6 +162,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
             'alien scout return option',
         );
         state = resolveCurrentOption(runner, returnScoutOption.id);
+        state = drainScoreBasesDelayUntilPromptOrIdle(runner);
 
         expectNoPrompt(state);
         expect(state.core.players['0'].hand.map(card => card.uid)).toEqual(
@@ -156,6 +212,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
             expect.arrayContaining(['scout1', 'scout2', 'mate1']),
         );
 
+        state = resolveReactionSourceOrDirectPrompt(runner, 'alien_scout', 'alien_scout_return');
         let scoutPrompt = getSimpleChoicePrompt(state, 'alien_scout_return');
         let scoutOption = getPromptOption(
             scoutPrompt,
@@ -168,6 +225,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
             expect.arrayContaining(['scout2', 'mate1']),
         );
 
+        state = resolveReactionSourceOrDirectPrompt(runner, 'alien_scout', 'alien_scout_return');
         scoutPrompt = getSimpleChoicePrompt(state, 'alien_scout_return');
         scoutOption = getPromptOption(
             scoutPrompt,
@@ -179,6 +237,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
             expect.arrayContaining(['scout2', 'mate1']),
         );
 
+        state = resolveReactionSourceOrDirectPrompt(runner, 'pirate_first_mate', 'pirate_first_mate_choose_base');
         const firstMatePrompt = getSimpleChoicePrompt(state, 'pirate_first_mate_choose_base');
         const moveMateOption = getPromptOption(
             firstMatePrompt,
@@ -186,6 +245,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
             'first mate destination option',
         );
         state = resolveCurrentOption(runner, moveMateOption.id);
+        state = drainScoreBasesDelayUntilPromptOrIdle(runner);
 
         expectNoPrompt(state);
         expect(state.core.bases[0].minions).toHaveLength(0);
@@ -213,13 +273,14 @@ describe('afterScoring 链式传递与延迟清场', () => {
         const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
         expect(advance.success).toBe(true);
 
+        let state = resolveReactionSourceOrDirectPrompt(runner, 'base_wizard_academy', 'base_wizard_academy');
         const wizardAcademyPrompt = getSimpleChoicePrompt(runner.getState(), 'base_wizard_academy');
         const chooseReplacementOption = getPromptOption(
             wizardAcademyPrompt,
             (option: any) => option.value?.defId === 'base_the_factory',
             'wizard academy replacement option',
         );
-        let state = resolveCurrentOption(runner, chooseReplacementOption.id);
+        state = resolveCurrentOption(runner, chooseReplacementOption.id);
 
         const reorderPrompt = getSimpleChoicePrompt(state, 'base_wizard_academy');
         const chooseRemainingTopOption = getPromptOption(
@@ -229,6 +290,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
         );
         state = resolveCurrentOption(runner, chooseRemainingTopOption.id);
 
+        state = resolveReactionSourceOrDirectPrompt(runner, 'alien_scout', 'alien_scout_return');
         const scoutPrompt = getSimpleChoicePrompt(state, 'alien_scout_return');
         const returnScoutOption = getPromptOption(
             scoutPrompt,
@@ -236,6 +298,7 @@ describe('afterScoring 链式传递与延迟清场', () => {
             'alien scout return option',
         );
         state = resolveCurrentOption(runner, returnScoutOption.id);
+        state = drainScoreBasesDelayUntilPromptOrIdle(runner);
 
         expectNoPrompt(state);
         expect(state.core.players['0'].hand.map(card => card.uid)).toContain('scout1');

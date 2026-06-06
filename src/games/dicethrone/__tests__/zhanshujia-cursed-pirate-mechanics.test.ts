@@ -594,6 +594,37 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(result.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
     });
 
+    it('火药桶维持投骰 6 生成转交交互时，upkeep 不应自动继续推进', () => {
+        const { state: promptState, events } = requestPowderKegTransferChoice();
+        const upkeepState = {
+            ...promptState,
+            sys: {
+                ...promptState.sys,
+                phase: 'upkeep',
+            },
+        } as MatchState<DiceThroneCore>;
+
+        const autoContinue = diceThroneFlowHooks.onAutoContinueCheck?.({
+            state: upkeepState,
+            events: [
+                ...events,
+                {
+                    type: 'SYS_PHASE_CHANGED',
+                    payload: {
+                        from: 'discard',
+                        to: 'upkeep',
+                        playerId: '0',
+                    },
+                    sourceCommandType: 'ADVANCE_PHASE',
+                    timestamp: 101,
+                } as DiceThroneEvent,
+            ],
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onAutoContinueCheck>>[0]);
+
+        expect(getSimpleChoicePrompt(promptState, 'upkeep-powder-keg')).toBeDefined();
+        expect(autoContinue).toBeUndefined();
+    });
+
     it('新收到火药桶时若已拥有火药桶，原火药桶立即爆炸并保留新火药桶', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] = 1;

@@ -121,6 +121,7 @@ export interface PhaseCondition extends BaseCondition {
     phaseId: string;
     diceCount?: number;
     rollLimit?: number;
+    rerollDieLimit?: number;
 }
 
 /**

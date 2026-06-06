@@ -121,7 +121,7 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
         });
 
         expect(wrongBaseResult.success).toBe(false);
-        expect(wrongBaseResult.error).toBe('afterScoring 只能选择当前正在结算的基地');
+        expect(wrongBaseResult.error).toBe('只能选择达到临界点的基地');
 
         const correctBaseResult = runner.dispatch('su:play_action', {
             playerId: '0',

@@ -220,7 +220,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/deploy.md` — 部署、构建产物、环境变量注入、线上/本地差异、CDN/R2 资源问题时必读。
   - **生产部署操作规范（强制）**：生产环境更新必须使用 `bash scripts/deploy/deploy-image.sh update`（基于 `docker-compose.prod.yml`）。**禁止在生产服务器上直接运行 `docker compose up -d`**（会使用默认的 `docker-compose.yml`，端口映射和环境变量与生产不同）。排查生产问题时，必须先读 `docs/deploy.md` 了解部署架构，禁止凭猜测给出服务器操作命令。
   - **生产最新部署 tag 口径（强制）**：用户说“更新部署 / 部署最新 / 发线上”且未明确指定版本时，唯一默认命令是 `bash scripts/deploy/deploy-image.sh update`，也就是部署 CI 推送到 GHCR 的 `latest`。禁止根据 commit SHA、短 SHA、run number 或个人推测临时拼出 `update <tag>`；只有用户明确指定 tag，或已经用 CI 输出 / GHCR / `docker manifest inspect` 证明 `web` 与 `game-server` 两个镜像都存在同一个精确 tag 时，才允许执行 `update <tag>`，并必须在汇报中写明验证证据。
-  - **Git 工作区变更控制（强制）**：未经用户当轮明确许可，不得执行会改变工作区状态或文件内容的操作（例如 `git stash`、`git clean`、`git restore`）。如确需隔离/清理未提交改动，必须先说明目的与影响，再等用户确认。
+  - **Git 工作区变更控制（强制）**：未经用户当轮明确许可，不得执行会改变工作区状态或文件内容的操作（例如 `git stash`、`git clean`、`git restore`）。如确需隔离/清理未提交改动，必须先说明目的与影响，再等用户确认。项目内 Git command guard 的能力边界、wrapper 用法与 `pre-rebase` 硬拦方案，统一以 `.codex/skill/git-operations/SKILL.md` 为准。
   - **Android OTA 包体规范（强制）**：Android OTA 只允许承载 H5 bundle 与轻量静态文件，**禁止**把 `public/assets/i18n/**`、大图集、大卡图或其他应走 R2 / 游戏包链路的资源打进 OTA zip。发布 Android OTA 时必须使用 `scripts/mobile/publish-android-ota.mjs` 这条受门禁保护的链路；若产物异常超过轻量包体阈值（当前脚本门禁 `20MB`）必须直接失败，禁止继续发布。
   - **Android OTA 版本门禁规范（强制）**：当前项目规则是“所有已安装版本默认都必须更新 OTA”。禁止再通过 `targetNativeVersion`、`minNativeVersion`、`maxNativeVersion`、`allow-legacy-shells` 等方式把 OTA 只发给某个原生版本或版本区间；发布脚本与 GitHub Actions 都必须保持这一禁令，若误传相关参数必须直接失败，不能静默带着错误门禁发出去。
   - **Android OTA 版本命名规范（强制）**：正式 OTA 的用户可见 bundle 版本必须继续沿用项目既有口径 `package.json.version-ota-UTC时间戳`。未经老板明确要求，不得因为切换发布入口（本地脚本 / GitHub Actions / 手工补发）而擅自改成 `gha-*`、run number、临时别名或其他展示格式。
@@ -395,7 +395,6 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **Git 复杂细则下沉到项目 skill（强制）**：根 `AGENTS.md` 只保留日常 `status/diff/commit/push` 入口和不可越过的红线；同步主分支、远端协议、pre-push 阻塞、PR、merge、fork、worktree 等细则统一以 `.codex/skill/git-operations/SKILL.md` 为准，不要再把整套 Git 提示词堆回根文件。
 - **开工先查分支职责**：开始任何实质工作前，必须确认当前分支/工作树与当前任务职责一致。若当前分支明显服务于另一任务线、另一游戏、另一 PR 或另一 worktree，禁止直接在此继续改。
 - **分支和 worktree 有固定职责**：新分支必须从主分支创建；仓库根目录默认只承担 main 主工作树职责；未获确认时禁止自行创建 git worktree。
-- **协作默认优先 clone 主仓库，不默认 fork（强制）**：多人协作、AI 协作、修 PR、并行 worktree、日常功能开发时，默认基于主仓库本地 clone / 已授权工作副本开分支推进。只有在当前身份对主仓库**无写权限**、必须做账号或权限隔离、或用户当轮明确要求走跨仓库 PR 时，才允许采用 fork 路线。禁止把 fork 当成“更安全”的默认动作，也不得在未核实权限与协作目标前擅自切到 fork 工作流。
 - **PR 修复/合并的 worktree 例外（强制）**：当用户明确进入“修 PR 并合并 / 走 PR 合并流程”且目标 PR 可写时，如果仓库根目录主工作区已脏、目标 PR 与 `main` 漂移较大、或已预判存在较高冲突风险，默认允许为该 PR **创建隔离 worktree** 作为执行现场；这视为当前动作的内建执行手段，不需要再把“能不能建 worktree”单独当成阻塞问题反复询问。该授权只覆盖当前明确点名的 PR，结束后必须汇报 worktree 路径、职责和收尾状态。
 - **未经允许不得擅自创建/切换分支**：未获用户明确许可，不得擅自创建、切换、重建、删除分支，默认停留在当前分支处理；若确需切换到 main、功能分支或其他 worktree，必须先说明目标、原因和影响并获得确认。只有用户明确要求“合并到主分支 / 清理分支 / 批量收口”时，才可执行相应切换与删除。
 - **禁止把“排查/顺手清理/准备合并”当成默认授权**：即使只是为了查看差异、验证主分支、处理冲突、整理 worktree 或做发布前准备，只要会创建、切换、重建、删除分支或 worktree，也必须先拿到用户当轮明确许可；禁止先斩后奏。
@@ -406,18 +405,10 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - **Git 回退和 stash 默认禁止**：未经用户明确许可，禁止执行 `git stash*`、历史回滚、`git restore`、`git checkout --` 等会影响现有工作区状态的命令；修 bug 必须通过编辑工具直接改代码。
 - **默认无必要不使用变基**：未获用户明确要求时，不执行 `git pull --rebase` 或其他 `rebase` 操作。
 - **merge / push 统一口径**：提交、push、`--no-verify`、快速路径都以前文“执行优先级与归并口径”为准；本节只补充 Git 协作细则，不再重复定义无校验语义。
-- **远端 Git 默认优先 SSH（强制）**：只要本机对目标仓库的 SSH 写权限已验证可用，涉及 `git fetch`、`git pull`、`git push`、`git ls-remote`、推回 PR head 或其他远端写操作时，默认优先使用 SSH remote 或 SSH `pushurl`；不得在已知 HTTPS 443 链路不稳定时继续机械重试 HTTPS。
-- **HTTPS 远端失败后自动切 SSH（强制）**：当远端 Git 操作因为 443 连接重置、连接超时、代理/证书/网络抖动等 HTTPS 传输问题失败，而 SSH 已验证可用时，必须直接切到 SSH 继续，不需要等用户额外提醒“改用 SSH”。只有 SSH 同样失败，或仓库根本没有可用 SSH 身份时，才把它作为阻塞点汇报。
 - **“3 权限开放”默认为一次性**：用户当轮开放 3 权限时，仅覆盖当次明确范围；任务切换、下一次提交或后续操作均不自动继承，除非用户再次明确说明继续开放。
 - **高风险 UI/规则文件合并不得只看静态门禁（强制）**：`Board.tsx`、游戏 `ui/`、共享交互组件、规则文档、agent 规则文件、关键测试断言文件，一旦在 merge 中发生冲突或大幅 diff，必须做语义对比与关键交互验证；禁止仅凭 `merge:audit` / lint / typecheck / 页面可打开收口。
-- **默认 push 前同步主分支**：在用户没有明确要求“直接 push / 无校验 push / 快速推进”时，`git push` 前先 `git fetch origin`，再把 `origin/main` 合并进当前分支；若用户已明确进入快速路径，则不额外追加这一步。
-- **Push 阻塞先分辨来源**：如果 `pre-push` 或强制校验失败来自工作区未提交改动而不是待推送提交本身，不得直接卡死整次 push；应先定位来源，再决定是否隔离。
 - **命令超时统一按 30 分钟上限**：shell/脚本/测试/推送命令默认最长 30 分钟，用户明确要求 `push` 时不要先用短超时试错。
 - **文件移动/复制优先安全方案**：禁止 `robocopy /MOVE`；先复制、再验证、最后按需删除源文件。
-- **PR 默认要走到终态**：涉及 GitHub PR 的审查、修复、推送、合并时，默认完成标准不是“代码已推到分支”，而是原始 PR 已 merge 或明确记录 blocker；同时必须登记原问题、额外回归、规则口径变化三类信息。
-- **可写 PR 默认先修后评后合（强制）**：当用户目标是“处理完 PR 并合并”，且原始 PR head 对当前执行者可写时，默认流程应是：先形成本地 findings 草案 → 在隔离 worktree 中直接修复 blocking 问题并验证 → 推回原 PR head → 再提交最终 review 结论并 merge。除非用户明确要求“只审查”、权限不足、或经过修复尝试后仍存在 blocker，否则**不要先提交 `REQUEST CHANGES` 把修复责任丢回作者**。
-- **跨仓库 PR 的真实写权限必须先验（强制）**：对 fork / 跨仓库 PR，`maintainerCanModify=true` 只代表作者允许维护者修改，**不等于**当前执行身份对 head repo 真实具有 `push` 权限。进入“修复并推回原 PR head”前，必须先通过 GitHub API 或一次真实写权限验证确认当前身份对 head repo 可写；若结果为 `push=false` 或验证失败，必须立即停止把“推回原 PR”当默认路线，并切换到用户确认过的 fallback（如直接落主仓库可写分支）。
-- **阻塞性 GitHub review 的提交时机（强制）**：`REQUEST CHANGES` / blocking review 只应用于以下场景：① 用户明确要求只做 review；② PR 不可写或 push 回 head 失败；③ 已尝试自动修复但仍无法满足门禁；④ 需要保留正式 blocker 记录以阻止误合并。对“当前可直接代修的小中型问题”，禁止把 GitHub review 当成默认第一步动作。
 - **提交粒度规范（强制）**：默认以“单一问题/功能链路”合并提交；实现 + 测试/证据 + 文案/规则 + 必要版本号应归于同一提交。**禁止**把截图补证、轻量文案、单点版本号这种细碎改动拆成独立提交。
 - **允许拆分的例外（需自洽）**：影响面巨大需要风险隔离、多个模块完全不互相依赖时，可按模块拆分；发布流程确需单独版本号/发布脚本时允许单独提交，但必须明确说明原因。
 - **细碎提交的收敛要求（强制）**：若过程中产生过细提交，应在合并/交付前进行合理粒度的 squash；任何历史改写（rebase/squash）必须先征得用户明确确认。

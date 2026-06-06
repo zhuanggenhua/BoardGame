@@ -1446,12 +1446,33 @@ const resolveDiceThroneSeatLegalOnlyRecovery = (args: {
     };
 };
 
+const resolveDiceThroneOnlineAiCurrentPlayerId = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+    fallbackPlayerId: string | null;
+}): string | null => {
+    if (args.phase !== 'defensiveRoll') {
+        return args.fallbackPlayerId;
+    }
+
+    const pendingAttack = (args.state.core as {
+        pendingAttack?: {
+            defenderId?: unknown;
+        };
+    } | undefined)?.pendingAttack;
+
+    return typeof pendingAttack?.defenderId === 'string'
+        ? pendingAttack.defenderId
+        : args.fallbackPlayerId;
+};
+
 // 引擎配置
 export const engineConfig = {
     ...createGameEngine(adapterConfig),
     resolveLocalPregameControlledPlayerId: resolveDiceThroneLocalPregameControlledPlayerId,
     onlineAiRecovery: {
         humanTurnLegalActionProbePhases: ['defensiveRoll', 'targetingRoll'],
+        resolveCurrentPlayerId: resolveDiceThroneOnlineAiCurrentPlayerId,
         buildInteractionRecoveryFingerprintHint: ({ state, playerId, phase, interaction }) =>
             buildDiceThroneInteractionRecoveryFingerprintHint({ state, playerId, phase, interaction }),
         resolveForcedInteractionCommand: resolveDiceThroneForcedInteractionRecoveryCommand,

@@ -59,6 +59,7 @@ import {
     getPendingBonusSettlementDice,
     getSeatingOrder,
 } from './rules';
+import { findPlayerAbility } from './abilityLookup';
 import { RESOURCE_IDS } from './resources';
 import { isPassiveActionUsable } from './passiveAbility';
 import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
@@ -225,6 +226,16 @@ const validateRollDice = (
     // 产品特例：枪手 duel 在防御阶段只能“直接结束防御”进入对掷结算，不允许手动掷防御骰。
     if (phase === 'defensiveRoll' && state.pendingAttack?.defenseAbilityId === 'duel') {
         return fail('defense_roll_disabled_for_duel');
+    }
+
+    if (phase === 'defensiveRoll' && state.rollCount > 0) {
+        const rerollDieLimit = getDefenseRerollDieLimit(state);
+        if (typeof rerollDieLimit === 'number') {
+            const unlockedDiceCount = getActiveDice(state).filter((die) => !die.isKept).length;
+            if (unlockedDiceCount > rerollDieLimit) {
+                return fail('defense_reroll_die_limit_exceeded');
+            }
+        }
     }
 
     // 晕眩额外攻击检查：如果当前是晕眩触发的额外攻击，防御方（原攻击方）不能防御掷骰
@@ -555,6 +566,22 @@ const normalizeSelectedAbilityId = (state: DiceThroneCore, playerId: PlayerId | 
         return 'elusive-step';
     }
     return abilityId;
+};
+
+const getDefenseRerollDieLimit = (state: DiceThroneCore): number | undefined => {
+    const defenderId = state.pendingAttack?.defenderId;
+    const defenseAbilityId = state.pendingAttack?.defenseAbilityId;
+    if (!defenderId || !defenseAbilityId) return undefined;
+
+    const match = findPlayerAbility(state, defenderId, defenseAbilityId);
+    const trigger = match?.variant?.trigger ?? match?.ability.trigger;
+    if (!trigger || trigger.type !== 'phase' || trigger.phaseId !== 'defensiveRoll') {
+        return undefined;
+    }
+
+    return typeof trigger.rerollDieLimit === 'number' && Number.isFinite(trigger.rerollDieLimit)
+        ? trigger.rerollDieLimit
+        : undefined;
 };
 
 const validateSelectAbility = (

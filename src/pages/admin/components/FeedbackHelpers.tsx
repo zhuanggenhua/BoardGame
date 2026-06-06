@@ -39,6 +39,7 @@ interface FeedbackItemLike {
     type: 'bug' | 'suggestion' | 'other';
     severity: 'low' | 'medium' | 'high' | 'critical';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
+    closedReason?: string | null;
     reporterType?: 'user' | 'system';
     source?: string;
     autoReportKind?: string;
@@ -51,6 +52,7 @@ interface FeedbackItemLike {
     contactInfo?: string;
     actionLog?: string;
     stateSnapshot?: string;
+    rewardPoints?: number;
     clientContext?: FeedbackClientContext;
     errorContext?: FeedbackErrorContext;
     createdAt: string;
@@ -359,9 +361,11 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItemLike, t: TFunc
         `- 类型: ${t(`feedback.type.${item.type}`)}`,
         `- 严重度: ${t(`feedback.severity.${item.severity}`)}`,
         `- 状态: ${t(`feedback.status.${item.status}`)}`,
+        item.closedReason ? `- 关闭理由: ${item.closedReason}` : '',
         gameLabel ? `- 游戏: ${gameLabel}` : '',
         `- 提交人: ${reporter}`,
         item.contactInfo ? `- 联系方式: ${item.contactInfo}` : '',
+        typeof item.rewardPoints === 'number' && item.rewardPoints > 0 ? `- 奖励积分: +${item.rewardPoints}` : '',
         typeof item.occurrenceCount === 'number' ? `- 聚合次数: ${item.occurrenceCount}` : '',
         item.firstOccurredAt ? `- 首次出现: ${formatAbsoluteTime(item.firstOccurredAt)}` : '',
         item.lastOccurredAt ? `- 最近出现: ${formatAbsoluteTime(item.lastOccurredAt)}` : '',

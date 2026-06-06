@@ -170,7 +170,7 @@ const clearFeedbackDraft = (storageKey: string) => {
 
 export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeContext }: FeedbackModalProps) => {
     const { t } = useTranslation(['game', 'common']);
-    const { token } = useAuth();
+    const { token, addFeedbackPoints } = useAuth();
     const { success, error } = useToast();
     const location = useLocation();
     const backdropRef = useRef<HTMLDivElement>(null);
@@ -398,8 +398,19 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                 );
             }
 
+            const payload = await res.json().catch(() => null) as { rewardPoints?: number } | null;
+            const rewardPoints = typeof payload?.rewardPoints === 'number' ? payload.rewardPoints : 0;
             clearFeedbackDraft(draftStorageKey);
-            success(t('hud.feedback.success'));
+            if (rewardPoints > 0) {
+                addFeedbackPoints(rewardPoints);
+                success({
+                    kind: 'reward-points',
+                    text: t('hud.feedback.success'),
+                    points: rewardPoints,
+                });
+            } else {
+                success(t('hud.feedback.success'));
+            }
             onClose();
         } catch (err) {
             console.error(err);

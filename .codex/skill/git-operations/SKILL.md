@@ -79,6 +79,14 @@ description: "本项目 Git 操作 skill。用于提交、推送、同步主分�
 - 不得擅自 `git stash`、`git restore`、`git checkout --`、`git clean`
 - 看见陌生改动，先判断是否影响当前任务；不影响就绕开，不要顺手清
 
+### 2.4 共享脏工作区与并发 AI
+
+- 默认假设当前工作区里长期存在用户和其他 AI 的并发改动；`dirty` 不是异常，而是常态背景
+- 看到 `ahead/behind` 加脏工作区时，先分清用户当前目标是 `push`、`同步主线`、`整理工作区` 还是 `修 bug`；不要把它们自动合并成“先保护现场”
+- `ahead N, behind M` 且工作区已脏时，**默认只允许做审查、汇报 blocker、或继续当前目标内的最小编辑**；不得擅自用 `stash`、`pull --rebase`、`rebase`、`reset`、`restore` 去“整理现场”
+- 用户只说“push/提交”时，先处理**已提交内容**与明确范围内的改动；不要因为 `behind` 或工作区脏就私自切到同步主线、变基、stash、建临时保护分支
+- 用户说“看着删 / 该删的删 / 整理改动”时，默认含义仍是**先看内容再判断**，不是任何形式的回滚、覆盖或清空授权
+
 ## 3. 检查与门禁
 
 ### 3.1 “检查一下再提交/推”
@@ -111,6 +119,29 @@ description: "本项目 Git 操作 skill。用于提交、推送、同步主分�
    - 先确认是陈旧 runtime / stale lock / 预算冷却，还是实际 E2E 失败
 4. 真实测试失败
    - 按失败用例定位，不能把它说成“只是网络问题”
+
+### 3.3 命令层 guard
+
+- 规范只能约束 AI；要拦命令本身，必须依赖仓库可控入口
+- 本仓库现在提供两层 guard：
+  - `simple-git-hooks` 的 `pre-rebase`：原生硬拦 `git rebase`
+  - `scripts/infra/git-command-guard.mjs`：仓库内 wrapper，可拦 `stash / restore / clean / rebase / pull --rebase / reset / revert / switch / checkout / 受控 branch/worktree`
+- `git stash / restore / clean` 没有 Git 原生 hook，**无法**只靠 `.git/hooks` 全局硬拦；要拦这几类命令，必须让当前 shell 先走 wrapper
+- PowerShell 当前会话可通过以下方式启用项目 guard：
+
+```powershell
+. .\scripts\infra\enable-boardgame-git-guard.ps1
+```
+
+- 启用后，当前 PowerShell 会话里、位于本仓库路径下的 `git` 命令会先经过 `git-command-guard`
+- 如果用户当轮已明确授权危险 Git 动作，必须显式写出绕过痕迹，而不是静默执行：
+
+```powershell
+$env:BOARDGAME_GIT_GUARD_BYPASS='1'
+git rebase ...
+```
+
+- 这层 guard 的目标不是“替代判断”，而是把最容易误伤工作区的命令先硬停下来，逼迫执行者回到用户授权与 skill 口径
 
 ## 4. 低频复杂协作
 
@@ -150,5 +181,7 @@ description: "本项目 Git 操作 skill。用于提交、推送、同步主分�
 
 - Git 日常用法模板
 - 远端协议口径
+- 共享脏工作区 / 并发 AI 下的 Git 边界
+- 项目级 Git command guard 的能力边界与使用方法
 - pre-push 失败分类
 - PR / merge / fork / worktree / 协作细则

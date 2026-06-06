@@ -47,6 +47,7 @@ import {
     buildAiProgressMarker,
     buildResponseWindowRecoveryFingerprintHint,
     resolveCurrentPlayerId,
+    resolveOnlineAiCurrentPlayerId,
     resolveForceEndTurnForStalledAi,
     shouldInspectSeatStatesForHiddenAiInteraction,
     shouldUseOnlineAiEmergencyOverlayFallback,
@@ -1385,7 +1386,10 @@ export class GameTransportServer {
         match: ActiveMatch,
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<ForceEndTurnStalledAiResolution | null> {
-        const currentPlayerId = resolveCurrentPlayerId(match.state);
+        const currentPlayerId = resolveOnlineAiCurrentPlayerId(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
         if (!currentPlayerId || seatControllers[currentPlayerId]?.type !== 'human') {
             return null;
         }
@@ -1898,7 +1902,9 @@ export class GameTransportServer {
             expectedCandidate,
             expectedTrackerKey: context.sequenceState.tracker.key,
             state: context.runtime.readState(),
-            progressMarker: buildAiProgressMarker(context.runtime.readState()),
+            progressMarker: buildAiProgressMarker(context.runtime.readState(), {
+                engineConfig: context.runtime.engineConfig,
+            }),
             engineConfig: context.runtime.engineConfig,
         });
         if (!revalidatedCandidate) {
@@ -2158,7 +2164,9 @@ export class GameTransportServer {
         },
     ): Promise<void> {
         const currentPhaseLabel = resolveOnlineAiRecoveryPhaseLabel(context.sequenceState.currentCandidate);
-        const markerAfterRecovery = buildAiProgressMarker(context.runtime.readState());
+        const markerAfterRecovery = buildAiProgressMarker(context.runtime.readState(), {
+            engineConfig: context.runtime.engineConfig,
+        });
         const unresolvedCandidate = args.sequenceProgress.allowNaturalAiContinuation
             ? null
             : await this.resolveChainedOnlineAiRecoverySequenceCandidate(context);
@@ -2352,7 +2360,9 @@ export class GameTransportServer {
             phase: phaseLabel,
             failureCount: nextTracker.failureCount,
             markerBefore: progressMarkerBeforeRecovery,
-            markerAfter: buildAiProgressMarker(match.state),
+            markerAfter: buildAiProgressMarker(match.state, {
+                engineConfig: match.engineConfig,
+            }),
         });
 
         if (nextTracker.failureCount >= this.onlineAiRecoveryFailureReportThreshold) {
@@ -2407,7 +2417,10 @@ export class GameTransportServer {
             blockerFingerprint,
             phase: match.state.sys?.phase ?? null,
             turnNumber: match.state.sys?.turnNumber ?? null,
-            currentPlayerId: resolveCurrentPlayerId(match.state),
+            currentPlayerId: resolveOnlineAiCurrentPlayerId(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            }),
             progressMarker,
             recentActionLogTail: this.extractOnlineAiRecoveryActionLogTail(match.state),
             recentEventStreamTail: this.extractOnlineAiRecoveryEventTail(match.state),
@@ -2707,7 +2720,10 @@ export class GameTransportServer {
             blockerFingerprint,
             phase: preCommandSeatView.sys?.phase ?? match.state.sys?.phase ?? null,
             turnNumber: preCommandSeatView.sys?.turnNumber ?? match.state.sys?.turnNumber ?? null,
-            currentPlayerId: resolveCurrentPlayerId(preCommandSeatView),
+            currentPlayerId: resolveOnlineAiCurrentPlayerId(preCommandSeatView, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            }),
             progressMarker: progressMarkerBefore,
             recentActionLogTail: this.extractOnlineAiRecoveryActionLogTail(match.state),
             recentEventStreamTail: this.extractOnlineAiRecoveryEventTail(match.state),
@@ -3128,7 +3144,9 @@ export class GameTransportServer {
                         playerId: dispatchDecision.overlayResyncRequest.playerId,
                         blockedReason: dispatchDecision.overlayResyncRequest.blockedReason,
                         blockedKey: dispatchDecision.overlayResyncRequest.blockedKey,
-                        progressMarker: buildAiProgressMarker(runtime.readState()),
+                        progressMarker: buildAiProgressMarker(runtime.readState(), {
+                            engineConfig: runtime.engineConfig,
+                        }),
                     });
                 }
                 return dispatchDecision.recoveryResult;

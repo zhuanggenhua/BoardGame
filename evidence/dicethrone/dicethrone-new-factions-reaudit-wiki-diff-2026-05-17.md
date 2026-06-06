@@ -1,6 +1,6 @@
 # DiceThrone 新派系重审与 Wiki 差异记录（2026-05-17）
 
-> 2026-06-05 当前有效口径：本文件记录的是四位新英雄总补审范围下的 Wiki / 对照源差异回写，不是“当前已经审完哪几位”的完成态证明。它的现行用途是给总汇总补充对照源差异、批次快照和未完成范围。Treant / Ninja 当前不能再被读成“主要只有 L2 或代表 L3”；两者升级技能对象级 `L3` 与关键 family `L4` 已大幅补齐，但这只表示对象级主 bug 已明显收敛，**不表示整英雄或整批已经全面审计完成**。当前残余应读作批次级 `L4` 治理、旧文档统一回写与最终发布口径统一。Gunslinger / Samurai 仍在同一总范围内，且未完成项也必须继续保留。
+> 2026-06-06 当前有效口径：本文件记录的是四位新英雄总补审范围下的 Wiki / 对照源差异回写，不是“当前已经审完哪几位”的完成态证明。它的现行用途是给总汇总补充对照源差异、批次快照和未完成范围。Treant / Ninja 当前不能再被读成“主要只有 L2 或代表 L3”；两者升级技能对象级 `L3` 与关键 family `L4` 已大幅补齐，但这只表示对象级主 bug 已明显收敛，**不表示整英雄或整批已经全面审计完成**。当前残余应读作批次级 `L4` 治理、旧文档统一回写与最终发布口径统一。对 Ninja `瞬身 II` 而言，当前也不得再沿用“只是 UI 命中层回归”这类半截归因；现行权威口径已更新为 `rollLimit=2 + rerollDieLimit=2 + DiceTray / Dice3D 命中层` 三线共同收口。Gunslinger / Samurai 仍在同一总范围内，且未完成项也必须继续保留。
 
 > 2026-05-19 范围更正：本文件记录的是“当前四位新英雄总补审范围”中的一轮 Wiki 对照与差异回写。总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解，不再按“两位新英雄”理解。
 
@@ -9,7 +9,7 @@
 - 本轮触发问题：Treant `wild-growth` / `wild-growth-2`（中文 UI 为“野蛮生长 / 野蛮生长 II”，用户口径“野性怒吼2”疑似指同一升级技能）在 2026-05-17 当时的实现中，`wild-growth` / `wild-growth-2` 仍沿用旧语义，未按当时核对文档支持“移除树灵加伤 / 弃生命源泉不可防御”。该问题现仅保留为历史触发背景，`wild-growth-2` 的当前有效口径已改以 `src/games/dicethrone/rule/treant录入核对.md`、`src/games/dicethrone/rule/treant卡牌录入核对.md` 与 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的 2026-06-04/2026-06-05 补记为准。
 - 主真相源：`src/games/dicethrone/rule/treant录入核对.md` 与 `src/games/dicethrone/rule/treant卡牌录入核对.md` 中记录的玩家板/卡图核对结论；清晰图片优先于 Wiki。
 - Wiki 仅作差异记录：本轮读取 Dice Throne Wiki 的 Treant 页面（https://dice-throne.fandom.com/wiki/Treant），确认 Wiki 提供 Treant 精灵/生命源泉/树灵通则说明，但页面正文没有列出 Wild Growth 的完整玩家板技能文本；因此本轮不使用 Wiki 覆盖图片口径。
-- 新派系全集重审对象暂列为：`gunslinger`、`samurai`、`treant`、`ninja`。截至 2026-06-05，Treant / Ninja 已不能再被概括成“主要只有 L2 或代表 L3”：两者升级技能对象级 `L3` 已大幅补齐，关键 family `L4` 也已补到批次级判等矩阵；Treant 若干基础对象与 15 张专属卡已有对象级 / 逐卡 `L3`，Ninja 行动卡、升级卡、技能本体与 token 代表链也已形成多份 `L3/L4` evidence。Treant / Ninja 仍不得据此宣称整批全面审计完成，当前残余应读作批次级 `L4` 治理、旧文档统一回写与最终发布口径统一。当前总补审范围仍以四位新英雄为准，gunslinger / samurai 也仍在总范围内。
+- 新派系全集重审对象暂列为：`gunslinger`、`samurai`、`treant`、`ninja`。截至 2026-06-06，Treant / Ninja 已不能再被概括成“主要只有 L2 或代表 L3”：两者升级技能对象级 `L3` 已大幅补齐，关键 family `L4` 也已补到批次级判等矩阵；Treant 若干基础对象与 15 张专属卡已有对象级 / 逐卡 `L3`，Ninja 行动卡、升级卡、技能本体与 token 代表链也已形成多份 `L3/L4` evidence。Treant / Ninja 仍不得据此宣称整批全面审计完成，当前残余应读作批次级 `L4` 治理、旧文档统一回写与最终发布口径统一。当前总补审范围仍以四位新英雄为准，gunslinger / samurai 也仍在总范围内。
 
 ## 已确认旧结论失效
 

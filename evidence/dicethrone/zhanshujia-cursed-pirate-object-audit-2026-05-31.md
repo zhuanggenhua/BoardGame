@@ -20,6 +20,7 @@
 
 ## 修订记录
 
+- 旧口径失效：把 DiceThrone 新英雄里的“可重掷/可再投/奖励骰可重投”都视为同一种共享上限语义。失效原因：2026-06-06 继续扩审忍者 `瞬身 II` 时确认，“还能再掷几轮”和“每轮最多重掷几颗骰子”是两条独立合同；旧实现只接到了前者，后者直到本轮才通过 `rerollDieLimit` + `commandValidation` 补齐。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\combat\conditions.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\commandValidation.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\ninja\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\ninja-ability-card-contract.test.ts`、`D:\gongzuo\webgame\BoardGame\docs\ai-rules\testing-audit.md`、`D:\gongzuo\webgame\BoardGame\.codex\skill\game-audit-workflow\SKILL.md`。新结论：后续 DiceThrone 新派系全面审计必须把 `rollLimit / selectCount / maxRerollCount / rerollDieLimit` 分开登记；截至本轮扩审，`selectDie` 家族与 bonusDice `maxRerollCount` 家族暂未发现与 `瞬身 II` 同坑的共享实现缺口。
 - 旧结论失效：整份 intake 仍缺稳定整跑证据，或仍应把最新状态写成 `39 passed` / `57/3` / `59/1` / `60 passed / 0 failed` 一类历史结果。失效原因：最新权威整跑 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 已为 `71 passed / 0 failed`；本轮收掉的既有测试侧残余漂移，也有 `休战` 的真实运行时机制 bug。新证据：`D:\gongzuo\webgame\BoardGame\e2e\dicethrone\zhanshujia-cursed-pirate-intake.e2e.ts` 当前 helper/断言写法、`src/games/dicethrone/domain/flowHooks.ts`、`src/games/dicethrone/domain/tokenResponse.ts`、`src/games/dicethrone/domain/reduceCombat.ts`，以及同命令的最新整跑结果。新结论：当前 intake soak/整跑红灯已不再是事实；剩余项回到双面对象级 completion audit、family 级 L4 合法复用登记、逐对象更高层级 L3/L4 与最终收口审计，不能再把“整跑仍红”作为主 blocker。
 - 旧结论失效：`休战` 只是在 L2 机制层被证明“理论上阻止攻击伤害”，真实运行时消费链仍待确认。失效原因：此前 `flowHooks.ts` 会在 `offensiveRoll -> defensiveRoll` 过早移除 `PARLEY`，`tokenResponse.ts` 的 `finalizeTokenResponse(...)` 又没有把 `damageScope` 继续传下去，导致某些真实攻击伤害不会被 `休战` 正确拦住；现已修正并补上真实攻击链 E2E。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\flowHooks.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\tokenResponse.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\reduceCombat.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-mechanics.test.ts`、截图 `174-176`。新结论：`休战` 现在不仅能被真实写入，还已证明会在真实攻击链里阻断攻击伤害，并在阶段结束后正确清理状态。
 - 旧结论失效：人类面板只是底图接入，是否进入运行时仍待确认。失效原因：当前仓库同时存在 `human-player-board.png` 与 `compressed/human-player-board.webp`，`ASSETS.PLAYER_BOARD('cursed_pirate', 'normal')` 和 `criticalImageResolver` 都已把 normal/human 面指向 `dicethrone/images/cursed/human-player-board`。新证据：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\ui\assets.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\criticalImageResolver.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\zhanshujia-cursed-pirate-intake.test.ts`。新结论：人类面底图已进入正式运行时消费链；真正还没收口的是基于该图面的 9 个对象逐槽 completion audit，而不是底图接线本身。
@@ -639,6 +640,12 @@
 
 - 当前战术家已无 remaining representative 对象级条目。
 - 当前剩余已整体上升为 family 级 `L4` / completion audit，主要集中在升级牌 family、升级进攻/防御共享参数链、奖励骰家族与双面总审计。
+
+### 2026-06-06 咒缚海盗 remaining representative 条目边界
+
+- 当前咒缚海盗也已无“手牌对象本体仍缺首条真实入口”的 remaining representative 条目。
+- `封舱 / 诱饵 / 抽筋剥皮 / 赎金 / 给我点上 / 啜呼 / 停战协议 / 送你们去喂鱼 / 起锚 / 虚张声势 / 诅咒卡牌` 这些过去常被并称为 remaining representative 的手牌对象，现在都已拿到对象级真实入口或对象级 `L3`。
+- 当前剩余已上升为 family 级 `L4` / completion audit，主要集中在状态家族生命周期、奖励骰/随机家族合法复用登记、双面合法复用登记与最终双面总审计。
 
 | 门禁 | 状态 | 说明 |
 | --- | --- | --- |

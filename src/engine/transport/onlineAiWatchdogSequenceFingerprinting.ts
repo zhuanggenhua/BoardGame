@@ -200,7 +200,7 @@ export function buildOnlineAiRecoveryTrackerSnapshot(args: {
     recoveryFingerprint: string;
     trackerKey: string;
 } {
-    const progressMarker = buildAiProgressMarker(args.state);
+    const progressMarker = buildAiProgressMarker(args.state, { engineConfig: args.engineConfig });
     const recoveryFingerprint = resolveOnlineAiRecoveryFingerprint({
         state: args.state,
         candidate: args.candidate,

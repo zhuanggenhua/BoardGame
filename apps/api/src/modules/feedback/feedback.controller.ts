@@ -61,7 +61,7 @@ export class FeedbackAdminController {
     @Roles('admin', 'developer', 'user')
     @Patch(':id/status')
     async updateStatus(@Request() req: FeedbackAdminRequest, @Param('id') id: string, @Body() dto: UpdateFeedbackStatusDto) {
-        const updated = await this.feedbackService.updateStatus(req.user!.userId, id, dto.status);
+        const updated = await this.feedbackService.updateStatus(req.user!.userId, id, dto);
         if (!updated) {
             throw new NotFoundException('feedback not found');
         }

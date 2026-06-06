@@ -6,7 +6,8 @@ export type ToastActionVariant = 'primary' | 'secondary';
 
 export type ToastContent =
     | { kind: 'text'; text: string }
-    | { kind: 'i18n'; ns?: string; key: string; params?: Record<string, string | number> };
+    | { kind: 'i18n'; ns?: string; key: string; params?: Record<string, string | number> }
+    | { kind: 'reward-points'; text: string; points: number };
 
 export interface ToastAction {
     id?: string;

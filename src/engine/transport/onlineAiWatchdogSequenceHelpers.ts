@@ -13,7 +13,7 @@ import {
     type OnlineAiRecoveryEngineConfig,
     type HiddenInteractionDescriptor,
     type HiddenSimpleChoiceInteraction,
-    resolveCurrentPlayerId,
+    resolveOnlineAiCurrentPlayerId,
     type ForceEndTurnStalledAiResolution,
 } from './onlineAiRecovery';
 import {
@@ -80,12 +80,13 @@ export function canExecuteOnlineAiWatchdogAdvancePhase(args: {
     state: MatchState<unknown>;
     seatControllers: Record<string, OnlineAiWatchdogSeatController>;
     playerId: string;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): boolean {
     if (!args.playerId || args.seatControllers[args.playerId]?.type === 'human') {
         return false;
     }
 
-    if (resolveCurrentPlayerId(args.state) !== args.playerId) {
+    if (resolveOnlineAiCurrentPlayerId(args.state, { engineConfig: args.engineConfig }) !== args.playerId) {
         return false;
     }
 
@@ -425,10 +426,10 @@ export function buildOnlineAiRecoveryStepBeforeSnapshot(args: {
     playerId: string;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): OnlineAiRecoveryStepBeforeSnapshot {
-    const markerBeforeStep = buildAiProgressMarker(args.state);
+    const markerBeforeStep = buildAiProgressMarker(args.state, { engineConfig: args.engineConfig });
     return {
         markerBeforeStep,
-        currentPlayerIdBeforeStep: resolveCurrentPlayerId(args.state),
+        currentPlayerIdBeforeStep: resolveOnlineAiCurrentPlayerId(args.state, { engineConfig: args.engineConfig }),
         stepKeyBefore: buildOnlineAiRecoverySequenceStepKey({
             state: args.state,
             playerId: args.playerId,
@@ -452,10 +453,10 @@ export function buildOnlineAiRecoveryStepAfterSnapshot(args: {
     playerId: string;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): OnlineAiRecoveryStepAfterSnapshot {
-    const nextMarker = buildAiProgressMarker(args.state);
+    const nextMarker = buildAiProgressMarker(args.state, { engineConfig: args.engineConfig });
     return {
         nextMarker,
-        currentPlayerIdAfterStep: resolveCurrentPlayerId(args.state),
+        currentPlayerIdAfterStep: resolveOnlineAiCurrentPlayerId(args.state, { engineConfig: args.engineConfig }),
         nextStepKey: buildOnlineAiRecoverySequenceStepKey({
             state: args.state,
             playerId: args.playerId,

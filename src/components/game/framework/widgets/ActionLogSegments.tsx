@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import type { ActionLogSegment } from '../../../../engine/types';
 import { CardPreviewTooltip } from './CardPreviewTooltip';
 import { BreakdownTooltip } from '../../../common/overlays/BreakdownTooltip';
-import { buildSpriteBackgroundImage, type CardPreviewRef } from '../../../../core';
+import type { CardPreviewRef } from '../../../../core';
+import { buildSpriteBackgroundImage } from '../../../../core/SpriteAssetResolver';
 
 interface ActionLogSegmentsProps {
     segments: ActionLogSegment[];

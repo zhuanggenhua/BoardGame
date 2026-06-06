@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { isBackofficeRole, useAuth } from '../../contexts/AuthContext';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, LogOut, History, MessageSquare, MousePointer2, Settings } from 'lucide-react';
@@ -11,6 +11,8 @@ import { AccountSettingsModal } from '../auth/AccountSettingsModal';
 import { CursorSettingsModal } from '../settings/CursorSettingsModal';
 import { NOTIFICATION_API_URL } from '../../config/server';
 import { useSocial } from '../../contexts/SocialContext';
+import { RewardPointsBadge } from '../common/labels/RewardPointsBadge';
+import { MyFeedbackModal } from './MyFeedbackModal';
 
 const NOTIFICATION_SEEN_KEY = 'notification_last_seen';
 const getNotificationSeenStorageKey = (userId?: string | null) => {
@@ -224,7 +226,21 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
         navigate('/admin');
     };
 
+    const handleOpenMyFeedback = () => {
+        setIsOpen(false);
+        openModal({
+            closeOnBackdrop: false,
+            closeOnEsc: true,
+            lockScroll: true,
+            render: ({ close }) => (
+                <MyFeedbackModal isOpen onClose={close} />
+            ),
+        });
+    };
+
     if (!user) return null;
+
+    const canAccessBackoffice = isBackofficeRole(user.role);
 
     return (
         <div className="relative flex h-8 items-center gap-1" ref={menuRef}>
@@ -247,6 +263,7 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                 className="group relative flex h-8 items-center gap-2 cursor-pointer px-2 outline-none transition-colors"
                 data-testid="user-menu-trigger"
             >
+                <RewardPointsBadge points={user.feedbackPoints ?? 0} className="shrink-0" />
                 {user.avatar ? (
                     <img
                         src={user.avatar}
@@ -303,12 +320,22 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                         {t('auth:menu.setCursor')}
                     </button>
 
+                    {canAccessBackoffice ? (
+                        <button
+                            onClick={handleOpenAdmin}
+                            className="w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors"
+                        >
+                            <LayoutDashboard size={16} />
+                            {t('auth:menu.adminDashboard')}
+                        </button>
+                    ) : null}
+
                     <button
-                        onClick={handleOpenAdmin}
+                        onClick={handleOpenMyFeedback}
                         className="w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors"
                     >
-                        <LayoutDashboard size={16} />
-                        {t('auth:menu.adminDashboard')}
+                        <MessageSquare size={16} />
+                        {t('auth:menu.myFeedback')}
                     </button>
 
                     {/* 退出登录 */}

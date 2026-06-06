@@ -84,7 +84,7 @@
 | 影牙 II / 诳惑 | 是 | 是 | 已按同一基础技能的双分支 `variants` 落地；主分支与 `诳惑` 分支对象级 direct closeout L3 已补齐，关键 token 响应窗 / 不可防御直结算 L4 已补齐；剩批次级治理与旧文档统一收口 |
 | 毒刃 II | 否 | 是 | 图片语义与当前实现一致；`L2` 已补齐双分支结算，在线 `L3` 也已补齐；旧“录入错 + 实现错”结论失效 |
 | 死亡盛放 II | 否 | 是 | 奖励骰/面具/重掷语义已按升级版落地；对象级 L3 已补齐，关键面具数量分层 L4 已补齐；剩批次级治理与旧文档统一收口 |
-| 瞬身 II | 否 | 主路线已对齐 | 2026-06-03 先补 `rollLimit=2` 实现缺口；2026-06-05 再次复跑红点后确认真实问题已切到 DiceTray / Dice3D UI 命中层，而不是技能未实装。现已通过 `trigger.rollLimit = 2` 共享消费 + `Dice3D` 命中层修复双线收口，并复跑真实防御 E2E 转绿 |
+| 瞬身 II | 否 | 主路线已对齐 | 2026-06-03 先补 `rollLimit=2`；2026-06-05 再命中 DiceTray / Dice3D UI 命中层回归；2026-06-06 继续补到 `rerollDieLimit=2`，锁住“第二次错误放行 3 颗全重掷”的共享校验缺口。现已由 `rollLimit + rerollDieLimit + UI 命中层` 三线共同收口 |
 
 ### 忍者最关键的结构结论
 
@@ -154,6 +154,24 @@
 - 树精与忍者的升级技能审计结论现已冻结成文，但若本文前段旧矩阵与后续补记冲突，一律以后续补记为准。
 - 截至 2026-06-05，本文范围内真正剩余的已经不是“还有多张升级技能没实施 / 没补对象级关键 L4”，而是**批次级 `L4` 判等治理、外围旧文档统一回写与最终对外口径统一**。
 
+## 2026-06-06 补记：瞬身 II 仍有一层共享校验漏项
+
+- 2026-06-05 把 `瞬身 II` 重新定性成“UI 命中层回归，而非技能没实装”之后，继续按 D5/D8/D50 回扫真实命令链，又发现一条此前没锁住的共享实现缺口：
+  - `BLINK_2.trigger.rollLimit = 2` 只能限制“防御阶段总掷骰次数”，不能限制“第二次最多只允许重掷 2 颗骰子”。
+  - 在旧实现里，只要玩家在第二次防御掷骰前不锁任何骰子，就能把 3 颗骰子一起重掷，和卡图“可重掷至多 2 颗”不一致。
+- 本轮修复：
+  - `src/games/dicethrone/domain/combat/conditions.ts` 为 `phase` trigger 新增 `rerollDieLimit`。
+  - `src/games/dicethrone/heroes/ninja/abilities.ts` 给 `BLINK_2` 明确声明 `rerollDieLimit: 2`。
+  - `src/games/dicethrone/domain/commandValidation.ts` 在 `defensiveRoll + rollCount > 0` 时新增共享校验：若当前防御技能声明了 `rerollDieLimit`，则第二次掷骰前未锁定骰子数不得超过该上限。
+- 新回归：
+  - `src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts`
+  - 新增两条命令级合同：
+    - `Blink II` 第二次防御重投前若仍解锁 3 颗骰子，应返回 `defense_reroll_die_limit_exceeded`
+    - 锁定 1 颗后，第二次只重投另外 2 颗仍应放行并正确改值
+- 当前结论更新：
+  - `瞬身 II` 不是“完全没实装”，但直到 2026-06-06 之前，它的“至多 2 颗”这条共享消费合同仍未真正锁死。
+  - 现已从“只有 `rollLimit=2` 与 UI 点击链”提升为“`rollLimit=2 + rerollDieLimit=2 + UI 命中层` 三层都锁住”。
+
 ## 2026-06-03 补记：瞬身 II 漏项根因
 
 - 漏的不是主结算，而是**防御阶段共享合同**里的“还能再投几次”。
@@ -193,14 +211,14 @@
 
 | 对象 | 规则子句 | 共享消费链 / 实现入口 | 当前证据 | 结论 |
 | --- | --- | --- | --- | --- |
-| 瞬身 II | `C1 防御掷 3 骰` `C2 可重掷至多 2 颗` `C3 忍刀数量=反击伤害` `C4 手里剑固定 2 伤` `C5 2 面具得 1 烟雾弹` | `BLINK_2.trigger.phaseId=defensiveRoll/diceCount=3/rollLimit=2` -> `ABILITY_ACTIVATED` -> `reduce` 写入 `rollDiceCount/rollLimit` -> 防御 UI / `ROLL_DICE` 校验；结算走 `ninja-blink-2` | L1 已核 trigger 与文案；L2 `ninja-ability-card-contract.test.ts` 已断言 `rollLimit=2` 与结算；L3 已由 `e2e/dicethrone/dicethrone-defense-selection.e2e.ts` 稳定跑通“首次防御掷骰 -> 保留 1 颗 -> 重投另外 2 颗 -> 确认并结束防御 -> 收口”，关键截图见 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-defense-selection.e2e\忍者瞬身-II-应在真实防御掷骰界面支持保留-1-颗并重投另外-2-颗\ninja-blink-2-defense-first-roll.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-defense-selection.e2e\忍者瞬身-II-应在真实防御掷骰界面支持保留-1-颗并重投另外-2-颗\ninja-blink-2-defense-second-roll.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-defense-selection.e2e\忍者瞬身-II-应在真实防御掷骰界面支持保留-1-颗并重投另外-2-颗\ninja-blink-2-defense-closeout.png` | 当前 bug 已修；对象级主链路现已补到稳定 L3，整批剩余缺口转为 L4 收口 |
+| 瞬身 II | `C1 防御掷 3 骰` `C2 可重掷至多 2 颗` `C3 忍刀数量=反击伤害` `C4 手里剑固定 2 伤` `C5 2 面具得 1 烟雾弹` | `BLINK_2.trigger.phaseId=defensiveRoll/diceCount=3/rollLimit=2/rerollDieLimit=2` -> `ABILITY_ACTIVATED` -> `reduce` 写入 `rollDiceCount/rollLimit` -> 防御 UI / `ROLL_DICE` 校验；结算走 `ninja-blink-2` | L1 已核 trigger 与文案；L2 现已由 `ninja-ability-card-contract.test.ts` 同时断言 `rollLimit=2`、第二次不能放行 3 颗全重掷、以及锁 1 颗后仍可重投另外 2 颗并正确改值；L3 已由 `e2e/dicethrone/dicethrone-defense-selection.e2e.ts` 稳定跑通“首次防御掷骰 -> 保留 1 颗 -> 重投另外 2 颗 -> 确认并结束防御 -> 收口”，关键截图见 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-defense-selection.e2e\忍者瞬身-II-应在真实防御掷骰界面支持保留-1-颗并重投另外-2-颗\ninja-blink-2-defense-first-roll.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-defense-selection.e2e\忍者瞬身-II-应在真实防御掷骰界面支持保留-1-颗并重投另外-2-颗\ninja-blink-2-defense-second-roll.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-defense-selection.e2e\忍者瞬身-II-应在真实防御掷骰界面支持保留-1-颗并重投另外-2-颗\ninja-blink-2-defense-closeout.png` | 当前 bug 已修；对象级主链路现已补到稳定 L3，整批剩余缺口转为 L4 收口 |
 | 一往无前 II | `C1 4 手里剑主分支` `C2 投掷 2 骰` `C3 可重掷其中 1 颗` `C4 造成点数和伤害` `C5 最终总和<=6 则不可防御` `C6 刀尖舔血(3 手里剑)改走真实伤害分支` | `GOING_FORWARD_2.variants` -> `ninja-going-forward-2` / `ninja-going-forward-bleed` -> `createBonusDiceWithReroll(maxRerollCount=1, customResolutionId='ninja-going-forward-2')` -> `validateCommand(REROLL_BONUS_DIE)` / `SKIP_BONUS_DICE_REROLL` -> `registerBonusDiceSettlementHandler(GOING_FORWARD_2_SETTLEMENT_ID)` | L1 已有结构合同：双分支、顺序与卡图对应；L2 已由 `ninja-ability-card-contract.test.ts` 覆盖 `C3` 的重掷上限为 1、`C5` 在总和 `<=6` 时会把攻击改成不可防御、总和 `>6` 时保持可防御，以及 `C6` 刀尖舔血分支会按单骰结果造成等值真实伤害并直接收口攻击链；L3 已补主分支真实入口：`e2e/dicethrone/dicethrone-ninja-bonus-reroll.e2e.ts` 现已稳定跑通“真实槽位 -> 变体选择 -> 奖励骰 -> 1 次重投到上限 -> closeout”，关键截图见 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-bonus-reroll.e2e\一往无前-II-主分支应从真实槽位进入奖励骰界面，并在-1-次重投后达到上限\ninja-going-forward-2-main-variant-choice.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-bonus-reroll.e2e\一往无前-II-主分支应从真实槽位进入奖励骰界面，并在-1-次重投后达到上限\ninja-going-forward-2-main-limit-reached.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-bonus-reroll.e2e\一往无前-II-主分支应从真实槽位进入奖励骰界面，并在-1-次重投后达到上限\ninja-going-forward-2-main-after-closeout.png`；`C6` bleed 分支现也已补对象级 L3：`e2e/dicethrone/dicethrone-ninja-bonus-reroll.e2e.ts` 已稳定跑通“真实槽位 -> 变体选择 -> 刀尖舔血奖励骰特写 -> 真实伤害收口”，关键截图见 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-bonus-reroll.e2e\一往无前-II-的刀尖舔血分支应从真实槽位进入分支选择，并按单骰结果造成真实伤害后收口\ninja-going-forward-2-bleed-variant-choice.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-bonus-reroll.e2e\一往无前-II-的刀尖舔血分支应从真实槽位进入分支选择，并按单骰结果造成真实伤害后收口\ninja-going-forward-2-bleed-overlay.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-bonus-reroll.e2e\一往无前-II-的刀尖舔血分支应从真实槽位进入分支选择，并按单骰结果造成真实伤害后收口\ninja-going-forward-2-bleed-after-closeout.png` | 主分支与 bleed 分支都已补到对象级 L3；奖励骰总和 `<=6 / >6` 的 L4 合同边界已补，整对象剩余缺口收敛到更高阶组合分支与批次口径统一 |
 | 死亡盛放 II | `C1 投掷 5 骰` `C2 忍刀=1 伤/手里剑=2 伤` `C3 1 面具则不可防御` `C4 2 面具则慢性中毒` `C5 可重掷至多 2 颗` | `DEATH_BLOSSOM_2` -> `ninja-death-blossom-2` -> `createBonusDiceWithReroll(maxRerollCount=2, customResolutionId='ninja-death-blossom-2')` -> `validateCommand(REROLL_BONUS_DIE)` / `SKIP_BONUS_DICE_REROLL` -> `registerBonusDiceSettlementHandler(DEATH_BLOSSOM_2_SETTLEMENT_ID)` | L1 已有结构合同；L2 已由 `ninja-ability-card-contract.test.ts` 覆盖 `C5` 的重掷上限为 2，以及 `0/1/2` 面具数量的收口分层：`0 面具` 保持可防御、`1 面具` 仅改成不可防御、`2 面具` 同时命中不可防御与 1 层慢性中毒；L3 已补真实入口：`e2e/dicethrone/dicethrone-ninja-bonus-reroll.e2e.ts` 已稳定跑通“真实槽位 -> 奖励骰 -> 2 次重投到上限 -> closeout”，关键截图见 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-bonus-reroll.e2e\死亡盛放-II-应从真实槽位进入奖励骰界面，并在-2-次重投后达到上限\ninja-death-blossom-2-overlay-initial.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-bonus-reroll.e2e\死亡盛放-II-应从真实槽位进入奖励骰界面，并在-2-次重投后达到上限\ninja-death-blossom-2-limit-reached.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-bonus-reroll.e2e\死亡盛放-II-应从真实槽位进入奖励骰界面，并在-2-次重投后达到上限\ninja-death-blossom-2-after-closeout.png`；closeout 后权威状态代表链为对手 HP `30 -> 25`、`delayed_poison = 1`、`pendingAttack/pendingDamage = null` | 对象级主链路已补到 L3；面具数量分层的 L4 合同边界已补，整批剩余缺口继续收敛到更高阶组合分支与批次口径统一 |
 | 毒刃 II | `C1 小顺子` `C2 投 1 奖励骰` `C3 忍刀=1 慢性中毒` `C4 手里剑/面具=2 慢性中毒` `C5 造成 5 点伤害` | `POISON_BLADE_2` -> `ninja-poison-blade-2` -> `handlePoisonBlade2` -> `BONUS_DICE_REROLL_REQUESTED(displayOnly)` -> `SKIP_BONUS_DICE_REROLL` / 奖励骰结算后继续攻击 closeout | L1：已对照 `temp/ninja-upgrade-crops/poisonblade2_precise.png` 复核图片语义与当前实现一致；L2：`src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts` 已新增 2 条完整攻击收口用例，分别断言 `忍刀 -> delayed_poison=1 + HP 30->25` 与 `手里剑/面具 -> delayed_poison=2 + HP 30->25`；L3：`e2e/dicethrone/dicethrone-ninja-ability-real-entry.e2e.ts` 已补齐真实槽位 + 奖励骰特写 + 树精 `rooted` 防御链在线收口，当前权威状态为 `delayed_poison=2 / 对手 HP 30->28 / pendingAttack=false` | 旧“录入错 + 实现错”与旧 `30->24` 在线断言均失效；对象级 `L1/L2/L3` 已达标，剩余缺口转为整批 `L4` 收口 |
 
 ### 本轮补审结论
 
-- 本次确认的直接产品 bug 只落在 `瞬身 II`，且已经由 `trigger.rollLimit = 2` + `ABILITY_ACTIVATED` 共享消费补齐。
+- 本次确认的直接产品 bug 只落在 `瞬身 II`，且直到 2026-06-06 才真正补齐到 `trigger.rollLimit = 2 + rerollDieLimit = 2` 的共享消费层。
 - 但按新通用维度回扫后，忍者这一家族仍不能继续沿用旧“已审过”口径，因为虽然对象级 L3 已补齐，**整批 L4 与跨对象收口还未完成**：
   - `一往无前 II`：主分支与 `刀尖舔血` bleed 分支现都已补到对象级 L3。
   - `死亡盛放 II`：对象级主链路现已补到 L3。
@@ -335,7 +353,7 @@
 | 刀尖舔血 | 单骰展示后直接真实伤害链 | — | 否 | 单骰 display-only 后直接造成真实伤害并 `nonattack closeout`；与 `毒刃 II`、`死亡盛放 II` 的后续链不同 | 已有对象级 L3，保留对象级 L4 |
 | 死亡盛放 II | 奖励骰重投攻击加伤链 | — | 否 | 同样走 `createBonusDiceWithReroll`，但 settlement 读取 5 骰面具/忍刀/手里剑计数，并按 `0/1/2` 面具数量分层追加“无额外 / 不可防御 / 不可防御 + 慢性中毒” | 对象级 L3 已齐，面具数量分层 L4 合同已补；剩余主要是更高阶组合分支与批次口径统一 |
 | 毒刃 II | display-only 奖励骰后继续攻击链 | — | 否 | 奖励骰只负责施加慢性中毒，攻击伤害仍走原攻击链与防御链收口，不属于 `nonattack closeout` 或 `attackBonus` 同构对象 | 已有对象级 L3，保留对象级 L4 |
-| 瞬身 II | 防御重投 + 选择收口链 | — | 否 | `defensiveRoll + rollLimit=2 + ninja-blink-2` 属防御专用 family，不能与攻击类或普通奖励骰链复用 | 已有对象级 L3，保留对象级 L4 |
+| 瞬身 II | 防御重投 + 选择收口链 | — | 否 | `defensiveRoll + rollLimit=2 + rerollDieLimit=2 + ninja-blink-2` 属防御专用 family；除 UI 命中层外，还额外依赖第二次防御掷骰前“不能放行 3 颗全重掷”的共享命令校验 | 已有对象级 L3，保留对象级 L4 |
 | 暗影步 II 主分支 | 标准 token + 不可防御伤害直结算链 | 诳惑 | 是 | 都不走 custom handler / 选择窗 / bonus settlement；仅通过标准 `grantToken/damage(unblockable)` 列表进入同一攻击清理管线，差异只剩 token 数量与伤害值 | 可复用标准直结算 family 的 L4，已无额外对象级差异 |
 | 诳惑 | 标准 token + 不可防御伤害直结算链 | 诳惑 | 是 | 作为代表对象，已补对象级 L3，且无额外分支/清理差异 | 作为代表对象保留 |
 | 影牙 II 主分支 | 标准 token + 普通伤害直结算链 | 影牙 II 主分支 | 是 | 与同类标准 effect list 共享攻击清理管线，不经过 custom handler；当前批内无更简单对象能替代其“两次 grantToken + 伤害”组合 | 作为代表对象保留 |

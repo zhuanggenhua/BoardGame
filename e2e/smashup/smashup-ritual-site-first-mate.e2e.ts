@@ -1,5 +1,43 @@
 import { test, expect } from '../framework';
 
+async function waitForPiratesAfterScoringAction(game: {
+    getState: () => Promise<any>;
+    passResponseWindow: (playerId?: string) => Promise<void>;
+}, page: {
+    waitForTimeout: (ms: number) => Promise<void>;
+}, timeoutMs = 20000): Promise<'smashup_reaction_choose' | 'pirate_first_mate_choose_base'> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        const state = await game.getState();
+        const sourceId = state?.sys?.interaction?.current?.data?.sourceId ?? null;
+        const windowType = state?.sys?.responseWindow?.current?.windowType ?? null;
+        const options = state?.sys?.interaction?.current?.data?.options ?? [];
+        const hasRealTriggerOption = options.some((option: any) =>
+            option?.id !== 'skip'
+            && option?.id !== 'pass'
+            && option?.value?.kind !== 'pass'
+            && option?.value?.skip !== true,
+        );
+
+        if (sourceId === 'pirate_first_mate_choose_base') {
+            return sourceId;
+        }
+
+        if (sourceId === 'smashup_reaction_choose' && hasRealTriggerOption) {
+            return sourceId;
+        }
+
+        if (windowType === 'meFirst' || windowType === 'afterScoring') {
+            await game.passResponseWindow();
+            continue;
+        }
+
+        await page.waitForTimeout(250);
+    }
+
+    throw new Error('等待海盗 afterScoring 触发超时');
+}
+
 test.describe('仪式场所 + 大副计分后链路', () => {
     test('真实端到端：仪式场所先把大副洗回牌库后，大副仍能移动到其他基地', async ({ game, page }, testInfo) => {
         test.setTimeout(120000);
@@ -49,19 +87,22 @@ test.describe('仪式场所 + 大副计分后链路', () => {
         await game.screenshot('01-ritual-site-first-mate-before-scoring', testInfo);
 
         await game.advancePhase();
-        await game.waitForInteraction('smashup_reaction_choose', 20000);
-        await expect(page.getByRole('button', { name: '仪式场所' })).toBeVisible();
-        await expect(page.getByRole('button', { name: '大副' })).toBeVisible();
+        const firstActionSource = await waitForPiratesAfterScoringAction(game, page, 20000);
+        if (firstActionSource === 'smashup_reaction_choose') {
+            await expect(page.getByRole('button', { name: '仪式场所' })).toBeVisible();
+            await expect(page.getByRole('button', { name: '大副' })).toBeVisible();
 
-        const firstReactionOptions = await game.getInteractionOptions();
-        const ritualSiteOption = firstReactionOptions.find((option: any) =>
-            option.value?.trigger?.sourceDefId === 'base_ritual_site'
-            || option.value?.sourceDefId === 'base_ritual_site'
-            || String(option.label ?? '').includes('仪式场所'),
-        ) ?? firstReactionOptions.find((option: any) => option.id !== 'skip' && option.id !== 'pass');
-        expect(ritualSiteOption, '未找到仪式场所的计分后触发').toBeTruthy();
+            const firstReactionOptions = await game.getInteractionOptions();
+            const ritualSiteOption = firstReactionOptions.find((option: any) =>
+                option.value?.trigger?.sourceDefId === 'base_ritual_site'
+                || option.value?.sourceDefId === 'base_ritual_site'
+                || String(option.label ?? '').includes('仪式场所'),
+            ) ?? firstReactionOptions.find((option: any) => option.id !== 'skip' && option.id !== 'pass');
+            expect(ritualSiteOption, '未找到仪式场所的计分后触发').toBeTruthy();
 
-        await game.selectOption(ritualSiteOption.id);
+            await game.selectOption(ritualSiteOption.id);
+        }
+
         await game.screenshot('02-after-ritual-site-resolved', testInfo);
 
         const afterRitualState = await game.getState();
@@ -70,17 +111,8 @@ test.describe('仪式场所 + 大副计分后链路', () => {
             (base.minions ?? []).some((minion: any) => minion.uid === 'mate-ritual'),
         )).toBe(false);
 
-        await page.waitForFunction(
-            () => {
-                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
-                const sourceId = state?.sys?.interaction?.current?.data?.sourceId;
-                return sourceId === 'smashup_reaction_choose' || sourceId === 'pirate_first_mate_choose_base';
-            },
-            { timeout: 20000, polling: 200 },
-        );
-
-        const interactionAfterRitual = await game.getState();
-        if (interactionAfterRitual.sys.interaction?.current?.data?.sourceId === 'smashup_reaction_choose') {
+        const secondActionSource = await waitForPiratesAfterScoringAction(game, page, 20000);
+        if (secondActionSource === 'smashup_reaction_choose') {
             await expect(page.getByRole('button', { name: '大副' })).toBeVisible();
             const secondReactionOptions = await game.getInteractionOptions();
             const firstMateOption = secondReactionOptions.find((option: any) =>
@@ -92,6 +124,7 @@ test.describe('仪式场所 + 大副计分后链路', () => {
             await game.selectOption(firstMateOption.id);
             await game.waitForInteraction('pirate_first_mate_choose_base', 20000);
         } else {
+            const interactionAfterRitual = await game.getState();
             expect(interactionAfterRitual.sys.interaction?.current?.data?.sourceId).toBe('pirate_first_mate_choose_base');
         }
         await game.screenshot('03-first-mate-target-prompt-after-ritual', testInfo);

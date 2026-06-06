@@ -8,7 +8,7 @@
 >
 > 2026-06-04 失效回写：本文内若仍把 `going-forward-2`、`slash-2`、`shadow-fang-2`、`shadow-step-2`、`smoke-screen-2`、`death-blossom-2`、`poison-blade-2`、`blink-2` 写成“结构未对齐/仍是旧实现/真实 L3 仍待补”，这些口径都已不同程度失效。当前以 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的 2026-06-04 补记与 `src/games/dicethrone/rule/ninja录入核对.md` 最新矩阵为准；本文保留历史审计轨迹，不再作为这些对象的最新正确性结论。
 >
-> 2026-06-05 失效回写：本文里若仍把 `slash-2`、`going-forward-2`、`shadow-fang-2 / 诳惑`、`blink-2` 写成“只证明槽位入口 / 真实 closeout 仍未补 / 真实防御 L3 仍待补”，这些口径也已失效。按 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的 2026-06-04/2026-06-05 补记，这几组升级技能的对象级 L3 已补齐，关键对象级 L4 也已大幅补齐；其中 `blink-2` 在 2026-06-05 的再失效已被重新定性为 **DiceTray / Dice3D UI 命中层回归**，不是“技能未实装”。当前残余应改读为批次级 `L4` 判等矩阵、外围旧文档统一回写与治理口径统一。
+> 2026-06-06 失效回写：本文里若仍把 `slash-2`、`going-forward-2`、`shadow-fang-2 / 诳惑`、`blink-2` 写成“只证明槽位入口 / 真实 closeout 仍未补 / 真实防御 L3 仍待补”，这些口径也已失效。按 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的 2026-06-04/2026-06-06 补记，这几组升级技能的对象级 L3 已补齐，关键对象级 L4 也已大幅补齐；其中 `blink-2` 当前最新权威归因已更新为 `rollLimit=2 + rerollDieLimit=2 + DiceTray / Dice3D UI 命中层` 三线共同收口，不是“技能未实装”。当前残余应改读为批次级 `L4` 判等矩阵、外围旧文档统一回写与治理口径统一。
 
 ## 本次重审结论
 
@@ -85,7 +85,7 @@ npx vitest run src/games/dicethrone/__tests__/ninja-ability-card-contract.test.t
 | `shadow-fang` | 面板：大顺子，忍术 2 + 8 伤害 | `largeStraight`，ninjutsu 2，damage 8 | 通用候选；`calm` 槽共享升级入口已测 | 通用 ability activate | N/A | token + damage | 无分支 | 通用攻击流程 | L1/L3 代表 | 基础版未单独 E2E；升级槽位入口已补 |
 | `shadow-fang-2` | 升级：影牙 II / 诳惑 | `SHADOW_FANG_2` 已按主路线 + `诳惑` 分支落地 | 升级后 `calm` 槽真实可点 | `sourceAbilityId=shadow-fang` | 升级卡替换 | 对象级主分支与 `诳惑` 分支已由合同测试补到 L2，direct closeout 已补到对象级 L3 | 当前对象级残余已不再是“仍缺真实收口”，而是批次级 `L4` 判等与外围旧文档统一回写 | `pendingAttack` 创建与最终 closeout 均已在新文档留证 | L2/L3 | 当前实现已对齐；本文旧“只到入口”口径已失效，当前最新对象级结论以升级重审文档为准 |
 | `blink` | 防御：掷 3 骰；若投出忍刀，造成 1 伤害；若投出手里剑，造成 2 伤害；若投出面具，获得烟雾弹 | `defensiveRoll` + 读取防御投已出骰面；不额外奖励骰 | 防御阶段 pendingAttack | `resolveAttack` 调用 `ninja-blink` | N/A | 当前保留的仍是 2026-05-18 合同层证据：`1/4/6` 时攻击者 HP -3、防御者烟雾弹 +1 | `isDefendable=false` 跳过 | 防御事件后攻击流程继续 | 历史 L2 | 旧“累计奖励骰反击”结论已失效；本行现在只保留基础 `blink` 合同回写轨迹，不构成 2026-06-05 当前 residual，实时残余仍以批次级治理口径为准 |
-| `blink-2` | 升级：瞬身 II；忍刀按数量造成伤害，手里剑固定 2 伤害，2 面具给烟雾弹；可重掷至多 2 颗 | 升级后使用独立 `ninja-blink-2`，并通过 `trigger.rollLimit=2` 进入共享防御重投合同 | 升级后防御入口 | `resolveAttack` | 升级卡替换 | 当前 L2 合同：`1/2/4` 时攻击者 HP -4；`1/6/6` 时攻击者 HP -1 且防御者烟雾弹 +1 | 同上 | 攻击流程继续 | L2/L3 | 当前已补合同测试 + 真实防御重投 E2E；对象级 L3 已达标，关键对象级 L4 也已补齐。本行现仅作为单对象历史回写入口，不能再被当成“瞬身 II 仍是当前对象级未完成项” |
+| `blink-2` | 升级：瞬身 II；忍刀按数量造成伤害，手里剑固定 2 伤害，2 面具给烟雾弹；可重掷至多 2 颗 | 升级后使用独立 `ninja-blink-2`，并通过 `trigger.rollLimit=2 + rerollDieLimit=2` 进入共享防御重投合同 | 升级后防御入口 | `resolveAttack` | 升级卡替换 | 当前 L2 合同：`1/2/4` 时攻击者 HP -4；`1/6/6` 时攻击者 HP -1 且防御者烟雾弹 +1；第二次防御重投前若 3 颗全开应被拒绝，锁 1 颗后只重投另外 2 颗应放行 | 同上 | 攻击流程继续 | L2/L3 | 当前已补合同测试 + 真实防御重投 E2E；对象级 L3 已达标，关键对象级 L4 也已补齐。本行现仅作为单对象历史回写入口，不能再被当成“瞬身 II 仍是当前对象级未完成项” |
 | `ninja-assassinate` | 终极技：慢性中毒 2、烟雾弹、10 伤害 | mask 5，poison 2，smoke 1，damage 10 | `ultimate` 槽真实可点 | `sourceAbilityId=ninja-assassinate` | N/A | 对手 HP 30->20，慢性中毒 2，烟雾弹 1 | 终极不可防御 | `pendingAttack` 清空，可继续推进 | L3 | 真实玩家板终极槽结算已补 |
 
 ## Token / 状态完整流程矩阵
@@ -125,7 +125,7 @@ npx vitest run src/games/dicethrone/__tests__/ninja-ability-card-contract.test.t
 - Token 复杂链路已有代表覆盖：`ninjutsu` 奖励骰与 6 点选择、`smoke_bomb` 成功免伤与失败分支、`delayed_poison` 回合结束。
 - `ninja-card-knife-fan` 时机合同已有 L2 覆盖：main 可打，offensiveRoll 不可打；2026-05-17 又补真实主阶段手牌 L3，证明 direct unblockable damage 1 会扣对手 HP。
 - `blink` / `blink-2` 当前最新权威口径已回到 `src/games/dicethrone/rule/ninja录入核对.md` 与 `src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts`：基础版读取防御投已出骰面后按“忍刀 +1 伤害 / 手里剑 +2 伤害 / 面具给烟雾弹”结算；II 级按“忍刀数量伤害 / 任一手里剑 +2 / 两个面具给烟雾弹”结算。对应实现入口为 `src/games/dicethrone/heroes/ninja/abilities.ts` 与 `src/games/dicethrone/domain/customActions/ninja.ts`。
-- `blink-2` 的 2026-06-05 当前最新异常归因也已更新：真实 UI 点击红点来自 `DiceTray` 命中层，而不是 `trigger.rollLimit`、防御 resolver 或 `ninja-blink-2` 实现缺失；现行回写证据见升级重审文档中的“UI 命中层回归”补记。
+- `blink-2` 的当前最新异常归因已进一步更新：2026-06-05 命中过的真实 UI 点击红点来自 `DiceTray` 命中层，但 2026-06-06 又继续坐实一条共享校验漏项，说明旧实现除了 UI 命中层外，还缺“第二次至多重掷 2 颗”的命令级合同。现行权威口径应读作 `trigger.rollLimit=2 + rerollDieLimit=2 + DiceTray 命中层` 三线都已补齐，具体回写证据见升级重审文档中的 `2026-06-06 补记：瞬身 II 仍有一层共享校验漏项` 与 `2026-06-05 补记：瞬身 II 再失效并非“未实装”，而是 UI 命中层回归`。
 
 ## 仍不能宣称完成的范围与已回写补记
 

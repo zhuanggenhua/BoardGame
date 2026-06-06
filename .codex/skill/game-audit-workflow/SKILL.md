@@ -72,6 +72,16 @@ description: 全游戏通用审计流程与证据链工作流。用于规则/卡
   4) **范围与持续**：仅本次/本回合/持续直到条件满足？是否会“挂载等待”？
 - **代码落点必须落在具体 handler / event / reducer**，禁止只写“逻辑上应该如此”。
 - **常见误审模式**：把“依赖消耗/支付/结算后触发”的语义，误实现成“打出即触发/立即消耗/提前结算”。
+- **重投/再投语义拆分（强制，D1/D3/D5/D23 高频漏审点）**：
+  - 遇到“可重掷其中 1 颗 / 可重掷至多 N 颗 / 可重投 1 次 / 可以同一颗掷 2 次 / 奖励骰可再掷”时，必须先拆成两层独立合同：
+    1) **总共还能触发几轮重投**
+    2) **每一轮最多能重投几颗骰子**
+  - 审计文档必须分别写出真实消费者，不得只写一个抽象“重投上限”：
+    - `rollLimit`：还能再投几轮
+    - `selectCount`：本轮允许选择多少颗骰子
+    - `maxRerollCount`：奖励骰总共还能重投几次
+    - `rerollDieLimit`：像防御重投这类“下一轮至多可重投几颗”的共享校验
+  - **禁止**只看到 `prompt`/overlay 打开、`rollLimit` 提高、或 `bonusDiceSettlement` 存在，就把“可重掷至多 N 颗”判成已实现；必须继续追到真实 `commandValidation` / interaction consumption / UI 锁定态。
 - **阶段推进合同补充（强制）**：
   - 若对象运行在 `offensiveRoll / targetingRoll`，并且玩家动作后还存在 `pendingAttack`、`currentChoiceSourceAbilityId`、bonus settlement 或其他 continuation，必须继续追到真实 `ADVANCE_PHASE` / Continue / 选择确认后的收口。
   - 若对象是在 `CHOICE_RESOLVED` / token 响应后才改写“不可防御 / 目标 / 伤害范围”，必须同时验证“选择前中间态正确”和“选择后共享合同已改写并成功收口”。

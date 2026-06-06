@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import ImageLightbox from '../../components/common/ImageLightbox';
+import { RewardPointsBadge } from '../../components/common/labels/RewardPointsBadge';
 import {
     CopyFeedbackButton,
     extractText,
@@ -45,6 +46,8 @@ interface FeedbackItem {
     type: 'bug' | 'suggestion' | 'other';
     severity: 'low' | 'medium' | 'high' | 'critical';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
+    closedReason?: string | null;
+    rewardPoints?: number;
     reporterType?: 'user' | 'system';
     source?: string;
     autoReportKind?: string;
@@ -206,6 +209,10 @@ const resolveOriginInfo = (item: FeedbackItem): {
         reporterType: 'user',
         source: item.source ?? 'feedback-modal',
     };
+};
+
+const requiresClosedReason = (item: FeedbackItem): boolean => {
+    return resolveOriginInfo(item).reporterType !== 'system';
 };
 
 const resolveSourceLabel = (t: TFunction<'admin'>, source: string): string => {
@@ -376,7 +383,6 @@ export default function AdminFeedbackPage() {
         const requestId = ++requestIdRef.current;
         if (!silent) setLoading(true);
         if (silent) setIsPolling(true);
-
         try {
             const params = new URLSearchParams({
                 limit: String(PAGE_LIMIT),
@@ -505,6 +511,19 @@ export default function AdminFeedbackPage() {
             error('你没有权限修改该反馈');
             return;
         }
+
+        let closedReason: string | undefined;
+        if (newStatus === 'closed' && requiresClosedReason(target)) {
+            const promptValue = window.prompt(t('feedback.messages.closedReasonPrompt'), target.closedReason ?? '');
+            if (promptValue === null) {
+                return;
+            }
+            closedReason = promptValue.trim();
+            if (!closedReason) {
+                error(t('feedback.messages.closedReasonRequired'));
+                return;
+            }
+        }
         try {
             const response = await fetch(`${ADMIN_API_URL}/feedback/${id}/status`, {
                 method: 'PATCH',
@@ -512,18 +531,26 @@ export default function AdminFeedbackPage() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify({ status: newStatus, ...(closedReason ? { closedReason } : {}) }),
             });
-            if (!response.ok) throw new Error('update_failed');
+            if (!response.ok) {
+                const payload = await response.json().catch(() => null) as { error?: string; message?: string } | null;
+                throw new Error(
+                    payload?.error
+                    || payload?.message
+                    || t('feedback.messages.updateFailed')
+                );
+            }
+            const updated = await response.json() as FeedbackItem;
 
             setFeedbacks((prev) => prev
                 .map((feedback) => (
-                    feedback._id === id ? { ...feedback, status: newStatus as FeedbackItem['status'] } : feedback
+                    feedback._id === id ? { ...feedback, ...updated } : feedback
                 ))
                 .filter((feedback) => statusFilter === 'all' || feedback.status === statusFilter));
             success(t('feedback.messages.updateSuccess'));
-        } catch {
-            error(t('feedback.messages.updateFailed'));
+        } catch (err) {
+            error(err instanceof Error ? err.message : t('feedback.messages.updateFailed'));
         }
     }, [error, feedbacks, statusFilter, success, t, token]);
 
@@ -1215,6 +1242,9 @@ function FeedbackDetailPanel({
                         </MetaBadge>
                     )}
                     {item.stateSnapshot && <MetaBadge>JSON</MetaBadge>}
+                    {item.rewardPoints ? (
+                        <RewardPointsBadge points={item.rewardPoints} signed className="rounded-md px-1.5 py-0.5 text-[10px]" />
+                    ) : null}
                     <div className="ml-auto">
                         <CopyFeedbackButton item={item} t={t} onAiPayloadCopy={onAiPayloadCopy} />
                     </div>
@@ -1312,6 +1342,18 @@ function FeedbackDetailPanel({
                                 {statusOptions.find((option) => option.value === item.status)?.label ?? item.status}
                             </span>
                         </MetaField>
+
+                        {item.status === 'closed' ? (
+                            <MetaField label={t('feedback.detail.closedReason')}>
+                                <span className="text-zinc-700">{item.closedReason?.trim() || t('feedback.detail.closedReasonEmpty')}</span>
+                            </MetaField>
+                        ) : null}
+
+                        {item.rewardPoints ? (
+                            <MetaField label={t('feedback.detail.rewardPoints')}>
+                                <RewardPointsBadge points={item.rewardPoints} signed className="text-xs" />
+                            </MetaField>
+                        ) : null}
 
                         <MetaField label="ID">
                             <span className="rounded-md bg-zinc-50 px-2 py-1 font-mono text-[11px] text-zinc-500">

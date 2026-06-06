@@ -326,7 +326,7 @@ export const BLINK_2: AbilityDef = {
     ...BLINK,
     name: abilityText('blink-2', 'name'),
     description: abilityText('blink-2', 'description'),
-    trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 3, rollLimit: 2 },
+    trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 3, rollLimit: 2, rerollDieLimit: 2 },
     effects: [
         {
             description: '防御掷 3 骰；可重掷至多 2 颗；造成等同于忍刀数量的伤害；若投出手里剑，造成 2 点伤害；若投出 2 个面具，获得 1 个烟雾弹。',

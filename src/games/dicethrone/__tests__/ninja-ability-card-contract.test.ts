@@ -557,6 +557,84 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(next.rollLimit).toBe(2);
     });
 
+    it('Blink II 在第二次防御重投前若仍解锁 3 颗骰子，应拒绝继续重投', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].abilities = state.core.players['1'].abilities.map(ability => (
+            ability.id === 'blink' ? BLINK_2 : ability
+        ));
+        state.core.players['1'].abilityLevels.blink = 2;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shattering-fist',
+            defenseAbilityId: 'blink',
+            isDefendable: true,
+            damage: 0,
+        };
+        state.core.rollCount = 0;
+        state.core.rollLimit = 2;
+        state.core.rollDiceCount = 3;
+
+        const firstRollEvents = execute(
+            { core: state.core, sys: { phase: 'defensiveRoll' } },
+            command('ROLL_DICE', '1'),
+            createQueuedRandom([1, 4, 6]),
+        );
+        const afterFirstRoll = applyEvents(state.core, firstRollEvents);
+
+        expect(afterFirstRoll.rollCount).toBe(1);
+        expect(afterFirstRoll.dice.slice(0, 3).every((die) => die.isKept === false)).toBe(true);
+        expect(validateCommand(afterFirstRoll, command('ROLL_DICE', '1'), 'defensiveRoll')).toEqual({
+            valid: false,
+            error: 'defense_reroll_die_limit_exceeded',
+        });
+    });
+
+    it('Blink II 在锁定 1 颗骰子后，应允许第二次只重投另外 2 颗', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].abilities = state.core.players['1'].abilities.map(ability => (
+            ability.id === 'blink' ? BLINK_2 : ability
+        ));
+        state.core.players['1'].abilityLevels.blink = 2;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shattering-fist',
+            defenseAbilityId: 'blink',
+            isDefendable: true,
+            damage: 0,
+        };
+        state.core.rollCount = 0;
+        state.core.rollLimit = 2;
+        state.core.rollDiceCount = 3;
+
+        const firstRollEvents = execute(
+            { core: state.core, sys: { phase: 'defensiveRoll' } },
+            command('ROLL_DICE', '1'),
+            createQueuedRandom([1, 4, 4]),
+        );
+        const afterFirstRoll = applyEvents(state.core, firstRollEvents);
+        const lockEvents = execute(
+            { core: afterFirstRoll, sys: { phase: 'defensiveRoll' } },
+            command('TOGGLE_DIE_LOCK', '1', { dieId: afterFirstRoll.dice[0].id }),
+            createQueuedRandom([1]),
+        );
+        const afterLock = applyEvents(afterFirstRoll, lockEvents);
+
+        expect(afterLock.dice[0]?.isKept).toBe(true);
+        expect(validateCommand(afterLock, command('ROLL_DICE', '1'), 'defensiveRoll')).toEqual({ valid: true });
+
+        const rerollEvents = execute(
+            { core: afterLock, sys: { phase: 'defensiveRoll' } },
+            command('ROLL_DICE', '1'),
+            createQueuedRandom([6, 6]),
+        );
+        const afterReroll = applyEvents(afterLock, rerollEvents);
+
+        expect(afterReroll.rollCount).toBe(2);
+        expect(afterReroll.dice.slice(0, 3).map((die) => die.value)).toEqual([1, 6, 6]);
+    });
+
     it('一往无前 II 主分支应通过共享奖励骰链限制为至多重掷 1 次，并在总和小于等于 6 时改成不可防御', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.pendingAttack = {

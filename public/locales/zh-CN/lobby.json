@@ -239,10 +239,10 @@
   "authorInfo": {
     "button": "电子化作者：{{author}}",
     "mobileButton": "电子化作者：{{author}}",
-    "buttonHint": "点击查看电子化作者信息",
-    "title": "电子化作者",
+    "buttonHint": "点击查看作者信息",
+    "title": "作者",
     "game": "作品：{{game}}",
-    "hint": "当前先展示电子化作者署名，后续如有更完整的作者介绍，会从这里展开。",
+    "hint": "当前先展示作者署名，后续如有更完整的作者介绍，会从这里展开。",
     "close": "关闭"
   },
   "packageManager": {

@@ -870,6 +870,7 @@
     "card_not_in_hand": "卡牌不在手牌中",
     "invalid_phase": "当前阶段无法执行此操作",
     "roll_limit_reached": "已达到投掷次数上限",
+    "defense_reroll_die_limit_exceeded": "当前防御技能本次只能重掷限定数量的骰子",
     "roll_already_confirmed": "已确认投掷结果",
     "no_roll_yet": "请先投掷骰子",
     "ability_not_available": "该技能当前不可用",

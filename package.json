@@ -142,7 +142,8 @@
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --concurrent 1 --no-stash && npm run typecheck",
-    "pre-push": "npm run quality:changed:pre-push"
+    "pre-push": "npm run quality:changed:pre-push",
+    "pre-rebase": "node scripts/infra/git-command-guard.mjs --hook pre-rebase"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

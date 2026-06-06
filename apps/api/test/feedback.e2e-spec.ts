@@ -251,6 +251,133 @@ describe('Feedback Module (e2e)', () => {
         expect(listRes.body.items[0].canManage).toBe(false);
     });
 
+    it('登录用户提交反馈会记录奖励积分并同步到用户资料', async () => {
+        const { token, userId } = await registerUser({
+            username: 'reward-player',
+            email: 'reward-player@example.com',
+            code: '345678',
+        });
+
+        const createRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                content: '登录反馈奖励测试',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        expect(createRes.body.rewardPoints).toBe(1);
+
+        const storedUser = await userModel.findById(userId).lean();
+        expect(storedUser?.feedbackPoints).toBe(1);
+
+        const meRes = await request(app.getHttpServer())
+            .get('/auth/me')
+            .set('Authorization', `Bearer ${token}`)
+            .expect(200);
+
+        expect(meRes.body.user.feedbackPoints).toBe(1);
+    });
+
+    it('mineOnly=true 只返回当前登录用户自己的反馈', async () => {
+        const { userToken: firstUserToken } = await seedUsers();
+        const { token: secondUserToken } = await registerUser({
+            username: 'other-feedback-owner',
+            email: 'other-feedback-owner@example.com',
+            code: '778899',
+        });
+
+        await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${firstUserToken}`)
+            .send({
+                content: '我的反馈 A',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${secondUserToken}`)
+            .send({
+                content: '别人的反馈 B',
+                type: 'suggestion',
+                severity: 'low',
+                gameName: 'tictactoe',
+            })
+            .expect(201);
+
+        const ownListRes = await request(app.getHttpServer())
+            .get('/admin/feedback?mineOnly=true&limit=20')
+            .set('Authorization', `Bearer ${firstUserToken}`)
+            .expect(200);
+
+        expect(ownListRes.body.items).toHaveLength(1);
+        expect(ownListRes.body.items[0].content).toBe('我的反馈 A');
+    });
+
+    it('普通用户反馈关闭时不填写关闭理由会返回 400', async () => {
+        const { userToken } = await seedUsers();
+
+        const createRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: '需要关闭理由的普通反馈',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        const closeRes = await request(app.getHttpServer())
+            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ status: 'closed' })
+            .expect(400);
+
+        expect(String(closeRes.body.error ?? closeRes.body.message ?? '')).toContain('关闭理由不能为空');
+    });
+
+    it('系统反馈关闭时允许不填写关闭理由', async () => {
+        const { adminToken } = await seedUsers();
+
+        const createRes = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({
+                content: '[system][online-ai-watchdog] 自动反馈关闭无需理由',
+                source: 'online-ai-watchdog',
+                type: 'bug',
+                severity: 'high',
+                gameName: 'dicethrone',
+                clientContext: {
+                    gameId: 'dicethrone',
+                    route: 'server-watchdog',
+                    mode: 'online',
+                },
+                errorContext: {
+                    source: 'online-ai-watchdog',
+                    name: 'auto-close-no-reason',
+                    message: 'auto-close-no-reason',
+                },
+            })
+            .expect(201);
+
+        const closeRes = await request(app.getHttpServer())
+            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ status: 'closed' })
+            .expect(200);
+
+        expect(closeRes.body.status).toBe('closed');
+    });
+
     it('internal feedback 需要 token 且可创建系统反馈', async () => {
         const payload = {
             content: 'system feedback',

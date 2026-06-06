@@ -78,6 +78,20 @@ async function readCurrentInteraction(page: Page): Promise<null | {
 }
 
 async function passCurrentSmashupResponse(page: Page): Promise<void> {
+    const currentInteraction = await readCurrentInteraction(page);
+    if (currentInteraction) {
+        const skipOption = currentInteraction.options.find((option) => (
+            option.id === 'skip'
+            || option.id === 'pass'
+            || option.value?.kind === 'pass'
+            || option.value?.skip === true
+        ));
+        if (skipOption) {
+            await respondCurrentInteractionByOptionId(page, skipOption.id);
+            return;
+        }
+    }
+
     const overlayPassButton = page.getByTestId('me-first-pass-button');
     if (await overlayPassButton.isVisible().catch(() => false)) {
         await overlayPassButton.click();
@@ -85,21 +99,7 @@ async function passCurrentSmashupResponse(page: Page): Promise<void> {
         return;
     }
 
-    const currentInteraction = await readCurrentInteraction(page);
-    if (!currentInteraction) {
-        throw new Error('当前没有可用于 PASS 的 SmashUp 响应交互');
-    }
-
-    const skipOption = currentInteraction.options.find((option) => (
-        option.id === 'skip'
-        || option.id === 'pass'
-        || option.value?.kind === 'pass'
-        || option.value?.skip === true
-    ));
-    if (!skipOption) {
-        throw new Error(`当前交互 ${currentInteraction.sourceId} 没有可用的 PASS/跳过选项`);
-    }
-    await clickInteractionOption(page, skipOption.id, skipOption.label);
+    throw new Error('当前没有可用于 PASS 的 SmashUp 响应交互');
 }
 
 async function respondCurrentInteractionByOptionId(page: Page, optionId: string): Promise<void> {

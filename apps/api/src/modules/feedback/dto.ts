@@ -209,6 +209,11 @@ export class CreateSystemFeedbackDto {
 export class UpdateFeedbackStatusDto {
     @IsEnum(FeedbackStatus)
     status!: FeedbackStatus;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(500)
+    closedReason?: string;
 }
 
 export class QueryFeedbackDto {
@@ -247,6 +252,11 @@ export class QueryFeedbackDto {
     @Transform(({ value }: { value: unknown }) => parseBoolean(value))
     @IsBoolean()
     preferMine?: boolean;
+
+    @IsOptional()
+    @Transform(({ value }: { value: unknown }) => parseBoolean(value))
+    @IsBoolean()
+    mineOnly?: boolean;
 }
 
 export class FeedbackFilterDto {
