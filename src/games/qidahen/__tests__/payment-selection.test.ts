@@ -8731,6 +8731,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-25');
         expect(resolved.regions.find((region) => region.id === 'city-region-25')).toMatchObject({
             controller: 'jin',
             troops: 0,
