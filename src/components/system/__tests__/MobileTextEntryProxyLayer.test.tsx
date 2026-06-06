@@ -1,6 +1,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
+import { UI_Z_INDEX } from '../../../core';
 import { syncProxyValueToTextEntry } from '../../../lib/textEntry';
 import { MobileTextEntryProxyLayer } from '../MobileTextEntryProxyLayer';
 
@@ -218,6 +219,26 @@ describe('MobileTextEntryProxyLayer', () => {
         expect(proxyForm).not.toBeNull();
         expect(proxyForm?.className).toContain('pointer-events-none');
         expect(proxyInput.className).toContain('pointer-events-auto');
+    });
+
+    it('代理输入层级应高于标准 modal 内容层，避免被弹窗盖住', async () => {
+        const sourceInput = document.createElement('input');
+        sourceInput.type = 'text';
+        sourceInput.value = 'alpha';
+        document.body.appendChild(sourceInput);
+
+        render(<MobileTextEntryProxyLayer />);
+
+        await act(async () => {
+            sourceInput.focus();
+            fireEvent.focusIn(sourceInput);
+            await vi.advanceTimersByTimeAsync(60);
+        });
+
+        const proxyLayer = screen.getByTestId('mobile-text-entry-proxy');
+        expect(proxyLayer).toHaveStyle({ zIndex: String(UI_Z_INDEX.textEntryProxy) });
+        expect(UI_Z_INDEX.textEntryProxy).toBeGreaterThan(UI_Z_INDEX.modalContent);
+        expect(UI_Z_INDEX.textEntryProxy).toBeGreaterThan(UI_Z_INDEX.modalTooltip);
     });
 
     it('代理输入改值时不应重建节点或丢失焦点', async () => {

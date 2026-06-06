@@ -1,4 +1,5 @@
 import React from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
@@ -84,6 +85,21 @@ export const CenterBoard = ({
 
     const playerBoardPath = ASSETS.PLAYER_BOARD(characterId, playerBoardFace);
     const tipBoardPath = ASSETS.TIP_BOARD(characterId);
+    const shouldAnimateBoardFlip = characterId === 'cursed_pirate';
+    const playerBoardMotionKey = `${characterId}:${playerBoardFace ?? 'default'}`;
+    const playerBoardFaceMotion = shouldAnimateBoardFlip
+        ? {
+            initial: { rotateY: -92, opacity: 0.2, scale: 0.98 },
+            animate: { rotateY: 0, opacity: 1, scale: 1 },
+            exit: { rotateY: 92, opacity: 0.2, scale: 0.98 },
+            transition: { duration: 0.58, ease: [0.22, 1, 0.36, 1] as const },
+        }
+        : {
+            initial: { opacity: 0.96 },
+            animate: { opacity: 1 },
+            exit: { opacity: 0.96 },
+            transition: { duration: 0.12 },
+        };
 
     const handleMagnifySurfaceClick = React.useCallback((
         event: React.MouseEvent<HTMLElement>,
@@ -125,44 +141,57 @@ export const CenterBoard = ({
                     data-character-id={characterId}
                     onClick={(event) => handleMagnifySurfaceClick(event, playerBoardPath)}
                 >
-                    <div
-                        className="h-full"
-                        style={{
-                            width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
-                        }}
-                    >
-                        <OptimizedImage
-                            src={playerBoardPath}
-                            locale={locale}
-                            alt={t('imageAlt.playerBoard')}
-                            className="h-full w-full"
-                            placeholder={false}
-                            data-testid="player-board-image"
+                    <AnimatePresence initial={false} mode="wait">
+                        <motion.div
+                            key={playerBoardMotionKey}
+                            className="relative h-full"
+                            data-testid="player-board-face-shell"
+                            data-player-board-face={playerBoardFace ?? 'default'}
                             style={{
-                                display: 'block',
-                                objectFit: 'contain',
-                                width: '100%',
-                                height: '100%',
+                                width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
+                                transformStyle: 'preserve-3d',
+                                WebkitTransformStyle: 'preserve-3d',
                             }}
-                        />
-                    </div>
-                    <AbilityOverlays
-                        ref={abilityOverlaysRef}
-                        isEditing={isLayoutEditing && isSelfView}
-                        availableAbilityIds={availableAbilityIds}
-                        canSelect={canSelectAbility}
-                        canHighlight={canHighlightAbility}
-                        onSelectAbility={onSelectAbility}
-                        onHighlightedAbilityClick={onHighlightedAbilityClick}
-                        selectedAbilityId={selectedAbilityId}
-                        activatingAbilityId={activatingAbilityId}
-                        abilityLevels={abilityLevels}
-                        characterId={characterId}
-                        playerBoardFace={playerBoardFace}
-                        locale={locale}
-                        onMagnifyCard={onMagnifyCard}
-                        playerTokens={playerTokens}
-                    />
+                            initial={playerBoardFaceMotion.initial}
+                            animate={playerBoardFaceMotion.animate}
+                            exit={playerBoardFaceMotion.exit}
+                            transition={playerBoardFaceMotion.transition}
+                        >
+                            <OptimizedImage
+                                src={playerBoardPath}
+                                locale={locale}
+                                alt={t('imageAlt.playerBoard')}
+                                className="h-full w-full"
+                                placeholder={false}
+                                data-testid="player-board-image"
+                                style={{
+                                    display: 'block',
+                                    objectFit: 'contain',
+                                    width: '100%',
+                                    height: '100%',
+                                    backfaceVisibility: 'hidden',
+                                    WebkitBackfaceVisibility: 'hidden',
+                                }}
+                            />
+                            <AbilityOverlays
+                                ref={abilityOverlaysRef}
+                                isEditing={isLayoutEditing && isSelfView}
+                                availableAbilityIds={availableAbilityIds}
+                                canSelect={canSelectAbility}
+                                canHighlight={canHighlightAbility}
+                                onSelectAbility={onSelectAbility}
+                                onHighlightedAbilityClick={onHighlightedAbilityClick}
+                                selectedAbilityId={selectedAbilityId}
+                                activatingAbilityId={activatingAbilityId}
+                                abilityLevels={abilityLevels}
+                                characterId={characterId}
+                                playerBoardFace={playerBoardFace}
+                                locale={locale}
+                                onMagnifyCard={onMagnifyCard}
+                                playerTokens={playerTokens}
+                            />
+                        </motion.div>
+                    </AnimatePresence>
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onMagnifyImage(playerBoardPath); }}

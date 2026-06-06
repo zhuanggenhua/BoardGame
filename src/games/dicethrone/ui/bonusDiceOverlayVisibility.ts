@@ -64,6 +64,15 @@ export interface InteractivePendingBonusOverlayArgs {
     responseWindowState?: BonusDiceResponseWindowStateSnapshot;
 }
 
+export interface ForegroundBonusDieVisibilityArgs {
+    hasChoice: boolean;
+    interactiveSettlement?: PendingBonusDiceSettlement;
+    bonusDie?: {
+        show?: boolean;
+        effectKey?: string;
+    };
+}
+
 export function shouldSuppressPendingDisplayOnlyBonusOverlay({
     settlement,
     cardSpotlightQueue,
@@ -125,4 +134,24 @@ export function resolveInteractivePendingBonusDiceSettlement({
     }
 
     return settlement;
+}
+
+export function shouldSuppressForegroundBonusDieOverlay({
+    hasChoice,
+    interactiveSettlement,
+    bonusDie,
+}: ForegroundBonusDieVisibilityArgs): boolean {
+    if (interactiveSettlement) {
+        return true;
+    }
+
+    if (!hasChoice) {
+        return false;
+    }
+
+    const shouldKeepPowderKegSpotlight = bonusDie?.show === true
+        && typeof bonusDie.effectKey === 'string'
+        && bonusDie.effectKey.startsWith('bonusDie.effect.powderKeg.');
+
+    return !shouldKeepPowderKegSpotlight;
 }

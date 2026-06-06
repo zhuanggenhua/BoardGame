@@ -11,6 +11,7 @@ import { BoardOverlays } from '../ui/BoardOverlays';
 import { SpotlightContainer } from '../ui/SpotlightContainer';
 import {
     resolveInteractivePendingBonusDiceSettlement,
+    shouldSuppressForegroundBonusDieOverlay,
     shouldSuppressPendingDisplayOnlyBonusOverlay,
 } from '../ui/bonusDiceOverlayVisibility';
 import { shouldHighlightOpponentViewAbilities } from '../ui/abilityHighlightVisibility';
@@ -1845,6 +1846,49 @@ describe('BonusDieOverlay', () => {
                 current: undefined,
             },
         })).toBe(settlement);
+    });
+
+    it('keeps powder keg standalone spotlight visible even when choice prompt is already open', () => {
+        expect(shouldSuppressForegroundBonusDieOverlay({
+            hasChoice: true,
+            interactiveSettlement: undefined,
+            bonusDie: {
+                show: true,
+                effectKey: 'bonusDie.effect.powderKeg.6',
+            },
+        })).toBe(false);
+    });
+
+    it('still suppresses non-powder-keg standalone spotlight when choice prompt is already open', () => {
+        expect(shouldSuppressForegroundBonusDieOverlay({
+            hasChoice: true,
+            interactiveSettlement: undefined,
+            bonusDie: {
+                show: true,
+                effectKey: 'bonusDie.effect.cursedPirateMarkedLoot',
+            },
+        })).toBe(true);
+    });
+
+    it('always suppresses foreground spotlight when interactive bonus settlement is active', () => {
+        expect(shouldSuppressForegroundBonusDieOverlay({
+            hasChoice: false,
+            interactiveSettlement: {
+                id: 'samurai-righteousness-1000',
+                sourceAbilityId: 'samurai-righteousness',
+                attackerId: '0',
+                targetId: '1',
+                dice: [{ index: 0, value: 4, face: 'sword' as const }],
+                rerollCostTokenId: '',
+                rerollCostAmount: 0,
+                rerollCount: 0,
+                readyToSettle: false,
+            },
+            bonusDie: {
+                show: true,
+                effectKey: 'bonusDie.effect.powderKeg.6',
+            },
+        })).toBe(true);
     });
 
     it('旧脏 interactive pendingBonusDiceSettlement 不应在前台奖励骰弹层链路里崩溃', () => {

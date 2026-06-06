@@ -802,7 +802,7 @@ export const MobileTextEntryProxyLayer = () => {
     return createPortal(
         <div
             className="fixed inset-x-0 bottom-0 pointer-events-none"
-            style={{ zIndex: UI_Z_INDEX.modalRoot + 120 }}
+            style={{ zIndex: UI_Z_INDEX.textEntryProxy }}
             data-testid="mobile-text-entry-proxy"
         >
             <form

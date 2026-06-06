@@ -24,4 +24,5 @@ export const UI_Z_INDEX = {
     tutorial: 2300,
     emergencyHud: 2400,
     cardPreviewTooltip: 2450,
+    textEntryProxy: 2500,
 } as const;

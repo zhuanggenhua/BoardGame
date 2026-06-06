@@ -36,6 +36,15 @@ describe('DiceThrone compatibility source guards', () => {
         expect(centerBoard).not.toContain('aspect-[1311/2048]');
     });
 
+    it('海盗双面玩家板应保留翻面动画，而不是直接硬切图片', () => {
+        const centerBoard = readUiSource('CenterBoard.tsx');
+
+        expect(centerBoard).toContain("const shouldAnimateBoardFlip = characterId === 'cursed_pirate'");
+        expect(centerBoard).toContain('<AnimatePresence initial={false} mode="wait">');
+        expect(centerBoard).toContain('rotateY: -92');
+        expect(centerBoard).toContain("data-testid=\"player-board-face-shell\"");
+    });
+
     it('玩家面板放大预览应提供显式宽高，避免旧 WebView 只剩横条', () => {
         const boardOverlays = readUiSource('BoardOverlays.tsx');
 

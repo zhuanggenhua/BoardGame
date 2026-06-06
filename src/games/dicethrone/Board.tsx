@@ -56,6 +56,7 @@ import { useCardSpotlight } from './hooks/useCardSpotlight';
 import {
     resolveInteractivePendingBonusDiceSettlement,
     shouldSuppressPendingDisplayOnlyBonusOverlay,
+    shouldSuppressForegroundBonusDieOverlay,
 } from './ui/bonusDiceOverlayVisibility';
 import { useActiveModifiers } from './hooks/useActiveModifiers';
 import { useUIState } from './hooks/useUIState';
@@ -2062,7 +2063,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     // 额外骰子
                     bonusDie={bonusDie}
                     onBonusDieClose={() => handlePendingBonusSettlementClose(displayOnlyBonusDiceSettlement)}
-                    suppressBonusDieOverlay={choice.hasChoice || Boolean(interactiveBonusDiceSettlement)}
+                    suppressBonusDieOverlay={shouldSuppressForegroundBonusDieOverlay({
+                        hasChoice: choice.hasChoice,
+                        interactiveSettlement: interactiveBonusDiceSettlement,
+                        bonusDie,
+                    })}
 
                     // 奖励骰展示态只留在 overlay，阻塞式重投交互改走 modal stack
                     pendingBonusDiceSettlement={displayOnlyBonusDiceSettlement}
