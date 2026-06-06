@@ -722,7 +722,12 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             // 战术家/咒缚海盗：伤害取决于防御骰、奖励骰或目标身上的诅咒金币层数
             'zhanshujia-war-monger-2-roll',
             'zhanshujia-countermeasures-defense',
+            // 咒缚海盗：choice request / bonus damage / 防御骰面分支不会在基础 mock 下稳定直接产出 DAMAGE_DEALT
+            'cursed-pirate-curse-card-choice',
             'cursed-pirate-damage-by-cursed-coins',
+            'cursed-pirate-flay-roll',
+            'cursed-pirate-human-verdict-command',
+            'cursed-pirate-human-defense',
             'cursed-pirate-still-wet-behind-ears-defense',
         ]);
 
