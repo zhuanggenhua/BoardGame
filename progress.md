@@ -1,5 +1,216 @@
 > 状态提示（2026-06-05）：本文件包含多条历史长期任务推进记录；其中的 `Next:`、`当前状态`、`继续下一批` 只对各自写入当时有效，**不自动构成当前对话任务**。未被用户当轮明确点名的条目，一律只作历史进度参考。
 
+## 2026-06-06 intake 当前已收敛到长跑 soak 稳定性，而不是新的稳定规则红灯
+
+- 收口对象：
+  - `制胜高地`
+  - `开拓战场（基础主分支）`
+  - `4 人无情诅咒 targeting`
+  - `4 人地毯式轰炸双敌目标链`
+  - `战术家 / 咒缚海盗 intake` 最新验证口径
+- 验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native`
+    - `2 files / 83 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过 ultimate 槽位触发并结算制胜高地的前置链"`
+    - `1 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过玩家板槽位触发并结算开拓战场的基础主分支"`
+    - `1 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "4 人真实入口应先进入 targetingRoll，并按 5/6 把无情诅咒的目标选择权交给正确玩家"`
+    - `1 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "4 人真实入口应展示并结算地毯式轰炸的双敌目标链"`
+    - `1 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts`
+    - 当前 file 已扩到 `78` 条，不再适合沿用旧的 `71 passed / 0 failed` 口径
+    - 整跑里中后段出现 `frontend readiness / route preload` 断连（`Failed to fetch` / `ECONNREFUSED 127.0.0.1:6273`）
+    - 同次整跑里冒红的 4 条对象链均已在单条补跑中转绿，因此当前没有新增稳定规则红灯
+- 当前边界：
+  - 当前剩余已进一步收敛为 `intake.e2e.ts` 整文件长跑 soak 稳定性，以及双面 / family 级 completion audit。
+  - `implementation_in_progress` 继续保留。
+
+## 2026-06-06 奖励骰 family 再补一轮负向/不串写机制回归
+
+- 收口对象：
+  - `起锚`
+  - `虚张声势`
+  - `死亡印记`
+  - `抽筋剥皮`
+  - `瞭望台`
+  - 咒缚海盗奖励骰 family 的 `default / below-threshold / no-cross-write` 子 seam
+- 代码动作：
+  - `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`
+    - 新增 `起锚骷髅时只施加休战，非骷髅时只抽 1 张牌`
+    - 新增 `虚张声势按弯刀伤害、战利品抽牌、骷髅火药桶三分支结算`
+    - 新增 `抽筋剥皮弯刀不足 3 时只增加攻击伤害，不施加火药桶`
+    - 强化 `死亡印记先获得 2CP...`：纯弯刀盘面显式锁定“不抽牌、不写诅咒金币，只写不可防御伤害”
+    - 强化 `瞭望台按弯刀查看手牌...`：弯刀查看手牌确认后不产生 `CARD_DISCARDED`
+- 验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "死亡印记先获得 2CP|起锚骷髅时只施加休战|抽筋剥皮弯刀不足 3 时只增加攻击伤害|瞭望台按弯刀查看手牌" --configLoader native`
+    - `4 passed`
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native`
+    - `76 passed`
+- 文档动作：
+  - `task_plan.md`
+    - 回写奖励骰 family 新增的负向 seam 与 `mechanics=76 passed` 口径。
+  - `findings.md`
+    - 回写当前正确结论：奖励骰 family 继续向 final verdict 收紧，但仍不能据此宣称整派系完成。
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-object-audit-2026-05-31.md`
+    - 回写 `起锚 / 虚张声势 / 死亡印记 / 抽筋剥皮 / 瞭望台` 的负向或不串写机制证据。
+- 当前边界：
+  - 这一步收掉的是奖励骰 family 里“默认分支 / 未达阈值 / 不串写”这类机制层缺口，不等于咒缚海盗奖励骰 family 已整体封版。
+  - 当前仍未收口的是 `诅咒金币 / 火药桶 / 奖励骰 family` 的 final verdict、双面 face-by-face completion audit，以及最终移除 `implementation_in_progress` 的门禁。
+
+## 2026-06-06 火药桶 `upkeep transfer -> 目标已持有者` 已补机制回归
+
+- 收口对象：
+  - `火药桶 family` 的 `upkeep transfer` 子段
+- 代码动作：
+  - `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`
+    - 新增 `火药桶维持投骰 6 转交给已持有者时，目标旧火药桶会爆炸并保留新火药桶`
+    - 这条回归显式锁定：`upkeep-powder-keg` 在转交给已持有目标时，必须同时满足 `源目标移除 / 目标旧桶爆炸 / 目标保留新桶`。
+- 验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "火药桶维持投骰 6 转交给已持有者时，目标旧火药桶会爆炸并保留新火药桶" --configLoader native`
+    - `1 passed`
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native`
+    - `71 passed`
+- 文档动作：
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-object-audit-2026-05-31.md`
+    - 回写 `upkeep transfer` 的 overlap 机制证据，不再只靠对象级 E2E 兜底。
+  - `task_plan.md`
+    - 回写 `火药桶 family -> upkeep transfer` 子段新增硬证据，固定当前 `mechanics=71 passed` 口径。
+- 当前边界：
+  - 这一步收掉的是 `火药桶` transfer overlap 的机制层缺口，不等于 `火药桶 family` 已整体封版。
+  - 当前仍未收口的是 `诅咒金币 / 火药桶 / 奖励骰 family` 的 final verdict、双面 face-by-face completion audit，以及最终移除 `implementation_in_progress` 的门禁。
+
+## 2026-06-06 human continuation decline path 已补齐，`诅咒金币` family 再前进一步
+
+- 收口对象：
+  - `判决指令`
+  - `无情劫掠`
+  - `诅咒金币 family` 的 `continuation writer` 子段
+- 代码动作：
+  - `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`
+    - 新增 `human 面判决指令拒绝获得诅咒金币时仍会继续施加休战并造成不可防御伤害`
+    - 新增 `human 面无情劫掠拒绝获得诅咒金币时仍会继续施加休战和火药桶`
+    - 两条都锁同一个 family 事实：`decline` 只影响是否自得金币，不应中断后续 continuation。
+- 验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "human 面判决指令拒绝获得诅咒金币|human 面无情劫掠拒绝获得诅咒金币" --configLoader native`
+    - `2 passed`
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native`
+    - `70 passed`
+- 文档动作：
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-object-audit-2026-05-31.md`
+    - 回写 `decline` 路径已被显式锁定，`诅咒金币` family 不再只是 accept path 有硬证据。
+  - `task_plan.md`
+    - 回写 `continuation writer` 子段新增硬证据，固定当前 `mechanics=70 passed` 口径。
+- 当前边界：
+  - 这一步收掉的是 human continuation 的负向路径缺口，不等于 `诅咒金币 family` 已整体封版。
+  - 当前仍未收口的是 `诅咒金币 / 火药桶 / 奖励骰 family` 的 final verdict、双面 face-by-face completion audit，以及最终移除 `implementation_in_progress` 的门禁。
+
+## 2026-06-06 completion audit 再收紧：剩余项已落到可执行子 family，而不是“待重录”
+
+- 收口对象：
+  - `诅咒金币`
+  - `火药桶`
+  - `咒缚海盗奖励骰 family`
+  - `双面 final gate`
+- 文档动作：
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-object-audit-2026-05-31.md`
+    - 把 `诅咒金币 / 火药桶` 的 L4 边界固定成可执行 seam：
+      - `诅咒金币 = direct writer / continuation writer / self-remove / later consumer`
+      - `火药桶 = direct grant / threshold writer / multi-target choice / upkeep transfer / no-attack passive`
+    - 新增 `咒缚海盗奖励骰 family 最终 verdict`，把 remaining 从泛化“奖励骰还没封版”收紧成 5 类子 family：
+      - `起锚 / 虚张声势` 的单骰即时分派
+      - `瞭望台` 的信息/弃牌交互
+      - `干票大的` 的双骰聚合资源
+      - `死亡印记 / 抽筋剥皮` 的攻击期多骰
+      - `啜呼` 的目标方 choice + 状态双写入
+    - 维持双面 final gate 现状：`human 9 / 9`、`cursed 9 / 9`、`16 / 16` 专属手牌、`human-player-board` 资源链都已通过；hold 只剩状态 family 与奖励骰 family 仍待 final verdict。
+  - `findings.md`
+    - 修正一处过时口径：不再写“技能是不是要重录，答案仍然是要”，改成“不需要整套重录，只剩逐槽复核 + 双面审计 + family 封版”。
+- 当前边界：
+  - 这一步没有新增代码或测试，推进的是 completion audit 的判定精度。
+  - 当前最小真实剩余集合已进一步固定为：
+    - `诅咒金币 family final verdict`
+    - `火药桶 family final verdict`
+    - `咒缚海盗奖励骰子 family final verdict`
+    - `双面 face-by-face completion audit`
+    - 最终是否允许移除 `implementation_in_progress`
+
+## 2026-06-06 用死亡吐息补齐凋零 / 休战的第二条 live consumer 直证
+
+- 收口对象：
+  - `凋零`
+  - `休战`
+  - 咒缚海盗状态 family 的 next-proof gate
+- 代码动作：
+  - `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts`
+    - 新增 `真实入口应在持有凋零时通过咒缚面 combo 槽位触发并减少死亡吐息的攻击伤害`
+    - 新增 `真实入口应在攻击者带有休战时通过咒缚面 combo 槽位阻断死亡吐息的攻击伤害并在阶段结束清理状态`
+    - 两条都复用现成 `setupBreathOfDeathScenario(...)`，不再另开新对象；只是在现有 `死亡吐息` 真实入口上分别施加 `凋零 1 / 休战 1`，验证不同攻击来源下的 live consumer 收口。
+- 验证：
+  - `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts`
+    - 通过
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应在持有凋零时通过咒缚面 combo 槽位触发并减少死亡吐息的攻击伤害"`
+    - `1 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应在攻击者带有休战时通过咒缚面 combo 槽位阻断死亡吐息的攻击伤害并在阶段结束清理状态"`
+    - `1 passed`
+- 文档动作：
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-object-audit-2026-05-31.md`
+    - 回写 `凋零 / 休战` 的对象级条目、状态家族 completion 边界、L4 seam 矩阵、family next-proof gate 与验证命令表。
+    - 当前口径已从“是否还缺第二条 live consumer”收紧为“第二条来源已拿到，剩余只在 family verdict 封版与合法复用登记”。
+- 当前边界：
+  - 这一步推进的是状态 family 证据强度，不等于状态家族已整体封版。
+  - 当前仍未收口的是 `诅咒金币 / 火药桶` 的 family 级合法复用登记、奖励骰 family 分组封版、双面 face-by-face completion audit，以及最终移除 `implementation_in_progress` 的门禁。
+
+## 2026-06-06 completion audit 口径进一步收紧：human 面不是“待重录”，但审计仍未封版
+
+- 收口对象：
+  - `human/normal 面`
+  - `implementation_in_progress` 保留依据
+  - 双面 final gate 的对外说法
+- 文档动作：
+  - `evidence/dicethrone/zhanshujia-cursed-pirate-object-audit-2026-05-31.md`
+    - 把双面 final gate 里的 `双面状态 family / 双面奖励骰 family` 从模糊 `audit-only` 收紧为“实现已落地，但仍待 audit 封版”的口径。
+    - 把底部汇总结论里的 `官方 human/normal 面完整实现` 从易被误读成“仍有未实现债”的 `scoped-debt` 改成更准确的 `audit-only`，明确剩余是双面重审计与合法复用登记，不是 human 面还没接线。
+    - 把 `对象级 L3/L4` 收紧为 `L3 object-complete / L4 pending`，明确当前主要剩余已经上升到 family 级 `L4` 与最终 completion audit。
+    - 补一条显式阅读说明：当前不能说“规则都实施完了”，但也不能再说“技能要整套重录”；更准确的是实现层已大幅落地、审计 verdict 仍未封版，因此 `implementation_in_progress` 继续保留。
+  - `task_plan.md`
+    - 新增一条当前笔记，固定上述完成判定口径，避免后续继续把双面 remaining 写回“human 面尚未实现”。
+- 当前边界：
+  - 这一步没有新增运行时代码，也没有把审计结论推进到“已全面完成”。
+  - 当前更准确的结论是：规则实现层面已经明显超过“待重录”，但双面 face-by-face completion audit、状态 family、奖励骰 family 与最终移除 `implementation_in_progress` 的门禁仍未收口。
+
+## 2026-06-06 intake 尾段真实入口已补齐最新权威结果，火药桶转交 E2E 旧等待口径已修正
+
+- 收口对象：
+  - `走跳板`
+  - `做好标记`
+  - `弯刀突刺`
+  - `诅咒金币`
+  - `火药桶`
+  - `咒缚`
+  - `无情诅咒`
+  - `地毯式轰炸 II`
+- 代码动作：
+  - `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts`
+    - 修正 `playPowderKegUpkeepTransfer(...)` 的开场等待口径：删除“先回到空白 discard 态”的旧预期，改为直接等待当前真实合同里的 `upkeep + simple-choice + currentChoiceSourceAbilityId=upkeep-powder-keg`。
+    - 根因不是运行时回退，而是此前已经修过 `flowHooks.ts` 的自动推进门禁后，E2E helper 仍保留旧时序假设，误把正确停在 `upkeep` 的转交选择窗当成失败。
+- 验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts --configLoader native`
+    - `8 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应在 human-cursed 无诅咒金币时于回合结束翻回咒缚面"`
+    - `1 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-command.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts --grep "真实入口应通过人类面 lotus 槽位触发并结算走跳板的弃牌分支|真实入口应通过人类面 chi 槽位触发并结算做好标记的奖励骰与诅咒金币链|真实入口应通过人类面 fist 槽位触发并结算弯刀突刺的四同值火药桶链"`
+    - `3 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-command.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts --grep "真实入口应展示并结算诅咒金币的维持阶段掉血链|真实入口应展示并结算火药桶的维持阶段爆炸链|真实入口应展示并结算火药桶维持阶段投 6 后的转交链|真实入口应展示并结算火药桶转交给已持有者时的原桶爆炸链|真实入口应展示并结算咒缚的维持阶段自伤链"`
+    - 首轮结果：`3 passed / 2 failed`
+    - 修 helper 后复跑 `火药桶维持阶段投 6 后的转交链|火药桶转交给已持有者时的原桶爆炸链`：`2 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-command.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts --grep "4 人真实入口应先进入 targetingRoll，并按 5/6 把无情诅咒的目标选择权交给正确玩家|4 人真实入口应展示并结算地毯式轰炸的双敌目标链"`
+    - `2 passed`
+- 当前边界：
+  - 这一步证明此前 30 分钟 full-file intake 长跑未覆盖完的尾段，现在已经被按权威分段补齐；其中唯一打出的真实红灯是两条 `火药桶` 转交 E2E 的旧等待口径，已修复并复绿。
+  - 当前仍不能据此宣称整派系完成；剩余继续保持为双面 completion audit、family 级 `L4` 合法复用登记，以及最终是否允许移除 `implementation_in_progress`。
+
 ## 2026-06-06 human 面判决指令 / 无情劫掠续结回归已收口，但整派系仍未完成
 
 - 收口对象：

@@ -1,4 +1,5 @@
 import type { LocalPregameControlResolver } from '../../engine/transport/followCurrentTurnPlayer';
+import { isManualSetupSelectionEnabledForSeat } from '../../engine/ai';
 
 type SmashUpPregameStateLike = {
     core?: {
@@ -13,7 +14,7 @@ type SmashUpPregameStateLike = {
 
 export const resolveSmashUpLocalPregameControlledPlayerId: LocalPregameControlResolver = (args) => {
     const manualAiSeatIds = Object.entries(args.seatControllers)
-        .filter(([, controller]) => controller?.type && controller.type !== 'human' && controller.manualFactionSelection === true)
+        .filter(([, controller]) => isManualSetupSelectionEnabledForSeat(controller))
         .map(([playerId]) => playerId);
 
     if (manualAiSeatIds.length === 0) {

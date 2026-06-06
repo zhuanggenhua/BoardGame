@@ -19,6 +19,7 @@ import { useHomeV2CompactLandscape } from '../../hooks/ui/useHomeV2CompactLandsc
 import type { AiDifficultyLevel, AiSeatController } from '../../engine/ai';
 import {
     DEFAULT_LOCAL_AI_DIFFICULTY,
+    isManualSetupSelectionEnabledForSeat,
     createDefaultLocalMatchPreferences,
     normalizeLocalMatchPreferences,
     type LocalMatchPreferences,
@@ -86,14 +87,24 @@ function getEnabledAiController(
         return {
             type: 'local-ai',
             difficulty,
-            ...(manualFactionSelection ? { manualFactionSelection: true } : {}),
+            ...(manualFactionSelection
+                ? {
+                    manualSetupSelection: true,
+                    manualFactionSelection: true,
+                }
+                : {}),
         };
     }
     if (gameManifest.ai?.remoteAi) {
         return {
             type: 'remote-ai',
             providerId: 'astrbot',
-            ...(manualFactionSelection ? { manualFactionSelection: true } : {}),
+            ...(manualFactionSelection
+                ? {
+                    manualSetupSelection: true,
+                    manualFactionSelection: true,
+                }
+                : {}),
         };
     }
     return { type: 'human' };
@@ -149,9 +160,13 @@ function applyManualFactionSelection(
             continue;
         }
         nextControllers[playerId] = enabled
-            ? { ...controller, manualFactionSelection: true }
+            ? { ...controller, manualSetupSelection: true, manualFactionSelection: true }
             : (() => {
-                const { manualFactionSelection: _ignored, ...rest } = controller;
+                const {
+                    manualSetupSelection: _ignoredSetup,
+                    manualFactionSelection: _ignoredFaction,
+                    ...rest
+                } = controller;
                 return rest;
             })();
     }
@@ -278,7 +293,7 @@ export const CreateRoomModal = ({
             ),
         )?.difficulty ?? DEFAULT_LOCAL_AI_DIFFICULTY;
         const shouldManualFactionSelection = Object.values(nextSeatControllers).some(
-            (controller) => controller.type !== 'human' && controller.manualFactionSelection === true,
+            (controller) => isManualSetupSelectionEnabledForSeat(controller),
         );
         const shouldEnableAi = initialPreferences
             ? countAiSeats(nextSeatControllers, nextPreferences.numPlayers) > 0

@@ -14,6 +14,12 @@ export const DEFAULT_AI_MINIMUM_ACTION_DELAY_MS = 1000;
 const MAX_AI_MINIMUM_ACTION_DELAY_MS = 5000;
 const MANUAL_FACTION_SEARCH_VALUE = '1';
 
+export type ManualSetupSeatControllerLike = {
+    type?: unknown;
+    manualSetupSelection?: unknown;
+    manualFactionSelection?: unknown;
+};
+
 function sanitizeOptionalId(value: string | undefined): string | undefined {
     const trimmed = value?.trim();
     return trimmed ? trimmed : undefined;
@@ -27,6 +33,21 @@ function sanitizeMinimumActionDelayMs(value: number | undefined): number | undef
 
 function isManualFactionSelectionEnabled(value: string | null): boolean {
     return value === MANUAL_FACTION_SEARCH_VALUE || value === 'true';
+}
+
+function isManualSetupSelectionEnabledFromSearchParams(searchParams: URLSearchParams, index: number): boolean {
+    return isManualFactionSelectionEnabled(searchParams.get(`seat${index}ManualSetup`))
+        || isManualFactionSelectionEnabled(searchParams.get(`seat${index}ManualFaction`));
+}
+
+export function isManualSetupSelectionEnabledForSeat(
+    controller: ManualSetupSeatControllerLike | null | undefined,
+): boolean {
+    return controller?.type !== 'human'
+        && (
+            controller?.manualSetupSelection === true
+            || controller?.manualFactionSelection === true
+        );
 }
 
 export function resolveAiMinimumActionDelayMs(
@@ -86,7 +107,12 @@ export function normalizeSeatController(
                 : {}),
             ...(normalizeAiDifficultyLevel(controller.difficulty) ? { difficulty: normalizeAiDifficultyLevel(controller.difficulty) } : {}),
             ...(minimumActionDelayMs !== undefined ? { minimumActionDelayMs } : {}),
-            ...(controller.manualFactionSelection === true ? { manualFactionSelection: true } : {}),
+            ...(isManualSetupSelectionEnabledForSeat(controller)
+                ? {
+                    manualSetupSelection: true,
+                    manualFactionSelection: true,
+                }
+                : {}),
         };
     }
 
@@ -103,7 +129,12 @@ export function normalizeSeatController(
         providerId,
         ...(fallbackPolicyId ? { fallbackPolicyId } : {}),
         ...(minimumActionDelayMs !== undefined ? { minimumActionDelayMs } : {}),
-        ...(controller.manualFactionSelection === true ? { manualFactionSelection: true } : {}),
+        ...(isManualSetupSelectionEnabledForSeat(controller)
+            ? {
+                manualSetupSelection: true,
+                manualFactionSelection: true,
+            }
+            : {}),
     };
 }
 
@@ -183,9 +214,7 @@ export function resolveSeatControllersFromSearchParams(args: {
         const explicitDifficulty = normalizeAiDifficultyLevel(
             args.searchParams.get(`seat${index}Difficulty`) ?? undefined,
         );
-        const manualFactionSelection = isManualFactionSelectionEnabled(
-            args.searchParams.get(`seat${index}ManualFaction`),
-        );
+        const manualSetupSelection = isManualSetupSelectionEnabledFromSearchParams(args.searchParams, index);
         const fallback = getDefaultSeatController(index, args.numPlayers, args.aiSupport);
         const controller = args.searchParams.has(`seat${index}`)
             ? (
@@ -194,9 +223,9 @@ export function resolveSeatControllersFromSearchParams(args: {
                     : explicit
             )
             : fallback;
-        controllers[playerId] = controller.type === 'human' || !manualFactionSelection
+        controllers[playerId] = controller.type === 'human' || !manualSetupSelection
             ? controller
-            : normalizeSeatController({ ...controller, manualFactionSelection: true }, args.aiSupport);
+            : normalizeSeatController({ ...controller, manualSetupSelection: true }, args.aiSupport);
     }
 
     return controllers;
@@ -237,7 +266,8 @@ export function buildLocalMatchSearchParams(args: {
         ) {
             search.set(`seat${index}Difficulty`, controller.difficulty);
         }
-        if (controller.type !== 'human' && controller.manualFactionSelection === true) {
+        if (isManualSetupSelectionEnabledForSeat(controller)) {
+            search.set(`seat${index}ManualSetup`, MANUAL_FACTION_SEARCH_VALUE);
             search.set(`seat${index}ManualFaction`, MANUAL_FACTION_SEARCH_VALUE);
         }
     }

@@ -1,5 +1,5 @@
 import type { MatchState } from '../engine/types';
-import type { AiSeatController } from '../engine/ai';
+import { isManualSetupSelectionEnabledForSeat, type AiSeatController } from '../engine/ai';
 import type { GameEngineConfig } from '../engine/transport/server';
 import { resolveOnlineAiCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
 
@@ -46,7 +46,7 @@ function resolveManualSetupSelectionTakeoverOverride(args: {
 function resolveManualSetupAttemptReleaseOverride(args: {
     sharedState: MatchState<unknown> | null | undefined;
     playerId: string;
-    actionKind: ManualSetupSelectionActionKind;
+    actionKind: string;
     selectionId: string;
     engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): boolean | undefined {
@@ -66,7 +66,7 @@ function resolveManualSetupSelectionActionKindOverride(args: {
     type: string;
     payload: unknown;
     engineConfig?: ManualSetupRecoveryEngineConfig | null;
-}): ManualSetupSelectionActionKind | null | undefined {
+}): string | null | undefined {
     const resolver = args.engineConfig?.onlineAiRecovery?.resolveManualSetupSelectionActionKindFromCommand;
     if (!resolver) {
         return undefined;
@@ -78,7 +78,7 @@ function resolveManualSetupSelectionActionKindOverride(args: {
 }
 
 function resolveManualSetupSelectionIdOverride(args: {
-    actionKind: ManualSetupSelectionActionKind;
+    actionKind: string;
     payload: unknown;
     engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): string | null | undefined {
@@ -89,6 +89,23 @@ function resolveManualSetupSelectionIdOverride(args: {
     return resolver({
         actionKind: args.actionKind,
         payload: args.payload,
+    });
+}
+
+function resolveManualSetupSharedConfirmationOverride(args: {
+    playerId: string;
+    actionKind: string;
+    selectionId: string | null;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
+}): boolean | undefined {
+    const resolver = args.engineConfig?.onlineAiRecovery?.shouldAwaitManualSetupSharedConfirmation;
+    if (!resolver) {
+        return undefined;
+    }
+    return resolver({
+        playerId: args.playerId,
+        actionKind: args.actionKind,
+        selectionId: args.selectionId,
     });
 }
 
@@ -131,7 +148,7 @@ export function resolveManualSetupSelectionTakeoverPlayerId(args: {
     }
 
     const manualAiSeatIds = Object.entries(args.seatControllers)
-        .filter(([, controller]) => controller.type !== 'human' && controller.manualFactionSelection === true)
+        .filter(([, controller]) => isManualSetupSelectionEnabledForSeat(controller))
         .map(([playerId]) => playerId);
     if (manualAiSeatIds.length === 0) {
         return null;
@@ -186,7 +203,7 @@ export function resolveManualSetupSelectionTakeoverPlayerId(args: {
 export function shouldReleaseManualSetupAttemptFromSharedState(args: {
     sharedState: MatchState<unknown> | null | undefined;
     playerId: string;
-    actionKind: ManualSetupSelectionActionKind;
+    actionKind: string;
     selectionId: string | null | undefined;
     engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): boolean {
@@ -204,6 +221,9 @@ export function shouldReleaseManualSetupAttemptFromSharedState(args: {
     });
     if (overriddenReleaseDecision !== undefined) {
         return overriddenReleaseDecision;
+    }
+    if (!isManualSetupSelectionActionKind(args.actionKind)) {
+        return false;
     }
 
     const phase = typeof args.sharedState.sys?.phase === 'string'
@@ -262,10 +282,6 @@ export function resolveManualSetupSelectionId(args: {
     payload: unknown;
     engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): string | null {
-    if (!isManualSetupSelectionActionKind(args.actionKind)) {
-        return null;
-    }
-
     const overriddenSelectionId = resolveManualSetupSelectionIdOverride({
         actionKind: args.actionKind,
         payload: args.payload,
@@ -273,6 +289,9 @@ export function resolveManualSetupSelectionId(args: {
     });
     if (overriddenSelectionId !== undefined) {
         return typeof overriddenSelectionId === 'string' ? overriddenSelectionId : null;
+    }
+    if (!isManualSetupSelectionActionKind(args.actionKind)) {
+        return null;
     }
 
     if (!isPlainRecord(args.payload)) {
@@ -286,7 +305,25 @@ export function resolveManualSetupSelectionId(args: {
     return typeof args.payload.factionId === 'string' ? args.payload.factionId : null;
 }
 
-export function shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt(actionKind: string): boolean {
+export function shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt(
+    actionKind: string,
+    options?: {
+        playerId?: string;
+        selectionId?: string | null;
+        engineConfig?: ManualSetupRecoveryEngineConfig | null;
+    },
+): boolean {
+    const overriddenDecision = options?.playerId
+        ? resolveManualSetupSharedConfirmationOverride({
+            playerId: options.playerId,
+            actionKind,
+            selectionId: options.selectionId ?? null,
+            engineConfig: options.engineConfig,
+        })
+        : undefined;
+    if (overriddenDecision !== undefined) {
+        return overriddenDecision;
+    }
     return isManualSetupSelectionActionKind(actionKind);
 }
 
@@ -294,7 +331,7 @@ export function resolveManualSetupAttemptReleaseSource(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatState: MatchState<unknown> | null | undefined;
     playerId: string;
-    actionKind: ManualSetupSelectionActionKind;
+    actionKind: string;
     selectionId: string | null | undefined;
     engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): 'shared' | 'seat' | null {
@@ -325,7 +362,7 @@ export function resolveManualSetupSelectionActionKindFromCommand(args: {
     type: string;
     payload: unknown;
     engineConfig?: ManualSetupRecoveryEngineConfig | null;
-}): ManualSetupSelectionActionKind | null {
+}): string | null {
     const overriddenActionKind = resolveManualSetupSelectionActionKindOverride(args);
     if (overriddenActionKind !== undefined) {
         return overriddenActionKind;

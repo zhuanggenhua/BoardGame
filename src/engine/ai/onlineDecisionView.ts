@@ -1,5 +1,6 @@
 import type { MatchState } from '../types';
 import type { GameAiRuntime } from './types';
+import { resolveCurrentTurnPlayerIdFromState } from '../sessionContext';
 
 export type OnlineAiDecisionVisibility = 'shared' | 'private-required';
 
@@ -57,16 +58,7 @@ export function resolveStateTurnNumber(state: MatchState<unknown> | null | undef
 }
 
 export function resolveCurrentPlayerIdFromState(state: MatchState<unknown> | null | undefined): string | null {
-    const core = state?.core as {
-        activePlayerId?: unknown;
-        currentPlayer?: unknown;
-        currentPlayerId?: unknown;
-    } | undefined;
-    if (!core) return null;
-    if (typeof core.activePlayerId === 'string') return core.activePlayerId;
-    if (typeof core.currentPlayerId === 'string') return core.currentPlayerId;
-    if (typeof core.currentPlayer === 'string') return core.currentPlayer;
-    return null;
+    return resolveCurrentTurnPlayerIdFromState(state);
 }
 
 export function resolveEventStreamNextIdFromState(state: MatchState<unknown> | null | undefined): number | null {

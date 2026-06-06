@@ -340,10 +340,7 @@ type TestOnlineAiRecoveryRuntime = {
 
 type TestOnlineAiRecoveryServerInternals = {
     loadMatch: (matchID: string) => Promise<any>;
-    hasOnlineAiRecoveryResolved: {
-        (match: any, candidate: any, seatControllers: TestSeatControllers): Promise<boolean>;
-        (candidate: any, runtime: TestOnlineAiRecoveryRuntime): Promise<boolean>;
-    };
+    hasOnlineAiRecoveryResolved: (candidate: any, runtime: TestOnlineAiRecoveryRuntime) => Promise<boolean>;
     createOnlineAiRecoveryRuntimeBase: (
         match: any,
         seatControllers: TestSeatControllers,
@@ -359,6 +356,14 @@ const createDefaultOnlineAiRecoverySeatControllers = (): TestSeatControllers => 
     '0': { type: 'human' },
     '1': { type: 'local-ai' },
 });
+
+const createDefaultOnlineAiRecoveryRuntime = (
+    serverInternal: Pick<TestOnlineAiRecoveryServerInternals, 'createOnlineAiRecoveryRuntimeBase'>,
+    match: any,
+): TestOnlineAiRecoveryRuntime => serverInternal.createOnlineAiRecoveryRuntimeBase(
+    match,
+    createDefaultOnlineAiRecoverySeatControllers(),
+);
 
 const createEngineConfigWithGameOver = (): GameEngineConfig => {
     const base = createEngineConfig();
@@ -1432,6 +1437,86 @@ describe('buildAiProgressMarker（响应窗口语义指纹）', () => {
 
         expect(buildAiProgressMarker(baseState.G as any))
             .not.toBe(buildAiProgressMarker(progressedState.G as any));
+    });
+
+    it('自定义前置选择状态未提供 adapter 时，不应被 shared progress marker fallback 误判为进展', () => {
+        const baseState = createOnlineAiRecoveryState({
+            activePlayerId: '1',
+            phase: 'setup',
+        });
+        (baseState.G as any).core.draftSetupSelections = {
+            '0': 'cleric',
+            '1': 'unselected',
+        };
+
+        const progressedState = {
+            ...baseState,
+            G: {
+                ...baseState.G,
+                core: {
+                    ...(baseState.G as any).core,
+                    draftSetupSelections: {
+                        '0': 'cleric',
+                        '1': 'ranger',
+                    },
+                },
+            },
+        };
+
+        expect(buildAiProgressMarker(baseState.G as any))
+            .toBe(buildAiProgressMarker(progressedState.G as any));
+    });
+
+    it('自定义前置选择状态提供 adapter 时，progress marker 应跟随该进度变化', () => {
+        const engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> = {
+            gameId: 'custom-manual-setup-progress-game',
+            onlineAiRecovery: {
+                buildPregameSelectionProgressSignature: ({ state, phase, fallbackSignature }) => {
+                    if (phase !== 'setup') {
+                        return undefined;
+                    }
+                    const draftSetupSelections = (state.core as {
+                        draftSetupSelections?: Record<string, unknown>;
+                    } | undefined)?.draftSetupSelections;
+                    if (!draftSetupSelections || typeof draftSetupSelections !== 'object') {
+                        return fallbackSignature;
+                    }
+                    const signature = Object.keys(draftSetupSelections)
+                        .sort()
+                        .map((playerId) => {
+                            const selectionId = draftSetupSelections[playerId];
+                            return `${playerId}:${typeof selectionId === 'string' ? selectionId : ''}`;
+                        })
+                        .join('|');
+                    return signature ? `draft:${signature}` : fallbackSignature;
+                },
+            },
+        };
+        const baseState = createOnlineAiRecoveryState({
+            activePlayerId: '1',
+            phase: 'setup',
+        });
+        (baseState.G as any).core.draftSetupSelections = {
+            '0': 'cleric',
+            '1': 'unselected',
+        };
+
+        const progressedState = {
+            ...baseState,
+            G: {
+                ...baseState.G,
+                core: {
+                    ...(baseState.G as any).core,
+                    draftSetupSelections: {
+                        '0': 'cleric',
+                        '1': 'ranger',
+                    },
+                },
+            },
+        };
+
+        expect(buildAiProgressMarker(baseState.G as any, { engineConfig }))
+            .not.toBe(buildAiProgressMarker(progressedState.G as any, { engineConfig }));
     });
 });
 
@@ -13300,18 +13385,12 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
         hiddenStillPresent = false;
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(unresolved).toBe(false);
@@ -13533,10 +13612,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(resolved).toBe(true);
@@ -13615,10 +13691,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(resolved).toBe(true);
@@ -13673,10 +13746,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(resolved).toBe(false);
@@ -13733,10 +13803,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(resolved).toBe(true);
@@ -13801,10 +13868,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(resolved).toBe(true);
@@ -13865,10 +13929,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(unresolved).toBe(false);
@@ -13926,10 +13987,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(unresolved).toBe(false);
@@ -14036,10 +14094,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(unresolved).toBe(false);
@@ -14096,10 +14151,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(resolved).toBe(true);
@@ -14156,10 +14208,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(
-                match,
-                createDefaultOnlineAiRecoverySeatControllers(),
-            ),
+            createDefaultOnlineAiRecoveryRuntime(serverInternal, match),
         );
 
         expect(resolved).toBe(true);
@@ -19088,6 +19137,116 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         await serverInternal.loadMatch('match-watchdog-manual-faction-selection-suppressed');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
+    it('online AI watchdog 在 custom manual setup action kind 提供 adapter 时，也不应上报 legal_action_unavailable 噪音反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const gameId = 'test-watchdog-manual-setup-custom-kind-suppressed';
+
+        aiModule.registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId, state }) => {
+                if (playerId !== '1' || state.sys?.phase !== 'setup') {
+                    return [];
+                }
+
+                return [{
+                    actionId: 'setup-select-draft-ranger',
+                    kind: 'setup-select-draft',
+                    label: '选择草案 ranger',
+                    commands: [{ type: 'SELECT_DRAFT', payload: { draftId: 'ranger' } }],
+                }];
+            },
+            localPolicies: {
+                manualSetupSelectionPolicy: {
+                    id: 'manualSetupSelectionPolicy',
+                    decide: () => ({
+                        actionId: 'setup-select-draft-ranger',
+                        confidence: 0.99,
+                        reasoningSummary: '存在合法草案选择动作，但该 AI 座位开启了手动代选，应交给真人。',
+                    }),
+                },
+            },
+            defaultLocalPolicyId: 'manualSetupSelectionPolicy',
+        });
+
+        await storage.createMatch('match-watchdog-manual-setup-custom-kind-suppressed', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                        hostStarted: false,
+                    },
+                    sys: {
+                        phase: 'setup',
+                        turnNumber: 1,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: gameId,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'manualSetupSelectionPolicy', manualSetupSelection: true },
+                },
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [{
+                ...createEngineConfigWithId(gameId),
+                onlineAiRecovery: {
+                    ...createEngineConfigWithId(gameId).onlineAiRecovery,
+                    shouldTreatActionAsManualSetupSelection: ({ actionKind }) => (
+                        actionKind === 'setup-select-draft' ? true : undefined
+                    ),
+                },
+            }],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { suppressBroadcast?: boolean },
+            ) => Promise<boolean>;
+        };
+
+        await serverInternal.loadMatch('match-watchdog-manual-setup-custom-kind-suppressed');
         const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
 
         await serverInternal.runOnlineAiRecoveryTick();

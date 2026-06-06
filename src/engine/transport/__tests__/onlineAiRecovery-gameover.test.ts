@@ -144,7 +144,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result?.resolution.action.commands).toEqual([]);
     });
 
-    it('DiceThrone targetingRoll 阶段即使当前玩家是 AI，也只允许 legal-action recovery，不得走裸 ADVANCE_PHASE fallback', () => {
+    it('DiceThrone targetingRoll 阶段当前玩家为 AI 时，应先维持 active-turn recovery surface', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -178,10 +178,11 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
 
         expect(result).toMatchObject({
             playerId: '1',
-            reason: 'active-turn-legal-only',
-            legalActionOnly: true,
+            reason: 'active-turn',
         });
-        expect(result?.resolution.action.commands).toEqual([]);
+        expect(result?.resolution.action.commands).toEqual([
+            { type: 'ADVANCE_PHASE', payload: {} },
+        ]);
     });
 
     it('Splendor 即使残留了 AI seat metadata，也不得生成裸 ADVANCE_PHASE fallback', () => {

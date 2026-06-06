@@ -6744,6 +6744,106 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
+    test('真实入口应在持有凋零时通过咒缚面 combo 槽位触发并减少死亡吐息的攻击伤害', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await setupBreathOfDeathScenario(match);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const guest = asRecord(players['1']);
+                const guestStatuses = asRecord(guest.statusEffects);
+                players['1'] = {
+                    ...guest,
+                    statusEffects: {
+                        ...guestStatuses,
+                        [STATUS_IDS.WITHER]: 1,
+                    },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.WITHER, 1);
+            const breathOfDeathSlot = match.guestPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="combo"]')
+                .first();
+            await expect(breathOfDeathSlot).toHaveAttribute('data-base-ability-id', 'breath-of-death', { timeout: 10000 });
+            await expect(breathOfDeathSlot).toHaveAttribute('data-resolved-ability-id', 'breath-of-death-small', { timeout: 10000 });
+            await expect(breathOfDeathSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '216-guest-breath-of-death-wither-entry');
+
+            await breathOfDeathSlot.click();
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'breath-of-death-small',
+            });
+
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    defenderId: pendingAttack.defenderId ?? null,
+                    defenseAbilityId: pendingAttack.defenseAbilityId ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'defensiveRoll',
+                defenderId: '0',
+                defenseAbilityId: 'countermeasures',
+            });
+
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                root.core = {
+                    ...core,
+                    dice: buildDiceForValues('zhanshujia-dice', [6, 6, 6, 6], {
+                        6: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+                    }),
+                    rollCount: 1,
+                    rollLimit: 1,
+                    rollDiceCount: 4,
+                    rollConfirmed: true,
+                };
+                return state;
+            });
+            await dismissDefenseShowcaseIfPresent(match.hostPage);
+            await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '217-host-breath-of-death-wither-defense-entry');
+
+            await dispatchDiceThroneCommand(match.hostPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '0',
+                payload: {},
+            });
+
+            await waitForAttackResolved(match.matchId, match.hostPage);
+            await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.HP, 44);
+            await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.HP, 50);
+            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.POWDER_KEG, 1);
+            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
+            await waitForStatusStack(match.matchId, match.hostPage, '1', STATUS_IDS.WITHER, 1);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '218-host-breath-of-death-wither-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实入口应通过 ultimate 槽位触发并结算制胜高地的前置链', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -8861,6 +8961,109 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.HP, 50);
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.POWDER_KEG, 1);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '176-host-parley-block-cleared');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口应在攻击者带有休战时通过咒缚面 combo 槽位阻断死亡吐息的攻击伤害并在阶段结束清理状态', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await setupBreathOfDeathScenario(match);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const guest = asRecord(players['1']);
+                const guestStatuses = asRecord(guest.statusEffects);
+                players['1'] = {
+                    ...guest,
+                    statusEffects: {
+                        ...guestStatuses,
+                        [STATUS_IDS.PARLEY]: 1,
+                    },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+
+            const breathOfDeathSlot = match.guestPage
+                .locator('[data-testid="player-board-surface"] [data-ability-slot="combo"]')
+                .first();
+            await expect(breathOfDeathSlot).toHaveAttribute('data-base-ability-id', 'breath-of-death', { timeout: 10000 });
+            await expect(breathOfDeathSlot).toHaveAttribute('data-resolved-ability-id', 'breath-of-death-small', { timeout: 10000 });
+            await expect(breathOfDeathSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.PARLEY, 1);
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '219-guest-breath-of-death-parley-entry');
+
+            await breathOfDeathSlot.click();
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'breath-of-death-small',
+            });
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '1',
+                payload: {},
+            });
+
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    defenderId: pendingAttack.defenderId ?? null,
+                    defenseAbilityId: pendingAttack.defenseAbilityId ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'defensiveRoll',
+                defenderId: '0',
+                defenseAbilityId: 'countermeasures',
+            });
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                root.core = {
+                    ...core,
+                    dice: buildDiceForValues('zhanshujia-dice', [5, 5, 5, 5], {
+                        5: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+                    }),
+                    rollCount: 1,
+                    rollLimit: 1,
+                    rollDiceCount: 4,
+                    rollConfirmed: true,
+                };
+                return state;
+            });
+            await dismissDefenseShowcaseIfPresent(match.hostPage);
+            await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]')).toBeEnabled({ timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '220-host-breath-of-death-parley-defense-entry');
+
+            await dispatchDiceThroneCommand(match.hostPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '0',
+                payload: {},
+            });
+
+            await waitForAttackResolved(match.matchId, match.hostPage);
+            await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.PARLEY, 0);
+            await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.HP, 50);
+            await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.HP, 50);
+            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.POWDER_KEG, 1);
+            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '221-host-breath-of-death-parley-cleared');
         } finally {
             await cleanupDTMatch(match);
         }

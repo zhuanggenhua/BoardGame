@@ -9,8 +9,10 @@ import {
     resolveLocalAiPolicy,
     resolveLocalAiPolicyByPreference,
 } from './registry';
+import { isManualSetupSelectionEnabledForSeat } from './seatControllers';
 import type { AiLegalAction, AiResponseWindowSnapshot, AiSeatController } from './types';
 import { createScopedLogger } from '../../lib/logger';
+import { resolveCurrentDecisionPlayerId } from '../sessionContext';
 
 const DEFAULT_REMOTE_AI_TIMEOUT_MS = 3000;
 const FAST_PASS_ACTION_KINDS = new Set(['advance-phase', 'response-pass']);
@@ -78,13 +80,27 @@ export interface AiActionResolution {
 
 export type AiDispatchResult = AiActionResolution | AiBlockedResolution | AiIdleResolution;
 
-export function shouldPlayerManuallyResolveFactionSelection(
+export function shouldPlayerManuallyResolveSetupSelection(
+    engineConfig: GameEngineConfig,
+    state: MatchState<unknown>,
+    playerId: string,
     seatController: AiSeatController,
     action: AiLegalAction,
 ): boolean {
-    return seatController.type !== 'human'
-        && seatController.manualFactionSelection === true
-        && MANUAL_SETUP_SELECTION_ACTION_KINDS.has(action.kind);
+    if (!isManualSetupSelectionEnabledForSeat(seatController)) {
+        return false;
+    }
+
+    const overriddenDecision = engineConfig.onlineAiRecovery?.shouldTreatActionAsManualSetupSelection?.({
+        state,
+        playerId,
+        actionKind: action.kind,
+    });
+    if (overriddenDecision !== undefined) {
+        return overriddenDecision;
+    }
+
+    return MANUAL_SETUP_SELECTION_ACTION_KINDS.has(action.kind);
 }
 
 function shouldUseRemoteDecision(args: {
@@ -112,32 +128,11 @@ function buildAttemptKey(args: {
     interactionId?: string | null;
     responderIndex?: number | null;
 }): string {
-    const core = args.state.core as {
-        activePlayerId?: unknown;
-        currentPlayerId?: unknown;
-        currentPlayer?: unknown;
-        turnOrder?: unknown;
-        currentPlayerIndex?: unknown;
-        pendingAttack?: unknown;
-    } | undefined;
     const phase = typeof args.state.sys?.phase === 'string' ? args.state.sys.phase : '';
-    const currentPlayerId = (() => {
-        if (!core) return '';
-        if (phase === 'defensiveRoll') {
-            const pendingAttack = core.pendingAttack as { defenderId?: unknown } | undefined;
-            if (typeof pendingAttack?.defenderId === 'string') {
-                return pendingAttack.defenderId;
-            }
-        }
-        if (typeof core.activePlayerId === 'string') return core.activePlayerId;
-        if (typeof core.currentPlayerId === 'string') return core.currentPlayerId;
-        if (typeof core.currentPlayer === 'string') return core.currentPlayer;
-        if (Array.isArray(core.turnOrder) && typeof core.currentPlayerIndex === 'number') {
-            const current = core.turnOrder[core.currentPlayerIndex];
-            return typeof current === 'string' ? current : '';
-        }
-        return '';
-    })();
+    const currentPlayerId = resolveCurrentDecisionPlayerId({
+        state: args.state,
+        preferPendingAttackDefenderAsDecisionOwner: true,
+    }) ?? '';
     const legalActionIds = args.legalActions.map((item) => item.actionId).join(',');
     const stateTurnNumber = typeof args.state.sys?.turnNumber === 'number'
         ? args.state.sys.turnNumber
@@ -486,9 +481,15 @@ export async function resolveNextAiDispatch(
             source: seatController.type === 'remote-ai' ? 'online' : 'local',
             seatController,
         });
-        if (seatController.manualFactionSelection === true) {
+        if (isManualSetupSelectionEnabledForSeat(seatController)) {
             const autoActions = context.legalActions.filter((action) => (
-                !shouldPlayerManuallyResolveFactionSelection(seatController, action)
+                !shouldPlayerManuallyResolveSetupSelection(
+                    args.engineConfig,
+                    args.state,
+                    playerId,
+                    seatController,
+                    action,
+                )
             ));
             if (autoActions.length !== context.legalActions.length) {
                 if (autoActions.length === 0) {

@@ -29,7 +29,9 @@ import {
     buildAiDecisionContext,
     getAiSeatIds,
     getGameAiRuntime,
+    isManualSetupSelectionEnabledForSeat,
     resolveSeatPlayerDisplayName,
+    type ManualSetupSeatControllerLike,
 } from '../ai';
 import { extractAiInteractionSnapshot, extractAiResponseWindowSnapshot } from '../ai/snapshots';
 import type { AiInteractionSnapshot, AiResponseWindowSnapshot } from '../ai/types';
@@ -637,26 +639,38 @@ export interface GameEngineConfig<
         resolveManualSetupSelectionTakeoverPlayerId?: (args: {
             sharedState: MatchState<unknown>;
             currentPlayerId: string | null;
-            seatControllers: Record<string, {
-                type?: unknown;
-                manualFactionSelection?: unknown;
-            } | undefined>;
+            seatControllers: Record<string, ManualSetupSeatControllerLike | undefined>;
             hasManualDispatch: boolean;
         }) => string | null | undefined;
         shouldReleaseManualSetupAttemptFromSharedState?: (args: {
             sharedState: MatchState<unknown>;
             playerId: string;
-            actionKind: 'select-faction' | 'setup-select-faction' | 'setup-select-character';
+            actionKind: string;
             selectionId: string;
         }) => boolean | undefined;
         resolveManualSetupSelectionActionKindFromCommand?: (args: {
             type: string;
             payload: unknown;
-        }) => 'select-faction' | 'setup-select-faction' | 'setup-select-character' | null | undefined;
+        }) => string | null | undefined;
         resolveManualSetupSelectionId?: (args: {
-            actionKind: 'select-faction' | 'setup-select-faction' | 'setup-select-character';
+            actionKind: string;
             payload: unknown;
         }) => string | null | undefined;
+        shouldAwaitManualSetupSharedConfirmation?: (args: {
+            playerId: string;
+            actionKind: string;
+            selectionId: string | null;
+        }) => boolean | undefined;
+        buildPregameSelectionProgressSignature?: (args: {
+            state: MatchState<unknown>;
+            phase: string;
+            fallbackSignature: string;
+        }) => string | null | undefined;
+        shouldTreatActionAsManualSetupSelection?: (args: {
+            state: MatchState<unknown>;
+            playerId: string;
+            actionKind: string;
+        }) => boolean | undefined;
         buildInteractionRecoveryFingerprintHint?: (args: {
             state: MatchState<unknown>;
             playerId: string;
@@ -1527,13 +1541,13 @@ export class GameTransportServer {
         };
     }
 
-    private async shouldSuppressOnlineAiWatchdogForManualFactionSelection(
+    private async shouldSuppressOnlineAiWatchdogForManualSetupSelection(
         match: ActiveMatch,
         playerId: string,
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<boolean> {
         const seatController = seatControllers[playerId];
-        if (!seatController || seatController.type === 'human' || seatController.manualFactionSelection !== true) {
+        if (!isManualSetupSelectionEnabledForSeat(seatController)) {
             return false;
         }
 
@@ -1555,7 +1569,13 @@ export class GameTransportServer {
         }).legalActions;
 
         return legalActions.length > 0
-            && legalActions.every((action) => aiModule.shouldPlayerManuallyResolveFactionSelection(seatController, action));
+            && legalActions.every((action) => aiModule.shouldPlayerManuallyResolveSetupSelection(
+                match.engineConfig,
+                match.state,
+                playerId,
+                seatController,
+                action,
+            ));
     }
 
     private buildOnlineAiRecoveryFingerprint(
@@ -1597,7 +1617,7 @@ export class GameTransportServer {
         }
 
         if ((candidate.reason === 'active-turn-legal-only' || candidate.reason === 'seat-legal-only')
-            && await this.shouldSuppressOnlineAiWatchdogForManualFactionSelection(
+            && await this.shouldSuppressOnlineAiWatchdogForManualSetupSelection(
                 match,
                 candidate.playerId,
                 seatControllers,

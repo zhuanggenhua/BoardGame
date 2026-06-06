@@ -1,6 +1,7 @@
 import type { MatchState } from '../types';
 import type { AiSeatController } from '../ai';
 import { createScopedLogger } from '../../lib/logger';
+import { resolveCurrentTurnPlayerId } from '../sessionContext';
 
 const localAiPerfLogger = createScopedLogger('LOCAL_AI_PERF');
 const aiRuntimeTruthLogger = createScopedLogger('AI_RUNTIME_TRUTH');
@@ -56,30 +57,7 @@ export function summarizeSeatControllerTypes(
 }
 
 export function resolveCoreCurrentPlayerId(core: unknown): string | null {
-    if (!core || typeof core !== 'object') {
-        return null;
-    }
-    const typedCore = core as {
-        activePlayerId?: unknown;
-        currentPlayerId?: unknown;
-        currentPlayer?: unknown;
-        turnOrder?: unknown;
-        currentPlayerIndex?: unknown;
-    };
-    if (typeof typedCore.activePlayerId === 'string') {
-        return typedCore.activePlayerId;
-    }
-    if (typeof typedCore.currentPlayerId === 'string') {
-        return typedCore.currentPlayerId;
-    }
-    if (typeof typedCore.currentPlayer === 'string') {
-        return typedCore.currentPlayer;
-    }
-    if (Array.isArray(typedCore.turnOrder) && typeof typedCore.currentPlayerIndex === 'number') {
-        const indexedPlayerId = typedCore.turnOrder[typedCore.currentPlayerIndex];
-        return typeof indexedPlayerId === 'string' ? indexedPlayerId : null;
-    }
-    return null;
+    return resolveCurrentTurnPlayerId(core);
 }
 
 export function ensureLocalAiTurnTimeline(args: {

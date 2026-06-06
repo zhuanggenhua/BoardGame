@@ -719,6 +719,7 @@ describe('AI seat controller helpers', () => {
             },
         });
 
+        expect(search.get('seat1ManualSetup')).toBe('1');
         expect(search.get('seat1ManualFaction')).toBe('1');
 
         const controllers = resolveSeatControllersFromSearchParams({
@@ -729,6 +730,22 @@ describe('AI seat controller helpers', () => {
         expect(controllers['1']).toEqual({
             type: 'local-ai',
             difficulty: 'normal',
+            manualSetupSelection: true,
+            manualFactionSelection: true,
+        });
+    });
+
+    it('本地对局 URL 解析也应接受通用的 seatNManualSetup 参数别名', () => {
+        const searchParams = new URLSearchParams('seat1=local-ai&seat1ManualSetup=1');
+        const controllers = resolveSeatControllersFromSearchParams({
+            numPlayers: 2,
+            searchParams,
+            aiSupport,
+        });
+
+        expect(controllers['1']).toEqual({
+            type: 'local-ai',
+            manualSetupSelection: true,
             manualFactionSelection: true,
         });
     });

@@ -8,14 +8,13 @@ import {
     resolveManualSetupSelectionActionKindFromCommand,
     resolveManualSetupSelectionId,
     shouldReleaseManualSetupAttemptFromSharedState,
-    type ManualSetupSelectionActionKind,
 } from './matchManualSetup';
 
 export type ManualAiSeatDispatch = (playerId: string, type: string, payload: unknown) => boolean;
 
 type PendingManualSetupSelection = {
     playerId: string;
-    actionKind: ManualSetupSelectionActionKind;
+    actionKind: string;
     selectionId: string;
 };
 

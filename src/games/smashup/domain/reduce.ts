@@ -56,6 +56,11 @@ import type {
 import type { PlayerId } from '../../../engine/types';
 import { SU_EVENTS, SU_EVENT_TYPES, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from './types';
 import { getBaseDef, getMinionDef, getCardDef, getFactionTitan } from '../data/cards';
+import {
+    buildCardInstanceFromObjectRef,
+    enrichCardInstanceWithObjectRef,
+    getCardTransferObjectRef,
+} from './objectProvenance';
 import { canControllerPlayTitan, hasCthulhuExpansionFaction } from './abilityHelpers';
 import { normalizeScoringEligibleBaseIndices } from './ongoingModifiers';
 import {
@@ -3032,6 +3037,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const fromPlayer = state.players[fromPlayerId];
             const toPlayer = state.players[toPlayerId];
             if (!fromPlayer || !toPlayer) return state;
+            const transferRef = getCardTransferObjectRef((event as CardTransferredEvent).payload);
 
             let found: CardInstance | undefined;
             const removeCard = (cards: CardInstance[]): CardInstance[] => {
@@ -3091,16 +3097,19 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 });
             }
 
-            if (!found && ownerId === undefined) return state;
+            if (!found && !transferRef && ownerId === undefined) return state;
 
             const def = getCardDef(defId);
-            const resolvedOwnerId = found?.owner ?? ownerId ?? fromPlayerId;
-            const card: CardInstance = found ?? {
-                uid: cardUid,
-                defId,
-                type: def?.type ?? 'minion',
-                owner: resolvedOwnerId,
-            };
+            const card: CardInstance = found
+                ? enrichCardInstanceWithObjectRef(found, transferRef)
+                : transferRef
+                    ? buildCardInstanceFromObjectRef(transferRef)
+                    : {
+                        uid: cardUid,
+                        defId,
+                        type: def?.type ?? 'minion',
+                        owner: ownerId ?? fromPlayerId,
+                    };
             const movedFromAndToSamePlayer = fromPlayerId === toPlayerId;
             let updatedPlayers = movedFromAndToSamePlayer
                 ? {

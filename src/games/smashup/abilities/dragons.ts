@@ -23,6 +23,7 @@ import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from 
 import { registerBaseAbilitySuppression, registerBaseVpModifier, registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import { reduce } from '../domain/reduce';
+import { createCardObjectRefFromInstance, createCardTransferEvent } from '../domain/objectProvenance';
 import type { ActionCardDef, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
@@ -584,17 +585,13 @@ const flankAttackChooseCardPromptProgram = createPromptProgram<FlankAttackPrompt
         } else {
             const liveCard = player.discard.find((card) => card.uid === selected.cardUid && card.defId === defId);
             if (!liveCard) return { events: [] };
-            events.push({
-                type: SU_EVENTS.CARD_TRANSFERRED,
-                payload: {
-                    cardUid: selected.cardUid,
-                    defId,
-                    fromPlayerId: playerId,
-                    toPlayerId: playerId,
-                    reason: 'dragons_flank_attack',
-                },
+            events.push(createCardTransferEvent({
+                card: createCardObjectRefFromInstance(liveCard),
+                fromPlayerId: playerId,
+                toPlayerId: playerId,
+                reason: 'dragons_flank_attack',
                 timestamp,
-            } as SmashUpEvent);
+            }) as SmashUpEvent);
 
             if (context.searchScope === 'both' && player.deck.length > 0) {
                 const shuffledDeck = random.shuffle([...player.deck]);

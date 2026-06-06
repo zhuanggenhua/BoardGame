@@ -32,7 +32,6 @@ import {
     onlineAiPerfLogger,
 } from './onlineAiRuntimeSupport';
 import {
-    isManualSetupSelectionActionKind,
     resolveManualSetupAttemptReleaseSource,
     resolveManualSetupSelectionId,
     shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt,
@@ -132,10 +131,11 @@ function resolveOnlineAiAttemptReleaseStage(args: {
     selectionId: string | null;
     engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
 }): OnlineAiAttemptReleaseStage | null {
-    if (!shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt(args.actionKind)) {
-        return null;
-    }
-    if (!isManualSetupSelectionActionKind(args.actionKind)) {
+    if (!shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt(args.actionKind, {
+        playerId: args.playerId,
+        selectionId: args.selectionId,
+        engineConfig: args.engineConfig,
+    })) {
         return null;
     }
     const releaseSource = resolveManualSetupAttemptReleaseSource({
@@ -358,6 +358,7 @@ function releaseConfirmedOnlineAiAttempt(args: OnlineAiActiveAttemptLifecycleArg
         playerId: activeAttempt.playerId,
         actionKind: activeAttempt.actionKind,
         selectionId: activeAttempt.pendingSelectionId,
+        engineConfig,
     });
     if (!releaseStage) {
         return;

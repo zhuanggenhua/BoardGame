@@ -33,6 +33,11 @@ import { SU_COMMANDS, SU_EVENTS, type ActionCardDef, type FusionCardDef } from '
 import { reduce } from '../domain/reduce';
 import { execute } from '../domain/reducer';
 import {
+    createCardObjectRef,
+    createCardObjectRefFromInstance,
+    createCardTransferEvent,
+} from '../domain/objectProvenance';
+import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
     getPlayerLabel,
@@ -522,17 +527,17 @@ function buildGeeksMinMaxingBorrowEvent(
     defId: string,
     now: number,
 ): SmashUpEvent {
-    return {
-        type: SU_EVENTS.CARD_TRANSFERRED,
-        payload: {
-            cardUid,
+    return createCardTransferEvent({
+        card: createCardObjectRef({
+            uid: cardUid,
             defId,
-            fromPlayerId: targetPlayerId,
-            toPlayerId: playerId,
-            reason: 'geeks_min_maxing',
-        },
+            ownerId: targetPlayerId,
+        }),
+        fromPlayerId: targetPlayerId,
+        toPlayerId: playerId,
+        reason: 'geeks_min_maxing',
         timestamp: now,
-    };
+    });
 }
 
 function buildGeeksMinMaxingPreparedMatchState(
@@ -2401,24 +2406,20 @@ export function registerGeekAbilities(): void {
         if (!cardUid || !defId || !ownerId) {
             return { state, events: [] };
         }
-        const inDiscard = state.core.players[ownerId]?.discard.some((card) => card.uid === cardUid && card.defId === defId) ?? false;
-        if (!inDiscard) {
+        const discardCard = state.core.players[ownerId]?.discard.find((card) => card.uid === cardUid && card.defId === defId);
+        if (!discardCard) {
             return { state, events: [] };
         }
 
         return {
             state,
-            events: [{
-                type: SU_EVENTS.CARD_TRANSFERRED,
-                payload: {
-                    cardUid,
-                    defId,
-                    fromPlayerId: ownerId,
-                    toPlayerId: ownerId,
-                    reason,
-                },
+            events: [createCardTransferEvent({
+                card: createCardObjectRefFromInstance(discardCard),
+                fromPlayerId: ownerId,
+                toPlayerId: ownerId,
+                reason,
                 timestamp,
-            }],
+            })],
         };
     });
     registerTrigger('geeks_cosplay', 'onVpAwarded', geeksCosplayTrigger, {

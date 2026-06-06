@@ -1211,19 +1211,22 @@ const MinionCard: React.FC<{
             attachedOverlayHideTimerRef.current = null;
         }
     }, []);
+    const notifyAttachedOverlayVisibilityChange = React.useEffectEvent((visible: boolean) => {
+        onAttachedOverlayVisibilityChange?.(visible);
+    });
     const setAttachedOverlayPinnedState = useCallback((visible: boolean) => {
         clearAttachedOverlayHideTimer();
         setIsAttachedOverlayPinned(visible);
-        onAttachedOverlayVisibilityChange?.(visible);
-    }, [clearAttachedOverlayHideTimer, onAttachedOverlayVisibilityChange]);
+        notifyAttachedOverlayVisibilityChange(visible);
+    }, [clearAttachedOverlayHideTimer, notifyAttachedOverlayVisibilityChange]);
     const scheduleAttachedOverlayHide = useCallback(() => {
         if (shouldShowAttachedActions) return;
         clearAttachedOverlayHideTimer();
         attachedOverlayHideTimerRef.current = window.setTimeout(() => {
             setIsAttachedOverlayPinned(false);
-            onAttachedOverlayVisibilityChange?.(false);
+            notifyAttachedOverlayVisibilityChange(false);
         }, 140);
-    }, [clearAttachedOverlayHideTimer, onAttachedOverlayVisibilityChange, shouldShowAttachedActions]);
+    }, [clearAttachedOverlayHideTimer, notifyAttachedOverlayVisibilityChange, shouldShowAttachedActions]);
     const isAttachedOverlayVisible = hasAttachedActions && (shouldShowAttachedActions || isAttachedOverlayPinned);
 
     React.useEffect(() => {
@@ -1235,14 +1238,14 @@ const MinionCard: React.FC<{
             setAttachedOverlayPinnedState(true);
         } else {
             setIsAttachedOverlayPinned(false);
-            onAttachedOverlayVisibilityChange?.(false);
+            notifyAttachedOverlayVisibilityChange(false);
         }
-    }, [hasAttachedActions, onAttachedOverlayVisibilityChange, setAttachedOverlayPinnedState, shouldShowAttachedActions]);
+    }, [hasAttachedActions, notifyAttachedOverlayVisibilityChange, setAttachedOverlayPinnedState, shouldShowAttachedActions]);
 
     React.useEffect(() => () => {
         clearAttachedOverlayHideTimer();
-        onAttachedOverlayVisibilityChange?.(false);
-    }, [clearAttachedOverlayHideTimer, onAttachedOverlayVisibilityChange]);
+        notifyAttachedOverlayVisibilityChange(false);
+    }, [clearAttachedOverlayHideTimer, notifyAttachedOverlayVisibilityChange]);
 
     const seed = minion.uid.charCodeAt(0) + index;
     const rotation = (seed % 6) - 3;
@@ -1427,14 +1430,16 @@ const MinionCard: React.FC<{
                 animate={rotationAnimate}
                 transition={rotationTransition}
             >
-                <div className="w-full h-full bg-slate-100 relative overflow-hidden">
-                    <CardPreview
-                        previewRef={genericDef?.previewRef
-                            ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: minion.defId, cardUid: minion.uid } }
-                            : undefined}
-                    className="w-full h-full"
-                        title={minionTitle}
-                    />
+                <div className="w-full h-full bg-slate-100 relative">
+                    <div className="w-full h-full overflow-hidden">
+                        <CardPreview
+                            previewRef={genericDef?.previewRef
+                                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: minion.defId, cardUid: minion.uid } }
+                                : undefined}
+                            className="w-full h-full"
+                            title={minionTitle}
+                        />
+                    </div>
 
                 {/* 多选已选中勾选标记 */}
                 {isMultiSelected && (
@@ -1454,166 +1459,163 @@ const MinionCard: React.FC<{
                         style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.6) 0%, transparent 70%)' }}
                     />
                 )}
+                    {/* 放大镜按钮 - 必须挂在随从变形层内，避免 hover/rotate 后像“脱卡” */}
+                    {showDesktopInspectButton && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onView(); }}
+                            className="absolute top-[0.15vw] right-[0.15vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg z-[110] cursor-zoom-in"
+                        >
+                            <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    )}
+
+                    {/* 力量增幅徽章 - 增益绿色/减益红色（左上角），仅有变化时显示 */}
+                    {(effectivePower !== minion.basePower) && (
+                        <div
+                            className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] z-30 ${
+                                effectivePower > minion.basePower ? 'bg-green-600' :
+                                effectivePower < minion.basePower ? 'bg-red-600' :
+                                'bg-slate-700'
+                            }`}
+                            title={(() => {
+                                const bd = getEffectivePowerBreakdown(core, minion, baseIndex);
+                                const parts = [`基础: ${bd.basePower}`];
+                                if (bd.powerCounters !== 0) parts.push(`力量指示物: ${bd.powerCounters > 0 ? '+' : ''}${bd.powerCounters}`);
+                                if (bd.permanentModifier !== 0) parts.push(`永久修正: ${bd.permanentModifier > 0 ? '+' : ''}${bd.permanentModifier}`);
+                                if (bd.tempModifier !== 0) parts.push(`临时: ${bd.tempModifier > 0 ? '+' : ''}${bd.tempModifier}`);
+                                if (bd.ongoingDetails.length > 0) {
+                                    for (const d of bd.ongoingDetails) parts.push(`${d.sourceName}: ${d.value > 0 ? '+' : ''}${d.value}`);
+                                }
+                                parts.push(`= ${bd.finalPower}`);
+                                return parts.join('\n');
+                            })()}
+                        >
+                            {effectivePower === minion.basePower
+                                ? effectivePower
+                                : `${effectivePower > minion.basePower ? '+' : ''}${effectivePower - minion.basePower}`}
+                        </div>
+                    )}
+
+                    {/* +1力量指示物徽章（左侧，力量增幅下方） */}
+                    {(minion.powerCounters ?? 0) > 0 && (
+                        <motion.div
+                            className={`absolute -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white px-[0.1vw] z-30 ${
+                                (effectivePower !== minion.basePower) ? 'top-[1vw]' : '-top-[0.4vw]'
+                            }`}
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                            title={`+1力量指示物 ×${minion.powerCounters}`}
+                        >
+                            +{minion.powerCounters}
+                        </motion.div>
+                    )}
+
+                    {/* 天赋已使用标记 */}
+                    {hasTalent && minion.talentUsed && !canUseTalent && (
+                        <UsedStateBadge label={t('ui.talent_used')} insetClassName="left-[0.2vw] right-[0.2vw]" />
+                    )}
+
+                    {/* 附着的 ongoing 行动卡 - 跟随随从变形层，避免缩放/旋转后看起来脱离宿主 */}
+                    {showTouchActivationHint && (
+                        <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-20 whitespace-nowrap pointer-events-none">
+                            {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
+                        </div>
+                    )}
+                    {hasAttachedActions && (
+                        <>
+                            <AttachedBadge count={minion.attachedActions.length} />
+                            <div
+                                data-attached-overlay-owner={minion.uid}
+                                className={`absolute top-0 flex ${attachedActionsPositionClass}
+                                    ${isAttachedOverlayVisible
+                                        ? 'opacity-100 scale-100 pointer-events-auto'
+                                        : 'opacity-0 scale-90 transition-all duration-150 pointer-events-none'
+                                    }`}
+                                style={{ zIndex: UI_Z_INDEX.tooltip, gap: layoutInlineSize(0.2, layout) }}
+                                onMouseEnter={() => {
+                                    if (!shouldShowAttachedActions) {
+                                        setAttachedOverlayPinnedState(true);
+                                    }
+                                }}
+                                onMouseLeave={() => {
+                                    if (!shouldShowAttachedActions) {
+                                        scheduleAttachedOverlayHide();
+                                    }
+                                }}
+                            >
+                                {minion.attachedActions.map((aa) => {
+                                    const actionDef = getCardDef(aa.defId);
+                                    const actionName = resolveCardName(actionDef, t) || aa.defId;
+                                    const actionText = resolveCardText(actionDef, t);
+                                    const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
+                                    const isSelectableAA = !!selectableOngoingUids?.has(aa.uid);
+                                    const isDimmedAA = !!selectableOngoingUids && !selectableOngoingUids.has(aa.uid);
+                                    const hasAATalent = actionDef?.abilityTags?.includes('talent') ?? false;
+                                    const canUseAATalent = !!usableOngoingTalentUids?.has(aa.uid);
+                                    const attachedActivationKey = `attached-${aa.uid}`;
+                                    const isAttachedActivationArmed = isActivationArmed(attachedActivationKey);
+                                    const showUsedAttachedState = hasAATalent && aa.talentUsed && !canUseAATalent;
+                                    return (
+                                        <motion.div
+                                            key={aa.uid}
+                                            data-attached-action-uid={aa.uid}
+                                            data-activation-armed={isAttachedActivationArmed ? 'true' : 'false'}
+                                            {...getAttachedTouchInspectProps(`attached-${aa.uid}`, { defId: aa.defId })}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (shouldBlockAttachedClick(`attached-${aa.uid}`)) return;
+                                                if (isSelectableAA && onOngoingSelect) {
+                                                    clearArmedActivation();
+                                                    onOngoingSelect(aa.uid);
+                                                } else if (canUseAATalent) {
+                                                    clearArmedActivation();
+                                                    dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: aa.uid, baseIndex });
+                                                } else {
+                                                    clearArmedActivation();
+                                                    onViewAction(aa.defId);
+                                                }
+                                            }}
+                                            className={`aspect-[0.714] bg-white rounded-[0.1vw] shadow-lg cursor-pointer
+                                                hover:scale-[2] ${shouldShowAttachedLeft ? 'hover:-translate-x-[0.8vw]' : 'hover:translate-x-[0.8vw]'} transition-transform duration-150
+                                                border-[0.08vw] ${isDimmedAA
+                                                    ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'
+                                                    : isSelectableAA
+                                                    ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_10px_rgba(74,222,128,0.55)]'
+                                                    : isAttachedActivationArmed
+                                                    ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.75)]'
+                                                    : canUseAATalent
+                                                    ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]'
+                                                    : showUsedAttachedState
+                                                    ? USED_STATE_CLASS
+                                                    : 'border-green-300 ring-1 ring-green-300/65 shadow-[0_0_10px_rgba(134,239,172,0.18)]'
+                                                }`}
+                                            style={{
+                                                width: layoutInlineSize(3, layout),
+                                                height: layoutCardHeight(3, layout),
+                                                aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
+                                            }}
+                                            title={actionTitle}
+                                        >
+                                            <div className="w-full h-full overflow-hidden rounded-[0.06vw]">
+                                                <CardPreview
+                                                    previewRef={actionDef?.previewRef
+                                                        ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: aa.defId, cardUid: aa.uid, disableHoverOverlay: true } }
+                                                        : undefined}
+                                                    className="w-full h-full"
+                                                    title={actionName}
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
                 </div>
             </motion.div>
-            {/* 放大镜按钮 - hover 时显示在右上角，z-[110] 确保不被 hover 容器盖住 */}
-            {showDesktopInspectButton && (
-                <button
-                    onClick={(e) => { e.stopPropagation(); onView(); }}
-                    className="absolute top-[0.15vw] right-[0.15vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg z-[110] cursor-zoom-in"
-                >
-                    <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                    </svg>
-                </button>
-            )}
-
-            {/* 力量增幅徽章 - 增益绿色/减益红色（左上角），仅有变化时显示 */}
-            {(effectivePower !== minion.basePower) && (
-                <div
-                    className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] z-30 ${
-                        effectivePower > minion.basePower ? 'bg-green-600' :
-                        effectivePower < minion.basePower ? 'bg-red-600' :
-                        'bg-slate-700'
-                    }`}
-                    title={(() => {
-                        const bd = getEffectivePowerBreakdown(core, minion, baseIndex);
-                        const parts = [`基础: ${bd.basePower}`];
-                        if (bd.powerCounters !== 0) parts.push(`力量指示物: ${bd.powerCounters > 0 ? '+' : ''}${bd.powerCounters}`);
-                        if (bd.permanentModifier !== 0) parts.push(`永久修正: ${bd.permanentModifier > 0 ? '+' : ''}${bd.permanentModifier}`);
-                        if (bd.tempModifier !== 0) parts.push(`临时: ${bd.tempModifier > 0 ? '+' : ''}${bd.tempModifier}`);
-                        if (bd.ongoingDetails.length > 0) {
-                            for (const d of bd.ongoingDetails) parts.push(`${d.sourceName}: ${d.value > 0 ? '+' : ''}${d.value}`);
-                        }
-                        parts.push(`= ${bd.finalPower}`);
-                        return parts.join('\n');
-                    })()}
-                >
-                    {effectivePower === minion.basePower
-                        ? effectivePower
-                        : `${effectivePower > minion.basePower ? '+' : ''}${effectivePower - minion.basePower}`}
-                </div>
-            )}
-
-            {/* +1力量指示物徽章（左侧，力量增幅下方） */}
-            {(minion.powerCounters ?? 0) > 0 && (
-                <motion.div
-                    className={`absolute -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white px-[0.1vw] z-30 ${
-                        (effectivePower !== minion.basePower) ? 'top-[1vw]' : '-top-[0.4vw]'
-                    }`}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                    title={`+1力量指示物 ×${minion.powerCounters}`}
-                >
-                    +{minion.powerCounters}
-                </motion.div>
-            )}
-
-            {/* 天赋已使用标记 */}
-            {hasTalent && minion.talentUsed && !canUseTalent && (
-                <UsedStateBadge label={t('ui.talent_used')} insetClassName="left-[0.2vw] right-[0.2vw]" />
-            )}
-
-            {/* 附着的 ongoing 行动卡 - 角标 + hover 时弹出小卡片 */}
-            {showTouchActivationHint && (
-                <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-20 whitespace-nowrap pointer-events-none">
-                    {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
-                </div>
-            )}
-            {hasAttachedActions && (
-                <>
-                    <AttachedBadge count={minion.attachedActions.length} />
-                    {/* hover 随从时显示的小卡片列，高 z-index 避免被相邻随从遮挡 */}
-                    {/* 行动卡选择模式下始终显示（不需要 hover） */}
-                    {/* 最右侧基地的最右边玩家：显示在左侧；其他：显示在右侧 */}
-                    <div
-                        data-attached-overlay-owner={minion.uid}
-                        className={`absolute top-0 flex ${attachedActionsPositionClass}
-                            ${isAttachedOverlayVisible
-                                ? 'opacity-100 scale-100 pointer-events-auto'
-                                : 'opacity-0 scale-90 transition-all duration-150 pointer-events-none'
-                            }`}
-                        style={{ zIndex: UI_Z_INDEX.tooltip, gap: layoutInlineSize(0.2, layout) }}
-                        onMouseEnter={() => {
-                            if (!shouldShowAttachedActions) {
-                                setAttachedOverlayPinnedState(true);
-                            }
-                        }}
-                        onMouseLeave={() => {
-                            if (!shouldShowAttachedActions) {
-                                scheduleAttachedOverlayHide();
-                            }
-                        }}
-                    >
-                        {minion.attachedActions.map((aa) => {
-                            const actionDef = getCardDef(aa.defId);
-                            const actionName = resolveCardName(actionDef, t) || aa.defId;
-                            const actionText = resolveCardText(actionDef, t);
-                            const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
-                            const isSelectableAA = !!selectableOngoingUids?.has(aa.uid);
-                            const isDimmedAA = !!selectableOngoingUids && !selectableOngoingUids.has(aa.uid);
-                            const hasAATalent = actionDef?.abilityTags?.includes('talent') ?? false;
-                            const canUseAATalent = !!usableOngoingTalentUids?.has(aa.uid);
-                            const attachedActivationKey = `attached-${aa.uid}`;
-                            const isAttachedActivationArmed = isActivationArmed(attachedActivationKey);
-                            const showUsedAttachedState = hasAATalent && aa.talentUsed && !canUseAATalent;
-                            return (
-                                <motion.div
-                                    key={aa.uid}
-                                    data-attached-action-uid={aa.uid}
-                                    data-activation-armed={isAttachedActivationArmed ? 'true' : 'false'}
-                                    {...getAttachedTouchInspectProps(`attached-${aa.uid}`, { defId: aa.defId })}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (shouldBlockAttachedClick(`attached-${aa.uid}`)) return;
-                                        if (isSelectableAA && onOngoingSelect) {
-                                            clearArmedActivation();
-                                            onOngoingSelect(aa.uid);
-                                        } else if (canUseAATalent) {
-                                            clearArmedActivation();
-                                            dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: aa.uid, baseIndex });
-                                        } else {
-                                            clearArmedActivation();
-                                            onViewAction(aa.defId);
-                                        }
-                                    }}
-                                    className={`aspect-[0.714] bg-white rounded-[0.1vw] shadow-lg cursor-pointer
-                                        hover:scale-[2] ${shouldShowAttachedLeft ? 'hover:-translate-x-[0.8vw]' : 'hover:translate-x-[0.8vw]'} transition-transform duration-150
-                                        border-[0.08vw] ${isDimmedAA
-                                            ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'
-                                            : isSelectableAA
-                                            ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_10px_rgba(74,222,128,0.55)]'
-                                            : isAttachedActivationArmed
-                                            ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.75)]'
-                                            : canUseAATalent
-                                            ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]'
-                                            : showUsedAttachedState
-                                            ? USED_STATE_CLASS
-                                            : 'border-green-300 ring-1 ring-green-300/65 shadow-[0_0_10px_rgba(134,239,172,0.18)]'
-                                        }`}
-                                    style={{
-                                        width: layoutInlineSize(3, layout),
-                                        height: layoutCardHeight(3, layout),
-                                        aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
-                                    }}
-                                    title={actionTitle}
-                                >
-                                    <div className="w-full h-full overflow-hidden rounded-[0.06vw]">
-                                        <CardPreview
-                                            previewRef={actionDef?.previewRef
-                                                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: aa.defId, cardUid: aa.uid, disableHoverOverlay: true } }
-                                                : undefined}
-                                            className="w-full h-full"
-                                            title={actionName}
-                                        />
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-                </>
-            )}
         </motion.div>
     );
 };

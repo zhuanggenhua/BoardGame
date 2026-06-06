@@ -307,11 +307,30 @@ export interface BaseCardDef {
 // ============================================================================
 
 /** 卡牌实例（运行时唯一） */
+export interface SmashUpCardZoneDestination {
+    zone: 'discard';
+    playerId: PlayerId;
+}
+
+export interface SmashUpCardProvenanceSnapshot {
+    ownerId: PlayerId;
+    defaultDestination: SmashUpCardZoneDestination;
+    sourceControllerId?: PlayerId;
+}
+
+export interface SmashUpCardObjectRef {
+    uid: string;
+    defId: string;
+    type?: CardType;
+    provenance: SmashUpCardProvenanceSnapshot;
+}
+
 export interface CardInstance {
     uid: string;
     defId: string;
     type: CardType;
     owner: PlayerId;
+    provenance?: SmashUpCardProvenanceSnapshot;
 }
 
 /** 基地上的随从 */
@@ -1829,6 +1848,7 @@ export interface CardTransferredEvent extends GameEvent<typeof SU_EVENTS.CARD_TR
         fromPlayerId: PlayerId;
         toPlayerId: PlayerId;
         ownerId?: PlayerId;
+        objectRef?: SmashUpCardObjectRef;
         reason: string;
     };
 }

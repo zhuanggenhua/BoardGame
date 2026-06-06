@@ -54,7 +54,11 @@ import { diceThroneFlowHooks } from './domain/flowHooks';
 import { isCardPlayableInResponseWindow } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { ASSETS } from './ui/assets';
-import { registerGameAiRuntime } from '../../engine/ai';
+import {
+    isManualSetupSelectionEnabledForSeat,
+    registerGameAiRuntime,
+    type ManualSetupSeatControllerLike,
+} from '../../engine/ai';
 import { diceThroneAiRuntime } from './ai';
 import { resolveDiceThroneLocalPregameControlledPlayerId } from './localPregameControl';
 
@@ -1469,10 +1473,7 @@ const resolveDiceThroneOnlineAiCurrentPlayerId = (args: {
 const resolveDiceThroneManualSetupSelectionTakeoverPlayerId = (args: {
     sharedState: MatchState<unknown>;
     currentPlayerId: string | null;
-    seatControllers: Record<string, {
-        type?: unknown;
-        manualFactionSelection?: unknown;
-    } | undefined>;
+    seatControllers: Record<string, ManualSetupSeatControllerLike | undefined>;
     hasManualDispatch: boolean;
 }): string | null => {
     if (!args.hasManualDispatch) {
@@ -1480,7 +1481,7 @@ const resolveDiceThroneManualSetupSelectionTakeoverPlayerId = (args: {
     }
 
     const manualAiSeatIds = Object.entries(args.seatControllers)
-        .filter(([, controller]) => controller?.type !== 'human' && controller?.manualFactionSelection === true)
+        .filter(([, controller]) => isManualSetupSelectionEnabledForSeat(controller))
         .map(([playerId]) => playerId);
     if (manualAiSeatIds.length === 0) {
         return null;
@@ -1511,7 +1512,7 @@ const resolveDiceThroneManualSetupSelectionTakeoverPlayerId = (args: {
 const shouldReleaseDiceThroneManualSetupAttemptFromSharedState = (args: {
     sharedState: MatchState<unknown>;
     playerId: string;
-    actionKind: 'select-faction' | 'setup-select-faction' | 'setup-select-character';
+    actionKind: string;
     selectionId: string;
 }): boolean | undefined => {
     if (args.actionKind !== 'setup-select-character') {

@@ -63,6 +63,7 @@ import type { PlayerId } from '../../../engine/types';
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
 import { getMinionDef, getMinionLikePower, getCardDef, getBaseDefIdsForFactions, getFusionDef } from '../data/cards';
 import type { ActionCardDef, FusionCardDef } from './types';
+import { buildCardInstanceFromObjectRef, getCardTransferObjectRef } from './objectProvenance';
 import { buildDeck, drawCards, getActionLikeResponseWindowTiming, isCardMinionLike, matchesDefId } from './utils';
 import { autoMulligan } from '../../../engine/primitives/mulligan';
 import { maybeQueueStartingHandMulliganPrompt } from './mulliganHandlers';
@@ -2011,6 +2012,10 @@ export function processReturnToHandTriggers(
                     owner: minion.owner,
                 };
             }
+        }
+        const transferRef = getCardTransferObjectRef(event.payload);
+        if (transferRef && (transferRef.type === 'minion' || getCardDef(transferRef.defId)?.type === 'minion')) {
+            return buildCardInstanceFromObjectRef(transferRef);
         }
         return undefined;
     };

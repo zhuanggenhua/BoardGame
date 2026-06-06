@@ -14,7 +14,11 @@ import { getOrCreateGuestId, getGuestName as resolveGuestName } from '../../../.
 import { UI_Z_INDEX } from '../../../../core';
 import { useToast } from '../../../../contexts/ToastContext';
 import { copyToClipboard } from '../../../../lib/utils';
-import { DEFAULT_LOCAL_AI_DIFFICULTY, resolveSeatControllersFromSearchParams } from '../../../../engine/ai';
+import {
+    DEFAULT_LOCAL_AI_DIFFICULTY,
+    isManualSetupSelectionEnabledForSeat,
+    resolveSeatControllersFromSearchParams,
+} from '../../../../engine/ai';
 import { useRuntimeViewport } from '../../../../hooks/ui/useRuntimeViewport';
 import type { GameManifestAiSupport } from '../../../../games/manifest.types';
 
@@ -209,9 +213,10 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
         policyId?: string;
         providerId?: string;
         difficulty?: string;
+        manualSetupSelection?: boolean;
         manualFactionSelection?: boolean;
     }) => {
-        const manualFactionSuffix = controller.manualFactionSelection
+        const manualFactionSuffix = isManualSetupSelectionEnabledForSeat(controller)
             ? ` · ${t('lobby:createRoom.aiManualFactionSelection')}`
             : '';
         if (controller.type === 'local-ai') {

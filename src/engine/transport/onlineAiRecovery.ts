@@ -1,5 +1,6 @@
 import type { AiResolution, AiSeatController } from '../ai';
 import type { MatchState } from '../types';
+import { resolveCurrentTurnPlayerIdFromState } from '../sessionContext';
 import type { GameEngineConfig } from './server';
 import {
     shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice,
@@ -144,23 +145,7 @@ export function shouldSilentlyRetryOnlineAiBatchRejection(reason: string): boole
 // Raw fallback only. Online AI behavior code should prefer resolveOnlineAiCurrentPlayerId()
 // whenever engineConfig.onlineAiRecovery may redefine whose turn/seat currently owns recovery.
 export function resolveCurrentPlayerId(sharedState: MatchState<unknown> | null | undefined): string | null {
-    const core = sharedState?.core as {
-        activePlayerId?: unknown;
-        currentPlayerId?: unknown;
-        currentPlayer?: unknown;
-        turnOrder?: unknown;
-        currentPlayerIndex?: unknown;
-    } | undefined;
-    if (!core) return null;
-
-    if (typeof core.activePlayerId === 'string') return core.activePlayerId;
-    if (typeof core.currentPlayerId === 'string') return core.currentPlayerId;
-    if (typeof core.currentPlayer === 'string') return core.currentPlayer;
-    if (Array.isArray(core.turnOrder) && typeof core.currentPlayerIndex === 'number') {
-        const current = core.turnOrder[core.currentPlayerIndex];
-        return typeof current === 'string' ? current : null;
-    }
-    return null;
+    return resolveCurrentTurnPlayerIdFromState(sharedState);
 }
 
 export function resolveOnlineAiCurrentPlayerId(
@@ -226,7 +211,7 @@ function buildStringArrayRecordSemanticSignature(values: unknown): string {
         .join('|');
 }
 
-function buildPregameSelectionProgressSignature(core: unknown): string {
+function buildSharedPregameSelectionProgressSignature(core: unknown): string {
     if (!isPlainRecord(core)) {
         return '';
     }
@@ -252,6 +237,29 @@ function buildPregameSelectionProgressSignature(core: unknown): string {
         selectedFactionsSignature,
         selectedCharactersSignature,
     ].join('#');
+}
+
+function resolvePregameSelectionProgressSignature(
+    state: MatchState<unknown>,
+    options?: {
+        engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    },
+): string {
+    const fallbackSignature = buildSharedPregameSelectionProgressSignature(state.core);
+    const phase = typeof state.sys?.phase === 'string' ? state.sys.phase : '';
+    const resolver = options?.engineConfig?.onlineAiRecovery?.buildPregameSelectionProgressSignature;
+    if (!resolver) {
+        return fallbackSignature;
+    }
+    const overriddenSignature = resolver({
+        state,
+        phase,
+        fallbackSignature,
+    });
+    if (overriddenSignature !== undefined) {
+        return typeof overriddenSignature === 'string' ? overriddenSignature : '';
+    }
+    return fallbackSignature;
 }
 
 export function buildAiProgressMarker(
@@ -309,7 +317,7 @@ export function buildAiProgressMarker(
         ? currentResponseWindow.currentResponderIndex
         : '';
     const currentPlayerId = resolveOnlineAiCurrentPlayerId(state, options) ?? '';
-    const pregameSelectionProgressSignature = buildPregameSelectionProgressSignature(state.core);
+    const pregameSelectionProgressSignature = resolvePregameSelectionProgressSignature(state, options);
 
     return [
         turnNumber,

@@ -58,6 +58,10 @@ export type AiSeatController =
         fallbackPolicyId?: string;
         difficulty?: AiDifficultyLevel;
         minimumActionDelayMs?: number;
+        manualSetupSelection?: boolean;
+        /**
+         * @deprecated 旧命名仍兼容；新游戏应优先使用 manualSetupSelection。
+         */
         manualFactionSelection?: boolean;
     }
     | {
@@ -67,6 +71,10 @@ export type AiSeatController =
         timeoutMs?: number;
         retryCount?: number;
         minimumActionDelayMs?: number;
+        manualSetupSelection?: boolean;
+        /**
+         * @deprecated 旧命名仍兼容；新游戏应优先使用 manualSetupSelection。
+         */
         manualFactionSelection?: boolean;
     };
 

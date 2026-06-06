@@ -187,4 +187,123 @@ describe('AI 手动选派系', () => {
 
         expect(resolution).toBeNull();
     });
+
+    it('勾选 manualSetupSelection 后，AI 也不自动提交 setup-select-character 动作', async () => {
+        const gameId = '__test_manual_setup_selection_alias__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') return [];
+                return [{
+                    actionId: 'setup-select-character-samurai',
+                    kind: 'setup-select-character',
+                    label: '选择角色 samurai',
+                    commands: [{ type: 'SELECT_CHARACTER', payload: { characterId: 'samurai' } }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'setup-select-character-samurai' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state: buildCharacterSelectState(),
+            matchId: 'local:manual-setup-selection-alias',
+            seatControllers: {
+                '1': { type: 'local-ai', manualSetupSelection: true },
+            },
+        });
+
+        expect(resolution).toBeNull();
+    });
+
+    it('自定义前置选择 action kind 未提供 adapter 时，manualSetupSelection 不应误拦截自动动作', async () => {
+        const gameId = '__test_manual_setup_selection_custom_kind_without_adapter__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') return [];
+                return [{
+                    actionId: 'setup-select-draft-ranger',
+                    kind: 'setup-select-draft',
+                    label: '选择草案 ranger',
+                    commands: [{ type: 'SELECT_DRAFT', payload: { draftId: 'ranger' } }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'setup-select-draft-ranger' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state: buildCharacterSelectState(),
+            matchId: 'local:manual-setup-selection-custom-kind-without-adapter',
+            seatControllers: {
+                '1': { type: 'local-ai', manualSetupSelection: true },
+            },
+        });
+
+        expect(resolution?.action.kind).toBe('setup-select-draft');
+    });
+
+    it('自定义前置选择 action kind 提供 adapter 时，manualSetupSelection 应拦截自动动作', async () => {
+        const gameId = '__test_manual_setup_selection_custom_kind_with_adapter__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') return [];
+                return [{
+                    actionId: 'setup-select-draft-ranger',
+                    kind: 'setup-select-draft',
+                    label: '选择草案 ranger',
+                    commands: [{ type: 'SELECT_DRAFT', payload: { draftId: 'ranger' } }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'setup-select-draft-ranger' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+                onlineAiRecovery: {
+                    shouldTreatActionAsManualSetupSelection: ({ actionKind }) => (
+                        actionKind === 'setup-select-draft' ? true : undefined
+                    ),
+                },
+            } as never,
+            state: buildCharacterSelectState(),
+            matchId: 'local:manual-setup-selection-custom-kind-with-adapter',
+            seatControllers: {
+                '1': { type: 'local-ai', manualSetupSelection: true },
+            },
+        });
+
+        expect(resolution).toBeNull();
+    });
 });

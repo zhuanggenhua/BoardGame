@@ -1,7 +1,14 @@
-import type { AiSeatController } from '../ai/types';
+import {
+    isManualSetupSelectionEnabledForSeat,
+    type AiSeatController,
+    type ManualSetupSeatControllerLike,
+} from '../ai';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 
-type SetupSeatController = { type?: unknown; policyId?: string; fallbackPolicyId?: string } | undefined;
+type SetupSeatController = {
+    policyId?: string;
+    fallbackPolicyId?: string;
+} & ManualSetupSeatControllerLike | undefined;
 
 export type GameManifestIndex = Record<string, Pick<GameManifestEntry, 'ai'> | undefined>;
 
@@ -76,6 +83,12 @@ export function resolveOnlineAiWatchdogSeatControllers(args: {
                     : {
                         ...(controller as { policyId?: string; fallbackPolicyId?: string }),
                         type: normalizedType,
+                        ...(isManualSetupSelectionEnabledForSeat(controller)
+                            ? {
+                                manualSetupSelection: true,
+                                manualFactionSelection: true,
+                            }
+                            : {}),
                     },
             ];
         }),
