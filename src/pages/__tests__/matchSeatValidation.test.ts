@@ -51,6 +51,7 @@ import {
     shouldShowOnlineGameErrorToast,
 } from '../matchRoomRuntime';
 import {
+    resolveOnlineManualSetupTakeoverPlayerId,
     resolveManualSetupAttemptReleaseSource,
     resolveManualSetupSelectionTakeoverPlayerId,
     shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt,
@@ -70,7 +71,6 @@ import {
     shouldRetainOnlineAiSeatOverrideAfterLatestState,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../onlineAiRecovery';
-import { resolveOnlineManualSetupTakeoverPlayerId } from '../onlineManualFactionSelectionBridge';
 import { resolveOnlineAiActivePlayerId } from '../useOnlineAiSeatAutoDispatch';
 import { resolveMatchRoomRouteIdentity } from '../matchRouteIdentity';
 import { resolveSmashUpLocalPregameControlledPlayerId } from '../../games/smashup/localPregameControl';

@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { GameClientOverrideProvider, useGameClient } from '../engine/transport/react';
-import { resolveOnlineAiCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';
 import {
+    resolveOnlineManualSetupTakeoverPlayerId,
     resolveManualSetupSelectionActionKindFromCommand,
     resolveManualSetupSelectionId,
-    resolveManualSetupSelectionTakeoverPlayerId,
     shouldReleaseManualSetupAttemptFromSharedState,
     type ManualSetupSelectionActionKind,
 } from './matchManualSetup';
@@ -19,22 +18,6 @@ type PendingManualSetupSelection = {
     actionKind: ManualSetupSelectionActionKind;
     selectionId: string;
 };
-
-export function resolveOnlineManualSetupTakeoverPlayerId(args: {
-    sharedState: MatchState<unknown> | null;
-    seatControllers: Record<string, AiSeatController>;
-    hasManualDispatch: boolean;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
-}): string | null {
-    return resolveManualSetupSelectionTakeoverPlayerId({
-        sharedState: args.sharedState,
-        currentPlayerId: resolveOnlineAiCurrentPlayerId(args.sharedState, {
-            engineConfig: args.engineConfig,
-        }),
-        seatControllers: args.seatControllers,
-        hasManualDispatch: args.hasManualDispatch,
-    });
-}
 
 export const OnlineManualFactionSelectionBridge = ({
     children,

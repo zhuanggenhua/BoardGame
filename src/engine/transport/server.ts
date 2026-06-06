@@ -46,7 +46,6 @@ import { resolveSetupPlayerIds } from './setupPlayerOrder';
 import {
     buildAiProgressMarker,
     buildResponseWindowRecoveryFingerprintHint,
-    resolveCurrentPlayerId,
     resolveOnlineAiCurrentPlayerId,
     resolveForceEndTurnForStalledAi,
     shouldInspectSeatStatesForHiddenAiInteraction,

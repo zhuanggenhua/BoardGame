@@ -47,7 +47,7 @@ import type {
 } from './domain/types';
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
 import { createDiceThroneEventSystem } from './domain/systems';
-import { getNextPhase, getRollerId, getActiveDice, areTeammates } from './domain/rules';
+import { getNextPhase, getRollerId, getActiveDice } from './domain/rules';
 import { findPlayerAbility } from './domain/abilityLookup';
 import { diceThroneCheatModifier } from './domain/cheatModifier';
 import { diceThroneFlowHooks } from './domain/flowHooks';

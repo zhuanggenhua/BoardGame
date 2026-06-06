@@ -1,6 +1,7 @@
 import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';
 import type { GameEngineConfig } from '../engine/transport/server';
+import { resolveOnlineAiCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
 
 export type ManualSetupSelectionActionKind =
     | 'select-faction'
@@ -69,6 +70,23 @@ export function shouldTakeOverManualSetupSelection(args: {
     engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): boolean {
     return resolveManualSetupSelectionTakeoverPlayerId(args) !== null;
+}
+
+export function resolveOnlineManualSetupTakeoverPlayerId(args: {
+    sharedState: MatchState<unknown> | null;
+    seatControllers: Record<string, AiSeatController>;
+    hasManualDispatch: boolean;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
+}): string | null {
+    return resolveManualSetupSelectionTakeoverPlayerId({
+        sharedState: args.sharedState,
+        currentPlayerId: resolveOnlineAiCurrentPlayerId(args.sharedState, {
+            engineConfig: args.engineConfig,
+        }),
+        seatControllers: args.seatControllers,
+        hasManualDispatch: args.hasManualDispatch,
+        engineConfig: args.engineConfig,
+    });
 }
 
 export function resolveManualSetupSelectionTakeoverPlayerId(args: {

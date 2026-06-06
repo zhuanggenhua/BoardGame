@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
-import { buildAiProgressMarker } from '../engine/transport/react';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { getGameImplementation } from '../games/registry';
 import {
-    buildAiProgressMarker,
     releaseAiAttemptKeyIfMatches,
     tryReserveAiAttemptKey,
 } from '../engine/transport/react';

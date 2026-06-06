@@ -9,7 +9,6 @@ import type {
 } from '../engine/transport/onlineAiRecovery';
 import {
     buildAiProgressMarker,
-    resolveCurrentPlayerId,
     resolveOnlineAiCurrentPlayerId,
 } from '../engine/transport/onlineAiRecovery';
 
