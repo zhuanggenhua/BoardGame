@@ -1199,6 +1199,7 @@ const MinionCard: React.FC<{
     const shouldShowAttachedActions = Boolean(selectableOngoingUids) || (isCoarsePointer ? !!isExpanded : false);
     const [isAttachedOverlayPinned, setIsAttachedOverlayPinned] = React.useState(false);
     const attachedOverlayHideTimerRef = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
+    const attachedOverlayVisibilityChangeRef = React.useRef(onAttachedOverlayVisibilityChange);
     const attachedActionsPositionClass = shouldShowAttachedLeft
         ? 'right-full flex-col-reverse pr-[0.6vw]'
         : 'left-full flex-col pl-[0.6vw]';
@@ -1211,9 +1212,12 @@ const MinionCard: React.FC<{
             attachedOverlayHideTimerRef.current = null;
         }
     }, []);
-    const notifyAttachedOverlayVisibilityChange = useCallback((visible: boolean) => {
-        onAttachedOverlayVisibilityChange?.(visible);
+    React.useEffect(() => {
+        attachedOverlayVisibilityChangeRef.current = onAttachedOverlayVisibilityChange;
     }, [onAttachedOverlayVisibilityChange]);
+    const notifyAttachedOverlayVisibilityChange = useCallback((visible: boolean) => {
+        attachedOverlayVisibilityChangeRef.current?.(visible);
+    }, []);
     const setAttachedOverlayPinnedState = useCallback((visible: boolean) => {
         clearAttachedOverlayHideTimer();
         setIsAttachedOverlayPinned(visible);
@@ -1518,104 +1522,104 @@ const MinionCard: React.FC<{
                         <UsedStateBadge label={t('ui.talent_used')} insetClassName="left-[0.2vw] right-[0.2vw]" />
                     )}
 
-                    {/* 附着的 ongoing 行动卡 - 跟随随从变形层，避免缩放/旋转后看起来脱离宿主 */}
-                    {showTouchActivationHint && (
-                        <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-20 whitespace-nowrap pointer-events-none">
-                            {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
-                        </div>
-                    )}
-                    {hasAttachedActions && (
-                        <>
-                            <AttachedBadge count={minion.attachedActions.length} />
-                            <div
-                                data-attached-overlay-owner={minion.uid}
-                                className={`absolute top-0 flex ${attachedActionsPositionClass}
-                                    ${isAttachedOverlayVisible
-                                        ? 'opacity-100 scale-100 pointer-events-auto'
-                                        : 'opacity-0 scale-90 transition-all duration-150 pointer-events-none'
-                                    }`}
-                                style={{ zIndex: UI_Z_INDEX.tooltip, gap: layoutInlineSize(0.2, layout) }}
-                                onMouseEnter={() => {
-                                    if (!shouldShowAttachedActions) {
-                                        setAttachedOverlayPinnedState(true);
-                                    }
-                                }}
-                                onMouseLeave={() => {
-                                    if (!shouldShowAttachedActions) {
-                                        scheduleAttachedOverlayHide();
-                                    }
-                                }}
-                            >
-                                {minion.attachedActions.map((aa) => {
-                                    const actionDef = getCardDef(aa.defId);
-                                    const actionName = resolveCardName(actionDef, t) || aa.defId;
-                                    const actionText = resolveCardText(actionDef, t);
-                                    const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
-                                    const isSelectableAA = !!selectableOngoingUids?.has(aa.uid);
-                                    const isDimmedAA = !!selectableOngoingUids && !selectableOngoingUids.has(aa.uid);
-                                    const hasAATalent = actionDef?.abilityTags?.includes('talent') ?? false;
-                                    const canUseAATalent = !!usableOngoingTalentUids?.has(aa.uid);
-                                    const attachedActivationKey = `attached-${aa.uid}`;
-                                    const isAttachedActivationArmed = isActivationArmed(attachedActivationKey);
-                                    const showUsedAttachedState = hasAATalent && aa.talentUsed && !canUseAATalent;
-                                    return (
-                                        <motion.div
-                                            key={aa.uid}
-                                            data-attached-action-uid={aa.uid}
-                                            data-activation-armed={isAttachedActivationArmed ? 'true' : 'false'}
-                                            {...getAttachedTouchInspectProps(`attached-${aa.uid}`, { defId: aa.defId })}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (shouldBlockAttachedClick(`attached-${aa.uid}`)) return;
-                                                if (isSelectableAA && onOngoingSelect) {
-                                                    clearArmedActivation();
-                                                    onOngoingSelect(aa.uid);
-                                                } else if (canUseAATalent) {
-                                                    clearArmedActivation();
-                                                    dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: aa.uid, baseIndex });
-                                                } else {
-                                                    clearArmedActivation();
-                                                    onViewAction(aa.defId);
-                                                }
-                                            }}
-                                            className={`aspect-[0.714] bg-white rounded-[0.1vw] shadow-lg cursor-pointer
-                                                hover:scale-[2] ${shouldShowAttachedLeft ? 'hover:-translate-x-[0.8vw]' : 'hover:translate-x-[0.8vw]'} transition-transform duration-150
-                                                border-[0.08vw] ${isDimmedAA
-                                                    ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'
-                                                    : isSelectableAA
-                                                    ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_10px_rgba(74,222,128,0.55)]'
-                                                    : isAttachedActivationArmed
-                                                    ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.75)]'
-                                                    : canUseAATalent
-                                                    ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]'
-                                                    : showUsedAttachedState
-                                                    ? USED_STATE_CLASS
-                                                    : 'border-green-300 ring-1 ring-green-300/65 shadow-[0_0_10px_rgba(134,239,172,0.18)]'
-                                                }`}
-                                            style={{
-                                                width: layoutInlineSize(3, layout),
-                                                height: layoutCardHeight(3, layout),
-                                                aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
-                                            }}
-                                            title={actionTitle}
-                                        >
-                                            <div className="w-full h-full overflow-hidden rounded-[0.06vw]">
-                                                <CardPreview
-                                                    previewRef={actionDef?.previewRef
-                                                        ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: aa.defId, cardUid: aa.uid, disableHoverOverlay: true } }
-                                                        : undefined}
-                                                    className="w-full h-full"
-                                                    title={actionName}
-                                                />
-                                            </div>
-                                        </motion.div>
-                                    );
-                                })}
-                            </div>
-                        </>
-                    )}
                 </div>
             </motion.div>
+            {/* 附着行动的 hover 层恢复到旧的外层容器，避免跟随宿主变形后 hover 提前丢失 */}
+            {showTouchActivationHint && (
+                <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-20 whitespace-nowrap pointer-events-none">
+                    {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
+                </div>
+            )}
+            {hasAttachedActions && (
+                <>
+                    <AttachedBadge count={minion.attachedActions.length} />
+                    <div
+                        data-attached-overlay-owner={minion.uid}
+                        className={`absolute top-0 flex ${attachedActionsPositionClass}
+                            ${isAttachedOverlayVisible
+                                ? 'opacity-100 scale-100 pointer-events-auto'
+                                : 'opacity-0 scale-90 transition-all duration-150 pointer-events-none'
+                            }`}
+                        style={{ zIndex: UI_Z_INDEX.tooltip, gap: layoutInlineSize(0.2, layout) }}
+                        onMouseEnter={() => {
+                            if (!shouldShowAttachedActions) {
+                                setAttachedOverlayPinnedState(true);
+                            }
+                        }}
+                        onMouseLeave={() => {
+                            if (!shouldShowAttachedActions) {
+                                scheduleAttachedOverlayHide();
+                            }
+                        }}
+                    >
+                        {minion.attachedActions.map((aa) => {
+                            const actionDef = getCardDef(aa.defId);
+                            const actionName = resolveCardName(actionDef, t) || aa.defId;
+                            const actionText = resolveCardText(actionDef, t);
+                            const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
+                            const isSelectableAA = !!selectableOngoingUids?.has(aa.uid);
+                            const isDimmedAA = !!selectableOngoingUids && !selectableOngoingUids.has(aa.uid);
+                            const hasAATalent = actionDef?.abilityTags?.includes('talent') ?? false;
+                            const canUseAATalent = !!usableOngoingTalentUids?.has(aa.uid);
+                            const attachedActivationKey = `attached-${aa.uid}`;
+                            const isAttachedActivationArmed = isActivationArmed(attachedActivationKey);
+                            const showUsedAttachedState = hasAATalent && aa.talentUsed && !canUseAATalent;
+                            return (
+                                <motion.div
+                                    key={aa.uid}
+                                    data-attached-action-uid={aa.uid}
+                                    data-activation-armed={isAttachedActivationArmed ? 'true' : 'false'}
+                                    {...getAttachedTouchInspectProps(`attached-${aa.uid}`, { defId: aa.defId })}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (shouldBlockAttachedClick(`attached-${aa.uid}`)) return;
+                                        if (isSelectableAA && onOngoingSelect) {
+                                            clearArmedActivation();
+                                            onOngoingSelect(aa.uid);
+                                        } else if (canUseAATalent) {
+                                            clearArmedActivation();
+                                            dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: aa.uid, baseIndex });
+                                        } else {
+                                            clearArmedActivation();
+                                            onViewAction(aa.defId);
+                                        }
+                                    }}
+                                    className={`aspect-[0.714] bg-white rounded-[0.1vw] shadow-lg cursor-pointer
+                                        hover:scale-[2] ${shouldShowAttachedLeft ? 'hover:-translate-x-[0.8vw]' : 'hover:translate-x-[0.8vw]'} transition-transform duration-150
+                                        border-[0.08vw] ${isDimmedAA
+                                            ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'
+                                            : isSelectableAA
+                                            ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_10px_rgba(74,222,128,0.55)]'
+                                            : isAttachedActivationArmed
+                                            ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.75)]'
+                                            : canUseAATalent
+                                            ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]'
+                                            : showUsedAttachedState
+                                            ? USED_STATE_CLASS
+                                            : 'border-green-300 ring-1 ring-green-300/65 shadow-[0_0_10px_rgba(134,239,172,0.18)]'
+                                        }`}
+                                    style={{
+                                        width: layoutInlineSize(3, layout),
+                                        height: layoutCardHeight(3, layout),
+                                        aspectRatio: `${CARD_ASPECT_RATIO} / 1`,
+                                    }}
+                                    title={actionTitle}
+                                >
+                                    <div className="w-full h-full overflow-hidden rounded-[0.06vw]">
+                                        <CardPreview
+                                            previewRef={actionDef?.previewRef
+                                                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: aa.defId, cardUid: aa.uid, disableHoverOverlay: true } }
+                                                : undefined}
+                                            className="w-full h-full"
+                                            title={actionName}
+                                        />
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                </>
+            )}
         </motion.div>
     );
 };
