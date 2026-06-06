@@ -4372,8 +4372,8 @@
     "zh-CN/dicethrone/images/cursed/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
-          "bytes": 604,
+          "sha256": "c4dd8792f453fe8ea958fd7518992a7cbd8798d0d53160bf3a009c9eefeeef7b",
+          "bytes": 647,
           "mime": "application/json"
         }
       }
@@ -5308,8 +5308,8 @@
     "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
-          "bytes": 370,
+          "sha256": "9a292882e4f7c95f301dfaf7571d1e97179db9b3ab74738e340136522c3e29e8",
+          "bytes": 397,
           "mime": "application/json"
         }
       }
@@ -5365,6 +5365,42 @@
           "sha256": "94ee6fa631ea1e21bab79a031e3f1d9689dad4d23e5232017bbb6da7071ebb90",
           "bytes": 9768,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "f9f54569480a73a6d2a54e46f2315decd8d28ea8c88931b9a46baedb3fb49e4c",
+          "bytes": 775812,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "27748edd4bb782d60106ead5c7bca46ee0cea02b34a16b438ba41f67c0f9b9ed",
+          "bytes": 26441844,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fantasyrealms/cards/backs/compressed/fantasyrealms-base-card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "368c57dc9f644fc0c4f61e3b69ebaec0e4b19ee6a59f2b5e6243f2ed1635d450",
+          "bytes": 332308,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/fantasyrealms/cards/backs/fantasyrealms-base-card-back": {
+      "variants": {
+        "png": {
+          "sha256": "71b3a9083ca6cd5406154db1f11b3914c0336e818bc0c623ed5015584465f60a",
+          "bytes": 2520767,
+          "mime": "image/png"
         }
       }
     },

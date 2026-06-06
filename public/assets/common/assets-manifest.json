@@ -727,8 +727,8 @@
     "audio/phrase-mappings.zh-CN.json": {
       "variants": {
         "json": {
-          "sha256": "44a8c1fe65aa40957ca711e7e42d588130b57645a193e667fd76111627caca5b",
-          "bytes": 173017,
+          "sha256": "fc8a154ffbc9e6d216a44168a5ef076aa456fe9b491266465a5ea10fd2d69615",
+          "bytes": 176108,
           "mime": "application/json"
         }
       }
