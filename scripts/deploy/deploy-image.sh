@@ -8,6 +8,7 @@ set -euo pipefail
 #   首次部署指定 tag：bash deploy-image.sh deploy v1.2.3
 #   更新版本：  bash deploy-image.sh update [tag]
 #   回滚版本：  bash deploy-image.sh rollback <tag>
+#   回滚到上次部署：bash deploy-image.sh rollback-last
 #   初始化管理员：bash deploy-image.sh init-admin
 #   查看状态：  bash deploy-image.sh status
 #   查看日志：  bash deploy-image.sh logs [service]
@@ -43,6 +44,7 @@ GAME_CONTAINER_NAME="boardgame-game-server"
 MONGODB_CONTAINER_NAME="boardgame-mongodb"
 REDIS_CONTAINER_NAME="boardgame-redis"
 COMPOSE_PROJECT_NAME_EFFECTIVE="${COMPOSE_PROJECT_NAME:-$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')}"
+DEPLOY_STATE_FILE="${DEPLOY_STATE_FILE:-.deploy-last-success.env}"
 
 PREVIOUS_WEB_IMAGE_REF=""
 PREVIOUS_GAME_IMAGE_REF=""
@@ -250,6 +252,66 @@ snapshot_current_runtime_refs() {
     log "  - game-server: ${PREVIOUS_GAME_IMAGE_REF}"
   else
     log "⚠️  未检测到完整的部署前运行镜像引用；若本次 smoke 失败，将无法自动回退"
+  fi
+}
+
+write_deploy_state() {
+  local previous_web_ref="${1:-}"
+  local previous_game_ref="${2:-}"
+  local current_web_ref="${3:-}"
+  local current_game_ref="${4:-}"
+  local action="${5:-deploy}"
+  local updated_at
+
+  updated_at="$(date -Iseconds)"
+
+  cat > "$DEPLOY_STATE_FILE" <<EOF
+DEPLOY_STATE_UPDATED_AT=${updated_at}
+DEPLOY_STATE_ACTION=${action}
+DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF=${previous_web_ref}
+DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF=${previous_game_ref}
+DEPLOY_STATE_CURRENT_WEB_IMAGE_REF=${current_web_ref}
+DEPLOY_STATE_CURRENT_GAME_IMAGE_REF=${current_game_ref}
+EOF
+}
+
+record_successful_runtime_state() {
+  local action="${1:-deploy}"
+  local current_web_ref current_game_ref
+
+  current_web_ref=$(get_container_image_reference "$WEB_CONTAINER_NAME" || true)
+  current_game_ref=$(get_container_image_reference "$GAME_CONTAINER_NAME" || true)
+
+  if [ -z "$current_web_ref" ] || [ -z "$current_game_ref" ]; then
+    log "⚠️  无法记录成功部署状态：未获取到当前运行镜像引用"
+    return 1
+  fi
+
+  write_deploy_state \
+    "$PREVIOUS_WEB_IMAGE_REF" \
+    "$PREVIOUS_GAME_IMAGE_REF" \
+    "$current_web_ref" \
+    "$current_game_ref" \
+    "$action"
+
+  log "✅ 已记录成功部署状态到 ${DEPLOY_STATE_FILE}"
+  return 0
+}
+
+load_deploy_state() {
+  if [ ! -f "$DEPLOY_STATE_FILE" ]; then
+    die "未找到部署状态文件 ${DEPLOY_STATE_FILE}，无法回滚到上次部署"
+  fi
+
+  # shellcheck disable=SC1090
+  . "$DEPLOY_STATE_FILE"
+
+  if [ -z "${DEPLOY_STATE_CURRENT_WEB_IMAGE_REF:-}" ] || [ -z "${DEPLOY_STATE_CURRENT_GAME_IMAGE_REF:-}" ]; then
+    die "部署状态文件缺少当前镜像引用，无法回滚到上次部署"
+  fi
+
+  if [ -z "${DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF:-}" ] || [ -z "${DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF:-}" ]; then
+    die "部署状态文件中没有上次部署镜像引用，当前版本没有可回滚的上一版"
   fi
 }
 
@@ -779,6 +841,8 @@ deploy() {
   # 等待服务就绪后初始化管理员
   init_admin_if_configured
 
+  record_successful_runtime_state "deploy" || true
+
   echo ""
   log "=========================================="
   log "  ✅ 部署完成"
@@ -800,6 +864,7 @@ rollback() {
   fi
 
   ensure_compose_file
+  snapshot_current_runtime_refs
 
   log "回滚到版本 ${tag}"
 
@@ -815,7 +880,43 @@ rollback() {
     die "手动回退后的 smoke 失败，请立即检查日志"
   fi
 
+  record_successful_runtime_state "rollback-tag" || true
+
   log "回滚完成"
+  docker compose -f "$COMPOSE_FILE" ps
+}
+
+rollback_last() {
+  ensure_compose_file
+  load_deploy_state
+
+  log "回滚到上次成功部署版本"
+  log "  - 当前记录 web: ${DEPLOY_STATE_CURRENT_WEB_IMAGE_REF}"
+  log "  - 当前记录 game-server: ${DEPLOY_STATE_CURRENT_GAME_IMAGE_REF}"
+  log "  - 目标回滚 web: ${DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF}"
+  log "  - 目标回滚 game-server: ${DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF}"
+
+  set_compose_image_refs "$DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF" "$DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF"
+
+  log "拉取上次部署镜像（如本地缺失）"
+  docker compose -f "$COMPOSE_FILE" pull || true
+
+  log "重启服务"
+  docker compose -f "$COMPOSE_FILE" up -d
+
+  if ! run_post_deploy_smoke "manual-rollback-last"; then
+    die "回滚到上次部署后的 smoke 失败，请立即检查日志"
+  fi
+
+  write_deploy_state \
+    "$DEPLOY_STATE_CURRENT_WEB_IMAGE_REF" \
+    "$DEPLOY_STATE_CURRENT_GAME_IMAGE_REF" \
+    "$DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF" \
+    "$DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF" \
+    "rollback-last"
+
+  log "✅ 已更新部署状态到 ${DEPLOY_STATE_FILE}"
+  log "回滚到上次部署完成"
   docker compose -f "$COMPOSE_FILE" ps
 }
 
@@ -840,6 +941,9 @@ case "${1:-deploy}" in
   rollback)
     rollback "${2:-}"
     ;;
+  rollback-last)
+    rollback_last
+    ;;
   init-admin)
     init_admin
     ;;
@@ -850,7 +954,7 @@ case "${1:-deploy}" in
     logs "${2:-}"
     ;;
   *)
-    echo "用法: $0 [deploy [tag]|update [tag]|rollback <tag>|init-admin|status|logs [service]]"
+    echo "用法: $0 [deploy [tag]|update [tag]|rollback <tag>|rollback-last|init-admin|status|logs [service]]"
     exit 1
     ;;
 esac
