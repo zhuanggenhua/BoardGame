@@ -21,6 +21,7 @@ import {
     createHeroMatchup,
     createNoResponseSetupWithEmptyHand,
     getCardById,
+    getCurrentInteractionId,
     createQueuedRandom,
     createRunner,
     fixedRandom,
@@ -2512,7 +2513,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             sourceAbilityId: 'verdict-command',
             isDefendable: true,
         });
-        expect(selected.state.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionId(selected.state)).toBeUndefined();
 
         const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
         const advanced = executePipeline(
@@ -2688,7 +2689,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             sourceAbilityId: 'astonishing',
             isDefendable: false,
         });
-        expect(selected.state.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionId(selected.state)).toBeUndefined();
 
         const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
         const advanced = executePipeline(
@@ -2796,7 +2797,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             sourceAbilityId: 'merciless-plunder',
             isDefendable: false,
         });
-        expect(selected.state.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionId(selected.state)).toBeUndefined();
 
         const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
         const advanced = executePipeline(
