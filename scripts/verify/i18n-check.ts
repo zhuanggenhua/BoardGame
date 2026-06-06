@@ -1,8 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import * as ts from 'typescript';
 import { I18N_NAMESPACES, SUPPORTED_LANGUAGES } from '../../src/lib/i18n/types';
 import { HEROES_DATA } from '../../src/games/dicethrone/heroes';
+import { COMMON_CARDS } from '../../src/games/dicethrone/domain/commonCards';
+import { CHARACTER_DATA_MAP } from '../../src/games/dicethrone/domain/characters';
+import { DICETHRONE_CHARACTER_CATALOG } from '../../src/games/dicethrone/domain/core-types';
+import { SHARED_TOKENS } from '../../src/games/dicethrone/domain/sharedTokens';
 import type { AbilityDef } from '../../src/games/dicethrone/domain/combat';
 import type { TriggerCondition } from '../../src/games/dicethrone/domain/combat/conditions';
 
@@ -30,7 +35,8 @@ type I18nWarning = {
         | 'raw-simple-choice-title'
         | 'raw-simple-choice-option-label'
         | 'raw-prompt-option-label'
-        | 'raw-create-skip-label';
+        | 'raw-create-skip-label'
+        | 'raw-dicethrone-contract-text';
     key: string;
     file: string;
     line: number;
@@ -124,17 +130,30 @@ const getLineNumber = (content: string, index: number): number => {
     return content.slice(0, index).split('\n').length;
 };
 
+const hasKeyPathSegments = (cursor: unknown, segments: string[]): boolean => {
+    if (segments.length === 0) {
+        return true;
+    }
+    if (!isPlainObject(cursor)) {
+        return false;
+    }
+
+    const remainingKey = segments.join('.');
+    if (remainingKey in cursor) {
+        return true;
+    }
+
+    const [segment, ...rest] = segments;
+    if (!(segment in cursor)) {
+        return false;
+    }
+
+    return hasKeyPathSegments(cursor[segment], rest);
+};
+
 const hasKeyPath = (namespaceData: LocaleNamespace, keyPath: string): boolean => {
     if (!keyPath) return false;
-    const segments = keyPath.split('.');
-    let cursor: unknown = namespaceData;
-    for (const segment of segments) {
-        if (!isPlainObject(cursor) || !(segment in cursor)) {
-            return false;
-        }
-        cursor = cursor[segment];
-    }
-    return true;
+    return hasKeyPathSegments(namespaceData, keyPath.split('.'));
 };
 
 const collectPatternMatches = (
@@ -381,6 +400,14 @@ const detectValidationFailHelperNames = (content: string): string[] => {
 
 const extractLiteralKeysFromExpression = (expression: string): { keys: string[]; dynamic: boolean } => {
     const trimmed = expression.trim();
+    if (/^getDiceThroneCharacterNameKey\s*\(/.test(trimmed)) {
+        return {
+            keys: DICETHRONE_CHARACTER_CATALOG
+                .map((character) => character.nameKey)
+                .filter((key): key is string => typeof key === 'string' && key.length > 0),
+            dynamic: false,
+        };
+    }
     if (trimmed.includes('`') && trimmed.includes('${')) {
         return { keys: [], dynamic: true };
     }
@@ -1713,7 +1740,7 @@ const looksLikeI18nKey = (value: string): boolean => {
 };
 
 const isI18nPropertyName = (propertyName: string): boolean => (
-    /(?:^|[A-Z])(title|label|description|players|name|message|hint)Key$/.test(propertyName)
+    /(?:^|[A-Z])(title|label|description|players|name|message|hint|effect)Key$/.test(propertyName)
 );
 
 const inferStaticNamespacesForFile = (
@@ -1803,6 +1830,388 @@ export const collectDiceThroneAbilityChoiceFaceLabelReferences = (
     }
 
     return Array.from(refsByKey.values());
+};
+
+const DICETHRONE_ROOT_DIR = path.join(ROOT_DIR, 'src', 'games', 'dicethrone');
+const DICETHRONE_GAME_NAMESPACE = 'game-dicethrone';
+const DICETHRONE_CONTRACT_KNOWN_NAMESPACES = new Set<string>([
+    ...I18N_NAMESPACES,
+    DICETHRONE_GAME_NAMESPACE,
+]);
+
+const normalizeContractStringValues = (value: unknown): string[] => {
+    if (typeof value === 'string') {
+        return [value];
+    }
+    if (Array.isArray(value)) {
+        return value.filter((item): item is string => typeof item === 'string');
+    }
+    return [];
+};
+
+const pushDiceThroneContractValue = (
+    references: I18nReference[],
+    _warnings: I18nWarning[],
+    file: string,
+    source: string,
+    _field: string,
+    rawValue: unknown,
+) => {
+    for (const value of normalizeContractStringValues(rawValue)) {
+        if (!looksLikeI18nKey(value)) {
+            continue;
+        }
+        const parsed = parseI18nKey(value, DICETHRONE_CONTRACT_KNOWN_NAMESPACES);
+        references.push({
+            key: parsed.key,
+            namespaces: [parsed.namespace ?? DICETHRONE_GAME_NAMESPACE],
+            file,
+            line: 1,
+            source,
+        });
+    }
+};
+
+const collectDiceThroneEffectContractValues = (
+    references: I18nReference[],
+    warnings: I18nWarning[],
+    file: string,
+    source: string,
+    effects: Array<{ description?: unknown; action?: Record<string, unknown> }> | undefined,
+) => {
+    for (const [effectIndex, effect] of (effects ?? []).entries()) {
+        pushDiceThroneContractValue(
+            references,
+            warnings,
+            file,
+            `${source}.effect[${effectIndex}]`,
+            'effect.description',
+            effect.description,
+        );
+    }
+};
+
+export const collectDiceThroneDataContractReferences = (): { references: I18nReference[]; warnings: I18nWarning[] } => {
+    const references: I18nReference[] = [];
+    const warnings: I18nWarning[] = [];
+    const coreTypesFile = normalizeFilePath(path.join(DICETHRONE_ROOT_DIR, 'domain', 'core-types.ts'));
+    const sharedTokensFile = normalizeFilePath(path.join(DICETHRONE_ROOT_DIR, 'domain', 'sharedTokens.ts'));
+    const commonCardsFile = normalizeFilePath(path.join(DICETHRONE_ROOT_DIR, 'domain', 'commonCards.ts'));
+
+    for (const character of DICETHRONE_CHARACTER_CATALOG) {
+        pushDiceThroneContractValue(
+            references,
+            warnings,
+            coreTypesFile,
+            `dicethrone.characterCatalog:${character.id}`,
+            'character.nameKey',
+            character.nameKey,
+        );
+
+        for (const [badgeIndex, badge] of (character.badges ?? []).entries()) {
+            pushDiceThroneContractValue(
+                references,
+                warnings,
+                coreTypesFile,
+                `dicethrone.characterCatalog:${character.id}.badge[${badgeIndex}]`,
+                'badge.labelKey',
+                badge.labelKey,
+            );
+        }
+    }
+
+    for (const token of SHARED_TOKENS) {
+        pushDiceThroneContractValue(
+            references,
+            warnings,
+            sharedTokensFile,
+            `dicethrone.sharedToken:${token.id}`,
+            'token.name',
+            token.name,
+        );
+        pushDiceThroneContractValue(
+            references,
+            warnings,
+            sharedTokensFile,
+            `dicethrone.sharedToken:${token.id}`,
+            'token.description',
+            token.description,
+        );
+    }
+
+    for (const [heroId, hero] of Object.entries(HEROES_DATA)) {
+        const heroFile = normalizeFilePath(path.join(DICETHRONE_ROOT_DIR, 'heroes', heroId));
+
+        for (const ability of hero.abilities) {
+            pushDiceThroneContractValue(
+                references,
+                warnings,
+                heroFile,
+                `dicethrone.ability:${heroId}:${ability.id}`,
+                'ability.name',
+                ability.name,
+            );
+            pushDiceThroneContractValue(
+                references,
+                warnings,
+                heroFile,
+                `dicethrone.ability:${heroId}:${ability.id}`,
+                'ability.description',
+                ability.description,
+            );
+            collectDiceThroneEffectContractValues(
+                references,
+                warnings,
+                heroFile,
+                `dicethrone.ability:${heroId}:${ability.id}`,
+                ability.effects as Array<{ description?: unknown; action?: Record<string, unknown> }> | undefined,
+            );
+
+            for (const variant of ability.variants ?? []) {
+                pushDiceThroneContractValue(
+                    references,
+                    warnings,
+                    heroFile,
+                    `dicethrone.abilityVariant:${heroId}:${variant.id}`,
+                    'variant.name',
+                    variant.name,
+                );
+                pushDiceThroneContractValue(
+                    references,
+                    warnings,
+                    heroFile,
+                    `dicethrone.abilityVariant:${heroId}:${variant.id}`,
+                    'variant.description',
+                    (variant as { description?: unknown }).description,
+                );
+                collectDiceThroneEffectContractValues(
+                    references,
+                    warnings,
+                    heroFile,
+                    `dicethrone.abilityVariant:${heroId}:${variant.id}`,
+                    variant.effects as Array<{ description?: unknown; action?: Record<string, unknown> }> | undefined,
+                );
+            }
+        }
+
+        for (const card of hero.cards) {
+            pushDiceThroneContractValue(
+                references,
+                warnings,
+                heroFile,
+                `dicethrone.card:${heroId}:${card.id}`,
+                'card.name',
+                card.name,
+            );
+            pushDiceThroneContractValue(
+                references,
+                warnings,
+                heroFile,
+                `dicethrone.card:${heroId}:${card.id}`,
+                'card.description',
+                card.description,
+            );
+            collectDiceThroneEffectContractValues(
+                references,
+                warnings,
+                heroFile,
+                `dicethrone.card:${heroId}:${card.id}`,
+                card.effects as Array<{ description?: unknown; action?: Record<string, unknown> }> | undefined,
+            );
+        }
+    }
+
+    for (const card of COMMON_CARDS) {
+        pushDiceThroneContractValue(
+            references,
+            warnings,
+            commonCardsFile,
+            `dicethrone.commonCard:${card.id}`,
+            'card.name',
+            card.name,
+        );
+        pushDiceThroneContractValue(
+            references,
+            warnings,
+            commonCardsFile,
+            `dicethrone.commonCard:${card.id}`,
+            'card.description',
+            card.description,
+        );
+        collectDiceThroneEffectContractValues(
+            references,
+            warnings,
+            commonCardsFile,
+            `dicethrone.commonCard:${card.id}`,
+            card.effects as Array<{ description?: unknown; action?: Record<string, unknown> }> | undefined,
+        );
+    }
+
+    for (const [characterId, data] of Object.entries(CHARACTER_DATA_MAP)) {
+        const file = normalizeFilePath(path.join(DICETHRONE_ROOT_DIR, 'heroes', characterId));
+
+        for (const token of data.tokens ?? []) {
+            pushDiceThroneContractValue(
+                references,
+                warnings,
+                file,
+                `dicethrone.token:${characterId}:${token.id}`,
+                'token.name',
+                token.name,
+            );
+            pushDiceThroneContractValue(
+                references,
+                warnings,
+                file,
+                `dicethrone.token:${characterId}:${token.id}`,
+                'token.description',
+                token.description,
+            );
+        }
+
+        for (const passive of data.passiveAbilities ?? []) {
+            pushDiceThroneContractValue(
+                references,
+                warnings,
+                file,
+                `dicethrone.passive:${characterId}:${passive.id}`,
+                'passive.nameKey',
+                passive.nameKey,
+            );
+
+            for (const [actionIndex, action] of passive.actions.entries()) {
+                pushDiceThroneContractValue(
+                    references,
+                    warnings,
+                    file,
+                    `dicethrone.passive:${characterId}:${passive.id}.action[${actionIndex}]`,
+                    'passive.action.labelKey',
+                    action.labelKey,
+                );
+                pushDiceThroneContractValue(
+                    references,
+                    warnings,
+                    file,
+                    `dicethrone.passive:${characterId}:${passive.id}.action[${actionIndex}]`,
+                    'passive.action.descriptionKey',
+                    action.descriptionKey,
+                );
+            }
+        }
+    }
+
+    return { references, warnings };
+};
+
+const shouldAuditDiceThroneRawContractFile = (filePath: string): boolean => {
+    const normalized = normalizeFilePath(filePath);
+    return normalized.includes('/src/games/dicethrone/heroes/')
+        || normalized.endsWith('/src/games/dicethrone/domain/commonCards.ts')
+        || normalized.endsWith('/src/games/dicethrone/domain/sharedTokens.ts')
+        || normalized.endsWith('/src/games/dicethrone/domain/reducer.ts')
+        || normalized.endsWith('/src/games/dicethrone/ui/TokenResponseModal.tsx');
+};
+
+export const collectDiceThroneRawContractWarningsFromContent = (
+    content: string,
+    filePath: string,
+): I18nWarning[] => {
+    if (!shouldAuditDiceThroneRawContractFile(filePath)) {
+        return [];
+    }
+
+    const warnings: I18nWarning[] = [];
+    const literalPropertyRegex = /\b(name|description|label|sourceName)\s*:\s*(['"`])([\s\S]*?)\2/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = literalPropertyRegex.exec(content)) !== null) {
+        const property = match[1];
+        const quote = match[2];
+        const rawValue = match[3].trim();
+
+        if (quote === '`' && rawValue.includes('${')) {
+            continue;
+        }
+        if (!rawValue || looksLikeI18nKey(rawValue)) {
+            continue;
+        }
+
+        warnings.push({
+            type: 'raw-dicethrone-contract-text',
+            key: rawValue,
+            file: filePath,
+            line: getLineNumber(content, match.index),
+            source: `${property}`,
+            detail: `DiceThrone 合同字段 ${property} 直接使用了可见文案，请改为 i18n key`,
+        });
+    }
+
+    const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const helperDescriptionIndexResolvers: Record<string, (args: readonly ts.Expression[]) => number[]> = {
+        damage: () => [1],
+        heal: () => [1],
+        drawCards: () => [1],
+        custom: () => [1],
+        customEffect: () => [2],
+        inflictStatus: () => [2],
+        grantStatus: () => [1],
+        grantSelfStatus: () => [2],
+        grantToken: (args) => {
+            const indexes: number[] = [];
+            if (args.length > 1 && ts.isNumericLiteral(args[0])) {
+                indexes.push(1);
+            }
+            if (args.length > 3) {
+                indexes.push(3);
+            }
+            return indexes;
+        },
+    };
+
+    const getRawStringLiteral = (node: ts.Expression): string | null => {
+        if (ts.isStringLiteralLike(node)) {
+            return node.text.trim();
+        }
+        if (ts.isNoSubstitutionTemplateLiteral(node)) {
+            return node.text.trim();
+        }
+        return null;
+    };
+
+    const visit = (node: ts.Node) => {
+        if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+            const helperName = node.expression.text;
+            const resolveIndexes = helperDescriptionIndexResolvers[helperName];
+            if (resolveIndexes) {
+                for (const argIndex of resolveIndexes(node.arguments)) {
+                    const arg = node.arguments[argIndex];
+                    if (!arg) {
+                        continue;
+                    }
+
+                    const rawValue = getRawStringLiteral(arg);
+                    if (!rawValue || looksLikeI18nKey(rawValue)) {
+                        continue;
+                    }
+
+                    warnings.push({
+                        type: 'raw-dicethrone-contract-text',
+                        key: rawValue,
+                        file: filePath,
+                        line: getLineNumber(content, arg.getStart(sourceFile)),
+                        source: `${helperName}.arg${argIndex}`,
+                        detail: `DiceThrone helper ${helperName} 的说明参数直接使用了可见文案，请改为 i18n key`,
+                    });
+                }
+            }
+        }
+
+        ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
+
+    return warnings;
 };
 
 export const collectManifestReferencesFromContent = (
@@ -2085,6 +2494,52 @@ export const collectMissingTranslations = (
     return Array.from(missingMap.values());
 };
 
+const dedupeWarnings = (warnings: I18nWarning[]): I18nWarning[] => {
+    const seen = new Set<string>();
+    const deduped: I18nWarning[] = [];
+
+    for (const warning of warnings) {
+        const id = [
+            warning.type,
+            warning.file,
+            warning.line,
+            warning.source,
+            warning.key,
+            warning.detail ?? '',
+        ].join('|');
+        if (seen.has(id)) {
+            continue;
+        }
+        seen.add(id);
+        deduped.push(warning);
+    }
+
+    return deduped;
+};
+
+const formatRawDiceThroneContractWarnings = (warnings: I18nWarning[]): string[] => {
+    const grouped = new Map<string, Array<{ line: number; source: string }>>();
+
+    for (const warning of warnings) {
+        const entries = grouped.get(warning.file) ?? [];
+        entries.push({ line: warning.line, source: warning.source });
+        grouped.set(warning.file, entries);
+    }
+
+    return Array.from(grouped.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([file, entries]) => {
+            const fieldLocations = Array.from(new Set(entries.map((entry) => `${entry.line} ${entry.source}`)))
+                .sort((a, b) => {
+                    const [lineA, sourceA] = a.split(' ', 2);
+                    const [lineB, sourceB] = b.split(' ', 2);
+                    const numeric = Number(lineA) - Number(lineB);
+                    return numeric !== 0 ? numeric : sourceA.localeCompare(sourceB);
+                });
+            return `- raw-dicethrone-contract-text ${file} (${fieldLocations.length} field(s)): ${fieldLocations.join(', ')}`;
+        });
+};
+
 const main = () => {
     const { locales, namespaceFiles } = loadLocales();
     const knownNamespaces = new Set([...namespaceFiles, ...I18N_NAMESPACES]);
@@ -2101,17 +2556,23 @@ const main = () => {
         references.push(...collectTutorialReferencesFromContent(content, file, knownNamespaces));
         references.push(...collectStaticKeyReferencesFromContent(content, file, knownNamespaces));
         warnings.push(...result.warnings);
+        warnings.push(...collectDiceThroneRawContractWarningsFromContent(content, file));
     }
 
     references.push(...collectDiceThroneAbilityChoiceFaceLabelReferences());
+    const diceThroneContract = collectDiceThroneDataContractReferences();
+    references.push(...diceThroneContract.references);
+    warnings.push(...diceThroneContract.warnings);
 
     const missing = collectMissingTranslations(references, locales);
+    const dedupedWarnings = dedupeWarnings(warnings);
     const blockingWarningTypes = new Set<I18nWarning['type']>([
         'raw-validation-error',
+        'raw-dicethrone-contract-text',
     ]);
-    const blockingWarnings = warnings.filter((warning) => blockingWarningTypes.has(warning.type));
+    const blockingWarnings = dedupedWarnings.filter((warning) => blockingWarningTypes.has(warning.type));
 
-    if (missing.length === 0 && warnings.length === 0) {
+    if (missing.length === 0 && dedupedWarnings.length === 0) {
         console.log('i18n-check: no missing keys detected.');
         return;
     }
@@ -2124,9 +2585,16 @@ const main = () => {
         }
     }
 
-    if (warnings.length) {
-        console.log(`\nWarnings (${warnings.length}):`);
-        for (const warning of warnings) {
+    if (dedupedWarnings.length) {
+        console.log(`\nWarnings (${dedupedWarnings.length}):`);
+        const rawDiceThroneWarnings = dedupedWarnings.filter((warning) => warning.type === 'raw-dicethrone-contract-text');
+        const otherWarnings = dedupedWarnings.filter((warning) => warning.type !== 'raw-dicethrone-contract-text');
+
+        for (const line of formatRawDiceThroneContractWarnings(rawDiceThroneWarnings)) {
+            console.log(line);
+        }
+
+        for (const warning of otherWarnings) {
             console.log(`- ${warning.type} ${warning.file}:${warning.line} ${warning.source} ${warning.detail ?? ''}`);
         }
     }
