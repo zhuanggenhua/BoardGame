@@ -1522,17 +1522,18 @@ const MinionCard: React.FC<{
                         <UsedStateBadge label={t('ui.talent_used')} insetClassName="left-[0.2vw] right-[0.2vw]" />
                     )}
 
+                    {showTouchActivationHint && (
+                        <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-20 whitespace-nowrap pointer-events-none">
+                            {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
+                        </div>
+                    )}
+                    {hasAttachedActions && <AttachedBadge count={minion.attachedActions.length} />}
+
                 </div>
             </motion.div>
             {/* 附着行动的 hover 层恢复到旧的外层容器，避免跟随宿主变形后 hover 提前丢失 */}
-            {showTouchActivationHint && (
-                <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-20 whitespace-nowrap pointer-events-none">
-                    {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
-                </div>
-            )}
             {hasAttachedActions && (
                 <>
-                    <AttachedBadge count={minion.attachedActions.length} />
                     <div
                         data-attached-overlay-owner={minion.uid}
                         className={`absolute top-0 flex ${attachedActionsPositionClass}
