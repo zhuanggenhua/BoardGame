@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>幻想国度 16:9 实体牌桌 UI 参考</title>
+  <style>
+    :root {
+      --atlas: url("../../public/assets/i18n/zh-CN/fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png");
+      --back: url("../../public/assets/i18n/zh-CN/fantasyrealms/cards/backs/fantasyrealms-base-card-back.png");
+      --wood-0: #160d08;
+      --wood-1: #3b2415;
+      --wood-2: #74451f;
+      --felt-0: #10231f;
+      --felt-1: #21483f;
+      --paper: #f2dfb5;
+      --paper-light: #fff1c9;
+      --ink: #2a1b12;
+      --gold: #d5aa4d;
+      --red: #7d2c27;
+      --green: #21483f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #120c08;
+      color: var(--paper-light);
+      font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
+    }
+
+    .stage {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 52% 36%, rgba(255, 211, 128, 0.25), transparent 35%),
+        radial-gradient(circle at 12% 90%, rgba(17, 50, 44, 0.65), transparent 36%),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(0,0,0,0.14) 1px, transparent 1px),
+        linear-gradient(135deg, var(--wood-0), var(--wood-1) 35%, var(--wood-2) 68%, #26160d);
+      background-size: auto, auto, 80px 80px, 80px 80px, auto;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, transparent, rgba(255, 220, 150, 0.05) 20%, transparent 42%),
+        repeating-linear-gradient(92deg, rgba(255, 238, 190, 0.018) 0 3px, transparent 3px 15px);
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 54%, rgba(5, 3, 2, 0.55));
+      pointer-events: none;
+    }
+
+    .mat {
+      position: absolute;
+      left: 340px;
+      top: 126px;
+      width: 1240px;
+      height: 836px;
+      border-radius: 56px;
+      background:
+        radial-gradient(circle at 50% 16%, rgba(255, 229, 152, 0.10), transparent 34%),
+        repeating-linear-gradient(42deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 16px),
+        linear-gradient(145deg, #16352f, var(--felt-1) 44%, #122520);
+      box-shadow:
+        inset 0 0 0 2px rgba(222, 171, 83, 0.42),
+        inset 0 0 0 12px rgba(15, 12, 9, 0.25),
+        0 42px 90px rgba(0,0,0,0.48);
+    }
+
+    .mat-ornament {
+      position: absolute;
+      inset: 34px;
+      border: 1px solid rgba(213, 170, 77, 0.28);
+      border-radius: 40px;
+      pointer-events: none;
+    }
+
+    .game-title {
+      position: absolute;
+      left: 80px;
+      top: 46px;
+      font-family: Georgia, "Times New Roman", "Microsoft YaHei UI", serif;
+      font-size: 58px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: #fff3ce;
+      text-shadow: 0 5px 0 rgba(0,0,0,0.28), 0 0 28px rgba(255,205,101,0.22);
+    }
+
+    .top-tokens {
+      position: absolute;
+      left: 502px;
+      top: 56px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .token {
+      height: 46px;
+      padding: 0 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #7b5330, #4b2c18);
+      border: 1px solid rgba(255, 221, 158, 0.42);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.14), 0 12px 24px rgba(0,0,0,0.26);
+      color: #fff2cf;
+      font-size: 24px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .source-area {
+      position: absolute;
+      left: 86px;
+      top: 180px;
+      width: 300px;
+      height: 560px;
+    }
+
+    .source-label,
+    .discard-label,
+    .small-label {
+      font-family: Georgia, "Microsoft YaHei UI", serif;
+      color: #fff2cf;
+      text-shadow: 0 3px 8px rgba(0,0,0,0.45);
+      font-weight: 800;
+    }
+
+    .source-label {
+      font-size: 34px;
+      margin: 0 0 26px 8px;
+    }
+
+    .pile {
+      position: relative;
+      width: 168px;
+      height: 238px;
+      margin-left: 18px;
+      border-radius: 18px;
+      transform: rotate(-4deg);
+      filter: drop-shadow(0 24px 30px rgba(0,0,0,0.46));
+    }
+
+    .pile::before,
+    .pile::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      background-image: var(--back);
+      background-size: cover;
+      background-position: center;
+      border: 2px solid rgba(255, 220, 140, 0.72);
+    }
+
+    .pile::before { transform: translate(12px, -10px) rotate(5deg); opacity: 0.8; }
+    .pile::after { transform: translate(4px, -4px) rotate(2deg); }
+
+    .pile .top-card {
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      background-image: var(--back);
+      background-size: cover;
+      background-position: center;
+      border: 2px solid rgba(255, 225, 140, 0.95);
+      z-index: 2;
+    }
+
+    .pick-token {
+      position: absolute;
+      right: 10px;
+      top: 96px;
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 24%, #ffe798, #d1a142 58%, #6c3d1d);
+      border: 3px solid rgba(255, 239, 180, 0.88);
+      box-shadow: 0 18px 34px rgba(0,0,0,0.42), inset 0 5px 12px rgba(255,255,255,0.28);
+      display: grid;
+      place-items: center;
+      color: #2b190d;
+      font-size: 24px;
+      font-weight: 900;
+      transform: rotate(8deg);
+      z-index: 4;
+    }
+
+    .draw-note {
+      position: absolute;
+      left: 30px;
+      top: 284px;
+      width: 238px;
+      min-height: 120px;
+      padding: 24px 28px;
+      color: var(--ink);
+      background: var(--paper);
+      border-radius: 8px 28px 12px 18px;
+      box-shadow: 0 18px 28px rgba(0,0,0,0.28);
+      transform: rotate(2deg);
+    }
+
+    .draw-note b {
+      display: block;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .draw-note span {
+      color: #6d5133;
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    .score-slip {
+      position: absolute;
+      left: 430px;
+      top: 190px;
+      width: 460px;
+      height: 192px;
+      padding: 26px 32px;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.28), transparent 25%),
+        repeating-linear-gradient(0deg, transparent 0 31px, rgba(126, 92, 47, 0.20) 31px 32px),
+        #f3dfb0;
+      border-radius: 10px 14px 12px 10px;
+      box-shadow: 0 22px 34px rgba(0,0,0,0.34);
+      transform: rotate(-2.4deg);
+      z-index: 6;
+    }
+
+    .score-slip::before {
+      content: "";
+      position: absolute;
+      left: 42px;
+      top: -18px;
+      width: 138px;
+      height: 34px;
+      background: rgba(230, 199, 126, 0.75);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.14);
+      transform: rotate(3deg);
+    }
+
+    .score-slip .score {
+      font-family: Georgia, "Microsoft YaHei UI", serif;
+      font-size: 58px;
+      font-weight: 900;
+      line-height: 1;
+      color: #3b2514;
+    }
+
+    .score-slip .breakdown {
+      margin-top: 16px;
+      display: flex;
+      gap: 14px;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .risk-seal {
+      position: absolute;
+      right: 28px;
+      bottom: 24px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      color: #fff1d0;
+      background: var(--red);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.12);
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .focus-card {
+      position: absolute;
+      left: 900px;
+      top: 162px;
+      width: 252px;
+      height: 352px;
+      border-radius: 20px;
+      background-image: url("card-crops/focus-world-tree.png");
+      background-size: cover;
+      background-position: center;
+      border: 5px solid #efcd73;
+      box-shadow:
+        0 32px 60px rgba(0,0,0,0.56),
+        0 0 0 10px rgba(61, 34, 15, 0.72);
+      transform: rotate(3deg);
+      z-index: 8;
+    }
+
+    .focus-card::after {
+      content: "焦点牌";
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: rgba(28, 20, 15, 0.78);
+      color: #fff2cf;
+      font-size: 24px;
+      font-weight: 900;
+      box-shadow: inset 0 0 0 1px rgba(255, 230, 168, 0.25);
+    }
+
+    .hand-label {
+      position: absolute;
+      left: 458px;
+      top: 490px;
+      color: #fff2cf;
+      font-family: Georgia, "Microsoft YaHei UI", serif;
+      font-size: 38px;
+      font-weight: 900;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.45);
+      z-index: 8;
+    }
+
+    .hand {
+      position: absolute;
+      left: 406px;
+      top: 558px;
+      width: 1110px;
+      height: 330px;
+      z-index: 10;
+    }
+
+    .card {
+      position: absolute;
+      width: 166px;
+      height: 232px;
+      border-radius: 16px;
+      background-size: cover;
+      background-position: center;
+      border: 3px solid rgba(255, 236, 174, 0.96);
+      box-shadow: 0 26px 34px rgba(0,0,0,0.46);
+      transform-origin: 50% 100%;
+    }
+
+    .card.selected {
+      width: 188px;
+      height: 263px;
+      border-width: 5px;
+      border-color: #ffe187;
+      box-shadow: 0 34px 48px rgba(0,0,0,0.58), 0 0 34px rgba(255, 205, 96, 0.40);
+      z-index: 8;
+    }
+
+    .card::after {
+      content: attr(data-tag);
+      position: absolute;
+      left: 14px;
+      bottom: 12px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(33, 72, 63, 0.90);
+      color: #fff2cf;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .c1 { left: 36px;  top: 60px; background-image: url("card-crops/hand-forest.png"); transform: rotate(-11deg); }
+    .c2 { left: 176px; top: 28px; background-image: url("card-crops/hand-forge.png"); transform: rotate(-7deg); }
+    .c3 { left: 328px; top: 6px;  background-image: url("card-crops/hand-gem-of-order.png"); transform: rotate(-3deg); }
+    .c4 { left: 496px; top: -12px; background-image: url("card-crops/hand-hydra.png"); transform: rotate(0deg); }
+    .c5 { left: 682px; top: 6px;  background-image: url("card-crops/hand-king.png"); transform: rotate(4deg); }
+    .c6 { left: 842px; top: 30px; background-image: url("card-crops/hand-knights.png"); transform: rotate(8deg); }
+    .c7 { left: 984px; top: 64px; background-image: url("card-crops/hand-unicorn.png"); transform: rotate(12deg); }
+
+    .discard-area {
+      position: absolute;
+      right: 76px;
+      top: 178px;
+      width: 338px;
+      height: 678px;
+      z-index: 4;
+    }
+
+    .discard-label {
+      font-size: 34px;
+      margin-bottom: 22px;
+    }
+
+    .progress-card {
+      position: relative;
+      width: 302px;
+      padding: 24px 24px 22px;
+      color: var(--ink);
+      background: #e8c990;
+      border-radius: 20px;
+      box-shadow: 0 24px 34px rgba(0,0,0,0.34);
+      transform: rotate(2deg);
+    }
+
+    .progress-card b {
+      display: flex;
+      justify-content: space-between;
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+
+    .track {
+      height: 16px;
+      border-radius: 999px;
+      background: rgba(64, 37, 18, 0.34);
+      overflow: hidden;
+    }
+
+    .track span {
+      display: block;
+      width: 70%;
+      height: 100%;
+      background: linear-gradient(90deg, #7d2c27, #d5aa4d);
+      border-radius: inherit;
+    }
+
+    .discard-fan {
+      position: relative;
+      width: 330px;
+      height: 250px;
+      margin-top: 38px;
+    }
+
+    .discard-card {
+      position: absolute;
+      width: 112px;
+      height: 156px;
+      border-radius: 12px;
+      background-size: cover;
+      background-position: center;
+      border: 2px solid #f4d889;
+      box-shadow: 0 18px 28px rgba(0,0,0,0.42);
+    }
+
+    .d1 { left: 8px; top: 18px; background-image: url("card-crops/discard-great-flood.png"); transform: rotate(-9deg); }
+    .d2 { left: 84px; top: 0; background-image: url("card-crops/discard-judicator.png"); transform: rotate(-1deg); z-index: 2; }
+    .d3 { left: 164px; top: 22px; background-image: url("card-crops/discard-leprechaun.png"); transform: rotate(8deg); z-index: 3; }
+
+    .discard-note {
+      position: absolute;
+      left: 18px;
+      top: 174px;
+      width: 258px;
+      padding: 18px 22px;
+      color: var(--ink);
+      background: #f0dfb3;
+      border-radius: 12px;
+      font-size: 24px;
+      font-weight: 900;
+      box-shadow: 0 14px 24px rgba(0,0,0,0.28);
+      transform: rotate(-2deg);
+    }
+
+    .seat-strip {
+      margin-top: 86px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      color: #fff0ce;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .pawn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 25%, #fff0a8, #d5aa4d 52%, #6d3c18);
+      box-shadow: 0 8px 14px rgba(0,0,0,0.38);
+    }
+
+    .end-turn {
+      position: absolute;
+      right: 348px;
+      bottom: 96px;
+      width: 148px;
+      height: 148px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 24%, #ffefb0, #d5aa4d 54%, #7a3b18);
+      border: 4px solid rgba(255, 242, 190, 0.90);
+      box-shadow: 0 26px 42px rgba(0,0,0,0.44), inset 0 7px 14px rgba(255,255,255,0.30);
+      display: grid;
+      place-items: center;
+      color: #2a180c;
+      font-size: 28px;
+      font-weight: 1000;
+      text-align: center;
+      transform: rotate(-8deg);
+      z-index: 12;
+    }
+
+    .discard-action {
+      position: absolute;
+      left: 666px;
+      bottom: 94px;
+      width: 346px;
+      height: 72px;
+      border-radius: 999px;
+      background: rgba(125, 44, 39, 0.96);
+      border: 2px solid rgba(255, 224, 155, 0.68);
+      box-shadow: 0 18px 28px rgba(0,0,0,0.36), inset 0 2px 0 rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff1d0;
+      font-size: 28px;
+      font-weight: 1000;
+      z-index: 14;
+    }
+
+    .detail-tab {
+      position: absolute;
+      left: 1050px;
+      bottom: 100px;
+      padding: 18px 28px;
+      color: var(--ink);
+      background: #efd695;
+      border-radius: 999px;
+      font-size: 24px;
+      font-weight: 900;
+      box-shadow: 0 16px 26px rgba(0,0,0,0.28);
+      z-index: 14;
+      transform: rotate(2deg);
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="幻想国度实体牌桌 UI 参考">
+    <div class="game-title">幻想国度</div>
+    <div class="top-tokens" aria-label="轻量状态">
+      <div class="token">当前玩家 你</div>
+      <div class="token">阶段 抽牌</div>
+      <div class="token">牌库 31</div>
+    </div>
+
+    <section class="source-area" aria-label="抽牌来源">
+      <h2 class="source-label">抽牌来源</h2>
+      <div class="pile" aria-label="牌库">
+        <div class="top-card"></div>
+      </div>
+      <div class="pick-token">抽牌</div>
+      <div class="draw-note">
+        <b>二选一</b>
+        <span>牌库暗抽 / 拿弃牌明牌</span>
+      </div>
+    </section>
+
+    <section class="mat" aria-label="当前组合与手牌">
+      <div class="mat-ornament"></div>
+      <div class="score-slip" aria-label="当前组合得分">
+        <div class="score">148 分</div>
+        <div class="breakdown">
+          <span>基础 83</span>
+          <span>联动 78</span>
+          <span>惩罚 -13</span>
+        </div>
+        <div class="risk-seal">封印风险</div>
+      </div>
+      <div class="focus-card" aria-label="焦点牌"></div>
+      <div class="hand-label">手牌 7 / 7</div>
+      <div class="hand" aria-label="七张手牌">
+        <div class="card c1" data-tag="领袖"></div>
+        <div class="card c2" data-tag="军队"></div>
+        <div class="card c3 selected" data-tag="神器"></div>
+        <div class="card c4" data-tag="烈焰"></div>
+        <div class="card c5" data-tag="土地"></div>
+        <div class="card c6" data-tag="天象"></div>
+        <div class="card c7" data-tag="巨兽"></div>
+      </div>
+      <div class="discard-action">弃置所选</div>
+      <div class="detail-tab">展开计分</div>
+    </section>
+
+    <aside class="discard-area" aria-label="弃牌区">
+      <h2 class="discard-label">弃牌区</h2>
+      <div class="progress-card">
+        <b><span>终局进度</span><span>7 / 10</span></b>
+        <div class="track"><span></span></div>
+      </div>
+      <div class="discard-fan" aria-label="公开弃牌">
+        <div class="discard-card d1"></div>
+        <div class="discard-card d2"></div>
+        <div class="discard-card d3"></div>
+        <div class="discard-note">公开牌，可被拿走</div>
+      </div>
+      <div class="seat-strip" aria-label="座位顺序">
+        <div class="pawn"></div>
+        <span>你</span>
+        <div class="pawn"></div>
+        <span>小王</span>
+        <div class="pawn"></div>
+        <span>小李</span>
+      </div>
+    </aside>
+
+    <button class="end-turn" aria-label="结束回合">结束<br />回合</button>
+  </main>
+</body>
+</html>

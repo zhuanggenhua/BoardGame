@@ -414,12 +414,12 @@ describe('FantasyRealms Board foundation', () => {
         Object.defineProperty(window, 'innerWidth', {
             configurable: true,
             writable: true,
-            value: 1440,
+            value: 1920,
         });
         Object.defineProperty(window, 'innerHeight', {
             configurable: true,
             writable: true,
-            value: 1024,
+            value: 1080,
         });
 
         try {
@@ -745,7 +745,8 @@ describe('FantasyRealms Board foundation', () => {
             }));
 
             expect(container.querySelector('.fr-live-score-strip')).not.toBeNull();
-            expect(container.querySelectorAll('.fr-live-score-seat')).toHaveLength(6);
+            expect(container.querySelector('.fr-live-score-band')).not.toBeNull();
+            expect(container.querySelector('.fr-live-score-seat')).toBeNull();
             expect(container.querySelector('.fr-panel--score-rail')).toBeNull();
         });
     });
@@ -794,10 +795,10 @@ describe('FantasyRealms Board foundation', () => {
             }));
 
             expect(screen.getByLabelText('玩家分数总览')).toBeInTheDocument();
-            expect(screen.getAllByText('测试玩家').length).toBeGreaterThanOrEqual(1);
             expect(screen.getAllByText('玩家2').length).toBeGreaterThanOrEqual(1);
-            expect(screen.getAllByText('玩家3').length).toBeGreaterThanOrEqual(1);
-            expect(screen.getAllByText('??').length).toBeGreaterThanOrEqual(2);
+            expect(screen.queryByText('玩家3')).not.toBeInTheDocument();
+            expect(screen.queryByText('??')).not.toBeInTheDocument();
+            expect(screen.getAllByText('第 1 名').length).toBeGreaterThanOrEqual(1);
             expect(screen.queryByText('官方总分')).not.toBeInTheDocument();
             expect(screen.queryByText('终局揭示')).not.toBeInTheDocument();
             expect(screen.queryByText('当前行动')).not.toBeInTheDocument();
