@@ -266,6 +266,7 @@ Merge branch 'feature-x' into main
 每次出现冲突并完成解决后，必须额外提交一份独立汇报文档，不能只写在 commit message 里。
 
 - **存放位置**：`evidence/merge-conflict-<分支或PR标识>-<YYYY-MM-DD>.md`
+- **默认时机**：优先与 merge commit 同批提交；如果 merge 已生成且当前流程明确不允许为了补文档而改写历史，可在 **merge 后紧跟的补记提交** 中补上，但不得隔很多提交后再追记
 - **最低必填字段**：
   - 冲突背景（base/head、触发命令）
   - 冲突文件清单（必须列出每个 `UU` 文件）
@@ -368,6 +369,7 @@ npm run merge:audit:strict -- HEAD
 
 **落点要求**：
 - 若本次已经产出冲突汇报文档，则把该登记放进同一份 `evidence/merge-conflict-*.md`
+- 若 merge commit 已生成且冲突汇报只能通过补记提交补上，仍必须保证补记提交紧跟 merge commit，且文档中写清对应 merge commit hash
 - 若本次没有冲突汇报文档，也必须在最终 PR 收尾汇报中单列“回归与行为变化登记”
 - 禁止只在脑中判断或口头带过，不落文档 / 汇报
 

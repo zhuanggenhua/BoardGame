@@ -296,7 +296,7 @@ function getConflictFilesFromCommitMessage(commit) {
   return [...files];
 }
 
-function hasMergeConflictEvidence(commit) {
+function hasMergeConflictEvidenceInCommit(commit) {
   const changedFiles = runGit(['show', '--pretty=format:', '--name-only', '--no-renames', commit], { allowFailure: true })
     .split(/\r?\n/)
     .map((value) => value.trim())
@@ -304,19 +304,33 @@ function hasMergeConflictEvidence(commit) {
   return changedFiles.some((file) => file.startsWith('evidence/merge-conflict-') && file.endsWith('.md'));
 }
 
+function hasMergeConflictEvidenceInDescendants(commit, headRef) {
+  if (!headRef || headRef === commit) return false;
+  const changedFiles = runGit(['diff', '--name-only', '--no-renames', `${commit}..${headRef}`], { allowFailure: true })
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return changedFiles.some((file) => file.startsWith('evidence/merge-conflict-') && file.endsWith('.md'));
+}
+
+function hasMergeConflictEvidence(commit, headRef) {
+  return hasMergeConflictEvidenceInCommit(commit) || hasMergeConflictEvidenceInDescendants(commit, headRef);
+}
+
 function runMergeAuditStrict(commit) {
   const result = spawnSync(process.execPath, ['scripts/verify/merge-conflict-audit.mjs', commit, '--fail-on-single-side'], {
     cwd: repoRoot,
-    stdio: 'inherit',
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
     shell: false,
   });
   if (result.error) {
     console.error(`[changed-quality-gate] merge:audit 启动失败: ${result.error.message}`);
     process.exit(1);
   }
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
-  }
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  return result.status ?? 1;
 }
 
 function runMergeConflictGuards({ baseRef, headRef }) {
@@ -343,12 +357,20 @@ function runMergeConflictGuards({ baseRef, headRef }) {
       console.log(`[changed-quality-gate] merge commit ${commit} 未记录真实冲突文件，退化为双侧重叠改动审计。`);
       console.log(`[changed-quality-gate] 双侧重叠改动文件数: ${overlapFiles.length}`);
     }
-    runMergeAuditStrict(commit);
+    const mergeAuditStatus = runMergeAuditStrict(commit);
+    const hasEvidence = hasMergeConflictEvidence(commit, headRef);
+    if (mergeAuditStatus !== 0 && !hasEvidence) {
+      process.exit(mergeAuditStatus);
+    }
 
-    if (!hasMergeConflictEvidence(commit)) {
+    if (!hasEvidence) {
       console.error(`[changed-quality-gate] merge commit ${commit} 缺少 evidence/merge-conflict-*.md 冲突汇报。`);
-      console.error('[changed-quality-gate] 请补充冲突汇报文档并重新提交。');
+      console.error('[changed-quality-gate] 请在 merge commit 内，或紧跟其后的补记提交中补充冲突汇报文档并重新提交。');
       process.exit(1);
+    }
+
+    if (mergeAuditStatus !== 0) {
+      console.log(`[changed-quality-gate] merge commit ${commit} 存在单边结果，但已检测到冲突汇报文档，继续执行后续门禁。`);
     }
   }
 }
