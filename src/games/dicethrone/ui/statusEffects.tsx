@@ -1,3 +1,5 @@
+// @asset-pipeline-allow
+// 这里用真实 img + 裁剪容器承接 atlas/status 图标，但候选 URL、预加载缓存与 ready 事件仍统一复用 AssetLoader 链路。
 import type { CSSProperties } from 'react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
