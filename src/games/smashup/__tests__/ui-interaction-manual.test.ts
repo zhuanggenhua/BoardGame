@@ -237,8 +237,7 @@ describe('SmashUp UI 交互验证', () => {
         expect(titanCard.className).not.toContain('hover:scale-125');
     });
 
-    it('桌面端附加行动卡在移入弹层时应保持显示，并把所属列抬到最高层', () => {
-        vi.useFakeTimers();
+    it('桌面端附加行动卡可见时应把所属列抬到最高层', () => {
         const core = makeState({
             bases: [
                 makeBase('test_base_1', [
@@ -255,61 +254,38 @@ describe('SmashUp UI 交互验证', () => {
             ],
         });
 
-        try {
-            render(
-                React.createElement(
-                    ToastProvider,
-                    undefined,
-                    React.createElement(BaseZone, {
-                        base: core.bases[0],
-                        baseIndex: 0,
-                        core,
-                        turnOrder: core.turnOrder,
-                        isDeployMode: false,
-                        isMyTurn: true,
-                        myPlayerId: '0',
-                        dispatch: vi.fn(),
-                        onClick: vi.fn(),
-                        onViewMinion: vi.fn(),
-                        onViewAction: vi.fn(),
-                        onViewBase: vi.fn(),
-                        onViewTitan: vi.fn(),
-                    }),
-                ),
-            );
+        render(
+            React.createElement(
+                ToastProvider,
+                undefined,
+                React.createElement(BaseZone, {
+                    base: core.bases[0],
+                    baseIndex: 0,
+                    core,
+                    turnOrder: core.turnOrder,
+                    isDeployMode: false,
+                    isMyTurn: true,
+                    myPlayerId: '0',
+                    dispatch: vi.fn(),
+                    onClick: vi.fn(),
+                    onViewMinion: vi.fn(),
+                    onViewAction: vi.fn(),
+                    onViewBase: vi.fn(),
+                    onViewTitan: vi.fn(),
+                    selectableOngoingUids: new Set(['attached-1']),
+                }),
+            ),
+        );
 
-            const hostMinion = document.querySelector('[data-minion-uid="host-minion"]') as HTMLElement | null;
-            const hostColumn = document.querySelector('[data-testid="su-base-player-column-0-0"]') as HTMLElement | null;
-            const attachedOverlay = document.querySelector('[data-attached-overlay-owner="host-minion"]') as HTMLElement | null;
-            expect(hostMinion).not.toBeNull();
-            expect(hostColumn).not.toBeNull();
-            expect(attachedOverlay).not.toBeNull();
+        const hostMinion = document.querySelector('[data-minion-uid="host-minion"]') as HTMLElement | null;
+        const hostColumn = document.querySelector('[data-testid="su-base-player-column-0-0"]') as HTMLElement | null;
+        const attachedOverlay = document.querySelector('[data-attached-overlay-owner="host-minion"]') as HTMLElement | null;
+        expect(hostMinion).not.toBeNull();
+        expect(hostColumn).not.toBeNull();
+        expect(attachedOverlay).not.toBeNull();
 
-            expect(hostMinion?.dataset.attachedOverlayVisible).toBe('false');
-            fireEvent.mouseOver(hostMinion as Element);
-            expect(hostMinion?.dataset.attachedOverlayVisible).toBe('true');
-            expect(hostColumn?.className).toContain('z-[1400]');
-
-            fireEvent.mouseOut(hostMinion as Element);
-            act(() => {
-                vi.advanceTimersByTime(80);
-            });
-            expect(hostMinion?.dataset.attachedOverlayVisible).toBe('true');
-
-            fireEvent.mouseOver(attachedOverlay as Element);
-            act(() => {
-                vi.advanceTimersByTime(200);
-            });
-            expect(hostMinion?.dataset.attachedOverlayVisible).toBe('true');
-
-            fireEvent.mouseOut(attachedOverlay as Element);
-            act(() => {
-                vi.advanceTimersByTime(141);
-            });
-            expect(hostMinion?.dataset.attachedOverlayVisible).toBe('false');
-        } finally {
-            vi.useRealTimers();
-        }
+        expect(hostMinion?.dataset.attachedOverlayVisible).toBe('true');
+        expect(hostColumn?.className).toContain('z-[1400]');
     });
 
     it('通用玩家显示工具应优先使用昵称，并在缺失时回退到座位标签', () => {

@@ -91,9 +91,13 @@ export const OnlineManualFactionSelectionBridge = ({
             engineConfig,
         });
         if (latestManualSetupPlayerId) {
-            const actionKind = resolveManualSetupSelectionActionKindFromCommand({ type, payload });
+            const actionKind = resolveManualSetupSelectionActionKindFromCommand({
+                type,
+                payload,
+                engineConfig,
+            });
             const selectionId = actionKind
-                ? resolveManualSetupSelectionId({ actionKind, payload })
+                ? resolveManualSetupSelectionId({ actionKind, payload, engineConfig })
                 : null;
             if (actionKind && selectionId) {
                 setPendingManualSetupSelection({

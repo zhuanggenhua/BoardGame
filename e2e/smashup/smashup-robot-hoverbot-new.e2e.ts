@@ -3104,14 +3104,14 @@ test.describe('Smash Up 牌库检索交互', () => {
             phase: 'playCards',
             bases: [
                 {
-                    defId: 'base_1',
+                    defId: 'base_the_jungle',
                     minions: [
                         { uid: 'eh-ally-1', defId: 'robot_microbot_alpha', owner: '0', controller: '0', tempPowerModifier: 0 },
                     ],
                     ongoingActions: [],
                 },
                 {
-                    defId: 'base_2',
+                    defId: 'base_tar_pits',
                     minions: [
                         { uid: 'eh-ally-2', defId: 'robot_microbot_guard', owner: '0', controller: '0', tempPowerModifier: 0 },
                     ],
@@ -3133,7 +3133,7 @@ test.describe('Smash Up 牌库检索交互', () => {
         await saveStableScreenshot(page, testInfo, 'smashup-world-champs-eh-discard-available-2026-04-28');
 
         await page.locator('[data-card-def-id="world_champs_eh"]').click();
-        await expect(page.getByText('请选择一个随从')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('span').filter({ hasText: '请选择一个随从' })).toBeVisible({ timeout: 5000 });
 
         await game.screenshot('eh-discard-minion-select-visible', testInfo);
         await saveStableScreenshot(page, testInfo, 'smashup-world-champs-eh-minion-select-2026-04-28');

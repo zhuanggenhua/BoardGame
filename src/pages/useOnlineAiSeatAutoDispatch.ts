@@ -253,6 +253,7 @@ function createOnlineAiResolutionSubmissionLifecycle(args: OnlineAiResolutionSub
                 selectionId: resolveManualSetupSelectionId({
                     actionKind: resolution.action.kind,
                     payload: resolution.action.commands[0]?.payload,
+                    engineConfig,
                 }),
                 engineConfig,
             });
@@ -751,6 +752,7 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                     return resolveManualSetupSelectionId({
                         actionKind: resolution.action.kind,
                         payload: firstCommand?.payload,
+                        engineConfig,
                     });
                 })(),
             };

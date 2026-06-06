@@ -649,6 +649,14 @@ export interface GameEngineConfig<
             actionKind: 'select-faction' | 'setup-select-faction' | 'setup-select-character';
             selectionId: string;
         }) => boolean | undefined;
+        resolveManualSetupSelectionActionKindFromCommand?: (args: {
+            type: string;
+            payload: unknown;
+        }) => 'select-faction' | 'setup-select-faction' | 'setup-select-character' | null | undefined;
+        resolveManualSetupSelectionId?: (args: {
+            actionKind: 'select-faction' | 'setup-select-faction' | 'setup-select-character';
+            payload: unknown;
+        }) => string | null | undefined;
         buildInteractionRecoveryFingerprintHint?: (args: {
             state: MatchState<unknown>;
             playerId: string;

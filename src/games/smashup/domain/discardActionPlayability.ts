@@ -61,3 +61,7 @@ export function canPlayActionFromDiscard(
     }
     return { allowed: true, sourceId: option.sourceId };
 }
+
+export function __getDiscardActionPlayProviderIdsForTest(): string[] {
+    return providers.map(provider => provider.id);
+}

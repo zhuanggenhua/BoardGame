@@ -22,6 +22,7 @@ Smash Up 当前的 modifier 注册由 `src/games/smashup/domain/ongoingModifiers
   - 保持 Smash Up 当前规则语义与审计口径不变
   - 用最小改动收敛 power / breakpoint / base power 三类 registry 的同类 footgun
   - 让声明式 helper 与自定义 modifier 注册都能稳定表达“共享 / 自管 / 仅基础版”三种意图
+  - 让 `ongoing_modifiers.ts` 的 authoring 入口收敛为“结构化定义 + 少量自定义回调”，不再把标准化持续牌分散成一堆单条 imperative 注册
 - Non-Goals:
   - 不重写 Smash Up 全部持续效果为新的 DSL
   - 不把这套 seam 立即上升到跨游戏通用引擎层
@@ -64,6 +65,31 @@ modifier registry 不再要求调用者传入 `handlesPodInternally: true/false`
 
 同理，如果后续有其他注册 helper 天然只表达某一种变体策略，也应由 helper 内部固定，而不是要求业务卡牌调用点记住额外参数。
 
+### Decision: 结构化 modifier 定义成为 Smash Up ongoing authoring 的首选 seam
+
+除了 runtime registry 的显式变体策略外，业务 authoring 还需要单一入口。否则即使 runtime seam 正确，调用层仍然会继续在每个派系函数里散写：
+
+- `registerOngoingPowerModifier(...)`
+- `registerPowerModifier(...)`
+- `registerBasePowerModifier(...)`
+- `registerBreakpointModifier(...)`
+
+这会让“规则本身”和“用哪种注册方式”继续分离，下一次仍可能因为调用点写法不同而出现结构性偏差。
+
+因此本次进一步约束：
+
+1. **标准 attached/base ongoing 规则**  
+   - 优先写成结构化定义列表（如 `defId/location/target/delta/condition`）
+   - 再由单一 helper 批量注册
+
+2. **需要自定义算法的 modifier**  
+   - 仍允许保留 callback
+   - 但要把 `sourceDefId` 与 `podStrategy` 放进同一份 definition object，再由批量 helper 注册
+
+3. **不要求一次性 effect DSL 化**  
+   - 这一步只收 ongoing/static modifier authoring
+   - trigger / interaction / ability runtime 仍沿现有渐进迁移路线
+
 ### Decision: 三类 registry 共享同一套变体语义
 
 这次变更不仅收 power modifier，还同时收：
@@ -88,7 +114,8 @@ modifier registry 不再要求调用者传入 `handlesPodInternally: true/false`
 2. 让 alias 生成与注册表审计统一读取新 seam。
 3. 让 `registerOngoingPowerModifier` 内部绑定稳定模式。
 4. 迁移 `abilities/ongoing_modifiers.ts` 中当前依赖 `handlesPodInternally` 的自定义规则。
-5. 补 registry 级与黑熊骑兵回归测试。
+5. 将标准化 attached/base ongoing 规则收敛到结构化定义表，将批量自定义 modifier 改走 definition helper。
+6. 补 registry 级与黑熊骑兵回归测试。
 
 ## Open Questions
 

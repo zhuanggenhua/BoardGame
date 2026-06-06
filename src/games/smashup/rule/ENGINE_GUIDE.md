@@ -135,6 +135,18 @@
   - **第 4 步**：仅 score 相关窗口部分实现，缺少覆盖任意事件的通用可选响应轮询；
   - **第 5 步**：基本实现。
 
+### 2.2 Ongoing / Modifier Authoring（强制）
+
+- **标准化持续力量牌优先写成结构化定义，不再散写单条注册。**
+  - 适用形态：`附着/基地上每张该牌给目标 +N/-N`
+  - authoring 入口应声明 `defId / location / target / delta / condition`
+- **需要自定义算法时，也必须把 `sourceDefId` 与 `podStrategy` 放在同一份 definition object 里。**
+  - 不要把“规则函数”和“这条规则属于 shared / selfManaged / baseOnly”拆到两个地方表达
+- **POD 语义是继承或覆盖，不是补充。**
+  - 显式 `_pod` 注册只覆盖 POD 版本
+  - POD 不得反向影响基础版
+  - 基础版专属 ongoing 必须显式标为 `baseOnly`
+
 ### 3. Witness / LKI（“卡必须看到 X 才能 After X”）
 
 - **基础 witness 规则**：

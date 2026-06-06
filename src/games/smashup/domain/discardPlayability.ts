@@ -112,3 +112,7 @@ export function hasAnyDiscardPlayable(core: SmashUpCore, playerId: PlayerId): bo
     }
     return false;
 }
+
+export function __getDiscardPlayProviderIdsForTest(): string[] {
+    return providers.map(provider => provider.id);
+}

@@ -11,8 +11,11 @@
 - [x] 3.1 迁移 `abilities/ongoing_modifiers.ts` 中现有自管变体注册点，移除对外部布尔补丁的依赖
 - [x] 3.2 收敛极地突击队员这类“原版有 ongoing、POD 没有对应 ongoing”的特殊规则到新 seam
 - [x] 3.3 确认 shared alias 与 base-only 规则在新 seam 下仍保持当前语义
+- [x] 3.4 将标准化 attached/base ongoing 力量规则收敛到结构化定义表，不再分散写单条 imperative 注册
+- [x] 3.5 将自定义 power/base power/breakpoint modifier 收敛到 definition helper，确保 `sourceDefId` 与 `podStrategy` 同位声明
 
 ## 4. Verification
 - [x] 4.1 补充 registry 级测试，覆盖 auto alias / self-managed / base-only 三类模式
 - [x] 4.2 更新极地突击队员回归测试，锁定原版唯一己方随从时只加一次 +2
 - [x] 4.3 运行 Smash Up 定向 Vitest：modifier registry、POD registration、black bear cavalry 能力测试
+- [x] 4.4 复跑本次新增的结构化 helper 回归与 TypeScript 检查

@@ -12,6 +12,7 @@ Smash Up 当前的力量修正 / 基地力量修正 / 爆破点修正注册，�
   - 基础版规则自动复用到 POD
   - 规则内部已自行处理原版 / POD 差异
   - 规则只属于基础版，不应自动生成 POD alias
+- 将 `ongoing_modifiers.ts` 中标准化的持续力量规则收敛为结构化定义入口，让“规则内容”和“注册方式”处于同一份定义中。
 - 迁移 `registerPowerModifier`、`registerBasePowerModifier`、`registerBreakpointModifier` 相关调用点到新的注册 seam，但不改任何卡牌规则语义。
 - 保持现有审计输出与 POD 可见性口径，只修正“重复 alias 导致重复计算”的结构性风险。
 - 为极地突击队员及同类自管变体规则补回归测试，证明不会再因 alias 重复而双算。

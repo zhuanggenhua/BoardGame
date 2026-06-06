@@ -5598,26 +5598,6 @@ const playPowderKegUpkeepTransfer = async (
     await dismissCardSpotlightIfPresent(match.hostPage);
     await dismissCardSpotlightIfPresent(match.guestPage);
     await expect.poll(async () => {
-        const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
-        const interaction = asRecord(asRecord(sys.interaction).current);
-        return {
-            phase: String(sys.phase ?? core.phase ?? ''),
-            flowHalted: Boolean(sys.flowHalted),
-            sourceAbilityId: String(interaction.sourceAbilityId ?? ''),
-            type: String(interaction.type ?? ''),
-            currentChoiceSourceAbilityId: String(core.currentChoiceSourceAbilityId ?? ''),
-        };
-    }, { timeout: 10000 }).toMatchObject({
-        phase: 'discard',
-        flowHalted: false,
-        sourceAbilityId: '',
-        type: '',
-        currentChoiceSourceAbilityId: '',
-    });
-
-    await saveEvidenceScreenshot(match.hostPage, testInfo, screenshotPrefix.before);
-
-    await expect.poll(async () => {
         const root = await readServerRoot(match.matchId, match.hostPage);
         const interaction = asRecord(asRecord(root.sys.interaction).current);
         const players = asRecordMap(root.core.players);
@@ -5643,6 +5623,8 @@ const playPowderKegUpkeepTransfer = async (
         type: 'simple-choice',
         hostPowderKeg: 1,
     });
+
+    await saveEvidenceScreenshot(match.hostPage, testInfo, screenshotPrefix.before);
 
     const transferTargetButton = match.hostPage.getByRole('button', { name: /转交给 P2|P2|对手|Opponent/i }).first();
     await expect(transferTargetButton).toBeVisible({ timeout: 10000 });

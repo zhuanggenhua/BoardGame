@@ -49,6 +49,14 @@ registerRestriction('zombie_overrun_pod', 'play_minion', zombieOverrunRestrictio
 registerTrigger('zombie_overrun_pod', 'onTurnStart', zombieOverrunSelfDestruct);
 ```
 
+### Modifier / ongoing 变体语义（强制）
+
+- **POD 变体默认是“继承或显式覆盖”，不是补充一层效果。**
+- 若基础版与 POD 版规则完全一致，可走共享 alias。
+- 若规则函数内部已经自己区分基础版 / POD，必须标记为自管变体；框架不得再补第二份 `_pod` alias。
+- 若基础版有该 ongoing、POD 明确没有，则必须标记为仅基础版；POD 不得继承该规则，且 `_pod` 也不得在 modifier 审计里冒充“已注册”。
+- **POD 绝不能反向影响原版。** 显式 `_pod` 注册只覆盖 POD 目标，不得让基础版多吃一层规则。
+
 ## 新增 POD 卡牌
 
 ### 1. 数据定义（必须）

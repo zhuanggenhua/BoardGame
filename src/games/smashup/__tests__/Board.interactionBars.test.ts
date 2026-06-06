@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, expect, it } from 'vitest';
+import { buildDiscardStripCards } from '../ui/discardStripCards';
 
 function readBoardSource(): string {
     return readFileSync(resolve(__dirname, '..', 'Board.tsx'), 'utf-8');
@@ -22,22 +23,66 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).not.toContain('isReactionDirectHandPrompt');
     });
 
-    it('弃牌横条保留赛博守护者的弃牌堆持续行动入口，并在点中随从时发出 fromDiscard 行动命令', () => {
-        const source = readBoardSource();
-        expect(source).toContain("mode: 'play_action_minion' as const");
-        expect(source).toContain("dispatch(SU_COMMANDS.PLAY_ACTION, {");
-        expect(source).toContain('targetMinionUid: minionUid');
-        expect(source).toContain('fromDiscard: true');
+    it('弃牌横条应把 discardActionPlayProvider 结果映射成点随从模式', () => {
+        const stripCards = buildDiscardStripCards({
+            isDiscardMinionPrompt: false,
+            discardPlayOptions: [],
+            discardActionPlayOptions: [{
+                card: { uid: 'action-1', defId: 'cyborg_apes_shielding', owner: '0', type: 'action' },
+                allowedBaseIndices: [0],
+                allowedMinionUids: ['host-1'],
+                sourceId: 'cyborg_apes_cyberback',
+                defId: 'cyborg_apes_shielding',
+                name: '护盾',
+            }],
+            discardSpecialOptions: [],
+        });
+
+        expect(stripCards).toEqual([{
+            uid: 'action-1',
+            defId: 'cyborg_apes_shielding',
+            label: '护盾',
+            mode: 'play_action_minion',
+        }]);
     });
 
-    it('弃牌堆 special 只保留点基地激活族，点随从的弃牌持续行动不应复用 activate_special 提示', () => {
-        const source = readBoardSource();
-        expect(source).toContain("'activate_special_base'");
-        expect(source).toContain("'activate_special_minion'");
-        expect(source).toContain("selected?.mode === 'activate_special_base'");
-        expect(source).toContain("selected?.mode === 'activate_special_minion'");
-        expect(source).toContain("defaultValue: '点击基地发动这张牌'");
-        expect(source).toContain("dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, {");
-        expect(source).toContain('targetMinionUid: minionUid');
+    it('弃牌堆 special 应按 allowedMinionUids 映射到点基地或点随从模式', () => {
+        const stripCards = buildDiscardStripCards({
+            isDiscardMinionPrompt: false,
+            discardPlayOptions: [],
+            discardActionPlayOptions: [],
+            discardSpecialOptions: [
+                {
+                    card: { uid: 'special-base', defId: 'skeletons_revenant', owner: '0', type: 'minion' },
+                    allowedBaseIndices: 'all',
+                    sourceId: 'skeletons_revenant',
+                    defId: 'skeletons_revenant',
+                    name: '归来者',
+                },
+                {
+                    card: { uid: 'special-minion', defId: 'world_champs_eh', owner: '0', type: 'action' },
+                    allowedBaseIndices: [0],
+                    allowedMinionUids: ['ally-1'],
+                    sourceId: 'world_champs_eh',
+                    defId: 'world_champs_eh',
+                    name: 'Eh',
+                },
+            ],
+        });
+
+        expect(stripCards).toEqual([
+            {
+                uid: 'special-base',
+                defId: 'skeletons_revenant',
+                label: '归来者',
+                mode: 'activate_special_base',
+            },
+            {
+                uid: 'special-minion',
+                defId: 'world_champs_eh',
+                label: 'Eh',
+                mode: 'activate_special_minion',
+            },
+        ]);
     });
 });

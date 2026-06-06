@@ -226,6 +226,7 @@
     "discard_play_available": "Play from discard pile",
     "click_base_to_deploy": "Click a base to deploy",
     "click_base_to_bury": "Click a base to bury this card",
+    "click_base_to_activate_discard_special": "Click a base to activate this card",
     "power_limit_exceeded": "Power limit exceeded",
     "minion_short": "Minion",
     "minion_global_quota": "Global Quota",

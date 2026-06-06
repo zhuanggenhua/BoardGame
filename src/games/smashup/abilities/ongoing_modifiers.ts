@@ -5,8 +5,14 @@
  * （在 initAllAbilities() 中调用）
  */
 
-import { registerPowerModifier, registerOngoingPowerModifier, registerBasePowerModifier, registerBreakpointModifier, registerTitanPowerModifier } from '../domain/ongoingModifiers';
-import type { PowerModifierContext } from '../domain/ongoingModifiers';
+import {
+    registerPowerModifiers,
+    registerOngoingPowerModifiers,
+    registerBasePowerModifiers,
+    registerBreakpointModifiers,
+    registerTitanPowerModifier,
+} from '../domain/ongoingModifiers';
+import type { BasePowerModifierContext, OngoingPowerModifierDefinition, PowerModifierContext } from '../domain/ongoingModifiers';
 import type { MinionOnBase, SmashUpCore } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { isMicrobot } from '../domain/utils';
@@ -59,39 +65,72 @@ function getOngoingActionControllerId(action: { ownerId: PlayerId; metadata?: Re
         : action.ownerId) as PlayerId;
 }
 
+const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinition[] = [
+    { defId: 'dino_upgrade', location: 'minion', target: 'self', delta: 2 },
+    {
+        defId: 'ghost_door_to_the_beyond',
+        location: 'base',
+        target: 'ownerMinions',
+        delta: 2,
+        condition: (ctx) => {
+            const player = ctx.state.players[ctx.minion.controller];
+            return !!player && player.hand.length <= 2;
+        },
+    },
+    { defId: 'ninja_poison', location: 'minion', target: 'self', delta: -4 },
+    { defId: 'killer_plant_sleep_spores', location: 'base', target: 'opponentMinions', delta: -1 },
+    { defId: 'steampunk_rotary_slug_thrower', location: 'base', target: 'ownerMinions', delta: 2 },
+    { defId: 'elder_thing_dunwich_horror', location: 'minion', target: 'self', delta: 5 },
+    { defId: 'vampire_dinner_date', location: 'minion', target: 'self', delta: -2 },
+    { defId: 'ancient_egyptians_ancient_curse', location: 'minion', target: 'self', delta: -2 },
+    { defId: 'mermaids_becalmed_shores', location: 'base', target: 'opponentMinions', delta: -1 },
+    { defId: 'mermaids_shipwreck_cove', location: 'base', target: 'ownerMinions', delta: 1 },
+    { defId: 'world_champs_bewitched', location: 'minion', target: 'self', delta: 2 },
+    { defId: 'fairies_leaf_armor', location: 'minion', target: 'self', delta: 1 },
+    { defId: 'princesses_heirloom', location: 'minion', target: 'self', delta: 1 },
+    { defId: 'shapeshifters_splice_as_nice', location: 'minion', target: 'self', delta: 2 },
+    { defId: 'cyborg_apes_cyberevolution', location: 'minion', target: 'self', delta: 3 },
+    { defId: 'werewolf_full_moon', location: 'base', target: 'ownerMinions', delta: 1 },
+    { defId: 'dragons_dragon_lands', location: 'base', target: 'ownerMinions', delta: 1 },
+    { defId: 'dragons_intimidating_presence', location: 'base', target: 'opponentMinions', delta: -1 },
+    { defId: 'superheroes_expanded_power', location: 'minion', target: 'self', delta: 1 },
+];
+
+function registerStructuredOngoingPowerModifiers(): void {
+    registerOngoingPowerModifiers(STRUCTURED_ONGOING_POWER_MODIFIERS);
+}
+
 // ============================================================================
 // 恐龙派系
 // ============================================================================
 
 function registerDinosaurModifiers(): void {
-    // 重装剑龙：其他玩家回合时 +2 力量
-    // 原版：永久被动 ongoing，不需要使用天赋
-    // POD 版：需要先使用天赋（talentUsed=true），然后在别人回合时 +2
-    registerPowerModifier('dino_armor_stego', (ctx: PowerModifierContext) => {
-        const baseId = ctx.minion.defId.replace(/_pod$/, '');
-        if (baseId !== 'dino_armor_stego') return 0;
-        // 当前回合不是自己的回合时 +2
-        const currentPlayer = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
-        if (currentPlayer === ctx.minion.controller) return 0;
-        // POD 版需要 talentUsed 标记为 true 才生效
-        const isPod = ctx.minion.defId.endsWith('_pod');
-        if (isPod && !ctx.minion.talentUsed) return 0;
-        return 2;
-    }, { podStrategy: 'selfManaged' });
-
-    // 战争猛龙：同基地每个己方战争猛龙（含自身）+1 力量
-    registerPowerModifier('dino_war_raptor', (ctx: PowerModifierContext) => {
-        const baseId = ctx.minion.defId.replace(/_pod$/, '');
-        if (baseId !== 'dino_war_raptor') return 0;
-        // war_raptor 和 war_raptor_pod 都算入同派系
-        const raptorCount = ctx.base.minions.filter(
-            m => ['dino_war_raptor', 'dino_war_raptor_pod'].includes(m.defId) && m.controller === ctx.minion.controller
-        ).length;
-        return raptorCount;
-    }, { podStrategy: 'selfManaged' });
-
-    // 升级（ongoing 行动卡附着在随从上）：每张 +2 力量
-    registerOngoingPowerModifier('dino_upgrade', 'minion', 'self', 2);
+    registerPowerModifiers([
+        {
+            sourceDefId: 'dino_armor_stego',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                const baseId = ctx.minion.defId.replace(/_pod$/, '');
+                if (baseId !== 'dino_armor_stego') return 0;
+                const currentPlayer = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
+                if (currentPlayer === ctx.minion.controller) return 0;
+                const isPod = ctx.minion.defId.endsWith('_pod');
+                if (isPod && !ctx.minion.talentUsed) return 0;
+                return 2;
+            },
+        },
+        {
+            sourceDefId: 'dino_war_raptor',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                const baseId = ctx.minion.defId.replace(/_pod$/, '');
+                if (baseId !== 'dino_war_raptor') return 0;
+                return ctx.base.minions.filter(
+                    m => ['dino_war_raptor', 'dino_war_raptor_pod'].includes(m.defId) && m.controller === ctx.minion.controller
+                ).length;
+            },
+        },
+    ]);
 }
 
 // ============================================================================
@@ -99,32 +138,33 @@ function registerDinosaurModifiers(): void {
 // ============================================================================
 
 function registerRobotModifiers(): void {
-    // 微型机阿尔法号：每个其他己方随从（视为微型机）+1 力量
-    // “你的所有随从均视为微型机”，因此计算场上所有己方其他随从数量
-    registerPowerModifier('robot_microbot_alpha', (ctx: PowerModifierContext) => {
-        const baseId = ctx.minion.defId.replace(/_pod$/, '');
-        if (baseId !== 'robot_microbot_alpha') return 0;
-        // 计算场上所有己方其他随从数量（所有基地）
-        let otherMinionCount = 0;
-        for (const base of ctx.state.bases) {
-            for (const m of base.minions) {
-                if (m.controller === ctx.minion.controller && m.uid !== ctx.minion.uid) {
-                    otherMinionCount++;
+    registerPowerModifiers([
+        {
+            sourceDefId: 'robot_microbot_alpha',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                const baseId = ctx.minion.defId.replace(/_pod$/, '');
+                if (baseId !== 'robot_microbot_alpha') return 0;
+                let otherMinionCount = 0;
+                for (const base of ctx.state.bases) {
+                    for (const minion of base.minions) {
+                        if (minion.controller === ctx.minion.controller && minion.uid !== ctx.minion.uid) {
+                            otherMinionCount++;
+                        }
+                    }
                 }
-            }
-        }
-        return otherMinionCount;
-    }, { podStrategy: 'selfManaged' });
-
-    // 微型机修理工 ongoing：己方每个微型机 +1 力量
-    // 描述：“你的每个微型机的力量 +1”
-    // alpha 在场时所有己方随从视为微型机；alpha 不在场时仅原始微型机受益
-    registerPowerModifier('robot_microbot_fixer', (ctx: PowerModifierContext) => {
-        // 目标随从必须是微型机才能受益
-        if (!isMicrobot(ctx.state, ctx.minion)) return 0;
-        // 计算场上与目标随从同控制者的修理工数量（包括 POD 版本）
-        return countMinionsWithDefId(ctx.state, 'robot_microbot_fixer', ctx.minion.controller);
-    }, { podStrategy: 'selfManaged' });
+                return otherMinionCount;
+            },
+        },
+        {
+            sourceDefId: 'robot_microbot_fixer',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (!isMicrobot(ctx.state, ctx.minion)) return 0;
+                return countMinionsWithDefId(ctx.state, 'robot_microbot_fixer', ctx.minion.controller);
+            },
+        },
+    ]);
 }
 
 // ============================================================================
@@ -132,19 +172,18 @@ function registerRobotModifiers(): void {
 // ============================================================================
 
 function registerGhostModifiers(): void {
-    // 不散阴魂：如果你只有 2 张或更少的手牌，本随从 +3 力量
-    registerPowerModifier('ghost_haunting', (ctx: PowerModifierContext) => {
-        if (!matchesDefId(ctx.minion, 'ghost_haunting')) return 0;
-        const player = ctx.state.players[ctx.minion.controller];
-        if (!player) return 0;
-        return player.hand.length <= 2 ? 3 : 0;
-    }, { podStrategy: 'selfManaged' });
-
-    // 通灵之门（ongoing 行动卡附着在基地上）：手牌 2 张或更少时同基地己方随从每张 +2 力量
-    registerOngoingPowerModifier('ghost_door_to_the_beyond', 'base', 'ownerMinions', 2, (ctx) => {
-        const player = ctx.state.players[ctx.minion.controller];
-        return !!player && player.hand.length <= 2;
-    });
+    registerPowerModifiers([
+        {
+            sourceDefId: 'ghost_haunting',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (!matchesDefId(ctx.minion, 'ghost_haunting')) return 0;
+                const player = ctx.state.players[ctx.minion.controller];
+                if (!player) return 0;
+                return player.hand.length <= 2 ? 3 : 0;
+            },
+        },
+    ]);
 }
 
 // ============================================================================
@@ -152,8 +191,6 @@ function registerGhostModifiers(): void {
 // ============================================================================
 
 function registerNinjaModifiers(): void {
-    // 毒药（ongoing 行动卡附着在随从上）：每张 -4 力量
-    registerOngoingPowerModifier('ninja_poison', 'minion', 'self', -4);
 }
 
 // ============================================================================
@@ -161,9 +198,6 @@ function registerNinjaModifiers(): void {
 // ============================================================================
 
 function registerKillerPlantModifiers(): void {
-    // 催眠孢子（ongoing 行动卡打出到基地上）：每张对其他玩家在此基地的随从 -1 力量
-    registerOngoingPowerModifier('killer_plant_sleep_spores', 'base', 'opponentMinions', -1);
-
     // 过度生长（ongoing 行动卡附着在基地上）：
     // 规则：持续：自你的回合开始时，将本基地的爆破点降低到 0 点
     // 实现方式：onTurnStart 触发器产生 BREAKPOINT_MODIFIED 事件（tempBreakpointModifiers，回合结束自动清零）
@@ -178,46 +212,42 @@ function registerKillerPlantModifiers(): void {
 // ============================================================================
 
 function registerSteampunkModifiers(): void {
-    // 蒸汽人：本基地有至少一个己方战术时 +1 力量（flat +1，非 scaling）
-    // 描述：「持续：如果你在本基地至少有一个你的战术附着在它上面，则 +1 力量。」
-    registerPowerModifier('steampunk_steam_man', (ctx: PowerModifierContext) => {
-        const baseId = ctx.minion.defId.replace(/_pod$/, '');
-        if (baseId !== 'steampunk_steam_man') return 0;
-        
-        // 检查基地上是否有己方行动卡（ongoing 或附着在随从上的）
-        const hasBaseOngoing = ctx.base.ongoingActions.some(
-            a => ((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === ctx.minion.controller
-        );
-        if (hasBaseOngoing) {
-            return 1;
-        }
-        for (const m of ctx.base.minions) {
-            if (m.attachedActions.some(
-                a => ((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === ctx.minion.controller
-            )) {
-                return 1;
-            }
-        }
-        return 0;
-    }, { podStrategy: 'selfManaged' });
+    registerPowerModifiers([
+        {
+            sourceDefId: 'steampunk_steam_man',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                const baseId = ctx.minion.defId.replace(/_pod$/, '');
+                if (baseId !== 'steampunk_steam_man') return 0;
+                const hasBaseOngoing = ctx.base.ongoingActions.some(
+                    action => ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.minion.controller
+                );
+                if (hasBaseOngoing) {
+                    return 1;
+                }
+                for (const minion of ctx.base.minions) {
+                    if (minion.attachedActions.some(
+                        action => ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.minion.controller
+                    )) {
+                        return 1;
+                    }
+                }
+                return 0;
+            },
+        },
+    ]);
 
-    // 蒸汽机车（ongoing 行动卡附着在基地上）：拥有者在此基地有随从时，每张 +5 总力量
-    // 注意：这是 BasePowerModifier，ctx.playerId 是正在计算总力量的玩家
-    // ctx.ongoing 是当前正在评估的 ongoing 卡
-    registerBasePowerModifier('steampunk_aggromotive', (ctx) => {
-        if (!ctx.ongoing) return 0;
-        const ongoingControllerId = (ctx.ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ctx.ongoing.ownerId;
-        // 只有当前 ongoing 卡的控制者才能获得加成
-        if (ongoingControllerId !== ctx.playerId) return 0;
-        
-        // 检查该控制者在此基地是否有随从
-        const hasMinion = ctx.base.minions.some(m => m.controller === ongoingControllerId);
-        
-        return hasMinion ? 5 : 0;
-    });
-
-    // 旋转弹头发射器（ongoing 行动卡附着在基地上）：每张给同基地己方随从 +2 力量
-    registerOngoingPowerModifier('steampunk_rotary_slug_thrower', 'base', 'ownerMinions', 2);
+    registerBasePowerModifiers([
+        {
+            defId: 'steampunk_aggromotive',
+            modifier: (ctx) => {
+                if (!ctx.ongoing) return 0;
+                const ongoingControllerId = (ctx.ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ctx.ongoing.ownerId;
+                if (ongoingControllerId !== ctx.playerId) return 0;
+                return ctx.base.minions.some(minion => minion.controller === ongoingControllerId) ? 5 : 0;
+            },
+        },
+    ]);
 }
 
 // ============================================================================
@@ -225,33 +255,40 @@ function registerSteampunkModifiers(): void {
 // ============================================================================
 
 function registerBearCavalryModifiers(): void {
-    // 极地突击队：基地上唯一己方随从时 +2 力量（不可消灭由 ongoing 保护系统处理）
-    registerPowerModifier('bear_cavalry_polar_commando', (ctx: PowerModifierContext) => {
-        // POD 版没有该 ongoing 效果（POD 版只有 talent 效果）
-        if (ctx.minion.defId === 'bear_cavalry_polar_commando_pod') return 0;
-        if (ctx.minion.defId !== 'bear_cavalry_polar_commando') return 0;
-        const myMinionCount = ctx.base.minions.filter(
-            m => m.controller === ctx.minion.controller
-        ).length;
-        return myMinionCount === 1 ? 2 : 0;
-    }, { podStrategy: 'baseOnly' });
+    registerPowerModifiers([
+        {
+            sourceDefId: 'bear_cavalry_polar_commando',
+            podStrategy: 'baseOnly',
+            modifier: (ctx: PowerModifierContext) => {
+                if (ctx.minion.defId === 'bear_cavalry_polar_commando_pod') return 0;
+                if (ctx.minion.defId !== 'bear_cavalry_polar_commando') return 0;
+                const myMinionCount = ctx.base.minions.filter(
+                    minion => minion.controller === ctx.minion.controller
+                ).length;
+                return myMinionCount === 1 ? 2 : 0;
+            },
+        },
+    ]);
 
-    // Bearing Down POD（ongoing 行动卡附着在基地上）：动态调整爆破点
-    // 规则：每个在此基地有随从的玩家 +2 爆破点；如果本回合你曾把对手随从移动到此基地，则改为每个玩家 -2
-    registerBreakpointModifier('bear_cavalry_bearing_down_pod', (ctx) => {
-        const cards = ctx.base.ongoingActions.filter(a => a.defId === 'bear_cavalry_bearing_down_pod');
-        if (cards.length === 0) return 0;
+    registerBreakpointModifiers([
+        {
+            sourceDefId: 'bear_cavalry_bearing_down_pod',
+            modifier: (ctx) => {
+                const cards = ctx.base.ongoingActions.filter(action => action.defId === 'bear_cavalry_bearing_down_pod');
+                if (cards.length === 0) return 0;
 
-        const playersWithMinions = new Set(ctx.base.minions.map(m => m.controller)).size;
-        const modifier = playersWithMinions * 2;
-        let total = 0;
-        for (const card of cards) {
-            const controllerId = getOngoingActionControllerId(card);
-            const movedOpponentHereThisTurn = ctx.state.movedToBasesThisTurn?.[ctx.baseIndex]?.[controllerId] ?? false;
-            total += movedOpponentHereThisTurn ? -modifier : modifier;
-        }
-        return total;
-    });
+                const playersWithMinions = new Set(ctx.base.minions.map(minion => minion.controller)).size;
+                const modifier = playersWithMinions * 2;
+                let total = 0;
+                for (const card of cards) {
+                    const controllerId = getOngoingActionControllerId(card);
+                    const movedOpponentHereThisTurn = ctx.state.movedToBasesThisTurn?.[ctx.baseIndex]?.[controllerId] ?? false;
+                    total += movedOpponentHereThisTurn ? -modifier : modifier;
+                }
+                return total;
+            },
+        },
+    ]);
 }
 
 // ============================================================================
@@ -259,8 +296,6 @@ function registerBearCavalryModifiers(): void {
 // ============================================================================
 
 function registerElderThingModifiers(): void {
-    // 邓威奇恐怖（ongoing 行动卡附着在随从上）：每张 +5 力量
-    registerOngoingPowerModifier('elder_thing_dunwich_horror', 'minion', 'self', 5);
 }
 
 // ============================================================================
@@ -268,20 +303,20 @@ function registerElderThingModifiers(): void {
 // ============================================================================
 
 function registerVampireModifiers(): void {
-    // Dinner Date POD（ongoing 行动卡附着在随从上）：附着随从 -2 力量
-    registerOngoingPowerModifier('vampire_dinner_date', 'minion', 'self', -2);
 }
 
 function registerAncientEgyptiansModifiers(): void {
-    // 阿努比斯祭司：如果本基地有你的埋葬牌，本随从 +2 力量
-    registerPowerModifier('ancient_egyptians_priest_of_anubis', (ctx: PowerModifierContext) => {
-        if (!matchesDefId(ctx.minion, 'ancient_egyptians_priest_of_anubis')) return 0;
-        const hasOwnedBuried = (ctx.base.buriedCards ?? []).some(card => card.controllerId === ctx.minion.controller);
-        if (!hasOwnedBuried) return 0;
-        return 2;
-    }, { podStrategy: 'selfManaged' });
-
-    registerOngoingPowerModifier('ancient_egyptians_ancient_curse', 'minion', 'self', -2);
+    registerPowerModifiers([
+        {
+            sourceDefId: 'ancient_egyptians_priest_of_anubis',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (!matchesDefId(ctx.minion, 'ancient_egyptians_priest_of_anubis')) return 0;
+                const hasOwnedBuried = (ctx.base.buriedCards ?? []).some(card => card.controllerId === ctx.minion.controller);
+                return hasOwnedBuried ? 2 : 0;
+            },
+        },
+    ]);
 }
 
 function registerSkeletonsModifiers(): void {
@@ -292,57 +327,57 @@ function registerSkeletonsModifiers(): void {
 }
 
 function registerMermaidsModifiers(): void {
-    // 安静的海岸：基地上其他玩家的仆从 -1 力量
-    registerOngoingPowerModifier('mermaids_becalmed_shores', 'base', 'opponentMinions', -1);
-
-    // 沉船湾：基地上拥有者的仆从 +1 力量
-    registerOngoingPowerModifier('mermaids_shipwreck_cove', 'base', 'ownerMinions', 1);
-
-    // 诱惑者：如果本回合有其他玩家仆从移动到这里，则 +2 力量
-    registerPowerModifier('mermaids_temptress', (ctx: PowerModifierContext) => {
-        if (!matchesDefId(ctx.minion, 'mermaids_temptress')) return 0;
-        const movedOpponentHereThisTurn = Object.entries(ctx.state.minionsMovedToBaseThisTurn ?? {})
-            .some(([playerId, movedBases]) => playerId !== ctx.minion.controller && (movedBases?.[ctx.baseIndex] ?? 0) > 0);
-        return movedOpponentHereThisTurn ? 2 : 0;
-    }, { podStrategy: 'selfManaged' });
+    registerPowerModifiers([
+        {
+            sourceDefId: 'mermaids_temptress',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (!matchesDefId(ctx.minion, 'mermaids_temptress')) return 0;
+                const movedOpponentHereThisTurn = Object.entries(ctx.state.minionsMovedToBaseThisTurn ?? {})
+                    .some(([playerId, movedBases]) => playerId !== ctx.minion.controller && (movedBases?.[ctx.baseIndex] ?? 0) > 0);
+                return movedOpponentHereThisTurn ? 2 : 0;
+            },
+        },
+    ]);
 }
 
 function registerWorldChampsModifiers(): void {
-    // 蛊惑附体：附着随从 +2 力量
-    registerOngoingPowerModifier('world_champs_bewitched', 'minion', 'self', 2);
 }
 
 function registerFairiesModifiers(): void {
-    // 叶之甲：附着随从 +1 力量
-    registerOngoingPowerModifier('fairies_leaf_armor', 'minion', 'self', 1);
+    registerPowerModifiers([
+        {
+            sourceDefId: 'fairies_daisy_chain',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => (
+                ctx.minion.attachedActions.reduce((total, action) => {
+                    if (action.defId !== 'fairies_daisy_chain' && action.defId !== 'fairies_daisy_chain_pod') {
+                        return total;
+                    }
+                    return total + ((((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.minion.controller) ? 2 : -2);
+                }, 0)
+            ),
+        },
+        {
+            sourceDefId: 'fairies_enchantment',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => (
+                ctx.base.ongoingActions.reduce((total, action) => {
+                    if (action.defId !== 'fairies_enchantment' && action.defId !== 'fairies_enchantment_pod') {
+                        return total;
+                    }
 
-    // 雏菊花环：你控制则 +2，否则 -2。需要按每张附着牌的 owner 动态判断。
-    registerPowerModifier('fairies_daisy_chain', (ctx: PowerModifierContext) => {
-        return ctx.minion.attachedActions.reduce((total, action) => {
-            if (action.defId !== 'fairies_daisy_chain' && action.defId !== 'fairies_daisy_chain_pod') {
-                return total;
-            }
-            return total + ((((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.minion.controller) ? 2 : -2);
-        }, 0);
-    }, { podStrategy: 'selfManaged' });
-
-    // 结果：根据交互选择为整座基地提供 +1 / -1 / both(净 0)。
-    registerPowerModifier('fairies_enchantment', (ctx: PowerModifierContext) => {
-        return ctx.base.ongoingActions.reduce((total, action) => {
-            if (action.defId !== 'fairies_enchantment' && action.defId !== 'fairies_enchantment_pod') {
-                return total;
-            }
-
-            const mode = action.metadata?.fairiesEnchantmentMode;
-            if (mode === 'plus') return total + 1;
-            if (mode === 'minus') return total - 1;
-            return total;
-        }, 0);
-    }, { podStrategy: 'selfManaged' });
+                    const mode = action.metadata?.fairiesEnchantmentMode;
+                    if (mode === 'plus') return total + 1;
+                    if (mode === 'minus') return total - 1;
+                    return total;
+                }, 0)
+            ),
+        },
+    ]);
 }
 
 function registerPrincessesModifiers(): void {
-    registerOngoingPowerModifier('princesses_heirloom', 'minion', 'self', 1);
 }
 
 function registerYuanhouModifiers(): void {
@@ -356,57 +391,74 @@ function registerYuanhouModifiers(): void {
         return highestPrintedPower;
     };
 
-    registerPowerModifier('shapeshifters_mimic', (ctx: PowerModifierContext) => {
-        if (!matchesDefId(ctx.minion, 'shapeshifters_mimic')) return 0;
-        const highestPrintedPower = getHighestPrintedPower(ctx.state);
-        return highestPrintedPower - getCardPrintedPower(ctx.minion.defId);
-    }, { podStrategy: 'selfManaged' });
-
-    registerPowerModifier('shapeshifters_copycat_copied_power', (ctx: PowerModifierContext) => {
-        if (!matchesDefId(ctx.minion, 'shapeshifters_copycat')) return 0;
-        if (ctx.minion.metadata?.copiedAbilityUntilTurn !== ctx.state.turnNumber) return 0;
-        const copiedDefId = ctx.minion.metadata?.copiedAbilityDefId;
-        if (copiedDefId === 'shapeshifters_mimic') {
-            return getHighestPrintedPower(ctx.state) - getCardPrintedPower(ctx.minion.defId);
-        }
-        if (copiedDefId === 'cyborg_apes_furious_george') {
-            return ctx.minion.attachedActions.length;
-        }
-        return 0;
-    }, { podStrategy: 'selfManaged' });
-
-    registerOngoingPowerModifier('shapeshifters_splice_as_nice', 'minion', 'self', 2);
-
-    registerPowerModifier('shapeshifters_cellular_bonding_copied_power', (ctx: PowerModifierContext) => {
-        const bondingCardUid = ctx.minion.metadata?.cellularBondingCardUid;
-        const copiedDefId = ctx.minion.metadata?.cellularBondingCopiedActionDefId;
-        if (typeof bondingCardUid !== 'string' || typeof copiedDefId !== 'string') return 0;
-        if (!ctx.minion.attachedActions.some(action => action.uid === bondingCardUid)) return 0;
-        if (copiedDefId === 'shapeshifters_splice_as_nice') return 2;
-        if (copiedDefId === 'cyborg_apes_cyberevolution') return 3;
-        if (copiedDefId === 'cyborg_apes_juiced_up') return ctx.minion.attachedActions.length * 2;
-        return 0;
-    }, { podStrategy: 'selfManaged' });
-
-    registerPowerModifier('cyborg_apes_furious_george', (ctx: PowerModifierContext) => {
-        if (!matchesDefId(ctx.minion, 'cyborg_apes_furious_george')) return 0;
-        return ctx.minion.attachedActions.length;
-    }, { podStrategy: 'selfManaged' });
-
-    registerOngoingPowerModifier('cyborg_apes_cyberevolution', 'minion', 'self', 3);
-
-    registerPowerModifier('cyborg_apes_juiced_up', (ctx: PowerModifierContext) => {
-        return ctx.minion.attachedActions.reduce((total, action) => {
-            if (action.defId !== 'cyborg_apes_juiced_up' && action.defId !== 'cyborg_apes_juiced_up_pod') return total;
-            return total + (ctx.minion.attachedActions.length * 2);
-        }, 0);
-    }, { podStrategy: 'selfManaged' });
-
-    registerPowerModifier('base_monkey_lab', (ctx: PowerModifierContext) => {
-        if (ctx.base.defId !== 'base_monkey_lab') return 0;
-        if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
-        return ctx.minion.attachedActions.length;
-    }, { podStrategy: 'selfManaged' });
+    registerPowerModifiers([
+        {
+            sourceDefId: 'shapeshifters_mimic',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (!matchesDefId(ctx.minion, 'shapeshifters_mimic')) return 0;
+                const highestPrintedPower = getHighestPrintedPower(ctx.state);
+                return highestPrintedPower - getCardPrintedPower(ctx.minion.defId);
+            },
+        },
+        {
+            sourceDefId: 'shapeshifters_copycat_copied_power',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (!matchesDefId(ctx.minion, 'shapeshifters_copycat')) return 0;
+                if (ctx.minion.metadata?.copiedAbilityUntilTurn !== ctx.state.turnNumber) return 0;
+                const copiedDefId = ctx.minion.metadata?.copiedAbilityDefId;
+                if (copiedDefId === 'shapeshifters_mimic') {
+                    return getHighestPrintedPower(ctx.state) - getCardPrintedPower(ctx.minion.defId);
+                }
+                if (copiedDefId === 'cyborg_apes_furious_george') {
+                    return ctx.minion.attachedActions.length;
+                }
+                return 0;
+            },
+        },
+        {
+            sourceDefId: 'shapeshifters_cellular_bonding_copied_power',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                const bondingCardUid = ctx.minion.metadata?.cellularBondingCardUid;
+                const copiedDefId = ctx.minion.metadata?.cellularBondingCopiedActionDefId;
+                if (typeof bondingCardUid !== 'string' || typeof copiedDefId !== 'string') return 0;
+                if (!ctx.minion.attachedActions.some(action => action.uid === bondingCardUid)) return 0;
+                if (copiedDefId === 'shapeshifters_splice_as_nice') return 2;
+                if (copiedDefId === 'cyborg_apes_cyberevolution') return 3;
+                if (copiedDefId === 'cyborg_apes_juiced_up') return ctx.minion.attachedActions.length * 2;
+                return 0;
+            },
+        },
+        {
+            sourceDefId: 'cyborg_apes_furious_george',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (!matchesDefId(ctx.minion, 'cyborg_apes_furious_george')) return 0;
+                return ctx.minion.attachedActions.length;
+            },
+        },
+        {
+            sourceDefId: 'cyborg_apes_juiced_up',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => (
+                ctx.minion.attachedActions.reduce((total, action) => {
+                    if (action.defId !== 'cyborg_apes_juiced_up' && action.defId !== 'cyborg_apes_juiced_up_pod') return total;
+                    return total + (ctx.minion.attachedActions.length * 2);
+                }, 0)
+            ),
+        },
+        {
+            sourceDefId: 'base_monkey_lab',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (ctx.base.defId !== 'base_monkey_lab') return 0;
+                if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+                return ctx.minion.attachedActions.length;
+            },
+        },
+    ]);
 }
 
 function getCardPrintedPower(defId: string): number {
@@ -423,30 +475,41 @@ function countOwnedActionsOnBase(ctx: PowerModifierContext, ownerId: PlayerId): 
 }
 
 function registerKaijuModifiers(): void {
-    for (const defId of [
-        'kaiju_radioactive_breath',
-        'kaiju_oh_no',
-        'kaiju_the_folly_of_men',
-        'kaiju_stomp',
-    ]) {
-        registerBasePowerModifier(defId, (ctx) =>
-            ctx.ongoing?.ownerId === ctx.playerId
-                ? (defId === 'kaiju_radioactive_breath' ? 3 : 2)
-                : 0);
-    }
+    registerBasePowerModifiers([
+        ...[
+            'kaiju_radioactive_breath',
+            'kaiju_oh_no',
+            'kaiju_the_folly_of_men',
+            'kaiju_stomp',
+        ].map((defId) => ({
+            defId,
+            modifier: (ctx: BasePowerModifierContext) => (
+                ctx.ongoing?.ownerId === ctx.playerId
+                    ? (defId === 'kaiju_radioactive_breath' ? 3 : 2)
+                    : 0
+            ),
+        })),
+        ...[
+            'kaiju_tail_smash',
+            'kaiju_wade_through_the_buildings',
+        ].map((defId) => ({
+            defId,
+            modifier: (ctx: BasePowerModifierContext) => (
+                ctx.ongoing?.ownerId === ctx.playerId ? 4 : 0
+            ),
+        })),
+    ]);
 
-    for (const defId of [
-        'kaiju_tail_smash',
-        'kaiju_wade_through_the_buildings',
-    ]) {
-        registerBasePowerModifier(defId, (ctx) =>
-            ctx.ongoing?.ownerId === ctx.playerId ? 4 : 0);
-    }
-
-    registerPowerModifier('kaiju_kaijookey', (ctx: PowerModifierContext) => {
-        if (ctx.minion.defId.replace(/_pod$/, '') !== 'kaiju_kaijookey') return 0;
-        return countOwnedActionsOnBase(ctx, ctx.minion.controller);
-    }, { podStrategy: 'selfManaged' });
+    registerPowerModifiers([
+        {
+            sourceDefId: 'kaiju_kaijookey',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (ctx.minion.defId.replace(/_pod$/, '') !== 'kaiju_kaijookey') return 0;
+                return countOwnedActionsOnBase(ctx, ctx.minion.controller);
+            },
+        },
+    ]);
 
     registerTitanPowerModifier('kaiju_gorgodzolla', (ctx) => {
         const baseDef = getBaseDef(ctx.base.defId);
@@ -459,14 +522,19 @@ function registerKaijuModifiers(): void {
 // ============================================================================
 
 function registerBaseModifiers(): void {
-    // 通用基地持续力量加成：从 BaseCardDef.minionPowerBonus 数据驱动
-    registerPowerModifier('base_minionPowerBonus', (ctx: PowerModifierContext) => {
-        if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) {
-            return 0;
-        }
-        const baseDef = getBaseDef(ctx.base.defId);
-        return baseDef?.minionPowerBonus ?? 0;
-    }, { podStrategy: 'selfManaged' }); // 通用修正器内部已自管变体，不需要额外 POD alias
+    registerPowerModifiers([
+        {
+            sourceDefId: 'base_minionPowerBonus',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) {
+                    return 0;
+                }
+                const baseDef = getBaseDef(ctx.base.defId);
+                return baseDef?.minionPowerBonus ?? 0;
+            },
+        },
+    ]);
 }
 
 // ============================================================================
@@ -474,27 +542,29 @@ function registerBaseModifiers(): void {
 // ============================================================================
 
 function registerWerewolfModifiers(): void {
-    // 满月（ongoing 行动卡打出到基地上）：拥有者在此基地的随从 +1 力量
-    registerOngoingPowerModifier('werewolf_full_moon', 'base', 'ownerMinions', 1);
 }
 
 function registerDragonModifiers(): void {
-    registerPowerModifier('base_wyrms_desolation', (ctx: PowerModifierContext) => {
-        if (ctx.base.defId !== 'base_wyrms_desolation') return 0;
-        if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
-        return -1;
-    }, { podStrategy: 'selfManaged' });
-    registerOngoingPowerModifier('dragons_dragon_lands', 'base', 'ownerMinions', 1);
-    registerOngoingPowerModifier('dragons_intimidating_presence', 'base', 'opponentMinions', -1);
+    registerPowerModifiers([
+        {
+            sourceDefId: 'base_wyrms_desolation',
+            podStrategy: 'selfManaged',
+            modifier: (ctx: PowerModifierContext) => {
+                if (ctx.base.defId !== 'base_wyrms_desolation') return 0;
+                if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+                return -1;
+            },
+        },
+    ]);
 }
 
 function registerSuperheroesModifiers(): void {
-    registerOngoingPowerModifier('superheroes_expanded_power', 'minion', 'self', 1);
 }
 
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
+    registerStructuredOngoingPowerModifiers();
     registerDinosaurModifiers();
     registerRobotModifiers();
     registerGhostModifiers();

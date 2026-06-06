@@ -103,6 +103,7 @@ import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowSta
 import { normalizeSmashUpCoreForUi } from './ui/normalizeRuntimeState';
 import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoReport';
 import { collectLegalActionPlayTargets, getActionPlayTargetMode } from './domain/playLegality';
+import { buildDiscardStripCards } from './ui/discardStripCards';
 
 const ABILITY_FEEDBACK_DEFAULT_MESSAGES: Record<string, string> = {
     'ui.extra_minion_granted': '获得{{count}}次额外随从机会',
@@ -1067,42 +1068,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [currentPrompt]);
 
     // 统一弃牌堆出牌：合并正常弃牌堆出牌 + interaction 驱动的弃牌堆随从选择
-    const discardStripCards = useMemo<Array<{
-        uid: string;
-        defId: string;
-        label: string;
-        optionId?: string;
-        optionValue?: unknown;
-        mode: 'interaction' | 'play_minion' | 'play_action_minion' | 'activate_special_base' | 'activate_special_minion';
-    }>>(() => {
-        // interaction 驱动模式优先（僵尸领主等）
-        if (isDiscardMinionPrompt && currentPrompt) {
-            return currentPrompt.options
-                .filter(opt => !(opt.value as Record<string, unknown>)?.done)
-                .map(opt => {
-                    const val = opt.value as { cardUid: string; defId: string };
-                    return { uid: val.cardUid, defId: val.defId, label: opt.label, optionId: opt.id, optionValue: opt.value, mode: 'interaction' as const };
-                });
-        }
-        // 正常弃牌堆出牌模式
-        if (discardPlayOptions.length > 0 || discardActionPlayOptions.length > 0 || discardSpecialOptions.length > 0) {
-            return [
-                ...discardPlayOptions.map(opt => ({
-                    uid: opt.card.uid, defId: opt.defId, label: opt.name, mode: 'play_minion' as const,
-                })),
-                ...discardActionPlayOptions.map(opt => ({
-                    uid: opt.card.uid, defId: opt.defId, label: opt.name, mode: 'play_action_minion' as const,
-                })),
-                ...discardSpecialOptions.map(opt => ({
-                    uid: opt.card.uid,
-                    defId: opt.defId,
-                    label: opt.name,
-                    mode: opt.allowedMinionUids?.length ? 'activate_special_minion' as const : 'activate_special_base' as const,
-                })),
-            ];
-        }
-        return [];
-    }, [isDiscardMinionPrompt, currentPrompt, discardPlayOptions, discardActionPlayOptions, discardSpecialOptions]);
+    const discardStripCards = useMemo(() => buildDiscardStripCards({
+        isDiscardMinionPrompt,
+        currentPromptOptions: currentPrompt?.options,
+        discardPlayOptions,
+        discardActionPlayOptions,
+        discardSpecialOptions,
+    }), [isDiscardMinionPrompt, currentPrompt, discardPlayOptions, discardActionPlayOptions, discardSpecialOptions]);
 
     // 弃牌堆出牌横排的"完成"选项（interaction 模式下的 done 选项）
     const discardStripDoneOption = useMemo(() => {

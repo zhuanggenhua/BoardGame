@@ -460,6 +460,20 @@ export function registerOngoingPowerModifier(
     }, { podStrategy: 'selfManaged' });
 }
 
+export function registerOngoingPowerModifiers(
+    definitions: readonly OngoingPowerModifierDefinition[],
+): void {
+    for (const definition of definitions) {
+        registerOngoingPowerModifier(
+            definition.defId,
+            definition.location,
+            definition.target,
+            definition.delta,
+            definition.condition,
+        );
+    }
+}
+
 /**
  * 注册一个临界点修正
  * 
@@ -478,6 +492,16 @@ export function registerBreakpointModifier(
         modifier,
         podStrategy: getPodStrategy(options),
     });
+}
+
+export function registerBreakpointModifiers(
+    definitions: readonly BreakpointModifierDefinition[],
+): void {
+    for (const definition of definitions) {
+        registerBreakpointModifier(definition.sourceDefId, definition.modifier, {
+            podStrategy: definition.podStrategy,
+        });
+    }
 }
 
 /** 清空所有修正注册表（测试用） */

@@ -6,9 +6,13 @@ import {
     getEffectiveBreakpoint,
     getEffectivePower,
     getRegisteredModifierIds,
+    registerBasePowerModifiers,
+    registerBreakpointModifiers,
+    registerOngoingPowerModifiers,
     registerBasePowerModifier,
     registerBreakpointModifier,
     registerPodPowerModifierAliases,
+    registerPowerModifiers,
     registerPowerModifier,
 } from '../domain/ongoingModifiers';
 import { makeBase, makeMinion, makeStateWithBases } from './helpers';
@@ -91,6 +95,44 @@ describe('registerPodPowerModifierAliases completion audit', () => {
         expect(powerModifierIds.has('alias_power_card_pod')).toBe(false);
     });
 
+    it('结构化 power modifier 定义也应保留 baseOnly 语义', () => {
+        registerPowerModifiers([
+            {
+                sourceDefId: 'bulk_power_card',
+                podStrategy: 'baseOnly',
+                modifier: (ctx) => (ctx.minion.defId === 'bulk_power_card' ? 3 : 0),
+            },
+        ]);
+        registerPodPowerModifierAliases();
+
+        const baseMinion = makeMinion('m-base', 'bulk_power_card', '0', 4, { powerModifier: 0 });
+        const podMinion = makeMinion('m-pod', 'bulk_power_card_pod', '0', 4, { powerModifier: 0 });
+        const state = makeStateWithBases([makeBase('base_the_jungle', [baseMinion, podMinion])]);
+
+        expect(getEffectivePower(state, baseMinion, 0)).toBe(7);
+        expect(getEffectivePower(state, podMinion, 0)).toBe(4);
+    });
+
+    it('结构化 ongoing modifier 定义应让 POD 附着牌沿同一规则生效且不双算', () => {
+        registerOngoingPowerModifiers([
+            {
+                defId: 'bulk_attached_buff',
+                location: 'minion',
+                target: 'self',
+                delta: 2,
+            },
+        ]);
+        registerPodPowerModifierAliases();
+
+        const podMinion = makeMinion('m-pod', 'target_minion_pod', '0', 4, {
+            powerModifier: 0,
+            attachedActions: [{ uid: 'oa-pod', defId: 'bulk_attached_buff_pod', ownerId: '0' }],
+        });
+        const state = makeStateWithBases([makeBase('base_the_jungle', [podMinion])]);
+
+        expect(getEffectivePower(state, podMinion, 0)).toBe(6);
+    });
+
     it('POD breakpoint alias 在未显式覆写时，仍应继承基础版 modifier', () => {
         registerBreakpointModifier('alias_breakpoint_card', (ctx) => (
             ctx.base.ongoingActions.some((action) => action.defId === 'alias_breakpoint_card') ? 3 : 0
@@ -152,6 +194,35 @@ describe('registerPodPowerModifierAliases completion audit', () => {
         const state = makeStateWithBases([base]);
 
         expect(getBasePowerModifiers(state, 0, '0')).toBe(9);
+    });
+
+    it('结构化 base power / breakpoint 定义也应与现有 alias 语义一致', () => {
+        registerBasePowerModifiers([
+            {
+                defId: 'bulk_base_power_card',
+                modifier: (ctx) => (ctx.ongoing?.defId === 'bulk_base_power_card' && ctx.ongoing.ownerId === ctx.playerId ? 5 : 0),
+            },
+        ]);
+        registerBreakpointModifiers([
+            {
+                sourceDefId: 'bulk_breakpoint_card',
+                modifier: (ctx) => (
+                    ctx.base.ongoingActions.some((action) => action.defId === 'bulk_breakpoint_card') ? 3 : 0
+                ),
+            },
+        ]);
+        registerPodPowerModifierAliases();
+
+        const base = makeBase('base_the_jungle', [makeMinion('m0', 'test_minion', '0', 3)]);
+        base.ongoingActions = [
+            { uid: 'oa-pod-power', defId: 'bulk_base_power_card_pod', ownerId: '0' },
+            { uid: 'oa-pod-breakpoint', defId: 'bulk_breakpoint_card_pod', ownerId: '0' },
+        ];
+        const state = makeStateWithBases([base]);
+        const baseBreakpoint = getEffectiveBreakpoint(makeStateWithBases([makeBase('base_the_jungle')]), 0);
+
+        expect(getBasePowerModifiers(state, 0, '0')).toBe(5);
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint + 3);
     });
 });
 

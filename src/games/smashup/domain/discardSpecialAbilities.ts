@@ -58,3 +58,7 @@ export function canActivateSpecialFromDiscard(
     }
     return { allowed: true, sourceId: option.sourceId };
 }
+
+export function __getDiscardSpecialProviderIdsForTest(): string[] {
+    return providers.map(provider => provider.id);
+}

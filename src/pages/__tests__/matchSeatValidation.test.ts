@@ -53,6 +53,8 @@ import {
 import {
     resolveOnlineManualSetupTakeoverPlayerId,
     resolveManualSetupAttemptReleaseSource,
+    resolveManualSetupSelectionActionKindFromCommand,
+    resolveManualSetupSelectionId,
     resolveManualSetupSelectionTakeoverPlayerId,
     shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt,
     shouldReleaseFactionSelectAttemptFromSharedState,
@@ -3313,6 +3315,50 @@ describe('submitOnlineAiResolution', () => {
             selectionId: 'ranger',
             engineConfig: manualSetupEngineConfig,
         })).toBe('shared');
+    });
+
+    it('自定义前置选择命令未提供 override 时，shared fallback 不应误判 actionKind / selectionId', () => {
+        expect(resolveManualSetupSelectionActionKindFromCommand({
+            type: 'custom:select_draft',
+            payload: { draftId: 'ranger' },
+        })).toBeNull();
+
+        expect(resolveManualSetupSelectionId({
+            actionKind: 'setup-select-character',
+            payload: { draftId: 'ranger' },
+        })).toBeNull();
+    });
+
+    it('自定义前置选择命令提供 override 时，应按 adapter 解析 actionKind / selectionId', () => {
+        const manualSetupEngineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> = {
+            gameId: 'custom-manual-setup-command-game',
+            onlineAiRecovery: {
+                resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }) => (
+                    type === 'custom:select_draft'
+                    && typeof (payload as { draftId?: unknown } | undefined)?.draftId === 'string'
+                        ? 'setup-select-character'
+                        : undefined
+                ),
+                resolveManualSetupSelectionId: ({ actionKind, payload }) => (
+                    actionKind === 'setup-select-character'
+                    && typeof (payload as { draftId?: unknown } | undefined)?.draftId === 'string'
+                        ? (payload as { draftId: string }).draftId
+                        : undefined
+                ),
+            },
+        };
+
+        expect(resolveManualSetupSelectionActionKindFromCommand({
+            type: 'custom:select_draft',
+            payload: { draftId: 'ranger' },
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('setup-select-character');
+
+        expect(resolveManualSetupSelectionId({
+            actionKind: 'setup-select-character',
+            payload: { draftId: 'ranger' },
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('ranger');
     });
 
     it('shared state 未记录该派系且仍在 factionSelect 时，不应提前释放 select-faction attempt', () => {

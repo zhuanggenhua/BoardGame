@@ -184,6 +184,7 @@
     "discard_play_available": "可从弃牌堆打出",
     "click_base_to_deploy": "点击基地部署",
     "click_base_to_bury": "点击基地埋葬这张牌",
+    "click_base_to_activate_discard_special": "点击基地发动这张牌",
     "power_limit_exceeded": "力量超出限制",
     "minion_short": "随从",
     "minion_global_quota": "通用额度",

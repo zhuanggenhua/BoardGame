@@ -62,6 +62,36 @@ function resolveManualSetupAttemptReleaseOverride(args: {
     });
 }
 
+function resolveManualSetupSelectionActionKindOverride(args: {
+    type: string;
+    payload: unknown;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
+}): ManualSetupSelectionActionKind | null | undefined {
+    const resolver = args.engineConfig?.onlineAiRecovery?.resolveManualSetupSelectionActionKindFromCommand;
+    if (!resolver) {
+        return undefined;
+    }
+    return resolver({
+        type: args.type,
+        payload: args.payload,
+    });
+}
+
+function resolveManualSetupSelectionIdOverride(args: {
+    actionKind: ManualSetupSelectionActionKind;
+    payload: unknown;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
+}): string | null | undefined {
+    const resolver = args.engineConfig?.onlineAiRecovery?.resolveManualSetupSelectionId;
+    if (!resolver) {
+        return undefined;
+    }
+    return resolver({
+        actionKind: args.actionKind,
+        payload: args.payload,
+    });
+}
+
 export function shouldTakeOverManualSetupSelection(args: {
     sharedState: MatchState<unknown> | null | undefined;
     currentPlayerId: string | null;
@@ -230,8 +260,22 @@ export function shouldReleaseFactionSelectAttemptFromSharedState(args: {
 export function resolveManualSetupSelectionId(args: {
     actionKind: string;
     payload: unknown;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): string | null {
-    if (!isManualSetupSelectionActionKind(args.actionKind) || !isPlainRecord(args.payload)) {
+    if (!isManualSetupSelectionActionKind(args.actionKind)) {
+        return null;
+    }
+
+    const overriddenSelectionId = resolveManualSetupSelectionIdOverride({
+        actionKind: args.actionKind,
+        payload: args.payload,
+        engineConfig: args.engineConfig,
+    });
+    if (overriddenSelectionId !== undefined) {
+        return typeof overriddenSelectionId === 'string' ? overriddenSelectionId : null;
+    }
+
+    if (!isPlainRecord(args.payload)) {
         return null;
     }
 
@@ -280,7 +324,13 @@ export function resolveManualSetupAttemptReleaseSource(args: {
 export function resolveManualSetupSelectionActionKindFromCommand(args: {
     type: string;
     payload: unknown;
+    engineConfig?: ManualSetupRecoveryEngineConfig | null;
 }): ManualSetupSelectionActionKind | null {
+    const overriddenActionKind = resolveManualSetupSelectionActionKindOverride(args);
+    if (overriddenActionKind !== undefined) {
+        return overriddenActionKind;
+    }
+
     if (!isPlainRecord(args.payload)) {
         return null;
     }
