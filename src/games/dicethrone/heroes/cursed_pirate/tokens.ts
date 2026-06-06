@@ -9,6 +9,7 @@ export const CURSED_PIRATE_TOKENS: TokenDef[] = [
         name: statusText(STATUS_IDS.CURSED_COIN, 'name'),
         colorTheme: 'from-yellow-500 to-amber-900',
         description: statusText(STATUS_IDS.CURSED_COIN, 'description') as unknown as string[],
+        iconPath: 'dicethrone/images/cursed/status/诅咒金币',
         stackLimit: 5,
         category: 'debuff',
         passiveTrigger: {
@@ -24,6 +25,7 @@ export const CURSED_PIRATE_TOKENS: TokenDef[] = [
         name: statusText(STATUS_IDS.POWDER_KEG, 'name'),
         colorTheme: 'from-orange-700 to-red-900',
         description: statusText(STATUS_IDS.POWDER_KEG, 'description') as unknown as string[],
+        iconPath: 'dicethrone/images/cursed/status/炸药',
         stackLimit: 1,
         category: 'debuff',
         passiveTrigger: {
@@ -39,6 +41,7 @@ export const CURSED_PIRATE_TOKENS: TokenDef[] = [
         name: statusText(STATUS_IDS.WITHER, 'name'),
         colorTheme: 'from-violet-700 to-slate-950',
         description: statusText(STATUS_IDS.WITHER, 'description') as unknown as string[],
+        iconPath: 'dicethrone/images/cursed/status/凋零',
         stackLimit: 2,
         category: 'debuff',
         passiveTrigger: {
@@ -55,6 +58,7 @@ export const CURSED_PIRATE_TOKENS: TokenDef[] = [
         name: statusText(STATUS_IDS.PARLEY, 'name'),
         colorTheme: 'from-sky-500 to-slate-700',
         description: statusText(STATUS_IDS.PARLEY, 'description') as unknown as string[],
+        iconPath: 'dicethrone/images/cursed/status/休战',
         stackLimit: 1,
         category: 'debuff',
         passiveTrigger: {

@@ -78,6 +78,7 @@ public/assets/
 - **玩家面板、提示板、地图、角色立绘、卡牌大图等缺失后会破坏主体验的图片，必须使用具备候选链/回退链的加载方式**，优先使用 `OptimizedImage`、`CardPreview` 或等价公共组件。
 - **禁止把关键图片降级成裸 CSS background 单路径**。`buildLocalizedImageSet` / `buildOptimizedImageSet` 只负责生成 URL 字符串，不能像 `OptimizedImage` 一样在运行时从本地包、public 资源、manifest/R2 之间逐级回退；浏览器的多 background URL 也不是可靠的失败回退机制。
 - **CSS background 只适合两类场景**：一是精灵图/图集裁剪、Canvas/特殊渲染等必须依赖 `background-position` 的场景；二是丢失后不影响主流程的纯装饰背景。前者必须明确仍然复用统一 URL 解析工具，并补测试或截图证明裁剪合同正确。
+- **Android 已安装包资源（`/_capacitor_file_/.../game-packages/.../current/assets/...`）默认不要把可识别图标继续做成 CSS background**：像状态图标、token 图标、可识别 atlas 裁片这类一旦丢失就会退化成“纯色壳/空心圆”的内容，在移动端应优先用真实 `<img>` / `OptimizedImage` / 等价候选链组件承接，再通过 `overflow:hidden + absolute positioning` 做裁片；只有纯装饰背景或已经有专项回归证据证明稳定时，才允许继续用 CSS background 方案。
 - **发现移动端或离线包中“PC 正常、手机缺图”时，先查该图片是否绕过了统一图片组件**；不得先把问题归因到缓存、旧素材包或 CDN，除非已经证明运行时请求链本身符合回退合同。
 - **禁止为游戏正式素材新增假图兜底**：卡牌、基地、泰坦、角色立绘、地图、token 主视觉等正式游戏素材，如果真实素材未命中、R2 返回慢、或本地包里暂时没有，禁止新增内联 SVG、程序生成占位图、临时拼字卡面、截图裁片冒充正式资源。运行时只能显示真实素材或保持真实未加载状态。
 - **E2E / 截图验收同样禁止假素材**：如果截图时 R2 资源因为冷启动或远端拉取较慢而尚未出现，这是可记录的真实状态；可以等待更久，也可以保留真实空态截图，但不能为了“让截图好看”在游戏里加假的 fallback 素材。
@@ -93,6 +94,7 @@ public/assets/
 - **禁止在组件内部自建第二套图片加载系统**：自定义图片组件、精灵图组件、3D 骰子组件、状态图标组件、CSS background 精灵图组件，禁止自己再写一套 `fetch`、`Image.onload`、URL probe、同源特判、语言特判或“先判 ready 再渲染”的加载状态机。
 - **必须优先复用统一资源工具**：运行时图片路径解析、语言回退、压缩路径选择、缓存与版本参数，统一走 `AssetLoader`、`OptimizedImage`、`CardPreview`、`getLocalizedImageUrls`、`getOptimizedImageUrls`、`buildLocalizedImageSet`。
 - **特殊渲染只能包裹统一链路，不能绕开统一链路**：例如 3D 骰子、Canvas 纹理、Sprite Atlas、CSS background-position 裁切，如果最终仍然要展示同一张运行时图片，那么只能在统一链路产出的 URL 或图片对象之上做渲染，不能自己重新决定资源候选、回退顺序或本地/远端判断。
+- **Sprite / atlas 裁片允许用“真实 `<img>` + 裁剪容器”替代 `background-position`**：如果目标运行态包含 Android 已安装包、本地 `_capacitor_file_`、WebView 兼容问题或手机端已出现“图存在但背景图不显示/只剩底色”，优先考虑保留统一候选链，再把裁片实现切成 `<img>` 绝对定位，而不是继续在 `background-image` 上堆特判。
 - **同模块已有正确实现时，禁止重发明**：如果同一游戏中已有图片显示稳定的实现（如 `HandArea`/`CardPreview`），其他图片组件必须先对照并沿用该用法；不能因为当前组件表现异常，就在旁边新增一套“只对这个组件生效”的 workaround。
 - **修回归先查接线是否偏离统一链路**：当图片出现“之前正常、后来空白/错图/偶发失败”时，优先检查是否绕过了 `AssetLoader`、是否引入组件内特判、是否手动拼接了与统一规则不一致的路径；禁止直接继续堆特例。
 - **如确实需要补充共享能力，应下沉到公共层**：如果统一链路不能满足某类图片展示需求，应补到 `AssetLoader` 或通用媒体组件，而不是在单个游戏/单个组件里偷偷复制一份资源加载逻辑。

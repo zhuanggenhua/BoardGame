@@ -11,6 +11,7 @@ export const ZHANSHUJIA_TOKENS: TokenDef[] = [
         name: tokenText(TOKEN_IDS.TACTICAL_ADVANTAGE, 'name'),
         colorTheme: 'from-amber-300 to-orange-500',
         description: tokenText(TOKEN_IDS.TACTICAL_ADVANTAGE, 'description') as unknown as string[],
+        iconPath: 'dicethrone/images/zhanshujia/status/战术优势',
         stackLimit: 5,
         category: 'consumable',
         frameId: 'tactical_advantage',
@@ -21,6 +22,7 @@ export const ZHANSHUJIA_TOKENS: TokenDef[] = [
         name: statusText(STATUS_IDS.BIND, 'name'),
         colorTheme: 'from-stone-500 to-zinc-800',
         description: statusText(STATUS_IDS.BIND, 'description') as unknown as string[],
+        iconPath: 'dicethrone/images/zhanshujia/status/紧缚',
         stackLimit: 1,
         category: 'debuff',
         passiveTrigger: {

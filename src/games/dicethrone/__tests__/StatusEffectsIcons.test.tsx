@@ -58,7 +58,8 @@ describe('StatusEffectsIcons', () => {
             )
         );
 
-        expect(html).toContain('/assets/dicethrone/images/monk/compressed/status-icons-atlas.webp');
+        expect(html).toContain('/assets/i18n/zh-CN/dicethrone/images/monk/compressed/status-icons-atlas.webp');
+        expect(html).toContain('<img');
     });
 
     it('token 展示查询 debuff token 时应回退到对应视觉元数据', () => {
@@ -89,8 +90,8 @@ describe('StatusEffectsIcons', () => {
             )
         );
 
-        expect(html).toContain('icons/compressed/');
-        expect(html).toContain('background-size:contain');
+        expect(html).toContain('/assets/i18n/zh-CN/dicethrone/images/samurai/icons/compressed/荣誉.webp');
+        expect(html).toContain('object-contain');
     });
 
     it('players.tokens 中的 debuff token 应复用视觉元数据，不再误显示加载态', () => {
@@ -429,6 +430,67 @@ describe('StatusEffectsIcons', () => {
             h: 256,
         });
         expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('/assets/'))).toBe(true);
+    });
+
+    it('新英雄 atlas 不可用时应回退到单图 iconPath，避免手机端整组空白', () => {
+        const tacticalHtml = renderToStaticMarkup(
+            getStatusEffectIconNode(
+                {
+                    frameId: 'tactical_advantage',
+                    atlasId: DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA,
+                    iconPath: 'dicethrone/images/zhanshujia/status/战术优势',
+                },
+                'zh-CN',
+                'normal',
+                null,
+            )
+        );
+        const cursedCoinHtml = renderToStaticMarkup(
+            getStatusEffectIconNode(
+                {
+                    frameId: 'cursed_coin',
+                    atlasId: DICETHRONE_STATUS_ATLAS_IDS.CURSED_PIRATE,
+                    iconPath: 'dicethrone/images/cursed/status/诅咒金币',
+                },
+                'zh-CN',
+                'normal',
+                null,
+            )
+        );
+
+        expect(tacticalHtml).toContain('/assets/i18n/zh-CN/dicethrone/images/zhanshujia/status/compressed/战术优势.webp');
+        expect(cursedCoinHtml).toContain('/assets/i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp');
+        expect(tacticalHtml).toContain('object-contain');
+        expect(cursedCoinHtml).toContain('object-contain');
+    });
+
+    it('游戏包 override 下的状态图标首候选失败后应切到下一个 _capacitor_file_ 候选', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setGameAssetBaseOverride('dicethrone', 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets');
+        setAssetHashesForTesting({
+            'i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp': 'coin1234',
+        });
+
+        const { container } = render(
+            getStatusEffectIconNode(
+                {
+                    iconPath: 'dicethrone/images/cursed/status/诅咒金币',
+                },
+                'zh-CN',
+                'normal',
+                null,
+            ),
+        );
+        const img = container.querySelector('img');
+        const hashedUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp?v=coin1234';
+        const plainUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp';
+
+        expect(img?.getAttribute('src')).toBe(hashedUrl);
+        fireEvent.error(img!);
+
+        await waitFor(() => {
+            expect(container.querySelector('img')?.getAttribute('src')).toBe(plainUrl);
+        });
     });
 
     it('游戏包 override 下的状态图集 JSON 应先走本地游戏包，并在 _capacitor_file_ query 失败后回退无 query URL', async () => {

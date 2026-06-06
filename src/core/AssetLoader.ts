@@ -1590,7 +1590,9 @@ export function buildLocalizedImageSet(src: string, locale?: string): string {
         return '';
     }
     const { primary } = getLocalizedImageUrls(src, locale);
-    const primaryUrl = primary.webp;
+    const primaryUrl = isCapacitorFileAssetUrl(primary.webp)
+        ? stripVersionParam(primary.webp)
+        : primary.webp;
     // CSS background-image 的多 url 是叠层，不是可靠的失败回退。
     // 统一只返回主路径；需要显式回退的场景在调用层处理。
     return primaryUrl ? `url("${primaryUrl}")` : '';

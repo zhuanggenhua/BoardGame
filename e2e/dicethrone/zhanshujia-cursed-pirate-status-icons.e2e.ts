@@ -1,4 +1,4 @@
-import type { Browser, Page } from '@playwright/test';
+import type { Browser, BrowserContextOptions, Page } from '@playwright/test';
 import { join } from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { test, expect } from '../framework';
@@ -31,10 +31,24 @@ const statusIconEvidenceDir = join(
     'zhanshujia-cursed-pirate-status-icons.e2e',
 );
 
-const setupNewHeroMatch = async (browser: Browser, baseURL: string | undefined): Promise<DTMatchSetup> => {
+const MOBILE_STATUS_CONTEXT_OPTIONS: BrowserContextOptions = {
+    viewport: { width: 915, height: 412 },
+    screen: { width: 915, height: 412 },
+    deviceScaleFactor: 2.625,
+    isMobile: true,
+    hasTouch: true,
+    userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+};
+
+const setupNewHeroMatch = async (
+    browser: Browser,
+    baseURL: string | undefined,
+    contextOptions?: BrowserContextOptions,
+): Promise<DTMatchSetup> => {
     const match = await setupOnlineMatch(browser, baseURL, {
         skipImageGate: true,
         characterSelectionTimeout: 240000,
+        contextOptions,
     });
     if (!match) {
         test.skip(true, '游戏服务器不可用或创建 DiceThrone 房间失败');
@@ -48,8 +62,10 @@ const setupNewHeroMatch = async (browser: Browser, baseURL: string | undefined):
     await waitForGameBoard(match.guestPage);
     await waitForDiceThroneHarness(match.hostPage);
     await waitForDiceThroneHarness(match.guestPage);
-    await match.hostPage.setViewportSize({ width: 1280, height: 720 });
-    await match.guestPage.setViewportSize({ width: 1280, height: 720 });
+    if (!contextOptions?.viewport) {
+        await match.hostPage.setViewportSize({ width: 1280, height: 720 });
+        await match.guestPage.setViewportSize({ width: 1280, height: 720 });
+    }
     return match;
 };
 
@@ -123,49 +139,75 @@ type BadgeSpriteSnapshot = {
     backgroundImage: string;
     backgroundSize: string;
     backgroundPosition: string;
+    imageSrc: string;
     className: string;
+    width: number;
+    height: number;
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
 };
 
-const readStatusTokenSpriteSnapshots = async (page: Page): Promise<BadgeSpriteSnapshot[]> =>
-    page.evaluate(() => {
-        const root = document.querySelector('[data-tutorial-id="status-tokens"]');
+const readIconBadgeSnapshots = async (page: Page, rootSelector: string): Promise<BadgeSpriteSnapshot[]> =>
+    page.evaluate((selector) => {
+        const root = document.querySelector(selector);
         if (!root) return [];
 
         return Array.from(root.querySelectorAll('.rounded-full'))
             .map((badge) => {
                 const badgeElement = badge as HTMLElement;
-                const icon = badgeElement.querySelector('span') as HTMLElement | null;
-                const iconStyle = icon ? window.getComputedStyle(icon) : null;
+                if (!badgeElement.className.includes('overflow-hidden')) {
+                    return null;
+                }
+                const image = badgeElement.querySelector('img') as HTMLImageElement | null;
+                const spriteSpan = Array.from(badgeElement.querySelectorAll('span')).find((node) => {
+                    const style = window.getComputedStyle(node);
+                    return Boolean(style.backgroundImage && style.backgroundImage !== 'none');
+                }) as HTMLElement | undefined;
+                const iconStyle = spriteSpan ? window.getComputedStyle(spriteSpan) : (image ? window.getComputedStyle(image) : null);
+                const imageSrc = image ? image.currentSrc || image.src || '' : '';
+                const rect = badgeElement.getBoundingClientRect();
                 return {
                     backgroundImage: iconStyle?.backgroundImage ?? '',
                     backgroundSize: iconStyle?.backgroundSize ?? '',
                     backgroundPosition: iconStyle?.backgroundPosition ?? '',
+                    imageSrc,
                     className: badgeElement.className,
+                    width: rect.width,
+                    height: rect.height,
+                    left: rect.left,
+                    right: rect.right,
+                    top: rect.top,
+                    bottom: rect.bottom,
                 };
             })
-            .filter((entry) => entry.backgroundImage.includes('status-icons-atlas'));
-    });
+            .filter((entry): entry is BadgeSpriteSnapshot => Boolean(entry));
+    }, rootSelector);
 
-const waitForStatusTokenSprites = async (
+const readIconBadgeCount = async (page: Page, rootSelector: string): Promise<number> =>
+    page.evaluate((selector) => (
+        Array.from(document.querySelectorAll(`${selector} .rounded-full`))
+            .filter((badge) => (badge as HTMLElement).className.includes('overflow-hidden'))
+            .length
+    ), rootSelector);
+
+const waitForIconBadges = async (
     page: Page,
+    rootSelector: string,
     minimumCount: number,
 ): Promise<BadgeSpriteSnapshot[]> => {
-    await page.waitForFunction((count) => {
-        const root = document.querySelector('[data-tutorial-id="status-tokens"]');
+    await page.waitForFunction(({ selector, count }) => {
+        const root = document.querySelector(selector);
         if (!root) return false;
         const entries = Array.from(root.querySelectorAll('.rounded-full')).filter((badge) => {
             const badgeElement = badge as HTMLElement;
-            const icon = badgeElement.querySelector('span') as HTMLElement | null;
-            const iconStyle = icon ? window.getComputedStyle(icon) : null;
-            return Boolean(
-                iconStyle?.backgroundImage.includes('status-icons-atlas')
-                && !badgeElement.className.includes('bg-gradient-to-br'),
-            );
+            return badgeElement.className.includes('overflow-hidden');
         });
         return entries.length >= count;
-    }, minimumCount, { timeout: 15000, polling: 200 });
+    }, { selector: rootSelector, count: minimumCount }, { timeout: 15000, polling: 200 });
 
-    return readStatusTokenSpriteSnapshots(page);
+    return readIconBadgeSnapshots(page, rootSelector);
 };
 
 test.describe('DiceThrone 战术家 / 咒缚海盗状态图标', () => {
@@ -177,16 +219,18 @@ test.describe('DiceThrone 战术家 / 咒缚海盗状态图标', () => {
         try {
             await injectVisibleNewHeroStatusIcons(match);
 
-            const hostSprites = await waitForStatusTokenSprites(match.hostPage, 2);
-            const guestSprites = await waitForStatusTokenSprites(match.guestPage, 4);
+            const hostSprites = await waitForIconBadges(match.hostPage, '[data-tutorial-id="status-tokens"]', 2);
+            const guestSprites = await waitForIconBadges(match.guestPage, '[data-tutorial-id="status-tokens"]', 4);
 
             expect(hostSprites).toHaveLength(2);
             expect(guestSprites).toHaveLength(4);
             for (const sprite of [...hostSprites, ...guestSprites]) {
-                expect(sprite.backgroundImage).toContain('status-icons-atlas');
-                expect(sprite.className).not.toContain('bg-gradient-to-br');
-                expect(sprite.backgroundSize).not.toBe('');
-                expect(sprite.backgroundPosition).not.toBe('');
+                expect(Boolean(sprite.imageSrc) || sprite.backgroundImage !== 'none').toBe(true);
+                if (!sprite.imageSrc) {
+                    expect(sprite.backgroundSize).not.toBe('');
+                }
+                expect(sprite.width).toBeGreaterThan(0);
+                expect(sprite.height).toBeGreaterThan(0);
             }
 
             await mkdir(statusIconEvidenceDir, { recursive: true });
@@ -196,6 +240,44 @@ test.describe('DiceThrone 战术家 / 咒缚海盗状态图标', () => {
             await match.guestPage.locator('[data-tutorial-id="status-tokens"]').screenshot({
                 path: join(statusIconEvidenceDir, 'guest-status-token-sprites.png'),
             });
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('手机端初始无 badge，注入后新英雄 token/status 应可见且不为空白圆形', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL, MOBILE_STATUS_CONTEXT_OPTIONS);
+
+        try {
+            const visibleHeaderSelector = '[data-testid="dt-top-header-1"]';
+            const hostInitialCount = await readIconBadgeCount(match.hostPage, visibleHeaderSelector);
+            const guestInitialCount = await readIconBadgeCount(match.guestPage, visibleHeaderSelector);
+            expect(hostInitialCount).toBeLessThan(4);
+            expect(guestInitialCount).toBeLessThan(2);
+
+            await mkdir(statusIconEvidenceDir, { recursive: true });
+            await match.hostPage.screenshot({ path: join(statusIconEvidenceDir, 'mobile-host-status-token-initial.png'), fullPage: false });
+            await match.guestPage.screenshot({ path: join(statusIconEvidenceDir, 'mobile-guest-status-token-initial.png'), fullPage: false });
+
+            await injectVisibleNewHeroStatusIcons(match);
+
+            const hostBadges = await waitForIconBadges(match.hostPage, visibleHeaderSelector, 4);
+            const guestBadges = await waitForIconBadges(match.guestPage, visibleHeaderSelector, 2);
+
+            expect(hostBadges).toHaveLength(4);
+            expect(guestBadges).toHaveLength(2);
+            for (const badge of [...hostBadges, ...guestBadges]) {
+                expect(Boolean(badge.imageSrc) || badge.backgroundImage !== 'none').toBe(true);
+                expect(badge.width).toBeGreaterThan(8);
+                expect(badge.height).toBeGreaterThan(8);
+                expect(badge.right).toBeGreaterThan(0);
+                expect(badge.bottom).toBeGreaterThan(0);
+            }
+
+            await match.hostPage.screenshot({ path: join(statusIconEvidenceDir, 'mobile-host-status-token-final.png'), fullPage: false });
+            await match.guestPage.screenshot({ path: join(statusIconEvidenceDir, 'mobile-guest-status-token-final.png'), fullPage: false });
         } finally {
             await cleanupDTMatch(match);
         }

@@ -2,7 +2,13 @@ import type { CSSProperties } from 'react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
-import { buildLocalizedImageSet, getLocalizedLocalAssetPath } from '../../../core';
+import {
+    getLocalizedImageCandidateUrls,
+    getLocalizedLocalAssetPath,
+    getPreloadedImageElement,
+    markImageLoaded,
+    onImageReady,
+} from '../../../core';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
 import { resolveI18nList } from './utils';
 
@@ -144,15 +150,226 @@ import { STATUS_EFFECT_META, TOKEN_META, getVisualMetaById, type StatusEffectMet
 // Re-export for consumers that import from ui/statusEffects
 export { STATUS_EFFECT_META, TOKEN_META, type StatusEffectMeta };
 
-const getStatusIconFrameStyle = (atlas: StatusIconAtlasConfig, frame: StatusIconAtlasFrame, debugFrameId?: string) => {
-    const xPos = atlas.imageW === frame.w ? 0 : (frame.x / (atlas.imageW - frame.w)) * 100;
-    const yPos = atlas.imageH === frame.h ? 0 : (frame.y / (atlas.imageH - frame.h)) * 100;
-    const bgSizeX = (atlas.imageW / frame.w) * 100;
-    const bgSizeY = (atlas.imageH / frame.h) * 100;
+const hasUsableStatusImage = (img: HTMLImageElement | null | undefined): img is HTMLImageElement =>
+    Boolean(img) && img.naturalWidth > 0 && img.naturalHeight > 0;
+
+const normalizeComparableUrl = (url: string): string => {
+    if (!url) return '';
+    if (typeof window === 'undefined') return url;
+    try {
+        return new URL(url, window.location.href).href;
+    } catch {
+        return url;
+    }
+};
+
+const findCandidateIndex = (candidateUrls: string[], url: string) => {
+    if (!url) return -1;
+    const normalizedUrl = normalizeComparableUrl(url);
+    return candidateUrls.findIndex((candidateUrl) => normalizeComparableUrl(candidateUrl) === normalizedUrl);
+};
+
+const resolveLoadedStatusCandidateUrl = (candidateUrls: string[]) => {
+    const normalizedCandidates = candidateUrls.map((candidateUrl) => ({
+        candidateUrl,
+        normalized: normalizeComparableUrl(candidateUrl),
+    }));
+
+    for (const candidateUrl of candidateUrls) {
+        const img = getPreloadedImageElement(candidateUrl);
+        if (!hasUsableStatusImage(img)) {
+            continue;
+        }
+
+        for (const src of [img.currentSrc, img.src, candidateUrl]) {
+            const normalizedSrc = normalizeComparableUrl(src);
+            if (!normalizedSrc) continue;
+            const matched = normalizedCandidates.find((candidate) => candidate.normalized === normalizedSrc);
+            if (matched) {
+                return matched.candidateUrl;
+            }
+        }
+    }
+
+    return '';
+};
+
+type StatusImageLoadResult = { url: string; img: HTMLImageElement } | null;
+const statusImageInFlightLoads = new Map<string, Promise<StatusImageLoadResult>>();
+
+const loadStatusImageCandidatesShared = (candidateUrls: string[]): Promise<StatusImageLoadResult> => {
+    if (candidateUrls.length === 0) {
+        return Promise.resolve(null);
+    }
+
+    const inFlightKey = candidateUrls.join('|');
+    const inFlight = statusImageInFlightLoads.get(inFlightKey);
+    if (inFlight) {
+        return inFlight;
+    }
+
+    const promise = new Promise<StatusImageLoadResult>((resolve) => {
+        const tryLoad = (index: number) => {
+            if (index >= candidateUrls.length) {
+                resolve(null);
+                return;
+            }
+
+            const url = candidateUrls[index];
+            const img = new Image();
+            img.onload = () => {
+                if (!hasUsableStatusImage(img)) {
+                    tryLoad(index + 1);
+                    return;
+                }
+                markImageLoaded(url, undefined, img, url);
+                resolve({ url, img });
+            };
+            img.onerror = () => {
+                tryLoad(index + 1);
+            };
+            img.src = url;
+        };
+
+        tryLoad(0);
+    }).finally(() => {
+        statusImageInFlightLoads.delete(inFlightKey);
+    });
+
+    statusImageInFlightLoads.set(inFlightKey, promise);
+    return promise;
+};
+
+const getAtlasFrameImageStyle = (atlas: StatusIconAtlasConfig, frame: StatusIconAtlasFrame): CSSProperties => ({
+    position: 'absolute',
+    top: `${-(frame.y / frame.h) * 100}%`,
+    left: `${-(frame.x / frame.w) * 100}%`,
+    width: `${(atlas.imageW / frame.w) * 100}%`,
+    height: `${(atlas.imageH / frame.h) * 100}%`,
+    maxWidth: 'none',
+    maxHeight: 'none',
+    pointerEvents: 'none',
+    userSelect: 'none',
+});
+
+const useResolvedStatusImage = (sourcePath: string | undefined, locale: string | undefined) => {
+    const effectiveLocale = locale || 'zh-CN';
+    const candidateUrls = React.useMemo(
+        () => (sourcePath ? getLocalizedImageCandidateUrls(sourcePath, effectiveLocale) : []),
+        [effectiveLocale, sourcePath],
+    );
+    const loadedCandidateUrl = React.useMemo(
+        () => resolveLoadedStatusCandidateUrl(candidateUrls),
+        [candidateUrls],
+    );
+    const initialCandidateIndex = React.useMemo(() => {
+        if (candidateUrls.length === 0) return -1;
+        const preloadedIndex = loadedCandidateUrl
+            ? findCandidateIndex(candidateUrls, loadedCandidateUrl)
+            : -1;
+        return preloadedIndex >= 0 ? preloadedIndex : 0;
+    }, [candidateUrls, loadedCandidateUrl]);
+    const [candidateIndex, setCandidateIndex] = React.useState(initialCandidateIndex);
+    const activeUrl = candidateIndex >= 0 ? candidateUrls[candidateIndex] ?? '' : '';
+
+    React.useEffect(() => {
+        setCandidateIndex(initialCandidateIndex);
+    }, [initialCandidateIndex, loadedCandidateUrl, sourcePath, effectiveLocale]);
+
+    React.useEffect(() => {
+        if (!sourcePath || candidateUrls.length === 0 || loadedCandidateUrl) {
+            return;
+        }
+
+        let cancelled = false;
+        void loadStatusImageCandidatesShared(candidateUrls).then((result) => {
+            if (cancelled || !result) {
+                return;
+            }
+
+            markImageLoaded(sourcePath, effectiveLocale, result.img, result.url);
+            const nextIndex = findCandidateIndex(candidateUrls, result.url);
+            if (nextIndex >= 0) {
+                setCandidateIndex(nextIndex);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [candidateUrls, effectiveLocale, loadedCandidateUrl, sourcePath]);
+
+    React.useEffect(() => {
+        if (!sourcePath || candidateUrls.length === 0) {
+            return;
+        }
+
+        return onImageReady((url) => {
+            if (!candidateUrls.includes(url)) {
+                return;
+            }
+            if (!hasUsableStatusImage(getPreloadedImageElement(url))) {
+                return;
+            }
+            const nextIndex = findCandidateIndex(candidateUrls, url);
+            if (nextIndex >= 0) {
+                setCandidateIndex(nextIndex);
+            }
+        });
+    }, [candidateUrls, sourcePath]);
+
+    const handleLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+        if (!sourcePath) return;
+        const img = event.currentTarget;
+        if (!hasUsableStatusImage(img)) {
+            return;
+        }
+        markImageLoaded(activeUrl, undefined, img, activeUrl);
+        markImageLoaded(sourcePath, effectiveLocale, img, activeUrl);
+    };
+
+    const handleError = () => {
+        setCandidateIndex((currentIndex) => {
+            const nextIndex = currentIndex + 1;
+            return nextIndex < candidateUrls.length ? nextIndex : -1;
+        });
+    };
+
     return {
-        backgroundSize: `${bgSizeX}% ${bgSizeY}%`,
-        backgroundPosition: `${xPos}% ${yPos}%`,
-    } as CSSProperties;
+        activeUrl,
+        handleError,
+        handleLoad,
+    };
+};
+
+const ResolvedStatusIconImage = ({
+    className,
+    locale,
+    sourcePath,
+    style,
+}: {
+    className: string;
+    locale?: string;
+    sourcePath?: string;
+    style?: CSSProperties;
+}) => {
+    const { activeUrl, handleError, handleLoad } = useResolvedStatusImage(sourcePath, locale);
+    if (!activeUrl) {
+        return <span className={className} />;
+    }
+
+    return (
+        <img
+            alt=""
+            aria-hidden="true"
+            className={className}
+            draggable={false}
+            onError={handleError}
+            onLoad={handleLoad}
+            src={activeUrl}
+            style={style}
+        />
+    );
 };
 
 export const getStatusEffectIconNode = (
@@ -183,14 +400,10 @@ export const getStatusEffectIconNode = (
     if (!frame || !targetAtlas) {
         if (meta.iconPath) {
             return (
-                <span
-                    className="block w-full h-full drop-shadow-md"
-                    style={{
-                        backgroundImage: buildLocalizedImageSet(meta.iconPath, locale),
-                        backgroundSize: 'contain',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat',
-                    }}
+                <ResolvedStatusIconImage
+                    className="block w-full h-full object-contain drop-shadow-md"
+                    locale={locale}
+                    sourcePath={meta.iconPath}
                 />
             );
         }
@@ -198,20 +411,18 @@ export const getStatusEffectIconNode = (
         return <span className="block w-full h-full" />;
     }
     const sizeClass = size === 'choice' ? 'w-full h-full' : 'w-full h-full';
-    const frameStyle = getStatusIconFrameStyle(targetAtlas, frame, meta.frameId);
 
     return (
-        <span
-            className={`block ${sizeClass} drop-shadow-md`}
-            style={{
-                backgroundImage: targetAtlas.imagePath
-                    ? buildLocalizedImageSet(targetAtlas.imagePath, locale)
-                    : undefined,
-                backgroundSize: frameStyle.backgroundSize,
-                backgroundPosition: frameStyle.backgroundPosition,
-                backgroundRepeat: 'no-repeat',
-            }}
-        />
+        <span className={`relative block ${sizeClass} overflow-hidden`}>
+            <ResolvedStatusIconImage
+                className="drop-shadow-md"
+                locale={locale}
+                sourcePath={targetAtlas.imagePath}
+                style={{
+                    ...getAtlasFrameImageStyle(targetAtlas, frame),
+                }}
+            />
+        </span>
     );
 };
 

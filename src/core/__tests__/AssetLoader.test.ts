@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setPublicFileHashesForTesting, versionedPublicFileUrl } from '../../lib/publicFileUrl';
 import {
+    buildLocalizedImageSet,
     clearGameAssetBaseOverrides,
     getLocalAssetPath,
     getLocalizedLocalAssetPath,
@@ -158,5 +159,20 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
             'https://assets.easyboardgame.top/official/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234',
             '/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234',
         ]);
+    });
+
+    it('移动端游戏包 CSS 背景图命中 _capacitor_file_ 时应去掉版本参数', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setGameAssetBaseOverride('dicethrone', 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets');
+        setAssetHashesForTesting({
+            'i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp': 'coin1234',
+        });
+        setLocalizedImageIndexForTesting({
+            'i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币': 1,
+        });
+
+        expect(buildLocalizedImageSet('dicethrone/images/cursed/status/诅咒金币', 'zh-CN')).toBe(
+            'url("http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp")',
+        );
     });
 });
