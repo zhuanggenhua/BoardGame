@@ -4944,6 +4944,7 @@ describe('王权骰铸流程测试', () => {
                 state,
                 'option-0',
                 [probeSystem, ...testSystems],
+                '0',
                 random,
                 playerIds,
             );
