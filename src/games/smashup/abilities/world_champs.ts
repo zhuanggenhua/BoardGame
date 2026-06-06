@@ -46,6 +46,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 
 type MinionChoice = { minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean };
 type PlayerChoice = { targetPlayerId?: PlayerId; skip?: boolean };
@@ -146,11 +147,17 @@ function transferCard(
     reason: string,
     timestamp: number,
 ): CardTransferredEvent {
-    return {
-        type: SU_EVENTS.CARD_TRANSFERRED,
-        payload: { cardUid, defId, fromPlayerId, toPlayerId, reason },
+    return createCardTransferEvent({
+        card: createCardObjectRef({
+            uid: cardUid,
+            defId,
+            ownerId: fromPlayerId,
+        }),
+        fromPlayerId,
+        toPlayerId,
+        reason,
         timestamp,
-    };
+    });
 }
 
 function getOtherPlayers(state: SmashUpCore, playerId: PlayerId): PlayerId[] {

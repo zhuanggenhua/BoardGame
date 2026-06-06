@@ -111,6 +111,23 @@ describe('i18n 静态检查工具', () => {
         ]));
     });
 
+    it('DiceThrone 继续使用 hero.* 旧前缀时会产生阻断告警', () => {
+        const content = `
+            import { useTranslation } from 'react-i18next';
+            const { t } = useTranslation('game-dicethrone');
+            t(\`hero.${'${player.characterId}'}\`);
+        `;
+        const result = collectReferencesFromContent(content, 'src/games/dicethrone/ui/OpponentHeader.tsx', {
+            defaultNamespace: 'game-dicethrone',
+            knownNamespaces: new Set(['game-dicethrone']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'deprecated-dicethrone-hero-key',
+            key: 'hero.*',
+        }));
+    });
+
     it('i18n.exists 命名空间一致时可作为 t(variable) 的保护条件', () => {
         const content = `
             import { useTranslation } from 'react-i18next';
@@ -277,6 +294,36 @@ describe('i18n 静态检查工具', () => {
             }),
         ]));
         expect(result.warnings.some((warning) => warning.type === 'dynamic-key')).toBe(false);
+    });
+
+    it('能从解构函数参数类型中反推成员表达式联合并展开具体 key', () => {
+        const content = `
+            import { useTranslation } from 'react-i18next';
+
+            type CharacterId = 'monk' | 'barbarian' | 'zhanshujia';
+            interface HeroState { characterId: CharacterId; }
+            interface HeroPanelProps { player: HeroState; }
+
+            function HeroPanel({ player }: HeroPanelProps) {
+                const { t } = useTranslation('game-dicethrone');
+                t(\`hero.${'${player.characterId}'}\`);
+                return null;
+            }
+        `;
+
+        const result = collectReferencesFromContent(content, 'src/games/dicethrone/ui/Demo.tsx', {
+            defaultNamespace: 'game-dicethrone',
+            knownNamespaces: new Set(['game-dicethrone']),
+        });
+
+        expect(result.references).toEqual(expect.arrayContaining([
+            expect.objectContaining({ key: 'hero.monk', namespaces: ['game-dicethrone'] }),
+            expect.objectContaining({ key: 'hero.barbarian', namespaces: ['game-dicethrone'] }),
+            expect.objectContaining({ key: 'hero.zhanshujia', namespaces: ['game-dicethrone'] }),
+        ]));
+        expect(result.references).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({ key: 'hero.*' }),
+        ]));
     });
 
     it('summonerwars StatusBanners 能展开 abilityId 联合并覆盖 instead key', () => {

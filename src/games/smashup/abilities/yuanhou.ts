@@ -35,6 +35,7 @@ import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerDiscardActionPlayProvider } from '../domain/discardActionPlayability';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import { reduce } from '../domain/reduce';
+import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
@@ -235,17 +236,18 @@ function discardFromHand(playerId: PlayerId, cardUids: string[], now: number): C
 }
 
 function returnCardInPlayToOwnerHand(card: LocatedInPlayCard, reason: string, now: number): CardTransferredEvent {
-    return {
-        type: SU_EVENTS.CARD_TRANSFERRED,
-        payload: {
-            cardUid: card.cardUid,
+    return createCardTransferEvent({
+        card: createCardObjectRef({
+            uid: card.cardUid,
             defId: card.defId,
-            fromPlayerId: card.ownerId,
-            toPlayerId: card.ownerId,
-            reason,
-        },
+            ownerId: card.ownerId,
+            type: card.type === 'minion' ? 'minion' : 'action',
+        }),
+        fromPlayerId: card.ownerId,
+        toPlayerId: card.ownerId,
+        reason,
         timestamp: now,
-    };
+    });
 }
 
 function millFromDeck(playerId: PlayerId, cardUids: string[], reason: string, now: number): CardsMilledEvent {

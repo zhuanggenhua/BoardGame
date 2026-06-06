@@ -11,7 +11,13 @@ import {
     grantExtraAction,
     grantExtraMinion,
 } from './abilityHelpers';
-import { createAbilityRuntimeSimpleChoice, createPromptProgram, executeAbilityProgram } from './abilityRuntime';
+import {
+    attachDeferredInteractionSnapshot,
+    createAbilityRuntimeSimpleChoice,
+    createPromptProgram,
+    executeAbilityProgram,
+    readDeferredInteractionSnapshot,
+} from './abilityRuntime';
 import {
     SU_COMMANDS,
     SU_EVENTS,
@@ -510,23 +516,27 @@ const immediateExtraMinionBasePromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = {
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, {
             extra: context.extra,
             choice: context.choice,
-        };
-        (interaction.data as any).optionsGenerator = (
+        });
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraMinionPayload; choice?: ImmediateMinionCardChoice } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
-            const latestChoice = data?.runtimeContext?.choice;
+            const snapshot = readDeferredInteractionSnapshot<{
+                extra?: ImmediateExtraMinionPayload;
+                choice?: ImmediateMinionCardChoice;
+            }>(data);
+            const latestExtra = snapshot?.extra;
+            const latestChoice = snapshot?.choice;
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraMinionBaseOptions(latestState, latestExtra, latestChoice),
                 createSkipOption('放弃这次额外随从') as any,
             ];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {
@@ -561,20 +571,21 @@ const immediateExtraMinionPromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = { extra: context.extra };
-        (interaction.data as any).autoRefresh = 'hand';
-        (interaction.data as any).responseValidationMode = 'live';
-        (interaction.data as any).optionsGenerator = (
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, { extra: context.extra });
+        (interactionWithSnapshot.data as any).autoRefresh = 'hand';
+        (interactionWithSnapshot.data as any).responseValidationMode = 'live';
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraMinionPayload } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
+            const snapshot = readDeferredInteractionSnapshot<{ extra?: ImmediateExtraMinionPayload }>(data);
+            const latestExtra = snapshot?.extra;
             if (!latestExtra) {
                 return [createSkipOption('放弃这次额外随从') as any];
             }
             return buildImmediateExtraMinionCardOptions(latestState, latestExtra) as any[];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {
@@ -632,23 +643,27 @@ const immediateExtraActionBasePromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = {
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, {
             extra: context.extra,
             choice: context.choice,
-        };
-        (interaction.data as any).optionsGenerator = (
+        });
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraActionPayload; choice?: ImmediateActionCardChoice } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
-            const latestChoice = data?.runtimeContext?.choice;
+            const snapshot = readDeferredInteractionSnapshot<{
+                extra?: ImmediateExtraActionPayload;
+                choice?: ImmediateActionCardChoice;
+            }>(data);
+            const latestExtra = snapshot?.extra;
+            const latestChoice = snapshot?.choice;
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraActionBaseOptions(latestState, latestExtra, latestChoice),
                 createSkipOption('放弃这次额外战术') as any,
             ];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {
@@ -683,23 +698,27 @@ const immediateExtraActionMinionPromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = {
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, {
             extra: context.extra,
             choice: context.choice,
-        };
-        (interaction.data as any).optionsGenerator = (
+        });
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraActionPayload; choice?: ImmediateActionCardChoice } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
-            const latestChoice = data?.runtimeContext?.choice;
+            const snapshot = readDeferredInteractionSnapshot<{
+                extra?: ImmediateExtraActionPayload;
+                choice?: ImmediateActionCardChoice;
+            }>(data);
+            const latestExtra = snapshot?.extra;
+            const latestChoice = snapshot?.choice;
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraActionMinionOptions(latestState, latestExtra, latestChoice),
                 createSkipOption('放弃这次额外战术') as any,
             ];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {
@@ -731,20 +750,21 @@ const immediateExtraActionPromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = { extra: context.extra };
-        (interaction.data as any).autoRefresh = 'hand';
-        (interaction.data as any).responseValidationMode = 'live';
-        (interaction.data as any).optionsGenerator = (
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, { extra: context.extra });
+        (interactionWithSnapshot.data as any).autoRefresh = 'hand';
+        (interactionWithSnapshot.data as any).responseValidationMode = 'live';
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraActionPayload } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
+            const snapshot = readDeferredInteractionSnapshot<{ extra?: ImmediateExtraActionPayload }>(data);
+            const latestExtra = snapshot?.extra;
             if (!latestExtra) {
                 return [createSkipOption('放弃这次额外战术') as any];
             }
             return buildImmediateExtraActionCardOptions(latestState, latestExtra) as any[];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {

@@ -27,6 +27,10 @@ export function clearDiscardActionPlayProviders(): void {
 }
 
 export function getDiscardActionPlayOptions(core: SmashUpCore, playerId: PlayerId): DiscardActionPlayOption[] {
+    const player = core.players[playerId];
+    if (!player) return [];
+    if (player.actionsPlayed >= player.actionLimit) return [];
+
     const result: DiscardActionPlayOption[] = [];
     const seenUids = new Set<string>();
     for (const provider of providers) {

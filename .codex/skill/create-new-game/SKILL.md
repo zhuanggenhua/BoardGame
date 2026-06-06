@@ -641,6 +641,29 @@ npm run dev                   # 编译无报错（游戏可在大厅列表看到
 
 在录入具体数据前，先设计通用数据结构：
 
+#### 对象生命周期与延迟交互前置审查（强制）
+
+只要新游戏里存在以下任一机制，就必须在正式录数据前先回答清楚，再决定 core/event/interaction 结构：
+
+1. 对象会跨区移动：手牌、牌库、弃牌、场上、附着区、宿主区、移出游戏区之间转换
+2. 对象会临时换控制者、换持有者、换宿主，或“当前使用者”和“真实拥有者”分离
+3. 某条交互会跨阶段、跨清场、跨宿主变化后继续结算
+4. UI 想根据 payload 里有没有 `defId` / `targetType` / 类似字段来猜展示模式
+
+最低输出必须包含：
+
+- `session context`：当前谁有权决策，统一从底层 seam 读取，不在业务层手猜
+- `object ref / provenance`：对象稳定身份、真实归属、当前控制/持有/宿主、默认终点分别怎么表达
+- `deferred snapshot`：哪些事实在交互创建时冻结，哪些字段允许解决时再查 live state
+- `interaction descriptor`：展示模式由什么显式描述，避免 UI 从业务 payload 猜语义
+
+禁止做法：
+
+- 只传一串 `fromPlayerId / toPlayerId / ownerId / cardId` 散字段，希望 reducer 自己猜真实语义
+- 把“当前控制者/当前宿主/当前持有者”直接当成真实拥有者或默认终点
+- 交互创建时不快照，等 resolve 时再去 live state 碰运气找对象
+- 让 UI 通过 payload 形状猜“这是按钮模式、卡牌模式还是基地模式”
+
 #### 实体类型分析
 
 列出游戏中的所有实体类型（如卡牌/单位/骰子/资源/状态），对每种实体类型回答：
@@ -1446,6 +1469,10 @@ npm run dev                         # 大厅可见、可创建对局、可完整
 - 状态/buff/debuff：必须使用 `engine/primitives/tags.ts`
 - 数值修改：必须使用 `engine/primitives/modifier.ts`
 - 可被 buff 修改的属性：必须使用 `engine/primitives/attribute.ts`（纯资源消耗仍用 `resources.ts`）
+- 当前决策者读取：必须优先复用 `src/engine/sessionContext.ts` 这一层语义，不再在共享层手写 `currentPlayer/currentPlayerId/currentPlayerIndex` 分支
+- 跨区对象/临时控制/附着脱离：必须先设计稳定 `object ref + provenance`，禁止直接复制历史 `owner/originalOwner/fromPlayerId/toPlayerId` 弱协议
+- 跨阶段交互：必须显式设计 `deferred snapshot`，禁止把创建时事实偷偷挂在 ad hoc `runtimeContext/context` 上
+- 交互展示：必须给出独立 descriptor，禁止靠 payload 形状推断 UI 模式
 
 ---
 

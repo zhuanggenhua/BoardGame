@@ -32,6 +32,7 @@ import { getCardDef, getBaseDef } from '../data/cards';
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
     createAbilityRuntimeSimpleChoice,
@@ -595,17 +596,18 @@ function buildWizardExternalActionSetupEvents(
     timestamp: number,
 ): SmashUpEvent[] {
     if (context.origin === 'wizard_mass_enchantment') {
-        return [{
-            type: SU_EVENTS.CARD_TRANSFERRED,
-            payload: {
-                cardUid: context.cardUid,
+        const sourcePlayerId = ensureWizardMassTransferSource(context);
+        return [createCardTransferEvent({
+            card: createCardObjectRef({
+                uid: context.cardUid,
                 defId: context.defId,
-                fromPlayerId: ensureWizardMassTransferSource(context),
-                toPlayerId: context.playerId,
-                reason: 'wizard_mass_enchantment',
-            },
+                ownerId: sourcePlayerId,
+            }),
+            fromPlayerId: sourcePlayerId,
+            toPlayerId: context.playerId,
+            reason: 'wizard_mass_enchantment',
             timestamp,
-        } as SmashUpEvent];
+        }) as SmashUpEvent];
     }
     if (playMode === 'ongoing-base' || playMode === 'ongoing-minion') {
         return [{

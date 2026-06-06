@@ -36,6 +36,7 @@ import { getBaseDef, getCardDef } from '../data/cards';
 import { actionLikeNeedsPlayBase } from '../domain/utils';
 import { execute } from '../domain/reducer';
 import { reduce } from '../domain/reduce';
+import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 import {
     createEffectProgram,
     createPromptProgram,
@@ -1319,11 +1320,17 @@ function transferCard(
     timestamp: number,
     ownerId?: PlayerId,
 ): CardTransferredEvent {
-    return {
-        type: SU_EVENTS.CARD_TRANSFERRED,
-        payload: { cardUid, defId, fromPlayerId, toPlayerId, ...(ownerId ? { ownerId } : {}), reason },
+    return createCardTransferEvent({
+        card: createCardObjectRef({
+            uid: cardUid,
+            defId,
+            ownerId: ownerId ?? fromPlayerId,
+        }),
+        fromPlayerId,
+        toPlayerId,
+        reason,
         timestamp,
-    };
+    });
 }
 
 function toDeckTop(

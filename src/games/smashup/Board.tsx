@@ -87,7 +87,7 @@ import { SmashUpEndgameContent, SmashUpEndgameActions } from './ui/SmashUpEndgam
 import type { SpotlightItem } from '../../components/game/framework';
 import { resolveRuntimeLayoutScaleMetrics } from '../mobileSupport';
 import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
-import { RevealOverlay } from './ui/RevealOverlay';
+import { RevealOverlay, resolveRevealSuppressionRules } from './ui/RevealOverlay';
 import { useSmashUpOverlay } from './ui/SmashUpOverlayContext';
 import {
     getSmashUpDirectHandPromptCardState,
@@ -1657,6 +1657,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!currentPrompt || !isCurrentPromptForPlayer) return;
         dismissAllSpotlight();
     }, [currentPrompt, dismissAllSpotlight, isCurrentPromptForPlayer]);
+
+    const revealSuppressionRules = useMemo(() => {
+        if (!currentPrompt) return [];
+        return resolveRevealSuppressionRules(
+            { ...currentPrompt, ...(currentPromptData ?? {}) },
+            isCurrentPromptForPlayer,
+        );
+    }, [currentPrompt, currentPromptData, isCurrentPromptForPlayer]);
 
     // 行动卡特写渲染
     const renderSpotlightCard = useCallback((item: SpotlightItem<{ defId: string }>) => {
@@ -3817,6 +3825,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     entries={eventStreamEntries}
                     currentPlayerId={revealViewerId}
                     playerNames={playerNames}
+                    suppressionRules={revealSuppressionRules}
                 />
 
                 {/* PREVIEW OVERLAY */}

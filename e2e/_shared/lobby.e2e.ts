@@ -44,6 +44,7 @@ async function ensureLobbyReady(page: Page): Promise<void> {
 async function applyKeyboardViewportSimulation(page: Page, options: { runtimeViewportHeight: number; keyboardInsetHeight: number }) {
     await page.evaluate(({ runtimeViewportHeight, keyboardInsetHeight }) => {
         const root = document.documentElement;
+        root.style.setProperty('--layout-viewport-height', `${window.innerHeight}px`);
         root.style.setProperty('--runtime-viewport-height', `${runtimeViewportHeight}px`);
         root.style.setProperty('--keyboard-inset-height', `${keyboardInsetHeight}px`);
         root.dataset.keyboardVisible = 'true';
@@ -449,24 +450,50 @@ test.describe('Lobby E2E', () => {
         const getCreateRoomModal = () => page.getByTestId('create-room-modal').last();
         const getRoomNameInput = () => page.getByTestId('create-room-name-input').last();
         const getPasswordInput = () => page.getByTestId('create-room-password-input').last();
-        const getPasswordToggle = () => page.getByTestId('create-room-password-toggle').last();
+        const mobileProxy = page.getByTestId('mobile-text-entry-proxy').last();
+        const mobileProxyInput = page.getByTestId('mobile-text-entry-proxy-input').last();
 
         await expect(getCreateRoomModal()).toBeVisible();
+        await page.waitForTimeout(250);
+
+        const beforeFocusMetrics = await getCreateRoomModal().evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+
+        await getRoomNameInput().click();
         await applyKeyboardViewportSimulation(page, {
             runtimeViewportHeight: 564,
             keyboardInsetHeight: 280,
         });
+        await expect(mobileProxy).toBeVisible();
+        await expect(mobileProxyInput).toBeEditable();
 
-        await getRoomNameInput().click();
-        await getRoomNameInput().fill('移动端建房输入校验');
+        const proxyMetrics = await mobileProxyInput.evaluate((node) => {
+            if (!(node instanceof HTMLInputElement)) {
+                throw new Error('建房代理输入框节点不是 input');
+            }
+            const rect = node.getBoundingClientRect();
+            const hitTarget = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            return {
+                bottom: rect.bottom,
+                runtimeViewportHeight: Number.parseFloat(
+                    window.getComputedStyle(document.documentElement).getPropertyValue('--runtime-viewport-height') || '0',
+                ),
+                isTopmost: hitTarget === node || node.contains(hitTarget),
+            };
+        });
+
+        expect(proxyMetrics.isTopmost, '建房代理输入框输入时不应被弹窗盖住').toBe(true);
+        expect(proxyMetrics.bottom, '建房代理输入框应留在键盘上方可视区').toBeLessThanOrEqual(proxyMetrics.runtimeViewportHeight);
+
+        await mobileProxyInput.fill('移动端建房输入校验');
         await expect(getPasswordInput()).toBeVisible();
         await expect(getPasswordInput()).toHaveAttribute('type', 'password');
-        await getPasswordToggle().click();
-        await expect(getPasswordInput()).toHaveAttribute('type', 'text');
-        await getPasswordInput().click();
-        await getPasswordInput().fill('123456');
         await expect(getRoomNameInput()).toHaveValue('移动端建房输入校验');
-        await expect(getPasswordInput()).toHaveValue('123456');
 
         const layoutMetrics = await getCreateRoomModal().evaluate((element) => {
             const roomName = element.querySelector('[data-testid="create-room-name-input"]');
@@ -492,11 +519,22 @@ test.describe('Lobby E2E', () => {
                 }).filter((fontSize) => Number.isFinite(fontSize) && fontSize > 0),
             };
         });
+        const afterFocusMetrics = await getCreateRoomModal().evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+        const modalTopDelta = Math.abs(afterFocusMetrics.top - beforeFocusMetrics.top);
+        const modalCenterYDelta = Math.abs(afterFocusMetrics.centerY - beforeFocusMetrics.centerY);
 
         expect(layoutMetrics.modalTop, '建房弹窗聚焦输入后顶部不应被顶出屏幕').toBeGreaterThanOrEqual(0);
         expect(layoutMetrics.roomNameBottom, '房间名输入框应留在键盘上方可视区').toBeLessThanOrEqual(layoutMetrics.runtimeViewportHeight);
         expect(layoutMetrics.passwordBottom, '密码输入框应留在键盘上方可视区').toBeLessThanOrEqual(layoutMetrics.runtimeViewportHeight);
         expect(Math.min(...layoutMetrics.inputFontSizes), '移动端建房输入区至少应为 16px').toBeGreaterThanOrEqual(16);
+        expect(modalTopDelta, '建房代理输入激活后弹窗顶部不应继续被键盘顶走').toBeLessThan(6);
+        expect(modalCenterYDelta, '建房代理输入激活后弹窗整体位置应基本保持稳定').toBeLessThan(6);
 
         await page.screenshot({
             path: 'test-results/evidence-screenshots/_shared/create-room-modal-mobile-keyboard-safe.png',
@@ -541,25 +579,18 @@ test.describe('Lobby E2E', () => {
         });
         await expect(passwordInput).toHaveAttribute('type', 'password');
 
-        const mobileProxyInput = page.getByTestId('mobile-text-entry-proxy-input').last();
-        let activePasswordInput = passwordInput;
-
         await passwordInput.evaluate((node) => {
             if (!(node instanceof HTMLInputElement)) {
                 throw new Error('私密房间密码输入框节点不是 input');
             }
             node.focus();
         });
-        await mobileProxyInput.waitFor({ state: 'visible', timeout: 3000 }).catch(() => undefined);
-        const proxyEditable = await mobileProxyInput.isEditable().catch(() => false);
-        if (proxyEditable) {
-            activePasswordInput = mobileProxyInput;
-        } else {
-            await expect(passwordInput).toBeEditable();
-        }
+        await page.waitForTimeout(120);
+        await expect(page.getByTestId('mobile-text-entry-proxy')).toHaveCount(0);
+        await expect(passwordInput).toBeEditable();
 
         // 输入密码（先保持默认 password 类型），确保“能输入”和“值确实写进去了”
-        await activePasswordInput.fill(privateRoom.password);
+        await passwordInput.fill(privateRoom.password);
         await expect(passwordInput).toHaveValue(privateRoom.password);
         // 切换显示密码，确保用户可以看到自己输入的内容（避免“看不到输入内容”的反馈）
         await expect(passwordToggle).toBeVisible();

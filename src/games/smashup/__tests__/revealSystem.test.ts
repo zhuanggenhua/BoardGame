@@ -26,7 +26,7 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { reduce } from '../domain/reduce';
 import type { RevealHandEvent, RevealDeckTopEvent } from '../domain/types';
 import type { EventStreamEntry } from '../../../engine/types';
-import { RevealOverlay } from '../ui/RevealOverlay';
+import { RevealOverlay, resolveRevealSuppressionRules } from '../ui/RevealOverlay';
 
 vi.mock('../../../components/common/media/CardPreview', () => ({
     CardPreview: ({ alt, className, style }: { alt?: string; className?: string; style?: React.CSSProperties }) => (
@@ -75,6 +75,33 @@ function makeRevealEntry({
                 viewerPlayerId,
                 cards: [{ uid: `card-${id}`, defId: 'pirate_first_mate' }],
                 reason: 'test_reveal_visibility',
+            },
+            timestamp: id * 100,
+        },
+    };
+}
+
+function makeRevealDeckTopEntry({
+    id,
+    viewerPlayerId,
+    reason,
+    cards,
+}: {
+    id: number;
+    viewerPlayerId: '0' | '1' | 'all';
+    reason: string;
+    cards: { uid: string; defId: string }[];
+}): EventStreamEntry {
+    return {
+        id,
+        event: {
+            type: SU_EVENTS.REVEAL_DECK_TOP,
+            payload: {
+                targetPlayerId: '0',
+                viewerPlayerId,
+                cards,
+                count: cards.length,
+                reason,
             },
             timestamp: id * 100,
         },
@@ -204,6 +231,53 @@ describe('卡牌展示系统', () => {
             const preview = document.querySelector<HTMLElement>('[data-card-preview]');
             expect(preview?.style.width).toBe('8.5vw');
             expect(preview?.style.height).toContain('vw');
+        });
+
+        it('猴子见猴子做 prompt 应生成同批顶五展示的 suppression 规则', () => {
+            expect(resolveRevealSuppressionRules({
+                sourceId: 'cyborg_apes_monkey_see_monkey_do_choose',
+                inspectedUids: ['deck-a', 'deck-b', 'deck-c'],
+            }, true)).toEqual([{
+                sourceId: 'cyborg_apes_monkey_see_monkey_do_choose',
+                reason: 'cyborg_apes_monkey_see_monkey_do',
+                cardUids: ['deck-a', 'deck-b', 'deck-c'],
+            }]);
+        });
+
+        it('被当前 prompt 接管的猴子见猴子做顶五展示不应残留或在 prompt 结束后重播', async () => {
+            const entries = [makeRevealDeckTopEntry({
+                id: 6,
+                viewerPlayerId: 'all',
+                reason: 'cyborg_apes_monkey_see_monkey_do',
+                cards: [
+                    { uid: 'deck-a', defId: 'going_bananas' },
+                    { uid: 'deck-b', defId: 'juiced_up' },
+                    { uid: 'deck-c', defId: 'monkey_on_your_back' },
+                ],
+            })];
+            const suppressionRules = [{
+                sourceId: 'cyborg_apes_monkey_see_monkey_do_choose',
+                reason: 'cyborg_apes_monkey_see_monkey_do',
+                cardUids: ['deck-a', 'deck-b', 'deck-c'],
+            }];
+
+            const { rerender } = render(React.createElement(RevealOverlay, {
+                entries,
+                currentPlayerId: '0',
+                suppressionRules,
+            }));
+
+            await Promise.resolve();
+            expect(screen.queryByTestId('reveal-overlay')).toBeNull();
+
+            rerender(React.createElement(RevealOverlay, {
+                entries,
+                currentPlayerId: '0',
+                suppressionRules: [],
+            }));
+
+            await Promise.resolve();
+            expect(screen.queryByTestId('reveal-overlay')).toBeNull();
         });
     });
 

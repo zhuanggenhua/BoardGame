@@ -15,6 +15,7 @@ import { getBaseDef, getCardDef, getMinionLikePower, getTitanDef } from '../data
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
+import { createCardObjectRefFromInstance, createCardTransferEvent } from '../domain/objectProvenance';
 import {
     addPowerCounter,
     addPermanentPower,
@@ -6916,17 +6917,13 @@ export function registerTitanInteractionHandlers(): void {
                 return { state, events: [] };
             }
 
-            const events: SmashUpEvent[] = [{
-                type: SU_EVENTS.CARD_TRANSFERRED,
-                payload: {
-                    cardUid: selected.cardUid,
-                    defId: selected.defId,
-                    fromPlayerId: playerId,
-                    toPlayerId: playerId,
-                    reason: 'sharks_helicoprion_reward',
-                },
+            const events: SmashUpEvent[] = [createCardTransferEvent({
+                card: createCardObjectRefFromInstance(liveCard),
+                fromPlayerId: playerId,
+                toPlayerId: playerId,
+                reason: 'sharks_helicoprion_reward',
                 timestamp,
-            } as SmashUpEvent];
+            }) as SmashUpEvent];
             const shuffledRemaining = random.shuffle(player.deck.filter(card => card.uid !== selected.cardUid));
             if (shuffledRemaining.length > 0) {
                 events.push({
@@ -7871,17 +7868,13 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
-        const transferEvent: CardTransferredEvent = {
-            type: SU_EVENTS.CARD_TRANSFERRED,
-            payload: {
-                cardUid: madnessCard.uid,
-                defId: madnessCard.defId,
-                fromPlayerId: playerId,
-                toPlayerId: selected.targetPlayerId,
-                reason: 'cthulhu_cthulhu_titan_talent',
-            },
+        const transferEvent: CardTransferredEvent = createCardTransferEvent({
+            card: createCardObjectRefFromInstance(madnessCard),
+            fromPlayerId: playerId,
+            toPlayerId: selected.targetPlayerId,
+            reason: 'cthulhu_cthulhu_titan_talent',
             timestamp,
-        };
+        });
         return { state, events: [transferEvent] };
     });
 

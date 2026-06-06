@@ -317,6 +317,10 @@ fxBus.pushSequence([
 - **领域 ID 常量表**：所有稳定 ID 在 `domain/ids.ts` 用 `as const` 定义，导出派生类型（`StatusId`/`TokenId`）。例外：i18n key、类型定义中的字面量。
 - **新机制先检查引擎**：实现前必须先搜索 `engine/primitives/` 和 `engine/systems/`，无则先在引擎层抽象。
 - **新游戏能力系统必须使用 `ability.ts`**：禁止自行实现注册表。每游戏独立实例，通过 label 区分。
+- **当前决策者统一从 `src/engine/sessionContext.ts` 读取**：禁止在共享层继续扩散 `currentPlayer/currentPlayerId/currentPlayerIndex` 这种每游戏一套的弱约定。
+- **对象生命周期要先建模 provenance**：凡涉及跨区、附着/脱离、临时控制、借用、代持、默认终点，不得只靠 `owner/originalOwner/fromPlayerId/toPlayerId` 散字段拼协议。
+- **延迟交互要先建模 snapshot**：凡交互会跨阶段、跨清场、跨宿主变化继续结算，必须显式区分创建时 snapshot 与 resolve 时 live lookup。
+- **交互展示模式独立描述**：禁止让 UI 仅凭 `defId/baseDefId/targetType` 等 payload 形状反推按钮/卡牌/棋盘展示模式。
 
 ---
 
@@ -414,6 +418,11 @@ isGameOver: (core) => {
 **状态/buff 原语（TagContainer / ModifierStack）**：
 - **SummonerWars 历史债务**：`BoardUnit` 上 `tempAbilities`/`boosts`/`extraAttacks`/`healingMode`/`wasAttackedThisTurn`/`originalOwner` 为 ad-hoc 字段，未用 TagContainer，回合清理靠手动解构。**新游戏禁止模仿**，必须用 `createTagContainer()` + `tickDurations`。
 - DiceThrone 已用引擎层 TagContainer；SmashUp 无 buff 系统。
+
+**对象生命周期 / 延迟交互历史债务**：
+- **SummonerWars 历史债务**：`owner/originalOwner/attachedCards/attachedUnits` 仍是对象身份、临时控制和宿主关系的 ad-hoc 混合表达。**新游戏禁止模仿**，必须先抽稳定 `object ref + provenance`。
+- **DiceThrone 历史债务**：`currentChoiceSourceAbilityId + pending state + payload-shaped choice` 仍有较强隐藏耦合。**新游戏禁止模仿**，必须优先设计显式 `deferred snapshot + interaction descriptor`。
+- **Cardia 历史债务**：`interaction: any`、`context` 透传、resolve 时再按 `sourceId` 回查 handler。**新游戏禁止模仿**，必须让交互 envelope 自足。
 
 ---
 

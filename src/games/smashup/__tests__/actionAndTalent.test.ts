@@ -19,6 +19,7 @@ import { getCardDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { reduce } from '../domain/reduce';
+import { createCardObjectRef } from '../domain/objectProvenance';
 import { makeCard, makeMatchState, makePlayer, makeState } from './helpers';
 import { defaultTestRandom, runCommand } from './testRunner';
 
@@ -82,7 +83,7 @@ describe('Property 8: 标准行动卡生命周期', () => {
         );
     });
 
-    it('CARD_TRANSFERRED 在来源区已不可见时仍应保留 ownerId，后续 borrowed 随从被消灭时进入真实拥有者弃牌堆', () => {
+    it('CARD_TRANSFERRED 在来源区已不可见时仍应仅凭 objectRef 重建 provenance，后续 borrowed 随从被消灭时进入真实拥有者弃牌堆', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -100,7 +101,12 @@ describe('Property 8: 标准行动卡生命周期', () => {
                 defId: 'pirate_first_mate',
                 fromPlayerId: '2',
                 toPlayerId: '0',
-                ownerId: '1',
+                objectRef: createCardObjectRef({
+                    uid: 'borrowed-minion',
+                    defId: 'pirate_first_mate',
+                    ownerId: '1',
+                    type: 'minion',
+                }),
                 reason: 'test_transfer_owner_provenance',
             },
             timestamp: 1000,

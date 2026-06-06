@@ -306,6 +306,24 @@ describe('葫芦娃派系作者 PR 级行为合同', () => {
         expect(getDiscardSpecialOptions(core, '0')).toEqual([]);
     });
 
+    it('行动额度已用完时，不应继续把紫金宝葫芦暴露为弃牌堆可打行动', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('gourd-card', 'huluwawa_purple_gold_gourd', 'action', '0')],
+                    actionsPlayed: 1,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_huluwawa_mountain', [
+                makeMinion('qiwa', 'huluwawa_qi_wa', '0', 4),
+            ])],
+        });
+
+        expect(getDiscardActionPlayOptions(core, '0')).toEqual([]);
+    });
+
     it('紫金宝葫芦从弃牌堆额外打出时只能附着到己方七娃身上', () => {
         const initial = makeMatchState(makeState({
             players: {

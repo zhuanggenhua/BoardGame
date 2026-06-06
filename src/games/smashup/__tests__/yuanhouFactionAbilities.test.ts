@@ -75,6 +75,19 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         return skipped.finalState;
     };
 
+    const advancePostScoringDelay = (state: any, playerId: string) => {
+        const delayUntil = (state.sys as any)._smashupPostScoringBaseRevealDelayUntil;
+        expect(typeof delayUntil).toBe('number');
+        const advanced = runCommand(state, {
+            type: 'ADVANCE_PHASE',
+            playerId,
+            payload: undefined,
+            timestamp: delayUntil,
+        } as any);
+        expect(advanced.success).toBe(true);
+        return advanced;
+    };
+
     it('变形者：基因突变通过真实行动入口给目标随从临时 +3 力量', () => {
         const core = {
             players: {
@@ -7047,10 +7060,11 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         }
 
         expect(sawActionPlayed).toBe(true);
-        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toContain('mole-target-action');
-        expect(resolved.finalState.core.players['0'].vp).toBe(3);
-        expect(resolved.finalState.core.players['1'].vp).toBe(1);
-        expect(resolved.finalState.core.bases[0].defId).toBe('base_the_nexus');
+        const finalized = advancePostScoringDelay(resolved.finalState, '0');
+        expect(finalized.finalState.core.players['1'].discard.map(card => card.uid)).toContain('mole-target-action');
+        expect(finalized.finalState.core.players['0'].vp).toBe(3);
+        expect(finalized.finalState.core.players['1'].vp).toBe(1);
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_the_nexus');
     });
 
     it('超级间谍：鼹鼠额外特殊行动受 Mindraker 计分窗口禁令约束', () => {
@@ -7177,20 +7191,9 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(afterNestedTrigger.success).toBe(true);
-        const settlePrompt = afterNestedTrigger.finalState.sys.interaction.current;
-        expect(settlePrompt?.data?.sourceId).toBe('smashup_reaction_choose');
-        const settlePassOption = findInteractionOption(settlePrompt, candidate => candidate.value?.kind === 'pass');
-        expect(settlePassOption).toBeTruthy();
-        const settled = runCommand(afterNestedTrigger.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: settlePrompt!.playerId,
-            payload: { optionId: settlePassOption.id },
-            timestamp: 1004,
-        } as any);
-
-        expect(settled.success).toBe(true);
-        expect(settled.finalState.sys.interaction.current).toBeUndefined();
-        expect(settled.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(afterNestedTrigger.finalState.sys.interaction.current).toBeUndefined();
+        expect(afterNestedTrigger.finalState.sys.responseWindow?.current).toBeUndefined();
+        const settled = advancePostScoringDelay(afterNestedTrigger.finalState, '0');
         expect(settled.finalState.sys.phase).toBe('playCards');
         expect(settled.finalState.core.currentPlayerIndex).toBe(1);
         expect(settled.finalState.core.players['0'].vp).toBe(3);
@@ -9378,7 +9381,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             }
 
             if (refreshedPrompt?.data?.sourceId === 'time_travelers_wormhole_choose') {
-                const option = findInteractionOption(refreshedPrompt, candidate => candidate.value?.minionUid === 'traveler-a');
+                const option = findInteractionOption(prompt, candidate => candidate.value?.minionUid === 'winner-a');
                 return { optionIds: [option.id] };
             }
 
@@ -9391,7 +9394,6 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             'time_travelers_time_is_fleeting_choose',
             'smashup_reaction_choose',
             'time_travelers_wormhole_choose',
-            'smashup_reaction_choose',
         ]);
         expect(resolved.events.some(event =>
             event.type === SU_EVENTS.BASE_DECK_REORDERED
@@ -9401,15 +9403,16 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             event.type === SU_EVENTS.DECK_REORDERED
             && (event.payload as { playerId?: string }).playerId === '0',
         )).toBe(true);
-        expect(resolved.finalState.core.bases[0].defId).toBe('base_faceless_city');
-        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-rest', 'traveler-a']);
-        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([
+        const finalized = advancePostScoringDelay(resolved.finalState, '0');
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_faceless_city');
+        expect(finalized.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-rest', 'winner-a']);
+        expect(finalized.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['traveler-a', 'draw-a', 'draw-b']);
+        expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([
             'time-fleeting-a',
             'wormhole-a',
-            'winner-a',
         ]);
-        expect(resolved.finalState.core.players['1'].discard.map(card => card.uid)).toEqual(['enemy-a']);
-        expect(resolved.finalState.sys.interaction.current).toBeUndefined();
+        expect(finalized.finalState.core.players['1'].discard.map(card => card.uid)).toEqual(['enemy-a']);
+        expect(finalized.finalState.sys.interaction.current).toBeUndefined();
     });
 
     it('时间旅行者基地：传送门室在计分后排队赢家额外回合并在回合结束时消费', () => {
@@ -10344,9 +10347,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(sourceBase.defId).toBe('base_portal_room');
         expect(sourceBase.minions.map(minion => minion.uid)).toEqual([]);
         expect(destinationBase.defId).toBe('base_secret_volcano_headquarters');
-        expect(destinationBase.minions.map(minion => minion.uid)).toEqual(['flying-host']);
+        expect(destinationBase.minions.map(minion => minion.uid)).toEqual(['flying-host', 'draw-a']);
         expect(movedHost?.attachedActions.map(action => action.uid)).not.toContain('flying-action');
-        expect(finalized.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a', 'draw-b']);
         expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toContain('flying-action');
     });
 
@@ -12029,7 +12031,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('raider-a');
     });
 
-    it('时间旅行者：虫洞后全员让过会消费未选择的传送门室触发并收口', () => {
+    it('时间旅行者：虫洞后全员让过会进入延迟清场并消费未选择的传送门室触发', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -12118,33 +12120,20 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             timestamp: 1003,
         } as any);
         expect(passPortalRoom.success).toBe(true);
-
-        const nestedPrompt = passPortalRoom.finalState.sys.interaction.current;
-        expect(nestedPrompt?.data?.sourceId).toBe('smashup_reaction_choose');
-        expect(nestedPrompt?.resolutionFrameId?.startsWith('onMinionDiscardedFromBase:')).toBe(true);
-        const nestedPassOption = findInteractionOption(nestedPrompt, candidate => candidate.value?.kind === 'pass');
-        expect(nestedPassOption).toBeTruthy();
-        const afterNestedPass = runCommand(passPortalRoom.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: nestedPrompt!.playerId,
-            payload: { optionId: nestedPassOption.id },
-            timestamp: 1004,
-        } as any);
-
-        expect(afterNestedPass.success).toBe(true);
-        expect(afterNestedPass.finalState.sys.interaction.current).toBeUndefined();
-        expect(afterNestedPass.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(passPortalRoom.finalState.sys.interaction.current).toBeUndefined();
+        expect(passPortalRoom.finalState.sys.responseWindow?.current).toBeUndefined();
+        const afterNestedPass = advancePostScoringDelay(passPortalRoom.finalState, '0');
         expect(afterNestedPass.finalState.core.triggerQueue?.some(trigger => trigger.sourceDefId === 'base_portal_room') === true).toBe(false);
         expect(afterNestedPass.finalState.core.bases[0].defId).toBe('base_faceless_city');
         expect([
             ...afterNestedPass.finalState.core.players['0'].deck.map(card => card.uid),
             ...afterNestedPass.finalState.core.players['0'].hand.map(card => card.uid),
         ]).toContain('raider-a');
-        expect(afterNestedPass.finalState.core.players['0'].discard.map(card => card.uid)).toContain('jumper-a');
+        expect(afterNestedPass.finalState.core.players['0'].hand.map(card => card.uid)).toContain('jumper-a');
         expect(afterNestedPass.finalState.core.players['1'].discard.map(card => card.uid)).toContain('enemy-a');
     });
 
-    it('时间旅行者：虫洞空选时应让所有己方随从按正常计分清场进入弃牌堆', () => {
+    it('时间旅行者：虫洞空选时不产生虫洞移动事件，其余计分后链路按正常合同继续', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -12218,7 +12207,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             chooseNone.events.filter(event => !event.type.startsWith('SYS_')),
         ).toEqual([]);
         expect(chooseNone.finalState.core.players['0'].discard.map(card => card.uid)).toContain('wormhole-a');
-        expect(chooseNone.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['jumper-a', 'raider-a', 'enemy-a']);
+        expect(chooseNone.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['raider-a', 'enemy-a']);
 
         const portalPrompt = chooseNone.finalState.sys.interaction.current!;
         expect(portalPrompt.data.sourceId).toBe('smashup_reaction_choose');
@@ -12230,20 +12219,9 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             timestamp: 1003,
         } as any);
         expect(passPortalRoom.success).toBe(true);
-
-        const nestedPrompt = passPortalRoom.finalState.sys.interaction.current;
-        expect(nestedPrompt?.data?.sourceId).toBe('smashup_reaction_choose');
-        expect(nestedPrompt?.resolutionFrameId?.startsWith('onMinionDiscardedFromBase:')).toBe(true);
-        const nestedPassOption = findInteractionOption(nestedPrompt, candidate => candidate.value?.kind === 'pass');
-        expect(nestedPassOption).toBeTruthy();
-        const afterNestedPass = runCommand(passPortalRoom.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: nestedPrompt!.playerId,
-            payload: { optionId: nestedPassOption.id },
-            timestamp: 1004,
-        } as any);
-
-        expect(afterNestedPass.success).toBe(true);
+        expect(passPortalRoom.finalState.sys.interaction.current).toBeUndefined();
+        expect(passPortalRoom.finalState.sys.responseWindow?.current).toBeUndefined();
+        const afterNestedPass = advancePostScoringDelay(passPortalRoom.finalState, '0');
         expect(afterNestedPass.finalState.core.bases[0].defId).toBe('base_faceless_city');
         expect(afterNestedPass.finalState.core.players['1'].discard.map(card => card.uid)).toContain('enemy-a');
         expect(afterNestedPass.finalState.core.baseDiscard).toEqual(['base_portal_room']);
@@ -12344,23 +12322,24 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             timestamp: 1003,
         } as any);
         expect(passPortalRoom.success).toBe(true);
+        const finalized = advancePostScoringDelay(passPortalRoom.finalState, '0');
 
         const p0Zones = [
-            ...passPortalRoom.finalState.core.players['0'].hand.map(card => card.uid),
-            ...passPortalRoom.finalState.core.players['0'].deck.map(card => card.uid),
-            ...passPortalRoom.finalState.core.players['0'].discard.map(card => card.uid),
+            ...finalized.finalState.core.players['0'].hand.map(card => card.uid),
+            ...finalized.finalState.core.players['0'].deck.map(card => card.uid),
+            ...finalized.finalState.core.players['0'].discard.map(card => card.uid),
         ];
         const p1Zones = [
-            ...passPortalRoom.finalState.core.players['1'].hand.map(card => card.uid),
-            ...passPortalRoom.finalState.core.players['1'].deck.map(card => card.uid),
-            ...passPortalRoom.finalState.core.players['1'].discard.map(card => card.uid),
+            ...finalized.finalState.core.players['1'].hand.map(card => card.uid),
+            ...finalized.finalState.core.players['1'].deck.map(card => card.uid),
+            ...finalized.finalState.core.players['1'].discard.map(card => card.uid),
         ];
 
-        expect(passPortalRoom.finalState.core.bases[0].defId).toBe('base_faceless_city');
+        expect(finalized.finalState.core.bases[0].defId).toBe('base_faceless_city');
         expect(p0Zones).not.toContain('borrowed-a');
-        expect(passPortalRoom.finalState.core.players['0'].discard.map(card => card.uid)).toContain('owned-a');
+        expect(finalized.finalState.core.players['0'].discard.map(card => card.uid)).toContain('owned-a');
         expect(p1Zones).toContain('borrowed-a');
-        expect(passPortalRoom.finalState.core.players['1'].discard.map(card => card.uid)).toContain('enemy-a');
+        expect(finalized.finalState.core.players['1'].discard.map(card => card.uid)).toContain('enemy-a');
     });
 
     it('电子猿基地：灵长类公园让赢家选择这里随从上的行动回到各自拥有者手牌', () => {

@@ -24,6 +24,11 @@ import { reduce } from '../domain/reduce';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import { buildAffectRecords } from '../domain/affect';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import {
+    createCardObjectRef,
+    createCardObjectRefFromInstance,
+    createCardTransferEvent,
+} from '../domain/objectProvenance';
 
 type SteampunkPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -783,17 +788,13 @@ const steampunkMechanicPromptProgram = createPromptProgram<SteampunkPromptContex
         if (!liveCard || !isMechanicReplayableDiscardAction(state.core, playerId, defId, (state.core.players[playerId]?.hand.length ?? 0) + 1)) {
             return { events: [] };
         }
-        const recoverEvent = {
-            type: SU_EVENTS.CARD_TRANSFERRED,
-            payload: {
-                cardUid: selected.cardUid,
-                defId,
-                fromPlayerId: playerId,
-                toPlayerId: playerId,
-                reason: 'steampunk_mechanic',
-            },
+        const recoverEvent = createCardTransferEvent({
+            card: createCardObjectRefFromInstance(liveCard),
+            fromPlayerId: playerId,
+            toPlayerId: playerId,
+            reason: 'steampunk_mechanic',
             timestamp,
-        } as SmashUpEvent;
+        }) as SmashUpEvent;
         const promptState = withSimulatedMatchState(state, [recoverEvent]);
         return {
             events: [recoverEvent],
@@ -972,17 +973,17 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
             payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'steampunk_change_of_venue' },
             timestamp,
         } as SmashUpEvent;
-        const recoverEvent = {
-            type: SU_EVENTS.CARD_TRANSFERRED,
-            payload: {
-                cardUid: selected.cardUid,
+        const recoverEvent = createCardTransferEvent({
+            card: createCardObjectRef({
+                uid: selected.cardUid,
                 defId: selected.defId,
-                fromPlayerId: selected.ownerId,
-                toPlayerId: playerId,
-                reason: 'steampunk_change_of_venue',
-            },
+                ownerId: selected.ownerId as PlayerId,
+            }),
+            fromPlayerId: selected.ownerId as PlayerId,
+            toPlayerId: playerId,
+            reason: 'steampunk_change_of_venue',
             timestamp,
-        } as SmashUpEvent;
+        }) as SmashUpEvent;
         const replayState = withSimulatedMatchState(state, [detachEvent, recoverEvent]);
 
         if (cardDef?.subtype === 'ongoing') {

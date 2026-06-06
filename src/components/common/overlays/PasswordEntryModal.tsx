@@ -39,6 +39,7 @@ export const PasswordEntryModal = ({
                     closeOnBackdrop={closeOnBackdrop}
                     overlayClassName="bg-[#2b2114]/30"
                     preserveKeyboardLayout
+                    disableTextEntryAutoscroll
                     containerClassName="p-4 sm:p-6"
                     containerStyle={{
                         paddingTop: 'max(1rem, var(--safe-area-top))',

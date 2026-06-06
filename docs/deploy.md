@@ -328,6 +328,8 @@ GitHub Actions 自动化：
 - **服务端缓存头**：生产单体服务会把上述目录按 `Cache-Control: public, max-age=31536000, immutable` 提供；浏览器或 Cloudflare 拿到新 URL 才会请求新内容。
 - **例外文件**：`/game-data/summonerwars.layout.json` 仍保持 `no-cache, no-store, must-revalidate`，因为它承载运行时布局编辑结果，不能误进长期缓存。
 - **入口页策略不变**：`index.html` 和 SPA fallback 继续 `no-cache, no-store, must-revalidate`，确保部署后刷新页面一定拿到新的资源引用关系。
+- **部署门禁新增**：`scripts/deploy/deploy-image.sh` 现在会在源站 smoke 通过后，再校验**公网首页引用的入口资源**是否与 `http://127.0.0.1/` 一致；如果 Cloudflare 仍在发旧 `index-*.js` / `MatchRoom-*.js`，部署不会被视为完成。
+- **Cloudflare purge 约定**：若服务器环境提供 `CLOUDFLARE_ZONE_ID` 与 `CLOUDFLARE_API_TOKEN`，部署脚本默认按 `CLOUDFLARE_PURGE_MODE=auto` 自动执行 purge（有凭据时等价于 `everything`）；若公网仍可能命中旧入口包，这是正式部署链的第一补救动作。
 - **新增 game-data 的判断规则**：如果文件是“构建期静态产物”，应纳入版本指纹 + 长缓存；如果文件可能被后台、编辑器或运行时直接改写，则默认保守缓存，除非同时设计了独立版本号或发布链路。
 
 ## 资源发布流程（官方）
@@ -336,7 +338,8 @@ GitHub Actions 自动化：
 2. 生成清单：`npm run assets:manifest`（输出 `assets-manifest.json`）。
 3. 校验清单：`npm run assets:validate`（缺文件/变体不一致会报错）。
 4. 上传资源与清单到对象存储（路径 `official/<gameId>/...`）。
-5. 如仅修改了对象元数据（例如 `Cache-Control`），使用 `npm run assets:upload:force` 重新上传；常规资源内容更新不需要手动 purge，因为 URL 会随内容 hash 自动变化。
+5. 如仅修改了对象元数据（例如 `Cache-Control`），使用 `npm run assets:upload:force` 重新上传；常规图片/音频资源内容更新不需要手动 purge，因为 URL 会随内容 hash 自动变化。
+6. 但 **Web 首页入口与 Vite 产物映射不是 R2 资源**。若线上反馈表现为“源站已是新版本，公网仍在发旧 `index-*.js` / `MatchRoom-*.js`”，必须改走 Cloudflare purge / 公网入口一致性排查，而不是继续猜修业务代码。
 
 ### Android OTA 产物发布流程
 

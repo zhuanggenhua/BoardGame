@@ -52,6 +52,40 @@ function getMinionBottomOverlayDefId(minion: MinionOnBase): string | undefined {
     return typeof copiedDefId === 'string' && copiedDefId !== minion.defId ? copiedDefId : undefined;
 }
 
+function getMinionPowerBadgePresentation(
+    core: SmashUpCore,
+    minion: MinionOnBase,
+    baseIndex: number,
+    effectivePower: number,
+) {
+    const breakdown = getEffectivePowerBreakdown(core, minion, baseIndex);
+    const signedContributors = [
+        breakdown.powerCounters,
+        breakdown.permanentModifier,
+        breakdown.tempModifier,
+        ...breakdown.ongoingDetails.map(detail => detail.value),
+    ].filter(value => value !== 0);
+    const hasPositiveContributor = signedContributors.some(value => value > 0);
+    const hasNegativeContributor = signedContributors.some(value => value < 0);
+    const hasMixedContributors = hasPositiveContributor && hasNegativeContributor;
+
+    return {
+        breakdown,
+        badgeToneClass: hasMixedContributors
+            ? 'bg-amber-700'
+            : effectivePower > minion.basePower
+                ? 'bg-green-600'
+                : effectivePower < minion.basePower
+                    ? 'bg-red-600'
+                    : 'bg-slate-700',
+        badgeLabel: hasMixedContributors
+            ? String(breakdown.finalPower)
+            : effectivePower === minion.basePower
+                ? String(effectivePower)
+                : `${effectivePower > minion.basePower ? '+' : ''}${effectivePower - minion.basePower}`,
+    };
+}
+
 // ============================================================================
 // Base Zone: The "Battlefield"
 // ============================================================================
@@ -288,7 +322,7 @@ export const BaseZone: React.FC<{
         const isSelectableOngoing = !!selectableOngoingUids?.has(oa.uid);
         const isDimmedOngoing = !!selectableOngoingUids && !selectableOngoingUids.has(oa.uid);
         const showUsedOngoingState = hasOngoingTalent && oa.talentUsed && !canUseOngoingTalent;
-        const showOngoingInspectButton = (showDesktopInspectButton || isCoarsePointer)
+        const showOngoingInspectButton = showDesktopInspectButton
             && !canUseOngoingTalent
             && !isSelectableOngoing;
         const ongoingPowerContribution = getOngoingCardPowerContribution({
@@ -1344,8 +1378,11 @@ const MinionCard: React.FC<{
         } else if (canActivateSpecial) {
             clearArmedActivation();
             dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { minionUid: minion.uid, baseIndex });
+        } else {
+            clearArmedActivation();
+            onView();
         }
-    }, [isSelectableMinion, onMinionSelect, clearArmedActivation, isCoarsePointer, canActivate, canUseTalent, canActivateSpecial, dispatch, minion.uid, baseIndex, shouldBlockMinionClick, armOrActivate, onToggleExpanded, onExpandMinion, hasAttachedActions, minionActivationKey]);
+    }, [isSelectableMinion, onMinionSelect, clearArmedActivation, isCoarsePointer, canActivate, canUseTalent, canActivateSpecial, dispatch, minion.uid, baseIndex, shouldBlockMinionClick, armOrActivate, onToggleExpanded, onExpandMinion, hasAttachedActions, minionActivationKey, onView]);
 
     const showUsedMinionState = hasTalent && minion.talentUsed && !canActivate;
     const minionContainerClassName = `relative aspect-[0.714] group ${isAttachedOverlayVisible ? '!z-[1300]' : 'hover:!z-[999]'} ${
@@ -1489,31 +1526,27 @@ const MinionCard: React.FC<{
                     )}
 
                     {/* 力量增幅徽章 - 增益绿色/减益红色（左上角），仅有变化时显示 */}
-                    {(effectivePower !== minion.basePower) && (
-                        <div
-                            className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] z-30 ${
-                                effectivePower > minion.basePower ? 'bg-green-600' :
-                                effectivePower < minion.basePower ? 'bg-red-600' :
-                                'bg-slate-700'
-                            }`}
-                            title={(() => {
-                                const bd = getEffectivePowerBreakdown(core, minion, baseIndex);
-                                const parts = [`基础: ${bd.basePower}`];
-                                if (bd.powerCounters !== 0) parts.push(`力量指示物: ${bd.powerCounters > 0 ? '+' : ''}${bd.powerCounters}`);
-                                if (bd.permanentModifier !== 0) parts.push(`永久修正: ${bd.permanentModifier > 0 ? '+' : ''}${bd.permanentModifier}`);
-                                if (bd.tempModifier !== 0) parts.push(`临时: ${bd.tempModifier > 0 ? '+' : ''}${bd.tempModifier}`);
-                                if (bd.ongoingDetails.length > 0) {
-                                    for (const d of bd.ongoingDetails) parts.push(`${d.sourceName}: ${d.value > 0 ? '+' : ''}${d.value}`);
-                                }
-                                parts.push(`= ${bd.finalPower}`);
-                                return parts.join('\n');
-                            })()}
-                        >
-                            {effectivePower === minion.basePower
-                                ? effectivePower
-                                : `${effectivePower > minion.basePower ? '+' : ''}${effectivePower - minion.basePower}`}
-                        </div>
-                    )}
+                    {(() => {
+                        if (effectivePower === minion.basePower) return null;
+                        const badge = getMinionPowerBadgePresentation(core, minion, baseIndex, effectivePower);
+                        const parts = [`基础: ${badge.breakdown.basePower}`];
+                        if (badge.breakdown.powerCounters !== 0) parts.push(`力量指示物: ${badge.breakdown.powerCounters > 0 ? '+' : ''}${badge.breakdown.powerCounters}`);
+                        if (badge.breakdown.permanentModifier !== 0) parts.push(`永久修正: ${badge.breakdown.permanentModifier > 0 ? '+' : ''}${badge.breakdown.permanentModifier}`);
+                        if (badge.breakdown.tempModifier !== 0) parts.push(`临时: ${badge.breakdown.tempModifier > 0 ? '+' : ''}${badge.breakdown.tempModifier}`);
+                        if (badge.breakdown.ongoingDetails.length > 0) {
+                            for (const d of badge.breakdown.ongoingDetails) parts.push(`${d.sourceName}: ${d.value > 0 ? '+' : ''}${d.value}`);
+                        }
+                        parts.push(`= ${badge.breakdown.finalPower}`);
+                        return (
+                            <div
+                                data-testid={`su-minion-power-badge-${minion.uid}`}
+                                className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] z-30 ${badge.badgeToneClass}`}
+                                title={parts.join('\n')}
+                            >
+                                {badge.badgeLabel}
+                            </div>
+                        );
+                    })()}
 
                     {/* +1力量指示物徽章（左侧，力量增幅下方） */}
                     {(minion.powerCounters ?? 0) > 0 && (

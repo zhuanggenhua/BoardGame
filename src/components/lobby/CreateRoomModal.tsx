@@ -749,7 +749,7 @@ export const CreateRoomModal = ({
                                 className="pointer-events-auto relative flex w-full max-w-md flex-col overflow-hidden rounded-sm border border-parchment-card-border/30 bg-parchment-card-bg font-serif shadow-parchment-card-hover"
                                 onClick={(event) => event.stopPropagation()}
                                 style={{
-                                    maxHeight: 'min(var(--runtime-modal-max-height, 92vh), 42rem)',
+                                    maxHeight: 'min(var(--modal-max-height, var(--runtime-modal-max-height)), 42rem)',
                                 }}
                                 data-testid="create-room-modal"
                             >

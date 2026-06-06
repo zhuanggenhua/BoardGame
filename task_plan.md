@@ -1,5 +1,19 @@
 > 状态提示（2026-06-05）：本文件保留的是最近一次长期任务计划快照，**不自动代表当前对话 active goal**。只有当用户当轮明确点名对应专项时，才可继续按本文件推进；否则一律只作历史计划参考。
 
+## Current Note（2026-06-06 live复核）
+
+- 本轮未再改 DiceThrone 业务代码，只对当前完成态做代码级复核，避免继续被历史 `hold` 段落误导。
+- 现跑验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native` -> `4 files / 97 passed`
+  - `temp/dicethrone-intake-full-run-2026-06-06-pass2.log` 末尾复核为 `80 passed (20.3m)`
+- 代码真相已与当前 closeout 口径一致：
+  - `src/games/dicethrone/domain/core-types.ts` 中 `zhanshujia / cursed_pirate` 确实已不再保留 `implementation_in_progress`
+  - `src/games/dicethrone/__tests__/character-catalog-status.test.ts` 当前显式锁定 `gunslinger / samurai / treant / ninja / zhanshujia / cursed_pirate` 都不应继续保留该徽标
+- 因此当前对“规则都实施了吗 / 技能是不是要重录 / 审计也是吗”的回答继续固定为：
+  - 规则实现已落地。
+  - 不需要整套重录。
+  - 审计 closeout 已完成。
+
 ## Current Note（2026-06-06 终版）
 
 - DiceThrone 战术家与咒缚海盗本轮 closeout 已完成，当前权威结论已从“审计 hold、继续挂 implementation_in_progress”切换为“目录完成态已落档”。

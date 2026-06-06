@@ -379,7 +379,6 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                 }
 
                 const canBindToCardSpotlight = cardCandidateIndex >= 0;
-                const shouldShowBonusDie = viewerInvolved || canBindToCardSpotlight;
 
                 spotlightLogger.info('bonus-event', {
                     eventType: type,
@@ -393,19 +392,8 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                     selfId,
                     viewerInvolved,
                     canBindToCardSpotlight,
-                    shouldShowBonusDie,
+                    standalonePublicReveal: !canBindToCardSpotlight,
                 });
-
-                if (!shouldShowBonusDie) {
-                    spotlightLogger.info('bonus-skip', {
-                        reason: 'viewer-not-involved-and-no-card-candidate',
-                        eventType: type,
-                        bonusPid,
-                        bonusTid,
-                        selfId,
-                    });
-                    continue;
-                }
 
                 // 浠?selectedCharacters 瑙ｆ瀽楠板瓙鎵€灞炶鑹?
                 const resolvedCharacterId = selectedCharacters?.[bonusPid as PlayerId]
@@ -487,10 +475,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                     }
 
                     const relatedBonusDiceEventCount = countRelatedBonusDiceEvents(newEntries, bonusPid, eventTimestamp);
-                    const shouldAggregateStandaloneMultiDice =
-                        !isSpectator
-                        && bonusPid === selfId
-                        && relatedBonusDiceEventCount > 1;
+                    const shouldAggregateStandaloneMultiDice = relatedBonusDiceEventCount > 1;
 
                     if (shouldAggregateStandaloneMultiDice) {
                         if (!pendingStandaloneMultiDice) {

@@ -12,6 +12,7 @@ interface ModalBaseProps {
     containerClassName?: string;
     containerStyle?: CSSProperties;
     preserveKeyboardLayout?: boolean;
+    disableTextEntryAutoscroll?: boolean;
     contentWrapperClassName?: string;
     contentWrapperStyle?: CSSProperties;
     visualStyle?: 'default' | 'home-v2';
@@ -62,6 +63,7 @@ export const ModalBase = memo(({
     containerClassName,
     containerStyle,
     preserveKeyboardLayout = false,
+    disableTextEntryAutoscroll = false,
     contentWrapperClassName,
     contentWrapperStyle,
     visualStyle = 'default',
@@ -127,6 +129,7 @@ export const ModalBase = memo(({
                     containerClassName
                 )}
                 data-lock-layout-viewport={preserveKeyboardLayout ? 'true' : undefined}
+                data-text-entry-autoscroll={disableTextEntryAutoscroll ? 'off' : undefined}
                 style={{ willChange: resolvedWillChange, ...homeV2ContainerStyle, ...resolvedContainerStyle }}
             >
                 <div className={clsx('w-full flex justify-center', contentWrapperClassName)} style={contentWrapperStyle}>

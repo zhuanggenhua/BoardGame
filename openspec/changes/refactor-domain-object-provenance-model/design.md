@@ -87,6 +87,8 @@
 3. 先迁移最容易丢失 provenance 或最依赖 live state 的高风险 family
 4. 按游戏/事件 family / interaction family 分批收口，而不是一次性全仓硬切
 
+当前 rollout inventory 与批次划分见同目录 [rollout.md](./rollout.md)。
+
 ## Open Questions
 
 - `ObjectRef` 与 `ObjectSnapshot` 的边界如何划分，何时只传引用，何时必须传快照？

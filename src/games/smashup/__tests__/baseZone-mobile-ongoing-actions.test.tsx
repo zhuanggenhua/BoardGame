@@ -1,7 +1,12 @@
 import React from 'react';
 import { fireEvent, render } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { initAllAbilities, resetAbilityInit } from '../abilities';
+import { clearRegistry } from '../domain/abilityRegistry';
+import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
+import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
+import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { BaseZone } from '../ui/BaseZone';
 import { SU_COMMANDS } from '../domain/types';
 
@@ -20,6 +25,15 @@ vi.mock('../../../components/common/media/CardPreview', async (importOriginal) =
             })
         ),
     };
+});
+
+beforeAll(() => {
+    clearRegistry();
+    clearBaseAbilityRegistry();
+    clearOngoingEffectRegistry();
+    clearPowerModifierRegistry();
+    resetAbilityInit();
+    initAllAbilities();
 });
 
 afterEach(() => {
@@ -82,6 +96,7 @@ function renderBaseZone(options?: {
 }) {
     const dispatch = vi.fn();
     const onViewAction = vi.fn();
+    const onViewMinion = vi.fn();
     const core = buildCore();
     core.bases[0] = {
         ...core.bases[0],
@@ -106,7 +121,7 @@ function renderBaseZone(options?: {
             dispatch,
             onClick: vi.fn(),
             onMinionSelect: options?.onMinionSelect,
-            onViewMinion: vi.fn(),
+            onViewMinion,
             onViewAction,
             onViewBase: vi.fn(),
             onViewTitan: vi.fn(),
@@ -114,7 +129,7 @@ function renderBaseZone(options?: {
         }),
     );
 
-    return { dispatch, onViewAction };
+    return { dispatch, onViewAction, onViewMinion };
 }
 
 describe('BaseZone 移动端 ongoing 交互', () => {
@@ -148,18 +163,46 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]')).toBeNull();
     });
 
-    it('基地上的普通持续行动卡在移动端仍可单击打开放大预览', () => {
+    it('基地上的普通持续行动卡在移动端可直接点卡面打开放大预览，且不再常驻放大镜', () => {
         const { onViewAction } = renderBaseZone({
             ongoingActions: [
                 { uid: 'oa1', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false },
             ],
         });
 
-        const magnifyButton = document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]');
-        expect(magnifyButton).not.toBeNull();
+        expect(document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]')).toBeNull();
+        const ongoingCard = document.querySelector('[data-ongoing-uid="oa1"]');
+        expect(ongoingCard).not.toBeNull();
 
-        fireEvent.click(magnifyButton as Element);
+        fireEvent.click(ongoingCard as Element);
         expect(onViewAction).toHaveBeenCalledWith('miskatonic_lost_knowledge');
+    });
+
+    it('移动端普通随从在没有可发动效果时应直接打开放大预览', () => {
+        const { onViewMinion, dispatch } = renderBaseZone({
+            minions: [
+                {
+                    uid: 'm1',
+                    defId: 'pirate_first_mate',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                },
+            ],
+        });
+
+        const minionCard = document.querySelector('[data-minion-uid="m1"]');
+        expect(minionCard).not.toBeNull();
+
+        fireEvent.click(minionCard as Element);
+
+        expect(dispatch).not.toHaveBeenCalled();
+        expect(onViewMinion).toHaveBeenCalledTimes(1);
     });
 
     it('附着在随从上的天赋战术在移动端展开后单击一次就应发动', () => {
@@ -304,6 +347,39 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         const counter = document.querySelector('[data-testid="su-base-titan-timebox-counter-time-box-live"]');
         expect(counter).not.toBeNull();
         expect(counter).toHaveTextContent('5');
+    });
+
+    it('混合增减来源时应显示当前有效力量，避免把净值误读成单一卡牌加成', () => {
+        renderBaseZone({
+            minions: [
+                {
+                    uid: 'puck-1',
+                    defId: 'fairies_puck',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 3,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [
+                        { uid: 'daisy-1', defId: 'fairies_daisy_chain', ownerId: '0', talentUsed: false },
+                    ],
+                },
+            ],
+            ongoingActions: [
+                { uid: 'enchantment-1', defId: 'fairies_enchantment', ownerId: '0', talentUsed: false, metadata: { fairiesEnchantmentMode: 'minus' } } as any,
+            ],
+        });
+
+        const badge = document.querySelector('[data-testid="su-minion-power-badge-puck-1"]') as HTMLElement | null;
+        expect(badge).not.toBeNull();
+        expect(badge).toHaveTextContent('4');
+        expect(badge?.textContent).not.toContain('+1');
+        expect(badge?.className).toContain('bg-amber-700');
+        expect(badge?.title).toContain('雏菊花环: +2');
+        expect(badge?.title).toContain('结果: -1');
+        expect(badge?.title).toContain('= 4');
     });
 
     it('随从选择模式下只高亮合法目标，非法目标保持普通显示但不可选', () => {

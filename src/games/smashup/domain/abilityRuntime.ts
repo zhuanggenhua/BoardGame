@@ -536,6 +536,26 @@ export function createAbilityRuntimeSimpleChoice<T>(
     };
 }
 
+export function attachDeferredInteractionSnapshot<TSnapshot>(
+    interaction: InteractionDescriptor,
+    snapshot: TSnapshot,
+): InteractionDescriptor {
+    return {
+        ...interaction,
+        data: {
+            ...((interaction.data ?? {}) as Record<string, unknown>),
+            deferredSnapshot: snapshot,
+        },
+    };
+}
+
+export function readDeferredInteractionSnapshot<TSnapshot>(
+    interactionData: unknown,
+): TSnapshot | undefined {
+    const snapshot = (interactionData as { deferredSnapshot?: unknown } | undefined)?.deferredSnapshot;
+    return snapshot as TSnapshot | undefined;
+}
+
 function normalizeRuntimeResult<TState, TEvent>(
     result: AbilityRuntimeResult<TState, TEvent> | TEvent[],
 ): AbilityRuntimeResult<TState, TEvent> {

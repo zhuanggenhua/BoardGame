@@ -40,8 +40,10 @@ describe('DiceThrone compatibility source guards', () => {
         const centerBoard = readUiSource('CenterBoard.tsx');
 
         expect(centerBoard).toContain("const shouldAnimateBoardFlip = characterId === 'cursed_pirate'");
-        expect(centerBoard).toContain('<AnimatePresence initial={false} mode="wait">');
-        expect(centerBoard).toContain('rotateY: -92');
+        expect(centerBoard).toContain("const true3DBoardFlipMotion = {");
+        expect(centerBoard).toContain("rotateY: cursedPirateVisibleFace === 'normal' ? 0 : 180");
+        expect(centerBoard).toContain("transform: 'rotateY(180deg)'");
+        expect(centerBoard).toContain("perspective: '2200px'");
         expect(centerBoard).toContain("data-testid=\"player-board-face-shell\"");
     });
 

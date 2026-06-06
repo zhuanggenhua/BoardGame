@@ -130,93 +130,20 @@ test.describe('Auth (account login) E2E', () => {
         await expect(getCodeInput()).toBeVisible();
         await expect(getUsernameInput()).toBeVisible();
 
-        await getUsernameInput().click();
-        const mobileProxy = page.getByTestId('mobile-text-entry-proxy').last();
-        const mobileProxyInput = page.getByTestId('mobile-text-entry-proxy-input').last();
-        await expect(mobileProxy).toBeVisible();
-
-        const proxyBackgroundColor = await mobileProxyInput.evaluate((node) => {
-            return window.getComputedStyle(node).backgroundColor;
-        });
-        expect(proxyBackgroundColor).not.toBe('transparent');
-        expect(proxyBackgroundColor).not.toBe('rgba(0, 0, 0, 0)');
-
-        await mobileProxyInput.pressSequentially('RememberMe');
-        await expect(mobileProxyInput).toBeFocused();
-        await expect(mobileProxyInput).toHaveValue('RememberMe');
-
-        await expect(getUsernameInput()).toHaveValue('RememberMe');
+        await getEmailInput().click();
+        await page.waitForTimeout(120);
+        await expect(page.getByTestId('mobile-text-entry-proxy')).toHaveCount(0);
+        await expect(getEmailInput()).toBeEditable();
+        await getEmailInput().fill('remembered@example.com');
+        await expect(getEmailInput()).toHaveValue('remembered@example.com');
 
         const layoutMetrics = await getAuthModal().evaluate((element) => {
             const submitButton = element.querySelector('button[type="submit"]');
             const emailInput = element.querySelector('[data-testid="auth-register-email-input"]');
             const codeInput = element.querySelector('[data-testid="auth-register-code-input"]');
-            const modalRect = element.getBoundingClientRect();
-
-            document.querySelector('[data-testid="e2e-auth-modal-capture-host"]')?.remove();
             if (!(element instanceof HTMLElement)) {
                 throw new Error('认证弹窗节点不是 HTMLElement');
             }
-            const clone = element.cloneNode(true);
-            if (!(clone instanceof HTMLElement)) {
-                throw new Error('认证弹窗快照节点不是 HTMLElement');
-            }
-            clone.setAttribute('data-testid', 'e2e-auth-modal-capture');
-            clone.style.position = 'fixed';
-            clone.style.top = '16px';
-            clone.style.left = '16px';
-            clone.style.right = 'auto';
-            clone.style.bottom = 'auto';
-            clone.style.inset = 'auto';
-            clone.style.margin = '0';
-            clone.style.transform = 'none';
-            clone.style.maxHeight = 'none';
-            clone.style.width = `${modalRect.width}px`;
-            clone.style.height = `${modalRect.height}px`;
-            clone.style.zIndex = '2147483647';
-            clone.style.pointerEvents = 'none';
-            clone.style.opacity = '1';
-            clone.style.visibility = 'visible';
-
-            const sourceInputs = element.querySelectorAll('input, textarea, select');
-            const cloneInputs = clone.querySelectorAll('input, textarea, select');
-            sourceInputs.forEach((input, index) => {
-                const target = cloneInputs[index];
-                if (input instanceof HTMLInputElement && target instanceof HTMLInputElement) {
-                    target.value = input.value;
-                    target.checked = input.checked;
-                    return;
-                }
-                if (input instanceof HTMLTextAreaElement && target instanceof HTMLTextAreaElement) {
-                    target.value = input.value;
-                    return;
-                }
-                if (input instanceof HTMLSelectElement && target instanceof HTMLSelectElement) {
-                    target.value = input.value;
-                }
-            });
-            clone.querySelectorAll('*').forEach((candidate) => {
-                if (!(candidate instanceof HTMLElement)) {
-                    return;
-                }
-                if (candidate.scrollHeight > candidate.clientHeight + 1) {
-                    candidate.scrollTop = 0;
-                }
-            });
-
-            const host = document.createElement('div');
-            host.setAttribute('data-testid', 'e2e-auth-modal-capture-host');
-            host.style.position = 'fixed';
-            host.style.inset = '0';
-            host.style.zIndex = '2147483647';
-            host.style.background = getComputedStyle(document.body).backgroundColor || '#efe4cb';
-            host.style.display = 'flex';
-            host.style.alignItems = 'flex-start';
-            host.style.justifyContent = 'flex-start';
-            host.style.padding = '16px';
-            host.style.pointerEvents = 'none';
-            host.appendChild(clone);
-            document.body.appendChild(host);
 
             return {
                 modalTop: element.getBoundingClientRect().top,
@@ -242,8 +169,6 @@ test.describe('Auth (account login) E2E', () => {
         expect(layoutMetrics.codeBottom).toBeLessThanOrEqual(layoutMetrics.runtimeViewportHeight);
         expect(Math.min(...layoutMetrics.inputFontSizes)).toBeGreaterThanOrEqual(16);
         expect(layoutMetrics.submitBottom).toBeLessThanOrEqual(layoutMetrics.runtimeViewportHeight);
-
-        await expect(page.getByTestId('e2e-auth-modal-capture-host')).toBeVisible();
         await page.screenshot({
             path: AUTH_MOBILE_SCREENSHOT_PATH,
             fullPage: false,

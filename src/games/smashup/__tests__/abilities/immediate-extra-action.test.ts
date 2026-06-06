@@ -21,6 +21,7 @@ import {
     makeMinion,
     makePlayer,
     makeState,
+    respondToPrompt,
     resolveInteractionChain,
 } from '../helpers';
 
@@ -86,6 +87,10 @@ describe('立即额外行动交互', () => {
         const options = optionsGenerator!(queuedState, getPromptHandlerData(prompt));
         const hasCardOption = options.some((option: any) => option?.value?.defId === 'ancient_egyptians_you_can_take_it_with_you');
         expect(hasCardOption).toBe(true);
+        expect(getPromptHandlerData(prompt)?.deferredSnapshot).toMatchObject({
+            extra: expect.objectContaining({ playerId: '0' }),
+        });
+        expect(getPromptHandlerData(prompt)?.runtimeContext).toBeUndefined();
     });
 
     it('立即额外行动应包含需要随从目标的行动卡', () => {
@@ -219,6 +224,37 @@ describe('立即额外行动交互', () => {
 
         expect(result.finalState.core.players['0'].hand.some(card => card.uid === 'h1')).toBe(false);
         expect(result.finalState.core.bases[1].minions.some(minion => minion.uid === 'h1')).toBe(true);
+    });
+
+    it('立即额外随从的基地选择 prompt 应通过 deferredSnapshot 保留 choice，而不是手写 runtimeContext', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('h1', 'zombie_walker', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'base_secret_garden', minions: [], ongoingActions: [] }),
+                makeBase({ defId: 'base_the_jungle', minions: [], ongoingActions: [] }),
+            ],
+        });
+
+        const firstPromptState = queueImmediateExtraMinion(makeMatchState(state));
+        const firstPrompt = getSimpleChoicePrompt(firstPromptState, 'smashup_immediate_extra_minion');
+        const firstOption = getPromptOption(
+            firstPrompt,
+            candidate => candidate?.value?.defId === 'zombie_walker',
+            'immediate extra minion card option',
+        );
+        const advanced = respondToPrompt(firstPromptState, firstOption.id, '0');
+        const basePrompt = getSimpleChoicePrompt(advanced.finalState, 'smashup_immediate_extra_minion_base');
+
+        expect(getPromptHandlerData(basePrompt)?.deferredSnapshot).toMatchObject({
+            extra: expect.objectContaining({ playerId: '0' }),
+            choice: expect.objectContaining({ cardUid: 'h1', defId: 'zombie_walker' }),
+        });
+        expect(getPromptHandlerData(basePrompt)?.runtimeContext).toBeUndefined();
     });
 
     it('立即额外随从应允许选择可作为随从打出的 setaside 泰坦', () => {

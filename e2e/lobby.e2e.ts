@@ -1057,6 +1057,10 @@ test.describe('Lobby E2E', () => {
             keyboardInsetHeight: 260,
         });
         await page.waitForTimeout(150);
+        await expect(page.getByTestId('mobile-text-entry-proxy')).toHaveCount(0);
+        await expect(authModal.getByTestId('auth-login-account-input')).toBeEditable();
+        await authModal.getByTestId('auth-login-account-input').fill('homev2@example.com');
+        await expect(authModal.getByTestId('auth-login-account-input')).toHaveValue('homev2@example.com');
         const authModalStableAfter = await authModal.evaluate((element) => {
             const rect = element.getBoundingClientRect();
             return {
@@ -1632,6 +1636,10 @@ test.describe('Lobby E2E', () => {
             keyboardInsetHeight: 260,
         });
         await page.waitForTimeout(150);
+        await expect(page.getByTestId('mobile-text-entry-proxy')).toHaveCount(0);
+        await expect(createRoomModal.getByTestId('create-room-name-input')).toBeEditable();
+        await createRoomModal.getByTestId('create-room-name-input').fill('新UI端到端校验房');
+        await expect(createRoomModal.getByTestId('create-room-name-input')).toHaveValue('新UI端到端校验房');
         const createRoomStableAfter = await createRoomModal.evaluate((element) => {
             const rect = element.getBoundingClientRect();
             return {
@@ -1759,21 +1767,10 @@ test.describe('Lobby E2E', () => {
             delete root.dataset.keyboardVisible;
         });
 
-        const mobileProxyInput = page.getByTestId('mobile-text-entry-proxy-input').last();
-        let activePasswordInput = passwordInput;
-        await mobileProxyInput.waitFor({ state: 'visible', timeout: 3000 }).catch(() => undefined);
-        const proxyEditable = await mobileProxyInput.isEditable().catch(() => false);
-        if (proxyEditable) {
-            activePasswordInput = mobileProxyInput;
-        } else {
-            await expect(passwordInput).toBeEditable();
-        }
-
-        await activePasswordInput.fill(injectedLockedRoom.password);
-        await expect(activePasswordInput).toHaveValue(injectedLockedRoom.password);
-        if (!proxyEditable) {
-            await expect(passwordInput).toHaveValue(injectedLockedRoom.password);
-        }
+        await expect(page.getByTestId('mobile-text-entry-proxy')).toHaveCount(0);
+        await expect(passwordInput).toBeEditable();
+        await passwordInput.fill(injectedLockedRoom.password);
+        await expect(passwordInput).toHaveValue(injectedLockedRoom.password);
         await expect(passwordConfirm).toBeEnabled();
         const getMatchResponsePromise = page.waitForResponse((response) => (
             response.request().method() === 'GET'
@@ -2135,7 +2132,6 @@ test.describe('Lobby E2E', () => {
         const getCreateRoomModal = () => page.getByTestId('create-room-modal').last();
         const getRoomNameInput = () => page.getByTestId('create-room-name-input').last();
         const getPasswordInput = () => page.getByTestId('create-room-password-input').last();
-        const getPasswordToggle = () => page.getByTestId('create-room-password-toggle').last();
 
         await expect(getCreateRoomModal()).toBeVisible();
         await applyKeyboardViewportSimulation(page, {
@@ -2143,84 +2139,23 @@ test.describe('Lobby E2E', () => {
             keyboardInsetHeight: 280,
         });
 
-        const mobileProxy = page.getByTestId('mobile-text-entry-proxy').last();
-        const mobileProxyInput = page.getByTestId('mobile-text-entry-proxy-input').last();
-
         await getRoomNameInput().click();
-        await expect(mobileProxy).toBeVisible();
-        await mobileProxyInput.fill('移动端建房输入校验');
+        await page.waitForTimeout(120);
+        await expect(page.getByTestId('mobile-text-entry-proxy')).toHaveCount(0);
+        await expect(getRoomNameInput()).toBeEditable();
+        await getRoomNameInput().fill('移动端建房输入校验');
         await expect(getPasswordInput()).toBeVisible();
         await expect(getPasswordInput()).toHaveAttribute('type', 'password');
-        await getPasswordToggle().click();
-        await expect(getPasswordInput()).toHaveAttribute('type', 'text');
-        await getPasswordInput().click();
-        await expect(mobileProxy).toBeVisible();
-        await mobileProxyInput.fill('123456');
         await expect(getRoomNameInput()).toHaveValue('移动端建房输入校验');
-        await expect(getPasswordInput()).toHaveValue('123456');
 
         const layoutMetrics = await getCreateRoomModal().evaluate((element) => {
             const roomName = element.querySelector('[data-testid="create-room-name-input"]');
             const password = element.querySelector('[data-testid="create-room-password-input"]');
             const runtimeViewportHeight = Number.parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--runtime-viewport-height') || '0');
             const modalRect = element.getBoundingClientRect();
-
-            document.querySelector('[data-testid="e2e-create-room-modal-capture-host"]')?.remove();
             if (!(element instanceof HTMLElement)) {
                 throw new Error('建房弹窗节点不是 HTMLElement');
             }
-            const clone = element.cloneNode(true);
-            if (!(clone instanceof HTMLElement)) {
-                throw new Error('建房弹窗快照节点不是 HTMLElement');
-            }
-            clone.setAttribute('data-testid', 'e2e-create-room-modal-capture');
-            clone.style.position = 'fixed';
-            clone.style.top = '16px';
-            clone.style.left = '16px';
-            clone.style.right = 'auto';
-            clone.style.bottom = 'auto';
-            clone.style.inset = 'auto';
-            clone.style.margin = '0';
-            clone.style.transform = 'none';
-            clone.style.maxHeight = 'none';
-            clone.style.width = `${modalRect.width}px`;
-            clone.style.height = `${modalRect.height}px`;
-            clone.style.zIndex = '2147483647';
-            clone.style.pointerEvents = 'none';
-            clone.style.opacity = '1';
-            clone.style.visibility = 'visible';
-
-            const sourceInputs = element.querySelectorAll('input, textarea, select');
-            const cloneInputs = clone.querySelectorAll('input, textarea, select');
-            sourceInputs.forEach((input, index) => {
-                const target = cloneInputs[index];
-                if (input instanceof HTMLInputElement && target instanceof HTMLInputElement) {
-                    target.value = input.value;
-                    target.checked = input.checked;
-                    return;
-                }
-                if (input instanceof HTMLTextAreaElement && target instanceof HTMLTextAreaElement) {
-                    target.value = input.value;
-                    return;
-                }
-                if (input instanceof HTMLSelectElement && target instanceof HTMLSelectElement) {
-                    target.value = input.value;
-                }
-            });
-
-            const host = document.createElement('div');
-            host.setAttribute('data-testid', 'e2e-create-room-modal-capture-host');
-            host.style.position = 'fixed';
-            host.style.inset = '0';
-            host.style.zIndex = '2147483647';
-            host.style.background = getComputedStyle(document.body).backgroundColor || '#efe4cb';
-            host.style.display = 'flex';
-            host.style.alignItems = 'flex-start';
-            host.style.justifyContent = 'flex-start';
-            host.style.padding = '16px';
-            host.style.pointerEvents = 'none';
-            host.appendChild(clone);
-            document.body.appendChild(host);
 
             return {
                 modalLeft: modalRect.left,
@@ -2246,7 +2181,6 @@ test.describe('Lobby E2E', () => {
         expect(layoutMetrics.passwordBottom, '密码输入框应留在键盘上方可视区').toBeLessThanOrEqual(layoutMetrics.runtimeViewportHeight);
         expect(Math.min(...layoutMetrics.inputFontSizes), '移动端建房输入区至少应为 16px').toBeGreaterThanOrEqual(16);
 
-        await expect(page.getByTestId('e2e-create-room-modal-capture-host')).toBeVisible();
         await page.screenshot({
             path: 'test-results/evidence-screenshots/_shared/create-room-modal-mobile-keyboard-safe.png',
             fullPage: false,
@@ -2289,6 +2223,11 @@ test.describe('Lobby E2E', () => {
             }
             node.focus();
         });
+        await page.waitForTimeout(120);
+        await expect(page.getByTestId('mobile-text-entry-proxy')).toHaveCount(0);
+        await expect(passwordInput).toBeEditable();
+        await passwordInput.fill(privateRoom.password);
+        await expect(passwordInput).toHaveValue(privateRoom.password);
 
         const layoutMetrics = await passwordModal.evaluate((element) => {
             if (!(element instanceof HTMLElement)) {
@@ -2322,38 +2261,9 @@ test.describe('Lobby E2E', () => {
         expect(layoutMetrics.confirmBottom, '私密房间确认按钮应留在键盘上方可视区').toBeLessThanOrEqual(layoutMetrics.runtimeViewportHeight);
         expect(passwordInputFontSize, '移动端私密房间密码输入至少应为 16px').toBeGreaterThanOrEqual(16);
 
-        await page.evaluate(() => {
-            document.querySelector('[data-testid="room-password-modal-capture"]')?.remove();
-
-            const liveModal = document.querySelector('[data-testid="room-password-modal"]');
-            if (!(liveModal instanceof HTMLElement)) {
-                throw new Error('未找到用于截图的私密房间密码弹窗');
-            }
-
-            const clonedModal = liveModal.cloneNode(true);
-            if (!(clonedModal instanceof HTMLElement)) {
-                throw new Error('私密房间密码弹窗克隆失败');
-            }
-
-            clonedModal.dataset.testid = 'room-password-modal-capture';
-            clonedModal.style.position = 'fixed';
-            clonedModal.style.left = '50%';
-            clonedModal.style.top = '50%';
-            clonedModal.style.transform = 'translate(-50%, -50%)';
-            clonedModal.style.zIndex = '9999';
-            clonedModal.style.pointerEvents = 'none';
-            clonedModal.style.margin = '0';
-            clonedModal.style.maxHeight = 'none';
-            clonedModal.style.visibility = 'visible';
-            clonedModal.style.opacity = '1';
-
-            document.body.appendChild(clonedModal);
-        });
-
-        const captureModal = page.getByTestId('room-password-modal-capture');
-        await expect(captureModal).toBeVisible();
-        await captureModal.screenshot({
+        await page.screenshot({
             path: 'test-results/evidence-screenshots/_shared/private-room-password-modal-mobile.png',
+            fullPage: false,
             animations: 'disabled',
         });
     });

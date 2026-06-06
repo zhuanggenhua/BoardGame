@@ -36,11 +36,14 @@ export const diceThroneLatencyConfig: LatencyOptimizationConfig = {
             'CONFIRM_ROLL': 'optimistic',
             'SELECT_ABILITY': 'optimistic',
             'SKIP_TOKEN_RESPONSE': 'optimistic',
+            // 维持/回合推进可能公开揭示对手的额外投骰；这里必须等权威 eventStream，
+            // 否则发送方本地回滚会把这类公开事件误裁掉，表现成对面视角静默结算。
+            'ADVANCE_PHASE': 'wait-confirm',
             // 种子同步后，随机命令也可以乐观预测并立即播放动画
             'ROLL_DICE': 'optimistic',
             'REROLL_DIE': 'optimistic',
             'REROLL_BONUS_DIE': 'optimistic',
-            // 注：ADVANCE_PHASE / RESPONSE_PASS 由引擎层内置 optimistic 默认值，无需重复声明
+            // 注：RESPONSE_PASS 仍沿用引擎层内置 optimistic 默认值
         },
         // [已移除] animationDelay：延迟整个 setState 会阻塞 EventStream 事件传递，
         // 骰子动画最短播放时间改为在 DiceActions 组件内用 MIN_ROLL_ANIMATION_MS 保护。

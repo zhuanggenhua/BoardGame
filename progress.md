@@ -1,5 +1,22 @@
 > 状态提示（2026-06-05）：本文件包含多条历史长期任务推进记录；其中的 `Next:`、`当前状态`、`继续下一批` 只对各自写入当时有效，**不自动构成当前对话任务**。未被用户当轮明确点名的条目，一律只作历史进度参考。
 
+## 2026-06-06 DiceThrone 战术家 / 咒缚海盗 live复核
+
+- 收口对象：
+  - 当前 closeout 口径是否真的对应代码现状
+  - “规则都实施了吗 / 技能是不是要重录 / 审计也是吗”的本轮可复述答案
+- 复核动作：
+  - 读取 `src/games/dicethrone/domain/core-types.ts`，确认 `zhanshujia / cursed_pirate` 目录定义已不再带 `implementation_in_progress`
+  - 读取 `src/games/dicethrone/__tests__/character-catalog-status.test.ts`，确认目录状态测试当前锁的是“这两名新英雄也不再挂标”
+  - 现跑 `closeout + character-catalog-status + intake + mechanics` 四组权威门禁
+  - 复核 `temp/dicethrone-intake-full-run-2026-06-06-pass2.log` 尾段，确认 latest full-file 仍是 `80 passed (20.3m)`
+- 验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native`
+    - `4 files / 97 passed`
+- 当前边界：
+  - 本轮没有新增业务实现，也没有新增审计 blocker。
+  - 当前可继续固定回答为：规则实现已落地；不需要整套重录；审计 closeout 已完成。
+
 ## 2026-06-06 DiceThrone 战术家 / 咒缚海盗 closeout 终版同步
 
 - 收口对象：

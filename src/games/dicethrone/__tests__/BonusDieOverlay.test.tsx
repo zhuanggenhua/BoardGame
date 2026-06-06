@@ -1424,6 +1424,142 @@ describe('BonusDieOverlay', () => {
         });
     });
 
+    it('对手视角下的自掷单骰 standalone 奖励骰也应显示特写，不能静默跳过', async () => {
+        const entries: EventStreamEntry[] = [
+            {
+                id: 1,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 1,
+                        face: 'heart',
+                        effectKey: 'bonusDie.effect.powderKeg.bang',
+                        effectParams: { value: 1 },
+                    },
+                    timestamp: 1100,
+                },
+            },
+        ];
+
+        function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
+            const state = useCardSpotlight({
+                eventStreamEntries: streamEntries,
+                currentPlayerId: '0',
+                opponentName: '对手',
+                selectedCharacters: {
+                    '0': 'gunslinger',
+                    '1': 'cursed_pirate',
+                },
+            });
+
+            return (
+                <pre data-testid="opponent-standalone-single-die-state">
+                    {JSON.stringify({
+                        cardSpotlightQueue: state.cardSpotlightQueue,
+                        bonusDie: state.bonusDie,
+                    })}
+                </pre>
+            );
+        }
+
+        const { rerender } = render(<HookProbe streamEntries={[]} />);
+        rerender(<HookProbe streamEntries={entries} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('opponent-standalone-single-die-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(0);
+            expect(state.bonusDie.show).toBe(true);
+            expect(state.bonusDie.value).toBe(1);
+            expect(state.bonusDie.face).toBe('heart');
+            expect(state.bonusDie.effectKey).toBe('bonusDie.effect.powderKeg.bang');
+        });
+    });
+
+    it('对手视角下的自掷多骰 standalone 奖励骰也应聚合展示，不能只静默吃掉前几颗', async () => {
+        const entries: EventStreamEntry[] = [
+            {
+                id: 1,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 1,
+                        face: 'heart',
+                        effectParams: { index: 0 },
+                    },
+                    timestamp: 1100,
+                },
+            },
+            {
+                id: 2,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 2,
+                        face: 'axe',
+                        effectParams: { index: 1 },
+                    },
+                    timestamp: 1101,
+                },
+            },
+            {
+                id: 3,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 1,
+                        face: 'heart',
+                        effectKey: 'bonusDie.effect.syntheticStandalone.result',
+                        effectParams: { heartCount: 1 },
+                    },
+                    timestamp: 1102,
+                },
+            },
+        ];
+
+        function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
+            const state = useCardSpotlight({
+                eventStreamEntries: streamEntries,
+                currentPlayerId: '0',
+                opponentName: '对手',
+                selectedCharacters: {
+                    '0': 'gunslinger',
+                    '1': 'barbarian',
+                },
+            });
+
+            return (
+                <pre data-testid="opponent-standalone-multi-dice-state">
+                    {JSON.stringify({
+                        cardSpotlightQueue: state.cardSpotlightQueue,
+                        bonusDie: state.bonusDie,
+                    })}
+                </pre>
+            );
+        }
+
+        const { rerender } = render(<HookProbe streamEntries={[]} />);
+        rerender(<HookProbe streamEntries={entries} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('opponent-standalone-multi-dice-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(0);
+            expect(state.bonusDie.show).toBe(true);
+            expect(state.bonusDie.bonusDice).toHaveLength(2);
+            expect(state.bonusDie.bonusDice[0].index).toBe(0);
+            expect(state.bonusDie.bonusDice[1].index).toBe(1);
+            expect(state.bonusDie.summaryEffectKey).toBe('bonusDie.effect.syntheticStandalone.result');
+            expect(state.bonusDie.displayOnly).toBe(true);
+        });
+    });
+
     it('自己打出的 Watch Out 单骰事件应显示独立骰子特写', async () => {
         const entries: EventStreamEntry[] = [
             {
@@ -1859,7 +1995,7 @@ describe('BonusDieOverlay', () => {
         })).toBe(false);
     });
 
-    it('still suppresses non-powder-keg standalone spotlight when choice prompt is already open', () => {
+    it('keeps non-powder-keg standalone spotlight visible when choice prompt is already open', () => {
         expect(shouldSuppressForegroundBonusDieOverlay({
             hasChoice: true,
             interactiveSettlement: undefined,
@@ -1867,7 +2003,7 @@ describe('BonusDieOverlay', () => {
                 show: true,
                 effectKey: 'bonusDie.effect.cursedPirateMarkedLoot',
             },
-        })).toBe(true);
+        })).toBe(false);
     });
 
     it('always suppresses foreground spotlight when interactive bonus settlement is active', () => {

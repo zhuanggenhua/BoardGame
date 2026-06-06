@@ -31,6 +31,7 @@ type I18nWarning = {
         | 'unknown-namespace'
         | 'dynamic-key'
         | 'exists-namespace-mismatch'
+        | 'deprecated-dicethrone-hero-key'
         | 'raw-validation-error'
         | 'raw-simple-choice-title'
         | 'raw-simple-choice-option-label'
@@ -736,6 +737,7 @@ const resolveNamedTypeExpression = (
 
 const collectCandidateTypeExpressionsForIdentifier = (
     content: string,
+    filePath: string,
     identifier: string,
     position: number,
 ): string[] => {
@@ -761,6 +763,43 @@ const collectCandidateTypeExpressionsForIdentifier = (
     while ((propertyMatch = propertyRegex.exec(content)) !== null) {
         if (propertyMatch.index > position) break;
         pushExpression(readDelimitedExpression(content, propertyMatch.index + propertyMatch[0].length, ';'));
+    }
+
+    const destructuredParamRegex = /\{([\s\S]{0,500}?)\}\s*:\s*([A-Za-z_$][\w$]*)/g;
+    let destructuredParamMatch: RegExpExecArray | null;
+    while ((destructuredParamMatch = destructuredParamRegex.exec(content)) !== null) {
+        if (destructuredParamMatch.index > position) break;
+
+        const bindingSource = destructuredParamMatch[1];
+        const paramTypeName = destructuredParamMatch[2];
+        const bindingRegex = /(?:^|,)\s*([A-Za-z_$][\w$]*)(?:\s*:\s*([A-Za-z_$][\w$]*))?/g;
+        let bindingMatch: RegExpExecArray | null;
+        let propertyName: string | null = null;
+
+        while ((bindingMatch = bindingRegex.exec(bindingSource)) !== null) {
+            const sourceName = bindingMatch[1];
+            const localName = bindingMatch[2] ?? sourceName;
+            if (localName === identifier) {
+                propertyName = sourceName;
+                break;
+            }
+        }
+
+        if (!propertyName) {
+            continue;
+        }
+
+        const resolvedType = resolveNamedTypeExpression(content, filePath, paramTypeName);
+        if (!resolvedType || !resolvedType.expression.startsWith('{')) {
+            continue;
+        }
+
+        const body = extractBraceBlock(resolvedType.expression, resolvedType.expression.indexOf('{'));
+        if (body === null) {
+            continue;
+        }
+
+        pushExpression(extractPropertyTypeFromObjectBody(body, propertyName));
     }
 
     return expressions;
@@ -846,7 +885,7 @@ const resolveMemberExpressionKeys = (
     }
 
     const [rootIdentifier, ...propertyPath] = parts;
-    const candidateTypes = collectCandidateTypeExpressionsForIdentifier(content, rootIdentifier, position);
+    const candidateTypes = collectCandidateTypeExpressionsForIdentifier(content, filePath, rootIdentifier, position);
     if (candidateTypes.length === 0) {
         return [];
     }
@@ -1708,6 +1747,21 @@ export const collectReferencesFromContent = (
         }
     }
 
+    if (normalizeFilePath(filePath).includes('src/games/dicethrone/')) {
+        for (const ref of references) {
+            if (!ref.namespaces.includes('game-dicethrone')) continue;
+            if (ref.key !== 'hero.*' && !ref.key.startsWith('hero.')) continue;
+            addWarning({
+                type: 'deprecated-dicethrone-hero-key',
+                key: ref.key,
+                file: ref.file,
+                line: ref.line,
+                source: ref.source,
+                detail: 'DiceThrone 英雄名已迁移到 characters.* / getDiceThroneCharacterNameKey()，禁止继续使用 hero.*',
+            });
+        }
+    }
+
     return { references, warnings };
 };
 
@@ -2099,7 +2153,6 @@ export const collectDiceThroneDataContractReferences = (): { references: I18nRef
             }
         }
     }
-
     return { references, warnings };
 };
 
@@ -2567,6 +2620,7 @@ const main = () => {
     const missing = collectMissingTranslations(references, locales);
     const dedupedWarnings = dedupeWarnings(warnings);
     const blockingWarningTypes = new Set<I18nWarning['type']>([
+        'deprecated-dicethrone-hero-key',
         'raw-validation-error',
         'raw-dicethrone-contract-text',
     ]);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
@@ -86,20 +86,17 @@ export const CenterBoard = ({
     const playerBoardPath = ASSETS.PLAYER_BOARD(characterId, playerBoardFace);
     const tipBoardPath = ASSETS.TIP_BOARD(characterId);
     const shouldAnimateBoardFlip = characterId === 'cursed_pirate';
-    const playerBoardMotionKey = `${characterId}:${playerBoardFace ?? 'default'}`;
-    const playerBoardFaceMotion = shouldAnimateBoardFlip
-        ? {
-            initial: { rotateY: -92, opacity: 0.2, scale: 0.98 },
-            animate: { rotateY: 0, opacity: 1, scale: 1 },
-            exit: { rotateY: 92, opacity: 0.2, scale: 0.98 },
-            transition: { duration: 0.58, ease: [0.22, 1, 0.36, 1] as const },
-        }
-        : {
-            initial: { opacity: 0.96 },
-            animate: { opacity: 1 },
-            exit: { opacity: 0.96 },
-            transition: { duration: 0.12 },
-        };
+    const cursedPirateVisibleFace = playerBoardFace === 'normal' ? 'normal' : 'cursed';
+    const cursedPirateNormalBoardPath = shouldAnimateBoardFlip
+        ? ASSETS.PLAYER_BOARD(characterId, 'normal')
+        : playerBoardPath;
+    const cursedPirateCursedBoardPath = shouldAnimateBoardFlip
+        ? ASSETS.PLAYER_BOARD(characterId, 'cursed')
+        : playerBoardPath;
+    const true3DBoardFlipMotion = {
+        rotateY: cursedPirateVisibleFace === 'normal' ? 0 : 180,
+        transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] as const },
+    };
 
     const handleMagnifySurfaceClick = React.useCallback((
         event: React.MouseEvent<HTMLElement>,
@@ -141,21 +138,129 @@ export const CenterBoard = ({
                     data-character-id={characterId}
                     onClick={(event) => handleMagnifySurfaceClick(event, playerBoardPath)}
                 >
-                    <AnimatePresence initial={false} mode="wait">
+                    {shouldAnimateBoardFlip ? (
+                        <div
+                            className="relative h-full"
+                            style={{
+                                width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
+                                perspective: '2200px',
+                                WebkitPerspective: '2200px',
+                                perspectiveOrigin: '50% 50%',
+                                WebkitPerspectiveOrigin: '50% 50%',
+                            }}
+                        >
+                            <motion.div
+                                className="relative h-full"
+                                data-testid="player-board-face-shell"
+                                data-player-board-face={cursedPirateVisibleFace}
+                                style={{
+                                    width: '100%',
+                                    transformStyle: 'preserve-3d',
+                                    WebkitTransformStyle: 'preserve-3d',
+                                    transformOrigin: '50% 50%',
+                                }}
+                                initial={false}
+                                animate={true3DBoardFlipMotion}
+                            >
+                                <div
+                                    className="absolute inset-0"
+                                    style={{
+                                        backfaceVisibility: 'hidden',
+                                        WebkitBackfaceVisibility: 'hidden',
+                                        transform: 'rotateY(0deg)',
+                                        pointerEvents: cursedPirateVisibleFace === 'normal' ? 'auto' : 'none',
+                                    }}
+                                >
+                                    <OptimizedImage
+                                        src={cursedPirateNormalBoardPath}
+                                        locale={locale}
+                                        alt={t('imageAlt.playerBoard')}
+                                        className="h-full w-full"
+                                        placeholder={false}
+                                        data-testid={cursedPirateVisibleFace === 'normal' ? 'player-board-image' : 'player-board-image-hidden'}
+                                        style={{
+                                            display: 'block',
+                                            objectFit: 'contain',
+                                            width: '100%',
+                                            height: '100%',
+                                        }}
+                                    />
+                                    {cursedPirateVisibleFace === 'normal' && (
+                                        <AbilityOverlays
+                                            ref={abilityOverlaysRef}
+                                            isEditing={isLayoutEditing && isSelfView}
+                                            availableAbilityIds={availableAbilityIds}
+                                            canSelect={canSelectAbility}
+                                            canHighlight={canHighlightAbility}
+                                            onSelectAbility={onSelectAbility}
+                                            onHighlightedAbilityClick={onHighlightedAbilityClick}
+                                            selectedAbilityId={selectedAbilityId}
+                                            activatingAbilityId={activatingAbilityId}
+                                            abilityLevels={abilityLevels}
+                                            characterId={characterId}
+                                            playerBoardFace="normal"
+                                            locale={locale}
+                                            onMagnifyCard={onMagnifyCard}
+                                            playerTokens={playerTokens}
+                                        />
+                                    )}
+                                </div>
+                                <div
+                                    className="absolute inset-0"
+                                    style={{
+                                        backfaceVisibility: 'hidden',
+                                        WebkitBackfaceVisibility: 'hidden',
+                                        transform: 'rotateY(180deg)',
+                                        pointerEvents: cursedPirateVisibleFace === 'cursed' ? 'auto' : 'none',
+                                    }}
+                                >
+                                    <OptimizedImage
+                                        src={cursedPirateCursedBoardPath}
+                                        locale={locale}
+                                        alt={t('imageAlt.playerBoard')}
+                                        className="h-full w-full"
+                                        placeholder={false}
+                                        data-testid={cursedPirateVisibleFace === 'cursed' ? 'player-board-image' : 'player-board-image-hidden'}
+                                        style={{
+                                            display: 'block',
+                                            objectFit: 'contain',
+                                            width: '100%',
+                                            height: '100%',
+                                        }}
+                                    />
+                                    {cursedPirateVisibleFace === 'cursed' && (
+                                        <AbilityOverlays
+                                            ref={abilityOverlaysRef}
+                                            isEditing={isLayoutEditing && isSelfView}
+                                            availableAbilityIds={availableAbilityIds}
+                                            canSelect={canSelectAbility}
+                                            canHighlight={canHighlightAbility}
+                                            onSelectAbility={onSelectAbility}
+                                            onHighlightedAbilityClick={onHighlightedAbilityClick}
+                                            selectedAbilityId={selectedAbilityId}
+                                            activatingAbilityId={activatingAbilityId}
+                                            abilityLevels={abilityLevels}
+                                            characterId={characterId}
+                                            playerBoardFace="cursed"
+                                            locale={locale}
+                                            onMagnifyCard={onMagnifyCard}
+                                            playerTokens={playerTokens}
+                                        />
+                                    )}
+                                </div>
+                            </motion.div>
+                        </div>
+                    ) : (
                         <motion.div
-                            key={playerBoardMotionKey}
                             className="relative h-full"
                             data-testid="player-board-face-shell"
                             data-player-board-face={playerBoardFace ?? 'default'}
                             style={{
                                 width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
-                                transformStyle: 'preserve-3d',
-                                WebkitTransformStyle: 'preserve-3d',
                             }}
-                            initial={playerBoardFaceMotion.initial}
-                            animate={playerBoardFaceMotion.animate}
-                            exit={playerBoardFaceMotion.exit}
-                            transition={playerBoardFaceMotion.transition}
+                            initial={{ opacity: 0.96 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.12 }}
                         >
                             <OptimizedImage
                                 src={playerBoardPath}
@@ -169,8 +274,6 @@ export const CenterBoard = ({
                                     objectFit: 'contain',
                                     width: '100%',
                                     height: '100%',
-                                    backfaceVisibility: 'hidden',
-                                    WebkitBackfaceVisibility: 'hidden',
                                 }}
                             />
                             <AbilityOverlays
@@ -191,7 +294,7 @@ export const CenterBoard = ({
                                 playerTokens={playerTokens}
                             />
                         </motion.div>
-                    </AnimatePresence>
+                    )}
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onMagnifyImage(playerBoardPath); }}

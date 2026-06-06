@@ -1232,6 +1232,7 @@ export const AuthModal = ({
             onClose={onClose}
             closeOnBackdrop={closeOnBackdrop}
             preserveKeyboardLayout
+            disableTextEntryAutoscroll={!isHomeV2Style}
             containerClassName="p-0"
             overlayClassName={isHomeV2Style ? '!bg-[rgba(18,13,9,0.56)] !backdrop-blur-[2px]' : 'bg-[rgba(18,13,9,0.50)] backdrop-blur-[3px]'}
             overlayStyle={isHomeV2Style ? { backgroundColor: 'rgba(18, 13, 9, 0.56)', backdropFilter: 'blur(2px)' } : undefined}

@@ -5185,6 +5185,117 @@ describe('王权骰铸流程测试', () => {
             expect(result.state.core.pendingAttack).toBeNull();
         });
 
+        it('线上反馈 6a1d5440：defensiveRoll 下 SYS_INTERACTION_RESPOND 处理忍术选择时不应再抛出 dice.map 异常', () => {
+            const playerIds: PlayerId[] = ['0', '1'];
+            const random = createQueuedRandom([1]);
+            const state = createHeroMatchup('cursed_pirate', 'ninja')(
+                playerIds,
+                random,
+            ) as ReturnType<ReturnType<typeof createHeroMatchup>>;
+
+            state.sys.phase = 'defensiveRoll';
+            state.sys.turnNumber = 0;
+            state.sys.flowHalted = true;
+            state.core.activePlayerId = '1';
+            state.core.turnNumber = 2;
+            state.core.rollCount = 1;
+            state.core.rollLimit = 1;
+            state.core.rollDiceCount = 5;
+            state.core.rollConfirmed = true;
+            state.core.activatingAbilityId = 'still-wet-behind-ears';
+            state.core.currentChoiceSourceAbilityId = 'slash-2-4';
+            state.core.dice = [
+                { id: 0, definitionId: 'cursed_pirate-dice', value: 2, symbol: 'cutlass', symbols: ['cutlass'], isKept: false },
+                { id: 1, definitionId: 'cursed_pirate-dice', value: 5, symbol: 'loot', symbols: ['loot'], isKept: false },
+                { id: 2, definitionId: 'cursed_pirate-dice', value: 2, symbol: 'cutlass', symbols: ['cutlass'], isKept: false },
+                { id: 3, definitionId: 'cursed_pirate-dice', value: 5, symbol: 'loot', symbols: ['loot'], isKept: false },
+                { id: 4, definitionId: 'cursed_pirate-dice', value: 2, symbol: 'cutlass', symbols: ['cutlass'], isKept: false },
+            ] as any;
+            state.core.pendingAttack = {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'slash-2-4',
+                defenseAbilityId: 'still-wet-behind-ears',
+                isDefendable: true,
+                damageResolved: true,
+                resolvedDamage: 7,
+                bonusDamage: 1,
+                attackModifierBonusDamage: 1,
+                preDefenseResolved: true,
+                defenseResolved: true,
+                extraRoll: { value: 6, resolved: true },
+                attackDiceValues: [1, 4, 1, 1, 3],
+                attackDiceFaceCounts: {
+                    fist: 0,
+                    palm: 0,
+                    taiji: 0,
+                    lotus: 0,
+                    sword: 0,
+                    heart: 0,
+                    strength: 0,
+                    branch: 0,
+                    leaf: 0,
+                    spirit: 0,
+                    ninja_katana: 4,
+                    shuriken: 1,
+                    mask: 0,
+                },
+            } as any;
+            state.core.pendingBonusDiceSettlement = {
+                id: 'slash-2-4-display-1780306943159',
+                sourceAbilityId: 'slash-2-4',
+                attackerId: '1',
+                targetId: '0',
+                dice: [{
+                    index: 0,
+                    value: 1,
+                    face: 'ninja_katana',
+                    effectKey: 'bonusDie.effect.ninjaNinjutsu',
+                    effectParams: { value: 1, bonusDamage: 1 },
+                }],
+                rerollCostTokenId: '',
+                rerollCostAmount: 0,
+                rerollCount: 0,
+                maxRerollCount: 0,
+                readyToSettle: false,
+                displayOnly: true,
+                summaryEffectKey: 'bonusDie.effect.ninjaNinjutsuResult',
+                summaryEffectParams: { value: 1, bonusDamage: 1 },
+            } as any;
+            injectSimpleChoicePrompt(state, {
+                id: 'choice-slash-2-4-1780306943689',
+                playerId: '1',
+                title: 'choices.ninjaNinjutsu.title',
+                options: [
+                    {
+                        id: 'option-0',
+                        label: 'choices.ninjaNinjutsu.poison',
+                        value: { value: 1, customId: 'ninja-ninjutsu-poison', labelKey: 'choices.ninjaNinjutsu.poison' },
+                    },
+                    {
+                        id: 'option-1',
+                        label: 'choices.ninjaNinjutsu.undefendable',
+                        value: { value: 1, customId: 'ninja-ninjutsu-undefendable', labelKey: 'choices.ninjaNinjutsu.undefendable' },
+                    },
+                ],
+                sourceId: 'slash-2-4',
+            });
+
+            const result = respondToPrompt(state, 'option-0', '1', random, playerIds);
+
+            expect(result.success).toBe(true);
+            if (!result.success) {
+                expect(result.error?.message).not.toContain('dice.map');
+                return;
+            }
+            expect(result.state.sys.phase).toBe('main2');
+            expect(result.state.core.pendingAttack).toBeNull();
+            expect(result.state.core.pendingBonusDiceSettlement).toMatchObject({
+                id: 'slash-2-4-display-1780306943159',
+                displayOnly: true,
+            });
+        });
+
         it('main1 阶段 BONUS_DICE_SETTLED 不触发阶段推进', () => {
             // 模拟卡牌效果在 main1 触发奖励骰重掷交互，结算后阶段应停留在 main1
             const random = createQueuedRandom([1, 1, 1, 1, 1]);

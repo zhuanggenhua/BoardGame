@@ -10371,6 +10371,57 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
+    test('真实入口应在火药桶维持阶段投出 1 时先展示奖励骰特写再正常结算', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+            await setupPowderKegUpkeepScenario(match, 1, 0, 0, repeatRandomValue(1, 8));
+            await dismissCardSpotlightIfPresent(match.hostPage);
+            await dismissCardSpotlightIfPresent(match.guestPage);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '222-host-powder-keg-upkeep-roll-1-before-advance');
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'ADVANCE_PHASE',
+                playerId: '1',
+                payload: {},
+            });
+
+            const overlay = match.hostPage.getByTestId('bonus-die-overlay');
+            await expect(overlay).toBeVisible({ timeout: 10000 });
+            const guestOverlay = match.guestPage.getByTestId('bonus-die-overlay');
+            await expect(guestOverlay).toBeVisible({ timeout: 10000 });
+
+            const spotlightContent = match.hostPage.getByTestId('bonus-die-spotlight-content').first();
+            await expect(spotlightContent).toHaveAttribute('data-is-rolling', 'false', { timeout: 10000 });
+
+            const die = spotlightContent.getByTestId('dice-3d').first();
+            await expect(die).toBeVisible({ timeout: 10000 });
+
+            const dieTransform = await die.evaluate((node) => {
+                const inner = node.firstElementChild as HTMLElement | null;
+                return inner?.style.transform ?? '';
+            });
+            expect(dieTransform).toBe('rotateX(0deg) rotateY(0deg)');
+
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '223-host-powder-keg-upkeep-roll-1-bonus-die');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '223b-guest-powder-keg-upkeep-roll-1-bonus-die');
+
+            await overlay.click({ force: true });
+            await guestOverlay.click({ force: true });
+            await expect(overlay).toBeHidden({ timeout: 5000 });
+            await expect(guestOverlay).toBeHidden({ timeout: 5000 });
+            await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.HP, 47);
+            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.POWDER_KEG, 0);
+            await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.HP, 50);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '224-host-powder-keg-upkeep-roll-1-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实入口应展示并结算火药桶维持阶段投 6 后的转交链', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;

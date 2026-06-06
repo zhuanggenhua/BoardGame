@@ -145,13 +145,5 @@ export function shouldSuppressForegroundBonusDieOverlay({
         return true;
     }
 
-    if (!hasChoice) {
-        return false;
-    }
-
-    const shouldKeepPowderKegSpotlight = bonusDie?.show === true
-        && typeof bonusDie.effectKey === 'string'
-        && bonusDie.effectKey.startsWith('bonusDie.effect.powderKeg.');
-
-    return !shouldKeepPowderKegSpotlight;
+    return false;
 }

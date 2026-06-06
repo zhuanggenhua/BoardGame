@@ -62,10 +62,11 @@ function cardFrameStyle(widthVw: number, aspectRatio = CARD_ASPECT_RATIO): React
     };
 }
 
-const REORDER_PROMPT_REASON_BY_SOURCE_ID: Record<string, string> = {
+const SUPPRESSED_REVEAL_REASON_BY_SOURCE_ID: Record<string, string> = {
     super_spies_spy_reorder: 'super_spies_spy',
     super_spies_for_my_eyes_only_reorder: 'super_spies_for_my_eyes_only',
     base_isis_swingin_pad_reorder: 'base_isis_swingin_pad',
+    cyborg_apes_monkey_see_monkey_do_choose: 'cyborg_apes_monkey_see_monkey_do',
 };
 
 function extractCardUids(items: unknown): string[] {
@@ -77,6 +78,11 @@ function extractCardUids(items: unknown): string[] {
             : undefined;
         return uid ? [uid] : [];
     });
+}
+
+function extractStringUids(items: unknown): string[] {
+    if (!Array.isArray(items)) return [];
+    return [...new Set(items.filter((item): item is string => typeof item === 'string'))];
 }
 
 function extractOperativeRevealCardUids(prompt: Record<string, unknown>): string[] {
@@ -119,12 +125,15 @@ export function resolveRevealSuppressionRules(activePrompt: unknown, isPromptOwn
             : [];
     }
 
-    const reason = REORDER_PROMPT_REASON_BY_SOURCE_ID[sourceId];
+    const reason = SUPPRESSED_REVEAL_REASON_BY_SOURCE_ID[sourceId];
     if (!reason) return [];
 
     const cardUids = extractCardUids((prompt as { inspectedCards?: unknown }).inspectedCards);
-    return cardUids.length > 0
-        ? [{ sourceId, reason, cardUids }]
+    const inspectedUids = cardUids.length > 0
+        ? cardUids
+        : extractStringUids((prompt as { inspectedUids?: unknown }).inspectedUids);
+    return inspectedUids.length > 0
+        ? [{ sourceId, reason, cardUids: inspectedUids }]
         : [];
 }
 
@@ -171,6 +180,11 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
         setMagnifyTarget(null);
         lastSeenIdRef.current = rollback.watermark ?? -1;
     }, [rollback.seq, rollback.watermark]);
+
+    useEffect(() => {
+        if (suppressionRules.length === 0) return;
+        setQueue((prev) => prev.filter((item) => !shouldSuppressRevealItem(item, suppressionRules)));
+    }, [suppressionRules]);
 
     // 消费新事件
     // 注意：展示 UI 需要显示历史的展示事件，所以不跳过历史事件
@@ -233,10 +247,11 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
             newItems.push(item);
         }
 
-        if (newItems.length > 0) {
-            setQueue(prev => [...prev, ...newItems].slice(-5));
+        const visibleItems = newItems.filter((item) => !shouldSuppressRevealItem(item, suppressionRules));
+        if (visibleItems.length > 0) {
+            setQueue(prev => [...prev, ...visibleItems].slice(-5));
         }
-    }, [entries, currentPlayerId, TRIGGER_EVENTS]);
+    }, [entries, currentPlayerId, suppressionRules, TRIGGER_EVENTS]);
 
     const visibleQueue = useMemo(
         () => queue.filter((item) => !shouldSuppressRevealItem(item, suppressionRules)),
