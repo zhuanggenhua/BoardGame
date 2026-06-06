@@ -1620,8 +1620,17 @@ export function getDirectAssetPath(relativePath: string): string {
 export function getLocalAssetPath(path: string): string {
     if (!isString(path) || !path) return '/assets';
     if (isPassthroughSource(path)) return path;
-    const trimmed = path.startsWith('/') ? path.slice(1) : path;
-    return resolveVersionedAssetUrl(`/assets/${trimmed}`);
+    const relative = stripKnownAssetPrefixes(splitUrlParts(path).path);
+    if (!relative) {
+        return '/assets';
+    }
+
+    const overrideBaseUrl = resolveAssetBaseUrlForPath(relative);
+    if (overrideBaseUrl) {
+        return resolveVersionedAssetUrl(`${overrideBaseUrl}/${relative}`);
+    }
+
+    return resolveVersionedAssetUrl(`/assets/${relative}`);
 }
 
 /**
@@ -1630,13 +1639,16 @@ export function getLocalAssetPath(path: string): string {
  */
 export function getLocalizedLocalAssetPath(path: string, locale?: string): string {
     if (!locale || isPassthroughSource(path)) return getLocalAssetPath(path);
-    // 去掉可能的前缀
-    let relative = splitUrlParts(path).path;
-    if (relative.startsWith('/assets/')) relative = relative.slice('/assets/'.length);
-    if (relative.startsWith(assetsBaseUrl + '/')) relative = relative.slice(assetsBaseUrl.length + 1);
-    relative = relative.replace(/^\/+/, '');
-    // 幂等性检查
+    const relative = stripKnownAssetPrefixes(splitUrlParts(path).path);
+    const overrideBaseUrl = resolveAssetBaseUrlForPath(relative);
     const localizedPrefix = `${LOCALIZED_ASSETS_SUBDIR}/${locale}/`;
-    if (relative.startsWith(localizedPrefix)) return resolveVersionedAssetUrl(`/assets/${relative}`);
-    return resolveVersionedAssetUrl(`/assets/${localizedPrefix}${relative}`);
+    const localizedRelative = relative.startsWith(localizedPrefix)
+        ? relative
+        : `${localizedPrefix}${relative}`;
+
+    if (overrideBaseUrl) {
+        return resolveVersionedAssetUrl(`${overrideBaseUrl}/${localizedRelative}`);
+    }
+
+    return resolveVersionedAssetUrl(`/assets/${localizedRelative}`);
 }

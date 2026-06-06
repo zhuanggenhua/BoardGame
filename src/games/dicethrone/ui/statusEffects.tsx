@@ -64,13 +64,34 @@ const dedupeUrls = (urls: Array<string | undefined>) => (
     urls.filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index)
 );
 
+const appendCapacitorFileQuerylessFallback = (url: string | undefined) => {
+    if (!url) {
+        return [];
+    }
+
+    const candidates = [url];
+    const isCapacitorFileUrl = /^https?:\/\/[^/]+\/_capacitor_file_\//i.test(url)
+        || url.startsWith('/_capacitor_file_/');
+    if (!isCapacitorFileUrl) {
+        return candidates;
+    }
+
+    const queryIndex = url.indexOf('?');
+    if (queryIndex <= 0) {
+        return candidates;
+    }
+
+    candidates.push(url.slice(0, queryIndex));
+    return candidates;
+};
+
 const getStatusAtlasJsonCandidates = (path: string, locale?: string) => {
     const effectiveLocale = locale || 'zh-CN';
     const fallbackLocale = getAtlasFallbackLocale(effectiveLocale);
 
     return dedupeUrls([
-        getLocalizedLocalAssetPath(path, effectiveLocale),
-        getLocalizedLocalAssetPath(path, fallbackLocale),
+        ...appendCapacitorFileQuerylessFallback(getLocalizedLocalAssetPath(path, effectiveLocale)),
+        ...appendCapacitorFileQuerylessFallback(getLocalizedLocalAssetPath(path, fallbackLocale)),
     ]);
 };
 

@@ -17,13 +17,22 @@ import {
     resolveSpriteAssetUrls,
 } from '../ui/assets';
 import { TokenBadge, getStatusEffectIconNode, loadStatusAtlases, type StatusIconAtlasConfig } from '../ui/statusEffects';
-import { getAssetsBaseUrl, markImageLoaded, setAssetsBaseUrl } from '../../../core';
+import {
+    clearGameAssetBaseOverrides,
+    getAssetsBaseUrl,
+    markImageLoaded,
+    setAssetsBaseUrl,
+    setGameAssetBaseOverride,
+} from '../../../core';
+import { setAssetHashesForTesting } from '../../../core/AssetLoader';
 
 registerDiceDefinition(moonElfDiceDefinition);
 
 describe('StatusEffectsIcons', () => {
     beforeEach(() => {
         setAssetsBaseUrl('/assets');
+        setAssetHashesForTesting({});
+        clearGameAssetBaseOverrides();
     });
 
     afterEach(() => {
@@ -420,6 +429,55 @@ describe('StatusEffectsIcons', () => {
             h: 256,
         });
         expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('/assets/'))).toBe(true);
+    });
+
+    it('游戏包 override 下的状态图集 JSON 应先走本地游戏包，并在 _capacitor_file_ query 失败后回退无 query URL', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setGameAssetBaseOverride('dicethrone', 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets');
+        setAssetHashesForTesting({
+            'i18n/zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json': 'atlas1234',
+        });
+
+        const hashedUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json?v=atlas1234';
+        const plainUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json';
+
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url === hashedUrl) {
+                return {
+                    ok: false,
+                    json: async () => null,
+                };
+            }
+            if (url === plainUrl) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        meta: { image: 'status-icons-atlas.png', size: { w: 512, h: 256 } },
+                        frames: {
+                            tactical_advantage: { frame: { x: 0, y: 0, w: 256, h: 256 } },
+                        },
+                    }),
+                };
+            }
+            return {
+                ok: false,
+                json: async () => null,
+            };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const atlases = await loadStatusAtlases('zh-CN');
+
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA]?.frames.tactical_advantage).toEqual({
+            x: 0,
+            y: 0,
+            w: 256,
+            h: 256,
+        });
+        expect(fetchMock.mock.calls.some(([input]) => String(input) === hashedUrl)).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input) === plainUrl)).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/assets/'))).toBe(false);
     });
 
     it('骰图切片坐标应匹配 3x3 atlas（使用下两行）', () => {

@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setPublicFileHashesForTesting, versionedPublicFileUrl } from '../../lib/publicFileUrl';
 import {
+    clearGameAssetBaseOverrides,
     getLocalAssetPath,
+    getLocalizedLocalAssetPath,
     getLocalizedImageCandidateUrls,
     getLocalizedImageUrls,
     getOptimizedImageUrls,
@@ -17,6 +19,7 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
         setAssetHashesForTesting({});
         setLocalizedImageIndexForTesting({});
         setPublicFileHashesForTesting({});
+        clearGameAssetBaseOverrides();
     });
 
     it('SVG 资源保持原路径', () => {
@@ -67,6 +70,17 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
         });
         expect(getLocalAssetPath('atlas-configs/dicethrone/ability-cards-common.atlas.json'))
             .toBe('/assets/atlas-configs/dicethrone/ability-cards-common.atlas.json?v=ef567890');
+    });
+
+    it('游戏包 override 生效时，本地语言化 JSON 应优先走游戏包目录', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setGameAssetBaseOverride('dicethrone', 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets');
+        setAssetHashesForTesting({
+            'i18n/zh-CN/dicethrone/images/cursed/status-icons-atlas.json': 'atlas5678',
+        });
+
+        expect(getLocalizedLocalAssetPath('dicethrone/images/cursed/status-icons-atlas.json', 'zh-CN'))
+            .toBe('http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/cursed/status-icons-atlas.json?v=atlas5678');
     });
 
     it('public 根目录字体与 logo 资源也会附加内容 hash', () => {
