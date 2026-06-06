@@ -8,7 +8,7 @@ export const NINJA_SYMBOLS = NINJA_DICE_FACE_IDS;
 
 export const ninjaDiceDefinition: DiceDefinition = {
     id: 'ninja-dice',
-    name: 'Ninja Dice',
+    name: 'config.dice.ninja.name',
     sides: 6,
     category: 'hero',
     faces: [

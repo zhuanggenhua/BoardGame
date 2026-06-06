@@ -339,14 +339,14 @@ describe('AndroidBackNavigation helpers', () => {
         })).toBe(3);
     });
 
-    it('有历史栈时执行 history.back', () => {
+    it('对局页即使有历史栈也统一回到大厅', () => {
         expect(resolveAndroidBackNavigationAction({
             pathname: '/play/smashup/match/room-1',
             search: '?playerID=0',
             historyState: { idx: 1 },
             historyLength: 2,
             modalStackDepth: 0,
-        })).toEqual({ type: 'history-back' });
+        })).toEqual({ type: 'fallback-route', path: '/?game=smashup' });
     });
 
     it('有可关闭弹窗时优先关闭弹窗，而不是退路由', () => {
@@ -400,6 +400,15 @@ describe('AndroidBackNavigation helpers', () => {
             historyLength: 1,
             modalStackDepth: 0,
         })).toEqual({ type: 'fallback-route', path: '/' });
+    });
+
+    it('非对局页仍保留 history.back 语义', () => {
+        expect(resolveAndroidBackNavigationAction({
+            pathname: '/maintenance',
+            historyState: { idx: 1 },
+            historyLength: 2,
+            modalStackDepth: 0,
+        })).toEqual({ type: 'history-back' });
     });
 
     it('根页且没有历史栈时允许退出 App', () => {

@@ -3677,6 +3677,153 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
     await screenshotViewport(page, 'yuanhou-baboom-multi-action-second-selected', testInfo);
   });
 
+  test('电子猿-Baboom-真实入口应允许从多张合法额外行动里选择猴子在你的背上并直接附着到自己', async ({ page, game }, testInfo) => {
+    test.setTimeout(90000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { skipInitialization: true }, 45000);
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '0',
+      phase: 'playCards',
+      extra: {
+        core: {
+          turnOrder: ['0', '1'],
+          currentPlayerIndex: 0,
+          turnNumber: 1,
+          nextUid: 1000,
+          players: {
+            '0': {
+              id: '0',
+              vp: 0,
+              hand: [
+                { uid: 'baboom-monkey-first-hand', defId: 'cyborg_apes_cyberevolution', type: 'action', owner: '0' },
+                { uid: 'baboom-monkey-second-hand', defId: 'cyborg_apes_monkey_on_your_back', type: 'action', owner: '0' },
+                { uid: 'baboom-monkey-invalid-hand', defId: 'cyborg_apes_going_bananas', type: 'action', owner: '0' },
+              ],
+              deck: [],
+              discard: [],
+              factions: ['cyborg_apes'],
+              minionsPlayed: 1,
+              minionLimit: 1,
+              actionsPlayed: 1,
+              actionLimit: 1,
+            },
+            '1': {
+              id: '1',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['sharks'],
+              minionsPlayed: 0,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+            },
+          },
+          bases: [
+            {
+              defId: 'base_monkey_lab',
+              breakpoint: 20,
+              minions: [
+                {
+                  uid: 'baboom-monkey-other-minion',
+                  defId: 'time_travelers_jumper',
+                  controller: '0',
+                  owner: '0',
+                  basePower: 2,
+                  powerCounters: 0,
+                  powerModifier: 0,
+                  tempPowerModifier: 0,
+                  talentUsed: false,
+                  playedThisTurn: false,
+                  attachedActions: [],
+                },
+                {
+                  uid: 'baboom-monkey-source',
+                  defId: 'cyborg_apes_baboom',
+                  controller: '0',
+                  owner: '0',
+                  basePower: 3,
+                  powerCounters: 0,
+                  powerModifier: 0,
+                  tempPowerModifier: 0,
+                  talentUsed: false,
+                  playedThisTurn: false,
+                  attachedActions: [],
+                },
+                {
+                  uid: 'baboom-monkey-enemy',
+                  defId: 'sharks_mako',
+                  controller: '1',
+                  owner: '1',
+                  basePower: 2,
+                  powerCounters: 0,
+                  powerModifier: 0,
+                  tempPowerModifier: 0,
+                  talentUsed: false,
+                  playedThisTurn: false,
+                  attachedActions: [],
+                },
+              ],
+              ongoingActions: [],
+            },
+          ],
+          baseDeck: ['base_the_vats'],
+          baseDiscard: [],
+        },
+      },
+    });
+
+    await page.locator('[data-minion-uid="baboom-monkey-source"]').click();
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const prompt = state?.sys?.interaction?.current;
+      const optionCardUids = (prompt?.data?.options ?? [])
+        .map((option: { value?: { cardUid?: unknown } }) => option?.value?.cardUid)
+        .filter((uid: unknown): uid is string => typeof uid === 'string')
+        .sort();
+      return prompt?.data?.sourceId === 'smashup_immediate_extra_action'
+        && prompt?.playerId === '0'
+        && hasSkipOption(prompt?.data?.options)
+        && optionCardUids.join(',') === 'baboom-monkey-first-hand,baboom-monkey-second-hand';
+    }, {
+      message: 'Baboom 额外行动在同时存在强化和猴子在你的背上时，应保留两张合法行动并过滤非法基地战术',
+      timeout: 15000,
+    }).toBe(true);
+
+    await expect(page.locator('[data-card-uid="baboom-monkey-first-hand"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-card-uid="baboom-monkey-second-hand"]')).toBeVisible({ timeout: 15000 });
+    await screenshotViewport(page, 'yuanhou-baboom-monkey-action-choice-prompt', testInfo);
+
+    await game.selectInteractionOptionBy(
+      (option) => option?.value?.cardUid === 'baboom-monkey-second-hand',
+      'Baboom immediate extra action selects Monkey on Your Back',
+    );
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const minions = (state?.core?.bases?.[0]?.minions ?? []) as Array<{ uid?: unknown; attachedActions?: unknown }>;
+      const source = minions.find(minion => minion.uid === 'baboom-monkey-source');
+      const other = minions.find(minion => minion.uid === 'baboom-monkey-other-minion');
+      const enemy = minions.find(minion => minion.uid === 'baboom-monkey-enemy');
+      const hand = state?.core?.players?.['0']?.hand ?? [];
+      return state?.sys?.interaction?.current == null
+        && hasUid(source?.attachedActions, 'baboom-monkey-second-hand')
+        && !hasUid(other?.attachedActions, 'baboom-monkey-second-hand')
+        && !hasUid(enemy?.attachedActions, 'baboom-monkey-second-hand')
+        && hasUid(hand, 'baboom-monkey-first-hand')
+        && !hasUid(hand, 'baboom-monkey-second-hand')
+        && hasUid(hand, 'baboom-monkey-invalid-hand');
+    }, {
+      message: 'Baboom 选择猴子在你的背上后，应直接附着到发动天赋的 Baboom 自己身上，并保持其他合法/非法手牌状态正确',
+      timeout: 15000,
+    }).toBe(true);
+
+    await screenshotViewport(page, 'yuanhou-baboom-monkey-action-attached-to-self', testInfo);
+  });
+
   test('电子猿-Baboom-同基地两只 Baboom 时真实入口应只把额外行动附着到发动天赋的那一只', async ({ page, game }, testInfo) => {
     test.setTimeout(90000);
     await setChineseLocale(page.context());
@@ -5467,7 +5614,9 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
 
     await expect(page.locator('[data-minion-uid="copycat-enemy-george"]')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('[data-option-id="copycat-enemy-george"]')).toHaveCount(0);
-    await page.locator('[data-minion-uid="copycat-enemy-george"]').click();
+    await page.locator('[data-minion-uid="copycat-enemy-george"]').click({
+      position: { x: 16, y: 16 },
+    });
 
     await expect.poll(async () => {
       const state = await game.getState();
@@ -5609,7 +5758,9 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
 
     await expect(page.locator('[data-minion-uid="copycat-expire-enemy-george"]')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('[data-option-id="copycat-expire-enemy-george"]')).toHaveCount(0);
-    await page.locator('[data-minion-uid="copycat-expire-enemy-george"]').click();
+    await page.locator('[data-minion-uid="copycat-expire-enemy-george"]').click({
+      position: { x: 16, y: 16 },
+    });
 
     await expect.poll(async () => {
       const state = await game.getState();

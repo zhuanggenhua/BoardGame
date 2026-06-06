@@ -306,11 +306,11 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(counter).toHaveTextContent('5');
     });
 
-    it('随从选择模式下应改为半展开，底部随从仍可单独点击', () => {
+    it('随从选择模式下只高亮合法目标，非法目标保持普通显示但不可选', () => {
         const onMinionSelect = vi.fn();
         renderBaseZone({
             isMinionSelectMode: true,
-            selectableMinionUids: new Set(['m1', 'm2', 'm3']),
+            selectableMinionUids: new Set(['m1']),
             onMinionSelect,
             minions: [
                 {
@@ -358,8 +358,19 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(thirdMinion).not.toBeNull();
         expect(secondMinion?.style.marginTop).toBe('-3.8515vw');
         expect(thirdMinion?.style.marginTop).toBe('-3.8515vw');
+        expect(secondMinion?.className).not.toContain('cursor-not-allowed');
+        expect(thirdMinion?.className).not.toContain('cursor-not-allowed');
 
         fireEvent.click(thirdMinion as Element);
-        expect(onMinionSelect).toHaveBeenCalledWith('m3', 0);
+        expect(onMinionSelect).not.toHaveBeenCalled();
+
+        const firstMinion = document.querySelector('[data-minion-uid="m1"]') as HTMLElement | null;
+        expect(firstMinion).not.toBeNull();
+        const firstFrame = firstMinion?.querySelector('div');
+        const secondFrame = secondMinion?.querySelector('div');
+        expect(firstFrame?.className).toContain('border-green-400');
+        expect(secondFrame?.className).not.toContain('border-green-400');
+        fireEvent.click(firstMinion as Element);
+        expect(onMinionSelect).toHaveBeenCalledWith('m1', 0);
     });
 });

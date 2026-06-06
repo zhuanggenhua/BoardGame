@@ -14,6 +14,8 @@ description: "BoardGame 项目的音效对接 overlay。先使用全局 `$audio-
   - 通用音效表：`音效中文名 + 音效 id/key`
   - 非通用音效表：额外带 `目标对象中文名`
 - 明确是否复用现有库、是否新增素材
+- 高频出牌/附着/召唤音效默认优先 `短促 one-shot`，避免长拖尾、loop 感、环境氛围类候选
+- 默认以 `4 秒` 为上限，超过 `4 秒` 的候选一般不采用；若保留，汇报里必须说明例外理由
 - 主动询问是否启动试听工具
 
 本 overlay 只补 BoardGame 仓库内的真实入口。
@@ -27,6 +29,7 @@ description: "BoardGame 项目的音效对接 overlay。先使用全局 `$audio-
 - 全量 registry：`public/assets/common/audio/registry.json`
 - 源码静态副本：`src/assets/audio/registry.json`
 - 具体游戏如有更小范围 registry，优先用游戏专用文件
+- 若本地存在 `public/assets/common/audio/**` 实体素材，最终候选必须再核实“磁盘上确实存在”；不能只凭 registry 选 key
 
 ### 中文友好名
 

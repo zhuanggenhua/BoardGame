@@ -1,11 +1,11 @@
 import type { GameTransportClient } from '../engine/transport/client';
-import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import type { AiResolution } from '../engine/ai';
 import type { AiSeatController } from '../engine/ai';
 import type {
     ForceEndTurnStalledAiReason,
     ForceEndTurnStalledAiResolution,
+    OnlineAiRecoveryEngineConfig,
 } from '../engine/transport/onlineAiRecovery';
 import {
     buildAiProgressMarker,
@@ -38,7 +38,7 @@ export function resolveOnlineAiAutoRecoveryCompletionNotice(args: {
     candidateReason: ForceEndTurnStalledAiReason;
     authoritativeState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): OnlineAiAutoRecoveryCompletionNotice | null {
     const { candidateReason, authoritativeState, seatControllers, engineConfig } = args;
 
@@ -83,7 +83,7 @@ type SubmitOnlineAiResolutionArgs = {
     resolution: AiResolution;
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     onWillResync?: (reason: string) => void;
     onConfirmed?: (authoritativeState: MatchState<unknown> | unknown) => void;
     onRejected?: (reason: string) => void;
@@ -94,7 +94,7 @@ type SubmitOnlineAiResolutionSequenceArgs = {
     initialResolution: AiResolution;
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     resolveNextResolution: (args: {
         authoritativeState: MatchState<unknown> | unknown;
         confirmedResolution: AiResolution;
@@ -119,7 +119,7 @@ type SubmitForceEndTurnRecoverySequenceArgs = {
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
     seatControllers: Record<string, AiSeatController>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
     followUpSteps?: number;
     onCompleted?: (authoritativeState: MatchState<unknown> | unknown) => void;

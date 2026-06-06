@@ -48,6 +48,7 @@ function getTokenCategory(
 }
 
 function getTokenEffectPreview(
+    t: (key: string, options?: Record<string, unknown>) => string,
     tokenDef: TokenDef,
     currentDamage: number,
     amount = 1,
@@ -61,7 +62,7 @@ function getTokenEffectPreview(
                 const canUse = currentDamage >= 5;
                 return {
                     damageChange: canUse ? 4 : 0,
-                    description: canUse ? '+4 伤害' : '需要伤害 >= 5',
+                    description: canUse ? t('tokenResponse.preview.critBoost') : t('tokenResponse.preview.critRequires'),
                     canUse,
                 };
             }
@@ -69,7 +70,7 @@ function getTokenEffectPreview(
             const totalModifier = Math.abs(getTokenEffectValue(tokenDef.activeUse?.effect, amount, 1));
             return {
                 damageChange: totalModifier,
-                description: `+${totalModifier} 伤害`,
+                description: t('tokenResponse.preview.damageBoost', { amount: totalModifier }),
                 canUse: true,
             };
         }
@@ -79,7 +80,7 @@ function getTokenEffectPreview(
                 const reduction = Math.ceil(currentDamage / 2);
                 return {
                     damageChange: -reduction,
-                    description: `伤害减半 (-${reduction})`,
+                    description: t('tokenResponse.preview.damageHalved', { amount: reduction }),
                     canUse: true,
                 };
             }
@@ -87,7 +88,7 @@ function getTokenEffectPreview(
             const totalModifier = getTokenEffectValue(tokenDef.activeUse?.effect, amount, -1);
             return {
                 damageChange: totalModifier,
-                description: `${totalModifier} 伤害`,
+                description: t('tokenResponse.preview.damageReduce', { amount: totalModifier }),
                 canUse: true,
             };
         }
@@ -96,7 +97,7 @@ function getTokenEffectPreview(
             const reflectAmount = Math.ceil(currentDamage / 2);
             return {
                 damageChange: 0,
-                description: `反弹 ${reflectAmount} 伤害给对手`,
+                description: t('tokenResponse.preview.damageReflect', { amount: reflectAmount }),
                 canUse: true,
             };
         }
@@ -104,21 +105,21 @@ function getTokenEffectPreview(
         case 'undefendable':
             return {
                 damageChange: 0,
-                description: '使攻击不可防御',
+                description: t('tokenResponse.preview.undefendable'),
                 canUse: true,
             };
 
         case 'evasive':
             return {
                 damageChange: 0,
-                description: '掷骰 1-2 完全闪避',
+                description: t('tokenResponse.preview.evasive'),
                 canUse: true,
             };
 
         default:
             return {
                 damageChange: 0,
-                description: '未知效果',
+                description: t('tokenResponse.preview.unknown'),
                 canUse: false,
             };
     }
@@ -214,7 +215,7 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
         if (useOptions.length <= 0) return null;
 
         const useAmount = useOptions[0] ?? 1;
-        const preview = getTokenEffectPreview(tokenDef, pendingDamage.currentDamage, useAmount, responsePhase);
+        const preview = getTokenEffectPreview(t, tokenDef, pendingDamage.currentDamage, useAmount, responsePhase);
         const category = getTokenCategory(tokenDef, responsePhase);
         const isDisabled = !preview.canUse;
 

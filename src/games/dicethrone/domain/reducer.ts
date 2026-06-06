@@ -85,7 +85,7 @@ const handleBonusDieRolled: EventHandler<Extract<DiceThroneEvent, { type: 'BONUS
             type: 'token' as const,
             value: pendingDamageBonus,
             sourceId: 'sneak_attack',
-            sourceName: '伏击',
+            sourceName: 'damageSource.sneakAttack',
         });
         pendingDamage = {
             ...state.pendingDamage,

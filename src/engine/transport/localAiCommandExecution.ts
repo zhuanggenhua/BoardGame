@@ -1,4 +1,7 @@
-import { buildAiProgressMarker } from './onlineAiRecovery';
+import {
+    buildAiProgressMarker,
+    type OnlineAiRecoveryEngineConfig,
+} from './onlineAiRecovery';
 import {
     buildLocalAiCommandProgressPayload,
     buildLocalAiCommandStateSnapshot,
@@ -11,7 +14,6 @@ import {
     type LocalAiTurnTimeline,
 } from './localAiDiagnostics';
 import type { MatchState } from '../types';
-import type { GameEngineConfig } from './server';
 
 export async function executeLocalAiCommandWithProgress(args: {
     gameId: string;
@@ -28,7 +30,7 @@ export async function executeLocalAiCommandWithProgress(args: {
     dispatch: (type: string, payload: unknown) => void;
     getState: () => MatchState<unknown>;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): Promise<LocalAiCommandEffect> {
     const normalizedPayload = args.command.payload && typeof args.command.payload === 'object'
         ? args.command.payload as Record<string, unknown>
@@ -156,7 +158,7 @@ export async function executeLocalAiCommandBatch(args: {
     dispatch: (type: string, payload: unknown) => void;
     getState: () => MatchState<unknown>;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): Promise<{ hasAnyCommandEffect: boolean }> {
     let hasAnyCommandEffect = false;
 

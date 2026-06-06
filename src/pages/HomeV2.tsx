@@ -268,11 +268,11 @@ export const HomeV2 = () => {
             }
 
             if (!result.success) {
-                toast.error({
-                    kind: 'i18n',
-                    key: result.error === 'forbidden' ? 'error.destroyForbidden' : 'error.destroyNetwork',
-                    ns: 'lobby',
-                });
+                if (result.error === 'forbidden') {
+                    toast.error({ kind: 'i18n', key: 'error.destroyForbidden', ns: 'lobby' });
+                } else {
+                    toast.error({ kind: 'i18n', key: 'error.destroyNetwork', ns: 'lobby' });
+                }
                 return;
             }
 

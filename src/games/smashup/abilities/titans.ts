@@ -3023,12 +3023,16 @@ function trickstersBigFunnyGiantPodOnTurnEnd(ctx: TriggerContext): TriggerResult
         const interaction = createSimpleChoice(
             `titan_tricksters_big_funny_giant_pod_counter_${titan.uid}_${ctx.now}`,
             titan.controllerId,
-            'Big Funny Giant: place a +1 power counter on this titan?',
+            'ui.titan_tricksters_big_funny_giant_pod_counter_title',
             [
                 { id: 'add', label: '放置 +1 指示物', value: { add: true }, displayMode: 'button' as const },
                 { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
             ],
-            { sourceId: 'titan_tricksters_big_funny_giant_pod_counter', targetType: 'button' },
+            {
+                sourceId: 'titan_tricksters_big_funny_giant_pod_counter',
+                targetType: 'button',
+                titleKey: 'ui.titan_tricksters_big_funny_giant_pod_counter_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             titanUid: titan.uid,

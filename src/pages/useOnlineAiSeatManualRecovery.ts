@@ -1,12 +1,12 @@
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../contexts/ToastContext';
-import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';
 import {
     resolveManualBlockedOnlineAiSeatResync,
     resolveManualOnlineAiRecovery,
+    type OnlineAiRecoveryEngineConfig,
 } from './onlineAiRecovery';
 import {
     submitForceEndTurnRecoverySequence,
@@ -18,7 +18,7 @@ const MANUAL_FORCE_END_TURN_FOLLOW_UP_STEPS = 16;
 
 type UseOnlineAiSeatManualRecoveryArgs = {
     state: MatchState<unknown> | null;
-    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig: OnlineAiRecoveryEngineConfig;
     matchId: string;
     seatControllers: Record<string, AiSeatController>;
     lastAiAttemptKeyRef: { current: string | null };

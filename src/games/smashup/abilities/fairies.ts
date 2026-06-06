@@ -22,6 +22,7 @@ import {
     markSpiritOfTheForestOrUsed,
     playTitan,
 } from '../domain/abilityHelpers';
+import { reduce } from '../domain/reduce';
 import { registerProtection, registerRestriction } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, RestrictionCheckContext } from '../domain/ongoingEffects';
 import {
@@ -506,6 +507,17 @@ function runtimeResultToBranchResult(
     };
 }
 
+function applyEventsToMatchState(
+    matchState: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    if (events.length === 0) return matchState;
+    return {
+        ...matchState,
+        core: events.reduce((core, event) => reduce(core, event), matchState.core),
+    };
+}
+
 function createTransferSelfAbilityProgram(
     sourceId: 'fairies_ladybug' | 'fairies_leaf_armor',
     title: string,
@@ -739,17 +751,41 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
         if (context.baseIndex === undefined) return { events: [] };
         const selectedValue = value as { branchId?: string; skip?: boolean };
         const previousBranchIds = context.selectedBranchIds ?? [];
+        const attached = state.core.bases[context.baseIndex]?.ongoingActions.find(action =>
+            action.uid === context.attachedCardUid
+            && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
+        );
+        if (!attached) return { events: [] };
+        const sourcePlayerId = (attached.metadata?.sourcePlayerId as PlayerId | undefined)
+            ?? (attached.metadata?.sourceControllerId as PlayerId | undefined);
 
         if (
             (selectedValue.branchId === 'plus' || selectedValue.branchId === 'minus')
             && context.allowBoth
             && previousBranchIds.length === 0
         ) {
+            const immediateMode = selectedValue.branchId;
+            const immediateEvents = [{
+                type: SU_EVENTS.ONGOING_ATTACHED,
+                payload: {
+                    cardUid: attached.uid,
+                    defId: attached.defId,
+                    ownerId: attached.ownerId,
+                    ...(sourcePlayerId && sourcePlayerId !== attached.ownerId ? { sourcePlayerId } : {}),
+                    targetType: 'base',
+                    targetBaseIndex: context.baseIndex,
+                    metadata: { fairiesEnchantmentMode: immediateMode },
+                    talentUsed: attached.talentUsed,
+                },
+                timestamp,
+            } as OngoingAttachedEvent];
+            const nextMatchState = applyEventsToMatchState(state, immediateEvents);
             return {
-                events: [],
+                events: immediateEvents,
+                matchState: nextMatchState,
                 context: {
                     ...context,
-                    matchState: state,
+                    matchState: nextMatchState,
                     playerId,
                     now: timestamp,
                     selectedBranchIds: [selectedValue.branchId],
@@ -762,12 +798,6 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
             ? [...previousBranchIds, selectedValue.branchId]
             : previousBranchIds;
         if (branchIds.length === 0) return { events: [] };
-
-        const attached = state.core.bases[context.baseIndex]?.ongoingActions.find(action =>
-            action.uid === context.attachedCardUid
-            && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
-        );
-        if (!attached) return { events: [] };
         const spirit = branchIds.length > 1 ? getAvailableSpiritOfTheForestOrTitan(state.core, playerId) : undefined;
         const fairiesEnchantmentMode = branchIds.includes('plus') && branchIds.includes('minus')
             ? 'both'
@@ -775,8 +805,6 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
         if (fairiesEnchantmentMode !== 'plus' && fairiesEnchantmentMode !== 'minus' && fairiesEnchantmentMode !== 'both') {
             return { events: [] };
         }
-        const sourcePlayerId = (attached.metadata?.sourcePlayerId as PlayerId | undefined)
-            ?? (attached.metadata?.sourceControllerId as PlayerId | undefined);
 
         return {
             events: [

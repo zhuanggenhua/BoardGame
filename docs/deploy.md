@@ -57,6 +57,7 @@ bash deploy-image.sh update v1.2.3  # 部署指定 tag
 
 ```bash
 bash deploy-image.sh rollback v1.2.3   # 回滚到指定版本
+bash deploy-image.sh rollback-last     # 回滚到上次成功部署版本
 bash deploy-image.sh status             # 查看状态
 bash deploy-image.sh logs [service]     # 查看日志
 ```

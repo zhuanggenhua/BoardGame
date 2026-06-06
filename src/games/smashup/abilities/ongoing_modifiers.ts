@@ -10,7 +10,11 @@ import {
     registerOngoingPowerModifiers,
     registerBasePowerModifiers,
     registerBreakpointModifiers,
+    registerCustomPowerModifiers,
+    registerCustomBasePowerModifiers,
     registerTitanPowerModifier,
+    matchesRuntimeDefId,
+    getActionControllerId,
 } from '../domain/ongoingModifiers';
 import type { BasePowerModifierContext, OngoingPowerModifierDefinition, PowerModifierContext } from '../domain/ongoingModifiers';
 import type { MinionOnBase, SmashUpCore } from '../domain/types';
@@ -57,12 +61,6 @@ function countMinionsWithDefId(
         ).length;
     }
     return count;
-}
-
-function getOngoingActionControllerId(action: { ownerId: PlayerId; metadata?: Record<string, unknown> }): PlayerId {
-    return (typeof action.metadata?.sourceControllerId === 'string'
-        ? action.metadata.sourceControllerId
-        : action.ownerId) as PlayerId;
 }
 
 const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinition[] = [
@@ -212,39 +210,24 @@ function registerKillerPlantModifiers(): void {
 // ============================================================================
 
 function registerSteampunkModifiers(): void {
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'steampunk_steam_man',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                const baseId = ctx.minion.defId.replace(/_pod$/, '');
-                if (baseId !== 'steampunk_steam_man') return 0;
-                const hasBaseOngoing = ctx.base.ongoingActions.some(
-                    action => ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.minion.controller
-                );
-                if (hasBaseOngoing) {
-                    return 1;
-                }
-                for (const minion of ctx.base.minions) {
-                    if (minion.attachedActions.some(
-                        action => ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.minion.controller
-                    )) {
-                        return 1;
-                    }
-                }
-                return 0;
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'steampunk_steam_man')) return 0;
+                return helpers.countActionsOnBaseControlledBy(ctx, ctx.minion.controller) > 0 ? 1 : 0;
             },
         },
     ]);
 
-    registerBasePowerModifiers([
+    registerCustomBasePowerModifiers([
         {
             defId: 'steampunk_aggromotive',
-            modifier: (ctx) => {
+            compute: (ctx, helpers) => {
                 if (!ctx.ongoing) return 0;
-                const ongoingControllerId = (ctx.ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ctx.ongoing.ownerId;
+                const ongoingControllerId = helpers.getActionControllerId(ctx.ongoing);
                 if (ongoingControllerId !== ctx.playerId) return 0;
-                return ctx.base.minions.some(minion => minion.controller === ongoingControllerId) ? 5 : 0;
+                return helpers.hasMinionOnBaseControlledBy(ctx.base, ongoingControllerId) ? 5 : 0;
             },
         },
     ]);
@@ -281,7 +264,7 @@ function registerBearCavalryModifiers(): void {
                 const modifier = playersWithMinions * 2;
                 let total = 0;
                 for (const card of cards) {
-                    const controllerId = getOngoingActionControllerId(card);
+                    const controllerId = getActionControllerId(card);
                     const movedOpponentHereThisTurn = ctx.state.movedToBasesThisTurn?.[ctx.baseIndex]?.[controllerId] ?? false;
                     total += movedOpponentHereThisTurn ? -modifier : modifier;
                 }
@@ -345,33 +328,28 @@ function registerWorldChampsModifiers(): void {
 }
 
 function registerFairiesModifiers(): void {
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'fairies_daisy_chain',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => (
-                ctx.minion.attachedActions.reduce((total, action) => {
-                    if (action.defId !== 'fairies_daisy_chain' && action.defId !== 'fairies_daisy_chain_pod') {
-                        return total;
-                    }
-                    return total + ((((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.minion.controller) ? 2 : -2);
-                }, 0)
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.sumMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'fairies_daisy_chain',
+                    (action) => (helpers.getActionControllerId(action) === ctx.minion.controller ? 2 : -2),
+                )
             ),
         },
         {
             sourceDefId: 'fairies_enchantment',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => (
-                ctx.base.ongoingActions.reduce((total, action) => {
-                    if (action.defId !== 'fairies_enchantment' && action.defId !== 'fairies_enchantment_pod') {
-                        return total;
-                    }
-
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.sumBaseOngoingsMatchingRuntimeDefId(ctx, 'fairies_enchantment', (action) => {
                     const mode = action.metadata?.fairiesEnchantmentMode;
-                    if (mode === 'plus') return total + 1;
-                    if (mode === 'minus') return total - 1;
-                    return total;
-                }, 0)
+                    if (mode === 'plus') return 1;
+                    if (mode === 'minus') return -1;
+                    return 0;
+                })
             ),
         },
     ]);
@@ -402,36 +380,6 @@ function registerYuanhouModifiers(): void {
             },
         },
         {
-            sourceDefId: 'shapeshifters_copycat_copied_power',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                if (!matchesDefId(ctx.minion, 'shapeshifters_copycat')) return 0;
-                if (ctx.minion.metadata?.copiedAbilityUntilTurn !== ctx.state.turnNumber) return 0;
-                const copiedDefId = ctx.minion.metadata?.copiedAbilityDefId;
-                if (copiedDefId === 'shapeshifters_mimic') {
-                    return getHighestPrintedPower(ctx.state) - getCardPrintedPower(ctx.minion.defId);
-                }
-                if (copiedDefId === 'cyborg_apes_furious_george') {
-                    return ctx.minion.attachedActions.length;
-                }
-                return 0;
-            },
-        },
-        {
-            sourceDefId: 'shapeshifters_cellular_bonding_copied_power',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                const bondingCardUid = ctx.minion.metadata?.cellularBondingCardUid;
-                const copiedDefId = ctx.minion.metadata?.cellularBondingCopiedActionDefId;
-                if (typeof bondingCardUid !== 'string' || typeof copiedDefId !== 'string') return 0;
-                if (!ctx.minion.attachedActions.some(action => action.uid === bondingCardUid)) return 0;
-                if (copiedDefId === 'shapeshifters_splice_as_nice') return 2;
-                if (copiedDefId === 'cyborg_apes_cyberevolution') return 3;
-                if (copiedDefId === 'cyborg_apes_juiced_up') return ctx.minion.attachedActions.length * 2;
-                return 0;
-            },
-        },
-        {
             sourceDefId: 'cyborg_apes_furious_george',
             podStrategy: 'selfManaged',
             modifier: (ctx: PowerModifierContext) => {
@@ -439,23 +387,55 @@ function registerYuanhouModifiers(): void {
                 return ctx.minion.attachedActions.length;
             },
         },
+    ]);
+
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'shapeshifters_copycat_copied_power',
+            variantPolicy: 'baseOnly',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'shapeshifters_copycat')) return 0;
+                if (ctx.minion.metadata?.copiedAbilityUntilTurn !== ctx.state.turnNumber) return 0;
+                const copiedDefId = ctx.minion.metadata?.copiedAbilityDefId;
+                if (helpers.matchesRuntimeDefId(copiedDefId, 'shapeshifters_mimic')) {
+                    return getHighestPrintedPower(ctx.state) - getCardPrintedPower(ctx.minion.defId);
+                }
+                if (helpers.matchesRuntimeDefId(copiedDefId, 'cyborg_apes_furious_george')) {
+                    return ctx.minion.attachedActions.length;
+                }
+                return 0;
+            },
+        },
+        {
+            sourceDefId: 'shapeshifters_cellular_bonding_copied_power',
+            variantPolicy: 'baseOnly',
+            compute: (ctx, helpers) => {
+                const bondingCardUid = ctx.minion.metadata?.cellularBondingCardUid;
+                const copiedDefId = ctx.minion.metadata?.cellularBondingCopiedActionDefId;
+                if (typeof bondingCardUid !== 'string' || typeof copiedDefId !== 'string') return 0;
+                if (!ctx.minion.attachedActions.some(action => action.uid === bondingCardUid)) return 0;
+                if (helpers.matchesRuntimeDefId(copiedDefId, 'shapeshifters_splice_as_nice')) return 2;
+                if (helpers.matchesRuntimeDefId(copiedDefId, 'cyborg_apes_cyberevolution')) return 3;
+                if (helpers.matchesRuntimeDefId(copiedDefId, 'cyborg_apes_juiced_up')) return ctx.minion.attachedActions.length * 2;
+                return 0;
+            },
+        },
         {
             sourceDefId: 'cyborg_apes_juiced_up',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => (
-                ctx.minion.attachedActions.reduce((total, action) => {
-                    if (action.defId !== 'cyborg_apes_juiced_up' && action.defId !== 'cyborg_apes_juiced_up_pod') return total;
-                    return total + (ctx.minion.attachedActions.length * 2);
-                }, 0)
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.countMinionAttachmentsMatchingRuntimeDefId(ctx, 'cyborg_apes_juiced_up')
+                * helpers.getMinionAttachmentCount(ctx)
+                * 2
             ),
         },
         {
             sourceDefId: 'base_monkey_lab',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
+            variantPolicy: 'baseOnly',
+            compute: (ctx, helpers) => {
                 if (ctx.base.defId !== 'base_monkey_lab') return 0;
                 if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
-                return ctx.minion.attachedActions.length;
+                return helpers.getMinionAttachmentCount(ctx);
             },
         },
     ]);

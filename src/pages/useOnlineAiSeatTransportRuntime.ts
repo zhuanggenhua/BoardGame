@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { buildAiProgressMarker } from '../engine/transport/react';
 import { GameTransportClient } from '../engine/transport/client';
-import type { GameEngineConfig } from '../engine/transport/server';
+import type { OnlineAiRecoveryEngineConfig } from '../engine/transport/onlineAiRecovery';
 import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';
 import { onAppVisible } from '../lib/mobile/appVisibility';
@@ -11,7 +11,7 @@ import {
     resolveOnlineAiEffectiveSeatStates,
     shouldRetainOnlineAiSeatOverrideAfterLatestState,
 } from './onlineAiRecovery';
-import type { ManualAiSeatDispatch } from './onlineManualFactionSelectionBridge';
+import type { ManualSetupSeatDispatch } from './onlineManualSetup.types';
 import {
     aiRuntimeTruthLogger,
     emitAiRuntimeTruth,
@@ -56,11 +56,11 @@ export type OnlineAiSeatTransportRuntime = {
 export function useOnlineAiSeatTransportRuntime(args: {
     server: string;
     matchId: string;
-    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig: OnlineAiRecoveryEngineConfig;
     seatControllers: Record<string, AiSeatController>;
     seatCredentials: Record<string, string>;
     state: MatchState<unknown> | null;
-    onManualFactionDispatchReady?: (handler: ManualAiSeatDispatch | null) => void;
+    onManualSetupDispatchReady?: (handler: ManualSetupSeatDispatch | null) => void;
 }) {
     const {
         server,
@@ -69,7 +69,7 @@ export function useOnlineAiSeatTransportRuntime(args: {
         seatControllers,
         seatCredentials,
         state,
-        onManualFactionDispatchReady,
+        onManualSetupDispatchReady,
     } = args;
     const clientsRef = useRef<Record<string, GameTransportClient>>({});
     const [connectionVersion, setConnectionVersion] = useState(0);
@@ -89,11 +89,11 @@ export function useOnlineAiSeatTransportRuntime(args: {
     }, []);
 
     useEffect(() => {
-        if (!onManualFactionDispatchReady) {
+        if (!onManualSetupDispatchReady) {
             return;
         }
 
-        const dispatchManualAiCommand: ManualAiSeatDispatch = (playerId, type, payload) => {
+        const dispatchManualSetupCommand: ManualSetupSeatDispatch = (playerId, type, payload) => {
             const client = clientsRef.current[playerId];
             if (!client?.isConnected) {
                 return false;
@@ -102,11 +102,11 @@ export function useOnlineAiSeatTransportRuntime(args: {
             return true;
         };
 
-        onManualFactionDispatchReady(dispatchManualAiCommand);
+        onManualSetupDispatchReady(dispatchManualSetupCommand);
         return () => {
-            onManualFactionDispatchReady(null);
+            onManualSetupDispatchReady(null);
         };
-    }, [onManualFactionDispatchReady]);
+    }, [onManualSetupDispatchReady]);
 
     const getSeatLatestState = useCallback((playerId: string): MatchState<unknown> | null => {
         const latestState = clientsRef.current[playerId]?.latestState;

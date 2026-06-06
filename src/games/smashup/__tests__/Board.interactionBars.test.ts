@@ -14,11 +14,12 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain("fixed inset-x-0 flex justify-center pointer-events-auto");
     });
 
-    it('普通 hand prompt 仍由手牌直选承接，响应交互不应复用这条分流', () => {
+    it('普通 hand prompt 仍由手牌直选承接，普通 reaction_choose button prompt 不应被整体排除出 PromptOverlay', () => {
         const source = readBoardSource();
         expect(source).toContain('isDirectHandSelectPrompt && handSelectExtraOptions.length > 0');
-        expect(source).toContain('const shouldRender = !isReactionChoicePrompt');
-        expect(source).toContain('isDiscardMode={needDiscard || isDirectHandSelectPrompt}');
+        expect(source).toContain('const shouldRender = !isDirectHandSelectPrompt');
+        expect(source).not.toContain('const shouldRender = !isReactionChoicePrompt');
+        expect(source).toContain('isDiscardMode={needDiscard}');
         expect(source).not.toContain('isHandDrivenPrompt');
         expect(source).not.toContain('isReactionDirectHandPrompt');
     });

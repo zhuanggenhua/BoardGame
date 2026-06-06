@@ -1,5 +1,7 @@
 import {
     isManualSetupSelectionEnabledForSeat,
+    normalizeSeatController,
+    withManualSetupSelectionAliases,
     type AiSeatController,
     type ManualSetupSeatControllerLike,
 } from '../ai';
@@ -55,6 +57,39 @@ function normalizeOnlineAiWatchdogSeatControllerType(
     return 'human';
 }
 
+function buildOnlineAiWatchdogSeatController(args: {
+    gameId: string;
+    controller: SetupSeatController;
+    gameManifests: GameManifestIndex;
+}): OnlineAiWatchdogSeatController {
+    const { gameId, controller, gameManifests } = args;
+    const normalizedType = normalizeOnlineAiWatchdogSeatControllerType(
+        gameId,
+        controller,
+        gameManifests,
+    );
+
+    if (normalizedType === 'human' || !controller) {
+        return { type: 'human' };
+    }
+
+    return normalizeSeatController(
+        {
+            ...(controller as {
+                policyId?: string;
+                fallbackPolicyId?: string;
+                providerId?: string;
+                minimumActionDelayMs?: number;
+            }),
+            type: normalizedType,
+            ...(isManualSetupSelectionEnabledForSeat(controller)
+                ? withManualSetupSelectionAliases({})
+                : {}),
+        },
+        gameManifests[gameId]?.ai,
+    );
+}
+
 export function resolveOnlineAiWatchdogSeatControllers(args: {
     gameId: string;
     playerIds: string[];
@@ -70,26 +105,13 @@ export function resolveOnlineAiWatchdogSeatControllers(args: {
 
     const seatControllers = Object.fromEntries(
         args.playerIds.map((playerId) => {
-            const controller = rawSeatControllers?.[playerId];
-            const normalizedType = normalizeOnlineAiWatchdogSeatControllerType(
-                args.gameId,
-                controller,
-                args.gameManifests,
-            );
             return [
                 playerId,
-                normalizedType === 'human'
-                    ? { type: 'human' as const }
-                    : {
-                        ...(controller as { policyId?: string; fallbackPolicyId?: string }),
-                        type: normalizedType,
-                        ...(isManualSetupSelectionEnabledForSeat(controller)
-                            ? {
-                                manualSetupSelection: true,
-                                manualFactionSelection: true,
-                            }
-                            : {}),
-                    },
+                buildOnlineAiWatchdogSeatController({
+                    gameId: args.gameId,
+                    controller: rawSeatControllers?.[playerId],
+                    gameManifests: args.gameManifests,
+                }),
             ];
         }),
     ) as Record<string, OnlineAiWatchdogSeatController>;

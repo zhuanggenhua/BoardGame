@@ -3,10 +3,12 @@ import { DICETHRONE_STATUS_ATLAS_IDS, STATUS_IDS, TOKEN_IDS } from '../../domain
 import { RESOURCE_IDS } from '../../domain/resources';
 import { GUNSLINGER_SFX_BOUNTY, GUNSLINGER_SFX_LOADED } from './abilities';
 
+const tokenText = (id: string, field: 'name' | 'description') => `tokens.${id}.${field}`;
+
 export const GUNSLINGER_TOKENS: TokenDef[] = [
     {
         id: TOKEN_IDS.EVASIVE,
-        name: '闪避',
+        name: tokenText(TOKEN_IDS.EVASIVE, 'name'),
         colorTheme: 'from-cyan-500 to-blue-500',
         description: [
             '受到伤害时可消耗 1 个闪避并掷 1 颗骰子。',
@@ -29,7 +31,7 @@ export const GUNSLINGER_TOKENS: TokenDef[] = [
     },
     {
         id: STATUS_IDS.KNOCKDOWN,
-        name: '击倒',
+        name: tokenText(STATUS_IDS.KNOCKDOWN, 'name'),
         colorTheme: 'from-red-600 to-orange-500',
         description: [
             '攻击掷骰阶段前可以花费 2 CP 移除此状态。',
@@ -48,7 +50,7 @@ export const GUNSLINGER_TOKENS: TokenDef[] = [
     },
     {
         id: TOKEN_IDS.LOADED,
-        name: '装填',
+        name: tokenText(TOKEN_IDS.LOADED, 'name'),
         colorTheme: 'from-amber-500 to-orange-500',
         description: [
             '攻击掷骰阶段结束时可消耗 1 个装填并掷 1 颗骰子。',
@@ -71,7 +73,7 @@ export const GUNSLINGER_TOKENS: TokenDef[] = [
     },
     {
         id: TOKEN_IDS.BOUNTY,
-        name: '赏金',
+        name: tokenText(TOKEN_IDS.BOUNTY, 'name'),
         colorTheme: 'from-yellow-500 to-amber-600',
         description: [
             '持有赏金的玩家受到攻击伤害时，伤害 +1。',

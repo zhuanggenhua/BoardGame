@@ -936,6 +936,34 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(getEffectivePower(core, copycat, 0)).toBe(4);
     });
 
+    it('变形者：Copycat 复制 POD 版狂怒的乔治时仍应按附着行动数量获得持续力量', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_the_vats', [
+                makeMinion('copycat', 'shapeshifters_copycat', '0', 2, {
+                    attachedActions: [
+                        { uid: 'action-a', defId: 'cyborg_apes_shielding', ownerId: '0' },
+                        { uid: 'action-b', defId: 'cyborg_apes_missing_uplink', ownerId: '0' },
+                    ],
+                    metadata: {
+                        copiedAbilityDefId: 'cyborg_apes_furious_george_pod',
+                        copiedAbilityUntilTurn: 1,
+                    },
+                }),
+            ])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        expect(getEffectivePower(core, core.bases[0].minions[0], 0)).toBe(4);
+    });
+
     it('变形者：Copycat 复制 Mimic 后应按最高印刷力量而非有效力量动态重算', () => {
         const core = {
             players: {
@@ -1784,6 +1812,35 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         };
 
         expect(getEffectivePower(afterBondingGone, afterBondingGone.bases[0].minions[0], 0)).toBe(2);
+    });
+
+    it('变形者：细胞结合复制 POD 版 Juiced Up 时仍应按宿主全部附着行动数量给 +2 倍增', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_the_vats', [
+                makeMinion('host', 'sharks_mako', '0', 2, {
+                    attachedActions: [
+                        { uid: 'cell-a', defId: 'shapeshifters_cellular_bonding', ownerId: '0' },
+                        { uid: 'shield-a', defId: 'cyborg_apes_shielding', ownerId: '0' },
+                        { uid: 'uplink-a', defId: 'cyborg_apes_missing_uplink', ownerId: '0' },
+                    ],
+                    metadata: {
+                        cellularBondingCardUid: 'cell-a',
+                        cellularBondingCopiedActionDefId: 'cyborg_apes_juiced_up_pod',
+                    },
+                }),
+            ])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        expect(getEffectivePower(core, core.bases[0].minions[0], 0)).toBe(8);
     });
 
     it('变形者：细胞结合复制未显式适配的 Daisy Chain 持续力量时不应隐式代理 power surface', () => {

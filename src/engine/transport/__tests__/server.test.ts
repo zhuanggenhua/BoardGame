@@ -18941,6 +18941,81 @@ describe('GameTransportServer（离座与重连）', () => {
         }
     });
 
+    it('online AI watchdog 在 defensiveRoll 且当前真人正是 defender 时，不应因 legal-action probe 访问未定义 phase 变量而抛错', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const gameId = 'test-watchdog-defensive-roll-defender-human-no-throw';
+
+        await storage.createMatch('match-watchdog-defensive-roll-defender-human-no-throw', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '0',
+                        currentPlayerIndex: 0,
+                        turnOrder: ['0', '1'],
+                        pendingAttack: { defenderId: '0' },
+                    },
+                    sys: {
+                        phase: 'defensiveRoll',
+                        turnNumber: 4,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: gameId,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai' },
+                },
+            }),
+        });
+
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfigWithId(gameId),
+            onlineAiRecovery: {
+                ...createEngineConfigWithId(gameId).onlineAiRecovery,
+                humanTurnLegalActionProbePhases: ['defensiveRoll'],
+            },
+        };
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [engineConfig],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            resolveOnlineAiRecoveryCandidate: (
+                match: any,
+                seatControllers: Record<string, { type: 'human' | 'local-ai'; policyId?: string }>,
+            ) => Promise<unknown>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-defensive-roll-defender-human-no-throw');
+        await expect(serverInternal.resolveOnlineAiRecoveryCandidate(match, {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai' },
+        })).resolves.toBeNull();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
     it('online AI watchdog 在 AI active 的 targetingRoll 且 legalActions 为空时，不得 fallback 到裸 ADVANCE_PHASE', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

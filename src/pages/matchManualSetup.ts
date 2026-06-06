@@ -1,7 +1,9 @@
 import type { MatchState } from '../engine/types';
 import { isManualSetupSelectionEnabledForSeat, type AiSeatController } from '../engine/ai';
-import type { GameEngineConfig } from '../engine/transport/server';
-import { resolveOnlineAiCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
+import {
+    resolveOnlineAiCurrentPlayerId,
+    type OnlineAiRecoveryEngineConfig,
+} from '../engine/transport/onlineAiRecovery';
 
 export type ManualSetupSelectionActionKind =
     | 'select-faction'
@@ -14,7 +16,7 @@ const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
     'setup-select-character',
 ]);
 
-type ManualSetupRecoveryEngineConfig = Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+type ManualSetupRecoveryEngineConfig = OnlineAiRecoveryEngineConfig;
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);

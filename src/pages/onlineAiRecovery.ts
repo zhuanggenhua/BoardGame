@@ -1,5 +1,6 @@
 import { getGameImplementation } from '../games/registry';
 import { buildAiProgressMarker } from '../engine/transport/react';
+import type { OnlineAiRecoveryEngineConfig } from '../engine/transport/onlineAiRecovery';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import {
@@ -18,7 +19,7 @@ const STALE_SEAT_RECOVERY_MIN_INTERVAL_MS = 1200;
 function shouldPreferManualLegalActionRecoveryForPublicPregame(args: {
     sharedState: MatchState<unknown>;
     candidate: NonNullable<ReturnType<typeof resolveManualForceEndAiPhase>>;
-    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig: OnlineAiRecoveryEngineConfig;
 }): boolean {
     if (args.candidate.reason !== 'active-turn') {
         return false;
@@ -32,7 +33,7 @@ function shouldPreferManualLegalActionRecoveryForPublicPregame(args: {
 }
 
 export async function resolveManualOnlineAiRecovery(args: {
-    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig: OnlineAiRecoveryEngineConfig;
     matchId: string;
     sharedState: MatchState<unknown>;
     seatControllers: Record<string, AiSeatController>;
@@ -187,7 +188,7 @@ export function buildOnlineAiForceSkipTrackerKey(args: {
 export function buildOnlineAiIdleSeatRecoveryKey(args: {
     playerId: string;
     authoritativeState: MatchState<unknown>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig?: OnlineAiRecoveryEngineConfig;
 }): string {
     return [
         'idle-active-ai',
@@ -208,7 +209,7 @@ export function buildOnlineAiSubmitBlockedRecoveryKey(args: {
         };
     };
     authoritativeState: MatchState<unknown>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig?: OnlineAiRecoveryEngineConfig;
 }): string {
     return [
         'submit-blocked-ai',
@@ -224,7 +225,7 @@ export function buildOnlineAiSubmitBlockedRecoveryKey(args: {
 
 export function buildOnlineAiSeamAwareProgressMarker(args: {
     state: MatchState<unknown>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig?: OnlineAiRecoveryEngineConfig;
 }): string {
     return buildAiProgressMarker(args.state, { engineConfig: args.engineConfig });
 }
@@ -232,7 +233,7 @@ export function buildOnlineAiSeamAwareProgressMarker(args: {
 export function buildOnlineAiSeamAwareAttemptMarkers(args: {
     sharedState: MatchState<unknown>;
     seatState: MatchState<unknown> | null | undefined;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig?: OnlineAiRecoveryEngineConfig;
 }): {
     sharedMarker: string;
     seatMarker: string | null;
@@ -257,7 +258,7 @@ export function resolveOnlineAiEffectiveSeatState(args: {
     playerId: string;
     seatStateOverrides: OnlineAiSeatStateRecord;
     seatLatestStates: OnlineAiSeatStateRecord;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig?: OnlineAiRecoveryEngineConfig;
 }): MatchState<unknown> | null {
     const override = args.seatStateOverrides[args.playerId];
     const latestState = args.seatLatestStates[args.playerId] ?? null;
@@ -278,7 +279,7 @@ export function resolveOnlineAiEffectiveSeatStates(args: {
     playerIds: string[];
     seatStateOverrides: OnlineAiSeatStateRecord;
     seatLatestStates: OnlineAiSeatStateRecord;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig?: OnlineAiRecoveryEngineConfig;
 }): Record<string, MatchState<unknown> | null> {
     return Object.fromEntries(
         args.playerIds.map((playerId) => [
@@ -296,7 +297,7 @@ export function resolveOnlineAiEffectiveSeatStates(args: {
 export function shouldStageOnlineAiSeatOverrideFromConfirmedState(args: {
     authoritativeState: MatchState<unknown> | unknown;
     latestSeatState: MatchState<unknown> | null | undefined;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig?: OnlineAiRecoveryEngineConfig;
 }): boolean {
     const authoritativeState = args.authoritativeState && typeof args.authoritativeState === 'object'
         ? args.authoritativeState as MatchState<unknown>
@@ -327,7 +328,7 @@ function hasSeatScopedBlockingSurface(state: MatchState<unknown> | null): boolea
 export function shouldRetainOnlineAiSeatOverrideAfterLatestState(args: {
     seatStateOverride: MatchState<unknown> | null | undefined;
     latestSeatState: MatchState<unknown> | null | undefined;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig?: OnlineAiRecoveryEngineConfig;
 }): boolean {
     const override = args.seatStateOverride ?? null;
     if (!override) {

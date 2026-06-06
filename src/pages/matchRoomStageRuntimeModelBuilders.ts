@@ -38,8 +38,8 @@ function buildMatchRoomOnlineAiRuntimeModel(args: {
         seatCredentials: ai.seatCredentials,
         autoAcceptedPlayerIds: ai.autoAcceptedPlayerIds,
         onForceEndAiPhaseReady: ai.onForceEndAiPhaseReady,
-        onManualFactionDispatchReady: ai.onManualFactionDispatchReady,
-        dispatchManualAiCommand: ai.dispatchManualAiCommand,
+        onManualSetupDispatchReady: ai.onManualSetupDispatchReady,
+        dispatchManualSetupCommand: ai.dispatchManualSetupCommand,
     };
 }
 
@@ -88,7 +88,7 @@ function buildMatchRoomOnlineSeatBridgeModel(args: {
 
     return {
         seatControllers: seatRuntime.seatControllers,
-        dispatchManualAiCommand: seatRuntime.dispatchManualAiCommand,
+        dispatchManualSetupCommand: seatRuntime.dispatchManualSetupCommand,
         engineConfig: seatRuntime.engineConfig,
         ai: aiRuntime,
     };

@@ -8,7 +8,7 @@ export const TREANT_SYMBOLS = TREANT_DICE_FACE_IDS;
 
 export const treantDiceDefinition: DiceDefinition = {
     id: 'treant-dice',
-    name: 'Treant Dice',
+    name: 'config.dice.treant.name',
     sides: 6,
     category: 'hero',
     faces: [

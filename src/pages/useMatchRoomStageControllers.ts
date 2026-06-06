@@ -8,7 +8,7 @@ import {
     shouldShowOnlineGameErrorToast,
     TUTORIAL_SILENT_ERRORS,
 } from './matchRoomRuntime';
-import type { ManualAiSeatDispatch } from './onlineManualFactionSelectionBridge';
+import type { ManualSetupSeatDispatch } from './onlineManualSetup.types';
 
 export function useMatchRoomStageControllers(args: {
     gameId?: string;
@@ -47,9 +47,9 @@ export function useMatchRoomStageControllers(args: {
         warning(resolveCommandError(i18n, error, gameId), undefined, { dedupeKey: `game.rejected.${error}` });
     }, [gameId, i18n, warning]);
 
-    const [dispatchManualAiCommand, setDispatchManualAiCommand] = useState<ManualAiSeatDispatch | null>(null);
-    const handleManualFactionDispatchReady = useCallback((handler: ManualAiSeatDispatch | null) => {
-        setDispatchManualAiCommand(() => handler);
+    const [dispatchManualSetupCommand, setDispatchManualSetupCommand] = useState<ManualSetupSeatDispatch | null>(null);
+    const handleManualSetupDispatchReady = useCallback((handler: ManualSetupSeatDispatch | null) => {
+        setDispatchManualSetupCommand(() => handler);
     }, []);
 
     const [forceEndAiPhaseHandler, setForceEndAiPhaseHandler] = useState<(() => Promise<boolean>) | null>(null);
@@ -62,8 +62,8 @@ export function useMatchRoomStageControllers(args: {
         resetOnlineTransportError,
         handleGameError,
         handleCommandRejected,
-        dispatchManualAiCommand,
-        handleManualFactionDispatchReady,
+        dispatchManualSetupCommand,
+        handleManualSetupDispatchReady,
         forceEndAiPhaseHandler,
         handleForceEndAiPhaseReady,
     };

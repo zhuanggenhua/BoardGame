@@ -33,6 +33,7 @@ function magnifyFrameStyle(isBase: boolean): React.CSSProperties {
 export interface CardMagnifyTarget {
     defId: string;
     type: 'minion' | 'base' | 'action' | 'titan';
+    overlayDefId?: string;
 }
 
 interface Props {
@@ -68,7 +69,10 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
     const resolvedName = resolveCardName(def, t) || previewDefId;
     const resolvedText = resolveCardText(def, t);
     const isBase = target.type === 'base';
-    const previewRef = getSmashUpRendererPreviewRef(previewDefId, { forceShowOverlay: true });
+    const previewRef = getSmashUpRendererPreviewRef(previewDefId, {
+        forceShowOverlay: true,
+        overlayDefId: target.type === 'minion' ? target.overlayDefId : undefined,
+    });
 
     return (
         <MagnifyOverlay isOpen onClose={onClose} overlayTestId="su-card-magnify-overlay">

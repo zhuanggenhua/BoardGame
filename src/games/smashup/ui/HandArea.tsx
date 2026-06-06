@@ -50,6 +50,8 @@ type Props = {
     isDiscardMode?: boolean;
     discardSelection?: Set<string>;
     disableInteraction?: boolean;
+    /** 仅高亮当前允许直接点击的手牌 uid 集合 */
+    highlightCardUids?: Set<string>;
     /** 被禁用的卡牌 uid 集合（置灰 + 摇头） */
     disabledCardUids?: Set<string>;
     isOpponentView?: boolean;
@@ -67,6 +69,7 @@ type HandCardProps = {
     isSelected: boolean;
     isDiscardSelected: boolean;
     isDiscardMode: boolean;
+    isHighlighted: boolean;
     disableInteraction: boolean;
     /** 此卡被单独禁用（置灰 + 摇头） */
     isDisabled: boolean;
@@ -96,6 +99,7 @@ const HandCard: React.FC<HandCardProps> = ({
     isSelected,
     isDiscardSelected,
     isDiscardMode,
+    isHighlighted,
     disableInteraction,
     isDisabled,
     isOpponentView,
@@ -238,6 +242,7 @@ const HandCard: React.FC<HandCardProps> = ({
         const sum = card.uid.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
         return (sum % 4) - 2; // -2 to 2 degrees
     }, [card.uid]);
+    const isSelectionContext = isDiscardMode || isHighlighted;
 
     // Dynamic Spacing: 
     // Standard gap: 0.8vw
@@ -321,7 +326,11 @@ const HandCard: React.FC<HandCardProps> = ({
                 ${isDisabled ? 'opacity-40 grayscale cursor-not-allowed' : ''}
                 ${isSelected ? 'ring-4 ring-green-400 shadow-[0_0_20px_rgba(74,222,128,0.5)]' : 'shadow-black/30'}
                 ${isDiscardSelected ? 'ring-4 ring-green-500 shadow-[0_0_14px_rgba(34,197,94,0.4)]' : ''}
-                ${!isSelected && !isDiscardSelected && !isDisabled && !isOpponentView ? (isDiscardMode ? 'ring-2 ring-green-500/35' : 'hover:ring-2 hover:ring-green-200/85 hover:shadow-xl') : ''}
+                ${!isSelected && !isDiscardSelected && !isOpponentView
+                    ? isSelectionContext
+                        ? 'ring-2 ring-green-500/35 shadow-[0_0_12px_rgba(34,197,94,0.22)]'
+                        : (!isDisabled ? 'hover:ring-2 hover:ring-green-200/85 hover:shadow-xl' : '')
+                    : ''}
             `}>
                 {/* Detail View Button (Magnifying Glass) - Appears on hover, inside card top-right */}
                 {!isOpponentView && (
@@ -377,6 +386,7 @@ export const HandArea: React.FC<Props> = ({
     isDiscardMode = false,
     discardSelection,
     disableInteraction = false,
+    highlightCardUids,
     disabledCardUids,
     isOpponentView = false,
     interactionMode = 'click',
@@ -455,6 +465,7 @@ export const HandArea: React.FC<Props> = ({
                                 isSelected={selectedCardUid === card.uid}
                                 isDiscardSelected={!!discardSelection?.has(card.uid)}
                                 isDiscardMode={isDiscardMode}
+                                isHighlighted={!!highlightCardUids?.has(card.uid)}
                                 disableInteraction={disableInteraction}
                                 isDisabled={!!disabledCardUids?.has(card.uid)}
                                 isOpponentView={false}

@@ -749,14 +749,24 @@ test.describe('Lobby E2E', () => {
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(card).toBeVisible();
 
+        const mobileViewport = page.viewportSize();
         const mobileCardBox = await card.boundingBox();
         expect(mobileCardBox).not.toBeNull();
-        if (!mobileCardBox) {
+        expect(mobileViewport).not.toBeNull();
+        if (!mobileCardBox || !mobileViewport) {
             throw new Error('首页活跃房间浮层未正确渲染，无法校验移动端布局');
         }
 
         expect(mobileCardBox.x).toBeGreaterThanOrEqual(8);
         expect(mobileCardBox.x + mobileCardBox.width).toBeLessThanOrEqual(390 - 8);
+        expect(Math.abs(mobileCardBox.x + mobileCardBox.width / 2 - mobileViewport.width / 2)).toBeLessThan(4);
+
+        const mobileBannerPosition = await banner.evaluate(node => window.getComputedStyle(node).position);
+        expect(mobileBannerPosition).toBe('fixed');
+
+        const mobileBottomGap = mobileViewport.height - (mobileCardBox.y + mobileCardBox.height);
+        expect(mobileBottomGap).toBeGreaterThanOrEqual(8);
+        expect(mobileBottomGap).toBeLessThanOrEqual(24);
 
         const actionButtons = actions.getByRole('button');
         await expect(actionButtons).toHaveCount(2);
@@ -772,17 +782,6 @@ test.describe('Lobby E2E', () => {
         const isSingleRowCompact = Math.abs(secondButtonBox.y - firstButtonBox.y) < 6 && secondButtonBox.x > firstButtonBox.x;
         const isWrappedStack = secondButtonBox.y > firstButtonBox.y + 2;
         expect(isSingleRowCompact || isWrappedStack).toBeTruthy();
-
-        const firstVisibleGameCard = page.locator('[data-game-id]:visible').first();
-        await expect(firstVisibleGameCard).toBeVisible();
-        const firstVisibleGameCardBox = await firstVisibleGameCard.boundingBox();
-        expect(firstVisibleGameCardBox).not.toBeNull();
-
-        if (!firstVisibleGameCardBox) {
-            throw new Error('首页游戏卡片未正确渲染，无法校验移动端活跃房间卡是否仍遮挡列表');
-        }
-
-        expect(mobileCardBox.y + mobileCardBox.height).toBeLessThanOrEqual(firstVisibleGameCardBox.y - 4);
 
         const hasHorizontalOverflow = await page.evaluate(() => {
             const maxScrollWidth = Math.max(

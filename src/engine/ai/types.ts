@@ -50,33 +50,37 @@ export interface AiDifficultyProfile {
     evaluatorProfile: 'basic' | 'balanced' | 'strong' | 'expert';
 }
 
+type ManualSetupSelectionFlagFields<TValue> = {
+    manualSetupSelection?: TValue;
+    /**
+     * @deprecated 旧命名仍兼容；新游戏应优先使用 manualSetupSelection。
+     */
+    manualFactionSelection?: TValue;
+};
+
+export type ManualSetupSeatControllerLike = {
+    type?: unknown;
+} & ManualSetupSelectionFlagFields<unknown>;
+
+export type AiManualSetupSelectionFlags = ManualSetupSelectionFlagFields<boolean>;
+
 export type AiSeatController =
     | { type: 'human' }
-    | {
+    | ({
         type: 'local-ai';
         policyId?: string;
         fallbackPolicyId?: string;
         difficulty?: AiDifficultyLevel;
         minimumActionDelayMs?: number;
-        manualSetupSelection?: boolean;
-        /**
-         * @deprecated 旧命名仍兼容；新游戏应优先使用 manualSetupSelection。
-         */
-        manualFactionSelection?: boolean;
-    }
-    | {
+    } & AiManualSetupSelectionFlags)
+    | ({
         type: 'remote-ai';
         providerId: string;
         fallbackPolicyId?: string;
         timeoutMs?: number;
         retryCount?: number;
         minimumActionDelayMs?: number;
-        manualSetupSelection?: boolean;
-        /**
-         * @deprecated 旧命名仍兼容；新游戏应优先使用 manualSetupSelection。
-         */
-        manualFactionSelection?: boolean;
-    };
+    } & AiManualSetupSelectionFlags);
 
 export interface AiInteractionOptionSnapshot {
     id: string;

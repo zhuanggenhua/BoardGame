@@ -90,6 +90,7 @@ import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
 import { RevealOverlay } from './ui/RevealOverlay';
 import { useSmashUpOverlay } from './ui/SmashUpOverlayContext';
 import {
+    getSmashUpDirectHandPromptCardState,
     isSmashUpPromptOwnedByPlayer,
     resolveSmashUpHandInteractionMode,
     resolveSmashUpHandPromptUiMode,
@@ -594,20 +595,18 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 手牌交互中不可选的 uid 集合（置灰）
     // 框架层已支持通用刷新（所有交互自动刷新），此处只处理明确禁用的选项
-    const handPromptDisabledUids = useMemo<Set<string> | undefined>(() => {
-        if (!isDirectHandSelectPrompt || !currentPrompt || !myPlayer) return undefined;
-
-        // 只标记选项中明确禁用的卡牌（opt.disabled === true）
-        const disabled = new Set<string>();
-        for (const opt of currentPrompt.options) {
-            if (opt.disabled) {
-                const val = opt.value as { cardUid?: string } | undefined;
-                if (val?.cardUid) disabled.add(val.cardUid);
-            }
+    const handPromptCardState = useMemo(() => {
+        if (!currentPrompt || !myPlayer) {
+            return { selectableCardUids: new Set<string>(), disabledCardUids: undefined as Set<string> | undefined };
         }
-
-        return disabled.size > 0 ? disabled : undefined;
-    }, [isDirectHandSelectPrompt, currentPrompt, myPlayer]);
+        return getSmashUpDirectHandPromptCardState({
+            currentPrompt,
+            playerID,
+            targetType: currentPromptTargetType,
+            hand: myPlayer.hand,
+        });
+    }, [currentPrompt, currentPromptTargetType, myPlayer, playerID]);
+    const handPromptSelectableUids = handPromptCardState.selectableCardUids;
 
     const handPromptTitanUids = useMemo<Set<string>>(() => {
         if (!isDirectHandSelectPrompt || !currentPrompt) return new Set();
@@ -3522,7 +3521,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     onOngoingSelect={handleOngoingSelect}
                                     onBuriedCardSelect={handleBuriedCardSelect}
                                     selectableOngoingUids={isOngoingSelectPrompt ? selectableOngoingUids : undefined}
-                                    onViewMinion={(defId) => setViewingCard({ defId, type: 'minion' })}
+                                    onViewMinion={(defId, options) => setViewingCard({ defId, type: 'minion', overlayDefId: options?.overlayDefId })}
                                     onViewAction={handleViewAction}
                                     onViewBase={(defId) => setViewingCard({ defId, type: 'base' })}
                                     onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
@@ -3641,8 +3640,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     selectedCardUid={selectedCardUid}
                                     onCardSelect={handleCardClick}
                                     compactLayout={isMobileViewport}
-                                    isDiscardMode={needDiscard || isDirectHandSelectPrompt}
+                                    isDiscardMode={needDiscard}
                                     discardSelection={discardSelection}
+                                    highlightCardUids={isDirectHandSelectPrompt ? handPromptSelectableUids : undefined}
                                     // 教学模式下，当不允许打出随从和行动时禁用手牌交互（摇头反馈）
                                     disableInteraction={
                                         shouldLockNormalHandInteraction ||
@@ -3651,7 +3651,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         !isTutorialCommandAllowed(SU_COMMANDS.PLAY_MINION) &&
                                         !isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)
                                     }
-                                    disabledCardUids={meFirstDisabledUids ?? handPromptDisabledUids ?? tutorialDisabledUids}
+                                    disabledCardUids={meFirstDisabledUids ?? tutorialDisabledUids}
                                     onCardView={handleViewCardDetail}
                                     isOpponentView={isAlternateView}
                                     interactionMode={handInteractionMode}
@@ -3824,8 +3824,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* PROMPT OVERLAY（手牌弃牌/基地选择/随从选择/行动卡选择/弃牌堆出牌交互时隐藏，由对应区域直接处理） */}
                 {(() => {
-                    const shouldRender = !isReactionChoicePrompt
-                        && !isDirectHandSelectPrompt
+                    const shouldRender = !isDirectHandSelectPrompt
                         && !isBaseSelectPrompt
                         && !isBuriedSelectPrompt
                         && !isMinionSelectPrompt

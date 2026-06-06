@@ -5,7 +5,7 @@ export const ZHANSHUJIA_SYMBOLS = ZHANSHUJIA_DICE_FACE_IDS;
 
 export const zhanshujiaDiceDefinition: DiceDefinition = {
     id: 'zhanshujia-dice',
-    name: 'Tactician Dice',
+    name: 'config.dice.zhanshujia.name',
     sides: 6,
     category: 'hero',
     faces: [

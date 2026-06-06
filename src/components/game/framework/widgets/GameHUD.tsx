@@ -43,7 +43,7 @@ import { generateId, copyToClipboard } from '../../../../lib/utils';
 import { OpponentOfflineBanner } from './OpponentOfflineBanner';
 import { logger } from '../../../../lib/logger';
 import { isNativeAndroidRuntime } from '../../../../lib/mobile/androidRuntime';
-import { GameHudRuntimeSettingsSection, shouldSuppressGameHudFab } from '../../../../games/gameHudRuntimeAdapter';
+import { GameHudRuntimeSettingsSection } from '../../../../games/gameHudRuntimeAdapter';
 import { OptimizedImage } from '../../../common/media/OptimizedImage';
 import { EmotePicker } from './EmotePicker';
 import { SeatEmoteOverlay } from './SeatEmoteOverlay';
@@ -332,12 +332,6 @@ export const GameHUD = ({
         const entries = undoState?.G?.sys?.actionLog?.entries ?? [];
         return buildActionLogRows(entries, { getPlayerLabel: getActionLogPlayerLabel });
     }, [getActionLogPlayerLabel, undoState?.G?.sys?.actionLog?.entries]);
-    const shouldSuppressFabMenu = useMemo(() => shouldSuppressGameHudFab({
-        gameId: _gameId,
-        mode,
-        state: undoState?.G ?? null,
-        playerId: myPlayerId,
-    }), [_gameId, mode, myPlayerId, undoState?.G]);
 
     const isSelfMessage = useCallback((message: MatchChatMessage) => {
         return isSelfChatMessage(message, myPlayerId, myDisplayName);
@@ -1139,8 +1133,8 @@ export const GameHUD = ({
 
     // 5.5 强制操作（将强制结束 AI / 强制去弹窗合并到一个展开面板）
     // 注意：这里要放在撤回之后 push，反转渲染后才会出现在“撤回上面”。
-    if (!isSetupPhase && (canForceEndAiPhase || canForceDismissPopup)) {
-        items.push({
+    const forceActionsItem: FabAction | null = !isSetupPhase && (canForceEndAiPhase || canForceDismissPopup)
+        ? {
             id: 'force-actions',
             icon: <AlertTriangle size={20} />,
             label: canForceEndAiPhase && canForceDismissPopup
@@ -1208,7 +1202,10 @@ export const GameHUD = ({
                     )}
                 </div>
             ),
-        });
+        }
+        : null;
+    if (forceActionsItem) {
+        items.push(forceActionsItem);
     }
 
     // 5.6 换位（位于操作日志与强制操作之间）
@@ -1251,14 +1248,12 @@ export const GameHUD = ({
                 />
             )}
             <SeatEmoteOverlay events={seatEmoteEvents} />
-            {!shouldSuppressFabMenu && (
-                <FabMenu
-                    isDark={true}
-                    items={items}
-                    position="bottom-right"
-                    zIndex={GAME_HUD_FAB_Z_INDEX}
-                />
-            )}
+            <FabMenu
+                isDark={true}
+                items={items}
+                position="bottom-right"
+                zIndex={GAME_HUD_FAB_Z_INDEX}
+            />
 
             {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
             {showFeedback && (

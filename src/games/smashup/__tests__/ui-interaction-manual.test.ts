@@ -69,10 +69,11 @@ function makeCard(uid: string, defId: string, owner: string, type: 'minion' | 'a
     return { uid, defId, owner, type };
 }
 
-function makeMinion(uid: string, defId: string, controller: string, power: number): MinionOnBase {
+function makeMinion(uid: string, defId: string, controller: string, power: number, metadata?: Record<string, unknown>): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
         basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
+        ...(metadata ? { metadata } : {}),
     };
 }
 
@@ -429,6 +430,85 @@ describe('SmashUp UI 交互验证', () => {
         const overlay = screen.getByTestId('su-card-text-overlay');
         expect(overlay.getAttribute('data-overlay-visibility')).toBe('hover');
         expect(overlay.className).toContain('group-hover:opacity-100');
+    });
+
+    it('模仿者会把目标卡图的下半部叠到自己的卡面上', () => {
+        render(
+            React.createElement(SmashUpCardRenderer, {
+                previewRef: {
+                    type: 'renderer',
+                    rendererId: 'smashup-card-renderer',
+                    payload: {
+                        defId: 'shapeshifters_copycat',
+                        cardUid: 'copycat-1',
+                        overlayDefId: 'cyborg_apes_furious_george',
+                    },
+                },
+            }),
+        );
+
+        const previews = screen.getAllByTestId('mock-card-preview');
+        expect(previews).toHaveLength(2);
+        expect(JSON.parse(previews[0].getAttribute('data-preview-ref') ?? 'null')).toMatchObject({
+            type: 'atlas',
+        });
+        expect(JSON.parse(previews[1].getAttribute('data-preview-ref') ?? 'null')).toEqual({
+            type: 'renderer',
+            rendererId: 'smashup-card-renderer',
+            payload: {
+                defId: 'cyborg_apes_furious_george',
+                cardUid: 'copycat-1',
+                disableHoverOverlay: true,
+            },
+        });
+        expect(screen.getByTestId('su-card-bottom-overlay')).toBeTruthy();
+    });
+
+    it('BaseZone 会把模仿者的下半部叠图信息传给渲染器和放大查看', () => {
+        const onViewMinion = vi.fn();
+        render(
+            React.createElement(BaseZone, {
+                base: makeBase('base_the_vats', [
+                    makeMinion('copycat-1', 'shapeshifters_copycat', '0', 2, {
+                        copiedAbilityDefId: 'cyborg_apes_furious_george',
+                    }),
+                ]),
+                baseIndex: 0,
+                core: makeState(),
+                turnOrder: ['0', '1'],
+                isDeployMode: false,
+                isMyTurn: true,
+                myPlayerId: '0',
+                dispatch: vi.fn(),
+                onClick: vi.fn(),
+                onViewMinion,
+                onViewAction: vi.fn(),
+                onViewBase: vi.fn(),
+                onViewTitan: vi.fn(),
+            }),
+        );
+
+        const previews = screen.getAllByTestId('mock-card-preview');
+        const minionPreview = previews.find((node) => (
+            (node.getAttribute('data-preview-ref') ?? '').includes('shapeshifters_copycat')
+        ));
+        expect(minionPreview).toBeTruthy();
+        expect(JSON.parse(minionPreview!.getAttribute('data-preview-ref') ?? 'null')).toEqual({
+            type: 'renderer',
+            rendererId: 'smashup-card-renderer',
+            payload: {
+                defId: 'shapeshifters_copycat',
+                cardUid: 'copycat-1',
+                overlayDefId: 'cyborg_apes_furious_george',
+            },
+        });
+
+        const inspectButton = document.querySelector('[data-minion-uid="copycat-1"] button');
+        expect(inspectButton).toBeTruthy();
+        fireEvent.click(inspectButton as Element);
+        expect(onViewMinion).toHaveBeenCalledWith('shapeshifters_copycat', {
+            overlayDefId: 'cyborg_apes_furious_george',
+        });
     });
 
     it('PromptOverlay 的卡牌选择模式应始终走 smashup-card-renderer（POD 卡也一样）', () => {

@@ -37,8 +37,8 @@ export type MatchRoomPageStageControllersModel = Pick<
     | 'resetOnlineTransportError'
     | 'handleGameError'
     | 'handleCommandRejected'
-    | 'dispatchManualAiCommand'
-    | 'handleManualFactionDispatchReady'
+    | 'dispatchManualSetupCommand'
+    | 'handleManualSetupDispatchReady'
     | 'forceEndAiPhaseHandler'
     | 'handleForceEndAiPhaseReady'
 >;
@@ -120,8 +120,8 @@ export type MatchRoomOnlineSeatRuntimeAdapter = {
     seatCredentials: MatchRoomPageSessionStateModel['onlineAiSeatCredentials'];
     autoAcceptedPlayerIds: MatchRoomPageSessionStateModel['onlineAiRematchAutoAcceptedPlayerIds'];
     onForceEndAiPhaseReady: MatchRoomPageStageControllersModel['handleForceEndAiPhaseReady'];
-    onManualFactionDispatchReady: MatchRoomPageStageControllersModel['handleManualFactionDispatchReady'];
-    dispatchManualAiCommand: MatchRoomPageStageControllersModel['dispatchManualAiCommand'];
+    onManualSetupDispatchReady: MatchRoomPageStageControllersModel['handleManualSetupDispatchReady'];
+    dispatchManualSetupCommand: MatchRoomPageStageControllersModel['dispatchManualSetupCommand'];
     onForceEndAiPhase?: MatchRoomPageStageControllersModel['forceEndAiPhaseHandler'];
     showForceEndAiPhase: boolean;
 };
@@ -265,8 +265,8 @@ function buildMatchRoomOnlineSeatRuntimeAdapter(args: {
         seatCredentials: sessionState.onlineAiSeatCredentials,
         autoAcceptedPlayerIds: sessionState.onlineAiRematchAutoAcceptedPlayerIds,
         onForceEndAiPhaseReady: stageControllers.handleForceEndAiPhaseReady,
-        onManualFactionDispatchReady: stageControllers.handleManualFactionDispatchReady,
-        dispatchManualAiCommand: stageControllers.dispatchManualAiCommand,
+        onManualSetupDispatchReady: stageControllers.handleManualSetupDispatchReady,
+        dispatchManualSetupCommand: stageControllers.dispatchManualSetupCommand,
         onForceEndAiPhase: stageControllers.forceEndAiPhaseHandler ?? undefined,
         showForceEndAiPhase: sessionState.matchStatus.isHost && sessionState.hasOnlineAiSeat,
     };

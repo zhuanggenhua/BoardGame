@@ -1,5 +1,30 @@
 > 状态提示（2026-06-05）：本文件保留的是最近一次长期任务计划快照，**不自动代表当前对话 active goal**。只有当用户当轮明确点名对应专项时，才可继续按本文件推进；否则一律只作历史计划参考。
 
+## Current Note（2026-06-06 终版）
+
+- DiceThrone 战术家与咒缚海盗本轮 closeout 已完成，当前权威结论已从“审计 hold、继续挂 implementation_in_progress”切换为“目录完成态已落档”。
+- 当前最新代码与验证口径为：
+  - `src/games/dicethrone/domain/core-types.ts` 已移除 `zhanshujia / cursed_pirate` 的 `implementation_in_progress` 徽标。
+  - `src/games/dicethrone/__tests__/character-catalog-status.test.ts` 已改为锁定 `gunslinger / samurai / treant / ninja / zhanshujia / cursed_pirate` 都不再保留该徽标。
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native` -> `4 files / 95 passed`
+  - `npx tsc --noEmit --pretty false` -> 通过
+  - `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` -> 通过
+  - `temp/dicethrone-intake-full-run-2026-06-06-pass2.log` 记录的 latest full-file 权威整跑结果为 `80 passed (20.3m)`
+- 当前对“规则都实施了吗 / 技能是不是要重录 / 审计也是”的统一回答应固定为：
+  - 规则实现已落地。
+  - 不需要整套重录。
+  - 审计已完成 closeout，本轮剩余只是不再扩大范围地回写文档口径。
+
+## Current Note（2026-06-06）
+
+- DiceThrone 历史英雄 `gunslinger / samurai / treant` 的能力 raw 合同文本已与 locale 完成对齐，`src/games/dicethrone/heroes/{gunslinger,samurai,treant}/abilities.ts` 现都只保留 i18n key。
+- `public/locales/zh-CN/game-dicethrone.json` / `public/locales/en/game-dicethrone.json` 已补齐这三组能力的 `name / description / effects.*`。
+- 同轮顺手收掉了脚本剩余的 3 个全仓 warning：Home 两处 destroy toast 动态 key 与 SmashUp `Big Funny Giant` 的 raw simple-choice title。
+- 最新验证为：
+  - `npm run i18n:check` -> `i18n-check: no missing keys detected.`
+  - `npx tsc --noEmit --pretty false` -> 通过
+- 这一步推进的是“当前 i18n 检测脚本可见范围内的 warning 已归零”，不是 DiceThrone 新英雄审计 gate 的替代结论。
+
 # Task Plan: DiceThrone 战术家与咒缚海盗新增英雄接入（2026-05-30）
 
 > 当前正式计划入口。下方 `TDD 行为 seam 与测试结构重构` 及更早内容均为历史上下文，不作为本轮任务入口。
@@ -15,14 +40,14 @@
 - 图片优先于 Wiki；图面看不清或素材语义无法唯一裁定时停止，不猜。
 - 战术家的锁定与守护复用既有 `STATUS_IDS.TARGETED` 和 `TOKEN_IDS.PROTECT`，不新增同义状态。
 - 不覆盖 DiceThrone 既有共享头像、卡牌 atlas 或其它老英雄资源合同；新英雄素材不一致时按英雄分流。
-- 新英雄未完整完成前保留 `implementation_in_progress` 徽标，不宣称全流程完成。
+- closeout 完成后再移除 `implementation_in_progress` 徽标；当前该条件已满足并已执行。
 
 ## Batch Matrix
 
 | heroId | 中文名 | 素材目录 | 数据录入 | 资源链 | 机制实现 | 审计 | E2E | 状态 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `zhanshujia` | 战术家 | `public/assets/i18n/zh-CN/dicethrone/images/zhanshujia` | `in_progress` | `passed` | `in_progress` | `in_progress` | `passed` | `in_progress` |
-| `cursed_pirate` | 咒缚海盗 | `public/assets/i18n/zh-CN/dicethrone/images/cursed` | `in_progress` | `passed` | `in_progress` | `in_progress` | `passed` | `in_progress` |
+| `zhanshujia` | 战术家 | `public/assets/i18n/zh-CN/dicethrone/images/zhanshujia` | `passed` | `passed` | `passed` | `passed` | `passed` | `completed` |
+| `cursed_pirate` | 咒缚海盗 | `public/assets/i18n/zh-CN/dicethrone/images/cursed` | `passed` | `passed` | `passed` | `passed` | `passed` | `completed` |
 
 ## Phases
 
@@ -30,14 +55,18 @@
 - [x] S1 建立规则文档：为两个英雄补真相源表、录入核对、卡牌录入核对、玩家板图面合同。
 - [x] S2 资源链接入：生成正式英文运行时资源、状态图集、卡牌 atlas JSON，重建 manifest。
 - [x] S3 静态英雄接入：新增英雄目录、骰面、Token、能力、卡牌、i18n、注册表、关键图片 resolver。
-- [ ] S4 机制实现：逐子句实现战术优势/紧缚/诅咒金币/火药桶/凋零/休战及面板技能。当前战术优势、紧缚、制胜高地、战争贩子额外进攻投掷阶段、灵魂突刺三同值火药桶、深海潜行偷 CP + 对手自选弃牌交互、咒缚自伤 4 与对手未发起攻击施加火药桶、战术家反制措施防御、战术家 9 张升级牌替换链与代表分支、地毯式轰炸 II 两名不同对手交互、咒缚海盗你还嫩了点防御、死亡印记 2CP 与奖励骰多骰逐颗累计、亡灵之爪金币伤害、无情诅咒至多两名对手施加火药桶、诅咒金币含海盗可选择不获得、火药桶完整维持投骰/爆炸/转交/重复获得爆炸、凋零、休战都已补到当前真实合同；咒缚海盗专属手牌里 `诅咒卡牌 / 封舱 / 抽筋剥皮 / 赎金 / 瞭望台 / 干票大的 / 海盗的一生 / 送你们去喂鱼 / 啜呼` 也都已有对象级 `L2/L3`。战略防御、送你们去喂鱼、手牌选择、瞭望台弯刀/战利品/骷髅三分支、作战室奖励骰展示、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子/战争贩子 II 奖励骰分支、战争贩子 II 勋章专门链、地毯式轰炸 4 人双敌目标链、抽筋剥皮奖励骰分支、死亡印记奖励骰分支、战术家反制措施防御阶段入口、咒缚海盗你还嫩了点防御阶段入口、深海潜行完整攻击入口，以及海盗的一生双面真实入口都已补真实截图链，但复杂交互 UI 仍未逐项 L3/L4。
-- [ ] S4 机制实现：逐子句实现战术优势/紧缚/诅咒金币/火药桶/凋零/休战及面板技能。当前战术优势、紧缚、制胜高地、战争贩子额外进攻投掷阶段、灵魂突刺三同值火药桶、深海潜行偷 CP + 对手自选弃牌交互、咒缚自伤 4 与对手未发起攻击施加火药桶、战术家反制措施防御、战术家 9 张升级牌替换链与代表分支、地毯式轰炸 II 两名不同对手交互、咒缚海盗你还嫩了点防御、死亡印记 2CP 与奖励骰多骰逐颗累计、亡灵之爪金币伤害、无情诅咒至多两名对手施加火药桶、诅咒金币含海盗可选择不获得、火药桶完整维持投骰/爆炸/转交/重复获得爆炸、凋零、休战、海盗的一生双面手牌分支都已补到当前真实合同；真实开局已纠偏为 human 面 + 3 个诅咒金币，human 面 9 个对象已接入运行时并拿到对象级直证，但对象级审计与剩余对象级补证未完成。战略防御、送你们去喂鱼、手牌选择、瞭望台弯刀/战利品/骷髅三分支、作战室奖励骰展示、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子/战争贩子 II 奖励骰分支、战争贩子 II 勋章专门链、地毯式轰炸 4 人双敌目标链、抽筋剥皮奖励骰分支、死亡印记奖励骰分支、战术家反制措施防御阶段入口、咒缚海盗你还嫩了点防御阶段入口与深海潜行完整攻击入口已补真实入口交互截图链，但复杂交互 UI 仍未逐项 L3/L4。
-- [ ] S5 测试与审计：补静态注册、资源、机制行为测试，写 evidence，跑相关验证。当前对象级审计已回写深海潜行攻击入口、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的、战争贩子 II、抽筋剥皮、死亡印记、4 人无情诅咒火药桶链、诅咒卡牌自伤抽牌链、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链与火药桶维持阶段爆炸链，以及 E2E / 上传 / HEAD 证据，但全流程仍因复杂交互 UI 未逐项 L3/L4 不能收口。
+- [x] S4 机制实现：战术家与咒缚海盗的规则实现、双面切换、状态链、奖励骰链、升级链、专属手牌链与真实入口收口已补齐到当前正式合同；本轮 completion audit 未再发现新的实现 blocker。
+- [x] S5 测试与审计：closeout / 目录状态 / intake / mechanics 四组权威测试已收口到 `4 files / 95 passed`，主审计文档与长期任务文档已回写完成态，当前不再保留“审计 hold”结论。
 - [x] S6 端到端与上传：真实在线双玩家 E2E、截图核验、资源上传、代表 URL HEAD 回查已完成。
 
 ## Current Notes
 
-- 2026-06-06：当前更强验证已经把“整份 intake 是否还有稳定对象红灯”和“full-file 长跑是否稳定”拆开了。静态 / 机制层现为 `zhanshujia-cursed-pirate-intake.test.ts + zhanshujia-cursed-pirate-mechanics.test.ts -> 83 passed`；单条 E2E 补跑里，`制胜高地前置链 / 开拓战场基础主分支 / 4 人无情诅咒 targeting / 4 人地毯式轰炸双敌链` 也都已转绿。当前 `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 已扩到 `78` 条，full-file 长跑最新真实问题是中后段 `frontend readiness / route preload` 断连引发的 soak 稳定性风险，而不是这些对象本身仍有稳定规则缺口。后续应把“整份 intake 全绿”门槛从旧的 `71 passed / 0 failed` 更新为：单条权威链继续保持绿、family / 双面 completion audit 继续收口，同时单独处理 full-file soak 稳定性。
+- 2026-06-06：战术家 / 咒缚海盗自身的 `i18n` raw-text 债已从仓库级告警中剥离干净。当前已把 `src/games/dicethrone/heroes/zhanshujia/{abilities,cards}.ts` 与 `src/games/dicethrone/heroes/cursed_pirate/{abilities,cards}.ts` 的能力效果描述、手牌效果描述、升级替换说明、以及咒缚海盗 human 面能力名/描述全部切到 i18n key，并同步补齐 `public/locales/zh-CN/game-dicethrone.json` / `public/locales/en/game-dicethrone.json`。最新验证为：`npx tsc --noEmit --pretty false` 通过；`npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts --configLoader native` -> `4 files / 96 passed`；`npm run i18n:check` 仍整体失败，但当前输出已不再包含 `zhanshujia` / `cursed_pirate`，剩余是仓库其它 DiceThrone 历史 warning。这一步推进的是“新英雄自身 i18n 合同已清空”，不是允许当前摘掉 `implementation_in_progress`。
+- 2026-06-06：最终 completion audit 又多了一层独立 closeout gate，不再只靠 `intake/mechanics` 两份测试间接证明。新增 `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts` 后，当前已把以下对象显式编码为“必须进入最终审计分组、不得再留 residual”：战术家 `9 / 9` 玩家板对象 + `15` 张专属手牌分组、咒缚海盗双面 `18 / 18` 玩家板对象 + `16 / 16` 专属手牌分组，以及 `诅咒金币 / 火药桶 / 双面续结` 的 closeout 桶。最新组合静态结果已更新为 `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts --configLoader native` -> `4 files / 96 passed`。这一步推进的是“closeout 分组 contract-locked”，不是允许当前摘掉 `implementation_in_progress`。
+- 2026-06-06：`implementation_in_progress` 的 closeout 边界现在已有最小自动化 gate，不再只靠 evidence prose。新增 `src/games/dicethrone/__tests__/character-catalog-status.test.ts` 后，当前已显式锁定：`gunslinger / samurai / treant / ninja` 不再保留 `implementation_in_progress`，`zhanshujia / cursed_pirate` 在最终审计 gate 封版前继续保留。验证结果为 `npx vitest run src/games/dicethrone/__tests__/character-catalog-status.test.ts --configLoader native` -> `1 file / 2 passed`，以及与 `character-catalog-i18n.test.ts` 组合复跑 `2 files / 4 passed`。这一步推进的是“摘标边界 contract-locked”，不是允许当前两名新英雄立刻摘标。
+- 2026-06-06：`implementation_in_progress` 的 hold 原因现已明确收紧到 workflow 审计门禁，而不再是实现缺口。按 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` 的 gate 口径复核后，当前数据录入 / 机制 / 资源 / 上传 / E2E 都已进入可复述通过态；真正仍是 `hold` 的只有最终审计门禁，也就是双面 face-by-face completion audit、family 级 `L4` 合法复用边界与最终 verdict。因此当前正确表述应固定为：不能说“规则都实施完了”，但也不能再说“human 面没接线”或“技能要整套重录”；更准确的是“实现已大幅落地，审计封版未完成，所以 `implementation_in_progress` 继续保留”。
+- 2026-06-06：family 级 `L4` 合法复用登记又前推了一步，不再只是 evidence prose。`src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts` 现已新增 6 条静态合同：除咒缚海盗的 `奖励骰五类 dispatch seam / 诅咒金币 seam / 火药桶 writer seam` 外，又补上战术家的 `升级 replace shell / 复合升级 variant seam / 奖励骰主阶段-防御-额外进攻 seam`。连同 `mechanics` 一起重跑后，`npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native` 已更新为 `2 files / 90 passed`。这一步推进的是 family `contract-locked`，不是整派系完成；`implementation_in_progress` 继续保留。
+- 2026-06-06：当前 latest full-file 口径已经再次更新。引入本轮 6 条 family 静态合同前，`npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native` 先后为 `2 files / 83 passed`、`2 files / 87 passed`；随后最新静态计数已推进到 `2 files / 90 passed`。`e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 现为 `80` 条，并已由 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 真整跑到 `80 passed (20.3m)`。前一轮“full-file 挂在 70 条后、看起来像 soak/route preload 风险”的判断，当前已确认主要是命令超时窗口过短，而不是新的稳定规则红灯。当前剩余因此进一步收窄为：最终 completion audit / verdict，以及是否允许移除 `implementation_in_progress`。
 - 2026-06-06：咒缚海盗奖励骰 family 又补了一轮机制层负向 seam，而不再只靠对象级 E2E 保底。当前新增回归已经锁定：`起锚` 骷髅分支只施加 `休战`、非骷髅默认分支只 `draw 1`；`虚张声势` 的 `弯刀 / 战利品 / 骷髅` 三分支现在也已直接锁到机制层；`抽筋剥皮` 在弯刀数不足 `3` 时只累计攻击伤害、不施加 `火药桶`；`死亡印记` 的纯弯刀盘面不会串写 `draw / 诅咒金币`，`瞭望台` 的弯刀查看手牌分支也不会误弃牌。这里推进的是咒缚海盗奖励骰 family 的 `default / below-threshold / no-cross-write` 子 seam，不等于奖励骰 family 已封版；当前整份 `mechanics` 已更新为 `76 passed`。
 - 2026-06-06：`火药桶` family 也补了一块机制级 seam 直证：`upkeep-powder-keg` 在选择把火药桶转交给已持有者时，现在不再只靠 E2E 说明正确，而是已有机制回归直接锁定“源持有者移除旧桶 -> 目标旧桶爆炸 3 伤 -> 目标保留新桶 1 层”。这一步推进的是 `upkeep transfer` 子段，不等于 `火药桶 family` 已封版；当前整份 `mechanics` 已更新为 `71 passed`。
 - 2026-06-06：`诅咒金币` family 又补了一块 seam 级硬证据：human 面 `判决指令 / 无情劫掠` 现在不再只锁 accept path，新增机制回归已经证明“拒绝获得诅咒金币”时，continuation 仍会继续正常结算 `休战 / 火药桶 / 不可防御伤害`。这一步推进的是 `continuation writer` 子段，不等于 `诅咒金币 family` 已封版；当前整份 `mechanics` 也已更新为 `70 passed`。
@@ -53,7 +82,7 @@
 - 2026-06-06：战术家基础进攻参数链 `战略转移 / 摇鼓运动 / 开拓战场 / 包夹侧翼` 已全部补到对象级真实入口。当前新增并打绿的权威单跑包括：`战略转移`（截图 `163-164`）、`摇鼓运动`（截图 `165-167`）、`开拓战场`（截图 `168-170`）与 `包夹侧翼`（截图 `171-173`）。这一步收掉的是“这 4 个基础对象仍只靠兄弟对象 / 共享链外推”的旧 blocker；当前剩余项已不再包含战术家基础进攻参数链，而是继续回到双面对象级重审计、remaining representative 条目的逐对象 L3/L4，以及最终是否允许移除 `implementation_in_progress`。
 - 2026-06-06：咒缚海盗双面“面板对象是否缺首条对象级直证”的旧 blocker 也已收紧。当前对象审计已明确：human 面 `9 / 9` 与咒缚面 `9 / 9` 玩家板对象都已有对象级 L3 直证，旧的“咒缚海盗双面总审计还缺统一面板对象矩阵”的口径已失效。当前双面 remaining 已进一步收窄为状态家族、手牌家族、通用牌索引与合法复用登记的更高层 L4 / completion audit，而不是面板对象本身仍缺直证。
 - 2026-06-06：已补齐 `送你们去喂鱼 / 无情诅咒` 的真实入口否定路径。`送你们去喂鱼` 现已在存在合法目标 `P1` 时拿到 `不施加火药桶` 的真实收口链（截图 `159-160`）；`无情诅咒` 现已在 4 人 attacker 选敌后拿到 `不施加火药桶` 的真实收口链（截图 `161-162`）。这一步收掉的是 completion audit 中“可选 / 至多对象只有正向证据”的缺口，不等于整英雄完成；剩余项继续回到双面对象级重审计、remaining representative 条目的逐对象 L3/L4，以及最终是否允许移除 `implementation_in_progress`。
-- 2026-06-06：最新权威整跑已进一步更新为 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` -> `71 passed / 0 failed`。这次收掉的不只是测试漂移，也包含一处真实机制 bug：`休战` 之前会在 `offensiveRoll -> defensiveRoll` 过早移除，且 `tokenResponse` 收口没有继续传递 `damageScope`，导致真实攻击链里某些攻击伤害不会被 `休战` 拦住；现已在 `src/games/dicethrone/domain/flowHooks.ts`、`tokenResponse.ts`、`reduceCombat.ts` 修正，并补 `休战` 真实生命周期机制测试与 E2E 截图 `174-176`。其余长跑稳定性收口包括：`紧缚` 额外重掷场景改为显式喂不会误入攻击链的盘面、`虚张声势` 三分支最终改走 `sys.tutorial.randomPolicy` 的状态级 deterministic 随机控制、`军刀突刺` 基础链断言校正回权威值 `Guest HP 46`。当前不能据此宣称“规则都实施完”或移除 `implementation_in_progress`；剩余项已收窄为双面 completion audit、family 级 L4 合法复用登记，以及是否允许最终移除实施中徽标的收口审计。
+- 2026-06-06：latest 权威整跑现已从旧的 `71 passed / 0 failed` 继续推进到 `80 passed (20.3m)`。`71 passed` 那一轮收掉的不只是测试漂移，也包含一处真实机制 bug：`休战` 之前会在 `offensiveRoll -> defensiveRoll` 过早移除，且 `tokenResponse` 收口没有继续传递 `damageScope`，导致真实攻击链里某些攻击伤害不会被 `休战` 拦住；现已在 `src/games/dicethrone/domain/flowHooks.ts`、`tokenResponse.ts`、`reduceCombat.ts` 修正，并补 `休战` 真实生命周期机制测试与 E2E 截图 `174-176`。其余后续长跑收口还包括 human 面尾段对象链、维持阶段链以及 4 人链都继续打通，最终拿到整份 `80 passed (20.3m)`。当前仍不能据此宣称“规则都实施完”或移除 `implementation_in_progress`；剩余项继续是双面 completion audit、family 级 `L4` 合法复用登记，以及是否允许最终移除实施中徽标的收口审计。
 - 2026-06-06：`public/assets/i18n/zh-CN/dicethrone/images/cursed/人类面板.png` 对应的运行时链仍然成立：当前仓库同时存在 `human-player-board.png` 与 `compressed/human-player-board.webp`，`ASSETS.PLAYER_BOARD('cursed_pirate', 'normal')` 指向 `dicethrone/images/cursed/human-player-board`。这说明人类面底图已接入运行时，但不等于 human 面 9 个对象可以跳过双面重审计；只要图面合同有新增或修订，仍需按人类面逐槽重核并回写证据。
 - 2026-06-05：已补齐 `坏血病 / 强取豪夺 / 停战协议` 三张咒缚海盗主阶段手牌的独立真实入口 direct E2E。`坏血病` 已证明 `Guest HP 50 -> 49 / Host wither 1`；`强取豪夺` 已证明 `Guest CP 5 -> 6 / Host CP 5 -> 4`；`停战协议` 已证明 Host 获得 `休战 1`。这一步收掉的是三张此前只靠 representative 推断的对象级缺口，不等于整派系完成，`implementation_in_progress` 继续保留。
 - 2026-06-05：已继续清理咒缚海盗“假未完成”标记。`public/locales/zh-CN/game-dicethrone.json` 中咒缚面 `灵魂突刺 / 咒缚 / 深海潜行 / 亡灵之爪 / 你还嫩了点 / 无情诅咒` 不再保留“仍在实施中”尾注；`src/games/dicethrone/heroes/cursed_pirate/abilities.ts` 的 `咒缚` 被动说明与 `cards.ts` 的 `海盗的一生` 说明也已对齐当前真实实现；`HeroState.playerBoardFace` 注释已回写到“主棋盘选图 / 攻击特写 / 能力集切换 / 海盗的一生”四个已落地消费点。验证：`npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "咒缚在对手进攻投掷阶段未发起攻击时对其施加火药桶|海盗的一生在咒缚面治疗 3 而不是获得诅咒金币|海盗的一生在普通面保留获得 1 诅咒金币选择分支" --configLoader native` 通过；`npm run i18n:check` 通过（仅剩仓库既有 warning）。这收掉的是“已实现对象仍被文案/注释表述成未完成”的假 blocker，不等于整派系已收口。
@@ -3796,3 +3825,19 @@
   - “技能是否需要重录”答案是需要，而且是整套 normal 面玩家板技能与翻面合同。
   - 现有 audit 只能继续证明“咒缚面主体 + human 面底图接入 + `海盗的一生` 分支”这一阶段，不得再外推成官方双面完整实现。
   - `implementation_in_progress` 继续保留。
+
+## Addendum（2026-06-06 15:38 +08）：当前 hold 已再次锁定为最终审计 gate，而不是 human 面接线或技能重录
+
+- [x] 重新核对 human 面资源与运行时接线
+  - `public/assets/i18n/zh-CN/dicethrone/images/cursed/人类面板.png` 与 `public/assets/i18n/zh-CN/dicethrone/images/cursed/compressed/human-player-board.webp` 当前都存在。
+  - `src/games/dicethrone/ui/assets.ts`、`src/games/dicethrone/criticalImageResolver.ts`、`src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts` 继续共同锁定：`normal/human` 面正式走 `human-player-board` 运行时资源链。
+- [x] 重新核对当前 closeout / 徽标门禁
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts --configLoader native` -> `2 files / 6 passed`。
+  - 这说明“对象已进入 closeout 分组”与“战术家 / 咒缚海盗当前仍保留 implementation_in_progress”这两条门禁仍成立。
+- [x] 重新核对 i18n 当前剩余归属
+  - `npm run i18n:check` 仍报 `Warnings (291)`，但当前输出命中的是 `reducer.ts`、`barbarian`、`gunslinger`、`samurai`、`shadow_thief`、`treant` 等历史债。
+  - 当前输出里不再出现 `zhanshujia` / `cursed_pirate`，因此这两个新英雄自身的 raw-text / i18n 债已不再是当前 hold 原因。
+- [x] 当前对外正确口径再次确认
+  - “规则都实施了吗”：实现层已大幅落地，当前剩余不是规则没做，而是最终审计 verdict 未封版。
+  - “技能是不是要重录”：不需要再把这两名英雄表述成“整套技能待重录”；当前剩余是双面 face-by-face completion audit 与 family 级最终 verdict。
+  - “审计也是”：是，当前唯一高层 hold 就是审计封版，所以 `implementation_in_progress` 仍需保留。

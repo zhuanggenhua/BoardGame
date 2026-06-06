@@ -467,6 +467,52 @@ describe('Fairies abilities', () => {
         expect(getEffectivePower(resolved.finalState.core, targetMinion!, 0)).toBe(2);
     });
 
+    it('fairies_enchantment 对同一基地上的双方随从都应统一生效，不按控制者分流', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('enchantment-1', 'fairies_enchantment', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('ally-1', 'robot_microbot_alpha', '0', 3, { powerModifier: 0 }),
+                    makeMinion('enemy-1', 'dinosaur_armor_stego', '1', 4, { powerModifier: 0 }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'enchantment-1', targetBaseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'fairies_enchantment');
+        const plusOption = getPromptOption(prompt, entry => entry.value?.branchId === 'plus', 'plus branch');
+        const plusResolved = respondToPrompt(played.finalState, plusOption.id, '0', defaultTestRandom);
+        const plusAlly = plusResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1');
+        const plusEnemy = plusResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy-1');
+        expect(getEffectivePower(plusResolved.finalState.core, plusAlly!, 0)).toBe(4);
+        expect(getEffectivePower(plusResolved.finalState.core, plusEnemy!, 0)).toBe(5);
+
+        const minusPlayed = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'enchantment-1', targetBaseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const minusPrompt = getSimpleChoicePrompt(minusPlayed.finalState, 'fairies_enchantment');
+        const minusOption = getPromptOption(minusPrompt, entry => entry.value?.branchId === 'minus', 'minus branch');
+        const minusResolved = respondToPrompt(minusPlayed.finalState, minusOption.id, '0', defaultTestRandom);
+        const minusAlly = minusResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1');
+        const minusEnemy = minusResolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy-1');
+        expect(getEffectivePower(minusResolved.finalState.core, minusAlly!, 0)).toBe(2);
+        expect(getEffectivePower(minusResolved.finalState.core, minusEnemy!, 0)).toBe(3);
+    });
+
     it('borrowed fairies_enchantment 选择 -1 模式后仍应更新 metadata 并保留 sourcePlayerId', () => {
         const core = makeState({
             players: {
@@ -695,6 +741,10 @@ describe('Fairies abilities', () => {
         const prompt = getSimpleChoicePrompt(played.finalState, 'fairies_enchantment');
         const plusOption = getPromptOption(prompt, entry => entry.value?.branchId === 'plus', 'plus branch');
         const chosePlus = respondToPrompt(played.finalState, plusOption.id, '0', defaultTestRandom);
+        const plusAppliedMinion = chosePlus.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1');
+        const plusAppliedEnchantment = chosePlus.finalState.core.bases[0].ongoingActions.find(action => action.uid === 'enchantment-1');
+        expect(plusAppliedEnchantment?.metadata?.fairiesEnchantmentMode).toBe('plus');
+        expect(getEffectivePower(chosePlus.finalState.core, plusAppliedMinion!, 0)).toBe(4);
         const followUpPrompt = getSimpleChoicePrompt(chosePlus.finalState, 'fairies_enchantment');
         const minusOption = getPromptOption(followUpPrompt, entry => entry.value?.branchId === 'minus', 'minus branch');
         getPromptOption(followUpPrompt, entry => entry.value?.skip === true, 'skip option');

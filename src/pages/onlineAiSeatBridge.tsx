@@ -3,7 +3,7 @@ import { useGameClient } from '../engine/transport/react';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';
-import type { ManualAiSeatDispatch } from './onlineManualFactionSelectionBridge';
+import type { ManualSetupSeatDispatch } from './onlineManualSetup.types';
 import { useOnlineAiSeatAutoDispatch } from './useOnlineAiSeatAutoDispatch';
 import { useOnlineAiSeatAutoRecovery } from './useOnlineAiSeatAutoRecovery';
 import { useOnlineAiSeatManualRecovery } from './useOnlineAiSeatManualRecovery';
@@ -16,7 +16,7 @@ type OnlineAiSeatBridgeProps = {
     seatControllers: Record<string, AiSeatController>;
     seatCredentials: Record<string, string>;
     onForceEndAiPhaseReady?: (handler: (() => Promise<boolean>) | null) => void;
-    onManualFactionDispatchReady?: (handler: ManualAiSeatDispatch | null) => void;
+    onManualSetupDispatchReady?: (handler: ManualSetupSeatDispatch | null) => void;
 };
 
 export const OnlineAiSeatBridge = ({
@@ -26,7 +26,7 @@ export const OnlineAiSeatBridge = ({
     seatControllers,
     seatCredentials,
     onForceEndAiPhaseReady,
-    onManualFactionDispatchReady,
+    onManualSetupDispatchReady,
 }: OnlineAiSeatBridgeProps) => {
     const { state } = useGameClient();
     const sharedState = state && typeof state === 'object'
@@ -39,7 +39,7 @@ export const OnlineAiSeatBridge = ({
         engineConfig,
         seatControllers,
         seatCredentials,
-        onManualFactionDispatchReady,
+        onManualSetupDispatchReady,
         state: sharedState,
     });
 

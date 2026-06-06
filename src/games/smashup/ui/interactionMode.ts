@@ -37,6 +37,10 @@ type ResolvePromptOwnershipInput = {
     playerID: string | null | undefined;
 };
 
+type ResolveDirectHandCardStateInput = ResolveHandPromptUiModeInput & {
+    hand: ReadonlyArray<{ uid?: unknown }> | null | undefined;
+};
+
 export function isSmashUpPromptOwnedByPlayer({
     currentPrompt,
     playerID,
@@ -98,6 +102,54 @@ export function hasSmashUpDirectHandPromptPlayableOptions({
         const value = option?.value as { cardUid?: unknown; titanUid?: unknown } | undefined;
         return typeof value?.cardUid === 'string' || typeof value?.titanUid === 'string';
     });
+}
+
+export function getSmashUpDirectHandPromptCardState({
+    currentPrompt,
+    playerID,
+    targetType,
+    hand,
+}: ResolveDirectHandCardStateInput): {
+    selectableCardUids: Set<string>;
+    disabledCardUids?: Set<string>;
+} {
+    const selectableCardUids = new Set<string>();
+    if (resolveSmashUpHandPromptUiMode({ currentPrompt, playerID, targetType }) !== 'direct') {
+        return { selectableCardUids };
+    }
+
+    const options = (currentPrompt as ButtonOverlayPromptLike | undefined)?.options;
+    const disabledCardUids = new Set<string>();
+    if (!Array.isArray(options) || options.length === 0) {
+        return {
+            selectableCardUids,
+            disabledCardUids: hand?.length
+                ? new Set((hand ?? []).flatMap(card => typeof card?.uid === 'string' ? [card.uid] : []))
+                : undefined,
+        };
+    }
+
+    for (const option of options) {
+        const value = option?.value as { cardUid?: unknown } | undefined;
+        if (typeof value?.cardUid !== 'string') continue;
+        if (option?.disabled) {
+            disabledCardUids.add(value.cardUid);
+            continue;
+        }
+        selectableCardUids.add(value.cardUid);
+    }
+
+    for (const card of hand ?? []) {
+        if (typeof card?.uid !== 'string') continue;
+        if (!selectableCardUids.has(card.uid)) {
+            disabledCardUids.add(card.uid);
+        }
+    }
+
+    return {
+        selectableCardUids,
+        disabledCardUids: disabledCardUids.size > 0 ? disabledCardUids : undefined,
+    };
 }
 
 export function shouldRenderSmashUpHandArea({

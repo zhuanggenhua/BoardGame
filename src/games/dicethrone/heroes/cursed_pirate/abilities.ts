@@ -1,4 +1,4 @@
-import { abilityText } from '../../../../engine/primitives/ability';
+import { abilityText, abilityEffectText } from '../../../../engine/primitives/ability';
 import type { AbilityDef, AbilityEffect, EffectTiming } from '../../domain/combat';
 import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS } from '../../domain/ids';
 import type { HeroState } from '../../domain/types';
@@ -31,17 +31,6 @@ const grantStatus = (statusId: string, description: string): AbilityEffect => ({
     timing: 'preDefense',
 });
 
-const grantSelfStatus = (
-    statusId: string,
-    value: number,
-    description: string,
-    timing: EffectTiming = 'preDefense',
-): AbilityEffect => ({
-    description,
-    action: { type: 'grantStatus', target: 'self', statusId, value },
-    timing,
-});
-
 const custom = (
     customActionId: string,
     description: string,
@@ -59,9 +48,9 @@ const SOUL_STAB: AbilityDef = {
     description: abilityText('soul-stab', 'description'),
     sfxKey: CURSED_PIRATE_SFX_SLASH,
     variants: [
-        { id: 'soul-stab-3', trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 3 } }, effects: [damage(5, '造成 5 点伤害。'), custom('cursed-pirate-powder-keg-if-three-kind', '若投出 3 个相同数字，施加火药桶。', { timing: 'postDamage', target: 'opponent' })], priority: 1 },
-        { id: 'soul-stab-4', trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 4 } }, effects: [damage(7, '造成 7 点伤害。'), custom('cursed-pirate-powder-keg-if-three-kind', '若投出 3 个相同数字，施加火药桶。', { timing: 'postDamage', target: 'opponent' })], priority: 2 },
-        { id: 'soul-stab-5', trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 5 } }, effects: [damage(9, '造成 9 点伤害。'), custom('cursed-pirate-powder-keg-if-three-kind', '若投出 3 个相同数字，施加火药桶。', { timing: 'postDamage', target: 'opponent' })], priority: 3 },
+        { id: 'soul-stab-3', trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 3 } }, effects: [damage(5, abilityEffectText('soul-stab', 'damage5')), custom('cursed-pirate-powder-keg-if-three-kind', abilityEffectText('soul-stab', 'powderKegIfThreeKind'), { timing: 'postDamage', target: 'opponent' })], priority: 1 },
+        { id: 'soul-stab-4', trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 4 } }, effects: [damage(7, abilityEffectText('soul-stab', 'damage7')), custom('cursed-pirate-powder-keg-if-three-kind', abilityEffectText('soul-stab', 'powderKegIfThreeKind'), { timing: 'postDamage', target: 'opponent' })], priority: 2 },
+        { id: 'soul-stab-5', trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 5 } }, effects: [damage(9, abilityEffectText('soul-stab', 'damage9')), custom('cursed-pirate-powder-keg-if-three-kind', abilityEffectText('soul-stab', 'powderKegIfThreeKind'), { timing: 'postDamage', target: 'opponent' })], priority: 3 },
     ],
 };
 
@@ -73,9 +62,9 @@ const MARKED_FOR_DEATH: AbilityDef = {
     sfxKey: CURSED_PIRATE_SFX_CURSE,
     trigger: { type: 'diceSet', faces: { [FACE.LOOT]: 3 } },
     effects: [
-        custom('gain-cp', '获得 2CP。', { params: { amount: 2 } }),
+        custom('gain-cp', abilityEffectText('marked-for-death', 'gain2Cp'), { params: { amount: 2 } }),
         {
-            description: '投 4 骰；弯刀造成不可防御伤害，战利品抽牌，骷髅施加诅咒金币。',
+            description: abilityEffectText('marked-for-death', 'roll4'),
             action: {
                 type: 'rollDie',
                 target: 'self',
@@ -98,9 +87,9 @@ const CURSED: AbilityDef = {
     description: abilityText('cursed', 'description'),
     trigger: { type: 'phaseStart', phase: 'upkeep' },
     effects: [
-        custom('cursed-pirate-cursed-upkeep-self-damage', '维持阶段受 4 点不可减少/防止伤害。', { timing: 'immediate' }),
+        custom('cursed-pirate-cursed-upkeep-self-damage', abilityEffectText('cursed', 'selfDamage4'), { timing: 'immediate' }),
         {
-            description: '如果一名对手在其进攻投掷阶段未造成一次攻击，则对该对手施加火药桶。',
+            description: abilityEffectText('cursed', 'powderKegToPassiveOpponents'),
         },
     ],
 };
@@ -113,10 +102,10 @@ const DEEP_SEA_DIVE: AbilityDef = {
     sfxKey: CURSED_PIRATE_SFX_CURSE,
     trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 1, [FACE.LOOT]: 2, [FACE.SKULL]: 1 } },
     effects: [
-        custom('cursed-pirate-steal-one-cp', '偷取 1CP。', { target: 'opponent' }),
-        custom('cursed-pirate-request-opponent-discard-one-card', '对手选择并弃 1 张手牌。', { target: 'opponent' }),
-        grantStatus(STATUS_IDS.WITHER, '对手获得凋零。'),
-        damage(8, '造成 8 点伤害。'),
+        custom('cursed-pirate-steal-one-cp', abilityEffectText('deep-sea-dive', 'steal1Cp'), { target: 'opponent' }),
+        custom('cursed-pirate-request-opponent-discard-one-card', abilityEffectText('deep-sea-dive', 'opponentDiscard1'), { target: 'opponent' }),
+        grantStatus(STATUS_IDS.WITHER, abilityEffectText('deep-sea-dive', 'inflictWither')),
+        damage(8, abilityEffectText('deep-sea-dive', 'damage8')),
     ],
 };
 
@@ -130,13 +119,21 @@ const BREATH_OF_DEATH: AbilityDef = {
         {
             id: 'breath-of-death-small',
             trigger: { type: 'smallStraight' },
-            effects: [grantStatus(STATUS_IDS.WITHER, '对手获得凋零。'), grantStatus(STATUS_IDS.POWDER_KEG, '对手获得火药桶。'), damage(7, '造成 7 点伤害。')],
+            effects: [
+                grantStatus(STATUS_IDS.WITHER, abilityEffectText('breath-of-death', 'smallInflictWither')),
+                grantStatus(STATUS_IDS.POWDER_KEG, abilityEffectText('breath-of-death', 'smallInflictPowderKeg')),
+                damage(7, abilityEffectText('breath-of-death', 'smallDamage7')),
+            ],
             priority: 1,
         },
         {
             id: 'breath-of-death-large',
             trigger: { type: 'largeStraight' },
-            effects: [grantStatus(STATUS_IDS.WITHER, '对手获得凋零。'), grantStatus(STATUS_IDS.POWDER_KEG, '对手获得火药桶。'), damage(10, '造成 10 点伤害。')],
+            effects: [
+                grantStatus(STATUS_IDS.WITHER, abilityEffectText('breath-of-death', 'largeInflictWither')),
+                grantStatus(STATUS_IDS.POWDER_KEG, abilityEffectText('breath-of-death', 'largeInflictPowderKeg')),
+                damage(10, abilityEffectText('breath-of-death', 'largeDamage10')),
+            ],
             priority: 2,
         },
     ],
@@ -151,10 +148,10 @@ const SOUL_COMMAND: AbilityDef = {
     sfxKey: CURSED_PIRATE_SFX_CURSE,
     trigger: { type: 'diceSet', faces: { [FACE.SKULL]: 4 } },
     effects: [
-        grantStatus(STATUS_IDS.PARLEY, '对手获得休战。'),
-        grantStatus(STATUS_IDS.POWDER_KEG, '对手获得火药桶。'),
-        grantStatus(STATUS_IDS.WITHER, '对手获得凋零。'),
-        damage(8, '造成 8 点不可防御伤害。', { unblockable: true }),
+        grantStatus(STATUS_IDS.PARLEY, abilityEffectText('soul-command', 'inflictParley')),
+        grantStatus(STATUS_IDS.POWDER_KEG, abilityEffectText('soul-command', 'inflictPowderKeg')),
+        grantStatus(STATUS_IDS.WITHER, abilityEffectText('soul-command', 'inflictWither')),
+        damage(8, abilityEffectText('soul-command', 'damage8'), { unblockable: true }),
     ],
 };
 
@@ -167,8 +164,8 @@ const UNDEAD_CLAW: AbilityDef = {
     sfxKey: CURSED_PIRATE_SFX_SLASH,
     trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 1, [FACE.SKULL]: 3 } },
     effects: [
-        damage(8, '造成 8 点不可防御伤害。', { unblockable: true }),
-        custom('cursed-pirate-damage-by-cursed-coins', '所有对手每有 1 个诅咒金币而受 1 点伤害。', { timing: 'postDamage' }),
+        damage(8, abilityEffectText('undead-claw', 'damage8'), { unblockable: true }),
+        custom('cursed-pirate-damage-by-cursed-coins', abilityEffectText('undead-claw', 'damageByCursedCoins'), { timing: 'postDamage' }),
     ],
 };
 
@@ -181,7 +178,7 @@ const STILL_WET_BEHIND_EARS: AbilityDef = {
     sfxKey: CURSED_PIRATE_SFX_SLASH,
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 5 },
     effects: [
-        custom('cursed-pirate-still-wet-behind-ears-defense', '防御掷 5 骰：每个弯刀造成 1 伤害；每个战利品获得 1CP；每个骷髅防止 2 伤害；若投出弯刀和骷髅，施加诅咒金币。', { timing: 'withDamage' }),
+        custom('cursed-pirate-still-wet-behind-ears-defense', abilityEffectText('still-wet-behind-ears', 'defense5'), { timing: 'withDamage' }),
     ],
 };
 
@@ -194,11 +191,11 @@ const MERCILESS_CURSE: AbilityDef = {
     sfxKey: CURSED_PIRATE_SFX_ULTIMATE,
     trigger: { type: 'diceSet', faces: { [FACE.SKULL]: 5 } },
     effects: [
-        damage(13, '造成 13 点伤害。'),
-        grantStatus(STATUS_IDS.PARLEY, '对手获得休战。'),
-        grantStatus(STATUS_IDS.CURSED_COIN, '对手获得诅咒金币。'),
-        grantStatus(STATUS_IDS.WITHER, '对手获得凋零。'),
-        custom('cursed-pirate-merciless-curse-powder-keg-targets', '对至多两名对手施加火药桶。', { timing: 'preDefense' }),
+        damage(13, abilityEffectText('merciless-curse', 'damage13')),
+        grantStatus(STATUS_IDS.PARLEY, abilityEffectText('merciless-curse', 'inflictParley')),
+        grantStatus(STATUS_IDS.CURSED_COIN, abilityEffectText('merciless-curse', 'inflictCursedCoin')),
+        grantStatus(STATUS_IDS.WITHER, abilityEffectText('merciless-curse', 'inflictWither')),
+        custom('cursed-pirate-merciless-curse-powder-keg-targets', abilityEffectText('merciless-curse', 'powderKegTargets'), { timing: 'preDefense' }),
     ],
 };
 
@@ -216,17 +213,17 @@ export const CURSED_PIRATE_CURSED_ABILITIES: AbilityDef[] = [
 
 const HUMAN_CUTLASS_STAB: AbilityDef = {
     id: 'cutlass-stab',
-    name: '弯刀突刺',
+    name: abilityText('cutlass-stab', 'name'),
     type: 'offensive',
-    description: '3/4/5 个弯刀分别造成 5/6/7 点伤害；若投出 4 个相同数字，施加火药桶。',
+    description: abilityText('cutlass-stab', 'description'),
     sfxKey: CURSED_PIRATE_SFX_SLASH,
     variants: [
         {
             id: 'cutlass-stab-3',
             trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 3 } },
             effects: [
-                damage(5, '造成 5 点伤害。'),
-                custom('cursed-pirate-human-powder-keg-if-four-kind', '若投出 4 个相同数字，施加火药桶。', { timing: 'postDamage', target: 'opponent' }),
+                damage(5, abilityEffectText('cutlass-stab', 'damage5')),
+                custom('cursed-pirate-human-powder-keg-if-four-kind', abilityEffectText('cutlass-stab', 'powderKegIfFourKind'), { timing: 'postDamage', target: 'opponent' }),
             ],
             priority: 1,
         },
@@ -234,8 +231,8 @@ const HUMAN_CUTLASS_STAB: AbilityDef = {
             id: 'cutlass-stab-4',
             trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 4 } },
             effects: [
-                damage(6, '造成 6 点伤害。'),
-                custom('cursed-pirate-human-powder-keg-if-four-kind', '若投出 4 个相同数字，施加火药桶。', { timing: 'postDamage', target: 'opponent' }),
+                damage(6, abilityEffectText('cutlass-stab', 'damage6')),
+                custom('cursed-pirate-human-powder-keg-if-four-kind', abilityEffectText('cutlass-stab', 'powderKegIfFourKind'), { timing: 'postDamage', target: 'opponent' }),
             ],
             priority: 2,
         },
@@ -243,8 +240,8 @@ const HUMAN_CUTLASS_STAB: AbilityDef = {
             id: 'cutlass-stab-5',
             trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 5 } },
             effects: [
-                damage(7, '造成 7 点伤害。'),
-                custom('cursed-pirate-human-powder-keg-if-four-kind', '若投出 4 个相同数字，施加火药桶。', { timing: 'postDamage', target: 'opponent' }),
+                damage(7, abilityEffectText('cutlass-stab', 'damage7')),
+                custom('cursed-pirate-human-powder-keg-if-four-kind', abilityEffectText('cutlass-stab', 'powderKegIfFourKind'), { timing: 'postDamage', target: 'opponent' }),
             ],
             priority: 3,
         },
@@ -253,15 +250,15 @@ const HUMAN_CUTLASS_STAB: AbilityDef = {
 
 const HUMAN_MAKE_YOUR_MARK: AbilityDef = {
     id: 'make-your-mark',
-    name: '做好标记',
+    name: abilityText('make-your-mark', 'name'),
     type: 'utility',
-    description: '获得 1CP，然后投掷 3 颗骰子：每个弯刀造成 2 点不可防御伤害；每个战利品抽 1 张牌；每个骷髅获得 1 个诅咒金币。',
+    description: abilityText('make-your-mark', 'description'),
     sfxKey: CURSED_PIRATE_SFX_CURSE,
     trigger: { type: 'diceSet', faces: { [FACE.LOOT]: 3 } },
     effects: [
-        custom('gain-cp', '获得 1CP。', { timing: 'preDefense', params: { amount: 1 } }),
+        custom('gain-cp', abilityEffectText('make-your-mark', 'gain1Cp'), { timing: 'preDefense', params: { amount: 1 } }),
         {
-            description: '投掷 3 颗骰子：弯刀造成 2 点不可防御伤害；战利品抽 1 张牌；骷髅获得 1 个诅咒金币。',
+            description: abilityEffectText('make-your-mark', 'roll3'),
             action: {
                 type: 'rollDie',
                 target: 'self',
@@ -279,14 +276,14 @@ const HUMAN_MAKE_YOUR_MARK: AbilityDef = {
 
 const HUMAN_CURSED: AbilityDef = {
     id: 'human-cursed',
-    name: '咒缚',
+    name: abilityText('human-cursed', 'name'),
     type: 'passive',
-    description: '在你的回合结束时，移除 1 个诅咒金币；若没有任何可供移除的诅咒金币，则将英雄面板翻到另一面，并在剩余游戏时间内保持在那一面。',
+    description: abilityText('human-cursed', 'description'),
     trigger: { type: 'phaseEnd', phase: 'discard' },
     effects: [
         custom(
             'cursed-pirate-human-cursed-end-turn',
-            '回合结束时，移除 1 个诅咒金币；若没有可移除的诅咒金币，则翻到另一面并保持在那里。',
+            abilityEffectText('human-cursed', 'endTurnFlipCheck'),
             { timing: 'immediate' },
         ),
     ],
@@ -294,34 +291,40 @@ const HUMAN_CURSED: AbilityDef = {
 
 const HUMAN_WALK_THE_PLANK: AbilityDef = {
     id: 'walk-the-plank',
-    name: '走跳板',
+    name: abilityText('walk-the-plank', 'name'),
     type: 'offensive',
-    description: '选择以下其一：偷取 1CP，或对手选择弃掉自己的 1 张牌，然后造成 7 点伤害。',
+    description: abilityText('walk-the-plank', 'description'),
     sfxKey: CURSED_PIRATE_SFX_CURSE,
     trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 1, [FACE.LOOT]: 2, [FACE.SKULL]: 1 } },
     effects: [
-        custom('cursed-pirate-human-walk-the-plank-choice', '选择偷取 1CP，或令对手弃掉 1 张牌。', { target: 'opponent' }),
-        damage(7, '造成 7 点伤害。'),
+        custom('cursed-pirate-human-walk-the-plank-choice', abilityEffectText('walk-the-plank', 'choice'), { target: 'opponent' }),
+        damage(7, abilityEffectText('walk-the-plank', 'damage7')),
     ],
 };
 
 const HUMAN_LIGHT_THE_FUSE: AbilityDef = {
     id: 'light-the-fuse',
-    name: '点燃炸药',
+    name: abilityText('light-the-fuse', 'name'),
     type: 'offensive',
-    description: '小顺子：施加火药桶，然后造成 7 点伤害。大顺子：施加火药桶，然后造成 9 点伤害。',
+    description: abilityText('light-the-fuse', 'description'),
     sfxKey: CURSED_PIRATE_SFX_CURSE,
     variants: [
         {
             id: 'light-the-fuse-small',
             trigger: { type: 'smallStraight' },
-            effects: [grantStatus(STATUS_IDS.POWDER_KEG, '施加火药桶。'), damage(7, '造成 7 点伤害。', { timing: 'preDefense' })],
+            effects: [
+                grantStatus(STATUS_IDS.POWDER_KEG, abilityEffectText('light-the-fuse', 'smallInflictPowderKeg')),
+                damage(7, abilityEffectText('light-the-fuse', 'smallDamage7'), { timing: 'preDefense' }),
+            ],
             priority: 1,
         },
         {
             id: 'light-the-fuse-large',
             trigger: { type: 'largeStraight' },
-            effects: [grantStatus(STATUS_IDS.POWDER_KEG, '施加火药桶。'), damage(9, '造成 9 点伤害。', { timing: 'preDefense' })],
+            effects: [
+                grantStatus(STATUS_IDS.POWDER_KEG, abilityEffectText('light-the-fuse', 'largeInflictPowderKeg')),
+                damage(9, abilityEffectText('light-the-fuse', 'largeDamage9'), { timing: 'preDefense' }),
+            ],
             priority: 2,
         },
     ],
@@ -329,15 +332,15 @@ const HUMAN_LIGHT_THE_FUSE: AbilityDef = {
 
 const HUMAN_VERDICT_COMMAND: AbilityDef = {
     id: 'verdict-command',
-    name: '判决指令',
+    name: abilityText('verdict-command', 'name'),
     type: 'offensive',
-    description: '获得 1 个诅咒金币，施加休战，然后造成 7 点不可防御伤害。',
+    description: abilityText('verdict-command', 'description'),
     sfxKey: CURSED_PIRATE_SFX_CURSE,
     trigger: { type: 'diceSet', faces: { [FACE.SKULL]: 4 } },
     effects: [
         custom(
             'cursed-pirate-human-verdict-command',
-            '获得 1 个诅咒金币；选择完成后继续施加休战并造成 7 点不可防御伤害。',
+            abilityEffectText('verdict-command', 'coinChoiceThenContinue'),
             { target: 'self' },
         ),
     ],
@@ -345,44 +348,44 @@ const HUMAN_VERDICT_COMMAND: AbilityDef = {
 
 const HUMAN_ASTONISHING: AbilityDef = {
     id: 'astonishing',
-    name: '惊魂动魄',
+    name: abilityText('astonishing', 'name'),
     type: 'offensive',
     tags: ['unblockable'],
-    description: '造成 7 点不可防御伤害。你可以移除任意数量的诅咒金币。',
+    description: abilityText('astonishing', 'description'),
     sfxKey: CURSED_PIRATE_SFX_SLASH,
     trigger: { type: 'diceSet', faces: { [FACE.CUTLASS]: 1, [FACE.SKULL]: 3 } },
     effects: [
-        damage(7, '造成 7 点不可防御伤害。', { unblockable: true }),
-        custom('cursed-pirate-human-remove-cursed-coins-choice', '你可以移除任意数量的诅咒金币。', { timing: 'postDamage' }),
+        damage(7, abilityEffectText('astonishing', 'damage7'), { unblockable: true }),
+        custom('cursed-pirate-human-remove-cursed-coins-choice', abilityEffectText('astonishing', 'removeAnyCursedCoins'), { timing: 'postDamage' }),
     ],
 };
 
 const HUMAN_STILL_WET_BEHIND_EARS: AbilityDef = {
     id: 'human-still-wet-behind-ears',
-    name: '嘿，老兄',
+    name: abilityText('human-still-wet-behind-ears', 'name'),
     type: 'defensive',
     tags: ['defensive'],
-    description: '防御投掷 4 颗骰子：每个弯刀造成 1 点伤害；每个战利品获得 1CP；每个骷髅防止 2 点伤害；若投出 2 个弯刀和 1 个骷髅，则获得 1 个诅咒金币。',
+    description: abilityText('human-still-wet-behind-ears', 'description'),
     sfxKey: CURSED_PIRATE_SFX_SLASH,
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 4 },
     effects: [
-        custom('cursed-pirate-human-defense', '防御掷 4 颗骰子：弯刀反击、战利品得 CP、骷髅防伤，且 2 弯刀 + 1 骷髅时获得诅咒金币。', { timing: 'withDamage' }),
+        custom('cursed-pirate-human-defense', abilityEffectText('human-still-wet-behind-ears', 'defense4'), { timing: 'withDamage' }),
     ],
 };
 
 const HUMAN_MERCILESS_PLUNDER: AbilityDef = {
     id: 'merciless-plunder',
-    name: '无情劫掠！',
+    name: abilityText('merciless-plunder', 'name'),
     type: 'offensive',
     tags: ['ultimate', 'uninterruptible'],
-    description: '造成 12 点伤害。获得 2 个诅咒金币。施加休战和火药桶。',
+    description: abilityText('merciless-plunder', 'description'),
     sfxKey: CURSED_PIRATE_SFX_ULTIMATE,
     trigger: { type: 'diceSet', faces: { [FACE.SKULL]: 5 } },
     effects: [
-        damage(12, '造成 12 点伤害。'),
+        damage(12, abilityEffectText('merciless-plunder', 'damage12')),
         custom(
             'cursed-pirate-human-merciless-plunder',
-            '获得 2 个诅咒金币；选择完成后继续施加休战和火药桶。',
+            abilityEffectText('merciless-plunder', 'coinChoiceThenContinue'),
             { timing: 'postDamage', target: 'self' },
         ),
     ],

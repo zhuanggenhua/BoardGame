@@ -1437,8 +1437,9 @@ export class GameTransportServer {
         })) {
             return null;
         }
+        const phase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
         const pendingAttack = (match.state.core as { pendingAttack?: { defenderId?: unknown } } | undefined)?.pendingAttack;
-        if (currentPhase === 'defensiveRoll' && pendingAttack?.defenderId === currentPlayerId) {
+        if (phase === 'defensiveRoll' && pendingAttack?.defenderId === currentPlayerId) {
             return null;
         }
 
@@ -1467,7 +1468,6 @@ export class GameTransportServer {
             mode: 'strict',
         });
 
-        const phase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
         if (aiDispatchResult.kind === 'blocked') {
             const playerId = aiDispatchResult.playerId;
             if (

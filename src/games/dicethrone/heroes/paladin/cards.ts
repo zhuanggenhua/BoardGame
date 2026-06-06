@@ -66,7 +66,7 @@ export const PALADIN_CARDS: AbilityCard[] = [
         description: cardText('card-consecrate', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PALADIN, index: 2 },
         effects: [{
-            description: '选择1名玩家获得守护、弹反、暴击和精准',
+            description: cardText('card-consecrate', 'description'),
             action: { type: 'custom', target: 'self', customActionId: 'paladin-consecrate' },
             timing: 'immediate'
         }]
@@ -80,7 +80,7 @@ export const PALADIN_CARDS: AbilityCard[] = [
         description: cardText('card-divine-favor', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PALADIN, index: 3 },
         effects: [{
-            description: '投掷1骰：剑-抽2; 头盔-治愈3; 心-治愈4; 祈祷-3CP',
+            description: cardText('card-divine-favor', 'description'),
             action: {
                 type: 'rollDie', target: 'self', diceCount: 1,
                 conditionalEffects: [
@@ -104,7 +104,7 @@ export const PALADIN_CARDS: AbilityCard[] = [
         // 仅能在被攻击后打出 → 防御投掷阶段 + 必须是防御方（当前投掷方）
         playCondition: { phase: 'defensiveRoll', requireIsRoller: true },
         effects: [{
-            description: '被攻击后投掷1骰防御',
+            description: cardText('card-absolution', 'description'),
             action: {
                 type: 'rollDie', target: 'self', diceCount: 1,
                 conditionalEffects: [
@@ -127,7 +127,7 @@ export const PALADIN_CARDS: AbilityCard[] = [
         description: cardText('card-gods-grace', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.PALADIN, index: 11 },
         effects: [{
-            description: '投掷1骰：祈祷-4CP; 否则-抽1',
+            description: cardText('card-gods-grace', 'description'),
             action: {
                 type: 'rollDie', target: 'self', diceCount: 1,
                 conditionalEffects: [

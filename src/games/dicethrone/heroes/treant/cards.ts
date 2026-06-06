@@ -59,7 +59,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         sfxKey: TREANT_SFX_HEAVY,
         ...treantCardRef(17),
         isAttackModifier: true,
-        effects: [custom('treant-card-trample-roll', '投掷 5 骰；每个树枝使本次攻击 +1，若至少增加 3 伤害则施加刺藤。')],
+        effects: [custom('treant-card-trample-roll', cardText('treant-card-trample', 'description'))],
     },
     {
         id: 'upgrade-tend-care-2',
@@ -70,7 +70,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('upgrade-tend-care-2', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(18),
-        effects: [replaceAbility('tend-care', TEND_CARE_2, 2, '升级细心呵护至 II 级。')],
+        effects: [replaceAbility('tend-care', TEND_CARE_2, 2, cardText('upgrade-tend-care-2', 'description'))],
     },
     {
         id: 'upgrade-rooted-2',
@@ -81,7 +81,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('upgrade-rooted-2', 'description'),
         sfxKey: TREANT_SFX_HEAVY,
         ...treantCardRef(19),
-        effects: [replaceAbility('rooted', ROOTED_2, 2, '升级扎根至 II 级。')],
+        effects: [replaceAbility('rooted', ROOTED_2, 2, cardText('upgrade-rooted-2', 'description'))],
     },
     {
         id: 'treant-card-drink-deep',
@@ -92,7 +92,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-drink-deep', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(20),
-        effects: [custom('treant-card-drink-deep', '选择 1 名玩家获得生命源泉。')],
+        effects: [custom('treant-card-drink-deep', cardText('treant-card-drink-deep', 'description'))],
     },
     {
         id: 'upgrade-shattering-fist-3',
@@ -103,7 +103,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('upgrade-shattering-fist-3', 'description'),
         sfxKey: TREANT_SFX_HEAVY,
         ...treantCardRef(21),
-        effects: [replaceAbility('shattering-fist', SHATTERING_FIST_3, 3, '升级破碎之拳至 III 级。')],
+        effects: [replaceAbility('shattering-fist', SHATTERING_FIST_3, 3, cardText('upgrade-shattering-fist-3', 'description'))],
     },
     {
         id: 'treant-card-harvest',
@@ -114,7 +114,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-harvest', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(22),
-        effects: [custom('treant-card-harvest', '移除至多 3 树灵获得 CP；若至少移除 2 树灵，至多 2 名玩家获得生命源泉。')],
+        effects: [custom('treant-card-harvest', cardText('treant-card-harvest', 'description'))],
     },
     {
         id: 'treant-card-cultivate',
@@ -125,7 +125,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-cultivate', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(23),
-        effects: [custom('treant-card-cultivate', '养成 3 树灵。', { cultivateAmount: 3 })],
+        effects: [custom('treant-card-cultivate', cardText('treant-card-cultivate', 'description'), { cultivateAmount: 3 })],
     },
     {
         id: 'treant-card-downpour',
@@ -136,7 +136,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-downpour', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(24),
-        effects: [custom('treant-card-downpour', '你可以养成所有现有树灵各一次。')],
+        effects: [custom('treant-card-downpour', cardText('treant-card-downpour', 'description'))],
     },
     {
         id: 'upgrade-nature-touch-2',
@@ -147,7 +147,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('upgrade-nature-touch-2', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(25),
-        effects: [replaceAbility('nature-touch', NATURE_TOUCH_2, 2, '升级自然之触至 II 级。')],
+        effects: [replaceAbility('nature-touch', NATURE_TOUCH_2, 2, cardText('upgrade-nature-touch-2', 'description'))],
     },
     {
         id: 'treant-card-soulfire',
@@ -159,7 +159,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         sfxKey: TREANT_SFX_LIGHT,
         ...treantCardRef(26),
         isAttackModifier: true,
-        effects: [custom('treant-card-soulfire-roll', '投掷 3 骰；树枝对所有对手造成 1 附属伤害，树叶获得生命源泉，树灵养成 1 树灵。')],
+        effects: [custom('treant-card-soulfire-roll', cardText('treant-card-soulfire', 'description'))],
     },
     {
         id: 'treant-card-mother-tree',
@@ -170,7 +170,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-mother-tree', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(27),
-        effects: [custom('treant-card-mother-tree-roll', '投掷 1 骰；若投出树灵，养成 4 树灵，否则抽 1。')],
+        effects: [custom('treant-card-mother-tree-roll', cardText('treant-card-mother-tree', 'description'))],
     },
     {
         id: 'upgrade-vengeful-vines-2',
@@ -181,7 +181,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('upgrade-vengeful-vines-2', 'description'),
         sfxKey: TREANT_SFX_LIGHT,
         ...treantCardRef(28),
-        effects: [replaceAbility('vengeful-vines', VENGEFUL_VINES_2, 2, '升级复仇枝蔓至 II 级。')],
+        effects: [replaceAbility('vengeful-vines', VENGEFUL_VINES_2, 2, cardText('upgrade-vengeful-vines-2', 'description'))],
     },
     {
         id: 'upgrade-wild-growth-2',
@@ -192,7 +192,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('upgrade-wild-growth-2', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(29),
-        effects: [replaceAbility('wild-growth', WILD_GROWTH_2, 2, '升级野蛮生长至 II 级。')],
+        effects: [replaceAbility('wild-growth', WILD_GROWTH_2, 2, cardText('upgrade-wild-growth-2', 'description'))],
     },
     {
         id: 'upgrade-shattering-fist-2',
@@ -203,7 +203,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('upgrade-shattering-fist-2', 'description'),
         sfxKey: TREANT_SFX_HEAVY,
         ...treantCardRef(30),
-        effects: [replaceAbility('shattering-fist', SHATTERING_FIST_2, 2, '升级破碎之拳至 II 级。')],
+        effects: [replaceAbility('shattering-fist', SHATTERING_FIST_2, 2, cardText('upgrade-shattering-fist-2', 'description'))],
     },
     {
         id: 'treant-card-planting',
@@ -214,7 +214,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-planting', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(31),
-        effects: [custom('treant-card-cultivate', '养成 3 树灵。', { cultivateAmount: 3 })],
+        effects: [custom('treant-card-cultivate', cardText('treant-card-planting', 'description'), { cultivateAmount: 3 })],
     },
     ...injectCommonCardPreviewRefs(
         COMMON_CARDS,

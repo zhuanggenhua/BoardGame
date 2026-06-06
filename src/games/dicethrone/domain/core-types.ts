@@ -6,7 +6,6 @@
 import type { PlayerId } from '../../../engine/types';
 import type { AiSeatController } from '../../../engine/ai/types';
 import type { CardPreviewRef } from '../../../core';
-import type { CharacterBadgeDef } from '../../../core/ui';
 import type { AbilityDef, AbilityEffect } from './combat';
 import type { ResourcePool } from './resourceSystem';
 import type { TokenDef, TokenState } from './tokenTypes';
@@ -95,15 +94,8 @@ export type TeamId = 'A' | 'B';
 export interface CharacterDefinition {
     id: SelectableCharacterId;
     nameKey: string;
-    badges?: CharacterBadgeDef[];
+    badges?: import('../../../core/ui').CharacterBadgeDef[];
 }
-
-const IMPLEMENTATION_IN_PROGRESS_BADGE: CharacterBadgeDef = {
-    id: 'implementation_in_progress',
-    labelKey: 'common:status_tags.under_construction',
-    tone: 'warning',
-    variant: 'disabled-overlay',
-};
 
 export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'monk', nameKey: 'characters.monk' },
@@ -116,9 +108,22 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'samurai', nameKey: 'characters.samurai' },
     { id: 'treant', nameKey: 'characters.treant' },
     { id: 'ninja', nameKey: 'characters.ninja' },
-    { id: 'zhanshujia', nameKey: 'characters.zhanshujia', badges: [IMPLEMENTATION_IN_PROGRESS_BADGE] },
-    { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate', badges: [IMPLEMENTATION_IN_PROGRESS_BADGE] },
+    { id: 'zhanshujia', nameKey: 'characters.zhanshujia' },
+    { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate' },
 ];
+
+const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(
+    DICETHRONE_CHARACTER_CATALOG.map((character) => [character.id, character.nameKey]),
+) as Record<SelectableCharacterId, string>;
+
+export function getDiceThroneCharacterNameKey(
+    characterId: CharacterId | SelectableCharacterId | null | undefined,
+): string | null {
+    if (!characterId || characterId === 'unselected') {
+        return null;
+    }
+    return DICETHRONE_CHARACTER_NAME_KEY_MAP[characterId] ?? null;
+}
 
 /**
  * 骰子实例

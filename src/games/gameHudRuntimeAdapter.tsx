@@ -15,9 +15,8 @@ type GameHudRuntimeSettingsSectionPublicProps = GameRuntimeSettingsSectionProps 
 export type { GameHudRuntimeMode };
 
 export function shouldSuppressGameHudFab(args: GameHudRuntimeSuppressionInput): boolean {
-    return getGameImplementation(args.gameId ?? '')?.runtimeAdapter?.shouldSuppressHudFab?.(args)
-        ?? defaultGameRuntimeAdapter.shouldSuppressHudFab?.(args)
-        ?? false;
+    void args;
+    return false;
 }
 
 export function tryHandleGameHudForceDismiss(args: GameHudForceDismissInput): boolean {

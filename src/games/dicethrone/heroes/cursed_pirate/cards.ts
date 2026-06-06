@@ -3,6 +3,7 @@ import type { CardPreviewRef } from '../../../../core';
 import { COMMON_CARDS, injectCommonCardPreviewRefs, type CommonCardAtlasIndexMap } from '../../domain/commonCards';
 import { CURSED_PIRATE_DICE_FACE_IDS, DICETHRONE_CARD_ATLAS_IDS, STATUS_IDS } from '../../domain/ids';
 import type { AbilityCard } from '../../types';
+import { abilityEffectText } from '../../../../engine/primitives/ability';
 
 const cardText = (id: string, field: 'name' | 'description') => `cards.${id}.${field}`;
 
@@ -46,7 +47,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(17),
         sourceAtlasIndex: 17,
         effects: [{
-            description: '投掷 1 骰：若为骷髅，对一名对手施加休战；否则抽 1。',
+            description: abilityEffectText('card-cursed-pirate-weigh-anchor', 'roll'),
             action: {
                 type: 'rollDie',
                 target: 'opponent',
@@ -71,7 +72,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(18),
         sourceAtlasIndex: 18,
         effects: [{
-            description: '选择抽 1，或受 2/4 伤害并抽 2/3。',
+            description: abilityEffectText('card-cursed-pirate-curse-card', 'choice'),
             action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-curse-card-choice' },
             timing: 'immediate',
         }],
@@ -86,7 +87,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(19),
         sourceAtlasIndex: 19,
         effects: [{
-            description: '弃掉所有手牌，然后抽 4。',
+            description: abilityEffectText('card-cursed-pirate-batten-down', 'discardHandDraw4'),
             action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-batten-down' },
             timing: 'immediate',
         }],
@@ -103,7 +104,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         isAttackModifier: true,
         playCondition: { requireDiceExists: true, requireHasRolled: true },
         effects: [{
-            description: '攻击伤害 +2。',
+            description: abilityEffectText('card-cursed-pirate-shark-bait', 'attackDamagePlus2'),
             action: { type: 'damage', target: 'opponent', value: 2, damageScope: 'attack' },
             timing: 'immediate',
         }],
@@ -120,7 +121,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         isAttackModifier: true,
         playCondition: { requireDiceExists: true, requireHasRolled: true },
         effects: [{
-            description: '投 5 骰，每个弯刀增加 1 攻击伤害；若至少增加 3 伤害，则施加火药桶。',
+            description: abilityEffectText('card-cursed-pirate-flay', 'roll5'),
             action: { type: 'custom', target: 'opponent', customActionId: 'cursed-pirate-flay-roll' },
             timing: 'immediate',
         }],
@@ -136,7 +137,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         sourceAtlasIndex: 22,
         playCondition: { requireDiceExists: true, requireHasRolled: true },
         effects: [{
-            description: '选择对手一颗骰子；除非其支付 2CP，否则重掷该骰子。',
+            description: abilityEffectText('card-cursed-pirate-ransom', 'chooseDieOrPay2'),
             action: { type: 'custom', target: 'opponent', customActionId: 'cursed-pirate-ransom-die-choice' },
             timing: 'immediate',
         }],
@@ -151,7 +152,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(23),
         sourceAtlasIndex: 23,
         effects: [{
-            description: '投掷 1 骰：弯刀造成 2 伤害；战利品抽 2；骷髅施加火药桶。',
+            description: abilityEffectText('card-cursed-pirate-bluster', 'roll'),
             action: {
                 type: 'rollDie',
                 target: 'opponent',
@@ -175,8 +176,8 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(24),
         sourceAtlasIndex: 24,
         effects: [
-            { description: '受到 1 伤害。', action: { type: 'damage', target: 'self', value: 1, damageScope: 'direct', unblockable: true }, timing: 'immediate' },
-            { description: '对一名对手施加凋零。', action: { type: 'grantStatus', target: 'opponent', statusId: STATUS_IDS.WITHER, value: 1 }, timing: 'immediate' },
+            { description: abilityEffectText('card-cursed-pirate-scurvy', 'selfDamage1'), action: { type: 'damage', target: 'self', value: 1, damageScope: 'direct', unblockable: true }, timing: 'immediate' },
+            { description: abilityEffectText('card-cursed-pirate-scurvy', 'inflictWither'), action: { type: 'grantStatus', target: 'opponent', statusId: STATUS_IDS.WITHER, value: 1 }, timing: 'immediate' },
         ],
     },
     {
@@ -189,7 +190,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(25),
         sourceAtlasIndex: 25,
         effects: [{
-            description: '从一名对手处偷取 1CP。',
+            description: abilityEffectText('card-cursed-pirate-pillage', 'steal1Cp'),
             action: { type: 'custom', target: 'opponent', customActionId: 'cursed-pirate-steal-one-cp' },
             timing: 'immediate',
         }],
@@ -204,7 +205,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(26),
         sourceAtlasIndex: 26,
         effects: [{
-            description: '对一名对手施加休战。',
+            description: abilityEffectText('card-cursed-pirate-parley', 'inflictParley'),
             action: { type: 'grantStatus', target: 'opponent', statusId: STATUS_IDS.PARLEY, value: 1 },
             timing: 'immediate',
         }],
@@ -219,7 +220,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(27),
         sourceAtlasIndex: 27,
         effects: [{
-            description: '选择一名对手并投 1 骰：弯刀查看其手牌；战利品由其自选弃 1；骷髅随机弃 1。',
+            description: abilityEffectText('card-cursed-pirate-crows-nest', 'roll'),
             action: { type: 'custom', target: 'opponent', customActionId: 'cursed-pirate-crows-nest-roll' },
             timing: 'immediate',
         }],
@@ -234,7 +235,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(28),
         sourceAtlasIndex: 28,
         effects: [{
-            description: '投 2 骰；若投出战利品，抽 2 并获得 2CP。',
+            description: abilityEffectText('card-cursed-pirate-hefty', 'roll2'),
             action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-hefty-roll' },
             timing: 'immediate',
         }],
@@ -249,7 +250,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(29),
         sourceAtlasIndex: 29,
         effects: [{
-            description: '普通面路径：获得 1 个诅咒金币；咒缚面路径：治疗 3。',
+            description: abilityEffectText('card-cursed-pirate-pirates-life', 'faceDependent'),
             action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-pirates-life' },
             timing: 'immediate',
         }],
@@ -264,7 +265,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(30),
         sourceAtlasIndex: 30,
         effects: [{
-            description: '对至多 3 名不同的对手施加火药桶。',
+            description: abilityEffectText('card-cursed-pirate-go-fish', 'powderKegTargets'),
             action: { type: 'custom', target: 'self', customActionId: 'cursed-pirate-go-fish-powder-keg-targets' },
             timing: 'immediate',
         }],
@@ -278,7 +279,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         description: cardText('card-cursed-pirate-give-me-some', 'description'),
         previewRef: atlasPreview(31),
         sourceAtlasIndex: 31,
-        effects: [{ description: '对一名对手施加火药桶。', action: { type: 'grantStatus', target: 'opponent', statusId: STATUS_IDS.POWDER_KEG, value: 1 }, timing: 'immediate' }],
+        effects: [{ description: abilityEffectText('card-cursed-pirate-give-me-some', 'inflictPowderKeg'), action: { type: 'grantStatus', target: 'opponent', statusId: STATUS_IDS.POWDER_KEG, value: 1 }, timing: 'immediate' }],
     },
     {
         id: 'card-cursed-pirate-sip',
@@ -290,7 +291,7 @@ const CURSED_PIRATE_HERO_CARDS: AbilityCard[] = [
         previewRef: atlasPreview(32),
         sourceAtlasIndex: 32,
         effects: [{
-            description: '对一名对手施加火药桶；该对手可改为投 1 骰，3-6 时获得火药桶和凋零。',
+            description: abilityEffectText('card-cursed-pirate-sip', 'choice'),
             action: { type: 'custom', target: 'opponent', customActionId: 'cursed-pirate-sip-choice' },
             timing: 'immediate',
         }],

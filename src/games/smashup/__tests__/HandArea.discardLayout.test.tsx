@@ -66,4 +66,20 @@ describe('SmashUp HandArea discard layout', () => {
         expect(firstCard?.style.width).toBeTruthy();
         expect(firstCard?.style.height).toBeTruthy();
     });
+
+    it('直选手牌选择态下只高亮合法卡，其他手牌保持普通显示', async () => {
+        const view = renderHandArea({
+            highlightCardUids: new Set(['hand-card-0']),
+        });
+
+        await waitFor(() => {
+            expect(view.container.querySelectorAll('[data-card-uid]')).toHaveLength(12);
+        });
+
+        const selectableCard = view.container.querySelector<HTMLElement>('[data-card-uid="hand-card-0"] > div');
+        const normalCard = view.container.querySelector<HTMLElement>('[data-card-uid="hand-card-1"] > div');
+        expect(selectableCard?.className).toContain('ring-2 ring-green-500/35');
+        expect(normalCard?.className).not.toContain('ring-2 ring-green-500/35');
+        expect(normalCard?.className).not.toContain('opacity-40 grayscale');
+    });
 });

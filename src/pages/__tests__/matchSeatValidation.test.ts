@@ -73,7 +73,10 @@ import {
     shouldRetainOnlineAiSeatOverrideAfterLatestState,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../onlineAiRecovery';
-import { resolveOnlineAiActivePlayerId } from '../useOnlineAiSeatAutoDispatch';
+import {
+    releaseConfirmedOnlineAiAttempt,
+    resolveOnlineAiActivePlayerId,
+} from '../useOnlineAiSeatAutoDispatch';
 import { resolveMatchRoomRouteIdentity } from '../matchRouteIdentity';
 import { resolveSmashUpLocalPregameControlledPlayerId } from '../../games/smashup/localPregameControl';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
@@ -4740,6 +4743,58 @@ describe('AI attemptKey 预占位', () => {
 
         releaseAiAttemptKeyIfMatches(ref, 'attempt-2');
         expect(ref.current).toBeNull();
+    });
+});
+
+describe('online-ai confirmed attempt release', () => {
+    it('shared state 已吸收 manual setup 结果时，不应因缺少 engineConfig 而在 release 阶段抛错', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['pirates', 'robots'],
+                    playerSelections: {
+                        '0': ['pirates'],
+                        '1': ['robots'],
+                    },
+                    completedPlayers: [],
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+        const activeAiAttemptRef = {
+            current: {
+                attemptKey: 'attempt-release-1',
+                playerId: '1',
+                reservedAt: Date.now(),
+                sharedMarker: 'shared-marker',
+                seatMarker: null,
+                actionKind: 'select-faction',
+                pendingSelectionId: 'robots',
+            },
+        };
+        const aiSeatDecisionDebugRef = { current: {} as Record<string, Record<string, unknown>> };
+        const clearActiveAiAttemptIfMatches = vi.fn((attemptKey: string) => {
+            if (activeAiAttemptRef.current?.attemptKey === attemptKey) {
+                activeAiAttemptRef.current = null;
+            }
+        });
+
+        expect(() => releaseConfirmedOnlineAiAttempt({
+            engineConfig: { gameId: 'smashup' },
+            sharedState,
+            activeAiAttemptRef,
+            aiSeatDecisionDebugRef,
+            getEffectiveSeatState: () => sharedState,
+            getSeatClient: () => null,
+            requestSeatResync: vi.fn(),
+            clearActiveAiAttemptIfMatches,
+        })).not.toThrow();
+
+        expect(clearActiveAiAttemptIfMatches).toHaveBeenCalledWith('attempt-release-1');
+        expect(activeAiAttemptRef.current).toBeNull();
+        expect(aiSeatDecisionDebugRef.current['1']?.stage).toBe('shared-faction-select-confirmed');
     });
 });
 

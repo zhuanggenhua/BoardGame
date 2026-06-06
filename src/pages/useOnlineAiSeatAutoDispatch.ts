@@ -4,9 +4,11 @@ import {
     releaseAiAttemptKeyIfMatches,
     tryReserveAiAttemptKey,
 } from '../engine/transport/react';
-import { resolveOnlineAiCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
+import {
+    resolveOnlineAiCurrentPlayerId,
+    type OnlineAiRecoveryEngineConfig,
+} from '../engine/transport/onlineAiRecovery';
 import type { GameTransportClient } from '../engine/transport/client';
-import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import {
     resolveLocalAiActionDelayPlan,
@@ -65,7 +67,7 @@ type OnlineAiAttemptReleaseStage = 'shared-faction-select-confirmed' | 'seat-fac
 
 type OnlineAiResolutionSubmissionLifecycleArgs = {
     matchId: string;
-    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig: OnlineAiRecoveryEngineConfig;
     sharedState: MatchState<unknown>;
     resolution: AiResolution;
     commandTypes: string[];
@@ -88,7 +90,7 @@ type OnlineAiSeatRecoveryFlowArgs = {
 };
 
 type OnlineAiActiveAttemptLifecycleArgs = {
-    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig: OnlineAiRecoveryEngineConfig;
     sharedState: MatchState<unknown>;
     activeAiAttemptRef: { current: ActiveAiAttempt | null };
     aiSeatDecisionDebugRef: { current: Record<string, Record<string, unknown>> };
@@ -101,7 +103,7 @@ type OnlineAiActiveAttemptLifecycleArgs = {
 export function resolveOnlineAiActivePlayerId(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): string | null {
     const currentPlayerId = resolveOnlineAiCurrentPlayerId(args.sharedState, {
         engineConfig: args.engineConfig,
@@ -129,7 +131,7 @@ function resolveOnlineAiAttemptReleaseStage(args: {
     playerId: string;
     actionKind: string;
     selectionId: string | null;
-    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig: OnlineAiRecoveryEngineConfig;
 }): OnlineAiAttemptReleaseStage | null {
     if (!shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt(args.actionKind, {
         playerId: args.playerId,
@@ -340,8 +342,9 @@ function resolveOnlineAiSeatRecoveryFlow(args: OnlineAiSeatRecoveryFlowArgs): {
     };
 }
 
-function releaseConfirmedOnlineAiAttempt(args: OnlineAiActiveAttemptLifecycleArgs): void {
+export function releaseConfirmedOnlineAiAttempt(args: OnlineAiActiveAttemptLifecycleArgs): void {
     const {
+        engineConfig,
         sharedState,
         activeAiAttemptRef,
         aiSeatDecisionDebugRef,
@@ -428,7 +431,7 @@ function releaseStaleOnlineAiAttempt(args: OnlineAiActiveAttemptLifecycleArgs): 
 
 type OnlineAiSeatAutoDispatchArgs = {
     matchId: string;
-    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig: OnlineAiRecoveryEngineConfig;
     state: MatchState<unknown> | null;
     seatControllers: Record<string, AiSeatController>;
     seatCredentials: Record<string, string>;

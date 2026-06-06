@@ -1,5 +1,5 @@
 import { DEFAULT_LOCAL_AI_DIFFICULTY, normalizeAiDifficultyLevel } from './difficulty';
-import type { AiSeatController, AiSupportProfile } from './types';
+import type { AiSeatController, AiSupportProfile, ManualSetupSeatControllerLike } from './types';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import {
     getDefaultSetupSelections,
@@ -12,13 +12,7 @@ import {
 const DEFAULT_REMOTE_PROVIDER_ID = 'astrbot';
 export const DEFAULT_AI_MINIMUM_ACTION_DELAY_MS = 1000;
 const MAX_AI_MINIMUM_ACTION_DELAY_MS = 5000;
-const MANUAL_FACTION_SEARCH_VALUE = '1';
-
-export type ManualSetupSeatControllerLike = {
-    type?: unknown;
-    manualSetupSelection?: unknown;
-    manualFactionSelection?: unknown;
-};
+const MANUAL_SETUP_SEARCH_VALUE = '1';
 
 function sanitizeOptionalId(value: string | undefined): string | undefined {
     const trimmed = value?.trim();
@@ -31,13 +25,13 @@ function sanitizeMinimumActionDelayMs(value: number | undefined): number | undef
     return Math.max(0, Math.min(Math.round(value), MAX_AI_MINIMUM_ACTION_DELAY_MS));
 }
 
-function isManualFactionSelectionEnabled(value: string | null): boolean {
-    return value === MANUAL_FACTION_SEARCH_VALUE || value === 'true';
+function isManualSetupSelectionSearchValueEnabled(value: string | null): boolean {
+    return value === MANUAL_SETUP_SEARCH_VALUE || value === 'true';
 }
 
 function isManualSetupSelectionEnabledFromSearchParams(searchParams: URLSearchParams, index: number): boolean {
-    return isManualFactionSelectionEnabled(searchParams.get(`seat${index}ManualSetup`))
-        || isManualFactionSelectionEnabled(searchParams.get(`seat${index}ManualFaction`));
+    return isManualSetupSelectionSearchValueEnabled(searchParams.get(`seat${index}ManualSetup`))
+        || isManualSetupSelectionSearchValueEnabled(searchParams.get(`seat${index}ManualFaction`));
 }
 
 export function isManualSetupSelectionEnabledForSeat(
@@ -48,6 +42,19 @@ export function isManualSetupSelectionEnabledForSeat(
             controller?.manualSetupSelection === true
             || controller?.manualFactionSelection === true
         );
+}
+
+export function withManualSetupSelectionAliases<T extends { type?: unknown }>(
+    controller: T,
+): T & {
+    manualSetupSelection: true;
+    manualFactionSelection: true;
+} {
+    return {
+        ...controller,
+        manualSetupSelection: true,
+        manualFactionSelection: true,
+    };
 }
 
 export function resolveAiMinimumActionDelayMs(
@@ -108,10 +115,7 @@ export function normalizeSeatController(
             ...(normalizeAiDifficultyLevel(controller.difficulty) ? { difficulty: normalizeAiDifficultyLevel(controller.difficulty) } : {}),
             ...(minimumActionDelayMs !== undefined ? { minimumActionDelayMs } : {}),
             ...(isManualSetupSelectionEnabledForSeat(controller)
-                ? {
-                    manualSetupSelection: true,
-                    manualFactionSelection: true,
-                }
+                ? withManualSetupSelectionAliases({})
                 : {}),
         };
     }
@@ -130,10 +134,7 @@ export function normalizeSeatController(
         ...(fallbackPolicyId ? { fallbackPolicyId } : {}),
         ...(minimumActionDelayMs !== undefined ? { minimumActionDelayMs } : {}),
         ...(isManualSetupSelectionEnabledForSeat(controller)
-            ? {
-                manualSetupSelection: true,
-                manualFactionSelection: true,
-            }
+            ? withManualSetupSelectionAliases({})
             : {}),
     };
 }
@@ -267,8 +268,8 @@ export function buildLocalMatchSearchParams(args: {
             search.set(`seat${index}Difficulty`, controller.difficulty);
         }
         if (isManualSetupSelectionEnabledForSeat(controller)) {
-            search.set(`seat${index}ManualSetup`, MANUAL_FACTION_SEARCH_VALUE);
-            search.set(`seat${index}ManualFaction`, MANUAL_FACTION_SEARCH_VALUE);
+            search.set(`seat${index}ManualSetup`, MANUAL_SETUP_SEARCH_VALUE);
+            search.set(`seat${index}ManualFaction`, MANUAL_SETUP_SEARCH_VALUE);
         }
     }
 

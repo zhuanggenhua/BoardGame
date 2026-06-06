@@ -42,6 +42,10 @@ Use this skill when the user asks to build UI from a generated design image or r
 
 ## Non-negotiables
 
+- New UI is not complete until it passes end-to-end on the real page or carrier it is meant to ship in.
+- For primary board or main-page rewrites in BoardGame, desktop real-page review is the first gate. Do not move the task's primary status to mobile adaptation while desktop still has blocking UI bugs, unless the user explicitly asks for a different order.
+- If real-page review still finds layout breakage, hierarchy drift, overflow, missing core controls, misleading empty states, or any other user-visible bug in the criticized path, do not report the UI as implemented or complete.
+- Passing component tests, DOM assertions, or partial screenshots is not enough when the shipped page still fails the target reading path.
 - Do not stop at "the right fields exist".
 - Do not accept a matching outer frame if the interior spacing is wrong.
 - Do not turn "not fullscreen" into the rule itself. The real rule is to converge back to the target draft and the shared shell's component grammar. If content clips, fix the shell's internal rhythm, local scrolling, or compact branch first while preserving center, margins, and component identity.
@@ -61,6 +65,21 @@ Use this skill when the user asks to build UI from a generated design image or r
 - Do not finalize without a side-by-side or crop comparison against the target. Human memory of the target is not evidence.
 - Do not stop on a passing E2E if the visual verdict is still "revise". Passing tests are only gates for covered metrics, not proof of visual fidelity.
 - Treat this skill as the implementation-validation counterpart to image generation. The image-generation step creates a target; this workflow decides whether the shipped UI actually satisfies that target.
+
+## Completion Gate
+
+Before calling a new UI complete, verify all of the following on the real route, modal, board, or page:
+
+1. The primary user path works end-to-end in the shipped carrier, not only in an isolated component state.
+2. The latest screenshot for that real carrier has been re-opened and visually checked after the final edit.
+3. Any previously identified real-page bug in that path is either fixed or explicitly recorded as still blocking completion.
+4. The final report distinguishes:
+   - complete implementation
+   - blocked by remaining UI bug
+   - optional follow-up polish
+5. If the task includes both desktop and mobile work, state whether desktop real-page acceptance has already passed. If not, mobile work cannot be the default next stage unless the user explicitly overrides the sequence.
+
+If item 3 is not satisfied, the correct status is "not complete".
 
 ## When to read more
 

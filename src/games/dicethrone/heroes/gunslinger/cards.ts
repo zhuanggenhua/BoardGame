@@ -79,7 +79,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-revolver-2', 'description'),
         sfxKey: GUNSLINGER_SFX_SHOT,
         ...gunslingerAtlasRef(18),
-        effects: [replaceAbility('revolver', REVOLVER_2, 2, '升级左轮手枪至 II 级。')],
+        effects: [replaceAbility('revolver', REVOLVER_2, 2, cardText('upgrade-revolver-2', 'description'))],
     },
     {
         id: 'upgrade-bounty-hunter-2',
@@ -90,7 +90,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-bounty-hunter-2', 'description'),
         sfxKey: GUNSLINGER_SFX_SHOT,
         ...gunslingerAtlasRef(19),
-        effects: [replaceAbility('bounty-hunter', BOUNTY_HUNTER_2, 2, '升级赏金猎人至 II 级。')],
+        effects: [replaceAbility('bounty-hunter', BOUNTY_HUNTER_2, 2, cardText('upgrade-bounty-hunter-2', 'description'))],
     },
     {
         id: 'upgrade-showdown-2',
@@ -101,7 +101,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-showdown-2', 'description'),
         sfxKey: GUNSLINGER_SFX_HEAVY,
         ...gunslingerAtlasRef(20),
-        effects: [replaceAbility('showdown', SHOWDOWN_2, 2, '升级枪战决斗至 II 级。')],
+        effects: [replaceAbility('showdown', SHOWDOWN_2, 2, cardText('upgrade-showdown-2', 'description'))],
     },
     {
         id: 'upgrade-showdown-3',
@@ -112,7 +112,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-showdown-3', 'description'),
         sfxKey: GUNSLINGER_SFX_HEAVY,
         ...gunslingerAtlasRef(21),
-        effects: [replaceAbility('showdown', SHOWDOWN_3, 3, '升级枪战决斗至 III 级。')],
+        effects: [replaceAbility('showdown', SHOWDOWN_3, 3, cardText('upgrade-showdown-3', 'description'))],
     },
     {
         id: 'upgrade-fan-the-hammer-2',
@@ -123,7 +123,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-fan-the-hammer-2', 'description'),
         sfxKey: GUNSLINGER_SFX_HEAVY,
         ...gunslingerAtlasRef(22),
-        effects: [replaceAbility('fan-the-hammer', FAN_THE_HAMMER_2, 2, '升级左轮速射至 II 级。')],
+        effects: [replaceAbility('fan-the-hammer', FAN_THE_HAMMER_2, 2, cardText('upgrade-fan-the-hammer-2', 'description'))],
     },
     {
         id: 'upgrade-take-cover-2',
@@ -134,7 +134,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-take-cover-2', 'description'),
         sfxKey: GUNSLINGER_SFX_SHOT,
         ...gunslingerAtlasRef(23),
-        effects: [replaceAbility('take-cover', TAKE_COVER_2, 2, '升级掩护射击至 II 级。')],
+        effects: [replaceAbility('take-cover', TAKE_COVER_2, 2, cardText('upgrade-take-cover-2', 'description'))],
     },
     {
         id: 'upgrade-deadeye-2',
@@ -145,7 +145,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-deadeye-2', 'description'),
         sfxKey: GUNSLINGER_SFX_HEAVY,
         ...gunslingerAtlasRef(24),
-        effects: [replaceAbility('deadeye', DEADEYE_2, 2, '升级死亡之眼至 II 级。')],
+        effects: [replaceAbility('deadeye', DEADEYE_2, 2, cardText('upgrade-deadeye-2', 'description'))],
     },
     {
         id: 'upgrade-duel-2',
@@ -156,7 +156,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-duel-2', 'description'),
         sfxKey: GUNSLINGER_SFX_HEAVY,
         ...gunslingerAtlasRef(25),
-        effects: [replaceAbility('duel', DUEL_2, 2, '升级对决至 II 级。')],
+        effects: [replaceAbility('duel', DUEL_2, 2, cardText('upgrade-duel-2', 'description'))],
     },
     {
         id: 'upgrade-quick-draw',
@@ -167,7 +167,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-quick-draw', 'description'),
         sfxKey: GUNSLINGER_SFX_DRAW,
         ...gunslingerAtlasRef(26),
-        effects: [replaceAbility('quick-draw', QUICK_DRAW_UPGRADED, 2, '升级快速拔枪至 II 级。')],
+        effects: [replaceAbility('quick-draw', QUICK_DRAW_UPGRADED, 2, cardText('upgrade-quick-draw', 'description'))],
     },
     {
         id: 'card-wanted',
@@ -179,7 +179,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         sfxKey: GUNSLINGER_SFX_BOUNTY,
         ...gunslingerAtlasRef(27),
         effects: [
-            custom('gunslinger-card-wanted', '选择 1 位玩家，使其获得 1 个赏金。'),
+            custom('gunslinger-card-wanted', cardText('card-wanted', 'description')),
         ],
     },
     {
@@ -192,7 +192,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         sfxKey: GUNSLINGER_SFX_LOADED,
         ...gunslingerAtlasRef(28),
         effects: [
-            grantToken('self', TOKEN_IDS.LOADED, 1, '获得 1 个装填。'),
+            grantToken('self', TOKEN_IDS.LOADED, 1, cardText('card-spin-the-chamber', 'description')),
         ],
     },
     {
@@ -205,7 +205,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         sfxKey: GUNSLINGER_SFX_SHOT,
         ...gunslingerAtlasRef(29),
         effects: [
-            custom('gunslinger-card-high-noon', '选择 1 位目标玩家，掷 1 颗骰子并按结果结算。'),
+            custom('gunslinger-card-high-noon', cardText('card-high-noon', 'description')),
         ],
     },
     {
@@ -222,7 +222,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         effects: [
             // 说明：这里的“该骰子”指的是你后续花费 Loaded 时触发的“装填奖励骰特写”中的那颗骰子（不是主攻击骰盘）。
             // 注意：本效果挂载到“装填奖励骰特写（bonus die spotlight）”的后续结算上；卡面描述不强调“下一次”，这里保持与 i18n 文案一致，避免双源漂移。
-            custom('gunslinger-card-wild-west', '当你花费 1 个装填指示物并掷装填奖励骰时，你可以将该奖励骰重掷 1 次，然后本次攻击总伤害值 +1。'),
+            custom('gunslinger-card-wild-west', cardText('card-wild-west', 'description')),
         ],
     },
     {
@@ -237,7 +237,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         isAttackModifier: true,
         playCondition: { requireDiceExists: true, requireHasRolled: true },
         effects: [
-            custom('gunslinger-card-eat-my-lead', '额外掷 5 颗骰子；每个子弹令本次攻击 +1。若加值大于 4，再施加击倒。'),
+            custom('gunslinger-card-eat-my-lead', cardText('card-eat-my-lead', 'description')),
         ],
     },
 

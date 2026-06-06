@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
-import type { GameEngineConfig } from '../engine/transport/server';
 import type { MatchState } from '../engine/types';
 import type { AiSeatController } from '../engine/ai';
+import type { OnlineAiRecoveryEngineConfig } from '../engine/transport/onlineAiRecovery';
 import {
     buildOnlineAiForceEndTurnTrackerKey,
     buildOnlineAiForceSkipTrackerKey,
@@ -41,7 +41,7 @@ type ForceEndTurnTracker = {
 
 type OnlineAiSeatAutoRecoveryArgs = {
     state: MatchState<unknown> | null;
-    engineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    engineConfig: OnlineAiRecoveryEngineConfig;
     lastAiAttemptKeyRef: { current: string | null };
     seatControllers: Record<string, AiSeatController>;
     runtime: OnlineAiSeatTransportRuntime;

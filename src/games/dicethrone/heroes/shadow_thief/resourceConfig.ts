@@ -4,7 +4,7 @@ import { INITIAL_HEALTH, MAX_HEALTH, INITIAL_CP, CP_MAX } from '../../domain/typ
 export const SHADOW_THIEF_RESOURCES: ResourceDefinition[] = [
     {
         id: 'cp',
-        name: 'CP',
+        name: 'config.resources.cp.name',
         initialValue: INITIAL_CP,
         min: 0,
         max: CP_MAX,
@@ -13,7 +13,7 @@ export const SHADOW_THIEF_RESOURCES: ResourceDefinition[] = [
     },
     {
         id: 'hp',
-        name: 'HP',
+        name: 'config.resources.hp.name',
         initialValue: INITIAL_HEALTH,
         min: 0,
         max: MAX_HEALTH, // 规则：玩家可以治疗到超过初始生命值最多 10 点

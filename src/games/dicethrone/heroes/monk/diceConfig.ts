@@ -17,7 +17,7 @@ import { DICE_FACE_IDS } from '../../domain/ids';
  */
 export const monkDiceDefinition: DiceDefinition = {
     id: 'monk-dice',
-    name: 'Monk Dice',
+    name: 'config.dice.monk.name',
     sides: 6,
     category: 'hero',
     faces: [

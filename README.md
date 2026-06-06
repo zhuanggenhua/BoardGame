@@ -185,6 +185,9 @@ bash deploy.sh
 # 后续更新
 bash deploy.sh update
 
+# 手动回滚到上次成功部署版本
+bash deploy.sh rollback-last
+
 # 拉取慢时，先单独拉镜像再 update（避免 compose pull 并发抢带宽）
 docker pull ghcr.io/zhuanggenhua/boardgame-game:latest
 docker pull ghcr.io/zhuanggenhua/boardgame-web:latest

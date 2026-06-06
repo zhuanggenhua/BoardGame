@@ -21,10 +21,10 @@ import {
     type MatchRoomSeatValidationSnapshot,
 } from './matchRoomBridges';
 import type { MatchRoomOnlineHudBridgeProps } from './useMatchRoomOnlineHudModel';
+import type { ManualSetupSeatDispatch } from './onlineManualSetup.types';
 import {
-    OnlineManualFactionSelectionBridge,
-    type ManualAiSeatDispatch,
-} from './onlineManualFactionSelectionBridge';
+    OnlineManualSetupSelectionBridge,
+} from './onlineManualSetupSelectionBridge';
 
 type MatchRoomBoardComponent = ComponentType<GameBoardProps>;
 type MatchRoomStatusPlayer = {
@@ -57,8 +57,8 @@ export type MatchRoomOnlineAiRuntimeModel = {
     seatCredentials: Record<string, string>;
     autoAcceptedPlayerIds: string[];
     onForceEndAiPhaseReady?: (handler: (() => Promise<boolean>) | null) => void;
-    onManualFactionDispatchReady?: (handler: ManualAiSeatDispatch | null) => void;
-    dispatchManualAiCommand: ManualAiSeatDispatch | null;
+    onManualSetupDispatchReady?: (handler: ManualSetupSeatDispatch | null) => void;
+    dispatchManualSetupCommand: ManualSetupSeatDispatch | null;
 };
 
 export type MatchRoomOnlineProviderModel = {
@@ -102,7 +102,7 @@ export type MatchRoomOnlineOverlayBridgesModel = {
 
 export type MatchRoomOnlineSeatBridgeModel = {
     seatControllers: Record<string, AiSeatController>;
-    dispatchManualAiCommand: ManualAiSeatDispatch | null;
+    dispatchManualSetupCommand: ManualSetupSeatDispatch | null;
     engineConfig: GameEngineConfig | null;
     ai: MatchRoomOnlineAiRuntimeModel | null;
 };
@@ -312,10 +312,10 @@ const MatchRoomOnlineOverlayBridges = ({
                     matchId={seatBridge.ai.matchId}
                     engineConfig={seatBridge.ai.engineConfig}
                     seatControllers={seatBridge.ai.seatControllers}
-                    seatCredentials={seatBridge.ai.seatCredentials}
-                    onForceEndAiPhaseReady={seatBridge.ai.onForceEndAiPhaseReady}
-                    onManualFactionDispatchReady={seatBridge.ai.onManualFactionDispatchReady}
-                />
+                seatCredentials={seatBridge.ai.seatCredentials}
+                onForceEndAiPhaseReady={seatBridge.ai.onForceEndAiPhaseReady}
+                onManualSetupDispatchReady={seatBridge.ai.onManualSetupDispatchReady}
+            />
             )}
         </>
     );
@@ -330,14 +330,14 @@ const MatchRoomOnlineSeatBridge = ({
 }) => {
     return (
         <>
-            {/* Keep the board inside the manual-faction seam so seat overrides apply to board commands. */}
-            <OnlineManualFactionSelectionBridge
+            {/* Keep the board inside the manual-setup seam so seat overrides apply to board commands. */}
+            <OnlineManualSetupSelectionBridge
                 seatControllers={seatBridge.seatControllers}
-                dispatchManualAiCommand={seatBridge.dispatchManualAiCommand}
+                dispatchManualSetupCommand={seatBridge.dispatchManualSetupCommand}
                 engineConfig={seatBridge.engineConfig}
             >
                 {children}
-            </OnlineManualFactionSelectionBridge>
+            </OnlineManualSetupSelectionBridge>
         </>
     );
 };

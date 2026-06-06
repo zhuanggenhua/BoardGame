@@ -17,7 +17,7 @@ import {
     inferDirectTargetTypeFromOptions,
     isCreateSimpleChoiceCall,
 } from './helpers/simpleChoiceAst';
-import { getSmashUpSelectableBaseIndices, hasSmashUpDirectHandPromptPlayableOptions, isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolveSmashUpHandPromptUiMode, shouldForceSmashUpPromptOverlay, shouldRenderSmashUpHandArea } from '../ui/interactionMode';
+import { getSmashUpDirectHandPromptCardState, getSmashUpSelectableBaseIndices, hasSmashUpDirectHandPromptPlayableOptions, isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolveSmashUpHandPromptUiMode, shouldForceSmashUpPromptOverlay, shouldRenderSmashUpHandArea } from '../ui/interactionMode';
 
 interface TargetTypeIssue {
     file: string;
@@ -935,7 +935,7 @@ describe('SmashUp Interaction targetType 审计', () => {
                 { displayMode: 'card' },
                 { displayMode: 'card' },
             ],
-        })).toBe(true);
+        })).toBe(false);
 
         expect(resolveSmashUpHandPromptUiMode({
             currentPrompt: { playerId: '0', multi: undefined },
@@ -1026,6 +1026,26 @@ describe('SmashUp Interaction targetType 审计', () => {
             targetType: 'hand',
             activePromptSurface: 'hand',
         })).toBe(true);
+
+        const directHandCardState = getSmashUpDirectHandPromptCardState({
+            currentPrompt: {
+                playerId: '0',
+                options: [
+                    { id: 'play-card', label: 'Going Bananas', value: { cardUid: 'mind-bananas-hand' } },
+                    { id: 'disabled-card', label: 'Disabled', value: { cardUid: 'stale-hand' }, disabled: true },
+                    { id: 'skip', label: '放弃这次额外战术', value: { skip: true } },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            hand: [
+                { uid: 'mind-bananas-hand' },
+                { uid: 'stale-hand' },
+                { uid: 'other-hand-card' },
+            ],
+        });
+        expect(Array.from(directHandCardState.selectableCardUids)).toEqual(['mind-bananas-hand']);
+        expect(Array.from(directHandCardState.disabledCardUids ?? []).sort()).toEqual(['other-hand-card', 'stale-hand']);
 
         expect(resolveSmashUpHandInteractionMode({
             preferredMode: 'drag',

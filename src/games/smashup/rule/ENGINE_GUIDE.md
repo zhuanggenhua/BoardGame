@@ -139,13 +139,53 @@
 
 - **标准化持续力量牌优先写成结构化定义，不再散写单条注册。**
   - 适用形态：`附着/基地上每张该牌给目标 +N/-N`
-  - authoring 入口应声明 `defId / location / target / delta / condition`
-- **需要自定义算法时，也必须把 `sourceDefId` 与 `podStrategy` 放在同一份 definition object 里。**
-  - 不要把“规则函数”和“这条规则属于 shared / selfManaged / baseOnly”拆到两个地方表达
+  - authoring 入口：`registerOngoingPowerModifiers`
+  - definition 应声明 `defId / location / target / delta / condition`
+- **需要自定义算法时，也必须走统一 definition object，而不是回退成裸函数注册。**
+  - power：`registerCustomPowerModifiers`
+  - base power：`registerCustomBasePowerModifiers`
+  - breakpoint：`registerCustomBreakpointModifiers`
+  - definition 至少应把 `sourceDefId/defId`、`variantPolicy`（按需）、自定义 `compute(...)` 放在同一处表达
 - **POD 语义是继承或覆盖，不是补充。**
-  - 显式 `_pod` 注册只覆盖 POD 版本
+  - `variantPolicy: 'inherit'`：基础版继承到 `_pod`
+  - `variantPolicy: 'override'`：显式 `_pod` 定义只覆盖 POD 版本
+  - `variantPolicy: 'baseOnly'`：仅基础版生效
   - POD 不得反向影响基础版
   - 基础版专属 ongoing 必须显式标为 `baseOnly`
+- **borrowed / copied / POD 归一必须优先复用 runtime helper。**
+  - controller 读取：`getActionControllerId(...)`
+  - POD/runtime 家族匹配：`matchesRuntimeDefId(...)`
+  - attached/base ongoing 计数：优先走 `PowerModifierRuntimeHelpers`
+- **遇到“行动家族型规则”时，不要让 registry 再自动复制一层 `_pod` alias。**
+  - 典型形态：`fairies_daisy_chain`、`fairies_enchantment`、`cyborg_apes_juiced_up`
+  - 这类规则要在 custom definition 里声明 `runtimeIdentity: 'actionFamily'`
+  - 原因：目标不是 source 实体本身，而是“同家族 attached/base ongoing 的运行时实例”；若仍走普通 alias，会把 base/pod 两份规则都命中到同一目标，导致双算
+- **`podStrategy: 'selfManaged'` 已降级为 legacy 例外。**
+  - 只有当前 shared helper 还表达不了时才允许保留
+  - 新规则默认不得新增 `selfManaged`
+
+### 2.2.1 Legacy `selfManaged` 清单（2026-06-06）
+
+以下规则仍保留 `podStrategy: 'selfManaged'`，但不再视为默认 authoring 模式：
+
+| 规则 | 状态 | 保留原因 / 后续方向 |
+| --- | --- | --- |
+| `dino_armor_stego` | 暂时保留例外 | 依赖“非己方回合 + POD 版 `talentUsed` 闸门”双语义，当前 helper 还没有对应 primitive |
+| `dino_war_raptor` | 可继续迁移 | 同基地同名计数；可后续抽成 entity-family count helper |
+| `robot_microbot_alpha` | 暂时保留例外 | 需要全场己方随从计数且排除自身，后续适合补 board-scan helper |
+| `robot_microbot_fixer` | 暂时保留例外 | 依赖 `isMicrobot(...)` 这类跨卡族谓词，后续适合补 family predicate helper |
+| `ghost_haunting` | 可继续迁移 | 规则已接近“self + hand condition”，可后续改为 custom definition |
+| `ancient_egyptians_priest_of_anubis` | 可继续迁移 | 依赖 `buriedCards` 查询，后续可抽成 buried count helper |
+| `mermaids_temptress` | 暂时保留例外 | 依赖 `minionsMovedToBaseThisTurn` 这类时序态，不属于当前 ongoing counting helper 覆盖面 |
+| `shapeshifters_mimic` | 暂时保留例外 | 依赖全场最高印刷力量扫描；与 copied-power 家族相邻，但仍缺 shared highest-printed-power helper |
+| `cyborg_apes_furious_george` | 可继续迁移 | 规则已接近“self attachment count”，可后续并入 custom definition |
+| `kaiju_kaijookey` | 暂时保留例外 | 依赖“本基地 owner 维度的所有行动总数”，后续适合抽成 owner-lens action count helper |
+| `base_minionPowerBonus` | 可继续迁移 | 纯基地字段读取，后续可改为 custom base/static definition |
+| `base_wyrms_desolation` | 可继续迁移 | 纯基地 static debuff，后续可改为 custom base/static definition |
+
+收口原则：
+- `可继续迁移`：当前 surface 已基本足够，后续只是继续把局部逻辑从 legacy 迁到 custom/structured definition。
+- `暂时保留例外`：需要先补新的 shared helper 或更明确的 domain primitive，再迁移才有意义。
 
 ### 3. Witness / LKI（“卡必须看到 X 才能 After X”）
 

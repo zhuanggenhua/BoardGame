@@ -524,7 +524,7 @@ function buildForceEndTurnFromInteractionState(
     playerId: string,
     reason: 'hidden-interaction' | 'visible-interaction',
     options?: {
-        engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+        engineConfig?: OnlineAiRecoveryEngineConfig | null;
         gameId?: string | null;
     },
 ): ForceEndTurnStalledAiResolution | null {
@@ -611,7 +611,7 @@ export function resolveForceAdvancePhaseAfterRecovery(args: {
     authoritativeState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     playerId: string;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): AiResolution | null {
     const { authoritativeState, seatControllers, playerId } = args;
@@ -662,7 +662,7 @@ export function resolveForceEndTurnFollowUpAfterConfirmation(args: {
     candidate: ForceEndTurnStalledAiResolution;
     authoritativeState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): AiResolution | null {
     const { candidate, authoritativeState, seatControllers } = args;
@@ -707,7 +707,7 @@ function buildForceSkipPayloadFromSeatState(
     playerId: string,
     options?: {
         allowWhenHasNonControl?: boolean;
-        engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+        engineConfig?: OnlineAiRecoveryEngineConfig | null;
         gameId?: string | null;
     },
 ): {
@@ -844,7 +844,7 @@ export function resolveForceSkippableHiddenAiInteraction(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     seatStates: Record<string, MatchState<unknown> | null | undefined>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): ForceSkippableHiddenAiInteraction | null {
     if (!shouldInspectSeatStatesForHiddenAiInteraction(args.sharedState)) {
@@ -896,7 +896,7 @@ export function resolveForceSkippableHiddenAiInteraction(args: {
 function resolveConfiguredSeatLegalOnlyRecovery(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): ForceEndTurnStalledAiResolution | null {
     const phase = typeof args.sharedState?.sys?.phase === 'string'
         ? args.sharedState.sys.phase
@@ -932,7 +932,7 @@ export function resolveForceEndTurnForStalledAi(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     seatStates: Record<string, MatchState<unknown> | null | undefined>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): ForceEndTurnStalledAiResolution | null {
     if (args.sharedState?.sys?.gameover) {
@@ -1089,7 +1089,7 @@ export function resolveManualForceEndAiPhase(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     seatStates: Record<string, MatchState<unknown> | null | undefined>;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): ForceEndTurnStalledAiResolution | null {
     if (args.sharedState?.sys?.gameover) {
@@ -1224,7 +1224,7 @@ export function resolveForceEndTurnRecoveryStep(args: {
     seatControllers: Record<string, AiSeatController>;
     playerId: string;
     allowAdvancePhase?: boolean;
-    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): AiResolution | null {
     const { authoritativeState, seatControllers, playerId, allowAdvancePhase = false } = args;

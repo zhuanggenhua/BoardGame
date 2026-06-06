@@ -2,12 +2,12 @@ import type { CancelableAiDelayHandle } from '../ai/actionDelay';
 import type { AiResolution } from '../ai/localRunner';
 import type { AiSeatController } from '../ai/types';
 import type { MatchState } from '../types';
-import type { GameEngineConfig } from './server';
 import type { LocalAiCommandEffect } from './localAiCommandEffects';
 import {
     logLocalAiPerfInfo,
     type LocalAiTurnTimeline,
 } from './localAiDiagnostics';
+import type { OnlineAiRecoveryEngineConfig } from './onlineAiRecovery';
 import { prepareLocalAiExecution } from './localAiExecutionPrep';
 import { executeLocalAiCommandBatch } from './localAiCommandExecution';
 import {
@@ -23,7 +23,7 @@ import {
 export async function executeResolvedLocalAiAction(args: {
     gameId: string;
     seed: string;
-    config: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+    config: OnlineAiRecoveryEngineConfig;
     resolution: AiResolution;
     seatControllers: Record<string, AiSeatController>;
     decisionResolvedAt: number;

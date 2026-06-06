@@ -365,6 +365,40 @@ describe('fairies_daisy_chain borrowed action controller seam', () => {
     });
 });
 
+describe('migrated ongoing authoring seams', () => {
+    it('fairies_enchantment 应同时识别基础版与 POD 版 metadata 模式并按配置累计力量', () => {
+        const host = makeMinion('host-1', 'test_minion', '0', 3, { powerModifier: 0 });
+        const state = makeState({
+            bases: [{
+                defId: 'base_a',
+                minions: [host],
+                ongoingActions: [
+                    { uid: 'enchant-plus', defId: 'fairies_enchantment', ownerId: '0', metadata: { fairiesEnchantmentMode: 'plus' } },
+                    { uid: 'enchant-minus-pod', defId: 'fairies_enchantment_pod', ownerId: '1', metadata: { fairiesEnchantmentMode: 'minus' } },
+                ] as any,
+            }],
+        });
+
+        expect(getEffectivePower(state, host, 0)).toBe(3);
+    });
+
+    it('cyborg_apes_juiced_up_pod 应按宿主全部附着行动数量给力量且不双算', () => {
+        const host = makeMinion('host-1', 'test_minion', '0', 2, {
+            powerModifier: 0,
+            attachedActions: [
+                { uid: 'juice-pod', defId: 'cyborg_apes_juiced_up_pod', ownerId: '1' },
+                { uid: 'shield-a', defId: 'cyborg_apes_shielding', ownerId: '0' },
+                { uid: 'uplink-a', defId: 'cyborg_apes_missing_uplink', ownerId: '0' },
+            ],
+        });
+        const state = makeState({
+            bases: [{ defId: 'base_monkey_lab', minions: [host], ongoingActions: [] }],
+        });
+
+        expect(getEffectivePower(state, host, 0)).toBe(11);
+    });
+});
+
 // ============================================================================
 // 恐龙：重装剑龙
 // ============================================================================

@@ -20,16 +20,13 @@ vi.mock('../registry', () => ({
 }));
 
 describe('gameHudRuntimeAdapter', () => {
-    it('非 smashup 游戏不会压制共享 HUD 的 FAB 菜单', () => {
+    it('任何游戏都不应压制共享 HUD 的 FAB 菜单', () => {
         expect(shouldSuppressGameHudFab({
             gameId: 'splendor',
             mode: 'online',
             state: null,
             playerId: '0',
         })).toBe(false);
-    });
-
-    it('smashup 反应窗口会压制共享 HUD 的 FAB 菜单', () => {
         const state = {
             core: {
                 turnOrder: ['0', '1'],
@@ -69,7 +66,7 @@ describe('gameHudRuntimeAdapter', () => {
             mode: 'online',
             state,
             playerId: '0',
-        })).toBe(true);
+        })).toBe(false);
     });
 
     it('只有 smashup 才渲染 HUD 运行时设置区块', () => {

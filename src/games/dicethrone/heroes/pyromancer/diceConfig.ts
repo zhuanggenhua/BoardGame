@@ -17,7 +17,7 @@ import { PYROMANCER_DICE_FACE_IDS } from '../../domain/ids';
  */
 export const pyromancerDiceDefinition: DiceDefinition = {
     id: 'pyromancer-dice',
-    name: 'Pyromancer Dice',
+    name: 'config.dice.pyromancer.name',
     sides: 6,
     category: 'hero',
     faces: [

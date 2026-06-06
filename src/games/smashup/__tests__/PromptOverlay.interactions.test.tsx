@@ -245,6 +245,10 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
                     { id: 'card-2', label: '大副', value: { defId: 'pirate_first_mate' }, displayMode: 'card' },
                     { id: 'card-3', label: '禁卡表', value: { defId: 'geeks_banned_list' }, displayMode: 'card' },
                     { id: 'card-4', label: '菲丽希亚', value: { defId: 'geeks_felicia_day' }, displayMode: 'card' },
+                    { id: 'card-5', label: '恶棍', value: { defId: 'bear_cavalry' }, displayMode: 'card' },
+                    { id: 'card-6', label: '机器人', value: { defId: 'robot_microbot_alpha' }, displayMode: 'card' },
+                    { id: 'card-7', label: '忍者侍从', value: { defId: 'ninja_apprentice' }, displayMode: 'card' },
+                    { id: 'card-8', label: '大脚怪', value: { defId: 'trickster_leprechaun' }, displayMode: 'card' },
                 ],
             },
         };
@@ -252,12 +256,64 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         renderPromptOverlay({ interaction, dispatch, playerID: '0' });
 
         expect(screen.getByTestId('prompt-card-search-input')).toBeInTheDocument();
-        expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(5);
+        expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(9);
 
         fireEvent.change(screen.getByTestId('prompt-card-search-input'), { target: { value: '禁卡' } });
 
         expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(1);
         expect(screen.getByText('显示 {{visible}} / {{total}}')).toBeInTheDocument();
+    });
+
+    it('单排仍能放下时不应提前显示搜索框', () => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'single-row-no-search',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择一张牌',
+                sourceId: 'single_row_prompt',
+                targetType: 'generic',
+                options: [
+                    { id: 'card-0', label: '收藏家', value: { defId: 'alien_collector' }, displayMode: 'card' },
+                    { id: 'card-1', label: '急速闪电', value: { defId: 'wizard_zap' }, displayMode: 'card' },
+                    { id: 'card-2', label: '大副', value: { defId: 'pirate_first_mate' }, displayMode: 'card' },
+                    { id: 'card-3', label: '禁卡表', value: { defId: 'geeks_banned_list' }, displayMode: 'card' },
+                    { id: 'card-4', label: '菲丽希亚', value: { defId: 'geeks_felicia_day' }, displayMode: 'card' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+
+        expect(screen.queryByTestId('prompt-card-search-input')).not.toBeInTheDocument();
+        expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(5);
+    });
+
+    it('基地卡单排放不下时才显示搜索框', () => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'base-row-search',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择目标基地',
+                sourceId: 'base_row_prompt',
+                targetType: 'base',
+                options: [
+                    { id: 'base-0', label: '基地一', value: { baseIndex: 0, baseDefId: 'base_0' }, displayMode: 'card' },
+                    { id: 'base-1', label: '基地二', value: { baseIndex: 1, baseDefId: 'base_mushroom_kingdom' }, displayMode: 'card' },
+                    { id: 'base-2', label: '基地三', value: { baseIndex: 2, baseDefId: 'base_2' }, displayMode: 'card' },
+                    { id: 'base-3', label: '基地四', value: { baseIndex: 3, baseDefId: 'base_the_factory' }, displayMode: 'card' },
+                    { id: 'base-4', label: '基地五', value: { baseIndex: 4, baseDefId: 'base_the_mothership' }, displayMode: 'card' },
+                    { id: 'base-5', label: '基地六', value: { baseIndex: 5, baseDefId: 'base_plateau_of_leng' }, displayMode: 'card' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+
+        expect(screen.getByTestId('prompt-card-search-input')).toBeInTheDocument();
     });
 
     it('顺序选择类选项只要携带 displayCard，也应走卡图面板而不是文本按钮', () => {

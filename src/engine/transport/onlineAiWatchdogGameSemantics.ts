@@ -1,7 +1,5 @@
 import type { MatchState } from '../types';
-import type { GameEngineConfig } from './server';
-
-type OnlineAiRecoverySemanticsEngineConfig = Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
+import type { OnlineAiRecoveryEngineConfig } from './onlineAiRecovery';
 
 const EMPTY_ONLINE_AI_PHASE_SET = new Set<string>();
 
@@ -15,7 +13,7 @@ const resolveConfiguredPhaseSet = (
 };
 
 export function resolveOnlineAiWatchdogAdvancePhaseCommandType(args: {
-    engineConfig?: OnlineAiRecoverySemanticsEngineConfig | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 } = {}): string {
     const configured = args.engineConfig?.onlineAiRecovery?.advancePhaseCommandType;
@@ -26,7 +24,7 @@ export function resolveOnlineAiWatchdogAdvancePhaseCommandType(args: {
 }
 
 export function resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType(args: {
-    engineConfig?: OnlineAiRecoverySemanticsEngineConfig | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 } = {}): string | null {
     if (args.engineConfig?.onlineAiRecovery?.disableFallbackAdvancePhase === true) {
@@ -38,7 +36,7 @@ export function resolveOnlineAiWatchdogFallbackAdvancePhaseCommandType(args: {
 export function isOnlineAiWatchdogPublicPregameLegalActionPhase(args: {
     state: MatchState<unknown>;
     phase?: string | null;
-    engineConfig?: OnlineAiRecoverySemanticsEngineConfig | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): boolean {
     const currentPhase = typeof args.phase === 'string'
@@ -60,7 +58,7 @@ export function isOnlineAiWatchdogPublicPregameLegalActionPhase(args: {
 export function shouldProbeOnlineAiLegalActionOnlyCandidateForHumanTurn(args: {
     state: MatchState<unknown>;
     currentPlayerId: string;
-    engineConfig?: OnlineAiRecoverySemanticsEngineConfig | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): boolean {
     const currentPhase = typeof args.state.sys?.phase === 'string' ? args.state.sys.phase : '';
@@ -100,7 +98,7 @@ export function shouldSuppressOnlineAiWatchdogActiveTurnCandidate(args: {
     phase: string;
     currentPlayerId: string;
     turnNumber: number | null;
-    engineConfig?: OnlineAiRecoverySemanticsEngineConfig | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): boolean {
     const configured = args.engineConfig?.onlineAiRecovery?.shouldSuppressActiveTurnCandidate;
@@ -117,7 +115,7 @@ export function shouldSuppressOnlineAiWatchdogActiveTurnCandidate(args: {
 
 export function shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice(args: {
     sourceId?: string | null;
-    engineConfig?: OnlineAiRecoverySemanticsEngineConfig | null;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     gameId?: string | null;
 }): boolean {
     if (typeof args.sourceId !== 'string' || args.sourceId.length === 0) {

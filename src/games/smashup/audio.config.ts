@@ -293,14 +293,14 @@ const ANCIENT_EGYPTIAN_ACTION_KEYS = [
     'magic.general.modern_magic_sound_fx_pack_vol.arcane_spells.arcane_spells_arcane_ripple_002',
 ];
 const CYBORG_APE_MINION_KEYS = [
-    'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_a5',
-    'cyberpunk.cyberpunk_sound_fx_pack_vol.android_esque.robotic_limb_single_b3',
-    'combat.general.khron_studio_fight_fury_vol_1_assets.strong_generic_punch.fghtimpt_strong_generic_punch_01',
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.fight.melee.steel_fist_punch_001',
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.fight.melee.pixel_punch_001',
+    'retro.retro_gaming_sound_fx_pack_vol.16_bit.fight.melee.pixel_punch_002',
 ];
 const CYBORG_APE_ACTION_KEYS = [
+    'foley.analogue_gear_sound_fx_pack_vol.audio_devices.handheld_radio_buttons_a',
+    'foley.analogue_gear_sound_fx_pack_vol.audio_devices.handheld_radio_buttons_b',
     'system.computers_machinery_sound_fx_pack_vol.misc.machinery.mech_transform_001',
-    'system.computers_machinery_sound_fx_pack_vol.misc.energy.laser_emitter_001',
-    'combat.general.khron_studio_fight_fury_vol_1_assets.strong_generic_punch.fghtimpt_strong_generic_punch_02',
 ];
 const DRAGON_MINION_KEYS = [
     'monster.general.khron_studio_monster_library_vol_3_assets.dragon.dragon_roar.creadrgn_dragon_roar_01',

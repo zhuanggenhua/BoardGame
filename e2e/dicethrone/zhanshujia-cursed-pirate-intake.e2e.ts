@@ -1259,6 +1259,8 @@ const setupTacticalAdvantageTransferScenario = async (match: MatchSetup) => {
 
         players['0'] = {
             ...host,
+            hand: [],
+            discard: [],
             resources: {
                 ...hostResources,
                 [RESOURCE_IDS.CP]: 5,
@@ -1274,6 +1276,8 @@ const setupTacticalAdvantageTransferScenario = async (match: MatchSetup) => {
         };
         players['1'] = {
             ...guest,
+            hand: [],
+            discard: [],
             resources: {
                 ...guestResources,
                 [RESOURCE_IDS.CP]: 5,
@@ -5037,6 +5041,7 @@ const playGainUpperHandUntilMedal = async (
     for (let attempt = 1; attempt <= 12; attempt += 1) {
         await setupGainUpperHandScenario(match, gainUpperHandCard, drawCard);
         await setHarnessDiceValues(match.hostPage, Array.from({ length: 16 }, () => 6));
+        await setHarnessRandomQueue(match.hostPage, repeatRandomValue(0.99, 8));
         await dismissCardSpotlightIfPresent(match.hostPage);
         await dismissCardSpotlightIfPresent(match.guestPage);
 

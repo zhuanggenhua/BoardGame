@@ -1,4 +1,4 @@
-import { abilityText } from '../../../../engine/primitives/ability';
+import { abilityText, abilityEffectText } from '../../../../engine/primitives/ability';
 import type { AbilityDef, AbilityEffect, EffectTiming } from '../../domain/combat';
 import { STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../../domain/ids';
 
@@ -61,9 +61,9 @@ const SABRE_THRUST: AbilityDef = {
     description: abilityText('sabre-thrust', 'description'),
     sfxKey: ZHANSHUJIA_SFX_LIGHT,
     variants: [
-        { id: 'sabre-thrust-3', trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 3 } }, effects: [damage(4, '造成 4 点伤害。')], priority: 1 },
-        { id: 'sabre-thrust-4', trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 4 } }, effects: [damage(5, '造成 5 点伤害。')], priority: 2 },
-        { id: 'sabre-thrust-5', trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 5 } }, effects: [damage(6, '造成 6 点伤害。')], priority: 3 },
+        { id: 'sabre-thrust-3', trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 3 } }, effects: [damage(4, abilityEffectText('sabre-thrust', 'damage4'))], priority: 1 },
+        { id: 'sabre-thrust-4', trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 4 } }, effects: [damage(5, abilityEffectText('sabre-thrust', 'damage5'))], priority: 2 },
+        { id: 'sabre-thrust-5', trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 5 } }, effects: [damage(6, abilityEffectText('sabre-thrust', 'damage6'))], priority: 3 },
     ],
 };
 
@@ -78,8 +78,8 @@ export const SABRE_THRUST_2: AbilityDef = {
             id: 'sabre-thrust-2-3',
             trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 3 } },
             effects: [
-                custom('zhanshujia-bind-if-three-kind', '若投出 3 个相同数字，则对手获得紧缚。', 'preDefense', 'opponent'),
-                damage(5, '造成 5 点伤害。'),
+                custom('zhanshujia-bind-if-three-kind', abilityEffectText('sabre-thrust-2', 'bindIfThreeKind'), 'preDefense', 'opponent'),
+                damage(5, abilityEffectText('sabre-thrust-2', 'damage5')),
             ],
             priority: 1,
         },
@@ -87,8 +87,8 @@ export const SABRE_THRUST_2: AbilityDef = {
             id: 'sabre-thrust-2-4',
             trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 4 } },
             effects: [
-                custom('zhanshujia-bind-if-three-kind', '若投出 3 个相同数字，则对手获得紧缚。', 'preDefense', 'opponent'),
-                damage(6, '造成 6 点伤害。'),
+                custom('zhanshujia-bind-if-three-kind', abilityEffectText('sabre-thrust-2', 'bindIfThreeKind'), 'preDefense', 'opponent'),
+                damage(6, abilityEffectText('sabre-thrust-2', 'damage6')),
             ],
             priority: 2,
         },
@@ -96,8 +96,8 @@ export const SABRE_THRUST_2: AbilityDef = {
             id: 'sabre-thrust-2-5',
             trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 5 } },
             effects: [
-                custom('zhanshujia-bind-if-three-kind', '若投出 3 个相同数字，则对手获得紧缚。', 'preDefense', 'opponent'),
-                damage(7, '造成 7 点伤害。'),
+                custom('zhanshujia-bind-if-three-kind', abilityEffectText('sabre-thrust-2', 'bindIfThreeKind'), 'preDefense', 'opponent'),
+                damage(7, abilityEffectText('sabre-thrust-2', 'damage7')),
             ],
             priority: 3,
         },
@@ -112,8 +112,8 @@ const CARPET_BOMBING: AbilityDef = {
     sfxKey: ZHANSHUJIA_SFX_HEAVY,
     trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 2, [FACE.MEDAL]: 2 } },
     effects: [
-        grantToken(1, '获得 1 战术优势。'),
-        custom('zhanshujia-carpet-bombing-targets', '对 2 名不同对手造成 2 点附属伤害。'),
+        grantToken(1, abilityEffectText('carpet-bombing', 'gainTa1')),
+        custom('zhanshujia-carpet-bombing-targets', abilityEffectText('carpet-bombing', 'targetTwoOpponents')),
     ],
 };
 
@@ -128,8 +128,8 @@ export const CARPET_BOMBING_2: AbilityDef = {
             id: 'carpet-bombing-2-main',
             trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 2, [FACE.MEDAL]: 2 } },
             effects: [
-                grantToken(2, '获得 2 战术优势。'),
-                custom('zhanshujia-carpet-bombing-targets', '对 2 名不同对手造成 2 点附属伤害。'),
+                grantToken(2, abilityEffectText('carpet-bombing-2', 'mainGainTa2')),
+                custom('zhanshujia-carpet-bombing-targets', abilityEffectText('carpet-bombing-2', 'mainTargetTwoOpponents')),
             ],
             priority: 2,
         },
@@ -137,8 +137,8 @@ export const CARPET_BOMBING_2: AbilityDef = {
             id: 'carpet-bombing-2-strategy',
             trigger: { type: 'diceSet', faces: { [FACE.BANNER]: 4 } },
             effects: [
-                grantToken(3, '获得 3 战术优势。'),
-                drawCards(2, '抽 2 张牌。'),
+                grantToken(3, abilityEffectText('carpet-bombing-2', 'strategyGainTa3')),
+                drawCards(2, abilityEffectText('carpet-bombing-2', 'strategyDraw2')),
             ],
             priority: 1,
         },
@@ -153,9 +153,9 @@ const WAR_MONGER: AbilityDef = {
     sfxKey: ZHANSHUJIA_SFX_COMMAND,
     trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 1, [FACE.BANNER]: 3 } },
     effects: [
-        grantToken(1, '获得 1 战术优势。'),
+        grantToken(1, abilityEffectText('war-monger', 'gainTa1')),
         {
-            description: '投 1 骰：军刀造成 5；旗帜获得 4 战术优势；勋章抽 1。',
+            description: abilityEffectText('war-monger', 'bonusRoll'),
             action: {
                 type: 'rollDie',
                 target: 'self',
@@ -168,7 +168,7 @@ const WAR_MONGER: AbilityDef = {
             },
             timing: 'preDefense',
         },
-        custom('zhanshujia-war-monger-extra-offensive-roll', '立即进入额外进攻投掷阶段。', 'postDamage'),
+        custom('zhanshujia-war-monger-extra-offensive-roll', abilityEffectText('war-monger', 'extraOffensiveRoll'), 'postDamage'),
     ],
 };
 
@@ -180,8 +180,8 @@ export const WAR_MONGER_2: AbilityDef = {
     sfxKey: ZHANSHUJIA_SFX_COMMAND,
     trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 1, [FACE.BANNER]: 3 } },
     effects: [
-        grantToken(2, '获得 2 战术优势。'),
-        custom('zhanshujia-war-monger-2-roll', '投 1 骰：军刀造成 6；旗帜获得 3 战术优势；勋章抽 1 并立即进入额外进攻投掷阶段。', 'preDefense', 'opponent'),
+        grantToken(2, abilityEffectText('war-monger-2', 'gainTa2')),
+        custom('zhanshujia-war-monger-2-roll', abilityEffectText('war-monger-2', 'bonusRoll'), 'preDefense', 'opponent'),
     ],
 };
 
@@ -192,7 +192,7 @@ const DRUM_MOVEMENT: AbilityDef = {
     description: abilityText('drum-movement', 'description'),
     sfxKey: ZHANSHUJIA_SFX_HEAVY,
     trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 3, [FACE.MEDAL]: 2 } },
-    effects: [grantStatus(STATUS_IDS.BIND, '对手获得紧缚。'), damage(7, '造成 7 点伤害。')],
+    effects: [grantStatus(STATUS_IDS.BIND, abilityEffectText('drum-movement', 'inflictBind')), damage(7, abilityEffectText('drum-movement', 'damage7'))],
 };
 
 export const DRUM_MOVEMENT_2: AbilityDef = {
@@ -206,9 +206,9 @@ export const DRUM_MOVEMENT_2: AbilityDef = {
             id: 'drum-movement-2-main',
             trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 3, [FACE.MEDAL]: 2 } },
             effects: [
-                grantToken(1, '获得 1 战术优势。'),
-                grantStatus(STATUS_IDS.BIND, '对手获得紧缚。'),
-                damage(7, '造成 7 点伤害。'),
+                grantToken(1, abilityEffectText('drum-movement-2', 'mainGainTa1')),
+                grantStatus(STATUS_IDS.BIND, abilityEffectText('drum-movement-2', 'mainInflictBind')),
+                damage(7, abilityEffectText('drum-movement-2', 'mainDamage7')),
             ],
             priority: 2,
         },
@@ -216,8 +216,8 @@ export const DRUM_MOVEMENT_2: AbilityDef = {
             id: 'drum-movement-2-indirect',
             trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 3, [FACE.BANNER]: 1 } },
             effects: [
-                grantToken(2, '获得 2 战术优势。'),
-                damage(2, '造成 2 点不可防御伤害。', { unblockable: true }),
+                grantToken(2, abilityEffectText('drum-movement-2', 'indirectGainTa2')),
+                damage(2, abilityEffectText('drum-movement-2', 'indirectDamage2'), { unblockable: true }),
             ],
             priority: 1,
             tags: ['unblockable'],
@@ -232,7 +232,7 @@ const FLANKING: AbilityDef = {
     description: abilityText('flanking', 'description'),
     sfxKey: ZHANSHUJIA_SFX_LIGHT,
     trigger: { type: 'smallStraight' },
-    effects: [grantToken(1, '获得 1 战术优势。'), damage(6, '造成 6 点伤害。')],
+    effects: [grantToken(1, abilityEffectText('flanking', 'gainTa1')), damage(6, abilityEffectText('flanking', 'damage6'))],
 };
 
 export const FLANKING_2: AbilityDef = {
@@ -242,7 +242,7 @@ export const FLANKING_2: AbilityDef = {
     description: abilityText('flanking-2', 'description'),
     sfxKey: ZHANSHUJIA_SFX_LIGHT,
     trigger: { type: 'smallStraight' },
-    effects: [grantToken(2, '获得 2 战术优势。'), damage(6, '造成 6 点伤害。')],
+    effects: [grantToken(2, abilityEffectText('flanking-2', 'gainTa2')), damage(6, abilityEffectText('flanking-2', 'damage6'))],
 };
 
 const EXPAND_BATTLEFIELD: AbilityDef = {
@@ -252,7 +252,11 @@ const EXPAND_BATTLEFIELD: AbilityDef = {
     description: abilityText('expand-battlefield', 'description'),
     sfxKey: ZHANSHUJIA_SFX_COMMAND,
     trigger: { type: 'largeStraight' },
-    effects: [grantToken(2, '获得 2 战术优势。'), grantStatus(STATUS_IDS.BIND, '对手获得紧缚。'), damage(9, '造成 9 点伤害。')],
+    effects: [
+        grantToken(2, abilityEffectText('expand-battlefield', 'gainTa2')),
+        grantStatus(STATUS_IDS.BIND, abilityEffectText('expand-battlefield', 'inflictBind')),
+        damage(9, abilityEffectText('expand-battlefield', 'damage9')),
+    ],
 };
 
 export const EXPAND_BATTLEFIELD_2: AbilityDef = {
@@ -265,13 +269,20 @@ export const EXPAND_BATTLEFIELD_2: AbilityDef = {
         {
             id: 'expand-battlefield-2-large-straight',
             trigger: { type: 'largeStraight' },
-            effects: [grantToken(3, '获得 3 战术优势。'), grantStatus(STATUS_IDS.BIND, '对手获得紧缚。'), damage(9, '造成 9 点伤害。')],
+            effects: [
+                grantToken(3, abilityEffectText('expand-battlefield-2', 'mainGainTa3')),
+                grantStatus(STATUS_IDS.BIND, abilityEffectText('expand-battlefield-2', 'mainInflictBind')),
+                damage(9, abilityEffectText('expand-battlefield-2', 'mainDamage9')),
+            ],
             priority: 2,
         },
         {
             id: 'expand-battlefield-2-lockdown',
             trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 1, [FACE.BANNER]: 2, [FACE.MEDAL]: 1 } },
-            effects: [drawCards(2, '抽 2 张牌。'), grantStatus(STATUS_IDS.BIND, '对手获得紧缚。')],
+            effects: [
+                drawCards(2, abilityEffectText('expand-battlefield-2', 'lockdownDraw2')),
+                grantStatus(STATUS_IDS.BIND, abilityEffectText('expand-battlefield-2', 'lockdownInflictBind')),
+            ],
             priority: 1,
         },
     ],
@@ -285,7 +296,10 @@ const STRATEGIC_SHIFT: AbilityDef = {
     description: abilityText('strategic-shift', 'description'),
     sfxKey: ZHANSHUJIA_SFX_COMMAND,
     trigger: { type: 'diceSet', faces: { [FACE.MEDAL]: 4 } },
-    effects: [grantToken(5, '获得 5 战术优势。'), damage(5, '造成 5 点不可防御伤害。', { unblockable: true })],
+    effects: [
+        grantToken(5, abilityEffectText('strategic-shift', 'gainTa5')),
+        damage(5, abilityEffectText('strategic-shift', 'damage5'), { unblockable: true }),
+    ],
 };
 
 export const STRATEGIC_SHIFT_2: AbilityDef = {
@@ -299,14 +313,18 @@ export const STRATEGIC_SHIFT_2: AbilityDef = {
         {
             id: 'strategic-shift-2-main',
             trigger: { type: 'diceSet', faces: { [FACE.MEDAL]: 4 } },
-            effects: [grantToken(5, '获得 5 战术优势。'), grantStatus(STATUS_IDS.BIND, '对手获得紧缚。'), damage(5, '造成 5 点不可防御伤害。', { unblockable: true })],
+            effects: [
+                grantToken(5, abilityEffectText('strategic-shift-2', 'mainGainTa5')),
+                grantStatus(STATUS_IDS.BIND, abilityEffectText('strategic-shift-2', 'mainInflictBind')),
+                damage(5, abilityEffectText('strategic-shift-2', 'mainDamage5'), { unblockable: true }),
+            ],
             priority: 2,
             tags: ['unblockable'],
         },
         {
             id: 'strategic-shift-2-recon',
             trigger: { type: 'diceSet', faces: { [FACE.MEDAL]: 3 } },
-            effects: [grantToken(5, '获得 5 战术优势。')],
+            effects: [grantToken(5, abilityEffectText('strategic-shift-2', 'reconGainTa5'))],
             priority: 1,
         },
     ],
@@ -321,7 +339,7 @@ const COUNTERMEASURES: AbilityDef = {
     sfxKey: ZHANSHUJIA_SFX_COMMAND,
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 4 },
     effects: [
-        custom('zhanshujia-countermeasures-defense', '防御掷 4 骰：每组 2 军刀造成 1 伤害；每个旗帜防止 1 伤害；每个勋章获得 1 战术优势。', 'withDamage'),
+        custom('zhanshujia-countermeasures-defense', abilityEffectText('countermeasures', 'defense4'), 'withDamage'),
     ],
 };
 
@@ -335,7 +353,7 @@ export const COUNTERMEASURES_2: AbilityDef = {
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 5 },
     effects: [
         {
-            description: '防御掷 5 骰：每组 2 军刀造成 1 伤害；每个旗帜防止 1 伤害；每个勋章获得 1 战术优势。',
+            description: abilityEffectText('countermeasures-2', 'defense5'),
             action: { type: 'custom', target: 'self', customActionId: 'zhanshujia-countermeasures-defense', params: { sabrePairDamage: 1 } },
             timing: 'withDamage',
         },
@@ -352,7 +370,7 @@ export const COUNTERMEASURES_3: AbilityDef = {
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 5 },
     effects: [
         {
-            description: '防御掷 5 骰：每组 2 军刀造成 2 伤害；每个旗帜防止 1 伤害；每个勋章获得 1 战术优势。',
+            description: abilityEffectText('countermeasures-3', 'defense5Heavy'),
             action: { type: 'custom', target: 'self', customActionId: 'zhanshujia-countermeasures-defense', params: { sabrePairDamage: 2 } },
             timing: 'withDamage',
         },
@@ -368,10 +386,10 @@ const HIGH_GROUND: AbilityDef = {
     sfxKey: ZHANSHUJIA_SFX_ULTIMATE,
     trigger: { type: 'diceSet', faces: { [FACE.MEDAL]: 5 } },
     effects: [
-        grantStatus(STATUS_IDS.TARGETED, '对手获得锁定。'),
-        grantStatus(STATUS_IDS.BIND, '对手获得紧缚。'),
-        custom('zhanshujia-high-ground-cap-up-and-fill', '战术优势上限提升 1，并获得战术优势至当前上限。'),
-        damage(12, '造成 12 点伤害。'),
+        grantStatus(STATUS_IDS.TARGETED, abilityEffectText('high-ground', 'inflictTargeted')),
+        grantStatus(STATUS_IDS.BIND, abilityEffectText('high-ground', 'inflictBind')),
+        custom('zhanshujia-high-ground-cap-up-and-fill', abilityEffectText('high-ground', 'capUpAndFill')),
+        damage(12, abilityEffectText('high-ground', 'damage12')),
     ],
 };
 

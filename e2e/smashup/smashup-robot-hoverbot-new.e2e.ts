@@ -675,7 +675,7 @@ test.describe('Smash Up 牌库检索交互', () => {
         await game.waitForInteraction('robot_hoverbot');
 
         const playCardOption = page.locator('[data-option-id="play"]').first();
-        const cardOptions = page.locator('[data-testid^="prompt-card-"]');
+        const cardOptions = page.locator('[data-testid^="prompt-card-"][data-option-id]');
         await expect(playCardOption).toBeVisible();
         await expect(cardOptions).toHaveCount(1);
 
@@ -773,7 +773,7 @@ test.describe('Smash Up 牌库检索交互', () => {
         expect(interactionMeta.optionDefs).toEqual(expect.arrayContaining(['wizard_summon', 'vikings_pillage']));
         expect(interactionMeta.optionDisplayModes.filter((mode: string) => mode === 'card')).toHaveLength(2);
 
-        const cardOptions = page.locator('[data-testid^="prompt-card-"]');
+        const cardOptions = page.locator('[data-testid^="prompt-card-"][data-option-id]');
         await expect(cardOptions).toHaveCount(2);
         await expect(page.locator('[data-option-id="action-1"]')).toBeVisible();
 

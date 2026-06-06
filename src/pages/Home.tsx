@@ -971,7 +971,7 @@ export const Home = () => {
     const activeMatchCard = activeMatch ? (
         <div
             data-testid="home-active-match-card"
-            className="pointer-events-auto flex w-full max-w-[min(100%,24rem)] flex-col gap-2 rounded-[10px] border border-parchment-brown bg-parchment-base-text/98 px-3 py-2.5 text-parchment-card-bg shadow-xl backdrop-blur-sm sm:max-w-[min(46rem,calc(100vw-2rem))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-3"
+            className="pointer-events-auto flex w-fit max-w-[calc(100vw-1.5rem)] flex-col gap-2 rounded-[10px] border border-parchment-brown bg-parchment-base-text/98 px-3 py-2.5 text-parchment-card-bg shadow-xl backdrop-blur-sm sm:max-w-[min(46rem,calc(100vw-2rem))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-3"
         >
             <div className="min-w-0 text-center sm:flex-1 sm:text-left">
                 <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-parchment-light-text sm:text-[10px] sm:tracking-wider">
@@ -1078,15 +1078,6 @@ export const Home = () => {
                     <CategoryPills activeCategory={activeCategory} onSelect={setActiveCategory} />
                 </nav>
 
-                {activeMatchCard && (
-                    <div
-                        data-testid="home-active-match-banner"
-                        className="mb-4 flex w-full justify-center px-1 sm:mb-5 sm:px-0 md:hidden"
-                    >
-                        {activeMatchCard}
-                    </div>
-                )}
-
                 {/* 游戏列表 */}
                 <section className="w-full pb-20">
                     <GameList
@@ -1104,7 +1095,7 @@ export const Home = () => {
             {activeMatch && (
                 <div
                     data-testid="home-active-match-banner"
-                    className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 hidden justify-center px-3 animate-in slide-in-from-bottom-4 fade-in duration-300 md:flex md:px-6"
+                    className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 flex justify-center px-3 sm:px-4 md:px-6 animate-in slide-in-from-bottom-4 fade-in duration-300"
                 >
                     {activeMatchCard}
                 </div>

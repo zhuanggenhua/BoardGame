@@ -5,7 +5,7 @@ export const CURSED_PIRATE_SYMBOLS = CURSED_PIRATE_DICE_FACE_IDS;
 
 export const cursedPirateDiceDefinition: DiceDefinition = {
     id: 'cursed_pirate-dice',
-    name: 'Cursed Pirate Dice',
+    name: 'config.dice.cursedPirate.name',
     sides: 6,
     category: 'hero',
     faces: [

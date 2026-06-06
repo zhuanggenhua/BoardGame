@@ -25,6 +25,7 @@ import {
 } from './baseZoneEntryAnimation';
 import { useArmedActivation } from '../../../hooks/ui/useArmedActivation';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
+import { matchesDefId } from '../domain/utils';
 
 const USED_STATE_CLASS = 'border-slate-400 ring-2 ring-slate-300/80 shadow-[0_0_12px_rgba(148,163,184,0.32)]';
 const CARD_ASPECT_RATIO = 0.714;
@@ -43,6 +44,12 @@ function getTimeBoxCounterLabel(titan: { defId: string; metadata?: Record<string
     const counters = Number(titan.metadata?.timeBoxCounters ?? 0);
     if (!Number.isFinite(counters) || counters <= 0) return null;
     return String(counters);
+}
+
+function getMinionBottomOverlayDefId(minion: MinionOnBase): string | undefined {
+    if (!matchesDefId(minion.defId, 'shapeshifters_copycat')) return undefined;
+    const copiedDefId = minion.metadata?.copiedAbilityDefId;
+    return typeof copiedDefId === 'string' && copiedDefId !== minion.defId ? copiedDefId : undefined;
 }
 
 // ============================================================================
@@ -83,7 +90,7 @@ export const BaseZone: React.FC<{
     onMinionSelect?: (minionUid: string, baseIndex: number) => void;
     onOngoingSelect?: (ongoingUid: string) => void;
     onBuriedCardSelect?: (cardUid: string) => void;
-    onViewMinion: (defId: string) => void;
+    onViewMinion: (defId: string, options?: { overlayDefId?: string }) => void;
     onViewAction: (defId: string) => void;
     onViewBase: (defId: string) => void;
     onViewTitan: (defId: string) => void;
@@ -1003,12 +1010,12 @@ export const BaseZone: React.FC<{
                                             pid={pid}
                                             baseIndex={baseIndex}
                                             dispatch={dispatch}
-                                            isMinionSelectMode={isMinionSelectMode && (!selectableMinionUids || selectableMinionUids.has(m.uid))}
+                                            isMinionSelectMode={isMinionSelectMode}
                                             isMultiSelected={!!multiSelectedMinionUids?.has(m.uid)}
                                             isDuelParticipant={!!duelParticipantMinionUids?.has(m.uid)}
                                             isDimmed={!!isMinionSelectMode && !!selectableMinionUids && !selectableMinionUids.has(m.uid)}
                                             onMinionSelect={onMinionSelect}
-                                            onView={() => onViewMinion(m.defId)}
+                                            onView={() => onViewMinion(m.defId, { overlayDefId: getMinionBottomOverlayDefId(m) })}
                                             onViewAction={onViewAction}
                                             selectableOngoingUids={selectableOngoingUids}
                                             onOngoingSelect={onOngoingSelect}
@@ -1253,6 +1260,7 @@ const MinionCard: React.FC<{
 
     const seed = minion.uid.charCodeAt(0) + index;
     const rotation = (seed % 6) - 3;
+    const bottomOverlayDefId = getMinionBottomOverlayDefId(minion);
     // 选择态每张只额外露出半张卡高：
     // 比常态更容易辨认候选，但不会像完整展开那样把整列拉得过高。
     const selectionStackOffset = Number((-(layout.minionCardWidth / CARD_ASPECT_RATIO) * 0.5).toFixed(4));
@@ -1283,15 +1291,18 @@ const MinionCard: React.FC<{
         },
     });
 
+    const isSelectionContext = !!isMinionSelectMode;
+    const isSelectableMinion = isSelectionContext && !isDimmed;
+
     const handleSelectCapture = useCallback((e: React.MouseEvent) => {
-        if (!isMinionSelectMode || !onMinionSelect) return;
+        if (!isSelectableMinion || !onMinionSelect) return;
         const blocked = shouldBlockMinionClick(`minion-${minion.uid}`);
         if (blocked) return;
         e.preventDefault();
         e.stopPropagation();
         clearArmedActivation();
         onMinionSelect(minion.uid, baseIndex);
-    }, [isMinionSelectMode, onMinionSelect, shouldBlockMinionClick, minion.uid, clearArmedActivation, baseIndex]);
+    }, [isSelectableMinion, onMinionSelect, shouldBlockMinionClick, minion.uid, clearArmedActivation, baseIndex]);
 
     const handleClick = useCallback((e: React.MouseEvent) => {
         if (e.defaultPrevented) return;
@@ -1299,7 +1310,7 @@ const MinionCard: React.FC<{
         const blocked = shouldBlockMinionClick(`minion-${minion.uid}`);
         if (blocked) return;
         // 随从选择模式：点击随从附着 ongoing 行动卡
-        if (isMinionSelectMode && onMinionSelect) {
+        if (isSelectableMinion && onMinionSelect) {
             clearArmedActivation();
             onMinionSelect(minion.uid, baseIndex);
             return;
@@ -1334,20 +1345,18 @@ const MinionCard: React.FC<{
             clearArmedActivation();
             dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { minionUid: minion.uid, baseIndex });
         }
-    }, [isMinionSelectMode, onMinionSelect, clearArmedActivation, isCoarsePointer, canActivate, canUseTalent, canActivateSpecial, dispatch, minion.uid, baseIndex, shouldBlockMinionClick, armOrActivate, onToggleExpanded, onExpandMinion, hasAttachedActions, minionActivationKey]);
+    }, [isSelectableMinion, onMinionSelect, clearArmedActivation, isCoarsePointer, canActivate, canUseTalent, canActivateSpecial, dispatch, minion.uid, baseIndex, shouldBlockMinionClick, armOrActivate, onToggleExpanded, onExpandMinion, hasAttachedActions, minionActivationKey]);
 
-    // 随从选择模式下的高亮
-    const isSelectableMinion = !!isMinionSelectMode;
     const showUsedMinionState = hasTalent && minion.talentUsed && !canActivate;
     const minionContainerClassName = `relative aspect-[0.714] group ${isAttachedOverlayVisible ? '!z-[1300]' : 'hover:!z-[999]'} ${
-        isDimmed
-            ? 'cursor-not-allowed'
-            : isSelectableMinion && !isDimmed
+        isSelectableMinion
             ? 'cursor-pointer -translate-y-[0.16vw] scale-[1.04]'
+            : isSelectionContext
+            ? 'cursor-default'
             : 'cursor-pointer'
     }`;
     const minionFrameClassName = `relative w-full h-full bg-white p-[0.2vw] rounded-[0.2vw] border-[0.15vw] transition-shadow duration-200
-        ${isDimmed ? 'opacity-45 saturate-[0.62] brightness-[0.88]' : isSelectableMinion ? '' : 'hover:scale-110'}
+        ${isSelectionContext ? '' : 'hover:scale-110'}
         ${isMultiSelected
             ? 'border-green-400 ring-[0.26vw] ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.72),0_0_40px_rgba(74,222,128,0.34)]'
             : isSelectableMinion
@@ -1438,7 +1447,11 @@ const MinionCard: React.FC<{
                     <div className="w-full h-full overflow-hidden">
                         <CardPreview
                             previewRef={genericDef?.previewRef
-                                ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: minion.defId, cardUid: minion.uid } }
+                                ? {
+                                    type: 'renderer',
+                                    rendererId: 'smashup-card-renderer',
+                                    payload: { defId: minion.defId, cardUid: minion.uid, overlayDefId: bottomOverlayDefId },
+                                }
                                 : undefined}
                             className="w-full h-full"
                             title={minionTitle}
