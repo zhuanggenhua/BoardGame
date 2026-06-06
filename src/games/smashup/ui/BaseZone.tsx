@@ -1211,9 +1211,9 @@ const MinionCard: React.FC<{
             attachedOverlayHideTimerRef.current = null;
         }
     }, []);
-    const notifyAttachedOverlayVisibilityChange = React.useEffectEvent((visible: boolean) => {
+    const notifyAttachedOverlayVisibilityChange = useCallback((visible: boolean) => {
         onAttachedOverlayVisibilityChange?.(visible);
-    });
+    }, [onAttachedOverlayVisibilityChange]);
     const setAttachedOverlayPinnedState = useCallback((visible: boolean) => {
         clearAttachedOverlayHideTimer();
         setIsAttachedOverlayPinned(visible);

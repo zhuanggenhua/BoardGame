@@ -7,7 +7,6 @@ import { CheckCircle, Clipboard, X, Edit } from 'lucide-react';
 import { useDebug } from '../../../../contexts/DebugContext';
 import { useGameMode } from '../../../../contexts/GameModeContext';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { GAME_SERVER_URL } from '../../../../config/server';
 import { matchSocket } from '../../../../services/matchSocket';
 import { destroyMatch, persistMatchCredentials } from '../../../../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName } from '../../../../hooks/match/ownerIdentity';
@@ -179,7 +178,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
             setStateInput('');
             setShowStateInput(false);
             setApplyError(null);
-        } catch (_err) {
+        } catch {
             setApplyError(t('debug.state.errorInvalidJson'));
             setTimeout(() => setApplyError(null), 3000);
         }
@@ -281,7 +280,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
         try {
             const arg = JSON.parse(rawArg);
             dispatch(moveName, arg);
-        } catch (_) {
+        } catch {
             dispatch(moveName, rawArg);
         }
     };
