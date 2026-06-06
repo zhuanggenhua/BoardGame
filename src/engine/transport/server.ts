@@ -2012,6 +2012,7 @@ export class GameTransportServer {
             actionRecovery: args.actionRecovery,
             blockedFailureReason: args.blockedFailureReason,
             resolveForceCommandAllowance: context.runtime.resolveForceCommandAllowance,
+            engineConfig: context.runtime.engineConfig,
             formatCommandFailureReason: formatOnlineAiCommandFailureReason,
         });
         const forcedCommandFailureDispatchDecision = resolveOnlineAiForcedRecoveryFailureDispatchDecision({
@@ -3921,7 +3922,10 @@ export class GameTransportServer {
         const { engineConfig, state, random, playerIds } = match;
         const stateIdBefore = match.stateID;
         const preTrainingState = this.stripStateForTraining(this.applyPlayerView(match, playerID)) as MatchState<unknown>;
-        const progressMarkerBeforeCommand = buildAiProgressMarker(match.state);
+        const progressMarkerBeforeCommand = buildAiProgressMarker(match.state, {
+            engineConfig,
+            gameId: match.gameId,
+        });
         const setupSeatControllers = extractSetupSeatControllers(match.metadata.setupData);
         const seatControllerType = resolveSeatControllerTypeForTraining(setupSeatControllers, playerID);
 

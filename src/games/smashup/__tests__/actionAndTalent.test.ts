@@ -18,6 +18,7 @@ import { initAllAbilities } from '../abilities';
 import { getCardDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { reduce } from '../domain/reduce';
 import { makeCard, makeMatchState, makePlayer, makeState } from './helpers';
 import { defaultTestRandom, runCommand } from './testRunner';
 
@@ -78,6 +79,66 @@ describe('Property 8: 标准行动卡生命周期', () => {
         expect(finalCore.players['0'].discard.some(card => card.uid === 'summon')).toBe(false);
         expect(finalCore.players['1'].discard).toContainEqual(
             expect.objectContaining({ uid: 'summon', defId: 'wizard_summon', owner: '1' }),
+        );
+    });
+
+    it('CARD_TRANSFERRED 在来源区已不可见时仍应保留 ownerId，后续 borrowed 随从被消灭时进入真实拥有者弃牌堆', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+            turnOrder: ['0', '1', '2'],
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const transferredCore = reduce(core, {
+            type: SU_EVENTS.CARD_TRANSFERRED,
+            payload: {
+                cardUid: 'borrowed-minion',
+                defId: 'pirate_first_mate',
+                fromPlayerId: '2',
+                toPlayerId: '0',
+                ownerId: '1',
+                reason: 'test_transfer_owner_provenance',
+            },
+            timestamp: 1000,
+        } as any);
+
+        expect(transferredCore.players['0'].hand).toContainEqual(
+            expect.objectContaining({ uid: 'borrowed-minion', owner: '1' }),
+        );
+
+        const played = runCommand(makeMatchState(transferredCore), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'borrowed-minion', baseIndex: 0 },
+        } as any, defaultTestRandom);
+
+        expect(played.success).toBe(true);
+        expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'borrowed-minion')).toEqual(
+            expect.objectContaining({ owner: '1', controller: '0' }),
+        );
+
+        const afterDestroy = reduce(played.finalState.core, {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'borrowed-minion',
+                minionDefId: 'pirate_first_mate',
+                fromBaseIndex: 0,
+                ownerId: '1',
+                controllerId: '0',
+                destroyerId: '0',
+                reason: 'test_transfer_owner_provenance',
+            },
+            timestamp: 1001,
+        } as any);
+
+        expect(afterDestroy.players['0'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);
+        expect(afterDestroy.players['2'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);
+        expect(afterDestroy.players['1'].discard).toContainEqual(
+            expect.objectContaining({ uid: 'borrowed-minion', owner: '1' }),
         );
     });
 

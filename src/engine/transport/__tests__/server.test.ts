@@ -3,6 +3,7 @@ import { GameTransportServer, type GameEngineConfig } from '../server';
 import {
     buildAiProgressMarker,
     resolveCurrentPlayerId,
+    resolveOnlineAiCurrentPlayerId,
     resolveForceEndTurnForStalledAi,
     resolveUnsatisfiableReasonFromInteraction,
 } from '../onlineAiRecovery';
@@ -241,6 +242,21 @@ const createEngineConfigWithId = (gameId: string): GameEngineConfig => {
         ...base,
         gameId,
         onlineAiRecovery: {
+            resolveCurrentPlayerId: gameId === 'dicethrone'
+                ? ({ state, phase, fallbackPlayerId }) => {
+                    if (phase !== 'defensiveRoll') {
+                        return fallbackPlayerId;
+                    }
+                    const pendingAttack = (state.core as {
+                        pendingAttack?: {
+                            defenderId?: unknown;
+                        };
+                    } | undefined)?.pendingAttack;
+                    return typeof pendingAttack?.defenderId === 'string'
+                        ? pendingAttack.defenderId
+                        : fallbackPlayerId;
+                }
+                : undefined,
             resolveSeatLegalOnlyRecovery: gameId === 'dicethrone'
                 ? ({ state, phase }) => {
                     if (phase === 'offensiveRoll' || phase === 'targetingRoll' || phase === 'defensiveRoll') {
@@ -280,6 +296,14 @@ const createEngineConfigWithId = (gameId: string): GameEngineConfig => {
                     };
                 }
                 : undefined,
+            shouldSuppressUnsatisfiableInteractionFeedback: gameId === 'dicethrone'
+                ? ({ sharedInteraction, seatInteraction, sharedSelectability, seatSelectability }) => (
+                    sharedInteraction?.kind === 'dt:defender-choice'
+                    && seatInteraction?.kind === 'dt:defender-choice'
+                    && sharedSelectability?.selectionState === 'no-options'
+                    && seatSelectability?.selectionState === 'no-options'
+                )
+                : undefined,
             allowForceCommandAfterLegalActionExhausted: ({ phase, previousCandidate, nextCandidate }) => {
                 if (gameId === 'dicethrone') {
                     return phase === 'defensiveRoll';
@@ -304,6 +328,37 @@ const createEngineConfigWithId = (gameId: string): GameEngineConfig => {
         },
     };
 };
+
+type TestSeatControllers = Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
+
+type TestOnlineAiRecoveryRuntime = {
+    readState: () => MatchState<unknown>;
+    resolveLatestCandidate: () => Promise<any>;
+    resolvePrivateOverlay: (playerId: string) => MatchState<unknown>;
+    seatControllers: TestSeatControllers;
+};
+
+type TestOnlineAiRecoveryServerInternals = {
+    loadMatch: (matchID: string) => Promise<any>;
+    hasOnlineAiRecoveryResolved: {
+        (match: any, candidate: any, seatControllers: TestSeatControllers): Promise<boolean>;
+        (candidate: any, runtime: TestOnlineAiRecoveryRuntime): Promise<boolean>;
+    };
+    createOnlineAiRecoveryRuntimeBase: (
+        match: any,
+        seatControllers: TestSeatControllers,
+    ) => TestOnlineAiRecoveryRuntime;
+    applyPlayerView: (match: any, playerID: string) => MatchState<unknown>;
+};
+
+const getOnlineAiRecoveryServerInternals = (
+    server: GameTransportServer,
+): TestOnlineAiRecoveryServerInternals => server as unknown as TestOnlineAiRecoveryServerInternals;
+
+const createDefaultOnlineAiRecoverySeatControllers = (): TestSeatControllers => ({
+    '0': { type: 'human' },
+    '1': { type: 'local-ai' },
+});
 
 const createEngineConfigWithGameOver = (): GameEngineConfig => {
     const base = createEngineConfig();
@@ -1380,8 +1435,8 @@ describe('buildAiProgressMarker（响应窗口语义指纹）', () => {
     });
 });
 
-describe('resolveCurrentPlayerId（防御阶段操作者）', () => {
-    it('defensiveRoll 且存在 pendingAttack.defenderId 时，应返回 defenderId', () => {
+describe('resolveOnlineAiCurrentPlayerId（防御阶段操作者）', () => {
+    it('shared fallback 不应内置 defensiveRoll=defenderId 的旧游戏知识', () => {
         const state = createOnlineAiRecoveryState({
             activePlayerId: '1',
             phase: 'defensiveRoll',
@@ -1393,7 +1448,25 @@ describe('resolveCurrentPlayerId（防御阶段操作者）', () => {
             isDefendable: true,
         };
 
-        expect(resolveCurrentPlayerId(state)).toBe('0');
+        expect(resolveCurrentPlayerId(state)).toBe('1');
+    });
+
+    it('dicethrone 应通过 onlineAiRecovery.resolveCurrentPlayerId seam 返回 defenderId', () => {
+        const state = createOnlineAiRecoveryState({
+            activePlayerId: '1',
+            phase: 'defensiveRoll',
+        }).G as any;
+
+        state.core.pendingAttack = {
+            attackerId: '1',
+            defenderId: '0',
+            isDefendable: true,
+        };
+
+        expect(resolveOnlineAiCurrentPlayerId(state, {
+            engineConfig: createEngineConfigWithId('dicethrone'),
+            gameId: 'dicethrone',
+        })).toBe('0');
     });
 });
 
@@ -13162,15 +13235,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                match: any,
-                candidate: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => Promise<boolean>;
-            applyPlayerView: (match: any, playerID: string) => MatchState<unknown>;
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-hidden-interaction-fresh-seat-view-over-cache');
         match.lastBroadcastedViews.set('1', {
@@ -13236,19 +13301,13 @@ describe('GameTransportServer（离座与重连）', () => {
         const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
             match,
             candidate,
-            {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            },
+            createDefaultOnlineAiRecoverySeatControllers(),
         );
         hiddenStillPresent = false;
         const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
             match,
             candidate,
-            {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            },
+            createDefaultOnlineAiRecoverySeatControllers(),
         );
 
         expect(unresolved).toBe(false);
@@ -13448,27 +13507,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                candidate: any,
-                runtime: {
-                    readState: () => MatchState<unknown>;
-                    resolveLatestCandidate: () => Promise<any>;
-                    resolvePrivateOverlay: (playerId: string) => MatchState<unknown>;
-                    seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
-                },
-            ) => Promise<boolean>;
-            createOnlineAiRecoveryRuntimeBase: (
-                match: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => {
-                readState: () => MatchState<unknown>;
-                resolveLatestCandidate: () => Promise<any>;
-                resolvePrivateOverlay: (playerId: string) => MatchState<unknown>;
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
-            };
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-visible-interaction-resolve-fingerprint-drift');
         const candidate = {
@@ -13488,10 +13527,11 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
-            '0': { type: 'human' },
-            '1': { type: 'local-ai' },
-        });
+        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
+            match,
+            candidate,
+            createDefaultOnlineAiRecoverySeatControllers(),
+        );
 
         expect(resolved).toBe(true);
     });
@@ -13521,27 +13561,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                candidate: any,
-                runtime: {
-                    readState: () => MatchState<unknown>;
-                    resolveLatestCandidate: () => Promise<any>;
-                    resolvePrivateOverlay: (playerId: string) => MatchState<unknown>;
-                    seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
-                },
-            ) => Promise<boolean>;
-            createOnlineAiRecoveryRuntimeBase: (
-                match: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => {
-                readState: () => MatchState<unknown>;
-                resolveLatestCandidate: () => Promise<any>;
-                resolvePrivateOverlay: (playerId: string) => MatchState<unknown>;
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
-            };
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-hidden-interaction-resolve-fingerprint-drift');
         const originalApplyPlayerView = (server as any).applyPlayerView.bind(server);
@@ -13587,10 +13607,11 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
-            '0': { type: 'human' },
-            '1': { type: 'local-ai' },
-        });
+        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
+            match,
+            candidate,
+            createDefaultOnlineAiRecoverySeatControllers(),
+        );
 
         expect(resolved).toBe(true);
     });
@@ -13623,14 +13644,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                match: any,
-                candidate: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => Promise<boolean>;
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-active-turn-resolve-same-surface');
         const candidate = {
@@ -13649,10 +13663,11 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
-            '0': { type: 'human' },
-            '1': { type: 'local-ai' },
-        });
+        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
+            match,
+            candidate,
+            createDefaultOnlineAiRecoverySeatControllers(),
+        );
 
         expect(resolved).toBe(false);
     });
@@ -13685,14 +13700,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                match: any,
-                candidate: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => Promise<boolean>;
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-active-turn-legal-only-resolve-same-surface');
         const candidate = {
@@ -13713,10 +13721,11 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
-            '0': { type: 'human' },
-            '1': { type: 'local-ai' },
-        });
+        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
+            match,
+            candidate,
+            createDefaultOnlineAiRecoverySeatControllers(),
+        );
 
         expect(resolved).toBe(false);
     });
@@ -13749,14 +13758,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                match: any,
-                candidate: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => Promise<boolean>;
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-active-turn-legal-only-resolve-new-phase');
         const candidate = {
@@ -13785,10 +13787,11 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
-            '0': { type: 'human' },
-            '1': { type: 'local-ai' },
-        });
+        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
+            match,
+            candidate,
+            createDefaultOnlineAiRecoverySeatControllers(),
+        );
 
         expect(resolved).toBe(true);
     });
@@ -13826,14 +13829,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                match: any,
-                candidate: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => Promise<boolean>;
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-active-turn-legal-only-resolve-same-active-turn');
         const candidate = {
@@ -13855,10 +13851,10 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(match, {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            }),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(unresolved).toBe(false);
@@ -13893,14 +13889,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                match: any,
-                candidate: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => Promise<boolean>;
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-seat-legal-only-resolve-response-window');
         const candidate = {
@@ -13923,10 +13912,10 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(match, {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            }),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(unresolved).toBe(false);
@@ -14011,27 +14000,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                candidate: any,
-                runtime: {
-                    readState: () => MatchState<unknown>;
-                    resolveLatestCandidate: () => Promise<any>;
-                    resolvePrivateOverlay: (playerId: string) => MatchState<unknown>;
-                    seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
-                },
-            ) => Promise<boolean>;
-            createOnlineAiRecoveryRuntimeBase: (
-                match: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => {
-                readState: () => MatchState<unknown>;
-                resolveLatestCandidate: () => Promise<any>;
-                resolvePrivateOverlay: (playerId: string) => MatchState<unknown>;
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
-            };
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-display-only-bonus-resolve-same-settlement');
         const candidate = {
@@ -14053,10 +14022,10 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const unresolved = await serverInternal.hasOnlineAiRecoveryResolved(
             candidate,
-            serverInternal.createOnlineAiRecoveryRuntimeBase(match, {
-                '0': { type: 'human' },
-                '1': { type: 'local-ai' },
-            }),
+            serverInternal.createOnlineAiRecoveryRuntimeBase(
+                match,
+                createDefaultOnlineAiRecoverySeatControllers(),
+            ),
         );
 
         expect(unresolved).toBe(false);
@@ -14091,14 +14060,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                match: any,
-                candidate: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => Promise<boolean>;
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-response-window-resolve-fingerprint-drift');
         const candidate = {
@@ -14118,10 +14080,11 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
-            '0': { type: 'human' },
-            '1': { type: 'local-ai' },
-        });
+        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
+            match,
+            candidate,
+            createDefaultOnlineAiRecoverySeatControllers(),
+        );
 
         expect(resolved).toBe(true);
     });
@@ -14155,14 +14118,7 @@ describe('GameTransportServer（离座与重连）', () => {
             onlineAiRecoveryTimeoutMs: 0,
         });
 
-        const serverInternal = server as unknown as {
-            loadMatch: (matchID: string) => Promise<any>;
-            hasOnlineAiRecoveryResolved: (
-                match: any,
-                candidate: any,
-                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
-            ) => Promise<boolean>;
-        };
+        const serverInternal = getOnlineAiRecoveryServerInternals(server);
 
         const match = await serverInternal.loadMatch('match-watchdog-response-loop-resolve-fingerprint-drift');
         const candidate = {
@@ -14182,10 +14138,11 @@ describe('GameTransportServer（离座与重连）', () => {
             },
         };
 
-        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(match, candidate, {
-            '0': { type: 'human' },
-            '1': { type: 'local-ai' },
-        });
+        const resolved = await serverInternal.hasOnlineAiRecoveryResolved(
+            match,
+            candidate,
+            createDefaultOnlineAiRecoverySeatControllers(),
+        );
 
         expect(resolved).toBe(true);
     });
@@ -18582,10 +18539,18 @@ describe('GameTransportServer（离座与重连）', () => {
             }),
         });
 
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfigWithId(gameId),
+            onlineAiRecovery: {
+                ...createEngineConfigWithId(gameId).onlineAiRecovery,
+                humanTurnLegalActionProbePhases: ['defensiveRoll'],
+            },
+        };
+
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithId(gameId)],
+            games: [engineConfig],
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
             onlineAiFeedbackReporter: feedbackReporter,
@@ -18789,10 +18754,18 @@ describe('GameTransportServer（离座与重连）', () => {
             }),
         });
 
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfigWithId(gameId),
+            onlineAiRecovery: {
+                ...createEngineConfigWithId(gameId).onlineAiRecovery,
+                humanTurnLegalActionProbePhases: ['targetingRoll'],
+            },
+        };
+
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithId(gameId)],
+            games: [engineConfig],
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
             onlineAiFeedbackReporter: feedbackReporter,

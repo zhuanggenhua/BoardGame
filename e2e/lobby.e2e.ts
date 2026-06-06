@@ -2655,14 +2655,19 @@ test.describe('Lobby E2E', () => {
 
     test(MOBILE_AUTHOR_ENTRY_TEST_NAME, async ({ page, game }, testInfo) => {
         await page.setViewportSize({ width: 390, height: 844 });
-        await page.goto('/?game=tictactoe', { waitUntil: 'domcontentloaded' });
+        await ensureLobbyReady(page);
+        await page.getByRole('heading', { name: /井字棋|Tic-Tac-Toe/i }).click();
         await expect(page).toHaveURL(/game=tictactoe/);
 
         const sidebar = page.getByTestId('game-details-sidebar');
         const mobileAuthorButton = page.getByTestId('game-details-author-button-mobile');
+        const leaderboardTabButton = page.getByTestId('game-details-tab-leaderboard');
+        const closeButton = page.getByTestId('game-details-close-button');
 
         await expect(sidebar).toBeVisible({ timeout: 15000 });
         await expect(mobileAuthorButton).toBeVisible();
+        await expect(leaderboardTabButton).toBeVisible();
+        await expect(closeButton).toBeVisible();
         await expect(page.getByTestId('game-details-description')).toBeHidden();
         await expect(page.getByTestId('game-details-player-recommendation')).toBeHidden();
 
@@ -2704,6 +2709,17 @@ test.describe('Lobby E2E', () => {
             normalizedBoxShadow === 'none'
             || /^rgba\(0, 0, 0, 0\) 0px 0px 0px 0px(, rgba\(0, 0, 0, 0\) 0px 0px 0px 0px)*$/.test(normalizedBoxShadow)
         ).toBeTruthy();
+
+        const leaderboardTabBox = await leaderboardTabButton.boundingBox();
+        const closeButtonBox = await closeButton.boundingBox();
+        expect(leaderboardTabBox).not.toBeNull();
+        expect(closeButtonBox).not.toBeNull();
+
+        if (!leaderboardTabBox || !closeButtonBox) {
+            throw new Error('移动端详情弹窗 tab 或关闭按钮未正确渲染，无法校验窄屏头部布局');
+        }
+
+        expect(leaderboardTabBox.x + leaderboardTabBox.width).toBeLessThanOrEqual(closeButtonBox.x - 4);
 
         await game.screenshot('lobby-mobile-author-entry-right-top', testInfo);
 

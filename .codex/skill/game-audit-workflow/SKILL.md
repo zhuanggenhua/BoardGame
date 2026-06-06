@@ -16,6 +16,7 @@ description: 全游戏通用审计流程与证据链工作流。用于规则/卡
 - **审计默认就是全量审计当前范围**：用户或文档只说“审计 / 补审 / 重审 / 收口审计”时，默认含义是把当前明确范围内的对象、子句、共享链路和适用维度做完整审计，而不是只做抽样、代表链或局部核对。若实际只做专项或抽样，必须显式写明“专项审计 / 抽样审计 / L1-L2 静态审计”。
 - **新增批次默认全面审计留档，不再追问**：如果任务语义是“新增派系 / 新英雄 / 新角色 / 新对象接入 / 从素材做到可玩”，且用户没有明确把范围缩成“只录入 / 只修一个 bug / 只做静态接入”，则默认交付就包含**对象级全面审计 + evidence 留档**。不得再反问“要不要补审 / 要不要留档 / 要不要做全面审计”。
 - **发现同维度漏项后必须继续扩审兄弟对象**：如果当前审计命中的是共享消费合同、同类技能 family、同类 UI 入口、同类时机或同类资源链的漏项，默认必须把同批兄弟对象一起纳入复审，并同步回写旧 evidence / rule。不得只修用户点名对象后停下，再把“其余对象要不要继续补审”抛回用户。
+- **状态/token 家族不能只凭对象级直证收口**：如果同一新英雄/新派系里有多个对象写入同一状态/token，或用户反馈集中在某个状态 family，默认必须继续拆出该状态的 `写入 seam -> 共享消费者 -> 清理/后续 -> 已验证入口`。只证明“多张牌都能写这个状态”不等于状态家族已到 `L4`；至少要继续查 `stack limit / accept-decline / upkeep / passiveTrigger / transfer / cleanup` 这些共享消费者。
 - **点入口 / 点变体不等于已结算**：对真实玩家板槽位、变体 modal、simple-choice、攻击修正或其他交互入口，看到 `SELECT_ABILITY`、按钮点击或 modal 选择，只能证明对象进入了流程，不能直接算对象级 L3。若真合同是“先建 `pendingAttack`，再由 `ADVANCE_PHASE` / Continue / 选择确认收口”，审计必须把这两段都补齐。
 - **不可防御必须同时审“声明层 + 共享消费层”**：看到 `damage(unblockable=true)` 或文案写“不可防御”时，不能直接判定收口。还必须反查 `isDefendable` 的共享来源是 ability/variant `tags`、choice effect patch、`ATTACK_MADE_UNDEFENDABLE` 还是其他 seam，并补证据证明真实流程不会误开防御窗口。
 - **停止条件只能是收口或用户显式缩范围**：只要当前范围内还存在未回写旧结论、未补对象矩阵、未补关键 L3/L4、或未澄清的共享链判等，就不能把任务表述成“已审完”。只有矩阵收口，或用户明确把范围缩小，才允许停止推进。
@@ -82,9 +83,27 @@ description: 全游戏通用审计流程与证据链工作流。用于规则/卡
     - `maxRerollCount`：奖励骰总共还能重投几次
     - `rerollDieLimit`：像防御重投这类“下一轮至多可重投几颗”的共享校验
   - **禁止**只看到 `prompt`/overlay 打开、`rollLimit` 提高、或 `bonusDiceSettlement` 存在，就把“可重掷至多 N 颗”判成已实现；必须继续追到真实 `commandValidation` / interaction consumption / UI 锁定态。
-- **阶段推进合同补充（强制）**：
+  - **阶段推进合同补充（强制）**：
   - 若对象运行在 `offensiveRoll / targetingRoll`，并且玩家动作后还存在 `pendingAttack`、`currentChoiceSourceAbilityId`、bonus settlement 或其他 continuation，必须继续追到真实 `ADVANCE_PHASE` / Continue / 选择确认后的收口。
   - 若对象是在 `CHOICE_RESOLVED` / token 响应后才改写“不可防御 / 目标 / 伤害范围”，必须同时验证“选择前中间态正确”和“选择后共享合同已改写并成功收口”。
+ - **状态 family 对照补充（强制）**：
+   - 遇到“多张卡/多条技能都在写同一状态/token”时，必须继续画出一张最小状态矩阵：
+     1) **写入 seam**：是 direct `grantStatus`、`customAction`、`choiceResolved`、`phase hook` 还是其它特殊入口
+     2) **共享消费者**：是哪一层真正消费该状态（`stack limit`、`accept/decline`、`upkeep`、`passiveTrigger`、`cleanup`、`transfer`、`damage gate`）
+     3) **已验证入口**：当前哪几条真实入口或 L2/L3 证据已经打穿
+     4) **不可外推差异**：哪些兄弟入口只是共用写入 helper，哪些才共用完整生命周期
+   - **禁止**只因为“多个入口都能把状态写上去”就把整个状态 family 判成 `L4` 或“只差治理尾项”。
+ - **升级/替换 family 对照补充（强制）**：
+   - 遇到 `replaceAbility`、升级牌写槽、双面切换能力集或其它“先替换定义，再由新定义继续运行”的对象时，必须拆成两层：
+     1) **替换壳**：打牌/翻面/扣费/离手后，`abilityLevel`、`upgradeCardByAbilityId` 或能力集切换是否真实成立
+     2) **被替换后的能力 seam**：新的 `trigger / variants / customAction / tags / postDamage continuation` 是否真实成立
+   - **禁止**只因为“升级牌写进升级槽”或“角色翻面切到新能力集”就把整条 family 判成 `L4`；这只能证明壳层成立，不能替代 replacement ability 本体审计。
+ - **奖励骰/特写壳与消费者拆分（强制）**：
+   - 遇到多个对象都经过 `rollDie`、`BONUS_DIE_ROLLED`、奖励骰特写或 `displayOnlySettlement` 时，必须继续拆成三层：
+     1) **触发/展示壳**：overlay 是否真实打开、关闭、阶段是否可继续
+     2) **分支消费者**：不同骰面最终落到 `drawCard / grantToken / damage / status / extraAttack / selectPlayer / damageShield` 哪一类消费者
+     3) **收口 continuation**：是否还要经过 `postDamage`、额外进攻、选择确认或其它后续时序
+   - **禁止**只因为多个对象都能看到奖励骰特写，或都写了 `BONUS_DIE_ROLLED / displayOnlySettlement`，就把它们判成同一 `L4` family；真正的判等边界必须落在后续消费者与 continuation。
 
 ### Step 3：D1-D52 维度审计（必须）
 - **强制打开** `docs/ai-rules/testing-audit.md`。

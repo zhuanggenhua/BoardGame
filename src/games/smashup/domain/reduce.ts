@@ -3028,7 +3028,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.CARD_TRANSFERRED: {
-            const { cardUid, defId, fromPlayerId, toPlayerId } = (event as CardTransferredEvent).payload;
+            const { cardUid, defId, fromPlayerId, toPlayerId, ownerId } = (event as CardTransferredEvent).payload;
             const fromPlayer = state.players[fromPlayerId];
             const toPlayer = state.players[toPlayerId];
             if (!fromPlayer || !toPlayer) return state;
@@ -3091,14 +3091,15 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 });
             }
 
-            if (!found) return state;
+            if (!found && ownerId === undefined) return state;
 
             const def = getCardDef(defId);
+            const resolvedOwnerId = found?.owner ?? ownerId ?? fromPlayerId;
             const card: CardInstance = found ?? {
                 uid: cardUid,
                 defId,
                 type: def?.type ?? 'minion',
-                owner: fromPlayerId,
+                owner: resolvedOwnerId,
             };
             const movedFromAndToSamePlayer = fromPlayerId === toPlayerId;
             let updatedPlayers = movedFromAndToSamePlayer

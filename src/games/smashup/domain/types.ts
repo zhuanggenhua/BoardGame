@@ -1827,6 +1827,7 @@ export interface CardTransferredEvent extends GameEvent<typeof SU_EVENTS.CARD_TR
         defId: string;
         fromPlayerId: PlayerId;
         toPlayerId: PlayerId;
+        ownerId?: PlayerId;
         reason: string;
     };
 }

@@ -333,6 +333,7 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                     <button
                         onClick={handleOpenMyFeedback}
                         className="w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors"
+                        data-testid="user-menu-my-feedback"
                     >
                         <MessageSquare size={16} />
                         {t('auth:menu.myFeedback')}

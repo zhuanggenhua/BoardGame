@@ -86,6 +86,7 @@ export async function runLocalAiTurnAttempt(args: {
     await executeResolvedLocalAiAction({
         gameId: args.config.gameId,
         seed: args.seed,
+        config: args.config,
         resolution,
         seatControllers: args.seatControllers,
         decisionResolvedAt,

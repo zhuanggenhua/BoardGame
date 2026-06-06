@@ -130,6 +130,7 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 onClick={(event) => event.stopPropagation()}
                 className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-parchment-card-border/30 bg-parchment-card-bg shadow-2xl"
+                data-testid="my-feedback-modal"
                 style={{ maxHeight: 'min(760px, var(--modal-max-height, var(--runtime-modal-max-height)))' }}
             >
                 <div className="flex items-center justify-between border-b border-parchment-card-border/30 bg-parchment-base-bg px-4 py-3">

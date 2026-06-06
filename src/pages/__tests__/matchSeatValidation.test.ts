@@ -4086,6 +4086,73 @@ describe('本地 AI 无进展重试判定', () => {
             nextState,
         })).toBe(false);
     });
+
+    it('custom current-player seam 漂移时，本地 AI retry guard 不应误判为未推进', () => {
+        const engineConfig = {
+            gameId: 'custom-offturn-game',
+            onlineAiRecovery: {
+                resolveCurrentPlayerId: ({ state, phase, fallbackPlayerId }: {
+                    state: MatchState<unknown>;
+                    phase: string;
+                    fallbackPlayerId: string | null;
+                }) => {
+                    if (phase !== 'defensiveRoll') {
+                        return fallbackPlayerId;
+                    }
+                    const pendingAttack = (state.core as {
+                        pendingAttack?: {
+                            defenderId?: unknown;
+                        };
+                    } | undefined)?.pendingAttack;
+                    return typeof pendingAttack?.defenderId === 'string'
+                        ? pendingAttack.defenderId
+                        : fallbackPlayerId;
+                },
+            },
+        } as const;
+
+        const previousState = buildProgressState({
+            core: {
+                activePlayerId: '0',
+                pendingAttack: {
+                    attackerId: '0',
+                    defenderId: '1',
+                },
+            },
+            sys: {
+                turnNumber: 1,
+                phase: 'defensiveRoll',
+                eventStream: { nextId: 5 },
+                interaction: { current: null, queue: [] },
+                responseWindow: { current: null },
+            },
+        });
+        const nextState = buildProgressState({
+            core: {
+                activePlayerId: '0',
+                pendingAttack: undefined,
+            },
+            sys: {
+                turnNumber: 1,
+                phase: 'main2',
+                eventStream: { nextId: 5 },
+                interaction: { current: null, queue: [] },
+                responseWindow: { current: null },
+            },
+        });
+
+        expect(buildAiProgressMarker(previousState, { engineConfig })).not.toBe(
+            buildAiProgressMarker(nextState, { engineConfig }),
+        );
+        expect(shouldRetryLocalAiAttemptAfterDispatch({
+            cancelled: false,
+            activeAttemptKey: 'attempt-1',
+            resolutionAttemptKey: 'attempt-1',
+            markerBeforeDispatch: buildAiProgressMarker(previousState, { engineConfig }),
+            nextState,
+            engineConfig,
+        })).toBe(false);
+    });
 });
 
 describe('AI attemptKey 预占位', () => {

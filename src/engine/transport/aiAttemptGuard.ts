@@ -1,5 +1,6 @@
 import type { MatchState } from '../types';
 import { buildAiProgressMarker } from './onlineAiRecovery';
+import type { GameEngineConfig } from './server';
 
 const NON_RECOVERABLE_REJECTED_COMMAND_ERRORS = new Set([
     'unauthorized',
@@ -26,10 +27,11 @@ export function shouldRetryLocalAiAttemptAfterDispatch(args: {
     resolutionAttemptKey: string;
     markerBeforeDispatch: string;
     nextState: MatchState<unknown>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
 }): boolean {
     if (args.cancelled) return false;
     if (args.activeAttemptKey !== null && args.activeAttemptKey !== args.resolutionAttemptKey) return false;
-    return buildAiProgressMarker(args.nextState) === args.markerBeforeDispatch;
+    return buildAiProgressMarker(args.nextState, { engineConfig: args.engineConfig }) === args.markerBeforeDispatch;
 }
 
 export function scheduleLocalAiRetryAfterDispatch(args: {
@@ -39,6 +41,7 @@ export function scheduleLocalAiRetryAfterDispatch(args: {
     markerBeforeDispatch: string;
     getNextState: () => MatchState<unknown>;
     scheduleRetry: () => void;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
     delayMs?: number;
 }): ReturnType<typeof setTimeout> {
     return setTimeout(() => {
@@ -48,6 +51,7 @@ export function scheduleLocalAiRetryAfterDispatch(args: {
             resolutionAttemptKey: args.resolutionAttemptKey,
             markerBeforeDispatch: args.markerBeforeDispatch,
             nextState: args.getNextState(),
+            engineConfig: args.engineConfig,
         })) {
             return;
         }

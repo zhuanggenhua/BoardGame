@@ -2,6 +2,7 @@ import type { CancelableAiDelayHandle } from '../ai/actionDelay';
 import type { AiResolution } from '../ai/localRunner';
 import type { AiSeatController } from '../ai/types';
 import type { MatchState } from '../types';
+import type { GameEngineConfig } from './server';
 import type { LocalAiCommandEffect } from './localAiCommandEffects';
 import {
     logLocalAiPerfInfo,
@@ -22,6 +23,7 @@ import {
 export async function executeResolvedLocalAiAction(args: {
     gameId: string;
     seed: string;
+    config: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>;
     resolution: AiResolution;
     seatControllers: Record<string, AiSeatController>;
     decisionResolvedAt: number;
@@ -114,6 +116,7 @@ export async function executeResolvedLocalAiAction(args: {
         dispatch: args.dispatch,
         getState: args.getState,
         commandEffectsByToken: args.commandEffectsByToken,
+        engineConfig: args.config,
     });
 
     finalizeLocalAiDispatch({
@@ -134,5 +137,6 @@ export async function executeResolvedLocalAiAction(args: {
         markerBeforeDispatch: args.markerBeforeDispatch,
         getNextState: args.getState,
         scheduleRetry: args.scheduleRetry,
+        engineConfig: args.config,
     });
 }

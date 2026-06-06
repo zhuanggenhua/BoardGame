@@ -46,7 +46,13 @@ type PlayerChoice = { targetPlayerId: PlayerId };
 type HandChoice = { cardUid: string; defId: string; ownerId: PlayerId };
 type MinionChoice = { minionUid: string; baseIndex: number };
 type CastRunesChoice = { topCardUid: string; cardUid?: string; defId?: string };
-type RaidingPartyChoice = { cardUid: string; ownerId: PlayerId; defId: string; type: 'action' | 'minion' } | { skip: true };
+type RaidingPartyChoice = {
+    cardUid: string;
+    sourcePlayerId: PlayerId;
+    ownerId: PlayerId;
+    defId: string;
+    type: 'action' | 'minion';
+} | { skip: true };
 type VikingPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
@@ -62,7 +68,7 @@ type VikingCastRunesOrderPromptContext = VikingPromptContext & {
 };
 type VikingRaidingPartyChoicePromptContext = VikingPromptContext & {
     targetPlayerId: PlayerId;
-    revealedCards: Array<{ uid: string; defId: string; type: 'action' | 'minion' }>;
+    revealedCards: Array<{ uid: string; defId: string; type: 'action' | 'minion'; owner: PlayerId }>;
 };
 type VikingRaidingPartyTargetPromptContext = VikingPromptContext & {
     selected: Exclude<RaidingPartyChoice, { skip: true }>;
@@ -115,14 +121,20 @@ function buildCastTheRunesOrderOptions(
 function buildRaidingPartyChoiceOptions(
     state: SmashUpCore,
     targetPlayerId: PlayerId,
-    revealedCards: Array<{ uid: string; defId: string; type: 'action' | 'minion' }>,
+    revealedCards: Array<{ uid: string; defId: string; type: 'action' | 'minion'; owner: PlayerId }>,
 ) {
     const eligible = getCurrentDeckTopSnapshotCards(state, targetPlayerId, revealedCards)
         .filter((card) => isRaidingPartyPlayable(card as CardInstance))
         .map((card, index) => ({
             id: `play-${index}`,
             label: getCardDef(card.defId)?.name ?? card.defId,
-            value: { cardUid: card.uid, ownerId: targetPlayerId, defId: card.defId, type: card.type },
+            value: {
+                cardUid: card.uid,
+                sourcePlayerId: targetPlayerId,
+                ownerId: card.owner,
+                defId: card.defId,
+                type: card.type,
+            },
             _source: 'static' as const,
             displayMode: 'card' as const,
         }));
@@ -429,7 +441,17 @@ function resolveRevealAndStealTopCard(params: {
         ),
     ];
     if (eligible) {
-        events.push(transferCard(deckInfo.card.uid, deckInfo.card.defId, params.targetPlayerId, params.actingPlayerId, params.reason, params.timestamp));
+        events.push(
+            transferCard(
+                deckInfo.card.uid,
+                deckInfo.card.defId,
+                params.targetPlayerId,
+                params.actingPlayerId,
+                params.reason,
+                params.timestamp,
+                deckInfo.card.owner,
+            ),
+        );
     }
     return { events };
 }
@@ -527,7 +549,7 @@ const vikingsValkyriePromptProgram = createPromptProgram<VikingPromptContext, Sm
                 .map((card, index) => ({
                     id: `discard-${targetPlayerId}-${index}`,
                     label: `${getCardDef(card.defId)?.name ?? card.defId} (${targetPlayerId})`,
-                    value: { cardUid: card.uid, ownerId: targetPlayerId, defId: card.defId },
+                    value: { cardUid: card.uid, sourcePlayerId: targetPlayerId, ownerId: card.owner, defId: card.defId },
                     _source: 'discard' as const,
                     displayMode: 'card' as const,
                 }));
@@ -542,10 +564,10 @@ const vikingsValkyriePromptProgram = createPromptProgram<VikingPromptContext, Sm
     },
     onResolve: ({ context, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
-        const selected = value as { cardUid?: string; ownerId?: PlayerId; defId?: string } | undefined;
-        if (!selected?.cardUid || !selected.ownerId || !selected.defId) return { events: [] };
+        const selected = value as { cardUid?: string; sourcePlayerId?: PlayerId; ownerId?: PlayerId; defId?: string } | undefined;
+        if (!selected?.cardUid || !selected.sourcePlayerId || !selected.ownerId || !selected.defId) return { events: [] };
         return {
-            events: [transferCard(selected.cardUid, selected.defId, selected.ownerId, context.playerId, 'vikings_valkyrie', timestamp)],
+            events: [transferCard(selected.cardUid, selected.defId, selected.sourcePlayerId, context.playerId, 'vikings_valkyrie', timestamp, selected.ownerId)],
         };
     },
 });
@@ -570,7 +592,7 @@ const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext, Sma
         if (!selected?.cardUid || !selected.defId) return { events: [] };
         if (selected.kind === 'buried' && selected.trueOwnerId) {
             return {
-                events: [transferCard(selected.cardUid, selected.defId, selected.trueOwnerId, context.playerId, 'vikings_ransack', timestamp)],
+                events: [transferCard(selected.cardUid, selected.defId, selected.trueOwnerId, context.playerId, 'vikings_ransack', timestamp, selected.trueOwnerId)],
             };
         }
         if (selected.ownerId) {
@@ -581,7 +603,7 @@ const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext, Sma
                         payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'vikings_ransack' },
                         timestamp,
                     } as OngoingDetachedEvent,
-                    transferCard(selected.cardUid, selected.defId, selected.ownerId, context.playerId, 'vikings_ransack', timestamp),
+                    transferCard(selected.cardUid, selected.defId, selected.ownerId, context.playerId, 'vikings_ransack', timestamp, selected.ownerId),
                 ],
             };
         }
@@ -608,7 +630,7 @@ const vikingsPillagePromptProgram = createPromptProgram<VikingPromptContext, Sma
         if (!target || target.hand.length === 0) return { events: [] };
         const card = random.shuffle([...target.hand])[0];
         return card
-            ? { events: [transferCard(card.uid, card.defId, selected.targetPlayerId, context.playerId, 'vikings_pillage', timestamp)] }
+            ? { events: [transferCard(card.uid, card.defId, selected.targetPlayerId, context.playerId, 'vikings_pillage', timestamp, card.owner)] }
             : { events: [] };
     },
 });
@@ -859,7 +881,12 @@ const vikingsRaidingPartyPlayerPromptProgram = createPromptProgram<VikingPromptC
         if (!selected?.targetPlayerId) return { events: [] };
         const deckInfo = prepareTopDeckCards(state.core, selected.targetPlayerId, 3, random, timestamp);
         if (deckInfo.cards.length === 0) return { events: [] };
-        const revealedCards = deckInfo.cards.map(card => ({ uid: card.uid, defId: card.defId, type: card.type as 'action' | 'minion' }));
+        const revealedCards = deckInfo.cards.map(card => ({
+            uid: card.uid,
+            defId: card.defId,
+            type: card.type as 'action' | 'minion',
+            owner: card.owner,
+        }));
         const events: SmashUpEvent[] = [
             ...deckInfo.events,
             revealDeckTop(selected.targetPlayerId, 'all', revealedCards.map(card => ({ uid: card.uid, defId: card.defId })), revealedCards.length, 'vikings_raiding_party', timestamp),
@@ -1224,7 +1251,15 @@ function playRaidingPartyCard(
     timestamp: number,
     prefixEvents: SmashUpEvent[],
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const transferEvent = transferCard(selected.cardUid, selected.defId, selected.ownerId, playerId, 'vikings_raiding_party', timestamp);
+    const transferEvent = transferCard(
+        selected.cardUid,
+        selected.defId,
+        selected.sourcePlayerId,
+        playerId,
+        'vikings_raiding_party',
+        timestamp,
+        selected.ownerId,
+    );
     const simulatedCore = reduce(state.core, transferEvent);
     const simulatedState: MatchState<SmashUpCore> = {
         ...state,
@@ -1282,10 +1317,11 @@ function transferCard(
     toPlayerId: PlayerId,
     reason: string,
     timestamp: number,
+    ownerId?: PlayerId,
 ): CardTransferredEvent {
     return {
         type: SU_EVENTS.CARD_TRANSFERRED,
-        payload: { cardUid, defId, fromPlayerId, toPlayerId, reason },
+        payload: { cardUid, defId, fromPlayerId, toPlayerId, ...(ownerId ? { ownerId } : {}), reason },
         timestamp,
     };
 }

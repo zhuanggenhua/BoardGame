@@ -136,6 +136,18 @@ async function clickCenter(locator: any, page: any) {
     await locator.dispatchEvent('click');
 }
 
+async function expectCenterHitSelf(locator: any, label: string) {
+    await expect(locator).toBeVisible({ timeout: 10000 });
+    const hitSelf = await locator.evaluate((element: HTMLElement) => {
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const target = document.elementFromPoint(centerX, centerY) as HTMLElement | null;
+        return !!target && (target === element || element.contains(target));
+    });
+    expect(hitSelf, `${label} 中心点命中目标应仍是自身`).toBe(true);
+}
+
 async function tapTouchCenter(locator: any, page: any) {
     const box = await locator.boundingBox();
     expect(box, '触摸目标应该先可见').not.toBeNull();
@@ -594,11 +606,61 @@ async function getBaseOptions(game: any) {
     }));
 }
 
-async function selectBaseByDefId(game: any, baseDefId: string) {
-    const options = await getBaseOptions(game);
-    const option = options.find((entry: any) => entry.baseDefId === baseDefId);
-    expect(option, `未找到基地选项 ${baseDefId}`).toBeTruthy();
-    await game.selectOption(option!.id);
+async function getBaseLocatorByDefId(page: any, game: any, baseDefId: string) {
+    const state = await game.getState();
+    const baseIndex = state?.core?.bases?.findIndex((base: any) => base?.defId === baseDefId) ?? -1;
+    expect(baseIndex, `未在棋盘上找到基地 ${baseDefId}`).toBeGreaterThanOrEqual(0);
+    return page.locator(`[data-base-index="${baseIndex}"]`);
+}
+
+async function selectBoardBaseByDefId(page: any, game: any, baseDefId: string) {
+    const locator = await getBaseLocatorByDefId(page, game, baseDefId);
+    await expectCenterHitSelf(locator, `基地 ${baseDefId}`);
+    await locator.click();
+}
+
+async function dispatchAdvancePhaseAtTimestamp(page: any, game: any, timestamp: number) {
+    const playerId = await game.getCurrentPlayerId();
+    expect(playerId, '推进 scoreBases 延迟结算前应能读取当前玩家').toBeTruthy();
+
+    await page.evaluate(async ({ nextPlayerId, nextTimestamp }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        await harness.command.dispatch({
+            type: 'ADVANCE_PHASE',
+            playerId: nextPlayerId,
+            payload: {},
+            timestamp: nextTimestamp,
+        });
+    }, {
+        nextPlayerId: playerId,
+        nextTimestamp: timestamp,
+    });
+    await page.waitForTimeout(120);
+}
+
+async function drainScoreBasesDelayUntilPromptOrExit(page: any, game: any, timeout = 15000) {
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+        const state = await game.getState();
+        const sourceId = state?.sys?.interaction?.current?.data?.sourceId;
+        if (sourceId === 'multi_base_scoring') {
+            return 'prompt';
+        }
+        if (state?.sys?.phase !== 'scoreBases') {
+            return 'exit';
+        }
+
+        const delayUntil = (state?.sys as Record<string, any> | undefined)?._smashupPostScoringBaseRevealDelayUntil;
+        if (typeof delayUntil === 'number') {
+            await dispatchAdvancePhaseAtTimestamp(page, game, Math.max(delayUntil + 1, Date.now() + 1));
+            continue;
+        }
+
+        await page.waitForTimeout(200);
+    }
+
+    throw new Error('等待多基地计分继续或退出超时');
 }
 
 function buildFourPlayerMobileScene() {
@@ -963,44 +1025,30 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await game.advancePhase();
         await game.waitForInteraction('multi_base_scoring', 15000);
 
-        await expect(page.getByText('选择先计分的基地')).toBeVisible();
-        const promptBaseGrid = page.getByTestId('prompt-base-grid');
-        await expect(promptBaseGrid).toBeVisible();
+        await expect(page.getByText(/选择先[计记]分的基地/)).toBeVisible();
 
         const baseOptions = await getBaseOptions(game);
         expect(baseOptions).toHaveLength(3);
         expect(baseOptions.map((option: any) => option.baseDefId).sort()).toEqual([...INITIAL_BASE_IDS].sort());
 
-        const promptCards = page.locator('[data-testid^="prompt-card-"]');
-        await expect(promptCards).toHaveCount(3);
-        const [firstCardBox, secondCardBox, thirdCardBox] = await Promise.all([
-            promptCards.nth(0).boundingBox(),
-            promptCards.nth(1).boundingBox(),
-            promptCards.nth(2).boundingBox(),
-        ]);
-        expect(firstCardBox, '第一个基地卡片应提供布局坐标').not.toBeNull();
-        expect(secondCardBox, '第二个基地卡片应提供布局坐标').not.toBeNull();
-        expect(thirdCardBox, '第三个基地卡片应提供布局坐标').not.toBeNull();
-        expect(
-            Math.abs((firstCardBox?.y ?? 0) - (secondCardBox?.y ?? 0)),
-            '前两个基地应落在同一行',
-        ).toBeLessThan(12);
-        expect(
-            (secondCardBox?.x ?? 0) - (firstCardBox?.x ?? 0),
-            '第二个基地应排在第一行右侧',
-        ).toBeGreaterThan(120);
-        expect(
-            (thirdCardBox?.y ?? 0) - (firstCardBox?.y ?? 0),
-            '第三个基地应换到下一行',
-        ).toBeGreaterThan(80);
+        const selectableBases = await Promise.all(
+            baseOptions.map(async (option: any) => ({
+                baseDefId: option.baseDefId,
+                locator: await getBaseLocatorByDefId(page, game, option.baseDefId),
+            })),
+        );
+        for (const { baseDefId, locator } of selectableBases) {
+            await expectCenterHitSelf(locator, `可选基地 ${baseDefId}`);
+            await locator.click({ trial: true });
+        }
 
         await game.screenshot('01-four-player-multi-base-prompt', testInfo);
         await saveEvidenceLocatorScreenshot(
             page,
-            promptBaseGrid,
+            selectableBases[0].locator,
             testInfo,
             'smashup',
-            'smashup-four-player-multi-base-grid-two-per-row.png',
+            'smashup-four-player-multi-base-board-click-target.png',
         );
     });
 
@@ -1012,7 +1060,7 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await game.advancePhase();
         await game.waitForInteraction('multi_base_scoring', 15000);
 
-        await selectBaseByDefId(game, 'base_tsars_palace');
+        await selectBoardBaseByDefId(page, game, 'base_tsars_palace');
 
         const vpGainFeedbacks = page.locator('[data-testid^="su-vp-gain-feedback-"]');
         await expect(vpGainFeedbacks.first()).toBeVisible({ timeout: 5000 });
@@ -1025,16 +1073,15 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect.poll(async () => {
             return (await getBaseOptions(game)).map((option: any) => option.baseDefId).sort();
         }).toEqual(['base_dread_lookout', 'base_the_jungle']);
-        await expect(page.getByText('选择先计分的基地')).toBeVisible();
+        expect(await drainScoreBasesDelayUntilPromptOrExit(page, game)).toBe('prompt');
+        await expect(page.getByText(/选择先[计记]分的基地/)).toBeVisible();
 
         await game.screenshot('02-after-first-base-choice', testInfo);
 
-        await selectBaseByDefId(game, 'base_the_jungle');
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return state.sys?.interaction?.current ? 'active' : 'idle';
-        }, { timeout: 15000 }).toBe('idle');
+        await selectBoardBaseByDefId(page, game, 'base_the_jungle');
+        expect(await drainScoreBasesDelayUntilPromptOrExit(page, game)).toBe('exit');
+        await game.waitForNoInteraction(15000);
+        await game.waitForPhase('playCards', 15000);
 
         const finalState = await game.getState();
 

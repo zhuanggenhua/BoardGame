@@ -241,4 +241,50 @@ describe('Vikings abilities', () => {
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['p0-deck-1']);
         expect(resolved.finalState.core.players['1'].deck.map(card => card.uid)).toEqual(['borrowed-1', 'p1-deck-1']);
     });
+
+    it('vikings_pillage 从他人手里拿到第三方拥有的牌时，应显式保留真实 ownerId', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('pillage-1', 'vikings_pillage', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2', {
+                    hand: [makeCard('borrowed-action', 'wizard_summon', 'action', '1')],
+                }),
+            },
+            turnOrder: ['0', '1', '2'],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'pillage-1' },
+            } as any,
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'vikings_pillage');
+        const targetOption = getPromptOption(prompt, option => option.value?.targetPlayerId === '2', 'target player 2 option');
+        const resolved = respondToPrompt(played.finalState, targetOption.id, '0', {
+            ...defaultTestRandom,
+            shuffle: items => [...items],
+        });
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_TRANSFERRED,
+            payload: expect.objectContaining({
+                cardUid: 'borrowed-action',
+                fromPlayerId: '2',
+                toPlayerId: '0',
+                ownerId: '1',
+                reason: 'vikings_pillage',
+            }),
+        }));
+        expect(resolved.finalState.core.players['0'].hand).toContainEqual(
+            expect.objectContaining({ uid: 'borrowed-action', owner: '1' }),
+        );
+    });
 });

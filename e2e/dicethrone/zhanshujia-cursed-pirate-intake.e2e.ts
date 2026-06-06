@@ -5620,20 +5620,35 @@ const playPowderKegUpkeepTransfer = async (
     await expect.poll(async () => {
         const root = await readServerRoot(match.matchId, match.hostPage);
         const interaction = asRecord(asRecord(root.sys.interaction).current);
+        const players = asRecordMap(root.core.players);
+        const host = asRecord(players['0']);
+        const guest = asRecord(players['1']);
+        const hostStatuses = asRecord(host.statusEffects);
+        const guestStatuses = asRecord(guest.statusEffects);
+        const interactionData = asRecord(interaction.data);
         return {
-            sourceAbilityId: String(interaction.sourceAbilityId ?? ''),
-            type: String(interaction.type ?? ''),
+            phase: String(root.sys.phase ?? root.core.phase ?? ''),
+            activePlayerId: String(root.core.activePlayerId ?? ''),
+            sourceAbilityId: String(interactionData.sourceId ?? ''),
+            type: String(interaction.kind ?? ''),
+            hostPowderKeg: Number(hostStatuses[STATUS_IDS.POWDER_KEG] ?? 0),
+            guestPowderKeg: Number(guestStatuses[STATUS_IDS.POWDER_KEG] ?? 0),
+            guestCursedCoin: Number(guestStatuses[STATUS_IDS.CURSED_COIN] ?? 0),
+            currentChoiceSourceAbilityId: String(root.core.currentChoiceSourceAbilityId ?? ''),
         };
     }, { timeout: 10000 }).toMatchObject({
+        phase: 'upkeep',
+        activePlayerId: '0',
         sourceAbilityId: 'upkeep-powder-keg',
         type: 'simple-choice',
+        hostPowderKeg: 1,
     });
 
-    const transferModal = match.hostPage.locator('#modal-root');
-    await expect(transferModal).toBeVisible({ timeout: 10000 });
+    const transferTargetButton = match.hostPage.getByRole('button', { name: /转交给 P2|P2|对手|Opponent/i }).first();
+    await expect(transferTargetButton).toBeVisible({ timeout: 10000 });
     await saveEvidenceScreenshot(match.hostPage, testInfo, screenshotPrefix.choice);
 
-    await transferModal.getByRole('button', { name: /P2|对手|Opponent/i }).first().click();
+    await transferTargetButton.click();
 
     await expect.poll(async () => {
         const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
@@ -5645,12 +5660,13 @@ const playPowderKegUpkeepTransfer = async (
         const hostStatuses = asRecord(host.statusEffects);
         const guestStatuses = asRecord(guest.statusEffects);
         const interaction = asRecord(asRecord(sys.interaction).current);
+        const interactionData = asRecord(interaction.data);
         return {
             hostHp: Number(hostResources[RESOURCE_IDS.HP] ?? 0),
             guestHp: Number(guestResources[RESOURCE_IDS.HP] ?? 0),
             hostPowderKeg: Number(hostStatuses[STATUS_IDS.POWDER_KEG] ?? 0),
             guestPowderKeg: Number(guestStatuses[STATUS_IDS.POWDER_KEG] ?? 0),
-            interactionSourceAbilityId: String(interaction.sourceAbilityId ?? ''),
+            interactionSourceAbilityId: String(interactionData.sourceId ?? ''),
         };
     }, { timeout: 10000 }).toMatchObject({
         hostHp: 50,

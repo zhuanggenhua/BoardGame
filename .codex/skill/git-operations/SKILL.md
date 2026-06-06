@@ -159,6 +159,14 @@ git rebase ...
 
 - 可写 PR：默认先本地修，再推回，再 review / merge
 - 不可写 PR：再走 fallback，不要假装能推回 head
+- 当 `merge origin/main` 被 `Your local changes would be overwritten by merge` 拦住时，先区分：
+  - 用户未授权并入当前未提交改动：停下汇报具体文件，不得擅自 `stash`
+  - 用户已明确授权“当前这批没问题可一起提交/并入提交”：允许先审查这批未提交 diff，按当前目标补一次提交，再重新执行 `merge`
+- 这种“先补提交再 merge”只适用于：
+  - 未提交改动仍属于当前目标或用户明确接受的同批改动
+  - 不需要回滚他人改动
+  - 不需要 `stash`、`rebase`、`reset`、`restore`
+- 如果未提交改动明显跨出当前目标，或无法判断归属，仍然必须停下，不得借“可以一起提交”把整片脏工作区直接吞进来
 - merge 前若命中项目要求，先读：
   - `docs/git-merge-checklist.md`
 

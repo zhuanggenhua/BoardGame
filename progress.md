@@ -1,5 +1,30 @@
 > 状态提示（2026-06-05）：本文件包含多条历史长期任务推进记录；其中的 `Next:`、`当前状态`、`继续下一批` 只对各自写入当时有效，**不自动构成当前对话任务**。未被用户当轮明确点名的条目，一律只作历史进度参考。
 
+## 2026-06-06 火药桶维持转交链已补齐，但整派系仍未收口
+
+- 收口对象：
+  - `火药桶`
+  - `人类面板` 运行时接线口径
+- 代码动作：
+  - `src/games/dicethrone/domain/flowHooks.ts`
+    - 给 `upkeep/income` 的自动继续补齐阻塞门禁：当前存在 `interaction.current / responseWindow.current / pendingDamage / 奖励骰结算` 时，不再把火药桶维持阶段的转交交互自动踩过去。
+  - `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`
+    - 新增回归：`火药桶维持投骰 6 生成转交交互时，upkeep 不应自动继续推进`。
+  - `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts`
+    - 修正 `setupPowderKegUpkeepScenario(...)` 与转交流程 helper，使真实入口断言对齐当前交互结构与自动推进时序。
+- 验证：
+  - `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts -t "火药桶维持投骰 6 时可选择任意玩家并能转交给其他玩家|火药桶维持投骰 6 生成转交交互时，upkeep 不应自动继续推进|新收到火药桶时若已拥有火药桶，原火药桶立即爆炸并保留新火药桶" --configLoader native`
+    - `3 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算火药桶维持阶段投 6 后的转交链"`
+    - `1 passed`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算火药桶转交给已持有者时的原桶爆炸链"`
+    - `1 passed`
+- 当前边界：
+  - 这一步收掉的是“火药桶 upkeep 转交真实链未闭合”的旧 blocker，不等于 `cursed_pirate` 或整派系规则已全部实施完。
+  - `public/assets/i18n/zh-CN/dicethrone/images/cursed/人类面板.png` 对应的人类面底图仍已接入正式运行时；但这不等于 human 面可跳过逐槽 completion audit。
+  - 当前更准确的口径不是“技能要整套从零重录”，而是继续做双面逐槽重核、family 级 `L4` 合法复用登记与最终 completion audit。
+  - `implementation_in_progress` 继续保留。
+
 ## 2026-06-06 战术家升级次级分支已补齐对象级真实入口
 
 - 收口对象：

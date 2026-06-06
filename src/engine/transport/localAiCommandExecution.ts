@@ -11,6 +11,7 @@ import {
     type LocalAiTurnTimeline,
 } from './localAiDiagnostics';
 import type { MatchState } from '../types';
+import type { GameEngineConfig } from './server';
 
 export async function executeLocalAiCommandWithProgress(args: {
     gameId: string;
@@ -27,6 +28,7 @@ export async function executeLocalAiCommandWithProgress(args: {
     dispatch: (type: string, payload: unknown) => void;
     getState: () => MatchState<unknown>;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
 }): Promise<LocalAiCommandEffect> {
     const normalizedPayload = args.command.payload && typeof args.command.payload === 'object'
         ? args.command.payload as Record<string, unknown>
@@ -34,7 +36,7 @@ export async function executeLocalAiCommandWithProgress(args: {
     const snapshotBeforeCommand = buildLocalAiCommandStateSnapshot({
         state: args.getState(),
         playerId: args.playerId,
-        marker: buildAiProgressMarker(args.getState()),
+        marker: buildAiProgressMarker(args.getState(), { engineConfig: args.engineConfig }),
     });
     const aiTraceToken = `${args.attemptKey}:${args.commandIndex}:${Date.now()}`;
     args.dispatch(args.command.type, {
@@ -61,7 +63,7 @@ export async function executeLocalAiCommandWithProgress(args: {
     const snapshotAfterCommand = buildLocalAiCommandStateSnapshot({
         state: args.getState(),
         playerId: args.playerId,
-        marker: buildAiProgressMarker(args.getState()),
+        marker: buildAiProgressMarker(args.getState(), { engineConfig: args.engineConfig }),
     });
     const effect = resolveLocalAiCommandEffect({
         before: snapshotBeforeCommand,
@@ -154,6 +156,7 @@ export async function executeLocalAiCommandBatch(args: {
     dispatch: (type: string, payload: unknown) => void;
     getState: () => MatchState<unknown>;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
+    engineConfig?: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> | null;
 }): Promise<{ hasAnyCommandEffect: boolean }> {
     let hasAnyCommandEffect = false;
 
@@ -173,6 +176,7 @@ export async function executeLocalAiCommandBatch(args: {
             dispatch: args.dispatch,
             getState: args.getState,
             commandEffectsByToken: args.commandEffectsByToken,
+            engineConfig: args.engineConfig,
         });
         if (effect.hasStateDelta) {
             hasAnyCommandEffect = true;

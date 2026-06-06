@@ -1074,6 +1074,7 @@ export function resolveOnlineAiForcedRecoveryCommandDecision(args: {
     advancePhaseCommandType: string;
     state: MatchState<unknown>;
     seatControllers: Record<string, OnlineAiWatchdogSeatController>;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     allowForceCommandAfterActiveTurnNoProgress: boolean;
     formatCommandFailureReason: (
         reason: string,
@@ -1131,6 +1132,7 @@ export function resolveOnlineAiForcedRecoveryCommandDecision(args: {
             state: args.state,
             seatControllers: args.seatControllers,
             playerId: args.currentCandidate.playerId,
+            engineConfig: args.engineConfig,
         })) {
         return {
             kind: 'advance-guard-blocked',
@@ -1153,6 +1155,7 @@ export function resolveOnlineAiForcedRecoveryCommandDecisionFromRuntime(args: {
     actionRecovery: OnlineAiLegalActionRecoveryResult;
     blockedFailureReason: OnlineAiRecoveryBlockedFailureReason | null;
     resolveForceCommandAllowance: OnlineAiRecoveryForceCommandAllowanceResolver;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
     formatCommandFailureReason: (
         reason: string,
         failedCommandType?: string,
@@ -1167,6 +1170,7 @@ export function resolveOnlineAiForcedRecoveryCommandDecisionFromRuntime(args: {
         advancePhaseCommandType: resolveOnlineAiWatchdogAdvancePhaseCommandType(args.gameId),
         state: args.state,
         seatControllers: args.seatControllers,
+        engineConfig: args.engineConfig,
         allowForceCommandAfterActiveTurnNoProgress: resolveOnlineAiRecoveryForceCommandAllowance({
             state: args.state,
             previousCandidate: args.currentCandidate,

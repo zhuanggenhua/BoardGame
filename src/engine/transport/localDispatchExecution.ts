@@ -100,12 +100,12 @@ export function executeLocalDispatch(args: {
         const snapshotBefore = buildLocalAiCommandStateSnapshot({
             state: prevState,
             playerId: resolvedPlayerId,
-            marker: buildAiProgressMarker(prevState),
+            marker: buildAiProgressMarker(prevState, { engineConfig: config }),
         });
         const snapshotAfter = buildLocalAiCommandStateSnapshot({
             state: refreshedState,
             playerId: resolvedPlayerId,
-            marker: buildAiProgressMarker(refreshedState),
+            marker: buildAiProgressMarker(refreshedState, { engineConfig: config }),
         });
         const effect = resolveLocalAiCommandEffect({
             before: snapshotBefore,
