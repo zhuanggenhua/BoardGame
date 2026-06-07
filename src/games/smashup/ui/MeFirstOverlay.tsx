@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { GameButton } from './GameButton';
 import type { MatchState } from '../../../engine/types';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { SU_COMMANDS, type CardInstance, type SmashUpCommand, type SmashUpCore } from '../domain/types';
 import {
     canCardBePlayedInResponseWindowForMatchState,
@@ -81,14 +82,34 @@ export const MeFirstOverlay: React.FC<{
     const { t } = useTranslation('game-smashup');
     const reactionWindow = getSmashUpReactionWindowPresentation(G);
 
-    const handlePass = useCallback(() => {
-        onSelectCard(null);
-        dispatch('RESPONSE_PASS');
-    }, [dispatch, onSelectCard]);
-
     // `smashup_reaction_choose` 本身就是计分响应的中间承载语义，不应把这层提示弹窗隐藏掉。
     const currentInteraction = G.sys.interaction?.current;
     const interactionSourceId = (currentInteraction?.data as { sourceId?: unknown } | undefined)?.sourceId;
+    const reactionPassOptionId = (() => {
+        if (interactionSourceId !== 'smashup_reaction_choose') return undefined;
+        const rawOptions = (currentInteraction?.data as { options?: unknown } | undefined)?.options;
+        if (!Array.isArray(rawOptions)) return undefined;
+        const option = rawOptions.find((entry) => {
+            if (!entry || typeof entry !== 'object') return false;
+            const candidate = entry as { id?: unknown; value?: { kind?: unknown; __emergency_skip__?: unknown } };
+            return candidate.id === 'pass'
+                || candidate.value?.kind === 'pass'
+                || candidate.id === '__emergency_skip__'
+                || candidate.value?.__emergency_skip__ === true;
+        }) as { id?: unknown } | undefined;
+        return typeof option?.id === 'string' ? option.id : undefined;
+    })();
+    const handlePass = useCallback(() => {
+        onSelectCard(null);
+        if (interactionSourceId === 'smashup_reaction_choose' && currentInteraction?.id && reactionPassOptionId) {
+            dispatch(INTERACTION_COMMANDS.RESPOND, {
+                interactionId: currentInteraction.id,
+                optionId: reactionPassOptionId,
+            });
+            return;
+        }
+        dispatch('RESPONSE_PASS');
+    }, [currentInteraction?.id, dispatch, interactionSourceId, onSelectCard, reactionPassOptionId]);
     const hasInteraction = !!currentInteraction && interactionSourceId !== 'smashup_reaction_choose';
     const hasLockedHiddenInteraction = !!G.sys.responseWindow?.current?.pendingInteractionId;
 
