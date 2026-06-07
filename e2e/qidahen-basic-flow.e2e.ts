@@ -1543,10 +1543,12 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('轮盘外交/雇佣');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('源区 皮岛');
+        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'song-jin');
         await expect(page.locator('[data-testid="qidahen-diplomacy-target-city-region-15"]')).toContainText('辽北');
 
         await page.locator('[data-testid="qidahen-diplomacy-target-city-region-15"]').click();
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('当前目标 辽北');
+        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-15');
         await page.locator('[data-testid="qidahen-diplomacy-choice-place-friendly"]').click();
         await expect(page.locator('[data-testid="qidahen-diplomacy-history"]')).toContainText('外交 1');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('还可继续 2 次');
@@ -1652,7 +1654,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('建立 3 个部队');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('获得 6 张手牌');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 13');
-        await expect(page.locator('[data-testid="qidahen-player-mongol"]')).toContainText('11/10');
+        await expect(page.locator('[data-testid="qidahen-player-mongol"]')).toContainText('12/10');
 
         await saveScreenshot(page, MA_SHI_TRADE_SCREENSHOT);
     });
@@ -1761,6 +1763,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await page.getByRole('button', { name: /大汗令箭/ }).click();
         await expect(page.locator('[data-testid="qidahen-khan-edict-selection"]')).toContainText('大汗令箭');
+        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await expect(page.locator('[data-testid="qidahen-khan-edict-choice-recruit-train"]')).toContainText('征兵训练');
         await expect(page.locator('[data-testid="qidahen-khan-edict-choice-hire-dispatch"]')).toContainText('外交雇佣');
 
@@ -1841,11 +1844,14 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await page.getByRole('button', { name: /大汗令箭/ }).click();
         await expect(page.locator('[data-testid="qidahen-khan-edict-selection"]')).toContainText('大汗令箭');
+        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await page.locator('[data-testid="qidahen-khan-edict-choice-hire-dispatch"]').click();
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('大汗令箭');
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('源区 山海关');
+        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await page.locator('[data-testid="qidahen-diplomacy-target-city-region-24"]').click();
         await expect(page.locator('[data-testid="qidahen-diplomacy-selection"]')).toContainText('当前目标 宁远');
+        await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-24');
         await page.locator('[data-testid="qidahen-diplomacy-choice-place-friendly"]').click();
         await expect(page.locator('[data-testid="qidahen-diplomacy-history"]')).toContainText('外交 1');
         await page.locator('[data-testid="qidahen-diplomacy-choice-hire-only"]').click();

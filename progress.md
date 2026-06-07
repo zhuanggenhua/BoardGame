@@ -8889,3 +8889,47 @@
 - 下一步：
   - 继续从其它高层等待态/完成态找还没正式锁 `data-map-selected` 的关键交互
   - 优先避开已清零的窗口态筛选器，转去查本轮之外的 `season-resolution / post-battle-decision / resolve-pending` 相邻链路
+
+## 2026-06-07 08:40 +08 又补通 4 条 UI 焦点守卫，并顺手修正 2 处 E2E 夹具/旧预期
+
+- 已修改：
+  - `e2e/qidahen-basic-flow.e2e.ts`
+  - `task_plan.md`
+  - `progress.md`
+- 本轮推进内容：
+  - 在“新年防线维护”收口后，继续沿 E2E 层找那些领域单测已经有真实 `selectedRegionId`，但 Board/UI 还没正式锁 `data-map-selected` 的链路
+  - 这轮补了 4 组 UI 焦点断言：
+    - `结构化战斗可选择低级承伤并继续战后占领`
+      - 待结算承伤面板：`city-region-14`
+      - 战后处理面板：`city-region-14`
+    - `城战突破后可在真实 Board 上选择围城而不改控制权`
+      - 战后处理面板：`city-region-25`
+    - `征召军队会先进入建军选择，再按选择补入 6 个部队`
+      - 建军选择面板：`song-jin`
+    - `马市贸易会先进入 1-3 建兵选择，再按选择给大明加兵并让蒙古摸牌`
+      - 建兵数量选择面板：`song-jin`
+  - 中间暴露出两类不是新断言本身错误、而是老测试残留的问题：
+    - `结构化战斗...` 这条 E2E 夹具只注入了 `pendingTargetAction`，没把 `selectedRegionId` 同步到真实战场，UI 因此沿用了快照默认值 `song-jin`
+      - 已补齐 `next.core.selectedRegionId = 'city-region-14'`
+    - `马市贸易...` 这条旧预期里的玩家手牌文案 `11/10` 已经过时
+      - 当前教程态真实 UI 为 `12/10`，已按运行时结果更新
+  - 为了避开机器当时的全局重任务内存门禁，本轮定向 E2E 使用了项目现有阈值覆盖口：
+    - `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.8`
+    - 这是临时运行环境变量，不改仓库配置
+- 已完成验证：
+  - `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.8 node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "结构化战斗可选择低级承伤并继续战后占领"`
+  - `1 passed`
+  - `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.8 node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "城战突破后可在真实 Board 上选择围城而不改控制权"`
+  - `1 passed`
+  - `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.8 node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "征召军队会先进入建军选择，再按选择补入 6 个部队"`
+  - `1 passed`
+  - `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.8 node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "马市贸易会先进入 1-3 建兵选择，再按选择给大明加兵并让蒙古摸牌"`
+  - `1 passed`
+- 补充说明：
+  - `npx eslint e2e/qidahen-basic-flow.e2e.ts --max-warnings 0` 仍会被该文件历史遗留的多处 `@typescript-eslint/no-explicit-any` 警告打断
+  - 本轮没有新增 lint error；当前不能把这条命令当增量门禁，只能把它视为既有文件级噪音
+- 当前结论：
+  - 这轮又把一批高层 UI 焦点守卫补到了真实等待态/战后态
+  - 同时把 1 处测试夹具缺失真实焦点、1 处旧 UI 文案预期漂移都顺手清掉了
+- 下一步：
+  - 继续扫 E2E 里 `resolve-pending / diplomacy-choice / khan-edict-choice / post-battle-decision` 相邻链路，优先找还没正式断 `data-map-selected` 的入口

@@ -4800,3 +4800,36 @@
 - [ ] 下一步：
   - 继续从非 `action-window` 的其它高层相位找剩余真实焦点残口，优先 `season-resolution / gao-di-dispatch-choice / resolve-pending` 之外的交互链
   - 若没有新的实现红灯，再扩到 Board/E2E 里其它仍未正式锁 `data-map-selected` 的关键等待态/完成态
+
+## Current Addendum（2026-06-07 08:40 +08）
+
+- [x] 已继续把一批“领域层已有真实焦点，但 E2E 还没正式锁 `data-map-selected`”的链路补到 UI 层：
+  - `e2e/qidahen-basic-flow.e2e.ts`
+- [x] 本轮新增/修正的 UI 焦点守卫：
+  - `结构化战斗可选择低级承伤并继续战后占领`
+    - 待结算进入承伤选择时：`data-map-selected === city-region-14`
+    - 进入 `post-battle-selection` 时：`data-map-selected === city-region-14`
+    - 同时补齐该测试夹具里缺失的 `selectedRegionId = city-region-14`，避免 UI 沿快照默认值 `song-jin` 假漂移
+  - `城战突破后可在真实 Board 上选择围城而不改控制权`
+    - `post-battle-selection` 等待态：`data-map-selected === city-region-25`
+  - `征召军队会先进入建军选择，再按选择补入 6 个部队`
+    - `recruit-choice` 等待态：`data-map-selected === song-jin`
+  - `马市贸易会先进入 1-3 建兵选择，再按选择给大明加兵并让蒙古摸牌`
+    - `ma-shi-trade-choice` 等待态：`data-map-selected === song-jin`
+- [x] 本轮顺手收掉的旧 E2E 漂移：
+  - `马市贸易` 这条教程态玩家条旧断言 `11/10` 已过时，当前真实运行态为 `12/10`，已按实际结果更新
+- [x] 已完成验证：
+  - `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.8 node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "结构化战斗可选择低级承伤并继续战后占领"`
+  - `1 passed`
+  - `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.8 node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "城战突破后可在真实 Board 上选择围城而不改控制权"`
+  - `1 passed`
+  - `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.8 node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "征召军队会先进入建军选择，再按选择补入 6 个部队"`
+  - `1 passed`
+  - `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.8 node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "马市贸易会先进入 1-3 建兵选择，再按选择给大明加兵并让蒙古摸牌"`
+  - `1 passed`
+- [ ] 当前仍未完成：
+  - 《七大恨》实施主线仍未整体收口
+  - Board/E2E 层还有其它等待态/完成态没有正式锁 `data-map-selected`
+- [ ] 下一步：
+  - 继续从 `resolve-pending / post-battle-decision / diplomacy-choice / khan-edict-choice` 相邻链路里找剩余 UI 焦点残口
+  - 若再遇到 UI 断言与领域层不一致，优先先判定是测试夹具缺真实 `selectedRegionId`，还是实现本体漂移
