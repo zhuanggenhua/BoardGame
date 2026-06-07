@@ -249,7 +249,7 @@ function formatSliderText(template: string | undefined, value: number, max: numb
 }
 
 function resolveSliderText(
-    t: (key: string, opts?: any) => string,
+    t: (key: string, opts?: Record<string, unknown>) => string,
     key: string | undefined,
     template: string | undefined,
     value: number,
