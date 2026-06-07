@@ -1228,7 +1228,7 @@ const projectSmashUpAction = (args: {
             if (talentSimulation) {
                 tacticalScore += Math.max(-90, Math.min(90, talentSimulation.positionDelta * 0.35));
                 if (talentSimulation.positionDelta <= 0) {
-                    tacticalScore -= 125;
+                    tacticalScore -= 140;
                     if (talentSimulation.unresolved) {
                         tacticalScore -= 25;
                     }

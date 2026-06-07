@@ -53,12 +53,12 @@ describe('Smash Up AI 主动天赋收益判断', () => {
             },
             bases: [
                 makeBase({
-                    defId: 'base_the_jungle',
-                    minions: [makeMinion('runner-1', 'robot_microbot_alpha', '0', 11)],
+                    defId: 'base_mountains_of_madness',
+                    minions: [makeMinion('runner-1', 'robot_microbot_alpha', '0', 19)],
                     ongoingActions: [{ uid: 'chase-1', defId: 'world_champs_high_speed_chase', ownerId: '0', talentUsed: false } as any],
                 }),
                 makeBase({
-                    defId: 'base_portal_room',
+                    defId: 'base_longhouse',
                     minions: [],
                     ongoingActions: [],
                 }),
