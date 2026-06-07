@@ -171,6 +171,29 @@ type QidahenRegionMaskDebugSnapshot = {
         approvedCount: number;
         requiredApprovalCount: number;
     };
+    lastBoundaryComponentDiagnostics: {
+        totalComponentCount: number;
+        ignoredComponentCount: number;
+        components: Array<{
+            componentIndex: number;
+            pixelCount: number;
+            bounds: {
+                left: number;
+                top: number;
+                right: number;
+                bottom: number;
+            };
+            directAnchoredRegionIds: string[];
+            directAnchoredRegionNames: string[];
+            anchoredRegionIds: string[];
+            anchoredRegionNames: string[];
+            overlapRegionIds: string[];
+            overlapRegionNames: string[];
+            matchedRegionId: string | null;
+            matchedRegionName: string | null;
+            matchedReason: string;
+        }>;
+    } | null;
 };
 
 declare global {
@@ -5592,6 +5615,7 @@ const QidahenRegionMaskTool: React.FC = () => {
     const [lastBoundaryExtractionStats, setLastBoundaryExtractionStats] = React.useState<BoundaryDraftExtractionStats | null>(null);
     const [lastRegionGenerationResults, setLastRegionGenerationResults] = React.useState<RegionGenerationResult[]>([]);
     const [lastRegionGenerationWorkflow, setLastRegionGenerationWorkflow] = React.useState<RegionGenerationWorkflow | null>(null);
+    const [lastBoundaryComponentDiagnostics, setLastBoundaryComponentDiagnostics] = React.useState<QidahenRegionMaskDebugSnapshot['lastBoundaryComponentDiagnostics']>(null);
     const [activeDiagnosticSampleId, setActiveDiagnosticSampleId] = React.useState<string>('beijing');
     const [diagnosticPreview, setDiagnosticPreview] = React.useState<DiagnosticPreview | null>(null);
     const [persistedWorkspaceState, setPersistedWorkspaceState] = React.useState<PersistedWorkspaceState>('empty');
@@ -6492,6 +6516,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             approvedCount: boundaryQualityReport.normality.approvedCount,
             requiredApprovalCount: boundaryQualityReport.normality.requiredApprovalCount,
         },
+        lastBoundaryComponentDiagnostics,
     }), [
         barrierPixelCount,
         boundaryDraftPixelCount,
@@ -6509,6 +6534,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         formalRegionSaveBlocked,
         graphNodes,
         isIsolatedWorkspace,
+        lastBoundaryComponentDiagnostics,
         lastRegionGenerationSummary,
         lastRegionGenerationWorkflow,
         passages.length,
@@ -13603,7 +13629,12 @@ const QidahenRegionMaskTool: React.FC = () => {
             setStatusMessage('当前还没有可用边界。请先等待地图加载，或添加/绘制边界后再生成。');
             return;
         }
+        setLastBoundaryComponentDiagnostics(null);
         const allowPartial = options?.allowPartial === true;
+        const shouldPreferPersistedFormalSeed = allowPartial && !isIsolatedWorkspace;
+        const boundaryGenerationExclusionMask = allowPartial && !isIsolatedWorkspace
+            ? new Uint8Array(currentMapArtifactExclusionMask.length)
+            : currentMapArtifactExclusionMask;
         const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
         const formalRegionIndexes = regions
             .map((region, regionIndex) => (region && !isDiagnosticRegionId(region.id) ? regionIndex : EMPTY_REGION))
@@ -13723,17 +13754,29 @@ const QidahenRegionMaskTool: React.FC = () => {
             const roughFallbackMask = buildRegionRoughFallbackMask({
                 regionId: region.id,
                 seedPoint: preferredSeed,
-                exclusionMask: currentMapArtifactExclusionMask,
+                exclusionMask: boundaryGenerationExclusionMask,
             });
-            const seedGuideMask = roughFallbackMask
-                ?? (AUTO_MAP_PRINTED_UI_EXCLUSION_MASK[preferredSeedIndex] !== 0 ? AUTO_MAP_REGION_FILLABLE_MASK : null);
+            const seedGuideMask = shouldPreferPersistedFormalSeed
+                ? null
+                : (
+                    roughFallbackMask
+                    ?? (AUTO_MAP_PRINTED_UI_EXCLUSION_MASK[preferredSeedIndex] !== 0 ? AUTO_MAP_REGION_FILLABLE_MASK : null)
+                );
             const seedSearchRadius = seedGuideMask ? 180 : 18;
             const seedFallbackRadius = seedGuideMask ? 220 : 36;
-            const seedPoint = (roughFallbackMask
-                ? findBestInteriorSeedPointInMask(preferredSeed, barrierMask, roughFallbackMask)
-                : null)
-                ?? findBestInteriorSeedPoint(preferredSeed, barrierMask, seedSearchRadius, seedGuideMask)
-                ?? findNearestNonBarrierPoint(preferredSeed, barrierMask, seedFallbackRadius, seedGuideMask);
+            const seedPoint = shouldPreferPersistedFormalSeed
+                ? (
+                    barrierMask[preferredSeedIndex] === 0
+                        ? preferredSeed
+                        : findNearestNonBarrierPoint(preferredSeed, barrierMask, 36)
+                )
+                : (
+                    (roughFallbackMask
+                        ? findBestInteriorSeedPointInMask(preferredSeed, barrierMask, roughFallbackMask)
+                        : null)
+                    ?? findBestInteriorSeedPoint(preferredSeed, barrierMask, seedSearchRadius, seedGuideMask)
+                    ?? findNearestNonBarrierPoint(preferredSeed, barrierMask, seedFallbackRadius, seedGuideMask)
+                );
             if (!seedPoint) {
                 skippedRegionCount += 1;
                 generationResults.push({
@@ -13751,12 +13794,12 @@ const QidahenRegionMaskTool: React.FC = () => {
             seedRecords.push({ regionIndex, region, seedPoint });
         }
 
-        if (allowPartial && isIsolatedWorkspace) {
+        if (allowPartial) {
             const fillBarrierMask = buildRegionFillBarrierMask(barrierMask);
             const usedRegionIds = new Set<string>();
             const usedRegionColors = new Set<string>();
-            const ignoreUnmatchedComponentsInFormalWorkspace = !isIsolatedWorkspace;
-            const componentFillableMask = ignoreUnmatchedComponentsInFormalWorkspace ? AUTO_MAP_REGION_FILLABLE_MASK : null;
+            const ignoreUnmatchedComponentsWithoutFormalMatch = !isIsolatedWorkspace;
+            const componentFillableMask = null;
             const allocateRegionColor = (preferredColor: string | null | undefined, componentIndex: number) => {
                 if (preferredColor && !usedRegionColors.has(preferredColor.toLowerCase())) {
                     usedRegionColors.add(preferredColor.toLowerCase());
@@ -13776,6 +13819,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 return fallbackColor;
             };
             const manualMatchRegionIndexesByPixel = new Map<number, number[]>();
+            const preferredAnchorPointByRegionIndex = new Map<number, MaskPoint>();
             for (let regionIndex = 0; regionIndex < regions.length; regionIndex += 1) {
                 const region = regions[regionIndex];
                 if (!region || isDiagnosticRegionId(region.id)) {
@@ -13785,9 +13829,18 @@ const QidahenRegionMaskTool: React.FC = () => {
                 const roughFallbackMask = buildRegionRoughFallbackMask({
                     regionId: region.id,
                     seedPoint: region.seed,
-                    exclusionMask: currentMapArtifactExclusionMask,
+                    exclusionMask: boundaryGenerationExclusionMask,
                 });
                 const preferredAnchorPoint = overridePoint
+                    ?? (
+                        shouldPreferPersistedFormalSeed && region.seed
+                            ? (
+                                barrierMask[(region.seed.y * MASK_WIDTH) + region.seed.x] === 0
+                                    ? region.seed
+                                    : findNearestNonBarrierPoint(region.seed, barrierMask, 36)
+                            )
+                            : null
+                    )
                     ?? (
                         region.seed && roughFallbackMask
                             ? findBestInteriorSeedPointInMask(region.seed, barrierMask, roughFallbackMask)
@@ -13799,12 +13852,18 @@ const QidahenRegionMaskTool: React.FC = () => {
                 if (!preferredAnchorPoint) {
                     continue;
                 }
-                const pointIndex = (preferredAnchorPoint.y * MASK_WIDTH) + preferredAnchorPoint.x;
-                const list = manualMatchRegionIndexesByPixel.get(pointIndex);
-                if (list) {
-                    list.push(regionIndex);
-                } else {
-                    manualMatchRegionIndexesByPixel.set(pointIndex, [regionIndex]);
+                preferredAnchorPointByRegionIndex.set(regionIndex, preferredAnchorPoint);
+                const supportMask = buildPointSupportMask(preferredAnchorPoint);
+                for (let index = 0; index < supportMask.length; index += 1) {
+                    if (supportMask[index] === 0) {
+                        continue;
+                    }
+                    const list = manualMatchRegionIndexesByPixel.get(index);
+                    if (list) {
+                        list.push(regionIndex);
+                    } else {
+                        manualMatchRegionIndexesByPixel.set(index, [regionIndex]);
+                    }
                 }
             }
 
@@ -13814,6 +13873,13 @@ const QidahenRegionMaskTool: React.FC = () => {
                 pixelCount: number;
                 sumX: number;
                 sumY: number;
+                bounds: {
+                    left: number;
+                    top: number;
+                    right: number;
+                    bottom: number;
+                };
+                directAnchoredRegionIndexes: number[];
                 anchoredRegionIndexes: number[];
                 overlapPixelsByRegionIndex: Map<number, number>;
             };
@@ -13913,20 +13979,115 @@ const QidahenRegionMaskTool: React.FC = () => {
                     pixelCount,
                     sumX,
                     sumY,
+                    bounds: {
+                        left,
+                        top,
+                        right,
+                        bottom,
+                    },
+                    directAnchoredRegionIndexes: [],
                     anchoredRegionIndexes: [...anchoredRegionIndexes],
                     overlapPixelsByRegionIndex,
                 });
             }
 
+            const componentIndexByPixel = new Int16Array(fillBarrierMask.length);
+            componentIndexByPixel.fill(-1);
+            for (const component of generatedComponents) {
+                for (let index = 0; index < component.pixelIndexes.length; index += 1) {
+                    componentIndexByPixel[component.pixelIndexes[index]] = component.componentIndex;
+                }
+            }
+            for (const [regionIndex, preferredAnchorPoint] of preferredAnchorPointByRegionIndex) {
+                const anchorIndex = (preferredAnchorPoint.y * MASK_WIDTH) + preferredAnchorPoint.x;
+                const componentIndex = componentIndexByPixel[anchorIndex] ?? -1;
+                if (componentIndex < 0 || componentIndex >= generatedComponents.length) {
+                    continue;
+                }
+                generatedComponents[componentIndex].directAnchoredRegionIndexes.push(regionIndex);
+            }
+
             const componentMatches = matchGeneratedComponentsToRegionIndexes({
-                components: generatedComponents,
+                components: generatedComponents.map((component) => ({
+                    ...component,
+                    anchoredRegionIndexes: component.directAnchoredRegionIndexes,
+                })),
                 regionCount: regions.length,
             });
             let ignoredUnmatchedComponentCount = 0;
+            const componentDiagnostics = generatedComponents.map((component) => {
+                const directAnchoredRegionIndexes = [...new Set(component.directAnchoredRegionIndexes)]
+                    .filter((regionIndex) => regionIndex >= 0 && regionIndex < regions.length);
+                const anchoredRegionIndexes = [...new Set(component.anchoredRegionIndexes)]
+                    .filter((regionIndex) => regionIndex >= 0 && regionIndex < regions.length);
+                const overlapRegionIndexes = [...component.overlapPixelsByRegionIndex.entries()]
+                    .filter(([regionIndex, overlapPixels]) => (
+                        regionIndex >= 0
+                        && regionIndex < regions.length
+                        && overlapPixels > 0
+                    ))
+                    .sort((left, right) => right[1] - left[1])
+                    .map(([regionIndex]) => regionIndex);
+                const matchedRegionIndex = ignoreUnmatchedComponentsWithoutFormalMatch
+                    ? (
+                        directAnchoredRegionIndexes.length > 1
+                            ? null
+                            : (componentMatches.get(component.componentIndex)?.regionIndex ?? null)
+                    )
+                    : (componentMatches.get(component.componentIndex)?.regionIndex ?? null);
+                const matchedReason = ignoreUnmatchedComponentsWithoutFormalMatch
+                    ? (
+                        matchedRegionIndex == null
+                            ? (
+                                directAnchoredRegionIndexes.length > 1
+                                    ? 'ignored:multi-direct-anchor'
+                                    : (
+                                        directAnchoredRegionIndexes.length === 0
+                                            ? (
+                                                anchoredRegionIndexes.length === 0
+                                                    ? 'ignored:no-anchor'
+                                                    : 'ignored:support-only-or-overlap-rejected'
+                                            )
+                                            : 'ignored:direct-anchor-rejected'
+                                    )
+                            )
+                            : (
+                                componentMatches.get(component.componentIndex)?.reason === 'overlap'
+                                    ? 'formal-overlap-fallback'
+                                    : 'formal-direct-anchor'
+                            )
+                    )
+                    : (componentMatches.get(component.componentIndex)?.reason ?? 'unmatched');
+                return {
+                    componentIndex: component.componentIndex,
+                    pixelCount: component.pixelCount,
+                    bounds: component.bounds,
+                    directAnchoredRegionIds: directAnchoredRegionIndexes.map((regionIndex) => regions[regionIndex]?.id ?? `unknown-${regionIndex}`),
+                    directAnchoredRegionNames: directAnchoredRegionIndexes.map((regionIndex) => regions[regionIndex]?.name ?? `unknown-${regionIndex}`),
+                    anchoredRegionIds: anchoredRegionIndexes.map((regionIndex) => regions[regionIndex]?.id ?? `unknown-${regionIndex}`),
+                    anchoredRegionNames: anchoredRegionIndexes.map((regionIndex) => regions[regionIndex]?.name ?? `unknown-${regionIndex}`),
+                    overlapRegionIds: overlapRegionIndexes.map((regionIndex) => regions[regionIndex]?.id ?? `unknown-${regionIndex}`),
+                    overlapRegionNames: overlapRegionIndexes.map((regionIndex) => regions[regionIndex]?.name ?? `unknown-${regionIndex}`),
+                    matchedRegionId: matchedRegionIndex == null ? null : (regions[matchedRegionIndex]?.id ?? null),
+                    matchedRegionName: matchedRegionIndex == null ? null : (regions[matchedRegionIndex]?.name ?? null),
+                    matchedReason,
+                };
+            });
+            setLastBoundaryComponentDiagnostics({
+                totalComponentCount: generatedComponents.length,
+                ignoredComponentCount: componentDiagnostics.filter((component) => component.matchedRegionId == null).length,
+                components: componentDiagnostics,
+            });
 
             for (const component of generatedComponents) {
-                const matchedRegionIndex = componentMatches.get(component.componentIndex)?.regionIndex ?? null;
-                if (matchedRegionIndex == null && ignoreUnmatchedComponentsInFormalWorkspace) {
+                const matchedRegionIndex = ignoreUnmatchedComponentsWithoutFormalMatch
+                    ? (
+                        component.directAnchoredRegionIndexes.length > 1
+                            ? null
+                            : (componentMatches.get(component.componentIndex)?.regionIndex ?? null)
+                    )
+                    : (componentMatches.get(component.componentIndex)?.regionIndex ?? null);
+                if (matchedRegionIndex == null && ignoreUnmatchedComponentsWithoutFormalMatch) {
                     ignoredUnmatchedComponentCount += 1;
                     continue;
                 }
@@ -13977,11 +14138,21 @@ const QidahenRegionMaskTool: React.FC = () => {
             assignmentsRef.current = nextAssignments;
             skipNextAssignmentsRenderEffectRef.current = true;
             skipNextGraphSyncEffectRef.current = true;
-            const autoPassageResult = buildAutoPassagesFromAssignments({
-                assignments: nextAssignments,
-                regions: nextGeneratedRegions,
-                existingPassages: [],
-            });
+            const autoPassageResult = !isIsolatedWorkspace
+                ? {
+                    passages: [...passages].sort((left, right) => left.id.localeCompare(right.id)),
+                    detectedCount: passages.length,
+                    addedCount: 0,
+                    preservedExisting: true,
+                }
+                : {
+                    ...buildAutoPassagesFromAssignments({
+                        assignments: nextAssignments,
+                        regions: nextGeneratedRegions,
+                        existingPassages: [],
+                    }),
+                    preservedExisting: false,
+                };
             setRegions(nextGeneratedRegions);
             setSelectedRegionId(nextGeneratedRegions[0]?.id ?? selectedRegionId);
             setPassages(autoPassageResult.passages);
@@ -13998,10 +14169,12 @@ const QidahenRegionMaskTool: React.FC = () => {
             setMode('paint');
             markAssignmentsChanged(nextGeneratedRegions, { renderOutline: false });
             const ignoredComponentNote = ignoredUnmatchedComponentCount > 0
-                ? `；忽略 ${ignoredUnmatchedComponentCount} 个未命中正式区域的闭合块`
+                ? `；忽略 ${ignoredUnmatchedComponentCount} 个未命中或同时命中多个正式锚点的闭合块`
                 : '';
-            const passageNote = autoPassageResult.detectedCount > 0
-                ? `已自动补全 ${autoPassageResult.detectedCount} 条通路，可直接选中通路设置移动代价。`
+            const passageNote = autoPassageResult.preservedExisting
+                ? `已保留 ${autoPassageResult.passages.length} 条正式通路，可直接选中通路设置移动代价。`
+                : autoPassageResult.detectedCount > 0
+                    ? `已自动补全 ${autoPassageResult.detectedCount} 条通路，可直接选中通路设置移动代价。`
                 : '没有识别到相邻通路，可切到通路编辑后手动拖线。';
             setStatusMessage(`已按红线/画布边缘生成 ${generatedRegionCount} 个区域，填充 ${writtenPixelCount.toLocaleString()} px${ignoredComponentNote}。已临时封住约 ${HAND_DRAWN_REGION_FILL_CLOSE_ITERATIONS + HAND_DRAWN_REGION_FILL_SEAL_ITERATIONS}px 的手绘小断口，并把 ${HAND_DRAWN_REGION_FILL_EDGE_SEAL_DISTANCE}px 内靠边红线接到画布边界；仍没有接成分割线的碎线不会单独成区。${passageNote}`);
             window.setTimeout(scrollSidebarToTop, 0);
@@ -14320,6 +14493,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         graphNodeMap,
         graphNodes.length,
         markAssignmentsChanged,
+        passages,
         regions,
         renderAssignments,
         scrollSidebarToTop,

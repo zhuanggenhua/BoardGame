@@ -189,6 +189,29 @@ type RegionMaskDebugSnapshot = {
         approvedCount: number;
         requiredApprovalCount: number;
     };
+    lastBoundaryComponentDiagnostics: {
+        totalComponentCount: number;
+        ignoredComponentCount: number;
+        components: Array<{
+            componentIndex: number;
+            pixelCount: number;
+            bounds: {
+                left: number;
+                top: number;
+                right: number;
+                bottom: number;
+            };
+            directAnchoredRegionIds: string[];
+            directAnchoredRegionNames: string[];
+            anchoredRegionIds: string[];
+            anchoredRegionNames: string[];
+            overlapRegionIds: string[];
+            overlapRegionNames: string[];
+            matchedRegionId: string | null;
+            matchedRegionName: string | null;
+            matchedReason: string;
+        }>;
+    } | null;
 };
 
 type RuntimePreviewDebugSnapshot = {
@@ -235,15 +258,6 @@ const readRuntimePreviewDebugSnapshot = async (page: Page): Promise<RuntimePrevi
         return snapshot;
     })
 );
-
-const ensureAdvancedWorkbenchExpanded = async (page: Page) => {
-    const compactToggle = page.getByTestId('qidahen-toggle-advanced-workbench-compact');
-    if (await compactToggle.count() === 0) {
-        return;
-    }
-    await compactToggle.click();
-    await expect(page.getByTestId('qidahen-open-best-available-move-cost-ready-workspace')).toBeVisible();
-};
 
 const saveTestIdScreenshot = async (page: Page, testId: string, targetPath: string) => {
     mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -2299,7 +2313,7 @@ test.describe('七大恨区域制图工具', () => {
         expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
     });
 
-    test('best-available 边界工作区可直接切到现成移动代价工作区', async ({ page }) => {
+    test('best-available 边界工作区当前不显示过期的移动代价直跳入口', async ({ page }) => {
         const canonicalBefore = readCanonicalWorkspaceSnapshot();
         test.info().setTimeout(180000);
         await page.setViewportSize({ width: 1600, height: 1000 });
@@ -2309,23 +2323,17 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         await expect(page.getByText('临时隔离工作区', { exact: true })).toBeVisible();
-        await ensureAdvancedWorkbenchExpanded(page);
         const beforeSwitchSnapshot = await readRegionMaskDebugSnapshot(page);
         expect(beforeSwitchSnapshot.workspaceKey).toBe('best-available-boundary-v3');
         expect(beforeSwitchSnapshot.isIsolatedWorkspace).toBe(true);
-        await page.getByTestId('qidahen-open-best-available-move-cost-ready-workspace').click();
-        await expect(page).toHaveURL(/workspace=best-available-move-cost-ready/u);
-        await expect(page.getByTestId('qidahen-region-truth-workflow-banner')).toContainText('区域粗稿 + 通路编辑（次路线）', { timeout: 30000 });
-        await expect(page.locator('main')).toContainText('模式：通路编辑', { timeout: 30000 });
-        await expect(page.locator('main')).toContainText('路径：4', { timeout: 30000 });
-        const bestAvailableWorkspaceSnapshot = await readRegionMaskDebugSnapshot(page);
-        expect(bestAvailableWorkspaceSnapshot.workspaceKey).toBe('best-available-move-cost-ready');
-        expect(bestAvailableWorkspaceSnapshot.isIsolatedWorkspace).toBe(true);
-        expect(bestAvailableWorkspaceSnapshot.persistedWorkspaceState).toBe('populated');
-        expect(bestAvailableWorkspaceSnapshot.graphNodeCount).toBe(5);
-        expect(bestAvailableWorkspaceSnapshot.passageCount).toBe(4);
-        expect(bestAvailableWorkspaceSnapshot.effectiveGeneratedRegionCount).toBe(5);
-        expect(bestAvailableWorkspaceSnapshot.boundaryQuality.generatedCount).toBe(5);
+        expect(beforeSwitchSnapshot.persistedWorkspaceState).toBe('empty');
+        expect(beforeSwitchSnapshot.graphNodeCount).toBe(0);
+        expect(beforeSwitchSnapshot.passageCount).toBe(0);
+        expect(beforeSwitchSnapshot.effectiveGeneratedRegionCount).toBe(0);
+        await expect(page.getByTestId('qidahen-open-best-available-move-cost-ready-workspace')).toHaveCount(0);
+        await expect(page.getByTestId('qidahen-open-best-available-runtime-preview')).toHaveCount(0);
+        await expect(page.getByTestId('qidahen-open-move-cost-ready-workspace')).toHaveCount(0);
+        await expect(page.getByTestId('qidahen-open-move-cost-runtime-preview')).toHaveCount(0);
         expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
     });
 
@@ -3459,6 +3467,25 @@ test.describe('七大恨区域制图工具', () => {
         await page.goto(getWorkspaceRoute(workspaceName), { waitUntil: 'domcontentloaded' });
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
+        await expect(page.locator('main')).toContainText('模式：通路编辑', { timeout: 30000 });
+        await expect(page.locator('main')).toContainText('路径：4', { timeout: 30000 });
+        await expect.poll(
+            async () => {
+                const snapshot = await readRegionMaskDebugSnapshot(page);
+                return {
+                    workspaceKey: snapshot.workspaceKey,
+                    graphNodeCount: snapshot.graphNodeCount,
+                    passageCount: snapshot.passageCount,
+                    effectiveGeneratedRegionCount: snapshot.effectiveGeneratedRegionCount,
+                };
+            },
+            { timeout: 30000 },
+        ).toEqual({
+            workspaceKey: workspaceName,
+            graphNodeCount: 5,
+            passageCount: 4,
+            effectiveGeneratedRegionCount: 5,
+        });
         await page.goto(getRuntimePreviewRoute(workspaceName), { waitUntil: 'domcontentloaded' });
         await expect(page.getByText('七大恨运行时预览')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('qidahen-runtime-preview-workspace')).toContainText(`workspace=${workspaceName}`);
