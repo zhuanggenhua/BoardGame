@@ -1,9 +1,10 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MeFirstOverlay } from '../ui/MeFirstOverlay';
 import type { MatchState } from '../../../engine/types';
 import type { SmashUpCore } from '../domain/types';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -252,6 +253,53 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         expect(screen.getByTestId('me-first-overlay')).toBeInTheDocument();
         expect(screen.getByText('计分后响应')).toBeInTheDocument();
         expect(screen.getByTestId('me-first-pass-button')).toBeInTheDocument();
+    });
+
+    it('统一响应交互存在 pass 选项时，中间让过按钮应响应当前交互而不是发送旧 RESPONSE_PASS', () => {
+        const base = createState();
+        const state = createState({
+            sys: {
+                ...base.sys,
+                interaction: {
+                    current: {
+                        id: 'reaction-choose',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个响应动作',
+                            options: [
+                                { id: 'play', label: '打出卡牌', value: { kind: 'play_action', cardUid: 'card-1' } },
+                                { id: 'pass', label: '让过', value: { kind: 'pass' } },
+                            ],
+                        },
+                    },
+                    queue: [],
+                },
+            },
+        });
+        const dispatch = vi.fn();
+        const onSelectCard = vi.fn();
+
+        render(
+            <MeFirstOverlay
+                G={state}
+                dispatch={dispatch}
+                playerID="0"
+                pendingCard={null}
+                onSelectCard={onSelectCard}
+                playerNames={{ '0': 'Host', '1': 'Guest' }}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('me-first-pass-button'));
+
+        expect(onSelectCard).toHaveBeenCalledWith(null);
+        expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: 'reaction-choose',
+            optionId: 'pass',
+        });
+        expect(dispatch).not.toHaveBeenCalledWith('RESPONSE_PASS');
     });
 
     it('hides when response window is locked by another hidden interaction', () => {

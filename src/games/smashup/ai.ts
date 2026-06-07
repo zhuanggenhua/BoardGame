@@ -6,8 +6,10 @@ import {
     createInteractionHintScorer,
     createLookaheadLocalAiPolicy,
     createProfileAwareActionScorer,
+    evaluateLocalAiActions,
     getAiActionStrategyTags,
     OPTIONAL_SKIP_AI_HINT,
+    pickBestLocalAiActionEvaluation,
     withAiActionStrategyTags,
 } from '../../engine/ai';
 import type {
@@ -19,7 +21,16 @@ import type {
     LocalAiActionEvaluation,
     LocalAiActionScorer,
 } from '../../engine/ai';
+import {
+    createActionLogSystem,
+    createEventStreamSystem,
+    createFlowSystem,
+    createInteractionSystem,
+    createSimpleChoiceSystem,
+} from '../../engine';
+import { executePipeline, type PipelineConfig } from '../../engine/pipeline';
 import { getFreshSimpleChoiceOptions, type InteractionDescriptor as EngineInteractionDescriptor, type PromptMultiConfig } from '../../engine/systems/InteractionSystem';
+import { SmashUpDomain, smashUpFlowHooks } from './domain';
 import {
     SU_COMMANDS,
     getCurrentPlayerId,
@@ -30,6 +41,7 @@ import {
     type SmashUpCore,
     type TriggerInstance,
 } from './domain/types';
+import type { SmashUpCommand, SmashUpEvent } from './domain/types';
 import {
     buildFactionSelectionIdentitySet,
     isSmashUpDiyFaction,
@@ -54,6 +66,8 @@ import {
     getTotalEffectivePowerOnBase,
 } from './domain/ongoingModifiers';
 import { getCardDef, getMinionLikePower, getBaseDef, getFactionCards } from './data/cards';
+import { createSmashUpEventSystem } from './domain/systems';
+import { ACTION_ALLOWLIST, formatSmashUpActionEntry } from './actionLog';
 import {
     getCardStrategyTags,
     getPlayerStrategyProfile,
@@ -110,6 +124,34 @@ type SmashUpCardAiMetrics = {
 };
 type SmashUpPlayKind = 'minion' | 'action';
 type SmashUpAssignmentMode = 'secure' | 'pressure';
+type SmashUpTalentSimulationResult = {
+    positionDelta: number;
+    unresolved: boolean;
+    executedSteps: number;
+};
+
+const SMASHUP_AI_SIMULATION_MAX_STEPS = 4;
+const smashUpAiSimulationPipelineConfig: PipelineConfig<SmashUpCore, SmashUpCommand, SmashUpEvent> = {
+    domain: SmashUpDomain,
+    systems: [
+        createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
+        createActionLogSystem<SmashUpCore>({
+            commandAllowlist: ACTION_ALLOWLIST,
+            formatEntry: formatSmashUpActionEntry,
+        }),
+        createInteractionSystem(),
+        createSimpleChoiceSystem(),
+        createEventStreamSystem(),
+        createSmashUpEventSystem(),
+    ],
+};
+const smashUpAiSimulationRandom = {
+    shuffle: <T>(arr: T[]) => [...arr],
+    random: () => 0.5,
+    d: (max: number) => Math.max(1, Math.floor(max / 2)),
+    range: (min: number, max: number) => Math.floor((min + max) / 2),
+};
+const smashUpTalentSimulationCache = new WeakMap<AiDecisionContext, Map<string, SmashUpTalentSimulationResult | null>>();
 
 const isInteractionControlValue = (value: unknown): boolean => {
     if (!value || typeof value !== 'object') return false;
@@ -880,6 +922,126 @@ const getProjectedPositionDelta = (
     return projectedPosition - currentPosition;
 };
 
+const buildAiInteractionSnapshotFromState = (state: SmashUpState) => {
+    const current = state.sys.interaction?.current as EngineInteractionDescriptor | undefined;
+    if (!current || current.kind !== 'simple-choice') return null;
+    const data = current.data as {
+        sourceId?: string;
+        options?: SmashUpInteractionOption[];
+        multi?: PromptMultiConfig;
+    } | undefined;
+    return {
+        id: current.id,
+        kind: current.kind,
+        sourceId: data?.sourceId,
+        playerId: current.playerId,
+        options: (data?.options ?? []).map((option) => ({
+            id: option.id,
+            label: option.label,
+            disabled: option.disabled,
+            displayMode: option.displayMode,
+            _ai: option._ai,
+        })),
+        multi: data?.multi,
+    };
+};
+
+const buildAiResponseWindowSnapshotFromState = (state: SmashUpState) => {
+    const current = state.sys.responseWindow?.current as {
+        windowType?: string;
+        sourceId?: string;
+        currentResponderIndex?: number;
+        responderQueue?: string[];
+    } | undefined;
+    if (!current) return null;
+    return {
+        windowType: current.windowType,
+        sourceId: current.sourceId,
+        currentResponderIndex: current.currentResponderIndex,
+        responderQueue: Array.isArray(current.responderQueue) ? [...current.responderQueue] : undefined,
+    };
+};
+
+function simulateSmashUpTalentAction(args: {
+    context: AiDecisionContext;
+    action: AiLegalAction;
+}): SmashUpTalentSimulationResult | null {
+    if (args.action.kind !== 'use-talent') return null;
+
+    const cachedByContext = smashUpTalentSimulationCache.get(args.context) ?? new Map<string, SmashUpTalentSimulationResult | null>();
+    if (!smashUpTalentSimulationCache.has(args.context)) {
+        smashUpTalentSimulationCache.set(args.context, cachedByContext);
+    }
+    if (cachedByContext.has(args.action.actionId)) {
+        return cachedByContext.get(args.action.actionId) ?? null;
+    }
+
+    const initialState = args.context.visibleState as SmashUpState;
+    let currentState = initialState;
+    let currentAction: AiLegalAction | null = args.action;
+    let executedSteps = 0;
+
+    while (currentAction && executedSteps < SMASHUP_AI_SIMULATION_MAX_STEPS) {
+        const command = currentAction.commands[0];
+        if (!command) {
+            cachedByContext.set(args.action.actionId, null);
+            return null;
+        }
+
+        const pipelineResult = executePipeline(
+            smashUpAiSimulationPipelineConfig,
+            currentState,
+            {
+                type: command.type,
+                playerId: args.context.playerId,
+                payload: command.payload,
+                timestamp: 0,
+            } as SmashUpCommand,
+            smashUpAiSimulationRandom,
+            Object.keys(currentState.core.players) as PlayerId[],
+        );
+        if (!pipelineResult.success) {
+            cachedByContext.set(args.action.actionId, null);
+            return null;
+        }
+
+        currentState = pipelineResult.state as SmashUpState;
+        executedSteps += 1;
+
+        const nextLegalActions = buildSmashUpAiLegalActions({
+            playerId: args.context.playerId,
+            state: currentState,
+        });
+        const hasOwnedInteraction = (currentState.sys.interaction?.current as EngineInteractionDescriptor | undefined)?.playerId === args.context.playerId;
+        if (!hasOwnedInteraction || nextLegalActions.length === 0) {
+            currentAction = null;
+            break;
+        }
+
+        const followUpContext: AiDecisionContext = {
+            ...args.context,
+            visibleState: currentState,
+            interaction: buildAiInteractionSnapshotFromState(currentState),
+            responseWindow: buildAiResponseWindowSnapshotFromState(currentState),
+            legalActions: nextLegalActions,
+        };
+        const followUpEvaluations = evaluateLocalAiActions(followUpContext, smashUpTalentFollowUpScorers);
+        const nextEvaluation = pickBestLocalAiActionEvaluation(followUpEvaluations);
+        currentAction = nextEvaluation?.action ?? null;
+        if (!currentAction || currentAction.kind === 'advance-phase') {
+            break;
+        }
+    }
+
+    const result: SmashUpTalentSimulationResult = {
+        positionDelta: Number((evaluateSmashUpPosition(currentState, args.context.playerId) - evaluateSmashUpPosition(initialState, args.context.playerId)).toFixed(3)),
+        unresolved: (currentState.sys.interaction?.current as EngineInteractionDescriptor | undefined)?.playerId === args.context.playerId,
+        executedSteps,
+    };
+    cachedByContext.set(args.action.actionId, result);
+    return result;
+}
+
 const projectSmashUpAction = (args: {
     context: AiDecisionContext;
     action: AiLegalAction;
@@ -1028,12 +1190,24 @@ const projectSmashUpAction = (args: {
         }
 
         const basePotential = evaluateBasePotential(state, playerId, baseIndex);
-        const tacticalScore = (
+        let tacticalScore = (
             (basePotential?.score ?? 0) * 0.16
             + getBaseSwingValue(basePotential ?? null) * 8
             + urgency * 0.95
             + strategyBonus * 0.55
         );
+        if (args.action.kind === 'use-talent') {
+            const talentSimulation = simulateSmashUpTalentAction(args);
+            if (talentSimulation) {
+                tacticalScore += Math.max(-90, Math.min(90, talentSimulation.positionDelta * 0.35));
+                if (talentSimulation.positionDelta <= 0) {
+                    tacticalScore -= 125;
+                    if (talentSimulation.unresolved) {
+                        tacticalScore -= 25;
+                    }
+                }
+            }
+        }
 
         return {
             score: Number((tacticalScore * scale).toFixed(3)),
@@ -1045,6 +1219,9 @@ const projectSmashUpAction = (args: {
                 strategyTags: strategyFit?.tags,
                 ownAward: basePotential?.ownAward ?? 0,
                 bestOpponentAward: basePotential?.bestOpponentAward ?? 0,
+                ...(args.action.kind === 'use-talent' ? {
+                    talentSimulation: simulateSmashUpTalentAction(args) ?? undefined,
+                } : {}),
             },
         };
     }
@@ -2436,6 +2613,20 @@ const advancePhaseScorer: LocalAiActionScorer = {
         };
     },
 };
+
+const smashUpTalentFollowUpScorers: LocalAiActionScorer[] = [
+    actionKindScorer,
+    interactionValueScorer,
+    smashUpReactionChoiceScorer,
+    interactionOrderScorer,
+    strategyProfileScorer,
+    minionTempoScorer,
+    actionTempoScorer,
+    urgentBaseTempoScorer,
+    responsePassScorer,
+    discardScorer,
+    advancePhaseScorer,
+];
 
 const baselineLocalPolicy = createLookaheadLocalAiPolicy({
     id: 'baseline',

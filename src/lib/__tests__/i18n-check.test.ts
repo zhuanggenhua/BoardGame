@@ -368,7 +368,7 @@ describe('i18n 静态检查工具', () => {
         }));
     });
 
-    it('createSimpleChoice 直接使用英文标题且缺少 titleKey 时会产生告警', () => {
+    it('createSimpleChoice 直接使用英文标题时，即使写了 titleKey 也会产生告警', () => {
         const content = `
             createSimpleChoice(
                 'choice-1',
@@ -394,10 +394,12 @@ describe('i18n 静态检查工具', () => {
         expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-title',
             key: 'The Bride: choose the first effect',
+            detail: expect.stringContaining('请补 titleKey'),
         }));
-        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+        expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-title',
             key: 'The Bride: choose the second effect',
+            detail: expect.stringContaining('即使已写 titleKey'),
         }));
     });
 

@@ -2,7 +2,7 @@
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']);
 
@@ -117,16 +117,34 @@ const resolveTargetImage = ({ path: imagePath, latest }) => {
 
 const openImage = (imagePath) => {
     if (process.platform === 'win32') {
-        const escapedPath = imagePath.replace(/'/g, "''");
-        const child = spawn(
+        const openResult = spawnSync(
             'powershell',
-            ['-NoProfile', '-Command', `Start-Process -LiteralPath '${escapedPath}'`],
+            [
+                '-NoProfile',
+                '-Command',
+                '$target = $env:BG_TARGET_IMAGE_PATH;'
+                + 'if (-not $target) { throw "缺少 BG_TARGET_IMAGE_PATH" };'
+                + 'if (-not (Test-Path -LiteralPath $target)) { throw "图片不存在: " + $target };'
+                + 'Start-Process -FilePath $target -ErrorAction Stop | Out-Null',
+            ],
             {
-                detached: true,
-                stdio: 'ignore',
+                env: {
+                    ...process.env,
+                    BG_TARGET_IMAGE_PATH: imagePath,
+                },
+                encoding: 'utf8',
+                stdio: 'pipe',
             },
         );
-        child.unref();
+
+        if (openResult.error) {
+            throw openResult.error;
+        }
+        if (openResult.status !== 0) {
+            const stderr = openResult.stderr?.trim();
+            const stdout = openResult.stdout?.trim();
+            throw new Error(stderr || stdout || `Windows 开图失败，退出码: ${openResult.status}`);
+        }
         return;
     }
 

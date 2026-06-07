@@ -275,6 +275,74 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         expect(finalState.core.bases[1].minions.find(minion => minion.uid === 'm3')?.powerCounters).toBe(7);
     });
 
+    it('afterScoring 通过统一反应入口打出我们乃最强后若没有合法接收目标，应给出无目标反馈并自动收口而不是卡死', () => {
+        const runner = createRunner((ids, random) => {
+            const core = SmashUpDomain.setup(ids, random);
+            const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.bases = [
+                {
+                    defId: 'base_the_jungle',
+                    minions: [
+                        makeMinion('m1', 'alien_invader', '0', '0', 3, 7),
+                        makeMinion('m2', 'ninja_shinobi', '1', '1', 2, 2),
+                    ],
+                    ongoingActions: [],
+                },
+            ];
+            core.baseDeck = ['base_secret_garden'];
+            core.players['0'].hand = [
+                { uid: 'c1', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '0' },
+            ];
+            core.players['1'].hand = [];
+
+            return { sys, core };
+        });
+
+        const { eventLog, choice } = advanceToAfterScoring(runner);
+        const playOptionId = findOptionId(
+            choice,
+            option => option.value?.kind === 'play_action' && option.value?.cardUid === 'c1',
+            '找不到我们乃最强的统一反应入口',
+        );
+        const playResult = runner.resolveInteraction('0', { optionId: playOptionId });
+        expect(playResult.success).toBe(true);
+        eventLog.push(...playResult.events);
+
+        const sourceChoice = getCurrentChoice(runner.getState());
+        expect(sourceChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
+        const chooseSource = runner.resolveInteraction(
+            '0',
+            {
+                optionId: findOptionId(
+                    sourceChoice!,
+                    option => option.value?.minionUid === 'm1',
+                    '找不到力量来源随从',
+                ),
+            },
+        );
+        expect(chooseSource.success).toBe(true);
+        eventLog.push(...chooseSource.events);
+        expect(
+            chooseSource.events.some(
+                event => event.type === SU_EVENTS.ABILITY_FEEDBACK
+                    && (event as { payload?: { feedbackKey?: string } }).payload?.feedbackKey === 'feedback.no_valid_targets',
+            ),
+        ).toBe(true);
+
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
+
+        const finalState = runner.getState();
+        expect(getCurrentChoice(finalState)).toBeUndefined();
+        expect(getReactionSession(finalState)).toBeUndefined();
+        expect(finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(1);
+        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_CLEARED)).toBe(1);
+        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_REPLACED)).toBe(1);
+    });
+
     it('afterScoring 窗口打开时不会提前清场换基地，全部让过后只补发一次', () => {
         const runner = createRunner((ids, random) => {
             const core = SmashUpDomain.setup(ids, random);

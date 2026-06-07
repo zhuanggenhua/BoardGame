@@ -1463,7 +1463,6 @@ const MinionCard: React.FC<{
             : 'cursor-pointer'
     }`;
     const minionFrameClassName = `relative w-full h-full bg-white p-[0.2vw] rounded-[0.2vw] border-[0.15vw] transition-shadow duration-200
-        ${isSelectionContext ? '' : 'hover:scale-110'}
         ${isMultiSelected
             ? 'border-green-400 ring-[0.26vw] ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.72),0_0_40px_rgba(74,222,128,0.34)]'
             : isSelectableMinion
@@ -1548,6 +1547,7 @@ const MinionCard: React.FC<{
             <motion.div
                 className="relative w-full h-full"
                 animate={rotationAnimate}
+                whileHover={isSelectionContext ? undefined : { scale: 1.1 }}
                 transition={rotationTransition}
             >
                 <div

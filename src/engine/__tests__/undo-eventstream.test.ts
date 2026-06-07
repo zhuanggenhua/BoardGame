@@ -125,8 +125,6 @@ describe('撤回后 EventStream 行为', () => {
     const r2 = exec(state, { type: 'INCREMENT', playerId: '0', payload: {} });
     state = r2.state;
 
-    const entriesBefore = getEventStreamEntries(state);
-    const maxIdBefore = entriesBefore[entriesBefore.length - 1].id;
     const nextIdBefore = state.sys.eventStream.nextId;
 
     // 请求 + 批准撤回
@@ -191,5 +189,48 @@ describe('撤回后 EventStream 行为', () => {
     expect(state.core.counter).toBe(0);
     expect(state.sys.undo.pendingRequest).toBeUndefined();
     expect(state.sys.undo.snapshots).toHaveLength(0);
+  });
+
+  it('AI 座位执行命令时，不应额外占用撤回快照', () => {
+    let state = setUndoAiSeatIds(makeState(), ['1']);
+
+    const humanTurn = exec(state, { type: 'INCREMENT', playerId: '0', payload: {} });
+    expect(humanTurn.success).toBe(true);
+    state = humanTurn.state;
+    expect(state.core.counter).toBe(1);
+    expect(state.sys.undo.snapshots).toHaveLength(1);
+
+    const aiTurn = exec(state, { type: 'INCREMENT', playerId: '1', payload: {} });
+    expect(aiTurn.success).toBe(true);
+    state = aiTurn.state;
+    expect(state.core.counter).toBe(2);
+    expect(state.sys.undo.snapshots).toHaveLength(1);
+
+    const undoResult = exec(state, { type: UNDO_COMMANDS.REQUEST_UNDO, playerId: '0', payload: {} });
+    expect(undoResult.success).toBe(true);
+    state = undoResult.state;
+
+    expect(state.core.counter).toBe(0);
+    expect(state.sys.undo.snapshots).toHaveLength(0);
+  });
+
+  it('显式 _noSnapshot 命令不应占用撤回快照，供教程 AI 复用', () => {
+    let state = makeState();
+
+    const humanTurn = exec(state, { type: 'INCREMENT', playerId: '0', payload: {} });
+    expect(humanTurn.success).toBe(true);
+    state = humanTurn.state;
+    expect(state.sys.undo.snapshots).toHaveLength(1);
+
+    const tutorialAiTurn = exec(state, {
+      type: 'INCREMENT',
+      playerId: '1',
+      payload: { _noSnapshot: true },
+    });
+    expect(tutorialAiTurn.success).toBe(true);
+    state = tutorialAiTurn.state;
+
+    expect(state.core.counter).toBe(2);
+    expect(state.sys.undo.snapshots).toHaveLength(1);
   });
 });

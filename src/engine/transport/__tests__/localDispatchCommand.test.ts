@@ -59,4 +59,24 @@ describe('buildLocalDispatchCommand', () => {
         expect(result.command.playerId).toBe('1');
         expect(result.command.payload).toEqual({});
     });
+
+    it('教程 AI 命令应自动附带 _noSnapshot，避免占用撤回次数', () => {
+        const result = buildLocalDispatchCommand({
+            commandType: 'ROLL_DICE',
+            payload: {
+                keepIds: [0, 1],
+                __tutorialPlayerId: '1',
+                __tutorialAiCommand: true,
+            },
+            state: createState(),
+            localPregameControlledPlayerId: '0',
+        });
+
+        expect(result.resolvedPlayerId).toBe('1');
+        expect(result.command.playerId).toBe('1');
+        expect(result.command.payload).toEqual({
+            keepIds: [0, 1],
+            _noSnapshot: true,
+        });
+    });
 });

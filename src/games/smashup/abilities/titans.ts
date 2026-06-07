@@ -869,7 +869,7 @@ function queueWalkingCastleChooseBaseInteraction(
     const interaction = createSimpleChoice(
         `titan_magical_girls_walking_castle_choose_base_${now}`,
         playerId,
-        'Walking Castle: choose a base to move to',
+        '行走城堡：选择要移动到的基地',
         buildBaseTargetOptions(baseOptions, state),
         {
             sourceId: 'titan_magical_girls_walking_castle_choose_base',
@@ -900,7 +900,7 @@ function queueWalkingCastleChooseMinionsInteraction(
     const interaction = createSimpleChoice(
         `titan_magical_girls_walking_castle_choose_minions_${now}`,
         playerId,
-        'Walking Castle: choose up to 3 of your minions to move with it',
+        '行走城堡：选择最多 3 个你的随从随之移动',
         buildMinionTargetOptions(ownedMinions, { state, sourcePlayerId: playerId, effectType: 'move' }),
         {
             sourceId: 'titan_magical_girls_walking_castle_choose_minions',
@@ -956,7 +956,7 @@ function queueHillGiveMinionInteraction(
     const interaction = createSimpleChoice(
         `titan_ignobles_the_hill_that_strolls_give_minion_${now}`,
         playerId,
-        'The Hill That Strolls: choose one of your minions to give away',
+        '移动的山：选择一个你的随从送出',
         buildMinionTargetOptions(targets, { state, sourcePlayerId: playerId, effectType: 'affect' }),
         {
             sourceId: 'titan_ignobles_the_hill_that_strolls_give_minion',
@@ -984,7 +984,7 @@ function queueHillReclaimMinionInteraction(
     const interaction = createSimpleChoice(
         `titan_ignobles_the_hill_that_strolls_reclaim_minion_${now}`,
         playerId,
-        'The Hill That Strolls: choose one of your minions here to reclaim',
+        '移动的山：选择此处一个你的随从取回',
         buildMinionTargetOptions(targets, { state, sourcePlayerId: playerId, effectType: 'affect' }),
         {
             sourceId: 'titan_ignobles_the_hill_that_strolls_reclaim_minion',
@@ -1028,7 +1028,7 @@ function ignoblesTheHillThatStrollsOnMinionAffected(ctx: TriggerContext): Trigge
     const interaction = createSimpleChoice(
         `titan_ignobles_the_hill_that_strolls_counter_${ctx.now}`,
         titanControllerId,
-        'The Hill That Strolls: place a +1 power counter on that minion?',
+        '移动的山：要在该随从上放置 1 枚 +1 战力标记吗？',
         [
             { id: 'place', label: '放置标记', labelKey: 'ui.place_counter', value: { place: true }, displayMode: 'button' as const },
             { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
@@ -1094,7 +1094,7 @@ function ignoblesTheHillThatStrollsTalent(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `titan_ignobles_the_hill_that_strolls_choose_branch_${ctx.now}`,
         ctx.playerId,
-        'The Hill That Strolls: choose a talent effect',
+        '移动的山：选择天赋效果',
         [
             { id: 'give', label: 'Give one away and draw 1', labelKey: 'ui.titan_hill_that_strolls_give_option', value: { branch: 'give' }, displayMode: 'button' as const },
             { id: 'reclaim', label: 'Reclaim one here', labelKey: 'ui.titan_hill_that_strolls_reclaim_option', value: { branch: 'reclaim' }, displayMode: 'button' as const },
@@ -2162,7 +2162,7 @@ function pecosBillOnDuelStarted(ctx: TriggerContext): TriggerResult | SmashUpEve
     const interaction = createSimpleChoice(
         `titan_pecos_bill_duel_start_${titan.uid}_${ctx.now}`,
         challengerPlayerId,
-        'Pecos Bill: you may discard a card to play this titan on the duel base',
+        'Pecos Bill：你可以弃一张牌，将此泰坦打到决斗基地',
         [
             ...player.hand.map((card) => ({
                 id: `hand-${card.uid}`,
@@ -2233,7 +2233,7 @@ function sphinxOnTurnStart(ctx: TriggerContext) {
     const interaction = createSimpleChoice(
         `titan_sphinx_start_turn_${ctx.now}`,
         ctx.playerId,
-        'Sphinx: choose one of your buried cards to return to your hand and move this titan there',
+        '狮身人面像：选择一张你的埋葬牌回到手牌，并将此泰坦移至那里',
         [
             ...buriedChoices.map((choice) => ({
                 id: `buried-${choice.cardUid}`,
@@ -2506,7 +2506,7 @@ function penguinsEmperorPenguinTalent(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `titan_penguins_emperor_penguin_talent_${ctx.now}`,
         ctx.playerId,
-        'Emperor Penguin: choose a low-power minion to shuffle into your deck',
+        '企鹅皇帝：选择一个低战力随从洗入牌库',
         options.map(option => ({
             id: option.cardUid,
             label: option.label,
@@ -2885,7 +2885,7 @@ function changerbotsMergaconTalent(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `titan_changerbots_mergacon_talent_${ctx.now}`,
         ctx.playerId,
-        'Mergacon: choose a base to move to',
+        'Mergacon：选择要移动到的基地',
         buildBaseTargetOptions(baseOptions, ctx.state),
         {
             sourceId: 'titan_changerbots_mergacon_talent',
@@ -3377,7 +3377,7 @@ function piratesTheKrakenAfterScoring(ctx: {
         const interaction = createSimpleChoice(
             `titan_pirates_the_kraken_choose_minion_${titan.uid}_${ctx.now}`,
             titan.controllerId,
-            'The Kraken: move one of your minions here to another base instead of discarding it',
+            '克拉肯：将此处一个你的随从移到其他基地，代替弃置',
             buildMinionTargetOptions(minionTargets, { state: ctx.state, sourcePlayerId: titan.controllerId, effectType: 'move' }),
             {
                 sourceId: 'titan_pirates_the_kraken_choose_minion',
@@ -3435,7 +3435,7 @@ function piratesTheKrakenTalent(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `titan_pirates_the_kraken_talent_${ctx.now}`,
         ctx.playerId,
-        'The Kraken: choose a base to move to',
+        '克拉肯：选择要移动到的基地',
         buildBaseTargetOptions(baseOptions, ctx.state),
         {
             sourceId: 'titan_pirates_the_kraken_talent',
@@ -4011,7 +4011,7 @@ function fortTitanosaurusSpecial(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `titan_dinosaurs_fort_titanosaurus_special_${ctx.now}`,
         ctx.playerId,
-        'Fort Titanosaurus: choose one of your minions to destroy',
+        '堡垒巨蜥：选择一个你的随从消灭',
         buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }),
         {
             sourceId: 'titan_dinosaurs_fort_titanosaurus_special',
@@ -4627,7 +4627,7 @@ function theBrideOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUpEvent[
     const interaction = createSimpleChoice(
         `titan_frankenstein_the_bride_start_choose_branch_${ctx.now}`,
         titanControllerId,
-        'The Bride: choose the first effect',
+        '新娘：选择第一个效果',
         branchOptions,
         {
             sourceId: 'titan_frankenstein_the_bride_start_choose_branch',
@@ -4798,7 +4798,7 @@ function theBrideTalent(ctx: AbilityContext): AbilityResult {
         const interaction = createSimpleChoice(
             `titan_frankenstein_the_bride_talent_add_counter_${ctx.now}`,
             ctx.playerId,
-            'The Bride: choose one of your minions here to place a +1 power counter on',
+            '新娘：选择此基地你的一名随从放置 +1 战力标记',
             buildMinionTargetOptions(addCounterTargets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'affect' }),
             {
                 sourceId: 'titan_frankenstein_the_bride_talent_add_counter',
@@ -4817,7 +4817,7 @@ function theBrideTalent(ctx: AbilityContext): AbilityResult {
         const interaction = createSimpleChoice(
             `titan_frankenstein_the_bride_talent_extra_action_${ctx.now}`,
             ctx.playerId,
-            'The Bride: choose a set of counters to remove',
+            '新娘：选择要移除的指示物组合',
             extraActionOptions,
             {
                 sourceId: 'titan_frankenstein_the_bride_talent_extra_action',
@@ -4835,7 +4835,7 @@ function theBrideTalent(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `titan_frankenstein_the_bride_talent_branch_${ctx.now}`,
         ctx.playerId,
-        'The Bride: choose a talent effect',
+        '新娘：选择天赋效果',
         [
             { id: 'add-counter', label: 'Place a +1 counter', labelKey: 'ui.titan_the_bride_talent_add_counter_option', value: { branch: 'addCounter' }, displayMode: 'button' as const },
             { id: 'extra-action', label: 'Remove 2 counters for an extra action', labelKey: 'ui.titan_the_bride_talent_extra_action_option', value: { branch: 'extraAction' }, displayMode: 'button' as const },
@@ -5785,7 +5785,7 @@ export function registerTitanInteractionHandlers(): void {
         const interaction = createSimpleChoice(
             `titan_killer_plants_killer_kudzu_talent_base_${timestamp}`,
             playerId,
-            'Killer Kudzu: choose a base to play that minion on',
+            '杀手葛藤：选择要打出该随从的基地',
             baseOptions,
             {
                 sourceId: 'titan_killer_plants_killer_kudzu_talent_base',
@@ -5923,7 +5923,7 @@ export function registerTitanInteractionHandlers(): void {
             const interaction = createSimpleChoice(
                 `titan_frankenstein_the_bride_start_choose_branch_${timestamp}`,
                 playerId,
-                'The Bride: choose the second effect',
+                '新娘：选择第二个效果',
                 buildTheBrideStartBranchOptions(state.core, playerId, usedKinds, selected.targetUid),
                 {
                     sourceId: 'titan_frankenstein_the_bride_start_choose_branch',
@@ -5994,7 +5994,7 @@ export function registerTitanInteractionHandlers(): void {
             const interaction = createSimpleChoice(
                 `titan_frankenstein_the_bride_talent_add_counter_${timestamp}`,
                 playerId,
-                'The Bride: choose one of your minions here to place a +1 power counter on',
+                '新娘：选择此基地你的一名随从放置 +1 战力标记',
                 buildMinionTargetOptions(targets, { state: state.core, sourcePlayerId: playerId, effectType: 'affect' }),
                 {
                     sourceId: 'titan_frankenstein_the_bride_talent_add_counter',
@@ -6269,7 +6269,7 @@ export function registerTitanInteractionHandlers(): void {
         const interaction = createSimpleChoice(
             `titan_ignobles_the_hill_that_strolls_choose_player_${timestamp}`,
             playerId,
-            'The Hill That Strolls: choose a player to give control to',
+            '移动的山：选择要交出控制权的玩家',
             opponentOptions,
             {
                 sourceId: 'titan_ignobles_the_hill_that_strolls_choose_player',
@@ -7958,7 +7958,7 @@ export function registerTitanInteractionHandlers(): void {
         const interaction = createSimpleChoice(
             `titan_pirates_the_kraken_choose_base_${selected.minionUid}_${timestamp}`,
             playerId,
-            'The Kraken: choose a base to move to',
+            '克拉肯：选择要移动到的基地',
             buildBaseTargetOptions(baseOptions, state.core),
             {
                 sourceId: 'titan_pirates_the_kraken_choose_base',

@@ -1639,15 +1639,17 @@ export const collectReferencesFromContent = (
             literal
             && !literal.dynamic
             && looksLikeHumanReadableValidationError(literal.value)
-            && !hasObjectLiteralTitleKey(configArg)
         ) {
+            const hasTitleKey = hasObjectLiteralTitleKey(configArg);
             addWarning({
                 type: 'raw-simple-choice-title',
                 key: literal.value,
                 file: filePath,
                 line: getLineNumber(content, titleArg.start),
                 source: 'createSimpleChoice.title',
-                detail: 'createSimpleChoice 标题直接使用了英文可见文案，请补 titleKey 并同步 locales',
+                detail: hasTitleKey
+                    ? 'createSimpleChoice 标题仍保留英文可见 fallback；即使已写 titleKey，泄露时前台仍会直接露英文，请改成中文兜底或移除可见英文'
+                    : 'createSimpleChoice 标题直接使用了英文可见文案，请补 titleKey 并同步 locales',
             });
         }
 
